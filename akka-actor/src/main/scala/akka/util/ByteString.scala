@@ -200,6 +200,10 @@ object ByteString {
       if (n <= 0) ByteString.empty
       else toByteString1.take(n)
 
+    override def takeRight(n: Int): ByteString =
+      if (n <= 0) ByteString.empty
+      else toByteString1.takeRight(n)
+
     override def dropRight(n: Int): ByteString =
       if (n <= 0) this
       else toByteString1.dropRight(n)
@@ -318,6 +322,13 @@ object ByteString {
     private[akka] def take1(n: Int): ByteString1 =
       if (n >= length) this
       else ByteString1(bytes, startIndex, n)
+
+    override def takeRight(n: Int): ByteString =
+      if (n <= 0) ByteString.empty else takeRight1(n)
+
+    /** INTERNAL API */
+    private[akka] def takeRight1(n: Int): ByteString1 =
+      if (n >= length) this else ByteString1(bytes, startIndex + (length - n), n)
 
     override def slice(from: Int, until: Int): ByteString =
       drop(from).take(until - Math.max(0, from))
@@ -530,6 +541,29 @@ object ByteString {
       else new ByteStrings(bytestrings.take(last) :+ bytestrings(last).take1(restToTake), n)
     }
 
+    override def takeRight(n: Int): ByteString =
+      if (n <= 0) ByteString.empty
+      else if (n >= length) this
+      else takeRight0(n)
+
+    private def takeRight0(n: Int): ByteString = {
+      val byteStringsSize = bytestrings.size
+      @tailrec def findSplit(fullTakes: Int, remainingToTake: Int): (Int, Int) = {
+        val bs = bytestrings(byteStringsSize - fullTakes - 1)
+        if (bs.length > remainingToTake) (fullTakes, remainingToTake)
+        else findSplit(fullTakes + 1, remainingToTake - bs.length)
+      }
+
+      val (fullTakes, remainingToTake) = findSplit(0, n)
+
+      if (fullTakes == 0)
+        bytestrings(byteStringsSize - 1).takeRight(n)
+      else if (remainingToTake == 0)
+        new ByteStrings(bytestrings.takeRight(fullTakes), n)
+      else
+        new ByteStrings(bytestrings(byteStringsSize - fullTakes - 1).takeRight1(remainingToTake) +: bytestrings.takeRight(fullTakes), n)
+    }
+
     override def dropRight(n: Int): ByteString =
       if (0 < n && n < length) dropRight0(n)
       else if (n >= length) ByteString.empty
@@ -677,7 +711,9 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
 
   // *must* be overridden by derived classes.
   override def take(n: Int): ByteString = throw new UnsupportedOperationException("Method take is not implemented in ByteString")
-  override def takeRight(n: Int): ByteString = slice(length - n, length)
+
+  // *must* be overridden by derived classes.
+  override def takeRight(n: Int): ByteString = throw new UnsupportedOperationException("Method takeRight is not implemented in ByteString")
 
   // these methods are optimized in derived classes utilising the maximum knowlage about data layout available to them:
   // *must* be overridden by derived classes.
