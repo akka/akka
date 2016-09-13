@@ -55,8 +55,13 @@ object ActorSubscriberDocSpec {
       case Reply(id) =>
         queue(id) ! Done(id)
         queue -= id
+        if (canceled && queue.isEmpty) {
+          context.stop(self)
+        }
       case OnComplete =>
-        context.stop(self)
+        if (queue.isEmpty) {
+          context.stop(self)
+        }
     }
   }
 

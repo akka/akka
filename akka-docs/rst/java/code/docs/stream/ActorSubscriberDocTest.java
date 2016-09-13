@@ -176,12 +176,17 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
             router.route(WorkerPoolProtocol.work(msg.id), self());
         }).
         match(ActorSubscriberMessage.onCompleteInstance().getClass(), complete -> {
-          context().stop(self());
+          if (queue.isEmpty()) {
+            context().stop(self());
+          }
         }).
         match(WorkerPoolProtocol.Reply.class, reply -> {
           int id = reply.id;
           queue.get(id).tell(WorkerPoolProtocol.done(id), self());
           queue.remove(id);
+          if (canceled() && queue.isEmpty()) {
+            context().stop(self());
+          }
         }).
         build());
       }
