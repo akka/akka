@@ -1317,32 +1317,49 @@ final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy)
 
     override def preStart(): Unit = buffer = BufferImpl(size, materializer)
 
-    //FIXME rewrite into distinct strategy functions to avoid matching on strategy for every input when full
-    def onPush(): Unit = {
-      if (buffer.isFull) strategy match {
-        case EmitEarly ⇒
+    val onPushWhenBufferFull: () ⇒ Unit = strategy match {
+      case EmitEarly ⇒
+        () ⇒ {
           if (!isTimerActive(timerName))
             push(out, buffer.dequeue()._2)
           else {
             cancelTimer(timerName)
             onTimer(timerName)
           }
-        case DropHead ⇒
+        }
+      case DropHead ⇒
+        () ⇒ {
           buffer.dropHead()
           grabAndPull()
-        case DropTail ⇒
+        }
+      case DropTail ⇒
+        () ⇒ {
           buffer.dropTail()
           grabAndPull()
-        case DropNew ⇒
+        }
+      case DropNew ⇒
+        () ⇒ {
           grab(in)
           if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
-        case DropBuffer ⇒
+        }
+      case DropBuffer ⇒
+        () ⇒ {
           buffer.clear()
           grabAndPull()
-        case Fail ⇒
+        }
+      case Fail ⇒
+        () ⇒ {
           failStage(new BufferOverflowException(s"Buffer overflow for delay combinator (max capacity was: $size)!"))
-        case Backpressure ⇒ throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
-      }
+        }
+      case Backpressure ⇒
+        () ⇒ {
+          throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
+        }
+    }
+
+    def onPush(): Unit = {
+      if (buffer.isFull)
+        onPushWhenBufferFull()
       else {
         grabAndPull()
         if (!isTimerActive(timerName)) {
