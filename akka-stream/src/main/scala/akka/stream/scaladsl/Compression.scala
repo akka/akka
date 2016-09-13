@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.impl.{ DeflateDecompressor, DeflateDecompressorBase, GzipDecompressor }
+import akka.stream.impl.io.compression._
 import akka.util.ByteString
 
 object Compression {

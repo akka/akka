@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import java.nio.charset.StandardCharsets
 
-import akka.stream.impl.{ DeflateCompressor, GzipCompressor }
+import akka.stream.impl.io.compression.{ DeflateCompressor, GzipCompressor }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
