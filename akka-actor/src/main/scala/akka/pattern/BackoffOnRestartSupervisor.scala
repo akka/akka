@@ -28,13 +28,6 @@ private class BackoffOnRestartSupervisor(
   import context._
   import BackoffSupervisor._
 
-  if (strategy.withinTimeRange.isFinite()) {
-    // If the user has defined a time range for the maxNrOfRetries, we'll queue up a message
-    // to ourselves every time that range elapses, to reset the restart counter.
-    val finiteWithinTimeRange = strategy.withinTimeRange.asInstanceOf[FiniteDuration]
-    system.scheduler.schedule(finiteWithinTimeRange, finiteWithinTimeRange, self, ResetRestartCount(restartCount))
-  }
-
   override val supervisorStrategy = OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
     case ex ⇒
       val defaultDirective: Directive =
@@ -45,6 +38,13 @@ private class BackoffOnRestartSupervisor(
         // Whatever the final Directive is, we will translate all Restarts
         // to our own Restarts, which involves stopping the child.
         case Restart ⇒
+          if (strategy.withinTimeRange.isFinite() && restartCount == 0) {
+            // If the user has defined a time range for the maxNrOfRetries, we'll schedule a message
+            // to ourselves every time that range elapses, to reset the restart counter. We hide it
+            // behind this conditional to avoid queuing the message unnecessarily
+            val finiteWithinTimeRange = strategy.withinTimeRange.asInstanceOf[FiniteDuration]
+            system.scheduler.schedule(finiteWithinTimeRange, finiteWithinTimeRange, self, ResetRestartCount(restartCount))
+          }
           val childRef = sender()
           val nextRestartCount = restartCount + 1
           if (strategy.maxNrOfRetries >= 0 && nextRestartCount > strategy.maxNrOfRetries) {

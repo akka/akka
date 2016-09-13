@@ -187,7 +187,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
             probe.expectMsg(4 seconds, "STARTED")
           }
         }
-        // Superviser should've terminated.
+        // Supervisor should've terminated.
         probe.expectTerminated(supervisor)
       }
     }
@@ -196,7 +196,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
       val probe = TestProbe()
       // withinTimeRange indicates the time range in which maxNrOfRetries will cause the child to
       // stop. IE: If we restart more than maxNrOfRetries in a time range longer than withinTimeRange
-      // that is acceptible.
+      // that is acceptable.
       val options = Backoff.onFailure(TestActor.props(probe.ref), "someChildName", 300 millis, 10 seconds, 0.0)
         .withSupervisorStrategy(OneForOneStrategy(withinTimeRange = 1 seconds, maxNrOfRetries = 3) {
           case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
