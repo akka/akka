@@ -47,9 +47,10 @@ lazy val root = Project(
       publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))))
     .aggregate(
       parsing,
-      httpCore, 
-      http, 
-      httpTestkit, 
+      httpCore,
+      http2Support,
+      http,
+      httpTestkit,
       httpTests, 
       httpMarshallersScala, 
       httpMarshallersJava, 
@@ -70,7 +71,7 @@ lazy val httpCore = project("akka-http-core")
 lazy val http = project("akka-http")
   .dependsOn(httpCore)
 
-lazy val http2 = project("akka-http2-support")
+lazy val http2Support = project("akka-http2-support")
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
 
 lazy val httpTestkit = project("akka-http-testkit")
