@@ -9,9 +9,10 @@ sealed trait StreamFrameEvent extends FrameEvent {
   def streamId: Int
 }
 
-case class GenericEvent(tpe: FrameType, flags: Int, streamId: Int, payload: ByteString) extends StreamFrameEvent
-
-case class DataFrame(streamId: Int /* TODO: finish */ ) extends StreamFrameEvent
+case class DataFrame(
+  streamId:  Int,
+  endStream: Boolean,
+  payload:   ByteString) extends StreamFrameEvent
 case class HeadersFrame(
   streamId:            Int,
   endStream:           Boolean,
@@ -29,3 +30,6 @@ case class WindowUpdateFrame(streamId: Int, windowSizeIncrement: Int) extends St
 case class ContinuationFrame(streamId: Int, endHeaders: Boolean, payload: ByteString) extends StreamFrameEvent
 
 case class Setting(identifier: SettingIdentifier, value: Int)
+
+/** Dummy event for all unknown frames */
+case class UnknownFrameEvent(tpe: FrameType, flags: Int, streamId: Int, payload: ByteString) extends StreamFrameEvent

@@ -64,6 +64,16 @@ object FrameParser extends ByteStringParser[FrameEvent] {
         // TODO: also write out Priority frame if priority was set
         HeadersFrame(streamId, endStream, endHeaders, payload.take(payload.remainingSize - paddingLength))
 
+      case DATA ⇒
+        val pad = isSet(Flags.PADDED)
+        val endStream = isSet(Flags.END_STREAM)
+
+        val paddingLength =
+          if (pad) payload.readByte() & 0xff
+          else 0
+
+        DataFrame(streamId, endStream, payload.take(payload.remainingSize - paddingLength))
+
       case SETTINGS ⇒
         val ack = isSet(Flags.ACK)
 
@@ -97,7 +107,7 @@ object FrameParser extends ByteStringParser[FrameEvent] {
         ContinuationFrame(streamId, endHeaders, payload.remainingData)
 
       case tpe ⇒ // TODO: remove once all stream types are defined
-        GenericEvent(tpe, flags, streamId, payload.remainingData)
+        UnknownFrameEvent(tpe, flags, streamId, payload.remainingData)
     }
   }
 }

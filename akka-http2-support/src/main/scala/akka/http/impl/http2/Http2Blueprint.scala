@@ -27,7 +27,7 @@ object Http2Blueprint {
    * and handles priorization (TODO: later)
    */
   def demux(): BidiFlow[HttpResponse, FrameEvent, FrameEvent, HttpRequest, NotUsed] =
-    BidiFlow.fromFlows(Flow[HttpResponse].map(_ ⇒ DataFrame(-1)), Flow[FrameEvent].map(_ ⇒ HttpRequest()))
+    BidiFlow.fromFlows(Flow[HttpResponse].map(_ ⇒ DataFrame(-1, true, ByteString())), Flow[FrameEvent].map(_ ⇒ HttpRequest()))
 
   /** A handler for a single server stream */
   def serverStreamHandler(): BidiFlow[HttpResponse, FrameEvent, FrameEvent, HttpRequest, NotUsed] = ???
