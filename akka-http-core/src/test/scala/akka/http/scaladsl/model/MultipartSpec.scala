@@ -13,6 +13,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import akka.actor.ActorSystem
+import akka.testkit.TestKit
 import headers._
 
 class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAfterAll {
@@ -22,7 +23,7 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
   akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   implicit val materializer = ActorMaterializer()
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   "Multipart.General" should {
     "support `toStrict` on the streamed model" in {

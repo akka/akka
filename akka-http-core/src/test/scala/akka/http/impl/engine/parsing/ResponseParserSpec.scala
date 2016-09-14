@@ -8,8 +8,9 @@ import akka.NotUsed
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.TLSProtocol._
-import com.typesafe.config.{ ConfigFactory, Config }
-import scala.concurrent.{ Future, Await }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
@@ -27,6 +28,7 @@ import HttpProtocols._
 import StatusCodes._
 import HttpEntity._
 import ParserOutput._
+import akka.testkit.TestKit
 
 class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -247,7 +249,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   private class Test {
     def awaitAtMost: FiniteDuration = 3.seconds

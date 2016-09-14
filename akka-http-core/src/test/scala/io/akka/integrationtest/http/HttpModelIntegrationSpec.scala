@@ -4,7 +4,8 @@
 
 package io.akka.integrationtest.http
 
-import com.typesafe.config.{ ConfigFactory, Config }
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
@@ -13,6 +14,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
+import akka.testkit.TestKit
 import headers._
 
 /**
@@ -39,7 +41,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
     akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
 
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   implicit val materializer = ActorMaterializer()
 

@@ -5,17 +5,20 @@
 package akka.http.impl.engine.parsing
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
+
 import akka.http.scaladsl.settings.ParserSettings
-import com.typesafe.config.{ ConfigFactory, Config }
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.annotation.tailrec
 import scala.util.Random
-import org.scalatest.{ BeforeAndAfterAll, WordSpec, Matchers }
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util._
+import akka.testkit.TestKit
 
 class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
@@ -235,7 +238,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
   }
 
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   def check(pair: (String, String)) = {
     val (expected, actual) = pair

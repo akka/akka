@@ -6,21 +6,23 @@ package akka.http.scaladsl.testkit
 
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.impl.ConstantFun
-import com.typesafe.config.{ ConfigFactory, Config }
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Await, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import akka.actor.ActorSystem
-import akka.stream.{ Materializer, ActorMaterializer }
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ Upgrade, `Sec-WebSocket-Protocol`, Host }
+import akka.http.scaladsl.model.headers.{ Host, Upgrade, `Sec-WebSocket-Protocol` }
 import FastFuture._
+import akka.testkit.TestKit
 
 trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTestResultComponent with MarshallingTestUtils {
   this: TestFrameworkInterface ⇒
@@ -45,7 +47,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   implicit def executor = system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  def cleanUp(): Unit = system.terminate()
+  def cleanUp(): Unit = TestKit.shutdownActorSystem(system)
 
   private val dynRR = new DynamicVariable[RouteTestResult](null)
   private def result =

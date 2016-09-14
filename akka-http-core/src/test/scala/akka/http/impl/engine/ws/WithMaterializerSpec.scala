@@ -4,10 +4,11 @@
 
 package akka.http.impl.engine.ws
 
-import com.typesafe.config.{ ConfigFactory, Config }
-import org.scalatest.{ Suite, BeforeAndAfterAll }
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.{ BeforeAndAfterAll, Suite }
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.testkit.TestKit
 
 trait WithMaterializerSpec extends BeforeAndAfterAll { _: Suite ⇒
   lazy val testConf: Config = ConfigFactory.parseString("""
@@ -16,5 +17,5 @@ trait WithMaterializerSpec extends BeforeAndAfterAll { _: Suite ⇒
   implicit lazy val system = ActorSystem(getClass.getSimpleName, testConf)
 
   implicit lazy val materializer = ActorMaterializer()
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 }
