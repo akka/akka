@@ -13,9 +13,6 @@ import akka.util.ByteString
 import akka.http.scaladsl.model._
 import headers._
 import ParserOutput._
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
-import akka.stream.TLSProtocol.SessionBytes
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 /**
  * INTERNAL API
@@ -28,33 +25,6 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
 
   private[this] var contextForCurrentResponse: Option[ResponseContext] = None
   private[this] var statusCode: StatusCode = StatusCodes.OK
-
-  // Note that this GraphStage mutates the HttpMessageParser instance, use with caution.
-  final val stage = new GraphStage[FlowShape[SessionBytes, ResponseOutput]] {
-    val in: Inlet[SessionBytes] = Inlet("HttpResponseParser.in")
-    val out: Outlet[ResponseOutput] = Outlet("HttpResponseParser.out")
-    override val shape: FlowShape[SessionBytes, ResponseOutput] = FlowShape(in, out)
-
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-      new GraphStageLogic(shape) with InHandler with OutHandler {
-        override def onPush(): Unit = handleParserOutput(self.parseSessionBytes(grab(in)))
-        override def onPull(): Unit = handleParserOutput(self.onPull())
-
-        override def onUpstreamFinish(): Unit =
-          if (self.onUpstreamFinish()) completeStage()
-          else if (isAvailable(out)) handleParserOutput(self.onPull())
-
-        private def handleParserOutput(output: ResponseOutput): Unit = {
-          output match {
-            case StreamEnd    ⇒ completeStage()
-            case NeedMoreData ⇒ pull(in)
-            case x            ⇒ push(out, x)
-          }
-        }
-
-        setHandlers(in, out, this)
-      }
-  }
 
   final def createShallowCopy(): HttpResponseParser = new HttpResponseParser(settings, headerParser.createShallowCopy())
 
