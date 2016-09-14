@@ -16,6 +16,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.cluster.pubsub._
+import akka.remote.RARP
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.util.Timeout
 
