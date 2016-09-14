@@ -16,7 +16,7 @@ object Http2Blueprint {
   def framing(): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
       Flow[FrameEvent].map(FrameRenderer.render),
-      Flow[ByteString].via(FrameParser))
+      Flow[ByteString].via(new FrameParser(shouldReadPreface = true)))
 
   /** Manages flow control for streams */
   def flowControl(): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =

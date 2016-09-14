@@ -6,14 +6,17 @@ import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
 
-object FrameParser extends ByteStringParser[FrameEvent] {
+class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEvent] {
   import ByteStringParser._
 
   abstract class Step extends ParseStep[FrameEvent]
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new ParsingLogic {
-      startWith(ReadPreface)
+      startWith {
+        if (shouldReadPreface) ReadPreface
+        else ReadFrame
+      }
 
       object ReadPreface extends Step {
         def parse(reader: ByteReader): ParseResult[FrameEvent] =
@@ -35,7 +38,7 @@ object FrameParser extends ByteStringParser[FrameEvent] {
           val payload = reader.take(length)
           val frame = parseFrame(FrameType.byId(tpe), flags, streamId, new ByteReader(payload))
 
-          ParseResult(Some(frame), ReadFrame, false)
+          ParseResult(Some(frame), ReadFrame, true)
         }
       }
     }
