@@ -45,6 +45,7 @@ import akka.actor.ActorIdentity
 import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import java.lang.management.ManagementFactory
+import akka.remote.RARP
 
 /**
  * This test is intended to be used as long running stress test
@@ -133,6 +134,12 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
+
+    akka.remote.artery.advanced {
+      idle-cpu-level = 1
+      embedded-media-driver = off
+      aeron-dir = "target/aeron-StressSpec"
+    }
 
     akka.actor.default-dispatcher.fork-join-executor {
       parallelism-min = 8
@@ -699,8 +706,11 @@ class StressMultiJvmNode12 extends StressSpec
 class StressMultiJvmNode13 extends StressSpec
 
 abstract class StressSpec
-  extends MultiNodeSpec(StressMultiJvmSpec)
-  with MultiNodeClusterSpec with BeforeAndAfterEach with ImplicitSender {
+  extends MultiNodeSpec({
+    // Aeron media driver must be started before ActorSystem
+    SharedMediaDriverSupport.startMediaDriver(StressMultiJvmSpec)
+    StressMultiJvmSpec
+  }) with MultiNodeClusterSpec with BeforeAndAfterEach with ImplicitSender {
 
   import StressMultiJvmSpec._
   import ClusterEvent._
@@ -725,6 +735,20 @@ abstract class StressSpec
     muteDeadLetters(classOf[SimpleJob], classOf[AggregatedClusterResult], SendBatch.getClass,
       classOf[StatsResult], classOf[PhiResult], RetryTick.getClass)(sys)
   }
+
+  override protected def afterTermination(): Unit = {
+    SharedMediaDriverSupport.stopMediaDriver(StressMultiJvmSpec)
+    super.afterTermination()
+  }
+
+  Runtime.getRuntime.addShutdownHook(new Thread {
+    override def run(): Unit = {
+      if (SharedMediaDriverSupport.isMediaDriverRunningByThisNode)
+        println("Abrupt exit of JVM without closing media driver. This should not happen and may cause test failure.")
+    }
+  })
+
+  def isArteryEnabled: Boolean = RARP(system).provider.remoteSettings.Artery.Enabled
 
   def jvmInfo(): String = {
     val runtime = ManagementFactory.getRuntimeMXBean
@@ -1129,200 +1153,199 @@ abstract class StressSpec
 
   "A cluster under stress" must {
 
-    "TODO work with artery" in (pending)
-    //    "log settings" taggedAs LongRunningTest in {
-    //      if (infolog) {
-    //        log.info("StressSpec JVM:\n{}", jvmInfo)
-    //        runOn(roles.head) {
-    //          log.info("StressSpec settings:\n{}", settings)
-    //        }
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "join seed nodes" taggedAs LongRunningTest in within(30 seconds) {
-    //
-    //      val otherNodesJoiningSeedNodes = roles.slice(numberOfSeedNodes, numberOfSeedNodes + numberOfNodesJoiningToSeedNodesInitially)
-    //      val size = seedNodes.size + otherNodesJoiningSeedNodes.size
-    //
-    //      createResultAggregator("join seed nodes", expectedResults = size, includeInHistory = true)
-    //
-    //      runOn((seedNodes ++ otherNodesJoiningSeedNodes): _*) {
-    //        reportResult {
-    //          cluster.joinSeedNodes(seedNodes.toIndexedSeq map address)
-    //          awaitMembersUp(size, timeout = remainingOrDefault)
-    //        }
-    //      }
-    //
-    //      awaitClusterResult()
-    //
-    //      nbrUsedRoles += size
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "start routers that are running while nodes are joining" taggedAs LongRunningTest in {
-    //      runOn(roles.take(3): _*) {
-    //        system.actorOf(
-    //          Props(classOf[Master], settings, settings.workBatchInterval, false).withDeploy(Deploy.local),
-    //          name = masterName) ! Begin
-    //      }
-    //    }
-    //
-    //    "join nodes one-by-one to small cluster" taggedAs LongRunningTest in {
-    //      joinOneByOne(numberOfNodesJoiningOneByOneSmall)
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "join several nodes to one node" taggedAs LongRunningTest in {
-    //      joinSeveral(numberOfNodesJoiningToOneNode, toSeedNodes = false)
-    //      nbrUsedRoles += numberOfNodesJoiningToOneNode
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "join several nodes to seed nodes" taggedAs LongRunningTest in {
-    //      if (numberOfNodesJoiningToSeedNodes > 0) {
-    //        joinSeveral(numberOfNodesJoiningToSeedNodes, toSeedNodes = true)
-    //        nbrUsedRoles += numberOfNodesJoiningToSeedNodes
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "join nodes one-by-one to large cluster" taggedAs LongRunningTest in {
-    //      joinOneByOne(numberOfNodesJoiningOneByOneLarge)
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "end routers that are running while nodes are joining" taggedAs LongRunningTest in within(30.seconds) {
-    //      if (exerciseActors) {
-    //        runOn(roles.take(3): _*) {
-    //          master match {
-    //            case Some(m) ⇒
-    //              m.tell(End, testActor)
-    //              val workResult = awaitWorkResult(m)
-    //              workResult.retryCount should ===(0)
-    //              workResult.sendCount should be > (0L)
-    //              workResult.ackCount should be > (0L)
-    //            case None ⇒ fail("master not running")
-    //          }
-    //        }
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "use routers with normal throughput" taggedAs LongRunningTest in {
-    //      if (exerciseActors) {
-    //        exerciseRouters("use routers with normal throughput", normalThroughputDuration,
-    //          batchInterval = workBatchInterval, expectDroppedMessages = false, tree = false)
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "use routers with high throughput" taggedAs LongRunningTest in {
-    //      if (exerciseActors) {
-    //        exerciseRouters("use routers with high throughput", highThroughputDuration,
-    //          batchInterval = Duration.Zero, expectDroppedMessages = false, tree = false)
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "use many actors with normal throughput" taggedAs LongRunningTest in {
-    //      if (exerciseActors) {
-    //        exerciseRouters("use many actors with normal throughput", normalThroughputDuration,
-    //          batchInterval = workBatchInterval, expectDroppedMessages = false, tree = true)
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "use many actors with high throughput" taggedAs LongRunningTest in {
-    //      if (exerciseActors) {
-    //        exerciseRouters("use many actors with high throughput", highThroughputDuration,
-    //          batchInterval = Duration.Zero, expectDroppedMessages = false, tree = true)
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "exercise join/remove/join/remove" taggedAs LongRunningTest in {
-    //      exerciseJoinRemove("exercise join/remove", joinRemoveDuration)
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "exercise supervision" taggedAs LongRunningTest in {
-    //      if (exerciseActors) {
-    //        exerciseSupervision("exercise supervision", supervisionDuration, supervisionOneIteration)
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "gossip when idle" taggedAs LongRunningTest in {
-    //      idleGossip("idle gossip")
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "start routers that are running while nodes are removed" taggedAs LongRunningTest in {
-    //      if (exerciseActors) {
-    //        runOn(roles.take(3): _*) {
-    //          system.actorOf(
-    //            Props(classOf[Master], settings, settings.workBatchInterval, false).withDeploy(Deploy.local),
-    //            name = masterName) ! Begin
-    //        }
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "leave nodes one-by-one from large cluster" taggedAs LongRunningTest in {
-    //      removeOneByOne(numberOfNodesLeavingOneByOneLarge, shutdown = false)
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "shutdown nodes one-by-one from large cluster" taggedAs LongRunningTest in {
-    //      removeOneByOne(numberOfNodesShutdownOneByOneLarge, shutdown = true)
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "leave several nodes" taggedAs LongRunningTest in {
-    //      removeSeveral(numberOfNodesLeaving, shutdown = false)
-    //      nbrUsedRoles -= numberOfNodesLeaving
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "shutdown several nodes" taggedAs LongRunningTest in {
-    //      removeSeveral(numberOfNodesShutdown, shutdown = true)
-    //      nbrUsedRoles -= numberOfNodesShutdown
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "shutdown nodes one-by-one from small cluster" taggedAs LongRunningTest in {
-    //      removeOneByOne(numberOfNodesShutdownOneByOneSmall, shutdown = true)
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "leave nodes one-by-one from small cluster" taggedAs LongRunningTest in {
-    //      removeOneByOne(numberOfNodesLeavingOneByOneSmall, shutdown = false)
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "end routers that are running while nodes are removed" taggedAs LongRunningTest in within(30.seconds) {
-    //      if (exerciseActors) {
-    //        runOn(roles.take(3): _*) {
-    //          master match {
-    //            case Some(m) ⇒
-    //              m.tell(End, testActor)
-    //              val workResult = awaitWorkResult(m)
-    //              workResult.sendCount should be > (0L)
-    //              workResult.ackCount should be > (0L)
-    //            case None ⇒ fail("master not running")
-    //          }
-    //        }
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
-    //
-    //    "log jvm info" taggedAs LongRunningTest in {
-    //      if (infolog) {
-    //        log.info("StressSpec JVM:\n{}", jvmInfo)
-    //      }
-    //      enterBarrier("after-" + step)
-    //    }
+    "log settings" taggedAs LongRunningTest in {
+      if (infolog) {
+        log.info("StressSpec JVM:\n{}", jvmInfo)
+        runOn(roles.head) {
+          log.info("StressSpec settings:\n{}", settings)
+        }
+      }
+      enterBarrier("after-" + step)
+    }
+
+    "join seed nodes" taggedAs LongRunningTest in within(30 seconds) {
+
+      val otherNodesJoiningSeedNodes = roles.slice(numberOfSeedNodes, numberOfSeedNodes + numberOfNodesJoiningToSeedNodesInitially)
+      val size = seedNodes.size + otherNodesJoiningSeedNodes.size
+
+      createResultAggregator("join seed nodes", expectedResults = size, includeInHistory = true)
+
+      runOn((seedNodes ++ otherNodesJoiningSeedNodes): _*) {
+        reportResult {
+          cluster.joinSeedNodes(seedNodes.toIndexedSeq map address)
+          awaitMembersUp(size, timeout = remainingOrDefault)
+        }
+      }
+
+      awaitClusterResult()
+
+      nbrUsedRoles += size
+      enterBarrier("after-" + step)
+    }
+
+    "start routers that are running while nodes are joining" taggedAs LongRunningTest in {
+      runOn(roles.take(3): _*) {
+        system.actorOf(
+          Props(classOf[Master], settings, settings.workBatchInterval, false).withDeploy(Deploy.local),
+          name = masterName) ! Begin
+      }
+    }
+
+    "join nodes one-by-one to small cluster" taggedAs LongRunningTest in {
+      joinOneByOne(numberOfNodesJoiningOneByOneSmall)
+      enterBarrier("after-" + step)
+    }
+
+    "join several nodes to one node" taggedAs LongRunningTest in {
+      joinSeveral(numberOfNodesJoiningToOneNode, toSeedNodes = false)
+      nbrUsedRoles += numberOfNodesJoiningToOneNode
+      enterBarrier("after-" + step)
+    }
+
+    "join several nodes to seed nodes" taggedAs LongRunningTest in {
+      if (numberOfNodesJoiningToSeedNodes > 0) {
+        joinSeveral(numberOfNodesJoiningToSeedNodes, toSeedNodes = true)
+        nbrUsedRoles += numberOfNodesJoiningToSeedNodes
+      }
+      enterBarrier("after-" + step)
+    }
+
+    "join nodes one-by-one to large cluster" taggedAs LongRunningTest in {
+      joinOneByOne(numberOfNodesJoiningOneByOneLarge)
+      enterBarrier("after-" + step)
+    }
+
+    "end routers that are running while nodes are joining" taggedAs LongRunningTest in within(30.seconds) {
+      if (exerciseActors) {
+        runOn(roles.take(3): _*) {
+          master match {
+            case Some(m) ⇒
+              m.tell(End, testActor)
+              val workResult = awaitWorkResult(m)
+              workResult.retryCount should ===(0)
+              workResult.sendCount should be > (0L)
+              workResult.ackCount should be > (0L)
+            case None ⇒ fail("master not running")
+          }
+        }
+      }
+      enterBarrier("after-" + step)
+    }
+
+    "use routers with normal throughput" taggedAs LongRunningTest in {
+      if (exerciseActors) {
+        exerciseRouters("use routers with normal throughput", normalThroughputDuration,
+          batchInterval = workBatchInterval, expectDroppedMessages = false, tree = false)
+      }
+      enterBarrier("after-" + step)
+    }
+
+    "use routers with high throughput" taggedAs LongRunningTest in {
+      if (exerciseActors) {
+        exerciseRouters("use routers with high throughput", highThroughputDuration,
+          batchInterval = Duration.Zero, expectDroppedMessages = false, tree = false)
+      }
+      enterBarrier("after-" + step)
+    }
+
+    "use many actors with normal throughput" taggedAs LongRunningTest in {
+      if (exerciseActors) {
+        exerciseRouters("use many actors with normal throughput", normalThroughputDuration,
+          batchInterval = workBatchInterval, expectDroppedMessages = false, tree = true)
+      }
+      enterBarrier("after-" + step)
+    }
+
+    "use many actors with high throughput" taggedAs LongRunningTest in {
+      if (exerciseActors) {
+        exerciseRouters("use many actors with high throughput", highThroughputDuration,
+          batchInterval = Duration.Zero, expectDroppedMessages = false, tree = true)
+      }
+      enterBarrier("after-" + step)
+    }
+
+    "exercise join/remove/join/remove" taggedAs LongRunningTest in {
+      exerciseJoinRemove("exercise join/remove", joinRemoveDuration)
+      enterBarrier("after-" + step)
+    }
+
+    "exercise supervision" taggedAs LongRunningTest in {
+      if (exerciseActors) {
+        exerciseSupervision("exercise supervision", supervisionDuration, supervisionOneIteration)
+      }
+      enterBarrier("after-" + step)
+    }
+
+    "gossip when idle" taggedAs LongRunningTest in {
+      idleGossip("idle gossip")
+      enterBarrier("after-" + step)
+    }
+
+    "start routers that are running while nodes are removed" taggedAs LongRunningTest in {
+      if (exerciseActors) {
+        runOn(roles.take(3): _*) {
+          system.actorOf(
+            Props(classOf[Master], settings, settings.workBatchInterval, false).withDeploy(Deploy.local),
+            name = masterName) ! Begin
+        }
+      }
+      enterBarrier("after-" + step)
+    }
+
+    "leave nodes one-by-one from large cluster" taggedAs LongRunningTest in {
+      removeOneByOne(numberOfNodesLeavingOneByOneLarge, shutdown = false)
+      enterBarrier("after-" + step)
+    }
+
+    "shutdown nodes one-by-one from large cluster" taggedAs LongRunningTest in {
+      removeOneByOne(numberOfNodesShutdownOneByOneLarge, shutdown = true)
+      enterBarrier("after-" + step)
+    }
+
+    "leave several nodes" taggedAs LongRunningTest in {
+      removeSeveral(numberOfNodesLeaving, shutdown = false)
+      nbrUsedRoles -= numberOfNodesLeaving
+      enterBarrier("after-" + step)
+    }
+
+    "shutdown several nodes" taggedAs LongRunningTest in {
+      removeSeveral(numberOfNodesShutdown, shutdown = true)
+      nbrUsedRoles -= numberOfNodesShutdown
+      enterBarrier("after-" + step)
+    }
+
+    "shutdown nodes one-by-one from small cluster" taggedAs LongRunningTest in {
+      removeOneByOne(numberOfNodesShutdownOneByOneSmall, shutdown = true)
+      enterBarrier("after-" + step)
+    }
+
+    "leave nodes one-by-one from small cluster" taggedAs LongRunningTest in {
+      removeOneByOne(numberOfNodesLeavingOneByOneSmall, shutdown = false)
+      enterBarrier("after-" + step)
+    }
+
+    "end routers that are running while nodes are removed" taggedAs LongRunningTest in within(30.seconds) {
+      if (exerciseActors) {
+        runOn(roles.take(3): _*) {
+          master match {
+            case Some(m) ⇒
+              m.tell(End, testActor)
+              val workResult = awaitWorkResult(m)
+              workResult.sendCount should be > (0L)
+              workResult.ackCount should be > (0L)
+            case None ⇒ fail("master not running")
+          }
+        }
+      }
+      enterBarrier("after-" + step)
+    }
+
+    "log jvm info" taggedAs LongRunningTest in {
+      if (infolog) {
+        log.info("StressSpec JVM:\n{}", jvmInfo)
+      }
+      enterBarrier("after-" + step)
+    }
   }
 
 }

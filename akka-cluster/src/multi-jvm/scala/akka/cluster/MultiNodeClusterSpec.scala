@@ -83,12 +83,14 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 
-  override def atStartup(): Unit = {
+  override protected def atStartup(): Unit = {
     startCoroner()
     muteLog()
+    self.atStartup()
   }
 
-  override def afterTermination(): Unit = {
+  override protected def afterTermination(): Unit = {
+    self.afterTermination()
     stopCoroner()
   }
 
