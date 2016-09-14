@@ -885,8 +885,8 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWithIndex: javadsl.Source[(Out, Long), Mat] =
-    new Source(delegate.zipWithIndex)
+  def zipWithIndex: javadsl.Source[Pair[Out @uncheckedVariance, Long], Mat] =
+    new Source(delegate.zipWithIndex.map { case (elem, index) ⇒ Pair(elem, index) })
 
   /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked

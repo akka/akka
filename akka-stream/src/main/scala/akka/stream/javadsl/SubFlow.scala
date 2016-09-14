@@ -1124,8 +1124,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWithIndex: SubFlow[In, (Out, Long), Mat] =
-    new SubFlow(delegate.zipWithIndex)
+  def zipWithIndex: SubFlow[In, akka.japi.Pair[Out @uncheckedVariance, Long], Mat] =
+    new SubFlow(delegate.zipWithIndex.map { case (elem, index) ⇒ akka.japi.Pair(elem, index) })
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed

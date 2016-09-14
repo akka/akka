@@ -1123,8 +1123,8 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWithIndex: javadsl.SubSource[(Out, Long), Mat] =
-    new SubSource(delegate.zipWithIndex)
+  def zipWithIndex: javadsl.SubSource[akka.japi.Pair[Out @uncheckedVariance, Long], Mat] =
+    new SubSource(delegate.zipWithIndex.map { case (elem, index) ⇒ akka.japi.Pair(elem, index) })
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed

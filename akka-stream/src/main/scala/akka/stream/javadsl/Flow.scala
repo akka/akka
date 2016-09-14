@@ -1648,8 +1648,8 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWithIndex: Flow[In, (Out, Long), Mat] =
-    new Flow(delegate.zipWithIndex)
+  def zipWithIndex: Flow[In, Pair[Out @uncheckedVariance, Long], Mat] =
+    new Flow(delegate.zipWithIndex.map { case (elem, index) ⇒ Pair(elem, index) })
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed
