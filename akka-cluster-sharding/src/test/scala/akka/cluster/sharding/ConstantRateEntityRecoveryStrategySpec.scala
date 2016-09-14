@@ -5,36 +5,36 @@ import akka.testkit.AkkaSpec
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
 
   import system.dispatcher
 
-  val strategy = EntityRecoveryStrategy.constantStrategy(system, 500 millis, 2)
+  val strategy = EntityRecoveryStrategy.constantStrategy(system, 1.second, 2)
 
   "ConstantRateEntityRecoveryStrategy" must {
     "recover entities" in {
       val entities = Set[EntityId]("1", "2", "3", "4", "5")
-      val startTime = System.currentTimeMillis()
+      val startTime = System.nanoTime()
       val resultWithTimes = strategy.recoverEntities(entities).map(
-        _.map(entityIds ⇒ (entityIds, System.currentTimeMillis() - startTime))
-      )
+        _.map(entityIds ⇒ (entityIds → (System.nanoTime() - startTime).nanos)))
 
-      val result = Await.result(Future.sequence(resultWithTimes), 4 seconds).toList.sortWith(_._2 < _._2)
+      val result = Await.result(Future.sequence(resultWithTimes), 6.seconds)
+        .toVector.sortBy { case (_, duration) ⇒ duration }
       result.size should ===(3)
 
       val scheduledEntities = result.map(_._1)
-      scheduledEntities.head.size should ===(2)
+      scheduledEntities(0).size should ===(2)
       scheduledEntities(1).size should ===(2)
       scheduledEntities(2).size should ===(1)
-      scheduledEntities.foldLeft(Set[EntityId]())(_ ++ _) should ===(entities)
+      scheduledEntities.flatten.toSet should ===(entities)
 
-      val times = result.map(_._2)
+      val timesMillis = result.map(_._2.toMillis)
 
-      times.head should ===(500L +- 30L)
-      times(1) should ===(1000L +- 30L)
-      times(2) should ===(1500L +- 30L)
+      // scheduling will not happen too early
+      timesMillis(0) should ===(1400L +- 500)
+      timesMillis(1) should ===(2400L +- 500L)
+      timesMillis(2) should ===(3400L +- 500L)
     }
 
     "not recover when no entities to recover" in {
