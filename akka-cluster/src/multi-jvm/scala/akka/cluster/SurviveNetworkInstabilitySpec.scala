@@ -366,17 +366,10 @@ abstract class SurviveNetworkInstabilitySpec
       }
 
       runOn(side2: _*) {
-        if (RARP(system).provider.remoteSettings.Artery.Enabled) {
-          // with artery the other side stays quarantined
-          val expected = (side2 map address).toSet
-          clusterView.members.map(_.address) should ===(expected)
-
-        } else {
-          // with the old remoting side2 comes back but stays unreachable
-          val expected = ((side2 ++ side1) map address).toSet
-          clusterView.members.map(_.address) should ===(expected)
-          assertUnreachable(side1: _*)
-        }
+        // side2 comes back but stays unreachable
+        val expected = ((side2 ++ side1) map address).toSet
+        clusterView.members.map(_.address) should ===(expected)
+        assertUnreachable(side1: _*)
       }
 
       enterBarrier("after-7")

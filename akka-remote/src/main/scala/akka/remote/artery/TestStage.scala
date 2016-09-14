@@ -3,105 +3,99 @@
  */
 package akka.remote.artery
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.Promise
+import java.util.concurrent.atomic.AtomicReference
+
+import scala.annotation.tailrec
 import scala.concurrent.duration._
-import akka.Done
+
 import akka.actor.Address
-import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
-import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
 import akka.stream.Outlet
-import akka.stream.stage.AsyncCallback
-import akka.stream.stage.CallbackWrapper
-import akka.stream.stage.GraphStageWithMaterializedValue
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
 import akka.util.OptionVal
-import akka.stream.stage.GraphStageLogic
 
 /**
- * INTERNAL API
+ * INTERNAL API: Thread safe mutable state that is shared among
+ * the test stages.
  */
-private[remote] trait TestManagementApi {
-  def send(command: Any)(implicit ec: ExecutionContext): Future[Done]
-}
+private[remote] class SharedTestState {
+  private val state = new AtomicReference[TestState](TestState(Map.empty))
 
-/**
- * INTERNAL API
- */
-private[remote] class TestManagementApiImpl(stopped: Future[Done], callback: AsyncCallback[TestManagementMessage])
-  extends TestManagementApi {
-
-  override def send(command: Any)(implicit ec: ExecutionContext): Future[Done] = {
-    if (stopped.isCompleted)
-      Future.successful(Done)
-    else {
-      val done = Promise[Done]()
-      callback.invoke(TestManagementMessage(command, done))
-      Future.firstCompletedOf(List(done.future, stopped))
+  def isBlackhole(from: Address, to: Address): Boolean =
+    state.get.blackholes.get(from) match {
+      case Some(destinations) ⇒ destinations(to)
+      case None               ⇒ false
     }
+
+  def blackhole(a: Address, b: Address, direction: Direction): Unit =
+    direction match {
+      case Direction.Send    ⇒ addBlackhole(a, b)
+      case Direction.Receive ⇒ addBlackhole(b, a)
+      case Direction.Both ⇒
+        addBlackhole(a, b)
+        addBlackhole(b, a)
+    }
+
+  @tailrec private def addBlackhole(from: Address, to: Address): Unit = {
+    val current = state.get
+    val newState = current.blackholes.get(from) match {
+      case Some(destinations) ⇒ current.copy(blackholes = current.blackholes.updated(from, destinations + to))
+      case None               ⇒ current.copy(blackholes = current.blackholes.updated(from, Set(to)))
+    }
+    if (!state.compareAndSet(current, newState))
+      addBlackhole(from, to)
   }
-}
 
-private[remote] class DisabledTestManagementApi extends TestManagementApi {
-  override def send(command: Any)(implicit ec: ExecutionContext): Future[Done] =
-    Future.failed(new RuntimeException("TestStage is disabled, enable with MultiNodeConfig.testTransport"))
+  def passThrough(a: Address, b: Address, direction: Direction): Unit =
+    direction match {
+      case Direction.Send    ⇒ removeBlackhole(a, b)
+      case Direction.Receive ⇒ removeBlackhole(b, a)
+      case Direction.Both ⇒
+        removeBlackhole(a, b)
+        removeBlackhole(b, a)
+    }
+
+  @tailrec private def removeBlackhole(from: Address, to: Address): Unit = {
+    val current = state.get
+    val newState = current.blackholes.get(from) match {
+      case Some(destinations) ⇒ current.copy(blackholes = current.blackholes.updated(from, destinations - to))
+      case None               ⇒ current
+    }
+    if (!state.compareAndSet(current, newState))
+      removeBlackhole(from, to)
+  }
+
 }
 
 /**
  * INTERNAL API
  */
-private[remote] final case class TestManagementMessage(command: Any, done: Promise[Done])
+private[remote] final case class TestState(blackholes: Map[Address, Set[Address]])
 
 /**
  * INTERNAL API
  */
-private[remote] class OutboundTestStage(outboundContext: OutboundContext, enabled: Boolean)
-  extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, OutboundEnvelope], TestManagementApi] {
+private[remote] class OutboundTestStage(outboundContext: OutboundContext, state: SharedTestState, enabled: Boolean)
+  extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
   val in: Inlet[OutboundEnvelope] = Inlet("OutboundTestStage.in")
   val out: Outlet[OutboundEnvelope] = Outlet("OutboundTestStage.out")
   override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+  override def createLogic(inheritedAttributes: Attributes) = {
     if (enabled) {
-      val stoppedPromise = Promise[Done]()
-
-      // FIXME see issue #20503 related to CallbackWrapper, we might implement this in a better way
-      val logic = new TimerGraphStageLogic(shape) with CallbackWrapper[TestManagementMessage] with InHandler with OutHandler with StageLogging {
-
-        private var blackhole = Set.empty[Address]
-
-        private val callback = getAsyncCallback[TestManagementMessage] {
-          case TestManagementMessage(command, done) ⇒
-            command match {
-              case SetThrottle(address, Direction.Send | Direction.Both, Blackhole) ⇒
-                log.info("blackhole outbound messages to {}", address)
-                blackhole += address
-              case SetThrottle(address, Direction.Send | Direction.Both, Unthrottled) ⇒
-                log.info("accept outbound messages to {}", address)
-                blackhole -= address
-              case _ ⇒ // not interested
-            }
-            done.success(Done)
-        }
-
-        override def preStart(): Unit = {
-          initCallback(callback.invoke)
-        }
-
-        override def postStop(): Unit = stoppedPromise.success(Done)
+      new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
         // InHandler
         override def onPush(): Unit = {
           val env = grab(in)
-          if (blackhole(outboundContext.remoteAddress)) {
+          if (state.isBlackhole(outboundContext.localAddress.address, outboundContext.remoteAddress)) {
             log.debug(
               "dropping outbound message [{}] to [{}] because of blackhole",
               env.message.getClass.getName, outboundContext.remoteAddress)
@@ -115,17 +109,12 @@ private[remote] class OutboundTestStage(outboundContext: OutboundContext, enable
 
         setHandlers(in, out, this)
       }
-
-      val managementApi: TestManagementApi = new TestManagementApiImpl(stoppedPromise.future, logic)
-
-      (logic, managementApi)
     } else {
-      val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      new GraphStageLogic(shape) with InHandler with OutHandler {
         override def onPush(): Unit = push(out, grab(in))
         override def onPull(): Unit = pull(in)
         setHandlers(in, out, this)
       }
-      (logic, new DisabledTestManagementApi)
     }
   }
 
@@ -134,40 +123,15 @@ private[remote] class OutboundTestStage(outboundContext: OutboundContext, enable
 /**
  * INTERNAL API
  */
-private[remote] class InboundTestStage(inboundContext: InboundContext, enabled: Boolean)
-  extends GraphStageWithMaterializedValue[FlowShape[InboundEnvelope, InboundEnvelope], TestManagementApi] {
+private[remote] class InboundTestStage(inboundContext: InboundContext, state: SharedTestState, enabled: Boolean)
+  extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   val in: Inlet[InboundEnvelope] = Inlet("InboundTestStage.in")
   val out: Outlet[InboundEnvelope] = Outlet("InboundTestStage.out")
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+  override def createLogic(inheritedAttributes: Attributes) = {
     if (enabled) {
-      val stoppedPromise = Promise[Done]()
-
-      // FIXME see issue #20503 related to CallbackWrapper, we might implement this in a better way
-      val logic = new TimerGraphStageLogic(shape) with CallbackWrapper[TestManagementMessage] with InHandler with OutHandler with StageLogging {
-
-        private var blackhole = Set.empty[Address]
-
-        private val callback = getAsyncCallback[TestManagementMessage] {
-          case TestManagementMessage(command, done) ⇒
-            command match {
-              case SetThrottle(address, Direction.Receive | Direction.Both, Blackhole) ⇒
-                log.info("blackhole inbound messages from {}", address)
-                blackhole += address
-              case SetThrottle(address, Direction.Receive | Direction.Both, Unthrottled) ⇒
-                log.info("accept inbound messages from {}", address)
-                blackhole -= address
-              case _ ⇒ // not interested
-            }
-            done.success(Done)
-        }
-
-        override def preStart(): Unit = {
-          initCallback(callback.invoke)
-        }
-
-        override def postStop(): Unit = stoppedPromise.success(Done)
+      new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
         // InHandler
         override def onPush(): Unit = {
@@ -177,7 +141,7 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, enabled: 
               // unknown, handshake not completed
               push(out, env)
             case OptionVal.Some(association) ⇒
-              if (blackhole(association.remoteAddress)) {
+              if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
                 log.debug(
                   "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
                   env.message.getClass.getName, association.remoteAddress, env.originUid)
@@ -192,17 +156,12 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, enabled: 
 
         setHandlers(in, out, this)
       }
-
-      val managementApi: TestManagementApi = new TestManagementApiImpl(stoppedPromise.future, logic)
-
-      (logic, managementApi)
     } else {
-      val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      new GraphStageLogic(shape) with InHandler with OutHandler {
         override def onPush(): Unit = push(out, grab(in))
         override def onPull(): Unit = pull(in)
         setHandlers(in, out, this)
       }
-      (logic, new DisabledTestManagementApi)
     }
   }
 
