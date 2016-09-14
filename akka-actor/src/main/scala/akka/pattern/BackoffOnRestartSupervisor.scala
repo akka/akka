@@ -43,7 +43,7 @@ private class BackoffOnRestartSupervisor(
             // to ourselves every time that range elapses, to reset the restart counter. We hide it
             // behind this conditional to avoid queuing the message unnecessarily
             val finiteWithinTimeRange = strategy.withinTimeRange.asInstanceOf[FiniteDuration]
-            system.scheduler.schedule(finiteWithinTimeRange, finiteWithinTimeRange, self, ResetRestartCount(restartCount))
+            system.scheduler.scheduleOnce(finiteWithinTimeRange, self, ResetRestartCount(restartCount))
           }
           val childRef = sender()
           val nextRestartCount = restartCount + 1
