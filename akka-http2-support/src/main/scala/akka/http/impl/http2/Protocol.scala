@@ -23,7 +23,23 @@ object Protocol {
     case object WINDOW_UPDATE extends FrameType(0x8)
     case object CONTINUATION extends FrameType(0x9)
 
-    val All = Seq(DATA, HEADERS, PRIORITY, RST_STREAM, SETTINGS, PUSH_PROMISE, PING, GOAWAY, WINDOW_UPDATE, CONTINUATION)
+    val All =
+      Array( // must start with id = 0 and don't have holes between ids
+        DATA,
+        HEADERS,
+        PRIORITY,
+        RST_STREAM,
+        SETTINGS,
+        PUSH_PROMISE,
+        PING,
+        GOAWAY,
+        WINDOW_UPDATE,
+        CONTINUATION).toSeq
+
+    // make sure that lookup works and `All` ordering isn't broken
+    All.foreach(f ⇒ require(f == byId(f.id), s"FrameType $f with id ${f.id} must be found"))
+
+    def isKnownId(id: Int): Boolean = id < All.size
     def byId(id: Int): FrameType = All(id)
   }
 
@@ -112,17 +128,19 @@ object Protocol {
     case object SETTINGS_MAX_HEADER_LIST_SIZE extends SettingIdentifier(0x6)
 
     val All =
-      Seq(
+      Array( // must start with id = 1 and don't have holes between ids
         SETTINGS_HEADER_TABLE_SIZE,
         SETTINGS_ENABLE_PUSH,
         SETTINGS_MAX_CONCURRENT_STREAMS,
         SETTINGS_INITIAL_WINDOW_SIZE,
         SETTINGS_MAX_FRAME_SIZE,
-        SETTINGS_MAX_HEADER_LIST_SIZE)
-        .map(s ⇒ s.id → s)
-        .toMap
+        SETTINGS_MAX_HEADER_LIST_SIZE).toSeq
 
-    def byId(id: Int): SettingIdentifier = All(id)
+    // make sure that lookup works and `All` ordering isn't broken
+    All.foreach(f ⇒ require(f == byId(f.id) && isKnownId(f.id), s"SettingIdentifier $f with id ${f.id} must be found"))
+
+    def isKnownId(id: Int): Boolean = id > 0 && id <= All.size
+    def byId(id: Int): SettingIdentifier = All(id - 1)
   }
 
   /**

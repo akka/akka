@@ -46,6 +46,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
   def parseFrame(tpe: FrameType, flags: Int, streamId: Int, payload: ByteReader): FrameEvent = {
     def isSet(flag: Int): Boolean = (flags & flag) != 0
 
+    // TODO: add @switch? seems non-trivial for now
     tpe match {
       case HEADERS ⇒
         val pad = isSet(Flags.PADDED)
