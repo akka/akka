@@ -4,8 +4,6 @@
 
 package akka.http.scaladsl.testkit
 
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.server.directives.ExecutionDirectives._
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.impl.ConstantFun
 import com.typesafe.config.{ ConfigFactory, Config }
