@@ -13,9 +13,9 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
+import akka.http.impl.engine.http2.Http2Blueprint
+import akka.http.impl.engine.http2.WrappedSslContextSPI
 import akka.http.impl.engine.server.HttpAttributes
-import akka.http.impl.http2.Http2Blueprint
-import akka.http.impl.http2.WrappedSslContextSPI
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse

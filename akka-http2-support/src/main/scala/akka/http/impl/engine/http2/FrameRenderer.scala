@@ -1,6 +1,10 @@
-package akka.http.impl.http2
+/**
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 
-import akka.http.impl.http2.Protocol.FrameType
+package akka.http.impl.engine.http2
+
+import akka.http.impl.engine.http2.Protocol.FrameType
 import akka.util.ByteString
 
 object FrameRenderer {
