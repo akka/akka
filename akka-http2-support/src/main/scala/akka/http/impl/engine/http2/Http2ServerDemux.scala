@@ -8,8 +8,11 @@ import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
+import akka.stream.scaladsl.Source
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.InHandler
+import akka.stream.stage.OutHandler
 
 /**
  * This stage contains all control logic for handling frames and (de)muxing data to/from substreams.
@@ -59,6 +62,8 @@ import akka.stream.stage.GraphStageLogic
  * only available in this stage.
  */
 class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+  import Http2ServerDemux._
+
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
@@ -69,6 +74,118 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) {
+    new GraphStageLogic(shape) with BufferedOutletSupport { logic ⇒
+      case class SubStream(
+        streamId: Int,
+        state:    StreamState,
+        outlet:   SubSourceOutlet[StreamFrameEvent]
+      ) extends BufferedOutlet[StreamFrameEvent](outlet)
+
+      override def preStart(): Unit = {
+        pull(frameIn)
+        pull(substreamIn)
+      }
+
+      var incomingStreams = Map.empty[Int, SubStream]
+
+      setHandler(frameIn, new InHandler {
+        def onPush(): Unit = {
+          grab(frameIn) match {
+            case headers @ HeadersFrame(streamId, endStream, endHeaders, fragment) ⇒
+              val subSource = new SubSourceOutlet[StreamFrameEvent](s"substream-out-$streamId")
+              val handler = SubStream(streamId, StreamState.Open /* FIXME */ , subSource)
+              incomingStreams += streamId → handler
+
+              val sub =
+                if (endStream && endHeaders) Http2SubStream(headers, Source.empty)
+                else Http2SubStream(headers, Source.fromGraph(subSource.source))
+
+              dispatchSubstream(sub)
+
+            case e: StreamFrameEvent if e.streamId > 0 ⇒ incomingStreams(e.streamId).push(e)
+
+            case SettingsFrame(_) ⇒
+              // FIXME: do something
+
+              bufferedFrameOut.push(SettingsAckFrame)
+            case e ⇒
+              println(s"Got unknown event $e")
+            // ignore unknown frames
+          }
+          pull(frameIn)
+        }
+      })
+
+      val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
+      def dispatchSubstream(sub: Http2SubStream): Unit = bufferedSubStreamOutput.push(sub)
+
+      setHandler(substreamIn, new InHandler {
+        def onPush(): Unit = {
+          val sub = grab(substreamIn)
+          bufferedFrameOut.push(sub.initialFrame)
+          val subIn = new SubSinkInlet[FrameEvent](s"substream-in-${sub.streamId}")
+          subIn.pull()
+          subIn.setHandler(new InHandler {
+            def onPush(): Unit = {
+              bufferedFrameOut.push(subIn.grab())
+              subIn.pull() // FIXME: this is too greedy, we should wait until the next one is sent out
+            }
+          })
+          sub.frames.runWith(subIn.sink)(subFusingMaterializer)
+        }
+      })
+
+      val bufferedFrameOut = new BufferedOutlet[FrameEvent](frameOut)
+      bufferedFrameOut.push(SettingsFrame(Nil)) // server side connection preface
     }
+}
+
+trait BufferedOutletSupport { logic: GraphStageLogic ⇒
+  trait GenericOutlet[T] {
+    def setHandler(handler: OutHandler): Unit
+    def push(elem: T): Unit
+  }
+  object GenericOutlet {
+    implicit def fromSubSourceOutlet[T](subSourceOutlet: SubSourceOutlet[T]): GenericOutlet[T] =
+      new GenericOutlet[T] {
+        def setHandler(handler: OutHandler): Unit = subSourceOutlet.setHandler(handler)
+        def push(elem: T): Unit = subSourceOutlet.push(elem)
+      }
+    implicit def fromOutlet[T](outlet: Outlet[T]): GenericOutlet[T] =
+      new GenericOutlet[T] {
+        def setHandler(handler: OutHandler): Unit = logic.setHandler(outlet, handler)
+        def push(elem: T): Unit = logic.emit(outlet, elem)
+      }
+  }
+  class BufferedOutlet[T](outlet: GenericOutlet[T]) {
+    val buffer: java.util.ArrayDeque[T] = new java.util.ArrayDeque[T]
+    var pulled: Boolean = false
+
+    outlet.setHandler(new OutHandler {
+      def onPull(): Unit =
+        if (!buffer.isEmpty) outlet.push(buffer.pop())
+        else pulled = true
+    })
+
+    def push(elem: T): Unit =
+      if (pulled) {
+        outlet.push(elem)
+        pulled = false
+      } else buffer.push(elem)
+  }
+}
+
+object Http2ServerDemux {
+  sealed trait StreamState
+  object StreamState {
+    case object Idle extends StreamState
+    case object Open extends StreamState
+    case object Closed extends StreamState
+    case object HalfClosedLocal extends StreamState
+    case object HalfClosedRemote extends StreamState
+
+    // for PUSH_PROMISE
+    // case object ReservedLocal extends StreamState
+    // case object ReservedRemote extends StreamState
+  }
 }
