@@ -79,7 +79,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         streamId: Int,
         state:    StreamState,
         outlet:   SubSourceOutlet[StreamFrameEvent]
-      ) extends BufferedOutlet[StreamFrameEvent](outlet)
+      ) extends BufferedOutlet[StreamFrameEvent](outlet) {
+        override def onDownstreamFinish(): Unit = () // ignore substream cancellation, FIXME: is that correct?
+      }
 
       override def preStart(): Unit = {
         pull(frameIn)
@@ -130,6 +132,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               bufferedFrameOut.push(subIn.grab())
               subIn.pull() // FIXME: this is too greedy, we should wait until the next one is sent out
             }
+
+            override def onUpstreamFinish(): Unit = () // FIXME: check for truncation (last frame must have endStream / endHeaders set)
           })
           sub.frames.runWith(subIn.sink)(subFusingMaterializer)
         }
@@ -157,15 +161,15 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
         def push(elem: T): Unit = logic.emit(outlet, elem)
       }
   }
-  class BufferedOutlet[T](outlet: GenericOutlet[T]) {
+  class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHandler {
     val buffer: java.util.ArrayDeque[T] = new java.util.ArrayDeque[T]
     var pulled: Boolean = false
 
-    outlet.setHandler(new OutHandler {
-      def onPull(): Unit =
-        if (!buffer.isEmpty) outlet.push(buffer.pop())
-        else pulled = true
-    })
+    def onPull(): Unit =
+      if (!buffer.isEmpty) outlet.push(buffer.pop())
+      else pulled = true
+
+    outlet.setHandler(this)
 
     def push(elem: T): Unit =
       if (pulled) {
