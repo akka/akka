@@ -178,7 +178,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
       case Remove(task) ⇒ tasks.remove(task)
       case Shutdown ⇒
         running = false
-        shutdown.success(Done)
+        shutdown.trySuccess(Done)
     }
   }
 

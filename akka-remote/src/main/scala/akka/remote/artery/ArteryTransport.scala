@@ -963,7 +963,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def initializeFlightRecorder(): Option[(FileChannel, Path, FlightRecorder)] = {
     if (settings.Advanced.FlightRecorderEnabled) {
-      val afrFile = FlightRecorder.createFileRecorderFile(settings.Advanced.FlightRecorderDestination)
+      val afrFile = FlightRecorder.createFlightRecorderFile(settings.Advanced.FlightRecorderDestination)
       log.info("Flight recorder enabled, output can be found in '{}'", afrFile)
 
       val fileChannel = FlightRecorder.prepareFileForFlightRecorder(afrFile)

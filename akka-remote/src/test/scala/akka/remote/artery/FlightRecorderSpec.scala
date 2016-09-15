@@ -383,16 +383,16 @@ class FlightRecorderSpec extends AkkaSpec {
       val fs = Jimfs.newFileSystem()
 
       try {
-        val tmpPath = FlightRecorder.createFileRecorderFile("", fs)
+        val tmpPath = FlightRecorder.createFlightRecorderFile("", fs)
         assertFileIsSound(tmpPath)
         // this is likely in the actual file system, so lets delete it
         Files.delete(tmpPath)
 
         Files.createDirectory(fs.getPath("/directory"))
-        val tmpFileInGivenPath = FlightRecorder.createFileRecorderFile("/directory", fs)
+        val tmpFileInGivenPath = FlightRecorder.createFlightRecorderFile("/directory", fs)
         assertFileIsSound(tmpFileInGivenPath)
 
-        val specificFile = FlightRecorder.createFileRecorderFile("/directory/flight-recorder.afr", fs)
+        val specificFile = FlightRecorder.createFlightRecorderFile("/directory/flight-recorder.afr", fs)
         assertFileIsSound(specificFile)
 
       } finally {

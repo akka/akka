@@ -191,7 +191,7 @@ private[remote] object FlightRecorder {
    *         2. A relative or absolute path ending with ".afr": this file will be used
    *         3. A relative or absolute path: this directory will be used, the file will get a random file name
    */
-  def createFileRecorderFile(destination: String, fs: FileSystem = FileSystems.getDefault): Path = {
+  def createFlightRecorderFile(destination: String, fs: FileSystem = FileSystems.getDefault): Path = {
 
     // TODO safer file permissions (e.g. only user readable on POSIX)?
     destination match {
