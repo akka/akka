@@ -6,7 +6,7 @@ encodeResponse
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
    :snippet: encodeResponse
 
 Description
@@ -21,7 +21,7 @@ If the ``Accept-Encoding`` header is missing or empty or specifies an encoding o
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
    :snippet: "encodeResponse"
 
 .. _RFC7231: http://tools.ietf.org/html/rfc7231#section-5.3.4

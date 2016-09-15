@@ -6,7 +6,7 @@ deleteCookie
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala
    :snippet: deleteCookie
 
 Description
@@ -18,5 +18,5 @@ Use the :ref:`-setCookie-` directive to update a cookie.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala
    :snippet: deleteCookie

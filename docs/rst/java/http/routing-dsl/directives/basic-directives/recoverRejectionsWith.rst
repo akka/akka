@@ -21,4 +21,4 @@ See :ref:`-recoverRejections-java-` (the synchronous equivalent of this directiv
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#recoverRejectionsWith
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#recoverRejectionsWith

@@ -6,7 +6,7 @@ encodeResponseWith
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
    :snippet: encodeResponseWith
 
 Description
@@ -24,7 +24,7 @@ response encoding is used. Otherwise the request is rejected.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
    :snippet: encodeResponseWith
 
 .. _RFC7231: http://tools.ietf.org/html/rfc7231#section-5.3.4

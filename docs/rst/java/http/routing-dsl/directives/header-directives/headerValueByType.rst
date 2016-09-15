@@ -19,4 +19,4 @@ is missing use the :ref:`-optionalHeaderValueByType-java-` directive instead.
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#headerValueByType
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#headerValueByType

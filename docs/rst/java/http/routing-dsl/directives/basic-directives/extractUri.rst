@@ -13,4 +13,4 @@ targeted access to parts of the URI.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractUri
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractUri

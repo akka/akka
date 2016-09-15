@@ -16,4 +16,4 @@ See :ref:`-extract-java-` and :ref:`ProvideDirectives-java` for an overview of s
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractLog
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractLog

@@ -13,7 +13,7 @@ Opening HTTP Connections
 With the connection-level API you open a new HTTP connection to a target endpoint by materializing a ``Flow``
 returned by the ``Http.get(system).outgoingConnection(...)`` method. Here is an example:
 
-.. includecode:: ../../code/docs/http/javadsl/HttpClientExampleDocTest.java#outgoing-connection-example
+.. includecode:: ../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java#outgoing-connection-example
 
 Apart from the host name and port the ``Http.get(system).outgoingConnection(...)`` method also allows you to specify socket options
 and a number of configuration settings for the connection.

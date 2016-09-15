@@ -15,6 +15,6 @@ If the ``Accept-Encoding`` header is missing or empty or specifies an encoding o
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java#encodeResponse
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java#encodeResponse
 
 .. _RFC7231: http://tools.ietf.org/html/rfc7231#section-5.3.4

@@ -13,4 +13,4 @@ See also :ref:`which-parameter-directive-java` to understand when to use which d
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java#parameterMap
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java#parameterMap

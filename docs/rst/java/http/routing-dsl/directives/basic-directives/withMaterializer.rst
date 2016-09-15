@@ -15,4 +15,4 @@ or used by directives which internally extract the materializer without sufracin
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#withMaterializer
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#withMaterializer

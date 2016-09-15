@@ -18,7 +18,7 @@ Opening HTTP Connections
 With the connection-level API you open a new HTTP connection to a target endpoint by materializing a ``Flow``
 returned by the ``Http().outgoingConnection(...)`` method. Here is an example:
 
-.. includecode:: ../../code/docs/http/scaladsl/HttpClientExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala
    :include: outgoing-connection-example
 
 Apart from the host name and port the ``Http().outgoingConnection(...)`` method also allows you to specify socket options
@@ -90,7 +90,7 @@ some other source. Potential scenarios where this might be useful include tests,
 
 On the client-side the stand-alone HTTP layer forms a ``BidiStage`` that is defined like this:
 
-.. includecode2:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
+.. includecode2:: ../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
    :snippet: client-layer
 
 You create an instance of ``Http.ClientLayer`` by calling one of the two overloads of the ``Http().clientLayer`` method,

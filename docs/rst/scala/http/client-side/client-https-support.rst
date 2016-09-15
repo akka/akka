@@ -5,7 +5,7 @@ Client-Side HTTPS Support
 
 Akka HTTP supports TLS encryption on the client-side as well as on the :ref:`server-side <serverSideHTTPS-scala>`.
 
-.. warning:
+.. warning::
 
    Akka HTTP 1.0 does not completely validate certificates when using HTTPS. Please do not treat HTTPS connections
    made with this version as secure. Requests are vulnerable to a Man-In-The-Middle attack via certificate substitution.
@@ -13,7 +13,7 @@ Akka HTTP supports TLS encryption on the client-side as well as on the :ref:`ser
 The central vehicle for configuring encryption is the ``HttpsConnectionContext``, which can be created using
 the static method ``ConnectionContext.https`` which is defined like this:
 
-.. includecode:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala
+.. includecode:: ../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala
    :include: https-context-creation
 
 In addition to the ``outgoingConnection``, ``newHostConnectionPool`` and ``cachedHostConnectionPool`` methods the
@@ -123,7 +123,7 @@ Disabling TLS security features, at your own risk
 
 The following shows an example of disabling SNI for a given connection:
 
-.. includecode:: ../../code/docs/http/scaladsl/HttpsExamplesSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/HttpsExamplesSpec.scala
    :include: disable-sni-connection
 
 The ``badSslConfig`` is a copy of the default ``AkkaSSLConfig`` with with the slightly changed configuration to disable SNI.

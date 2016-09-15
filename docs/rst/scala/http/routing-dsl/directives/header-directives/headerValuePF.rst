@@ -6,7 +6,7 @@ headerValuePF
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
    :snippet: headerValuePF
 
 Description
@@ -23,5 +23,5 @@ If the function is not defined for any header the request is rejected as "NotFou
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
    :snippet: headerValuePF-0

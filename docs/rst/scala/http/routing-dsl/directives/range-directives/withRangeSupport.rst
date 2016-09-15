@@ -42,5 +42,5 @@ See also: https://tools.ietf.org/html/rfc7233
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RangeDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/RangeDirectivesExamplesSpec.scala
    :snippet: withRangeSupport

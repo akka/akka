@@ -35,5 +35,5 @@ is missing use the :ref:`-optionalHeaderValueByType-` directive instead.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
    :snippet: headerValueByType-0

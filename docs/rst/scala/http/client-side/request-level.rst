@@ -56,13 +56,13 @@ with the futures completion. For example you should not access the Actors state 
 (such as ``map``, ``onComplete``, ...) and instead you should use the ``pipeTo`` pattern to pipe the result back
 to the Actor as a message.
 
-.. includecode:: ../../code/docs/http/scaladsl/HttpClientExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala
    :include: single-request-in-actor-example
 
 Example
 -------
 
-.. includecode:: ../../code/docs/http/scaladsl/HttpClientExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala
    :include: single-request-example
 
 

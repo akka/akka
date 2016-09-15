@@ -35,5 +35,5 @@ directives have potentially chained into the :ref:`RouteResult` future transform
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala
    :snippet: complete-examples

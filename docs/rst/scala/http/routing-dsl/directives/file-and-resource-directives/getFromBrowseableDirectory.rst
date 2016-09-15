@@ -6,7 +6,7 @@ getFromBrowseableDirectory
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala
    :snippet: getFromBrowseableDirectory
 
 Description
@@ -26,7 +26,7 @@ For more details refer to :ref:`-getFromBrowseableDirectory-`.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala
    :snippet: getFromBrowseableDirectory-examples
 
 

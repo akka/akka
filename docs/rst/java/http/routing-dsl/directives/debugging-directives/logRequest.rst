@@ -16,4 +16,4 @@ Use ``logResult`` for logging the response, or ``logRequestResult`` for logging 
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java#logRequest
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/DebuggingDirectivesExamplesTest.java#logRequest

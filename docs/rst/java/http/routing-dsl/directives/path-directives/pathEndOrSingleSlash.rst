@@ -16,4 +16,4 @@ It is equivalent to ``pathEnd | pathSingleSlash`` but slightly more efficient.
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#path-end-or-single-slash
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#path-end-or-single-slash

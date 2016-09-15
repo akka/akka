@@ -16,4 +16,4 @@ Use ``mapUnmatchedPath`` to change the value of the unmatched path.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractUnmatchedPath
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractUnmatchedPath

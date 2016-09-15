@@ -6,7 +6,7 @@ handleWebSocketMessages
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala
    :snippet: handleWebSocketMessages
 
 Description
@@ -23,5 +23,5 @@ For more information about the WebSocket support, see :ref:`server-side-websocke
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala
    :snippet: greeter-service

@@ -14,4 +14,4 @@ See :ref:`ProvideDirectives-java` for an overview of similar directives.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#provide
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#provide

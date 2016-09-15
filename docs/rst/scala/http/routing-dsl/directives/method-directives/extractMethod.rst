@@ -6,7 +6,7 @@ extractMethod
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala
    :snippet: extractMethod
 
 Description
@@ -20,7 +20,7 @@ In the below example our route first matches all ``GET`` requests, and if an inc
 the matching continues and the extractMethod route will be applied which we can use to programatically
 print what type of request it was - independent of what actual HttpMethod it was:
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
    :snippet: extractMethod-example
 
 
@@ -29,6 +29,6 @@ Custom Http Method
 
 When you define a custom HttpMethod, you can define a route using extractMethod.
 
-.. includecode:: ../../../../code/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala
+.. includecode:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala
    :include: application-custom
 

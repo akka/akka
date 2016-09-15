@@ -14,4 +14,4 @@ The directive returns a ``RequestEntity`` without unmarshalling the request. To 
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractRequestEntity
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractRequestEntity

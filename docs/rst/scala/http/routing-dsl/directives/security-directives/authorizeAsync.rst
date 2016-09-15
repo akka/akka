@@ -6,7 +6,7 @@ authorizeAsync
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
    :snippet: authorizeAsync
 
 Description
@@ -32,5 +32,5 @@ See also :ref:`-authorize-` for the synchronous version of this directive.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
    :snippet: 0authorizeAsync

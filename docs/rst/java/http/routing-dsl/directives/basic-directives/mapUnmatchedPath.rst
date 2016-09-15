@@ -15,4 +15,4 @@ Use ``extractUnmatchedPath`` for extracting the current value of the unmatched p
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapUnmatchedPath
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapUnmatchedPath

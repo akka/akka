@@ -8,13 +8,13 @@ provided by the ``akka-http-core`` module.
 
 Depending on your application's specific needs you can choose from three different API levels:
 
-:ref:`connection-level-api-java`
+- :ref:`connection-level-api-java`
   for full-control over when HTTP connections are opened/closed and how requests are scheduled across them
 
-:ref:`host-level-api-java`
+- :ref:`host-level-api-java`
   for letting Akka HTTP manage a connection-pool to *one specific* host/port endpoint
 
-:ref:`request-level-api-java`
+- :ref:`request-level-api-java`
   for letting Akka HTTP perform all connection management
 
 You can interact with different API levels at the same time and, independently of which API level you choose,

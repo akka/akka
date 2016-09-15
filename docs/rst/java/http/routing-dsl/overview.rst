@@ -7,7 +7,7 @@ The Akka HTTP :ref:`http-low-level-server-side-api-java` provides a ``Flow``- or
 an application to respond to incoming HTTP requests by simply mapping requests to responses
 (excerpt from :ref:`Low-level server side example <http-low-level-server-side-example-java>`):
 
-.. includecode:: ../../code/docs/http/javadsl/server/HttpServerExampleDocTest.java
+.. includecode:: ../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java
   :include: request-handler
 
 While it'd be perfectly possible to define a complete REST API service purely by inspecting the incoming
@@ -21,7 +21,7 @@ async handler function) that can be directly supplied to a ``bind`` call.
 
 Here's the complete example rewritten using the composable high-level API:
 
-.. includecode:: ../../code/docs/http/javadsl/server/HighLevelServerExample.java
+.. includecode:: ../../../../../test/java/docs/http/javadsl/server/HighLevelServerExample.java
   :include: high-level-server-example
 
 The core of the Routing DSL becomes available with a single import::

@@ -18,4 +18,4 @@ an ``Optional`` value instead of rejecting the request if no matching header cou
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#optionalHeaderValueByType
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#optionalHeaderValueByType

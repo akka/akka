@@ -6,7 +6,7 @@ withoutSizeLimit
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala
    :snippet: withoutSizeLimit
 
 Description
@@ -22,5 +22,5 @@ See also :ref:`-withSizeLimit-` for setting request entity size limit.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
   :snippet: withoutSizeLimit-example

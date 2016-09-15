@@ -12,4 +12,4 @@ For rejecting a request if it doesn't match a specified scheme name, see the :re
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java#extractScheme
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java#extractScheme

@@ -6,7 +6,7 @@ onSuccess
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala
    :snippet: onSuccess
 
 Description
@@ -21,5 +21,5 @@ To handle the ``Failure`` case manually as well, use :ref:`-onComplete-`, instea
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala
    :snippet: onSuccess

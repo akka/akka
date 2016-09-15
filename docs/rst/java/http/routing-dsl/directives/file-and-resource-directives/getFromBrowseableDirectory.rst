@@ -20,7 +20,7 @@ For more details refer to :ref:`-getFromBrowseableDirectory-java-`.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java#getFromBrowseableDirectory
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java#getFromBrowseableDirectory
 
 
 Default file listing page example

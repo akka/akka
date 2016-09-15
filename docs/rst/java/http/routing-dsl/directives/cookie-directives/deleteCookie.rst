@@ -12,4 +12,4 @@ Use the :ref:`-setCookie-java-` directive to update a cookie.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java#deleteCookie
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java#deleteCookie

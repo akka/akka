@@ -6,7 +6,7 @@ parameterMap
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala
    :snippet: parameterMap
 
 Description
@@ -20,5 +20,5 @@ See also :ref:`which-parameter-directive` to understand when to use which direct
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: parameterMap

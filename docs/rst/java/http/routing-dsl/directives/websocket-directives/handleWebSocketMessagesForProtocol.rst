@@ -21,4 +21,4 @@ For more information about the WebSocket support, see :ref:`server-side-websocke
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/WebSocketDirectivesExamplesTest.java#handleWebSocketMessagesForProtocol
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/WebSocketDirectivesExamplesTest.java#handleWebSocketMessagesForProtocol

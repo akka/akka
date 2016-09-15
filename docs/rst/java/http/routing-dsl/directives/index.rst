@@ -70,8 +70,6 @@ What Directives do
 
 A directive can do one or more of the following:
 
-.. rst-class:: wide
-
 * Transform the incoming ``RequestContext`` before passing it on to its inner route (i.e. modify the request)
 * Filter the ``RequestContext`` according to some logic, i.e. only pass on certain requests and reject others
 * Extract values from the ``RequestContext`` and make them available to its inner route as "extractions"

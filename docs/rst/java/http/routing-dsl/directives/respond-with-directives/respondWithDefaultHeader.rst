@@ -18,4 +18,4 @@ See also :ref:`-respondWithDefaultHeaders-java-`  if you'd like to add more than
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java#respondWithDefaultHeader
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java#respondWithDefaultHeader

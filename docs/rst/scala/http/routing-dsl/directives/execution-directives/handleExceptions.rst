@@ -6,7 +6,7 @@ handleExceptions
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
    :snippet: handleExceptions
 
 Description
@@ -21,5 +21,5 @@ See :ref:`exception-handling-scala` for general information about options for ha
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala
    :snippet: handleExceptions

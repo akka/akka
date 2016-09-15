@@ -14,4 +14,4 @@ This directive is a simple alias for ``pathPrefix(PathEnd)`` and is mostly used 
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#path-single-slash
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#path-single-slash

@@ -33,7 +33,7 @@ Minimal Example
 
 This is a complete, very basic Akka HTTP application relying on the Routing DSL:
 
-.. includecode2:: ../../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
    :snippet: minimal-routing-example
 
 It starts an HTTP Server on localhost and replies to GET requests to ``/hello`` with a simple response.
@@ -48,7 +48,7 @@ The following is an Akka HTTP route definition that tries to show off a few feat
 not really do anything useful but its definition should give you a feel for what an actual API definition with
 the Routing DSL will look like:
 
-.. includecode2:: ../../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
    :snippet: long-routing-example
 
 .. _handling-http-server-failures-high-level-scala:
@@ -66,7 +66,7 @@ For example the server might be unable to bind to the given port. For example wh
 is already taken by another application, or if the port is privileged (i.e. only usable by ``root``).
 In this case the "binding future" will fail immediately, and we can react to if by listening on the Future's completion:
 
-.. includecode2:: ../../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
   :snippet: binding-failure-high-level-example
 
 
@@ -93,14 +93,14 @@ those streams both for the file and for the form fields.
 Here is a simple example which just dumps the uploaded file into a temporary file on disk, collects
 some form fields and saves an entry to a fictive database:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/FileUploadExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/FileUploadExamplesSpec.scala
    :snippet: simple-upload
 
 You can transform the uploaded files as they arrive rather than storing then in a temporary file as
 in the previous example. In this example we accept any number of ``.csv`` files, parse those into lines
 and split each line before we send it to an actor for further processing:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/FileUploadExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/FileUploadExamplesSpec.scala
    :snippet: stream-csv-upload
 
 Configuring Server-side HTTPS

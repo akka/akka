@@ -13,4 +13,4 @@ value instead of rejecting the request if no matching header could be found.
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#optionalHeaderValue
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#optionalHeaderValue

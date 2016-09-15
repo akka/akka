@@ -6,7 +6,7 @@ responseEncodingAccepted
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
    :snippet: responseEncodingAccepted
 
 Description
@@ -17,5 +17,5 @@ Passes the request to the inner route if the request accepts the argument encodi
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
   :snippet: responseEncodingAccepted

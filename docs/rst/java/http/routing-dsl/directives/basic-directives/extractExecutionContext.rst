@@ -15,4 +15,4 @@ See :ref:`-extract-java-` to learn more about how extractions work.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractExecutionContext
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractExecutionContext

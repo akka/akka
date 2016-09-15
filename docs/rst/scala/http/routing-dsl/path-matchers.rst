@@ -28,7 +28,7 @@ defines a matcher which only extracts a single value of type ``T``.
 
 Here is an example of a more complex ``PathMatcher`` expression:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
    :snippet: path-matcher
 
 This will match paths like ``foo/bar/X42/edit`` or ``foo/bar/X/create``.
@@ -192,5 +192,5 @@ transform / (h)flatMap / (h)map
 Examples
 --------
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
    :snippet: path-dsl

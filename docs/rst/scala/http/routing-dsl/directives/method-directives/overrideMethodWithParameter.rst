@@ -6,7 +6,7 @@ overrideMethodWithParameter
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala
    :snippet: overrideMethodWithParameter
 
 Description
@@ -27,5 +27,5 @@ This directive is useful for:
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
    :snippet: overrideMethodWithParameter-0

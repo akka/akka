@@ -17,4 +17,4 @@ See also :ref:`-withoutSizeLimit-java-` for skipping request entity size check.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java#withSizeLimitExample
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java#withSizeLimitExample

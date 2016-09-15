@@ -6,7 +6,7 @@ decodeRequestWith
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
    :snippet: decodeRequestWith
 
 Description
@@ -17,5 +17,5 @@ Decodes the incoming request if it is encoded with one of the given encoders. If
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
    :snippet: decodeRequestWith

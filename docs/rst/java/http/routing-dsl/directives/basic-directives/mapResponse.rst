@@ -15,9 +15,9 @@ See also :ref:`-mapResponseHeaders-java-` or :ref:`-mapResponseEntity-java-` for
 Example: Override status
 ------------------------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapResponse
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapResponse
 
 Example: Default to empty JSON response on errors
 -------------------------------------------------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapResponse-advanced
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapResponse-advanced

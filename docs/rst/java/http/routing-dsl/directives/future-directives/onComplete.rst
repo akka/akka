@@ -15,4 +15,4 @@ To complete with a successful result automatically and just handle the failure r
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java#onComplete
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java#onComplete

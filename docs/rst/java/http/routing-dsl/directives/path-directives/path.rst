@@ -31,4 +31,4 @@ If the match fails the request is rejected with an :ref:`empty rejection set <em
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#path-dsl
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#path-dsl

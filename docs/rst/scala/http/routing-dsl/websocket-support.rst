@@ -18,7 +18,7 @@ i.e. a sequence of octets or a text message, i.e. a sequence of unicode code poi
 
 Akka HTTP provides a straight-forward model for this abstraction:
 
-.. includecode:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala
+.. includecode:: ../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala
    :include: message-model
 
 The data of a message is provided as a stream because WebSocket messages do not have a predefined size and could
@@ -82,7 +82,7 @@ Let's look at an example_.
 WebSocket requests come in like any other requests. In the example, requests to ``/greeter`` are expected to be
 WebSocket requests:
 
-.. includecode:: ../../code/docs/http/scaladsl/server/WebSocketExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala
    :include: websocket-request-handling
 
 It uses pattern matching on the path and then inspects the request to query for the ``UpgradeToWebSocket`` header. If
@@ -92,7 +92,7 @@ such a header is found, it is used to generate a response by passing a handler f
 The passed handler expects text messages where each message is expected to contain (a person's) name
 and then responds with another text message that contains a greeting:
 
-.. includecode:: ../../code/docs/http/scaladsl/server/WebSocketExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala
    :include: websocket-handler
 
 .. note::
@@ -108,7 +108,7 @@ was a WebSocket request. Otherwise, the directive rejects the request.
 
 Here's the above simple request handler rewritten as a route:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala
    :snippet: greeter-service
 
 The example also includes code demonstrating the testkit support for WebSocket services. It allows to create WebSocket
@@ -116,4 +116,4 @@ requests to run against a route using `WS` which can be used to provide a mock W
 testing of the WebSocket handler's behavior if the request was accepted.
 
 
-.. _example: @github@/akka-docs/rst/scala/code/docs/http/scaladsl/server/WebSocketExampleSpec.scala
+.. _example: @github@/akka-docs/rst/scala/../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala

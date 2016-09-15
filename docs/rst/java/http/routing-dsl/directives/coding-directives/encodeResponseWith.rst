@@ -18,6 +18,6 @@ response encoding is used. Otherwise the request is rejected.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java#encodeResponseWith
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java#encodeResponseWith
 
 .. _RFC7231: http://tools.ietf.org/html/rfc7231#section-5.3.4

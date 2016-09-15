@@ -25,20 +25,20 @@ Example
 
 Matching a list of hosts:
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java#host1
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java#host1
 
 Making sure the host satisfies the given predicate
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java#host2
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java#host2
 
 Using a regular expressions:
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java#matchAndExtractHost
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java#matchAndExtractHost
 
 Beware that in the case of introducing multiple capturing groups in the regex such as in the case bellow, the
 directive will fail at runtime, at the moment the route tree is evaluated for the first time. This might cause
 your http handler actor to enter in a fail/restart loop depending on your supervision strategy.
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java#failing-matchAndExtractHost
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java#failing-matchAndExtractHost
 
 

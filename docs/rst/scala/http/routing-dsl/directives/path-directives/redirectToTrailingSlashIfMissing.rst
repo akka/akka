@@ -6,7 +6,7 @@ redirectToTrailingSlashIfMissing
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
    :snippet: redirectToTrailingSlashIfMissing
 
 Description
@@ -27,7 +27,7 @@ See also :ref:`-redirectToNoTrailingSlashIfPresent-` for the opposite behaviour.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
    :snippet: redirectToTrailingSlashIfMissing-0
 
 See also :ref:`-redirectToNoTrailingSlashIfPresent-` which achieves the opposite - redirecting paths in case they do have a trailing slash.

@@ -16,4 +16,4 @@ See also :ref:`-withSizeLimit-java-` for setting request entity size limit.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java#withSizeLimitExample
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java#withSizeLimitExample

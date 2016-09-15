@@ -6,7 +6,7 @@ extractClientIP
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala
    :snippet: extractClientIP
 
 Description
@@ -19,6 +19,6 @@ setting ``akka.http.server.remote-address-header`` is set to ``on``. Per default
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
   :snippet: extractClientIP-example
 

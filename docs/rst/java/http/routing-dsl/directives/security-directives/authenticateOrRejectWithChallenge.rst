@@ -17,4 +17,4 @@ More details about challenge-response authentication are available in the `RFC 2
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java#authenticateOrRejectWithChallenge
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java#authenticateOrRejectWithChallenge

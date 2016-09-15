@@ -11,4 +11,4 @@ Passes the request to the inner route if the request accepts the argument encodi
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java#responseEncodingAccepted
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java#responseEncodingAccepted

@@ -67,7 +67,7 @@ Starting and Stopping
 On the most basic level an Akka HTTP server is bound by invoking the ``bind`` method of the `akka.http.scaladsl.Http`_
 extension:
 
-.. includecode2:: ../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
    :snippet: binding-example
 
 Arguments to the ``Http().bind`` method specify the interface and port to bind to and register interest in handling
@@ -103,7 +103,7 @@ Requests are handled by calling one of the ``handleWithXXX`` methods with a hand
 
 Here is a complete example:
 
-.. includecode2:: ../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
   :snippet: full-server-example
 
 In this example, a request is handled by transforming the request stream with a function ``HttpRequest => HttpResponse``
@@ -159,7 +159,7 @@ some other source. Potential scenarios where this might be useful include tests,
 
 On the server-side the stand-alone HTTP layer forms a ``BidiFlow`` that is defined like this:
 
-.. includecode2:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
+.. includecode2:: ../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
    :snippet: server-layer
 
 You create an instance of ``Http.ServerLayer`` by calling one of the two overloads of the ``Http().serverLayer`` method,
@@ -217,7 +217,7 @@ The first type of failure is when the server is unable to bind to the given port
 is already taken by another application, or if the port is privileged (i.e. only usable by ``root``).
 In this case the "binding future" will fail immediatly, and we can react to if by listening on the Future's completion:
 
-.. includecode2:: ../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
   :snippet: binding-failure-handling
 
 Once the server has successfully bound to a port, the ``Source[IncomingConnection, _]`` starts running and emiting
@@ -233,7 +233,7 @@ In the example below we add a custom ``GraphStage`` (see :ref:`stream-customize-
 stream's failure. We signal a ``failureMonitor`` actor with the cause why the stream is going down, and let the Actor
 handle the rest – maybe it'll decide to restart the server or shutdown the ActorSystem, that however is not our concern anymore.
 
-.. includecode2:: ../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
   :snippet: incoming-connections-source-failure-handling
 
 Connection failures
@@ -243,7 +243,7 @@ The third type of failure that can occur is when the connection has been properl
 however afterwards is terminated abruptly – for example by the client aborting the underlying TCP connection.
 To handle this failure we can use the same pattern as in the previous snippet, however apply it to the connection's Flow:
 
-.. includecode2:: ../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
   :snippet: connection-stream-failure-handling
 
 These failures can be described more or less infrastructure related, they are failing bindings or connections.

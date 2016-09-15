@@ -118,7 +118,7 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
     System.in.read();
     system.terminate();
   }
-  //#
+  //#https-http-app
 
   //#https-http-config
   // ** CONFIGURING ADDITIONAL SETTINGS ** //
@@ -156,5 +156,5 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
 
       return https;
   }
-  //#
+  //#https-http-config
 }

@@ -14,4 +14,4 @@ See :ref:`Response Transforming Directives-java` for similar directives.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapResponseEntity
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapResponseEntity

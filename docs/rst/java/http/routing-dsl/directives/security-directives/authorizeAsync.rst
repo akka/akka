@@ -26,4 +26,4 @@ See also :ref:`-authorize-java-` for the synchronous version of this directive.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java#authorizeAsync
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/SecurityDirectivesExamplesTest.java#authorizeAsync

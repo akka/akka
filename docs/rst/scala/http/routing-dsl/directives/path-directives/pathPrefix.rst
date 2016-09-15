@@ -6,7 +6,7 @@ pathPrefix
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
    :snippet: pathPrefix
 
 
@@ -32,5 +32,5 @@ the URI. If the match fails the request is rejected with an :ref:`empty rejectio
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
    :snippet: pathPrefix-

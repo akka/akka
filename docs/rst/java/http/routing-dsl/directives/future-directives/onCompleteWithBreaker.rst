@@ -16,4 +16,4 @@ Otherwise, the same behaviour provided by :ref:`-onComplete-java-` is to be expe
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java#onCompleteWithBreaker
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java#onCompleteWithBreaker

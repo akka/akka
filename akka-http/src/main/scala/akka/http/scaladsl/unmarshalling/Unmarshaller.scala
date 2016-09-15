@@ -67,7 +67,7 @@ object Unmarshaller
    * "super-unmarshaller".
    */
   def firstOf[A, B](unmarshallers: Unmarshaller[A, B]*): Unmarshaller[A, B] = //...
-  //#
+  //#unmarshaller-creation
     Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat => a ⇒
       def rec(ix: Int, supported: Set[ContentTypeRange]): Future[B] =
         if (ix < unmarshallers.size) {

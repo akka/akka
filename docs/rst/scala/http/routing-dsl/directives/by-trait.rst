@@ -8,40 +8,40 @@ All predefined directives are organized into traits that form one part of the ov
 Directives filtering or extracting from the request
 ---------------------------------------------------
 
-:ref:`MethodDirectives`
+- :ref:`MethodDirectives`
   Filter and extract based on the request method.
 
-:ref:`HeaderDirectives`
+- :ref:`HeaderDirectives`
   Filter and extract based on request headers.
 
-:ref:`PathDirectives`
+- :ref:`PathDirectives`
   Filter and extract from the request URI path.
 
-:ref:`HostDirectives`
+- :ref:`HostDirectives`
   Filter and extract based on the target host.
 
-:ref:`ParameterDirectives`, :ref:`FormFieldDirectives`
+- :ref:`ParameterDirectives`, :ref:`FormFieldDirectives`
   Filter and extract based on query parameters or form fields.
 
-:ref:`CodingDirectives`
+- :ref:`CodingDirectives`
   Filter and decode compressed request content.
 
-:ref:`MarshallingDirectives`
+- :ref:`MarshallingDirectives`
   Extract the request entity.
 
-:ref:`SchemeDirectives`
+- :ref:`SchemeDirectives`
   Filter and extract based on the request scheme.
 
-:ref:`SecurityDirectives`
+- :ref:`SecurityDirectives`
   Handle authentication data from the request.
 
-:ref:`CookieDirectives`
+- :ref:`CookieDirectives`
   Filter and extract cookies.
 
-:ref:`BasicDirectives` and :ref:`MiscDirectives`
+- :ref:`BasicDirectives` and :ref:`MiscDirectives`
   Directives handling request properties.
 
-:ref:`FileUploadDirectives`
+- :ref:`FileUploadDirectives`
   Handle file uploads.
 
 
@@ -50,31 +50,31 @@ Directives filtering or extracting from the request
 Directives creating or transforming the response
 ------------------------------------------------
 
-:ref:`CacheConditionDirectives`
+- :ref:`CacheConditionDirectives`
   Support for conditional requests (``304 Not Modified`` responses).
 
-:ref:`CookieDirectives`
+- :ref:`CookieDirectives`
   Set, modify, or delete cookies.
 
-:ref:`CodingDirectives`
+- :ref:`CodingDirectives`
   Compress responses.
 
-:ref:`FileAndResourceDirectives`
+- :ref:`FileAndResourceDirectives`
   Deliver responses from files and resources.
 
-:ref:`RangeDirectives`
+- :ref:`RangeDirectives`
   Support for range requests (``206 Partial Content`` responses).
 
-:ref:`RespondWithDirectives`
+- :ref:`RespondWithDirectives`
   Change response properties.
 
-:ref:`RouteDirectives`
+- :ref:`RouteDirectives`
   Complete or reject a request with a response.
 
-:ref:`BasicDirectives` and :ref:`MiscDirectives`
+- :ref:`BasicDirectives` and :ref:`MiscDirectives`
   Directives handling or transforming response properties.
 
-:ref:`TimeoutDirectives`
+- :ref:`TimeoutDirectives`
   Configure request timeouts and automatic timeout responses.
 
 

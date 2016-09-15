@@ -28,7 +28,7 @@ See :ref:`-logRequest-` for the general description how these directives work.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
    :snippet: logRequestResult
 
 
@@ -38,5 +38,5 @@ Building Advanced Directives
 This example will showcase the advanced logging using the ``DebuggingDirectives``.
 The built `logResponseTime` directive will log the request time (or rejection reason):
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
    :snippet: logRequestResultWithResponseTime

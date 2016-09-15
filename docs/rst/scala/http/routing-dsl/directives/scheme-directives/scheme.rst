@@ -6,7 +6,7 @@ scheme
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala
    :snippet: scheme
 
 Description
@@ -25,6 +25,6 @@ For simply extracting the scheme name, see the :ref:`-extractScheme-` directive.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala
    :snippet: example-2
 

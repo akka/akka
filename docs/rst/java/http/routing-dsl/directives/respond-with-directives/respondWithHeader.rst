@@ -14,4 +14,4 @@ See also :ref:`-respondWithHeaders-java-` if you'd like to add more than one hea
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java#respondWithHeader
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java#respondWithHeader

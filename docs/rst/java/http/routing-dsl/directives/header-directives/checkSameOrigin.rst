@@ -14,4 +14,4 @@ Example
 -------
 Checking the ``Origin`` header:
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#checkSameOrigin
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#checkSameOrigin

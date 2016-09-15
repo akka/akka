@@ -39,7 +39,7 @@ has this feature (including the free and bundled with the Oracle JDK VisualVM as
 Problem example: blocking the default dispatcher
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. includecode2:: ../code/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala
    :snippet: blocking-example-in-default-dispatcher
 
 Here the app is exposed to load of continous GET requests and large number
@@ -90,7 +90,7 @@ functionality and the number of cores the server has.
 Whenever blocking has to be done, use the above configured dispatcher
 instead of the default one:
 
-.. includecode2:: ../code/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala
    :snippet: blocking-example-in-dedicated-dispatcher
 
 This forces the app to use the same load, initially normal requests and then

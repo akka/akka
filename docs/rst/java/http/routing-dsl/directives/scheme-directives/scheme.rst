@@ -19,4 +19,4 @@ For simply extracting the scheme name, see the :ref:`-extractScheme-java-` direc
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java#scheme
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/SchemeDirectivesExamplesTest.java#scheme

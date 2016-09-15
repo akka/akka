@@ -27,5 +27,5 @@ See also: https://tools.ietf.org/html/rfc7233
 
 Example
 -------
-.. includecode2:: ../../../../code/docs/http/javadsl/server/directives/RangeDirectivesExamplesTest.java
+.. includecode2:: ../../../../../../../test/java/docs/http/javadsl/server/directives/RangeDirectivesExamplesTest.java
    :snippet: withRangeSupport

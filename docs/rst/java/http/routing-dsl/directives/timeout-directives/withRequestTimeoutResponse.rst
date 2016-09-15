@@ -23,5 +23,5 @@ To learn more about various timeouts in Akka HTTP and how to configure them see 
 
 Example
 -------
-.. includecode2:: ../../../../code/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java
+.. includecode2:: ../../../../../../../test/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java
    :snippet: withRequestTimeoutResponse

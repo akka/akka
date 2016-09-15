@@ -13,4 +13,4 @@ See also :ref:`-withSettings-java-` or :ref:`-extractSettings-java-`.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapSettings
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapSettings

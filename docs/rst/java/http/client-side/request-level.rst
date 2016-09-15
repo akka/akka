@@ -44,7 +44,7 @@ request's effective URI.
 Just like in the case of the super-pool flow described above the request must have either an absolute URI or a valid
 ``Host`` header, otherwise the returned future will be completed with an error.
 
-.. includecode:: ../../code/docs/http/javadsl/HttpClientExampleDocTest.java#single-request-example
+.. includecode:: ../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java#single-request-example
 
 Using the Future-Based API in Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -53,7 +53,7 @@ with the futures completion. For example you should not access the Actors state 
 (such as ``map``, ``onComplete``, ...) and instead you should use the ``pipe`` pattern to pipe the result back
 to the Actor as a message:
 
-.. includecode:: ../../code/docs/http/javadsl/HttpClientExampleDocTest.java#single-request-in-actor-example
+.. includecode:: ../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java#single-request-in-actor-example
 
 
 .. warning::

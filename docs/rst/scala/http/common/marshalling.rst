@@ -17,7 +17,7 @@ Basic Design
 Marshalling of instances of type ``A`` into instances of type ``B`` is performed by a ``Marshaller[A, B]``.
 Akka HTTP also predefines a number of helpful aliases for the types of marshallers that you'll likely work with most:
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/package.scala
+.. includecode2:: ../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/package.scala
    :snippet: marshaller-aliases
 
 Contrary to what you might initially expect ``Marshaller[A, B]`` is not a plain function ``A => B`` but rather
@@ -42,7 +42,7 @@ delaying the actual construction of the marshalling target instance to the very 
 
 This is how ``Marshalling`` is defined:
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala
+.. includecode2:: ../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala
    :snippet: marshalling
 
 
@@ -122,7 +122,7 @@ For writing your own marshallers you won't have to "manually" implement the ``Ma
 Rather, it should be possible to use one of the convenience construction helpers defined on the ``Marshaller``
 companion:
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala
+.. includecode2:: ../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala
    :snippet: marshaller-creation
 
 
@@ -160,5 +160,5 @@ request using the :ref:`Routing DSL <http-high-level-server-side-api>`.
 However, you can also use the marshalling infrastructure directly if you wish, which can be useful for example in tests.
 The best entry point for this is the ``akka.http.scaladsl.marshalling.Marshal`` object, which you can use like this:
 
-.. includecode2:: ../../code/docs/http/scaladsl/MarshalSpec.scala
-   :snippet: use marshal
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/MarshalSpec.scala
+   :snippet: use-marshal

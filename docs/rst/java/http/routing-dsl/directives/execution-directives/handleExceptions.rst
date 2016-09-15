@@ -15,4 +15,4 @@ See :ref:`exception-handling-java` for general information about options for han
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java#handleExceptions
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java#handleExceptions

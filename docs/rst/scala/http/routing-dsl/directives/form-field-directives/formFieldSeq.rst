@@ -6,7 +6,7 @@ formFieldSeq
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala
    :snippet: formFieldSeq
 
 Description
@@ -26,5 +26,5 @@ can cause performance issues or even an ``OutOfMemoryError`` s.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala
    :snippet: formFieldSeq

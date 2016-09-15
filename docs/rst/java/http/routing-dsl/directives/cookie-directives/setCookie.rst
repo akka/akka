@@ -13,4 +13,4 @@ Use the :ref:`-deleteCookie-java-` directive to delete a cookie.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java#setCookie
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java#setCookie

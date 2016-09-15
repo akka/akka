@@ -14,4 +14,4 @@ Use the :ref:`-optionalCookie-java-` directive instead if you want to support mi
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java#cookie
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java#cookie

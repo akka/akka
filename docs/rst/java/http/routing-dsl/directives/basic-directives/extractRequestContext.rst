@@ -17,4 +17,4 @@ See also :ref:`-extractRequest-java-` if only interested in the :class:`HttpRequ
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractRequestContext
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractRequestContext

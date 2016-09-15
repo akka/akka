@@ -4,7 +4,7 @@ Routing DSL Overview
 The Akka HTTP :ref:`http-low-level-server-side-api` provides a ``Flow``- or ``Function``-level interface that allows
 an application to respond to incoming HTTP requests by simply mapping requests to responses:
 
-.. includecode2:: ../../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
    :snippet: low-level-server-example
 
 While it'd be perfectly possible to define a complete REST API service purely by pattern-matching against the incoming
@@ -21,7 +21,7 @@ using ``Route.handlerFlow`` or, otherwise, the conversion is also provided impli
 
 For example, the service definition from above, written using the routing DSL, would look like this:
 
-.. includecode2:: ../../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
    :snippet: high-level-server-example
 
 The core of the Routing DSL becomes available with a single import::

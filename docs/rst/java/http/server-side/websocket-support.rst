@@ -24,7 +24,7 @@ methods to cast a message.
 The subclasses ``BinaryMessage`` and ``TextMessage`` contain methods to access the data. Take the API of
 ``TextMessage`` as an example (``BinaryMessage`` is very similar with ``String`` replaced by ``ByteString``):
 
-.. includecode:: /../../akka-http-core/src/main/scala/akka/http/javadsl/model/ws/Message.scala
+.. includecode:: ../../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/model/ws/Message.scala
    :include: message-model
 
 The data of a message is provided as a stream because WebSocket messages do not have a predefined size and could
@@ -90,7 +90,7 @@ Let's look at an example_.
 WebSocket requests come in like any other requests. In the example, requests to ``/greeter`` are expected to be
 WebSocket requests:
 
-.. includecode:: ../../code/docs/http/javadsl/server/WebSocketCoreExample.java
+.. includecode:: ../../../../../test/java/docs/http/javadsl/server/WebSocketCoreExample.java
    :include: websocket-handling
 
 It uses a helper method ``akka.http.javadsl.model.ws.WebSocket.handleWebSocketRequestWith`` which can be used if
@@ -101,7 +101,7 @@ return a ``400 Bad Request`` error response.
 In the example, the passed handler expects text messages where each message is expected to contain (a person's) name
 and then responds with another text message that contains a greeting:
 
-.. includecode:: ../../code/docs/http/javadsl/server/WebSocketCoreExample.java
+.. includecode:: ../../../../../test/java/docs/http/javadsl/server/WebSocketCoreExample.java
    :include: websocket-handler
 
 .. note::
@@ -120,12 +120,12 @@ Let's look at how the above example can be rewritten using the high-level routin
 Instead of writing the request handler manually, the routing behavior of the app is defined by a route that
 uses the ``handleWebSocketRequests`` directive in place of the ``WebSocket.handleWebSocketRequestWith``:
 
-.. includecode:: ../../code/docs/http/javadsl/server/WebSocketRoutingExample.java
+.. includecode:: ../../../../../test/java/docs/http/javadsl/server/WebSocketRoutingExample.java
    :include: websocket-route
 
 The handling code itself will be the same as with using the low-level API.
 
 See the `full routing example`_.
 
-.. _example: @github@/akka-docs/rst/java/code/docs/http/javadsl/server/WebSocketCoreExample.java
-.. _full routing example: @github@/akka-docs/rst/java/code/docs/http/javadsl/server/WebSocketCoreExample.java
+.. _example: @github@/akka-docs/rst/java/../../../test/java/docs/http/javadsl/server/WebSocketCoreExample.java
+.. _full routing example: @github@/akka-docs/rst/java/../../../test/java/docs/http/javadsl/server/WebSocketCoreExample.java

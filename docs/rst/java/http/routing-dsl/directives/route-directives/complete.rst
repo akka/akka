@@ -18,4 +18,4 @@ Please note that the ``complete`` directive has multiple variants, like
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java#complete
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java#complete

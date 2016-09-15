@@ -20,4 +20,4 @@ For more details refer to :ref:`-getFromBrowseableDirectory-java-`.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java#getFromBrowseableDirectories
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java#getFromBrowseableDirectories

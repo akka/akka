@@ -24,6 +24,6 @@ See also :ref:`-redirectToTrailingSlashIfMissing-java-` for the opposite behavio
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#redirect-notrailing-slash-present
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#redirect-notrailing-slash-present
 
 See also :ref:`-redirectToTrailingSlashIfMissing-java-` which achieves the opposite - redirecting paths in case they do *not* have a trailing slash.

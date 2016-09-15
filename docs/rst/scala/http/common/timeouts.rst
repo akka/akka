@@ -46,7 +46,7 @@ never sending the real response otherwise).
 
 The default ``HttpResponse`` that is written when a request timeout is exceeded looks like this:
 
-.. includecode2:: /../../akka-http-core/src/main/scala/akka/http/impl/engine/server/HttpServerBluePrint.scala
+.. includecode2:: ../../../../../../../akka-http-core/src/main/scala/akka/http/impl/engine/server/HttpServerBluePrint.scala
    :snippet: default-request-timeout-httpresponse
 
 A default request timeout is applied globally to all routes and can be configured using the

@@ -11,4 +11,4 @@ Decodes the incoming request if it is encoded with one of the given encoders. If
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java#decodeRequestWith
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java#decodeRequestWith

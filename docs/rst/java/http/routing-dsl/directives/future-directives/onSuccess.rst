@@ -14,4 +14,4 @@ To handle the ``Failure`` case manually as well, use :ref:`-onComplete-java-`, i
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java#onSuccess
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java#onSuccess

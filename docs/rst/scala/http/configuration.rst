@@ -12,14 +12,14 @@ These are the relevant default configuration values for the Akka HTTP modules.
 akka-http-core
 ~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../../../akka-http-core/src/main/resources/reference.conf
+.. literalinclude:: ../../../../../../akka-http-core/src/main/resources/reference.conf
    :language: none
 
 
 akka-http
 ~~~~~~~~~
 
-.. literalinclude:: ../../../../akka-http/src/main/resources/reference.conf
+.. literalinclude:: ../../../../../../akka-http/src/main/resources/reference.conf
    :language: none
 
 

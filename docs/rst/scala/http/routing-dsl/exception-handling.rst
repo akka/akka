@@ -35,11 +35,11 @@ The second case allows you to restrict the applicability of your handler to cert
 
 Here is an example for wiring up a custom handler via :ref:`-handleExceptions-`:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala
    :snippet: explicit-handler-example
 
 
 And this is how to do it implicitly:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala
    :snippet: implicit-handler-example

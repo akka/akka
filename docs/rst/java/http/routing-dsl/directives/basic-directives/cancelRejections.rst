@@ -19,4 +19,4 @@ which provides a nicer DSL for building rejection handlers.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#cancelRejections
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#cancelRejections

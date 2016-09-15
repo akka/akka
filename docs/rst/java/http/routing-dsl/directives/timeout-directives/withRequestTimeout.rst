@@ -33,10 +33,10 @@ For more information about various timeouts in Akka HTTP see :ref:`http-timeouts
 
 Example
 -------
-.. includecode2:: ../../../../code/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java
+.. includecode2:: ../../../../../../../test/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java
    :snippet: withRequestTimeout-plain
 
 With setting the handler at the same time:
 
-.. includecode2:: ../../../../code/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java
+.. includecode2:: ../../../../../../../test/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java
    :snippet: withRequestTimeout-with-handler

@@ -6,7 +6,7 @@ respondWithDefaultHeader
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RespondWithDirectives.scala
    :snippet: respondWithDefaultHeader
 
 
@@ -26,5 +26,5 @@ See also :ref:`-respondWithDefaultHeaders-`  if you'd like to add more than one 
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
    :snippet: respondWithDefaultHeader-0

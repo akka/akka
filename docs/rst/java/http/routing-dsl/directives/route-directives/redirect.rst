@@ -14,4 +14,4 @@ It is equivalent to this snippet relying on the ``complete`` directive:
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java#redirect
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java#redirect

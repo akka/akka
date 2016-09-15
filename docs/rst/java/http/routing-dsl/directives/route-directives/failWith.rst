@@ -25,4 +25,4 @@ exception.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java#failWith
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java#failWith

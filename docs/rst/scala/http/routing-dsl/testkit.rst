@@ -15,7 +15,7 @@ Usage
 Here is an example of what a simple test with the routing testkit might look like (using the built-in support for
 scalatest_):
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/FullTestKitExampleSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/FullTestKitExampleSpec.scala
    :snippet: source-quote
 
 The basic structure of a test built with the testkit is this (expression placeholder in all-caps)::

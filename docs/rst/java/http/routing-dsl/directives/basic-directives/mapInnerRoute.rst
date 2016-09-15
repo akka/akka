@@ -13,4 +13,4 @@ with any other route. Usually, the returned route wraps the original one with cu
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapInnerRoute
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapInnerRoute

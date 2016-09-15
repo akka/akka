@@ -15,4 +15,4 @@ See :ref:`Response Transforming Directives-java` for similar directives.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapResponseHeaders
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapResponseHeaders

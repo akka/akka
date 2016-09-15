@@ -19,4 +19,4 @@ See also :ref:`-headerValuePF-java-` for a nicer syntactic alternative.
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#headerValue
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#headerValue

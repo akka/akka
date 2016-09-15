@@ -15,4 +15,4 @@ inner-level to discriminate "path already fully matched" from other alternatives
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#path-end
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#path-end

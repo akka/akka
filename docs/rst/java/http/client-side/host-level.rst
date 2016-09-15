@@ -153,4 +153,4 @@ all pools have terminated.
 Example
 -------
 
-.. includecode:: ../../code/docs/http/javadsl/HttpClientExampleDocTest.java#host-level-example
+.. includecode:: ../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java#host-level-example

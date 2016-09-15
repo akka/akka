@@ -15,4 +15,4 @@ See also :ref:`-respondWithHeader-java-` if you'd like to add just a single head
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java#respondWithHeaders
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java#respondWithHeaders

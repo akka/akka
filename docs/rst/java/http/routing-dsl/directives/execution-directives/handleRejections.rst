@@ -14,4 +14,4 @@ See :ref:`rejections-java` for general information about options for handling re
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java#handleRejections
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java#handleRejections

@@ -20,4 +20,4 @@ This directive is useful for:
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java#overrideMethodWithParameter
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java#overrideMethodWithParameter

@@ -17,4 +17,4 @@ See :ref:`-formFieldList-java-` for details.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java#formFieldMap
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java#formFieldMap

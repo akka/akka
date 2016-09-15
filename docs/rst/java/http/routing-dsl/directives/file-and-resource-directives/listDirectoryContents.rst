@@ -21,4 +21,4 @@ Note that it's not required to wrap this directive with ``get`` as this directiv
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java#listDirectoryContents
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java#listDirectoryContents

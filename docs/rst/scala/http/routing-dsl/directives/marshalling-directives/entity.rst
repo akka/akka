@@ -6,7 +6,7 @@ entity
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala
    :snippet: entity
 
 Description
@@ -39,20 +39,20 @@ Examples
 The following example uses ``spray-json`` to unmarshall a json request into a simple ``Person`` 
 class.  It utilizes ``SprayJsonSupport`` via the ``PersonJsonSupport`` object as the in-scope unmarshaller.
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: person-case-class
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: person-json-support
 
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: example-entity-with-json
 
 It is also possible to use the ``entity`` directive to obtain raw ``JsValue`` ( spray-json_ ) objects, by simply using
 ``as[JsValue]``, or any other JSON type for which you have marshallers in-scope.
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MarshallingDirectivesExamplesSpec.scala
    :snippet: example-entity-with-raw-json
 
 

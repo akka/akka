@@ -21,4 +21,4 @@ the URI. If the match fails the request is rejected with an :ref:`empty rejectio
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#raw-path-prefix-test
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java#raw-path-prefix-test

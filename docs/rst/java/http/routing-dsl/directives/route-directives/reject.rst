@@ -20,4 +20,4 @@ modifier for "filtering out" certain cases.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java#reject
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java#reject

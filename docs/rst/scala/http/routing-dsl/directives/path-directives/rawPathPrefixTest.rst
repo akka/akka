@@ -6,7 +6,7 @@ rawPathPrefixTest
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
    :snippet: rawPathPrefixTest
 
 
@@ -32,5 +32,5 @@ from the URI. If the match fails the request is rejected with an :ref:`empty rej
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
-   :snippet: rawPathPrefixTest-
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
+   :snippet: completeWithUnmatchedPath,rawPathPrefixTest-

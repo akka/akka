@@ -14,4 +14,4 @@ handling when the header is missing use the :ref:`-optionalHeaderValueByName-jav
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#headerValueByName
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HeaderDirectivesExamplesTest.java#headerValueByName

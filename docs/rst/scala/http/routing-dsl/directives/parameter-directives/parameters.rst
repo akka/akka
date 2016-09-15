@@ -61,47 +61,47 @@ Examples
 Required parameter
 ^^^^^^^^^^^^^^^^^^
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: required-1
 
 Optional parameter
 ^^^^^^^^^^^^^^^^^^
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: optional
 
 Optional parameter with default value
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: optional-with-default
 
 Parameter with required value
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: required-value
 
 Deserialized parameter
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: mapped-value
 
 Repeated parameter
 ^^^^^^^^^^^^^^^^^^
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: repeated
 
 CSV parameter
 ^^^^^^^^^^^^^
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: csv
 
 Repeated, deserialized parameter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala
    :snippet: mapped-repeated

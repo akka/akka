@@ -19,4 +19,4 @@ by the default ``RejectionHandler``.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java#head
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java#head

@@ -55,7 +55,7 @@ for details).
 
 The ``Route`` created using the Route DSL is then "bound" to a port to start serving HTTP requests:
 
-.. includecode2:: ../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
    :snippet: minimal-routing-example
 
 A common use case is to reply to a request using a model object having the marshaller transform it into JSON. In
@@ -63,7 +63,7 @@ this case shown by two separate routes. The first route queries an asynchronous 
 ``Future[Option[Item]]`` result into a JSON response. The second unmarshalls an ``Order`` from the incoming request
 saves it to the database and replies with an OK when done.
 
-.. includecode2:: ../code/docs/http/scaladsl/SprayJsonExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/SprayJsonExampleSpec.scala
    :snippet: second-spray-json-example
 
 The logic for the marshalling and unmarshalling JSON in this example is provided by the "spray-json" library
@@ -77,7 +77,7 @@ body.
 
 Example that streams random numbers as long as the client accepts them:
 
-.. includecode:: ../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode:: ../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
    :include: stream-random-numbers
 
 Connecting to this service with a slow HTTP client would backpressure so that the next random number is produced on
@@ -89,7 +89,7 @@ Akka HTTP routes easily interacts with actors. In this example one route allows 
 style while the second route contains a request-response interaction with an actor. The resulting response is rendered
 as json and returned when the response arrives from the actor.
 
-.. includecode:: ../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode:: ../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
    :include: actor-interaction
 
 Again the logic for the marshalling and unmarshalling JSON in this example is provided by the "spray-json" library
@@ -104,7 +104,7 @@ The low-level Akka HTTP server APIs allows for handling connections or individua
 ``HttpRequest`` s and answering them by producing ``HttpResponse`` s. This is provided by the ``akka-http-core`` module.
 APIs for handling such request-responses as function calls and as a ``Flow[HttpRequest, HttpResponse, _]`` are available.
 
-.. includecode2:: ../code/docs/http/scaladsl/HttpServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala
    :snippet: low-level-server-example
 
 Read more details about the low level APIs in the section :ref:`http-low-level-server-side-api`.
@@ -118,7 +118,7 @@ handled more performantly by re-using TCP connections to the server.
 
 Example simple request:
 
-.. includecode:: ../code/docs/http/scaladsl/HttpClientExampleSpec.scala
+.. includecode:: ../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala
    :include: single-request-example
 
 

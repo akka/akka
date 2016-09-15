@@ -90,5 +90,5 @@ Predefined path matchers allow extraction of various types of values:
 
 Here's a collection of path matching examples:
 
-.. includecode:: ../../../code/docs/http/javadsl/server/PathDirectiveExampleTest.java
+.. includecode:: ../../../../../../test/java/docs/http/javadsl/server/PathDirectiveExampleTest.java
   :include: path-examples

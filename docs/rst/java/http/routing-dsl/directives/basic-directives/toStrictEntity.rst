@@ -20,4 +20,4 @@ A timeout parameter is given and if the stream isn't completed after the timeout
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#toStrictEntity
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#toStrictEntity

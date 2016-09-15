@@ -18,4 +18,4 @@ can cause performance issues or even an ``OutOfMemoryError`` s.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java#formFieldList
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java#formFieldList

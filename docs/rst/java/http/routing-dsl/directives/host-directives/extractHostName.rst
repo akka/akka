@@ -10,4 +10,4 @@ to its inner route.
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java#extractHostname
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/HostDirectivesExamplesTest.java#extractHostname

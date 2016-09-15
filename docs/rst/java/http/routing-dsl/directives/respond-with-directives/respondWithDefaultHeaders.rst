@@ -30,6 +30,6 @@ is shown in the example below, however it allows including multiple default head
 
 The semantics remain the same however, as explained by the following example:
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java#respondWithDefaultHeaders
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java#respondWithDefaultHeaders
 
 See the :ref:`-respondWithDefaultHeader-java-` directive for an example with only one header.

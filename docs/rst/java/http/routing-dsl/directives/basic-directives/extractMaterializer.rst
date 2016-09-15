@@ -14,4 +14,4 @@ See also :ref:`-withMaterializer-java-` to see how to customise the used materia
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractMaterializer
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#extractMaterializer

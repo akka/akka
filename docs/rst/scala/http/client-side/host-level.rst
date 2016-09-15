@@ -156,5 +156,5 @@ all pools have terminated.
 Example
 -------
 
-.. includecode:: ../../code/docs/http/scaladsl/HttpClientExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala
    :include: host-level-example

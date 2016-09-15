@@ -105,7 +105,7 @@ trait HeaderDirectives {
     headerValue(f).map(Some(_): Option[T]).recoverPF {
       case Nil ⇒ provide(None)
     }
-  //#
+  //#optional-header
 
   /**
    * Extracts an optional HTTP header value using the given partial function.

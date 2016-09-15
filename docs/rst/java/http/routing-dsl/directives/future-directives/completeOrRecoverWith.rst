@@ -15,4 +15,4 @@ To handle the successful case manually as well, use the :ref:`-onComplete-java-`
 
 Example
 -------
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java#completeOrRecoverWith
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/FutureDirectivesExamplesTest.java#completeOrRecoverWith

@@ -6,7 +6,7 @@ decodeRequest
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala
    :snippet: decodeRequest
 
 Description
@@ -17,5 +17,5 @@ Decompresses the incoming request if it is ``gzip`` or ``deflate`` compressed. U
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/CodingDirectivesExamplesSpec.scala
    :snippet: "decodeRequest"

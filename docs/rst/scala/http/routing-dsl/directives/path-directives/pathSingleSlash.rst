@@ -6,7 +6,7 @@ pathSingleSlash
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala
    :snippet: pathSingleSlash
 
 
@@ -22,5 +22,5 @@ This directive is a simple alias for ``pathPrefix(PathEnd)`` and is mostly used 
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
    :snippet: pathSingleSlash-

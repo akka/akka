@@ -7,7 +7,7 @@ The value extraction performed by :ref:`Directives` is a nice way of providing y
 properties, all with proper type-safety and error handling. However, in some case you might want even more.
 Consider this example:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala
    :snippet: example-1
 
 Here the :ref:`-parameters-scala-` directives is employed to extract three ``Int`` values, which are then used to construct an
@@ -18,7 +18,7 @@ model class constructor directly afterwards can somewhat clutter up your route d
 If your model classes are case classes, as in our example, Akka HTTP supports an even shorter and more concise
 syntax. You can also write the example above like this:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala
    :snippet: example-2
 
 You can postfix any directive with extractions with an ``as(...)`` call. By simply passing the companion object of your
@@ -30,7 +30,7 @@ call to produces the right number of extractions, with the right types and in th
 If you'd like to construct a case class instance from extractions produced by *several* directives you can first join
 the directives with the ``&`` operator before using the ``as`` call:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala
    :snippet: example-3
 
 Here the ``Color`` class has gotten another member, ``name``, which is supplied not as a parameter but as a path
@@ -59,7 +59,7 @@ read.
 If you use case class extraction you can put the verification logic into the constructor of your case class, where it
 should be:
 
-.. includecode2:: ../../code/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/server/CaseClassExtractionExamplesSpec.scala
    :snippet: example-4
 
 If you write your validations like this Akka HTTP's case class extraction logic will properly pick up all error

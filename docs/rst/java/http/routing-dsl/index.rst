@@ -35,7 +35,7 @@ For example the server might be unable to bind to the given port. For example wh
 is already taken by another application, or if the port is privileged (i.e. only usable by ``root``).
 In this case the "binding future" will fail immediately, and we can react to if by listening on the CompletionStage's completion:
 
-.. includecode:: ../../code/docs/http/javadsl/server/HighLevelServerBindFailureExample.java
+.. includecode:: ../../../../../test/java/docs/http/javadsl/server/HighLevelServerBindFailureExample.java
   :include: binding-failure-high-level-example
 
 

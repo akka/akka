@@ -6,7 +6,7 @@ fileUpload
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala
    :snippet: fileUpload
 
 Description
@@ -21,7 +21,7 @@ with the same name, the first one will be used and the subsequent ones ignored.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FileUploadDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/FileUploadDirectivesExamplesSpec.scala
    :snippet: fileUpload
 
 ::

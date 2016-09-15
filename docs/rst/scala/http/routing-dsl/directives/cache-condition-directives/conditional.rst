@@ -6,7 +6,7 @@ conditional
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CacheConditionDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CacheConditionDirectives.scala
    :snippet: conditional
 
 

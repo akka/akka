@@ -16,4 +16,4 @@ See :ref:`Request Transforming Directives-java` for an overview of similar direc
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapRequestContext
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java#mapRequestContext

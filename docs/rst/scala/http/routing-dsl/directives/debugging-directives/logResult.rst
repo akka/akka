@@ -32,5 +32,5 @@ Use ``logRequest`` for logging the request, or ``logRequestResult`` for logging 
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala
    :snippet: logResult

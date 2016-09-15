@@ -13,4 +13,4 @@ Use the :ref:`-cookie-java-` directive instead if the inner route does not handl
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java#optionalCookie
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/CookieDirectivesExamplesTest.java#optionalCookie

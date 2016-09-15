@@ -8,7 +8,7 @@ Akka HTTP supports TLS encryption on the server-side as well as on the :ref:`cli
 The central vehicle for configuring encryption is the ``HttpsConnectionContext``, which can be created using
 the static method ``ConnectionContext.https`` which is defined like this:
 
-.. includecode:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala
+.. includecode:: ../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala
    :include: https-context-creation
 
 On the server-side the ``bind``, and ``bindAndHandleXXX`` methods of the `akka.http.scaladsl.Http`_ extension define an
@@ -40,7 +40,7 @@ SSL Config settings used by Akka HTTP (as well as Streaming TCP) are located und
 In order to use SSL-Config in Akka so it logs to the right ActorSystem-wise logger etc., the
 ``AkkaSSLConfig`` extension is provided. Obtaining it is as simple as:
 
-.. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
    :snippet: akka-ssl-config
 
 While typical usage, for example for configuring http client settings would be applied globally by configuring
@@ -71,20 +71,20 @@ and either setting it as the default one to be used by all servers started by th
 or passing it in explicitly when binding the server:
 
 
-.. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
    :snippet: imports
 
-.. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
    :snippet: low-level-default
 
 Once you configured the HTTPS context, you can set it as default:
 
-.. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
    :snippet: set-low-level-context-default
 
 It is also possible to pass in the context to specific ``bind...`` (or client) calls, like displayed below:
 
-.. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
    :snippet: bind-low-level-context
 
 
@@ -95,14 +95,14 @@ one for HTTPS, and the other for HTTP.
 
 When configuring HTTPS, you can do it up like explained in the above :ref:`using-https-scala` section,
 
-.. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
    :snippet: low-level-default
 
 or via :ref:`ssl-config-scala` (not explained here though).
 
 Then, call ``bind...`` methods twice like below. The passed ``https`` context is from the above code snippet.
 
-.. includecode2:: ../code/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
+.. includecode2:: ../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala
    :snippet: both-https-and-http
 
 Further reading

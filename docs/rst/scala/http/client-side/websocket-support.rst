@@ -48,13 +48,13 @@ HTTP response, or fail if the connection fails with an exception.
 
 Simple example sending a message and printing any incoming message:
 
-.. includecode:: ../../code/docs/http/scaladsl/WebSocketClientExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala
    :include: single-WebSocket-request
 
 
 The websocket request may also include additional headers, like in this example, HTTP Basic Auth:
 
-.. includecode:: ../../code/docs/http/scaladsl/WebSocketClientExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala
    :include: authorized-single-WebSocket-request
 
 
@@ -72,7 +72,7 @@ the server returned a regular HTTP response, or fail if the connection fails wit
 Simple example sending a message and printing any incoming message:
 
 
-.. includecode:: ../../code/docs/http/scaladsl/WebSocketClientExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala
    :include: WebSocket-client-flow
 
 
@@ -93,14 +93,14 @@ entire connection is closed (after a "Closing Handshake" has been exchanged or a
 This may lead to unexpected behavior, for example if we are trying to only consume messages coming from the server,
 like this:
 
-.. includecode:: ../../code/docs/http/scaladsl/WebSocketClientExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala
    :include: half-closed-WebSocket-closing-example
 
 This will in fact quickly close the connection because of the ``Source.empty`` being completed immediately when the
 stream is materialized. To solve this you can make sure to not complete the outgoing source by using for example
 ``Source.maybe`` like this:
 
-.. includecode:: ../../code/docs/http/scaladsl/WebSocketClientExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala
    :include: half-closed-WebSocket-working-example
 
 This will keep the outgoing source from completing, but without emitting any elements until the ``Promise`` is manually
@@ -109,7 +109,7 @@ completed which makes the ``Source`` complete and the connection to close.
 The same problem holds true if emitting a finite number of elements, as soon as the last element is reached the ``Source``
 will close and cause the connection to close. To avoid that you can concatenate ``Source.maybe`` to the finite stream:
 
-.. includecode:: ../../code/docs/http/scaladsl/WebSocketClientExampleSpec.scala
+.. includecode:: ../../../../../test/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala
    :include: half-closed-WebSocket-finite-working-example
 
 Scenarios that exist with the two streams in a WebSocket and possible ways to deal with it:

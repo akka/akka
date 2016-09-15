@@ -6,7 +6,7 @@ handleRejections
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
    :snippet: handleRejections
 
 Description
@@ -20,5 +20,5 @@ See :ref:`rejections-scala` for general information about options for handling r
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala
    :snippet: handleRejections

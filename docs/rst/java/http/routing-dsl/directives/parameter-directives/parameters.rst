@@ -12,4 +12,4 @@ See :ref:`which-parameter-directive-java` to understand when to use which direct
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java#parameters
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java#parameters

@@ -14,7 +14,7 @@ with the same name, the first one will be used and the subsequent ones ignored.
 
 Example
 -------
-.. includecode2:: ../../../../code/docs/http/javadsl/server/directives/FileUploadDirectivesExamplesTest.java
+.. includecode2:: ../../../../../../../test/java/docs/http/javadsl/server/directives/FileUploadDirectivesExamplesTest.java
    :snippet: fileUpload
 
 ::

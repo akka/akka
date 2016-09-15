@@ -11,4 +11,4 @@ Decompresses the incoming request if it is ``gzip`` or ``deflate`` compressed. U
 Example
 -------
 
-.. includecode:: ../../../../code/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java#decodeRequest
+.. includecode:: ../../../../../../../test/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java#decodeRequest

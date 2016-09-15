@@ -76,7 +76,7 @@ sealed abstract class Marshaller[-A, +B] {
     Marshaller(implicit ec ⇒ c ⇒ apply(f(ec)(c)))
 }
 
-//# marshaller-creation
+//#marshaller-creation
 object Marshaller
   extends GenericMarshallers
   with PredefinedToEntityMarshallers
@@ -138,7 +138,7 @@ object Marshaller
   def combined[A, B, C](marshal: A ⇒ B)(implicit m2: Marshaller[B, C]): Marshaller[A, C] =
     Marshaller[A, C] { ec ⇒ a ⇒ m2.compose(marshal).apply(a)(ec) }
 }
-//#
+//#marshaller-creation
 
 //#marshalling
 /**
@@ -176,4 +176,4 @@ object Marshalling {
     def map[B](f: A ⇒ B): Opaque[B] = copy(marshal = () ⇒ f(marshal()))
   }
 }
-//#
+//#marshalling
