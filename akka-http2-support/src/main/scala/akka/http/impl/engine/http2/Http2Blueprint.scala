@@ -9,11 +9,18 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
+
+/** Represents one direction of an Http2 substream */
+case class Http2SubStream(initialFrame: StreamFrameEvent, frames: Source[StreamFrameEvent, _]) {
+  def streamId: Int = initialFrame.streamId
+}
 
 object Http2Blueprint {
   def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
-    demux() atop
+    httpLayer() atop
+      demux() atop
       flowControl() atop
       framing()
 
@@ -30,9 +37,17 @@ object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(): BidiFlow[HttpResponse, FrameEvent, FrameEvent, HttpRequest, NotUsed] =
-    BidiFlow.fromFlows(Flow[HttpResponse].map(_ ⇒ DataFrame(-1, true, ByteString())), Flow[FrameEvent].map(_ ⇒ HttpRequest()))
+  def demux(): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+    BidiFlow.fromGraph(new Http2ServerDemux)
 
-  /** A handler for a single server stream */
-  def serverStreamHandler(): BidiFlow[HttpResponse, FrameEvent, FrameEvent, HttpRequest, NotUsed] = ???
+  /**
+   * Translation between substream frames and Http messages (both directions)
+   *
+   * To make use of parallelism requests and responses need to be associated (other than by ordering), suggestion
+   * is to add a special (virtual) header containing the streamId (or any other kind of token) is added to the HttRequest
+   * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
+   * bindAndHandle the user needs to take of this manually.
+   */
+  def httpLayer(): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] =
+    ???
 }
