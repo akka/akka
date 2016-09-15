@@ -29,6 +29,7 @@ import StatusCodes._
 import HttpEntity._
 import ParserOutput._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.testkit.TestKit
 
 class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -249,7 +250,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   private class Test {
     def awaitAtMost: FiniteDuration = 3.seconds

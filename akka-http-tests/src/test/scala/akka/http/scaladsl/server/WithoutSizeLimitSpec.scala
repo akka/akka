@@ -10,6 +10,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.stream.ActorMaterializer
+import akka.testkit.TestKit
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
@@ -64,9 +65,7 @@ class WithoutSizeLimitSpec extends WordSpec with Matchers with RequestBuilding w
     }
   }
 
-  override def afterAll() = {
-    system.terminate
-  }
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   private def entityOfSize(size: Int) = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "0" * size)
 }

@@ -6,13 +6,11 @@ package akka.http.scaladsl.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.ActorMaterializer
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, TestKit }
 import org.scalatest.concurrent.{ IntegrationPatience, ScalaFutures }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
 /** INTERNAL API - not (yet?) ready for public consuption */
 private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers with BeforeAndAfterAll
@@ -24,9 +22,7 @@ private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers wi
   implicit val mat = ActorMaterializer()
   import system.dispatcher
 
-  override protected def afterAll(): Unit = {
-    Await.ready(system.terminate(), 3.seconds)
-  }
+  override protected def afterAll() = TestKit.shutdownActorSystem(system)
 
   implicit class DSL(request: HttpRequest) {
     def ~!>(route: Route) = new Prepped(request, route)
@@ -44,7 +40,6 @@ private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers wi
       } finally binding.flatMap(_.unbind()).futureValue
     }
   }
-
 }
 
 object IntegrationRoutingSpec {

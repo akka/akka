@@ -6,9 +6,10 @@ package akka.http.impl.engine.rendering
 
 import com.typesafe.config.{ Config, ConfigFactory }
 import java.net.InetSocketAddress
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import org.scalatest.{ FreeSpec, Matchers, BeforeAndAfterAll }
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
 import akka.actor.ActorSystem
 import akka.event.NoLogging
@@ -20,6 +21,7 @@ import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import HttpEntity._
 import HttpMethods._
+import akka.testkit.TestKit
 
 class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -318,7 +320,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
     }
   }
 
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   class TestSetup(
     val userAgent: Option[`User-Agent`] = Some(`User-Agent`("akka-http/1.0.0")),

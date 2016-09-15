@@ -17,6 +17,7 @@ import akka.http.scaladsl.model._
 import headers._
 import HttpCharsets._
 import MediaTypes._
+import akka.testkit.TestKit
 
 class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with MultipartMarshallers with MarshallingTestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
@@ -162,7 +163,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     }
   }
 
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   protected class FixedRandom extends java.util.Random {
     override def nextBytes(array: Array[Byte]): Unit = "my-stable-boundary".getBytes("UTF-8").copyToArray(array)

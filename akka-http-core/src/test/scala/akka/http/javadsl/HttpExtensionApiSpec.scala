@@ -5,7 +5,7 @@ package akka.http.javadsl
 
 import java.net.InetSocketAddress
 import java.util.Optional
-import java.util.concurrent.{ CompletionStage, TimeUnit, CompletableFuture }
+import java.util.concurrent.{ CompletableFuture, CompletionStage, TimeUnit }
 
 import akka.NotUsed
 import akka.http.javadsl.ConnectHttp._
@@ -17,12 +17,14 @@ import akka.event.NoLogging
 import akka.http.javadsl.model._
 import akka.http.scaladsl.TestUtils
 import akka.japi.Function
-import akka.stream.{ ActorMaterializer }
-import akka.stream.javadsl.{ Source, Flow, Sink, Keep }
+import akka.stream.ActorMaterializer
+import akka.stream.javadsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.TestSubscriber
-import com.typesafe.config.{ ConfigFactory }
-import org.scalatest.{ WordSpec, Matchers, BeforeAndAfterAll }
+import akka.testkit.TestKit
+import com.typesafe.config.ConfigFactory
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
+
 import scala.util.Try
 
 class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll {
@@ -471,7 +473,5 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
   private def waitFor[T](completionStage: CompletionStage[T]): T =
     completionStage.toCompletableFuture.get(1, TimeUnit.SECONDS)
 
-  override protected def afterAll(): Unit = {
-    system.terminate()
-  }
+  override protected def afterAll() = TestKit.shutdownActorSystem(system)
 }

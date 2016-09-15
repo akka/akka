@@ -10,8 +10,9 @@ import akka.http.scaladsl.testkit.ScalatestUtils
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model._
-import scala.concurrent.duration._
+import akka.testkit.TestKit
 
+import scala.concurrent.duration._
 import scala.concurrent.Await
 
 class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
@@ -72,5 +73,5 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
 
   }
 
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 }

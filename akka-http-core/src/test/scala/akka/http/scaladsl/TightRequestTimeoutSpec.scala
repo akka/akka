@@ -4,31 +4,16 @@
 
 package akka.http.scaladsl
 
-import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
-import java.net.{ BindException, Socket }
-import java.util.concurrent.TimeoutException
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.event.Logging.LogEvent
-import akka.http.impl.util._
-import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.model.HttpEntity._
-import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.stream.scaladsl._
-import akka.stream.testkit._
-import akka.stream.{ OverflowStrategy, ActorMaterializer, BindFailedException, StreamTcpException }
-import akka.testkit.{ TestProbe, EventFilter }
-import akka.util.ByteString
+import akka.stream.{ OverflowStrategy, ActorMaterializer }
+import akka.testkit.TestProbe
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
-import scala.annotation.tailrec
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
-import scala.util.{ Success, Try }
 import akka.testkit.TestKit
 
 class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
@@ -45,9 +30,7 @@ class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfter
   implicit val materializer = ActorMaterializer()
   implicit val patience = PatienceConfig(3.seconds)
 
-  override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system)
-  }
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   "Tight request timeout" should {
 
