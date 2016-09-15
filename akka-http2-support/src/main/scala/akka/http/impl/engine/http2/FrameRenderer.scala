@@ -30,6 +30,24 @@ object FrameRenderer {
           streamId,
           headerBlockFragment
         )
+
+      case SettingsFrame(settings) ⇒
+        // FIXME
+        renderFrame(
+          Http2Protocol.FrameType.SETTINGS,
+          0,
+          0,
+          ByteString.empty
+        )
+
+      case SettingsAckFrame ⇒
+        // FIXME
+        renderFrame(
+          Http2Protocol.FrameType.SETTINGS,
+          Http2Protocol.Flags.ACK.value,
+          0,
+          ByteString.empty
+        )
     }
 
   def renderFrame(tpe: FrameType, flags: Int, streamId: Int, payload: ByteString): ByteString = {

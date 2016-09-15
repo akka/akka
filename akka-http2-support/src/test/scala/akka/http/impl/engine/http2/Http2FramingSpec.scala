@@ -104,6 +104,23 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
       }
       "with padding and priority settings" in pending
     }
+    "SETTINGS frame" - {
+      "empty" in {
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # length
+            00000100     # type = 0x4 = SETTINGS
+            00000000     # no flags
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # no stream ID
+         """ should parseTo(SettingsFrame(Nil))
+      }
+      "with one setting" in pending
+      "with two settings" in pending
+      "ack" in pending
+    }
   }
 
   private def parseTo(events: FrameEvent*): Matcher[ByteString] =
