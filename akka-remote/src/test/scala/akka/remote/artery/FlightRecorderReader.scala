@@ -69,8 +69,17 @@ object FlightRecorderReader {
       raFile = new RandomAccessFile(flightRecorderFile.toFile, "rw")
       channel = raFile.getChannel
       reader = new FlightRecorderReader(channel)
-
       println(reader.structure)
+
+      println("--- ALERT ENTRIES")
+      reader.structure.alertLog.logs.foreach(log ⇒ println(log.richEntries.mkString("\n")))
+
+      println("--- HI FREQUENCY ENTRIES")
+      reader.structure.hiFreqLog.logs.foreach(log ⇒ println(log.compactEntries.mkString("\n")))
+
+      println("--- LO FREQUENCY ENTRIES")
+      reader.structure.loFreqLog.logs.foreach(log ⇒ println(log.richEntries.mkString("\n")))
+
     } finally {
       if (reader ne null) reader.close()
       if (channel ne null) channel.close()
