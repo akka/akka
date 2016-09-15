@@ -1,7 +1,8 @@
 package akka.remote.artery
 
-import java.io.IOException
+import java.io.{ IOException, RandomAccessFile }
 import java.nio.channels.FileChannel
+import java.nio.file.Path
 import java.time.Instant
 
 import org.agrona.concurrent.MappedResizeableBuffer
@@ -58,6 +59,24 @@ object FlightRecorderReader {
     window = HiFreqWindow,
     recordSize = HiFreqRecordSize,
     entriesPerRecord = HiFreqBatchSize)
+
+  def dumpToStdout(flightRecorderFile: Path): Unit = {
+    var raFile: RandomAccessFile = null
+    var channel: FileChannel = null
+    var reader: FlightRecorderReader = null
+    try {
+
+      raFile = new RandomAccessFile(flightRecorderFile.toFile, "rw")
+      channel = raFile.getChannel
+      reader = new FlightRecorderReader(channel)
+
+      println(reader.structure)
+    } finally {
+      if (reader ne null) reader.close()
+      if (channel ne null) channel.close()
+      if (raFile ne null) raFile.close()
+    }
+  }
 
 }
 
