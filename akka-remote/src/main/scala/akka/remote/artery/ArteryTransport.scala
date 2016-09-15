@@ -541,7 +541,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
               Logging.simpleName(cause),
               if (settings.Advanced.EmbeddedMediaDriver) "embedded" else "external",
               cause.getMessage)
-            taskRunner.stop()
+            Await.ready(taskRunner.stop(), 20.seconds)
+            // TODO more cleanup/shutdown here?
             aeronErrorLogTask.cancel()
             system.terminate()
             throw new AeronTerminated(cause)
