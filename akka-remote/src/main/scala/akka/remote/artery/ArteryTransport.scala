@@ -6,12 +6,12 @@ package akka.remote.artery
 import java.io.File
 import java.net.InetSocketAddress
 import java.nio.channels.{ DatagramChannel, FileChannel }
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -20,7 +20,6 @@ import scala.util.Success
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-
 import akka.Done
 import akka.NotUsed
 import akka.actor._
@@ -767,8 +766,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       flightRecorder.foreach(_.close())
       afrFileChannel.foreach(_.force(true))
       afrFileChannel.foreach(_.close())
-      // TODO: Be smarter about this in tests and make it always-on-for prod
-      afrFile.foreach(_.delete())
       Done
     }
   }
@@ -957,11 +954,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .toMat(messageDispatcherSink)(Keep.both)
   }
 
-  private def initializeFlightRecorder(): Option[(FileChannel, File, FlightRecorder)] = {
+  private def initializeFlightRecorder(): Option[(FileChannel, Path, FlightRecorder)] = {
     if (settings.Advanced.FlightRecorderEnabled) {
-      // TODO: Figure out where to put it, currently using temporary files
-      val afrFile = File.createTempFile("artery", ".afr")
-      afrFile.deleteOnExit()
+      val afrFile = FlightRecorder.createFileRecorderFile(settings.Advanced.FlightRecorderDestination)
+      log.info("Flight recorder enabled, output can be found in '{}'", afrFile)
 
       val fileChannel = FlightRecorder.prepareFileForFlightRecorder(afrFile)
       Some((fileChannel, afrFile, new FlightRecorder(fileChannel)))

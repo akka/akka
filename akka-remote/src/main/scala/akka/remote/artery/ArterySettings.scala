@@ -11,9 +11,11 @@ import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
 import akka.util.WildcardIndex
 import akka.NotUsed
 import com.typesafe.config.Config
+
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import java.net.InetAddress
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 /** INTERNAL API */
@@ -108,6 +110,7 @@ private[akka] final class ArterySettings private (config: Config) {
     val DriverTimeout = config.getMillisDuration("driver-timeout").requiring(interval ⇒
       interval > Duration.Zero, "driver-timeout must be more than zero")
     val FlightRecorderEnabled: Boolean = getBoolean("flight-recorder.enabled")
+    val FlightRecorderDestination: String = getString("flight-recorder.destination")
     val Compression = new Compression(getConfig("compression"))
 
     final val MaximumFrameSize = 1024 * 1024
