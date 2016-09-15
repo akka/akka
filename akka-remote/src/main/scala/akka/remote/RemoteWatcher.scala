@@ -158,7 +158,7 @@ private[akka] class RemoteWatcher(
     watchingNodes foreach { a ⇒
       if (!unreachable(a) && !failureDetector.isAvailable(a)) {
         log.warning("Detected unreachable: [{}]", a)
-        quarantine(a, addressUids.get(a))
+        quarantine(a, addressUids.get(a), "Deemed unreachable by remote failure detector")
         publishAddressTerminated(a)
         unreachable += a
       }
@@ -167,8 +167,8 @@ private[akka] class RemoteWatcher(
   def publishAddressTerminated(address: Address): Unit =
     AddressTerminatedTopic(context.system).publish(AddressTerminated(address))
 
-  def quarantine(address: Address, uid: Option[Int]): Unit =
-    remoteProvider.quarantine(address, uid)
+  def quarantine(address: Address, uid: Option[Int], reason: String): Unit =
+    remoteProvider.quarantine(address, uid, reason)
 
   def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
     assert(watcher != self)

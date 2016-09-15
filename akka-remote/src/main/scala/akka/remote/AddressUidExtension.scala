@@ -25,5 +25,12 @@ object AddressUidExtension extends ExtensionId[AddressUidExtension] with Extensi
 }
 
 class AddressUidExtension(val system: ExtendedActorSystem) extends Extension {
-  val addressUid: Int = ThreadLocalRandom.current.nextInt()
+  val longAddressUid: Long = {
+    // FIXME we should use a long here, but then we need to change in Cluster and RemoteWatcher also
+    //ThreadLocalRandom.current.nextLong()
+    ThreadLocalRandom.current.nextInt()
+  }
+
+  @deprecated("Use longAddressUid instead", "2.4.x")
+  val addressUid: Int = longAddressUid.toInt
 }

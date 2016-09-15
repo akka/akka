@@ -53,7 +53,7 @@ object RemoteWatcherSpec {
       // that doesn't interfere with the real watch that is going on in the background
       context.system.eventStream.publish(TestRemoteWatcher.AddressTerm(address))
 
-    override def quarantine(address: Address, uid: Option[Int]): Unit = {
+    override def quarantine(address: Address, uid: Option[Int], reason: String): Unit = {
       // don't quarantine in remoting, but publish a testable message
       context.system.eventStream.publish(TestRemoteWatcher.Quarantined(address, uid))
     }
@@ -66,7 +66,7 @@ class RemoteWatcherSpec extends AkkaSpec(
   """akka {
        loglevel = INFO
        log-dead-letters-during-shutdown = false
-       actor.provider = "akka.remote.RemoteActorRefProvider"
+       actor.provider = remote
        remote.netty.tcp {
          hostname = localhost
          port = 0

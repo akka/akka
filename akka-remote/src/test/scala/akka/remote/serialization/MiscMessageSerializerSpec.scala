@@ -13,13 +13,10 @@ import com.typesafe.config.ConfigFactory
 object MiscMessageSerializerSpec {
   val serializationTestOverrides =
     """
-       |akka.actor.serialization-bindings = {
-       |  "akka.actor.Identify" = akka-misc
-       |  "akka.actor.ActorIdentity" = akka-misc
-       |  "scala.Some" = akka-misc
-       |  "scala.None$" = akka-misc
-       |}
-     """.stripMargin
+    akka.actor.enable-additional-serialization-bindings=on
+    # or they can be enabled with
+    # akka.remote.artery.enabled=on
+    """
 
   val testConfig = ConfigFactory.parseString(serializationTestOverrides).withFallback(AkkaSpec.testConf)
 }

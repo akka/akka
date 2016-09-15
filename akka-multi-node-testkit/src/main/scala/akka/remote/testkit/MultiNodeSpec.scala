@@ -5,15 +5,18 @@ package akka.remote.testkit
 
 import language.implicitConversions
 import java.net.{ InetAddress, InetSocketAddress }
-import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
-import scala.concurrent.{ Await, Awaitable }
+
+import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
+
+import scala.concurrent.{ Await, Awaitable, Future }
 import scala.util.control.NonFatal
 import scala.collection.immutable
 import akka.actor._
 import akka.util.Timeout
-import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
+import akka.remote.testconductor.{ RoleName, TestConductor, TestConductorExt }
 import akka.testkit._
 import akka.testkit.TestEvent._
+
 import scala.concurrent.duration._
 import akka.remote.testconductor.RoleName
 import akka.actor.RootActorPath
@@ -99,6 +102,7 @@ abstract class MultiNodeConfig {
       if (_testTransport) ConfigFactory.parseString(
         """
            akka.remote.netty.tcp.applied-adapters = [trttl, gremlin]
+           akka.remote.artery.advanced.test-mode = on
         """)
       else ConfigFactory.empty
 
@@ -195,9 +199,11 @@ object MultiNodeSpec {
   require(selfIndex >= 0 && selfIndex < maxNodes, "multinode.index is out of bounds: " + selfIndex)
 
   private[testkit] val nodeConfig = mapToConfig(Map(
-    "akka.actor.provider" → "akka.remote.RemoteActorRefProvider",
+    "akka.actor.provider" → "remote",
+    "akka.remote.artery.canonical.hostname" → selfName,
     "akka.remote.netty.tcp.hostname" → selfName,
-    "akka.remote.netty.tcp.port" → selfPort))
+    "akka.remote.netty.tcp.port" → selfPort,
+    "akka.remote.artery.canonical.port" → selfPort))
 
   private[testkit] val baseConfig: Config = ConfigFactory.parseString("""
       akka {
