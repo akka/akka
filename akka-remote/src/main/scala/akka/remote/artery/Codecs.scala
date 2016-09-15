@@ -94,6 +94,11 @@ private[remote] class Encoder(
         val outboundEnvelope = grab(in)
         val envelope = bufferPool.acquire()
 
+        headerBuilder.resetMessageFields()
+        // don't use outbound compression for ArteryMessage, e.g. handshake messages must get through
+        // without depending on compression tables being in sync when systems are restarted
+        headerBuilder.useOutboundCompression(!outboundEnvelope.message.isInstanceOf[ArteryMessage])
+
         // internally compression is applied by the builder:
         outboundEnvelope.recipient match {
           case OptionVal.Some(r) ⇒ headerBuilder setRecipientActorRef r
@@ -288,38 +293,62 @@ private[remote] class Decoder(
       override def onPush(): Unit = {
         messageCount += 1
         val envelope = grab(in)
+        headerBuilder.resetMessageFields()
         envelope.parseHeader(headerBuilder)
 
         val originUid = headerBuilder.uid
         val association = inboundContext.association(originUid)
 
-        val recipient: OptionVal[InternalActorRef] = headerBuilder.recipientActorRef(originUid) match {
+        val recipient: OptionVal[InternalActorRef] = try headerBuilder.recipientActorRef(originUid) match {
           case OptionVal.Some(ref) ⇒
             OptionVal(ref.asInstanceOf[InternalActorRef])
           case OptionVal.None if headerBuilder.recipientActorRefPath.isDefined ⇒
             resolveRecipient(headerBuilder.recipientActorRefPath.get)
           case _ ⇒
             OptionVal.None
+        } catch {
+          case NonFatal(e) ⇒
+            // probably version mismatch due to restarted system
+            log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e.getMessage)
+            OptionVal.None
         }
 
-        if (recipient.isEmpty && headerBuilder.recipientActorRefPath.isEmpty && !headerBuilder.isNoRecipient) {
-          log.debug("Dropping message for unknown recipient. It was probably sent from system [{}] with compression " +
+        val sender: OptionVal[InternalActorRef] = try headerBuilder.senderActorRef(originUid) match {
+          case OptionVal.Some(ref) ⇒
+            OptionVal(ref.asInstanceOf[InternalActorRef])
+          case OptionVal.None if headerBuilder.senderActorRefPath.isDefined ⇒
+            OptionVal(actorRefResolver.getOrCompute(headerBuilder.senderActorRefPath.get))
+          case _ ⇒
+            OptionVal.None
+        } catch {
+          case NonFatal(e) ⇒
+            // probably version mismatch due to restarted system
+            log.warning("Couldn't decompress sender from originUid [{}]. {}", originUid, e.getMessage)
+            OptionVal.None
+        }
+
+        val classManifestOpt = try headerBuilder.manifest(originUid) catch {
+          case NonFatal(e) ⇒
+            // probably version mismatch due to restarted system
+            log.warning("Couldn't decompress manifest from originUid [{}]. {}", originUid, e.getMessage)
+            OptionVal.None
+        }
+
+        if ((recipient.isEmpty && headerBuilder.recipientActorRefPath.isEmpty && !headerBuilder.isNoRecipient) ||
+          (sender.isEmpty && headerBuilder.senderActorRefPath.isEmpty && !headerBuilder.isNoSender)) {
+          log.debug("Dropping message for unknown recipient/sender. It was probably sent from system [{}] with compression " +
+            "table [{}] built for previous incarnation of the destination system, or it was compressed with a table " +
+            "that has already been discarded in the destination system.", originUid,
+            headerBuilder.inboundActorRefCompressionTableVersion)
+          pull(in)
+        } else if (classManifestOpt.isEmpty) {
+          log.debug("Dropping message with unknown manifest. It was probably sent from system [{}] with compression " +
             "table [{}] built for previous incarnation of the destination system, or it was compressed with a table " +
             "that has already been discarded in the destination system.", originUid,
             headerBuilder.inboundActorRefCompressionTableVersion)
           pull(in)
         } else {
-
-          val sender: OptionVal[InternalActorRef] = headerBuilder.senderActorRef(originUid) match {
-            case OptionVal.Some(ref) ⇒
-              OptionVal(ref.asInstanceOf[InternalActorRef])
-            case OptionVal.None if headerBuilder.senderActorRefPath.isDefined ⇒
-              OptionVal(actorRefResolver.getOrCompute(headerBuilder.senderActorRefPath.get))
-            case _ ⇒
-              OptionVal.None
-          }
-
-          val classManifest = headerBuilder.manifest(originUid)
+          val classManifest = classManifestOpt.get
 
           if ((messageCount & heavyHitterMask) == 0) {
             // --- hit refs and manifests for heavy-hitter counting

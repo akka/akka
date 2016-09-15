@@ -1297,19 +1297,29 @@ public final class ArteryControlFormats {
      */
     akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder();
 
-    // required uint32 tableVersion = 2;
+    // required uint64 originUid = 2;
     /**
-     * <code>required uint32 tableVersion = 2;</code>
+     * <code>required uint64 originUid = 2;</code>
+     */
+    boolean hasOriginUid();
+    /**
+     * <code>required uint64 originUid = 2;</code>
+     */
+    long getOriginUid();
+
+    // required uint32 tableVersion = 3;
+    /**
+     * <code>required uint32 tableVersion = 3;</code>
      */
     boolean hasTableVersion();
     /**
-     * <code>required uint32 tableVersion = 2;</code>
+     * <code>required uint32 tableVersion = 3;</code>
      */
     int getTableVersion();
 
-    // repeated string keys = 3;
+    // repeated string keys = 4;
     /**
-     * <code>repeated string keys = 3;</code>
+     * <code>repeated string keys = 4;</code>
      *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
@@ -1320,7 +1330,7 @@ public final class ArteryControlFormats {
     java.util.List<java.lang.String>
     getKeysList();
     /**
-     * <code>repeated string keys = 3;</code>
+     * <code>repeated string keys = 4;</code>
      *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
@@ -1330,7 +1340,7 @@ public final class ArteryControlFormats {
      */
     int getKeysCount();
     /**
-     * <code>repeated string keys = 3;</code>
+     * <code>repeated string keys = 4;</code>
      *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
@@ -1340,7 +1350,7 @@ public final class ArteryControlFormats {
      */
     java.lang.String getKeys(int index);
     /**
-     * <code>repeated string keys = 3;</code>
+     * <code>repeated string keys = 4;</code>
      *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
@@ -1351,17 +1361,17 @@ public final class ArteryControlFormats {
     akka.protobuf.ByteString
         getKeysBytes(int index);
 
-    // repeated uint32 values = 4;
+    // repeated uint32 values = 5;
     /**
-     * <code>repeated uint32 values = 4;</code>
+     * <code>repeated uint32 values = 5;</code>
      */
     java.util.List<java.lang.Integer> getValuesList();
     /**
-     * <code>repeated uint32 values = 4;</code>
+     * <code>repeated uint32 values = 5;</code>
      */
     int getValuesCount();
     /**
-     * <code>repeated uint32 values = 4;</code>
+     * <code>repeated uint32 values = 5;</code>
      */
     int getValues(int index);
   }
@@ -1436,31 +1446,36 @@ public final class ArteryControlFormats {
             }
             case 16: {
               bitField0_ |= 0x00000002;
+              originUid_ = input.readUInt64();
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
               tableVersion_ = input.readUInt32();
               break;
             }
-            case 26: {
-              if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+            case 34: {
+              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
                 keys_ = new akka.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000004;
+                mutable_bitField0_ |= 0x00000008;
               }
               keys_.add(input.readBytes());
               break;
             }
-            case 32: {
-              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+            case 40: {
+              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
                 values_ = new java.util.ArrayList<java.lang.Integer>();
-                mutable_bitField0_ |= 0x00000008;
+                mutable_bitField0_ |= 0x00000010;
               }
               values_.add(input.readUInt32());
               break;
             }
-            case 34: {
+            case 42: {
               int length = input.readRawVarint32();
               int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008) && input.getBytesUntilLimit() > 0) {
+              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010) && input.getBytesUntilLimit() > 0) {
                 values_ = new java.util.ArrayList<java.lang.Integer>();
-                mutable_bitField0_ |= 0x00000008;
+                mutable_bitField0_ |= 0x00000010;
               }
               while (input.getBytesUntilLimit() > 0) {
                 values_.add(input.readUInt32());
@@ -1476,10 +1491,10 @@ public final class ArteryControlFormats {
         throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
-        if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
           keys_ = new akka.protobuf.UnmodifiableLazyStringList(keys_);
         }
-        if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+        if (((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
           values_ = java.util.Collections.unmodifiableList(values_);
         }
         this.unknownFields = unknownFields.build();
@@ -1536,27 +1551,43 @@ public final class ArteryControlFormats {
       return from_;
     }
 
-    // required uint32 tableVersion = 2;
-    public static final int TABLEVERSION_FIELD_NUMBER = 2;
-    private int tableVersion_;
+    // required uint64 originUid = 2;
+    public static final int ORIGINUID_FIELD_NUMBER = 2;
+    private long originUid_;
     /**
-     * <code>required uint32 tableVersion = 2;</code>
+     * <code>required uint64 originUid = 2;</code>
      */
-    public boolean hasTableVersion() {
+    public boolean hasOriginUid() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>required uint32 tableVersion = 2;</code>
+     * <code>required uint64 originUid = 2;</code>
+     */
+    public long getOriginUid() {
+      return originUid_;
+    }
+
+    // required uint32 tableVersion = 3;
+    public static final int TABLEVERSION_FIELD_NUMBER = 3;
+    private int tableVersion_;
+    /**
+     * <code>required uint32 tableVersion = 3;</code>
+     */
+    public boolean hasTableVersion() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>required uint32 tableVersion = 3;</code>
      */
     public int getTableVersion() {
       return tableVersion_;
     }
 
-    // repeated string keys = 3;
-    public static final int KEYS_FIELD_NUMBER = 3;
+    // repeated string keys = 4;
+    public static final int KEYS_FIELD_NUMBER = 4;
     private akka.protobuf.LazyStringList keys_;
     /**
-     * <code>repeated string keys = 3;</code>
+     * <code>repeated string keys = 4;</code>
      *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
@@ -1569,7 +1600,7 @@ public final class ArteryControlFormats {
       return keys_;
     }
     /**
-     * <code>repeated string keys = 3;</code>
+     * <code>repeated string keys = 4;</code>
      *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
@@ -1581,7 +1612,7 @@ public final class ArteryControlFormats {
       return keys_.size();
     }
     /**
-     * <code>repeated string keys = 3;</code>
+     * <code>repeated string keys = 4;</code>
      *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
@@ -1593,7 +1624,7 @@ public final class ArteryControlFormats {
       return keys_.get(index);
     }
     /**
-     * <code>repeated string keys = 3;</code>
+     * <code>repeated string keys = 4;</code>
      *
      * <pre>
      * actual Map is represented by separate sequences of keys and values,
@@ -1606,24 +1637,24 @@ public final class ArteryControlFormats {
       return keys_.getByteString(index);
     }
 
-    // repeated uint32 values = 4;
-    public static final int VALUES_FIELD_NUMBER = 4;
+    // repeated uint32 values = 5;
+    public static final int VALUES_FIELD_NUMBER = 5;
     private java.util.List<java.lang.Integer> values_;
     /**
-     * <code>repeated uint32 values = 4;</code>
+     * <code>repeated uint32 values = 5;</code>
      */
     public java.util.List<java.lang.Integer>
         getValuesList() {
       return values_;
     }
     /**
-     * <code>repeated uint32 values = 4;</code>
+     * <code>repeated uint32 values = 5;</code>
      */
     public int getValuesCount() {
       return values_.size();
     }
     /**
-     * <code>repeated uint32 values = 4;</code>
+     * <code>repeated uint32 values = 5;</code>
      */
     public int getValues(int index) {
       return values_.get(index);
@@ -1631,6 +1662,7 @@ public final class ArteryControlFormats {
 
     private void initFields() {
       from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+      originUid_ = 0L;
       tableVersion_ = 0;
       keys_ = akka.protobuf.LazyStringArrayList.EMPTY;
       values_ = java.util.Collections.emptyList();
@@ -1641,6 +1673,10 @@ public final class ArteryControlFormats {
       if (isInitialized != -1) return isInitialized == 1;
 
       if (!hasFrom()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasOriginUid()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -1663,13 +1699,16 @@ public final class ArteryControlFormats {
         output.writeMessage(1, from_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeUInt32(2, tableVersion_);
+        output.writeUInt64(2, originUid_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeUInt32(3, tableVersion_);
       }
       for (int i = 0; i < keys_.size(); i++) {
-        output.writeBytes(3, keys_.getByteString(i));
+        output.writeBytes(4, keys_.getByteString(i));
       }
       for (int i = 0; i < values_.size(); i++) {
-        output.writeUInt32(4, values_.get(i));
+        output.writeUInt32(5, values_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -1686,7 +1725,11 @@ public final class ArteryControlFormats {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += akka.protobuf.CodedOutputStream
-          .computeUInt32Size(2, tableVersion_);
+          .computeUInt64Size(2, originUid_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeUInt32Size(3, tableVersion_);
       }
       {
         int dataSize = 0;
@@ -1834,12 +1877,14 @@ public final class ArteryControlFormats {
           fromBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
-        tableVersion_ = 0;
+        originUid_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
-        keys_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        tableVersion_ = 0;
         bitField0_ = (bitField0_ & ~0x00000004);
-        values_ = java.util.Collections.emptyList();
+        keys_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
+        values_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -1879,16 +1924,20 @@ public final class ArteryControlFormats {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
+        result.originUid_ = originUid_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
         result.tableVersion_ = tableVersion_;
-        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
           keys_ = new akka.protobuf.UnmodifiableLazyStringList(
               keys_);
-          bitField0_ = (bitField0_ & ~0x00000004);
+          bitField0_ = (bitField0_ & ~0x00000008);
         }
         result.keys_ = keys_;
-        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
           values_ = java.util.Collections.unmodifiableList(values_);
-          bitField0_ = (bitField0_ & ~0x00000008);
+          bitField0_ = (bitField0_ & ~0x00000010);
         }
         result.values_ = values_;
         result.bitField0_ = to_bitField0_;
@@ -1910,13 +1959,16 @@ public final class ArteryControlFormats {
         if (other.hasFrom()) {
           mergeFrom(other.getFrom());
         }
+        if (other.hasOriginUid()) {
+          setOriginUid(other.getOriginUid());
+        }
         if (other.hasTableVersion()) {
           setTableVersion(other.getTableVersion());
         }
         if (!other.keys_.isEmpty()) {
           if (keys_.isEmpty()) {
             keys_ = other.keys_;
-            bitField0_ = (bitField0_ & ~0x00000004);
+            bitField0_ = (bitField0_ & ~0x00000008);
           } else {
             ensureKeysIsMutable();
             keys_.addAll(other.keys_);
@@ -1926,7 +1978,7 @@ public final class ArteryControlFormats {
         if (!other.values_.isEmpty()) {
           if (values_.isEmpty()) {
             values_ = other.values_;
-            bitField0_ = (bitField0_ & ~0x00000008);
+            bitField0_ = (bitField0_ & ~0x00000010);
           } else {
             ensureValuesIsMutable();
             values_.addAll(other.values_);
@@ -1939,6 +1991,10 @@ public final class ArteryControlFormats {
 
       public final boolean isInitialized() {
         if (!hasFrom()) {
+          
+          return false;
+        }
+        if (!hasOriginUid()) {
           
           return false;
         }
@@ -2089,49 +2145,82 @@ public final class ArteryControlFormats {
         return fromBuilder_;
       }
 
-      // required uint32 tableVersion = 2;
-      private int tableVersion_ ;
+      // required uint64 originUid = 2;
+      private long originUid_ ;
       /**
-       * <code>required uint32 tableVersion = 2;</code>
+       * <code>required uint64 originUid = 2;</code>
        */
-      public boolean hasTableVersion() {
+      public boolean hasOriginUid() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>required uint32 tableVersion = 2;</code>
+       * <code>required uint64 originUid = 2;</code>
+       */
+      public long getOriginUid() {
+        return originUid_;
+      }
+      /**
+       * <code>required uint64 originUid = 2;</code>
+       */
+      public Builder setOriginUid(long value) {
+        bitField0_ |= 0x00000002;
+        originUid_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required uint64 originUid = 2;</code>
+       */
+      public Builder clearOriginUid() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        originUid_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // required uint32 tableVersion = 3;
+      private int tableVersion_ ;
+      /**
+       * <code>required uint32 tableVersion = 3;</code>
+       */
+      public boolean hasTableVersion() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>required uint32 tableVersion = 3;</code>
        */
       public int getTableVersion() {
         return tableVersion_;
       }
       /**
-       * <code>required uint32 tableVersion = 2;</code>
+       * <code>required uint32 tableVersion = 3;</code>
        */
       public Builder setTableVersion(int value) {
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000004;
         tableVersion_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required uint32 tableVersion = 2;</code>
+       * <code>required uint32 tableVersion = 3;</code>
        */
       public Builder clearTableVersion() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000004);
         tableVersion_ = 0;
         onChanged();
         return this;
       }
 
-      // repeated string keys = 3;
+      // repeated string keys = 4;
       private akka.protobuf.LazyStringList keys_ = akka.protobuf.LazyStringArrayList.EMPTY;
       private void ensureKeysIsMutable() {
-        if (!((bitField0_ & 0x00000004) == 0x00000004)) {
+        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
           keys_ = new akka.protobuf.LazyStringArrayList(keys_);
-          bitField0_ |= 0x00000004;
+          bitField0_ |= 0x00000008;
          }
       }
       /**
-       * <code>repeated string keys = 3;</code>
+       * <code>repeated string keys = 4;</code>
        *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
@@ -2144,7 +2233,7 @@ public final class ArteryControlFormats {
         return java.util.Collections.unmodifiableList(keys_);
       }
       /**
-       * <code>repeated string keys = 3;</code>
+       * <code>repeated string keys = 4;</code>
        *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
@@ -2156,7 +2245,7 @@ public final class ArteryControlFormats {
         return keys_.size();
       }
       /**
-       * <code>repeated string keys = 3;</code>
+       * <code>repeated string keys = 4;</code>
        *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
@@ -2168,7 +2257,7 @@ public final class ArteryControlFormats {
         return keys_.get(index);
       }
       /**
-       * <code>repeated string keys = 3;</code>
+       * <code>repeated string keys = 4;</code>
        *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
@@ -2181,7 +2270,7 @@ public final class ArteryControlFormats {
         return keys_.getByteString(index);
       }
       /**
-       * <code>repeated string keys = 3;</code>
+       * <code>repeated string keys = 4;</code>
        *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
@@ -2200,7 +2289,7 @@ public final class ArteryControlFormats {
         return this;
       }
       /**
-       * <code>repeated string keys = 3;</code>
+       * <code>repeated string keys = 4;</code>
        *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
@@ -2219,7 +2308,7 @@ public final class ArteryControlFormats {
         return this;
       }
       /**
-       * <code>repeated string keys = 3;</code>
+       * <code>repeated string keys = 4;</code>
        *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
@@ -2235,7 +2324,7 @@ public final class ArteryControlFormats {
         return this;
       }
       /**
-       * <code>repeated string keys = 3;</code>
+       * <code>repeated string keys = 4;</code>
        *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
@@ -2245,12 +2334,12 @@ public final class ArteryControlFormats {
        */
       public Builder clearKeys() {
         keys_ = akka.protobuf.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000008);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string keys = 3;</code>
+       * <code>repeated string keys = 4;</code>
        *
        * <pre>
        * actual Map is represented by separate sequences of keys and values,
@@ -2269,35 +2358,35 @@ public final class ArteryControlFormats {
         return this;
       }
 
-      // repeated uint32 values = 4;
+      // repeated uint32 values = 5;
       private java.util.List<java.lang.Integer> values_ = java.util.Collections.emptyList();
       private void ensureValuesIsMutable() {
-        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
+        if (!((bitField0_ & 0x00000010) == 0x00000010)) {
           values_ = new java.util.ArrayList<java.lang.Integer>(values_);
-          bitField0_ |= 0x00000008;
+          bitField0_ |= 0x00000010;
          }
       }
       /**
-       * <code>repeated uint32 values = 4;</code>
+       * <code>repeated uint32 values = 5;</code>
        */
       public java.util.List<java.lang.Integer>
           getValuesList() {
         return java.util.Collections.unmodifiableList(values_);
       }
       /**
-       * <code>repeated uint32 values = 4;</code>
+       * <code>repeated uint32 values = 5;</code>
        */
       public int getValuesCount() {
         return values_.size();
       }
       /**
-       * <code>repeated uint32 values = 4;</code>
+       * <code>repeated uint32 values = 5;</code>
        */
       public int getValues(int index) {
         return values_.get(index);
       }
       /**
-       * <code>repeated uint32 values = 4;</code>
+       * <code>repeated uint32 values = 5;</code>
        */
       public Builder setValues(
           int index, int value) {
@@ -2307,7 +2396,7 @@ public final class ArteryControlFormats {
         return this;
       }
       /**
-       * <code>repeated uint32 values = 4;</code>
+       * <code>repeated uint32 values = 5;</code>
        */
       public Builder addValues(int value) {
         ensureValuesIsMutable();
@@ -2316,7 +2405,7 @@ public final class ArteryControlFormats {
         return this;
       }
       /**
-       * <code>repeated uint32 values = 4;</code>
+       * <code>repeated uint32 values = 5;</code>
        */
       public Builder addAllValues(
           java.lang.Iterable<? extends java.lang.Integer> values) {
@@ -2326,11 +2415,11 @@ public final class ArteryControlFormats {
         return this;
       }
       /**
-       * <code>repeated uint32 values = 4;</code>
+       * <code>repeated uint32 values = 5;</code>
        */
       public Builder clearValues() {
         values_ = java.util.Collections.emptyList();
-        bitField0_ = (bitField0_ & ~0x00000008);
+        bitField0_ = (bitField0_ & ~0x00000010);
         onChanged();
         return this;
       }
@@ -6055,21 +6144,22 @@ public final class ArteryControlFormats {
       "\n\032ArteryControlFormats.proto\"G\n\013Quaranti" +
       "ned\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\032\n\002to\030" +
       "\002 \002(\0132\016.UniqueAddress\"5\n\022MessageWithAddr" +
-      "ess\022\037\n\007address\030\001 \002(\0132\016.UniqueAddress\"q\n\035" +
-      "CompressionTableAdvertisement\022\034\n\004from\030\001 " +
-      "\002(\0132\016.UniqueAddress\022\024\n\014tableVersion\030\002 \002(" +
-      "\r\022\014\n\004keys\030\003 \003(\t\022\016\n\006values\030\004 \003(\r\"Q\n Compr" +
-      "essionTableAdvertisementAck\022\034\n\004from\030\001 \002(" +
-      "\0132\016.UniqueAddress\022\017\n\007version\030\002 \002(\r\"\212\001\n\025S" +
-      "ystemMessageEnvelope\022\017\n\007message\030\001 \002(\014\022\024\n",
-      "\014serializerId\030\002 \002(\005\022\027\n\017messageManifest\030\003" +
-      " \001(\014\022\r\n\005seqNo\030\004 \002(\004\022\"\n\nackReplyTo\030\005 \002(\0132" +
-      "\016.UniqueAddress\"G\n\030SystemMessageDelivery" +
-      "Ack\022\r\n\005seqNo\030\001 \002(\004\022\034\n\004from\030\002 \002(\0132\016.Uniqu" +
-      "eAddress\"K\n\007Address\022\020\n\010protocol\030\001 \002(\t\022\016\n" +
-      "\006system\030\002 \002(\t\022\020\n\010hostname\030\003 \002(\t\022\014\n\004port\030" +
-      "\004 \002(\r\"7\n\rUniqueAddress\022\031\n\007address\030\001 \002(\0132" +
-      "\010.Address\022\013\n\003uid\030\002 \002(\004B\017\n\013akka.remoteH\001"
+      "ess\022\037\n\007address\030\001 \002(\0132\016.UniqueAddress\"\204\001\n" +
+      "\035CompressionTableAdvertisement\022\034\n\004from\030\001" +
+      " \002(\0132\016.UniqueAddress\022\021\n\toriginUid\030\002 \002(\004\022" +
+      "\024\n\014tableVersion\030\003 \002(\r\022\014\n\004keys\030\004 \003(\t\022\016\n\006v" +
+      "alues\030\005 \003(\r\"Q\n CompressionTableAdvertise" +
+      "mentAck\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\017\n" +
+      "\007version\030\002 \002(\r\"\212\001\n\025SystemMessageEnvelope",
+      "\022\017\n\007message\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022" +
+      "\027\n\017messageManifest\030\003 \001(\014\022\r\n\005seqNo\030\004 \002(\004\022" +
+      "\"\n\nackReplyTo\030\005 \002(\0132\016.UniqueAddress\"G\n\030S" +
+      "ystemMessageDeliveryAck\022\r\n\005seqNo\030\001 \002(\004\022\034" +
+      "\n\004from\030\002 \002(\0132\016.UniqueAddress\"K\n\007Address\022" +
+      "\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\020\n\010hos" +
+      "tname\030\003 \002(\t\022\014\n\004port\030\004 \002(\r\"7\n\rUniqueAddre" +
+      "ss\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002" +
+      "(\004B\017\n\013akka.remoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -6093,7 +6183,7 @@ public final class ArteryControlFormats {
           internal_static_CompressionTableAdvertisement_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_CompressionTableAdvertisement_descriptor,
-              new java.lang.String[] { "From", "TableVersion", "Keys", "Values", });
+              new java.lang.String[] { "From", "OriginUid", "TableVersion", "Keys", "Values", });
           internal_static_CompressionTableAdvertisementAck_descriptor =
             getDescriptor().getMessageTypes().get(3);
           internal_static_CompressionTableAdvertisementAck_fieldAccessorTable = new

@@ -295,7 +295,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
   @volatile private[this] var areonErrorLog: AeronErrorLog = _
 
-  @volatile private[this] var inboundCompressions: Option[InboundCompressions] = None
+  @volatile private[this] var _inboundCompressions: Option[InboundCompressions] = None
+  def inboundCompressions: Option[InboundCompressions] = _inboundCompressions
 
   def bindAddress: UniqueAddress = _bindAddress
   override def localAddress: UniqueAddress = _localAddress
@@ -421,7 +422,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     runInboundStreams()
     topLevelFREvents.loFreq(Transport_StartupFinished, NoMetaData)
 
-    log.info("Remoting started; listening on address: {}", defaultAddress)
+    log.info("Remoting started; listening on address: [{}] with uid [{}]", localAddress.address, localAddress.uid)
   }
 
   private lazy val shutdownHook = new Thread {
@@ -572,7 +573,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def runInboundStreams(): Unit = {
     val noCompressions = NoInboundCompressions // TODO possibly enable on other channels too https://github.com/akka/akka/pull/20546/files#r68074082
     val compressions = createInboundCompressions(this)
-    inboundCompressions = Some(compressions)
+    _inboundCompressions = Some(compressions)
 
     runInboundControlStream(noCompressions) // TODO should understand compressions too
     runInboundOrdinaryMessagesStream(compressions)
@@ -598,31 +599,43 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
             import CompressionProtocol._
             m match {
               case ActorRefCompressionAdvertisement(from, table) ⇒
-                log.debug("Incoming ActorRef compression advertisement from [{}], table: [{}]", from, table)
-                val a = association(from.address)
-                // make sure uid is same for active association
-                if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
-                  import system.dispatcher
-                  a.changeActorRefCompression(table).foreach { _ ⇒
-                    a.sendControl(ActorRefCompressionAdvertisementAck(localAddress, table.version))
-                    system.eventStream.publish(Events.ReceivedActorRefCompressionTable(from, table))
+                if (table.originUid == localAddress.uid) {
+                  log.debug("Incoming ActorRef compression advertisement from [{}], table: [{}]", from, table)
+                  val a = association(from.address)
+                  // make sure uid is same for active association
+                  if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
+                    import system.dispatcher
+                    a.changeActorRefCompression(table).foreach { _ ⇒
+                      a.sendControl(ActorRefCompressionAdvertisementAck(localAddress, table.version))
+                      system.eventStream.publish(Events.ReceivedActorRefCompressionTable(from, table))
+                    }
                   }
-                }
+                } else
+                  log.debug(
+                    "Discarding incoming ActorRef compression advertisement from [{}] that was " +
+                      "prepared for another incarnation with uid [{}] than current uid [{}], table: [{}]",
+                    from, table.originUid, localAddress.uid, table)
               case ActorRefCompressionAdvertisementAck(from, tableVersion) ⇒
                 inboundCompressions.foreach(_.confirmActorRefCompressionAdvertisement(from.uid, tableVersion))
               case ClassManifestCompressionAdvertisement(from, table) ⇒
-                log.debug("Incoming Class Manifest compression advertisement from [{}], table: [{}]", from, table)
-                val a = association(from.address)
-                // make sure uid is same for active association
-                if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
-                  import system.dispatcher
-                  a.changeClassManifestCompression(table).foreach { _ ⇒
-                    a.sendControl(ClassManifestCompressionAdvertisementAck(localAddress, table.version))
-                    system.eventStream.publish(Events.ReceivedClassManifestCompressionTable(from, table))
+                if (table.originUid == localAddress.uid) {
+                  log.debug("Incoming Class Manifest compression advertisement from [{}], table: [{}]", from, table)
+                  val a = association(from.address)
+                  // make sure uid is same for active association
+                  if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
+                    import system.dispatcher
+                    a.changeClassManifestCompression(table).foreach { _ ⇒
+                      a.sendControl(ClassManifestCompressionAdvertisementAck(localAddress, table.version))
+                      system.eventStream.publish(Events.ReceivedClassManifestCompressionTable(from, table))
+                    }
                   }
-                }
+                } else
+                  log.debug(
+                    "Discarding incoming Class Manifest compression advertisement from [{}] that was " +
+                      "prepared for another incarnation with uid [{}] than current uid [{}], table: [{}]",
+                    from, table.originUid, localAddress.uid, table)
               case ClassManifestCompressionAdvertisementAck(from, tableVersion) ⇒
-                inboundCompressions.foreach(_.confirmActorRefCompressionAdvertisement(from.uid, tableVersion))
+                inboundCompressions.foreach(_.confirmClassManifestCompressionAdvertisement(from.uid, tableVersion))
             }
 
           case Quarantined(from, to) if to == localAddress ⇒
@@ -722,6 +735,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         log.error(cause, s"{} failed after shutdown. {}", streamName, cause.getMessage)
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
       case cause ⇒
+        _inboundCompressions.foreach(_.close())
+        _inboundCompressions = None
         if (restartCounter.restart()) {
           log.error(cause, "{} failed. Restarting it. {}", streamName, cause.getMessage)
           restart()
@@ -758,6 +773,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       _ ← taskRunner.stop()
     } yield {
       topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
+
+      _inboundCompressions.foreach(_.close())
+      _inboundCompressions = None
 
       if (aeronErrorLogTask != null) {
         aeronErrorLogTask.cancel()

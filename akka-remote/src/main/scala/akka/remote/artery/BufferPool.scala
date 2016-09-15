@@ -89,8 +89,6 @@ private[remote] object EnvelopeBuffer {
 
   val UsAscii = Charset.forName("US-ASCII")
 
-  val DeadLettersCode = 0
-
   // accessing the internal char array of String when writing literal strings to ByteBuffer
   val StringValueFieldOffset = Unsafe.instance.objectFieldOffset(classOf[String].getDeclaredField("value"))
 }
@@ -106,6 +104,8 @@ private[remote] object HeaderBuilder {
 
   def out(): HeaderBuilder =
     new HeaderBuilderImpl(NoInboundCompressions, CompressionTable.empty[ActorRef], CompressionTable.empty[String])
+
+  final val DeadLettersCode = -1
 }
 
 /**
@@ -122,6 +122,8 @@ private[remote] sealed trait HeaderBuilder {
 
   def inboundActorRefCompressionTableVersion: Int
   def inboundClassManifestCompressionTableVersion: Int
+
+  def useOutboundCompression(on: Boolean): Unit
 
   def outboundActorRefCompression: CompressionTable[ActorRef]
   def setOutboundActorRefCompression(table: CompressionTable[ActorRef]): Unit
@@ -172,7 +174,14 @@ private[remote] sealed trait HeaderBuilder {
   def serializer: Int
 
   def setManifest(manifest: String): Unit
-  def manifest(originUid: Long): String
+  def manifest(originUid: Long): OptionVal[String]
+
+  /**
+   * Reset all fields that are related to an outbound message,
+   * i.e. Encoder calls this as the first thing in onPush.
+   */
+  def resetMessageFields(): Unit
+
 }
 
 /**
@@ -197,26 +206,40 @@ private[remote] final class HeaderBuilderImpl(
   inboundCompression:                    InboundCompressions,
   var _outboundActorRefCompression:      CompressionTable[ActorRef],
   var _outboundClassManifestCompression: CompressionTable[String]) extends HeaderBuilder {
+  import HeaderBuilder.DeadLettersCode
 
   private[this] val toSerializationFormat: SerializationFormatCache = new SerializationFormatCache
 
   // Fields only available for EnvelopeBuffer
-  var _version: Byte = _
-  var _flags: Byte = _
-  var _uid: Long = _
+  var _version: Byte = 0
+  var _flags: Byte = 0
+  var _uid: Long = 0
   var _inboundActorRefCompressionTableVersion: Int = 0
   var _inboundClassManifestCompressionTableVersion: Int = 0
+  var _useOutboundCompression: Boolean = true
 
   var _senderActorRef: String = null
   var _senderActorRefIdx: Int = -1
   var _recipientActorRef: String = null
   var _recipientActorRefIdx: Int = -1
 
-  var _serializer: Int = _
+  var _serializer: Int = 0
   var _manifest: String = null
   var _manifestIdx: Int = -1
 
   var _metadataContainer: ByteString = null
+
+  override def resetMessageFields(): Unit = {
+    _flags = 0
+    _senderActorRef = null
+    _senderActorRefIdx = -1
+    _recipientActorRef = null
+    _recipientActorRefIdx = -1
+
+    _serializer = 0
+    _manifest = null
+    _manifestIdx = -1
+  }
 
   override def setVersion(v: Byte) = _version = v
   override def version = _version
@@ -234,6 +257,9 @@ private[remote] final class HeaderBuilderImpl(
   override def inboundActorRefCompressionTableVersion: Int = _inboundActorRefCompressionTableVersion
   override def inboundClassManifestCompressionTableVersion: Int = _inboundClassManifestCompressionTableVersion
 
+  def useOutboundCompression(on: Boolean): Unit =
+    _useOutboundCompression = on
+
   def setOutboundActorRefCompression(table: CompressionTable[ActorRef]): Unit = {
     _outboundActorRefCompression = table
   }
@@ -245,39 +271,49 @@ private[remote] final class HeaderBuilderImpl(
   def outboundClassManifestCompression: CompressionTable[String] = _outboundClassManifestCompression
 
   override def setSenderActorRef(ref: ActorRef): Unit = {
-    _senderActorRefIdx = outboundActorRefCompression.compress(ref)
-    if (_senderActorRefIdx == -1) _senderActorRef = Serialization.serializedActorPath(ref) // includes local address from `currentTransportInformation`
+    // serializedActorPath includes local address from `currentTransportInformation`
+    if (_useOutboundCompression) {
+      _senderActorRefIdx = outboundActorRefCompression.compress(ref)
+      if (_senderActorRefIdx == -1) _senderActorRef = Serialization.serializedActorPath(ref)
+    } else
+      _senderActorRef = Serialization.serializedActorPath(ref)
   }
   override def setNoSender(): Unit = {
     _senderActorRef = null
-    _senderActorRefIdx = EnvelopeBuffer.DeadLettersCode
+    _senderActorRefIdx = DeadLettersCode
   }
   override def isNoSender: Boolean =
-    (_senderActorRef eq null) && _senderActorRefIdx == EnvelopeBuffer.DeadLettersCode
-  override def senderActorRef(originUid: Long): OptionVal[ActorRef] =
-    if (_senderActorRef eq null)
+    (_senderActorRef eq null) && _senderActorRefIdx == DeadLettersCode
+  override def senderActorRef(originUid: Long): OptionVal[ActorRef] = {
+    // we treat deadLetters as always present, but not included in table
+    if ((_senderActorRef eq null) && !isNoSender)
       inboundCompression.decompressActorRef(originUid, inboundActorRefCompressionTableVersion, _senderActorRefIdx)
     else OptionVal.None
+  }
+
   def senderActorRefPath: OptionVal[String] =
     OptionVal(_senderActorRef)
 
   def setNoRecipient(): Unit = {
     _recipientActorRef = null
-    _recipientActorRefIdx = EnvelopeBuffer.DeadLettersCode
+    _recipientActorRefIdx = DeadLettersCode
   }
   def isNoRecipient: Boolean =
-    (_recipientActorRef eq null) && _recipientActorRefIdx == EnvelopeBuffer.DeadLettersCode
+    (_recipientActorRef eq null) && _recipientActorRefIdx == DeadLettersCode
 
   def setRecipientActorRef(ref: ActorRef): Unit = {
-    _recipientActorRefIdx = outboundActorRefCompression.compress(ref)
-    if (_recipientActorRefIdx == -1) {
+    if (_useOutboundCompression) {
+      _recipientActorRefIdx = outboundActorRefCompression.compress(ref)
+      if (_recipientActorRefIdx == -1) _recipientActorRef = toSerializationFormat.getOrCompute(ref)
+    } else
       _recipientActorRef = toSerializationFormat.getOrCompute(ref)
-    }
   }
-  def recipientActorRef(originUid: Long): OptionVal[ActorRef] =
-    if (_recipientActorRef eq null)
+  def recipientActorRef(originUid: Long): OptionVal[ActorRef] = {
+    // we treat deadLetters as always present, but not included in table
+    if ((_recipientActorRef eq null) && !isNoRecipient)
       inboundCompression.decompressActorRef(originUid, inboundActorRefCompressionTableVersion, _recipientActorRefIdx)
     else OptionVal.None
+  }
   def recipientActorRefPath: OptionVal[String] =
     OptionVal(_recipientActorRef)
 
@@ -288,16 +324,18 @@ private[remote] final class HeaderBuilderImpl(
     _serializer
 
   override def setManifest(manifest: String): Unit = {
-    _manifestIdx = outboundClassManifestCompression.compress(manifest)
-    if (_manifestIdx == -1) _manifest = manifest
+    if (_useOutboundCompression) {
+      _manifestIdx = outboundClassManifestCompression.compress(manifest)
+      if (_manifestIdx == -1) _manifest = manifest
+    } else
+      _manifest = manifest
   }
-  override def manifest(originUid: Long): String = {
-    if (_manifest ne null) _manifest
+  override def manifest(originUid: Long): OptionVal[String] = {
+    if (_manifest ne null) OptionVal.Some(_manifest)
     else {
-      _manifest = inboundCompression.decompressClassManifest(
+      inboundCompression.decompressClassManifest(
         originUid,
-        inboundClassManifestCompressionTableVersion, _manifestIdx).get
-      _manifest
+        inboundClassManifestCompressionTableVersion, _manifestIdx)
     }
   }
 
@@ -434,7 +472,7 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
       header._senderActorRef = null
       header._senderActorRefIdx = idx
     } else {
-      header._senderActorRef = readLiteral()
+      header._senderActorRef = emptyAsNull(readLiteral())
     }
 
     // Deserialize recipient
@@ -444,7 +482,7 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
       header._recipientActorRef = null
       header._recipientActorRefIdx = idx
     } else {
-      header._recipientActorRef = readLiteral()
+      header._recipientActorRef = emptyAsNull(readLiteral())
     }
 
     // Deserialize class manifest
@@ -457,6 +495,10 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
       header._manifest = readLiteral()
     }
   }
+
+  private def emptyAsNull(s: String): String =
+    if (s == "") null
+    else s
 
   private def readLiteral(): String = {
     val length = byteBuffer.getShort
@@ -477,7 +519,7 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
   }
 
   private def writeLiteral(tagOffset: Int, literal: String): Unit = {
-    val length = literal.length
+    val length = if (literal eq null) 0 else literal.length
     if (length > 65535)
       throw new IllegalArgumentException("Literals longer than 65535 cannot be encoded in the envelope")
 

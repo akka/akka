@@ -47,8 +47,7 @@ object HandshakeShouldDropCompressionTableSpec {
 }
 
 class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDropCompressionTableSpec.commonConfig)
-  with ImplicitSender with BeforeAndAfter
-  with CompressionTestKit {
+  with ImplicitSender with BeforeAndAfter {
   import HandshakeShouldDropCompressionTableSpec._
 
   implicit val t = Timeout(3.seconds)
@@ -81,7 +80,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
 
       val a0 = aProbe.expectMsgType[ReceivedActorRefCompressionTable](10.seconds)
       info("System [A] received: " + a0)
-      a0.table.map.keySet should contain(testActor)
+      a0.table.dictionary.keySet should contain(testActor)
 
       // cause a1Probe to become a heavy hitter (we want to not have it in the 2nd compression table later)
       (1 to messagesToExchange).foreach { i ⇒ echoSel.tell(s"hello-$i", a1Probe.ref) }
@@ -90,7 +89,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
 
       val a1 = aProbe.expectMsgType[ReceivedActorRefCompressionTable](10.seconds)
       info("System [A] received: " + a1)
-      a1.table.map.keySet should contain(a1Probe.ref)
+      a1.table.dictionary.keySet should contain(a1Probe.ref)
 
       log.warning("SHUTTING DOWN system {}...", systemB)
       shutdown(systemB)
@@ -112,7 +111,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
 
       val a2 = aNewProbe.expectMsgType[ReceivedActorRefCompressionTable](10.seconds)
       info("System [A] received: " + a2)
-      a2.table.map.keySet should contain(testActor)
+      a2.table.dictionary.keySet should contain(testActor)
 
       val aNew2Probe = TestProbe()
       (1 to messagesToExchange).foreach { i ⇒ echoSel.tell(s"hello-$i", aNew2Probe.ref) } // does not reply, but a hot receiver should be advertised
@@ -121,7 +120,7 @@ class HandshakeShouldDropCompressionTableSpec extends AkkaSpec(HandshakeShouldDr
 
       val a3 = aNewProbe.expectMsgType[ReceivedActorRefCompressionTable](10.seconds)
       info("Received second compression: " + a3)
-      a3.table.map.keySet should contain(aNew2Probe.ref)
+      a3.table.dictionary.keySet should contain(aNew2Probe.ref)
     }
   }
 
