@@ -12,8 +12,7 @@ import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.annotation.tailrec
-import scala.concurrent.Future
-import scala.concurrent.Promise
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
@@ -425,8 +424,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     log.info("Remoting started; listening on address: {}", defaultAddress)
   }
 
-  private lazy val stopMediaDriverShutdownHook = new Thread {
-    override def run(): Unit = stopMediaDriver()
+  private lazy val shutdownHook = new Thread {
+    override def run(): Unit = {
+      if (!_shutdown) {
+        internalShutdown()
+
+      }
+    }
   }
 
   private def startMediaDriver(): Unit = {
@@ -463,7 +467,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       val driver = MediaDriver.launchEmbedded(driverContext)
       log.debug("Started embedded media driver in directory [{}]", driver.aeronDirectoryName)
       topLevelFREvents.loFreq(Transport_MediaDriverStarted, driver.aeronDirectoryName().getBytes("US-ASCII"))
-      Runtime.getRuntime.addShutdownHook(stopMediaDriverShutdownHook)
+      Runtime.getRuntime.addShutdownHook(shutdownHook)
       if (!mediaDriver.compareAndSet(None, Some(driver))) {
         throw new IllegalStateException("media driver started more than once")
       }
@@ -492,7 +496,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
             "Couldn't delete Aeron embedded media driver files in [{}] due to [{}]",
             driver.aeronDirectoryName, e.getMessage)
       }
-      Try(Runtime.getRuntime.removeShutdownHook(stopMediaDriverShutdownHook))
     }
   }
 
@@ -741,14 +744,18 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         flushingPromise.future
       }
     implicit val ec = remoteDispatcher
+    flushing.recover { case _ ⇒ Done }.flatMap(_ ⇒ internalShutdown())
+  }
 
+  private def internalShutdown(): Future[Done] = {
+    import system.dispatcher
+
+    killSwitch.abort(ShutdownSignal)
+    topLevelFREvents.loFreq(Transport_KillSwitchPulled, NoMetaData)
     for {
-      _ ← flushing.recover { case _ ⇒ Done }
-      _ = killSwitch.abort(ShutdownSignal)
       _ ← streamsCompleted
+      _ ← taskRunner.stop()
     } yield {
-      topLevelFREvents.loFreq(Transport_KillSwitchPulled, NoMetaData)
-      taskRunner.stop()
       topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
 
       if (aeronErrorLogTask != null) {
