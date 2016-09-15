@@ -8,15 +8,16 @@ import akka.NotUsed
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.TLSProtocol._
-import com.typesafe.config.{ ConfigFactory, Config }
-import scala.concurrent.{ Future, Await }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, Attributes, FlowShape, Inlet, Outlet }
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
@@ -27,6 +28,7 @@ import HttpProtocols._
 import StatusCodes._
 import HttpEntity._
 import ParserOutput._
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -322,7 +324,34 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def newParserStage(requestMethod: HttpMethod = GET) = {
       val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, system.log)())
       parser.setContextForNextResponse(HttpResponseParser.ResponseContext(requestMethod, None))
-      parser.stage
+
+      // Note that this GraphStage mutates the HttpMessageParser instance, use with caution.
+      new GraphStage[FlowShape[SessionBytes, ResponseOutput]] {
+        val in: Inlet[SessionBytes] = Inlet("HttpResponseParser.in")
+        val out: Outlet[ResponseOutput] = Outlet("HttpResponseParser.out")
+        override val shape: FlowShape[SessionBytes, ResponseOutput] = FlowShape(in, out)
+
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+          new GraphStageLogic(shape) with InHandler with OutHandler {
+            override def onPush(): Unit = handleParserOutput(parser.parseSessionBytes(grab(in)))
+            override def onPull(): Unit = handleParserOutput(parser.onPull())
+
+            override def onUpstreamFinish(): Unit =
+              if (parser.onUpstreamFinish()) completeStage()
+              else if (isAvailable(out)) handleParserOutput(parser.onPull())
+
+            private def handleParserOutput(output: ResponseOutput): Unit = {
+              output match {
+                case StreamEnd    ⇒ completeStage()
+                case NeedMoreData ⇒ pull(in)
+                case x            ⇒ push(out, x)
+              }
+            }
+
+            setHandlers(in, out, this)
+          }
+      }
+
     }
 
     private def compactEntity(entity: ResponseEntity): Future[ResponseEntity] =
