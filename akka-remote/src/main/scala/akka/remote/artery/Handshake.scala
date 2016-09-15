@@ -230,7 +230,7 @@ private[akka] class InboundHandshake(inboundContext: InboundContext, inControlSt
               s"Dropping message [{}] from unknown system with UID [{}]. " +
                 "This system with UID [{}] was probably restarted. " +
                 "Messages will be accepted when new handshake has been completed.",
-              env.message.getClass.getName, inboundContext.localAddress.uid, env.originUid)
+              env.message.getClass.getName, env.originUid, inboundContext.localAddress.uid)
           pull(in)
         }
       }

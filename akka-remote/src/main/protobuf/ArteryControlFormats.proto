@@ -24,13 +24,14 @@ message MessageWithAddress {
 // CompressionProtocol.ClassManifestCompressionAdvertisement
 message CompressionTableAdvertisement {
   required UniqueAddress from = 1;
-  required uint32 tableVersion = 2;
+  required uint64 originUid = 2;
+  required uint32 tableVersion = 3;
 
   // actual Map is represented by separate sequences of keys and values,
   // relies on both sequences using the same order so that corresponding entries can be
   // associated again when deserializing
-  repeated string keys = 3;
-  repeated uint32 values = 4;
+  repeated string keys = 4;
+  repeated uint32 values = 5;
 }
 
 // CompressionProtocol.ActorRefCompressionAdvertisementAck

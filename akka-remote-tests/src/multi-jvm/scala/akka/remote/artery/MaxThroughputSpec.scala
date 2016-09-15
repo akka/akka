@@ -139,7 +139,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
     def waitingForCompression: Receive = {
       case ReceivedActorRefCompressionTable(_, table) ⇒
-        if (table.map.contains(target)) {
+        if (table.dictionary.contains(target)) {
           sendBatch() // first some warmup
           target ! Start // then Start, which will echo back here
           context.setReceiveTimeout(Duration.Undefined)
