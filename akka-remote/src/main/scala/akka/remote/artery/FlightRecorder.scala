@@ -3,7 +3,7 @@
  */
 package akka.remote.artery
 
-import java.io.{ File, RandomAccessFile }
+import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
 import java.nio.file._
 import java.nio.{ ByteBuffer, ByteOrder }

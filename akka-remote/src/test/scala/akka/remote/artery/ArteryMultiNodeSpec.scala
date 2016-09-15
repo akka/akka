@@ -3,14 +3,19 @@
  */
 package akka.remote.artery
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem, RootActorPath }
+import java.nio.file.{ FileSystems, Files, Path }
+import java.util.UUID
+
+import akka.actor.{ ActorSystem, RootActorPath }
 import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.Outcome
 
 object ArteryMultiNodeSpec {
+
   def defaultConfig =
-    ConfigFactory.parseString("""
+    ConfigFactory.parseString(s"""
       akka {
         actor.provider = remote
         actor.warn-about-java-serializer-usage = off
@@ -19,6 +24,10 @@ object ArteryMultiNodeSpec {
           canonical {
             hostname = localhost
             port = 0
+          }
+          advanced.flight-recorder {
+            enabled=on
+            destination=target/flight-recorder-${UUID.randomUUID().toString}.afr
           }
         }
       }
@@ -41,6 +50,8 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
   def address(sys: ActorSystem) = RARP(sys).provider.getDefaultAddress
   def rootActorPath(sys: ActorSystem) = RootActorPath(address(sys))
   def nextGeneratedSystemName = s"${localSystem.name}-remote-${remoteSystems.size}"
+  private val flightRecorderFile: Path =
+    FileSystems.getDefault.getPath(RARP(system).provider.remoteSettings.Artery.Advanced.FlightRecorderDestination)
 
   private var remoteSystems: Vector[ActorSystem] = Vector.empty
 
@@ -62,9 +73,32 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
     remoteSystem
   }
 
+  // keep track of failure so that we can print flight recorder output on failures
+  private var failed = false
+  override protected def withFixture(test: NoArgTest): Outcome = {
+    val out = super.withFixture(test)
+    if (!out.isSucceeded) failed = true
+    out
+  }
+
+  override protected def beforeTermination(): Unit = {
+    handleFlightRecorderFile()
+  }
+
   override def afterTermination(): Unit = {
     remoteSystems.foreach(sys ⇒ shutdown(sys))
     remoteSystems = Vector.empty
+  }
+
+  private def handleFlightRecorderFile(): Unit = {
+    if (Files.exists(flightRecorderFile)) {
+      if (failed) {
+        // logger may not be alive anymore so we have to use stdout here
+        println("Flight recorder dump:")
+        FlightRecorderReader.dumpToStdout(flightRecorderFile)
+      }
+      Files.delete(flightRecorderFile)
+    }
   }
 
 }
