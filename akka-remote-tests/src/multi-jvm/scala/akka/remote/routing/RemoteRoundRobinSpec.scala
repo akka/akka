@@ -10,9 +10,11 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.PoisonPill
 import akka.actor.Address
+
 import scala.concurrent.Await
 import akka.pattern.ask
-import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
+import akka.remote.MultiNodeRemotingSpec
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.routing.Broadcast
 import akka.routing.GetRoutees
 import akka.routing.Routees
@@ -23,6 +25,7 @@ import akka.routing.Resizer
 import akka.routing.Routee
 import akka.routing.FromConfig
 import akka.testkit._
+
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
@@ -36,7 +39,7 @@ class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
-      """)))
+      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
 
   deployOnAll("""
       /service-hello {
@@ -83,8 +86,8 @@ object RemoteRoundRobinSpec {
   }
 }
 
-class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends MultiNodeSpec(multiNodeConfig)
-  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
+class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends MultiNodeRemotingSpec(multiNodeConfig)
+  with DefaultTimeout {
   import multiNodeConfig._
   import RemoteRoundRobinSpec._
 

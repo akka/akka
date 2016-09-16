@@ -35,7 +35,7 @@ class RemoteReDeploymentConfig(artery: Boolean) extends MultiNodeConfig {
          acceptable-heartbeat-pause=2.5s
        }
        akka.remote.artery.enabled = $artery
-       """)))
+       """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
 
   testTransport(on = true)
 
@@ -105,8 +105,8 @@ object RemoteReDeploymentMultiJvmSpec {
   def echoProps(target: ActorRef) = Props(new Echo(target))
 }
 
-abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymentConfig) extends MultiNodeSpec(multiNodeConfig)
-  with STMultiNodeSpec with ImplicitSender {
+abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymentConfig)
+  extends MultiNodeRemotingSpec(multiNodeConfig) {
 
   def sleepAfterKill: FiniteDuration
   def expectQuarantine: Boolean

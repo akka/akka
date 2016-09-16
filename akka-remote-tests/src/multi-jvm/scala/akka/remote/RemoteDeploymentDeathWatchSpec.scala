@@ -27,7 +27,7 @@ class RemoteDeploymentDeathWatchMultiJvmSpec(artery: Boolean) extends MultiNodeC
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
-      """)))
+      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
 
   deployOn(second, """/hello.remote = "@third@" """)
 
@@ -69,8 +69,7 @@ object RemoteDeploymentDeathWatchSpec {
 }
 
 abstract class RemoteDeploymentDeathWatchSpec(multiNodeConfig: RemoteDeploymentDeathWatchMultiJvmSpec)
-  extends MultiNodeSpec(multiNodeConfig)
-  with STMultiNodeSpec with ImplicitSender {
+  extends MultiNodeRemotingSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteDeploymentDeathWatchSpec._
 
