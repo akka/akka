@@ -4,16 +4,20 @@
 package akka.remote.artery
 
 import java.util.concurrent.TimeUnit.MICROSECONDS
-import scala.util.control.NonFatal
-import akka.actor.ExtendedActorSystem
-import akka.dispatch.AbstractNodeQueue
-import akka.event.Logging
-import org.agrona.concurrent.BackoffIdleStrategy
+import java.util.concurrent.TimeUnit.MILLISECONDS
+
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
-import org.agrona.concurrent.IdleStrategy
-import org.agrona.concurrent.BusySpinIdleStrategy
+import scala.util.control.NonFatal
+
+import akka.actor.ExtendedActorSystem
+import akka.dispatch.AbstractNodeQueue
 import akka.dispatch.MonitorableThreadFactory
+import akka.event.Logging
+import org.agrona.concurrent.BackoffIdleStrategy
+import org.agrona.concurrent.BusySpinIdleStrategy
+import org.agrona.concurrent.IdleStrategy
+import org.agrona.concurrent.SleepingIdleStrategy
 
 /**
  * INTERNAL API
@@ -82,10 +86,9 @@ private[akka] object TaskRunner {
   }
 
   def createIdleStrategy(idleCpuLevel: Int): IdleStrategy = {
-    if (idleCpuLevel == 1) {
-      val maxParkMicros = 400
-      new BackoffIdleStrategy(100, 1, MICROSECONDS.toNanos(1), MICROSECONDS.toNanos(maxParkMicros))
-    } else if (idleCpuLevel == 10)
+    if (idleCpuLevel == 1)
+      new SleepingIdleStrategy(MILLISECONDS.toNanos(1))
+    else if (idleCpuLevel == 10)
       new BusySpinIdleStrategy
     else {
       // spin between 100 to 10000 depending on idleCpuLevel

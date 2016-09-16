@@ -97,7 +97,7 @@ abstract class MultiNodeConfig {
     _roles(MultiNodeSpec.selfIndex)
   }
 
-  private[testkit] def config: Config = {
+  private[akka] def config: Config = {
     val transportConfig =
       if (_testTransport) ConfigFactory.parseString(
         """
