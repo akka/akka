@@ -20,6 +20,7 @@ import akka.stream.stage.TimerGraphStageLogic
 import akka.util.OptionVal
 import akka.Done
 import scala.concurrent.Future
+import akka.actor.Address
 
 /**
  * INTERNAL API
@@ -32,7 +33,7 @@ private[akka] object OutboundHandshake {
    */
   class HandshakeTimeoutException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
-  final case class HandshakeReq(from: UniqueAddress) extends ControlMessage
+  final case class HandshakeReq(from: UniqueAddress, to: Address) extends ControlMessage
   final case class HandshakeRsp(from: UniqueAddress) extends Reply
 
   private sealed trait HandshakeState
@@ -130,7 +131,7 @@ private[akka] class OutboundHandshake(
         injectHandshakeTickScheduled = true
         scheduleOnce(InjectHandshakeTick, injectHandshakeInterval)
         val env: OutboundEnvelope = outboundEnvelopePool.acquire().init(
-          recipient = OptionVal.None, message = HandshakeReq(outboundContext.localAddress), sender = OptionVal.None)
+          recipient = OptionVal.None, message = HandshakeReq(outboundContext.localAddress, outboundContext.remoteAddress), sender = OptionVal.None)
         push(out, env)
       }
 
@@ -176,7 +177,7 @@ private[akka] class InboundHandshake(inboundContext: InboundContext, inControlSt
           override def onPush(): Unit = {
             val env = grab(in)
             env.message match {
-              case HandshakeReq(from) ⇒ onHandshakeReq(from)
+              case HandshakeReq(from, to) ⇒ onHandshakeReq(from, to)
               case HandshakeRsp(from) ⇒
                 after(inboundContext.completeHandshake(from)) {
                   pull(in)
@@ -191,17 +192,27 @@ private[akka] class InboundHandshake(inboundContext: InboundContext, inControlSt
           override def onPush(): Unit = {
             val env = grab(in)
             env.message match {
-              case HandshakeReq(from) ⇒ onHandshakeReq(from)
+              case HandshakeReq(from, to) ⇒ onHandshakeReq(from, to)
               case _ ⇒
                 onMessage(env)
             }
           }
         })
 
-      private def onHandshakeReq(from: UniqueAddress): Unit = {
-        after(inboundContext.completeHandshake(from)) {
-          inboundContext.sendControl(from.address, HandshakeRsp(inboundContext.localAddress))
+      private def onHandshakeReq(from: UniqueAddress, to: Address): Unit = {
+        if (to != inboundContext.localAddress.address) {
+          if (log.isDebugEnabled)
+            log.debug(
+              s"Dropping Handshake Request addressed to unknown local address [{}]. " +
+                "Local address is [{}]",
+              to, inboundContext.localAddress.address)
+
           pull(in)
+        } else {
+          after(inboundContext.completeHandshake(from)) {
+            inboundContext.sendControl(from.address, HandshakeRsp(inboundContext.localAddress))
+            pull(in)
+          }
         }
       }
 

@@ -405,8 +405,9 @@ private[remote] class Decoder(
               scheduleOnce(RetryResolveRemoteDeployedRecipient(
                 retryResolveRemoteDeployedRecipientAttempts,
                 recipientActorRefPath, decoded), retryResolveRemoteDeployedRecipientInterval)
-          } else
+          } else {
             push(out, decoded)
+          }
         }
       }
 
@@ -537,4 +538,3 @@ private[remote] class Deserializer(
       setHandlers(in, out, this)
     }
 }
-
