@@ -9,7 +9,10 @@ import org.agrona.concurrent.MappedResizeableBuffer
 
 import scala.collection.immutable
 
-object FlightRecorderReader {
+/**
+ * Internal API
+ */
+private[akka] object FlightRecorderReader {
   import FlightRecorder._
 
   sealed trait LogState
@@ -89,7 +92,10 @@ object FlightRecorderReader {
 
 }
 
-class FlightRecorderReader(fileChannel: FileChannel) {
+/**
+ * Internal API
+ */
+private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
   import FlightRecorder._
   import FlightRecorderReader._
 
