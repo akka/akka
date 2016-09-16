@@ -129,7 +129,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
           }
         }))
         a ! "hello"
-        expectMsgPF(1 second, "Logging.Debug2") {
+        expectMsgPF(hint = "Logging.Debug2") {
           case m: Logging.Debug2 if m.mdc == myMDC ⇒ ()
         }
       }
