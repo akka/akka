@@ -63,8 +63,7 @@ object RemoteNodeRestartDeathWatchSpec {
 }
 
 abstract class RemoteNodeRestartDeathWatchSpec(multiNodeConfig: RemoteNodeRestartDeathWatchConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with STMultiNodeSpec with ImplicitSender {
+  extends MultiNodeRemotingSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteNodeRestartDeathWatchSpec._
 

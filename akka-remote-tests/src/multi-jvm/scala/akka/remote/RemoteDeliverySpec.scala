@@ -26,7 +26,7 @@ class RemoteDeliveryConfig(artery: Boolean) extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
-      """)))
+      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
 }
 
 class RemoteDeliveryMultiJvmNode1 extends RemoteDeliverySpec(new RemoteDeliveryConfig(artery = false))
@@ -48,8 +48,7 @@ object RemoteDeliverySpec {
 }
 
 abstract class RemoteDeliverySpec(multiNodeConfig: RemoteDeliveryConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with STMultiNodeSpec with ImplicitSender {
+  extends MultiNodeRemotingSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteDeliverySpec._
 

@@ -51,9 +51,7 @@ object RemoteQuarantinePiercingSpec {
 }
 
 abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePiercingConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with STMultiNodeSpec
-  with ImplicitSender {
+  extends MultiNodeRemotingSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteQuarantinePiercingSpec._
 

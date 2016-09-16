@@ -42,11 +42,16 @@ trait FlightRecordingSupport { self: MultiNodeSpec ⇒
    * Dump the contents of the flight recorder file to standard output
    */
   final protected def printFlightRecording(): Unit = {
-    if (Files.exists(flightRecorderFile)) {
+    if (destinationIsValidForDump() && Files.exists(flightRecorderFile)) {
       // use stdout/println as we do not know if the system log is alive
       println("Flight recorder dump:")
       FlightRecorderReader.dumpToStdout(flightRecorderFile)
     }
+  }
+
+  private def destinationIsValidForDump() = {
+    val path = flightRecorderFile.toString
+    path != "" && path.endsWith(".afr")
   }
 
 }

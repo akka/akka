@@ -24,7 +24,7 @@ class AttemptSysMsgRedeliveryMultiJvmSpec(artery: Boolean) extends MultiNodeConf
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
-      """)))
+      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
 
   testTransport(on = true)
 
@@ -53,8 +53,7 @@ object AttemptSysMsgRedeliverySpec {
 }
 
 abstract class AttemptSysMsgRedeliverySpec(multiNodeConfig: AttemptSysMsgRedeliveryMultiJvmSpec)
-  extends MultiNodeSpec(multiNodeConfig)
-  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
+  extends MultiNodeRemotingSpec(multiNodeConfig) {
   import multiNodeConfig._
   import AttemptSysMsgRedeliverySpec._
 

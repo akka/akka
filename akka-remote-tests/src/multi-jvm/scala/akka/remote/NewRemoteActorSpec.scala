@@ -55,8 +55,7 @@ object NewRemoteActorSpec {
 }
 
 abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
-  extends MultiNodeSpec(multiNodeConfig)
-  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
+  extends MultiNodeRemotingSpec(multiNodeConfig) {
   import multiNodeConfig._
   import NewRemoteActorSpec._
 
