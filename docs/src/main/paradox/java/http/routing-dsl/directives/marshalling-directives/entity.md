@@ -32,4 +32,4 @@ TODO: Add example snippets.
 It is also possible to use the `entity` directive to obtain raw `JsValue` ( [spray-json](https://github.com/spray/spray-json) ) objects, by simply using
 `as[JsValue]`, or any other JSON type for which you have marshallers in-scope.
 
-TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: [write example snippets for Akka HTTP Java DSL #20466 ](https://github.com/akka/akka/issues/20466).
+TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: [write example snippets for Akka HTTP Java DSL #218](https://github.com/akka/akka-http/issues/218).

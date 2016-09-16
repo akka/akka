@@ -3,7 +3,7 @@
 
 ## Signature
 
-```
+```scala
 def formFields(field: <FieldDef[T]>): Directive1[T]
 def formFields(fields: <FieldDef[T_i]>*): Directive[T_0 :: ... T_i ... :: HNil]
 def formFields(fields: <FieldDef[T_0]> :: ... <FieldDef[T_i]> ... :: HNil): Directive[T_0 :: ... T_i ... :: HNil]

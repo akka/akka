@@ -3,7 +3,7 @@
 
 ## Signature
 
-```
+```scala
 def optionalHeaderValueByType[T <: HttpHeader: ClassTag](): Directive1[Option[T]]
 ```
 

@@ -3,7 +3,7 @@
 
 ## Signature
 
-```
+```scala
 def logRequest(marker: String)(implicit log: LoggingContext): Directive0
 def logRequest(marker: String, level: LogLevel)(implicit log: LoggingContext): Directive0
 def logRequest(show: HttpRequest => String)(implicit log: LoggingContext): Directive0

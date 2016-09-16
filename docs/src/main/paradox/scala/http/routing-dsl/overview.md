@@ -23,13 +23,13 @@ For example, the service definition from above, written using the routing DSL, w
 
 The core of the Routing DSL becomes available with a single import:
 
-```
+```scala
 import akka.http.scaladsl.server.Directives._
 ```
 
 This example also relies on the pre-defined support for Scala XML with:
 
-```
+```scala
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 ```
 

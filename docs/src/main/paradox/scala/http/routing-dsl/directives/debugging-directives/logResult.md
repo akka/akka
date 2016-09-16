@@ -3,7 +3,7 @@
 
 ## Signature
 
-```
+```scala
 def logResult(marker: String)(implicit log: LoggingContext): Directive0
 def logResult(marker: String, level: LogLevel)(implicit log: LoggingContext): Directive0
 def logResult(show: RouteResult => String)(implicit log: LoggingContext): Directive0

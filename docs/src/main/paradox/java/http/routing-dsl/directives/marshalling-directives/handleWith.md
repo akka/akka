@@ -25,10 +25,10 @@ on marshalling entities with akka-http.
 ## Examples
 
 The following example uses an `updatePerson` function with a `Person` case class as an input and output.  We plug this function into our route using `handleWith`.
-TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: [write example snippets for Akka HTTP Java DSL #20466 ](https://github.com/akka/akka/issues/20466).
+TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: [write example snippets for Akka HTTP Java DSL #218](https://github.com/akka/akka-http/issues/218).
 
-TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: [write example snippets for Akka HTTP Java DSL #20466 ](https://github.com/akka/akka/issues/20466).
+TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: [write example snippets for Akka HTTP Java DSL #218](https://github.com/akka/akka-http/issues/218).
 
 The PersonJsonSupport object handles both marshalling and unmarshalling of the Person case class.
 
-TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: [write example snippets for Akka HTTP Java DSL #20466 ](https://github.com/akka/akka/issues/20466).
+TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: [write example snippets for Akka HTTP Java DSL #218](https://github.com/akka/akka-http/issues/218).

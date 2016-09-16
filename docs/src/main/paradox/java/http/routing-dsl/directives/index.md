@@ -21,14 +21,14 @@ which could (and often should) happen asynchronously.
 
 With the @ref[complete-java](route-directives/complete.md#complete-java) directive this becomes even shorter:
 
-```
+```java
 Route route = complete("yeah");
 ```
 
 Writing multiple routes that are tried as alternatives (in-order of definition), is as simple as using the `route(route1, route2)`,
 method:
 
-```
+```java
 Route routes = route(
   pathSingleSlash(() ->
     getFromResource("web/calculator.html")
@@ -41,7 +41,7 @@ You could also simply define a "catch all" completion by providing it as the las
 In the example below we use the `get()` (one of the @ref[MethodDirectives](method-directives/index.md#methoddirectives-java)) to match all incoming `GET`
 requests for that route, and all other requests will be routed towards the other "catch all" route, that completes the route:
 
-```
+```java
 Route route =
   get(
     () -> complete("Received GET")
@@ -56,7 +56,7 @@ If no route matches a given request, a default `404 Not Found` response will be 
 
 The general anatomy of a directive is as follows:
 
-```
+```java
 directiveName(arguments [, ...], (extractions [, ...]) -> {
   ... // inner route
 })

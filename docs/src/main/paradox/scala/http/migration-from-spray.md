@@ -8,21 +8,21 @@ Features which are not ported to the akka-http:
 as it has been seen mostly as an anti-pattern. More information here: [https://github.com/akka/akka/issues/18626](https://github.com/akka/akka/issues/18626)
  * `respondWithMediaType` was considered an anti-pattern in spray and is not ported to Akka HTTP.
 Instead users should rely on content type negotiation as Akka HTTP implements it.
-More information here: [https://github.com/akka/akka/issues/18625](https://github.com/akka/akka/issues/18625)
+More information here: [https://github.com/akka/akka-http/issues/190](https://github.com/akka/akka-http/issues/190)
  * @ref[Registering Custom Media Types](common/http-model.md#registeringcustommediatypes) changed from Spray in order not to rely on global state.
 
 ## Removed HttpService
 
 Spray’s `HttpService` was removed. This means that scala code like this:
 
-```
+```scala
 val service = system.actorOf(Props(new HttpServiceActor(routes)))
 IO(Http)(system) ! Http.Bind(service, "0.0.0.0", port = 8080)
 ```
 
 needs to be changed into:
 
-```
+```scala
 Http().bindAndHandle(routes, "0.0.0.0", port = 8080)
 ```
 
@@ -32,7 +32,7 @@ Marshaller.of can be replaced with `Marshaller.withFixedContentType`.
 
 Was:
 
-```
+```scala
 Marshaller.of[JsonApiObject](`application/json`) { (value, contentType, ctx) =>
   ctx.marshalTo(HttpEntity(contentType, value.toJson.toString))
 }
@@ -40,7 +40,7 @@ Marshaller.of[JsonApiObject](`application/json`) { (value, contentType, ctx) =>
 
 Replace with:
 
-```
+```scala
 Marshaller.withFixedContentType(`application/json`) { obj =>
   HttpEntity(`application/json`, obj.toJson.compactPrint)
 }
@@ -51,7 +51,7 @@ when creating one “super” marshaller from other marshallers:
 
 Before:
 
-```
+```scala
 ToResponseMarshaller.oneOf(
   `application/vnd.api+json`,
   `application/json`
@@ -63,7 +63,7 @@ ToResponseMarshaller.oneOf(
 
 After:
 
-```
+```scala
 Marshaller.oneOf(
   jsonApiMarshaller,
   jsonMarshaller
@@ -74,7 +74,7 @@ Marshaller.oneOf(
 
 Akka Http contains a set of predefined unmarshallers. This means that scala code like this:
 
-```
+```scala
 Unmarshaller[Entity](`application/json`) {
   case HttpEntity.NonEmpty(contentType, data) =>
     data.asString.parseJson.convertTo[Entity]
@@ -83,7 +83,7 @@ Unmarshaller[Entity](`application/json`) {
 
 needs to be changed into:
 
-```
+```scala
 Unmarshaller
   .stringUnmarshaller
   .forContentTypes(`application/json`)
@@ -96,13 +96,13 @@ Unmarshaller
 
 Was:
 
-```
+```scala
 MediaType.custom("application/vnd.acme+json")
 ```
 
 Replace with:
 
-```
+```scala
 MediaType.applicationWithFixedCharset("application/vnd.acme+json", HttpCharsets.`UTF-8`)
 ```
 
@@ -112,7 +112,7 @@ MediaType.applicationWithFixedCharset("application/vnd.acme+json", HttpCharsets.
 
 Before:
 
-```
+```scala
 def rootRejectionHandler = RejectionHandler {
   case Nil =>
     requestUri { uri =>
@@ -128,7 +128,7 @@ def rootRejectionHandler = RejectionHandler {
 
 After:
 
-```
+```scala
 RejectionHandler
 .newBuilder()
 .handle {
@@ -147,7 +147,7 @@ RejectionHandler
 
 The Spray-client pipeline was removed. Http’s `singleRequest` should be used instead of `sendReceive`:
 
-```
+```scala
 //this will not longer work
 val token = Authorization(OAuth2BearerToken(accessToken))
 val pipeline: HttpRequest => Future[HttpResponse] = (addHeader(token) ~> sendReceive)
@@ -160,7 +160,7 @@ pipeline(patch).map { response ⇒
 
 needs to be changed into:
 
-```
+```scala
 val request = HttpRequest(
   method = PATCH,
   uri = Uri(uri),
@@ -183,7 +183,7 @@ With the streaming nature of http entity, it’s important to have a strict http
 multiple form fields or use file upload directives.
 One solution might be using next directive before working with form fields:
 
-```
+```scala
 val toStrict: Directive0 = extractRequest flatMap { request =>
   onComplete(request.entity.toStrict(5.seconds)) flatMap {
     case Success(strict) =>
@@ -195,7 +195,7 @@ val toStrict: Directive0 = extractRequest flatMap { request =>
 
 And one can use it like this:
 
-```
+```scala
 toStrict {
   formFields("name".as[String]) { name =>
   ...

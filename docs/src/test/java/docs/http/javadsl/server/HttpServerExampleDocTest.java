@@ -218,20 +218,18 @@ public class HttpServerExampleDocTest {
   }
   
 
-  //#consume-entity-directive
-  class Bid {
-    final String userId;
-    final int bid;
-
-    Bid(String userId, int bid) {
-      this.userId = userId;
-      this.bid = bid; 
-    }
-  }
-  //#consume-entity-directive
-
-  void consumeEntityUsingEntityDirective() {
+  static class ConsumeEntityUsingEntityDirective {
     //#consume-entity-directive
+    class Bid {
+      final String userId;
+      final int bid;
+ 
+      Bid(String userId, int bid) {
+        this.userId = userId;
+        this.bid = bid; 
+      }
+    }
+
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
     final ActorMaterializer materializer = ActorMaterializer.create(system);
@@ -247,7 +245,7 @@ public class HttpServerExampleDocTest {
       )
     );
     //#consume-entity-directive
-      }
+  }
       
   void consumeEntityUsingRawDataBytes() {
     //#consume-raw-dataBytes

@@ -28,7 +28,7 @@ The concept of a request value has been completely removed, and replaced with pr
 
 **Previously**:
 
-```
+```java
 RequestVal<Host> host = Headers.byClass(Host.class).instance();
 
 final Route route =
@@ -41,7 +41,7 @@ final Route route =
 
 **Now**:
 
-```
+```java
 final Route route =
   headerValueByType(Host.class, host -> complete("Host was: " + host));
 ```

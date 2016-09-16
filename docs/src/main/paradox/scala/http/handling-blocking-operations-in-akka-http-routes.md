@@ -65,7 +65,7 @@ that you have not configured an explicit dispatcher for (sic!)).
 In `application.conf`, the dispatcher dedicated for blocking behaviour should
 be configured as follows:
 
-```
+```conf
 my-blocking-dispatcher {
   type = Dispatcher
   executor = "thread-pool-executor"

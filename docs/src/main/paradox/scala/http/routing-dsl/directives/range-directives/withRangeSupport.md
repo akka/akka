@@ -3,7 +3,7 @@
 
 ## Signature
 
-```
+```scala
 def withRangeSupport(): Directive0
 def withRangeSupport(rangeCountLimit: Int, rangeCoalescingThreshold:Long): Directive0
 ```

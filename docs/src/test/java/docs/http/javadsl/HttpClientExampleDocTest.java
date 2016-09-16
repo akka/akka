@@ -41,7 +41,7 @@ import scala.util.Try;
 @SuppressWarnings("unused")
 public class HttpClientExampleDocTest {
 
-  HttpResponse responseFromSomewhere() {
+  static HttpResponse responseFromSomewhere() {
     return null;
   }
   
@@ -65,42 +65,38 @@ public class HttpClientExampleDocTest {
     //#manual-entity-consume-example-1
   }
   
-    private 
+  private static class ConsumeExample2 {
     //#manual-entity-consume-example-2
     final class ExamplePerson {
       final String name;
       public ExamplePerson(String name) { this.name = name; }
     }
-    
+  
     public ExamplePerson parse(ByteString line) { 
       return new ExamplePerson(line.utf8String()); 
     }
+
+    final ActorSystem system = ActorSystem.create();
+    final ExecutionContextExecutor dispatcher = system.dispatcher();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+  
+    final HttpResponse response = responseFromSomewhere();
+    
+    // toStrict to enforce all data be loaded into memory from the connection
+    final CompletionStage<HttpEntity.Strict> strictEntity = response.entity()
+        .toStrict(FiniteDuration.create(3, TimeUnit.SECONDS).toMillis(), materializer);
+
+    // while API remains the same to consume dataBytes, now they're in memory already:
+
+    final CompletionStage<ExamplePerson> person = 
+      strictEntity
+        .thenCompose(strict ->
+          strict.getDataBytes()
+            .runFold(ByteString.empty(), (acc, b) -> acc.concat(b), materializer)
+            .thenApply(this::parse)
+        );
     //#manual-entity-consume-example-2
-  
-    void manualEntityConsumeExample2() {
-      //#manual-entity-consume-example-2
-      final ActorSystem system = ActorSystem.create();
-      final ExecutionContextExecutor dispatcher = system.dispatcher();
-      final ActorMaterializer materializer = ActorMaterializer.create(system);
-  
-      final HttpResponse response = responseFromSomewhere();
-      
-      // toStrict to enforce all data be loaded into memory from the connection
-      final CompletionStage<HttpEntity.Strict> strictEntity = response.entity()
-          .toStrict(FiniteDuration.create(3, TimeUnit.SECONDS).toMillis(), materializer);
-
-      // while API remains the same to consume dataBytes, now they're in memory already:
-
-      final CompletionStage<ExamplePerson> person = 
-        strictEntity
-          .thenCompose(strict ->
-            strict.getDataBytes()
-              .runFold(ByteString.empty(), (acc, b) -> acc.concat(b), materializer)
-              .thenApply(this::parse)
-          );
-
-      //#manual-entity-consume-example-2
-    }
+  }
   
   void manualEntityDiscardExample1() {
     //#manual-entity-discard-example-1
@@ -135,21 +131,21 @@ public class HttpClientExampleDocTest {
   }
   
   
-    // compile only test
-    public void testConstructRequest() {
-        //#outgoing-connection-example
+  // compile only test
+  public void testConstructRequest() {
+    //#outgoing-connection-example
 
-        final ActorSystem system = ActorSystem.create();
-        final ActorMaterializer materializer = ActorMaterializer.create(system);
+    final ActorSystem system = ActorSystem.create();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-        final Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
-                Http.get(system).outgoingConnection(toHost("akka.io", 80));
-        final CompletionStage<HttpResponse> responseFuture =
-                Source.single(HttpRequest.create("/"))
-                        .via(connectionFlow)
-                        .runWith(Sink.<HttpResponse>head(), materializer);
-        //#outgoing-connection-example
-    }
+    final Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
+            Http.get(system).outgoingConnection(toHost("akka.io", 80));
+    final CompletionStage<HttpResponse> responseFuture =
+            Source.single(HttpRequest.create("/"))
+                    .via(connectionFlow)
+                    .runWith(Sink.<HttpResponse>head(), materializer);
+    //#outgoing-connection-example
+  }
 
   // compile only test
   public void testHostLevelExample() {

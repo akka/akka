@@ -22,7 +22,7 @@ See also @ref[respondWithDefaultHeader](respondWithDefaultHeader.md#respondwithd
 The `respondWithDefaultHeaders` directive is equivalent to the `respondWithDefaultHeader` directive which
 is shown in the example below, however it allows including multiple default headers at once in the directive, like so:
 
-```
+```scala
 respondWithDefaultHeaders(
   Origin(HttpOrigin("http://akka.io"),
   RawHeader("X-Fish-Name", "Blippy"))) { /*...*/ }

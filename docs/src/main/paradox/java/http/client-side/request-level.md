@@ -58,5 +58,5 @@ lack of entity consumption as a back-pressure signal and stop reading from the u
 This is a feature of Akka HTTP that allows consuming entities (and pulling them through the network) in
 a streaming fashion, and only *on demand* when the client is ready to consume the bytes -
 it may be a bit surprising at first though.
-There are tickets open about automatically dropping entities if not consumed ([#18716](https://github.com/akka/akka/issues/18716) and [#18540](https://github.com/akka/akka/issues/18540)),
+There are tickets open about automatically dropping entities if not consumed ([#183](https://github.com/akka/akka-http/issues/183) and [#117](https://github.com/akka/akka-http/issues/117)),
 so these may be implemented in the near future.

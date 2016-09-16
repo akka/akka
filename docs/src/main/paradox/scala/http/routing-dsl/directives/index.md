@@ -22,19 +22,19 @@ way of creating routes.
 Since `Route` is just a type alias for a function type `Route` instances can be written in any way in which function
 instances can be written, e.g. as a function literal:
 
-```
+```scala
 val route: Route = { ctx => ctx.complete("yeah") }
 ```
 
 or shorter:
 
-```
+```scala
 val route: Route = _.complete("yeah")
 ```
 
 With the @ref[complete](route-directives/complete.md#complete) directive this becomes even shorter:
 
-```
+```scala
 val route = complete("yeah")
 ```
 
@@ -44,7 +44,7 @@ cases.
 Let's look at a slightly more complicated example to highlight one important point in particular.
 Consider these two routes:
 
-```
+```scala
 val a: Route = {
   println("MARK")
   ctx => ctx.complete("yeah")
@@ -62,7 +62,7 @@ every time the route is *run*.
 
 Using the @ref[complete](route-directives/complete.md#complete) directive the same effects are achieved like this:
 
-```
+```scala
 val a = {
   println("MARK")
   complete("yeah")
@@ -79,7 +79,7 @@ every time the produced route is run.
 
 Let's take things one step further:
 
-```
+```scala
 val route: Route = { ctx =>
   if (ctx.request.method == HttpMethods.GET)
     ctx.complete("Received GET")
@@ -90,7 +90,7 @@ val route: Route = { ctx =>
 
 Using the @ref[get](method-directives/get.md#get) and @ref[complete](route-directives/complete.md#complete) directives we can write this route like this:
 
-```
+```scala
 val route =
   get {
     complete("Received GET")
@@ -102,7 +102,7 @@ Again, the produced routes will behave identically in all cases.
 
 Note that, if you wish, you can also mix the two styles of route creation:
 
-```
+```scala
 val route =
   get { ctx =>
     ctx.complete("Received GET")
@@ -121,7 +121,7 @@ to creating routes via `Route` function literals that directly manipulate the @r
 
 The general anatomy of a directive is as follows:
 
-```
+```scala
 name(arguments) { extractions =>
   ... // inner route
 }
@@ -208,20 +208,20 @@ expected and logical constraints are enforced at compile-time.
 
 For example you cannot `|` a directive producing an extraction with one that doesn't:
 
-```
+```scala
 val route = path("order" / IntNumber) | get // doesn't compile
 ```
 
 Also the number of extractions and their types have to match up:
 
-```
+```scala
 val route = path("order" / IntNumber) | path("order" / DoubleNumber)   // doesn't compile
 val route = path("order" / IntNumber) | parameter('order.as[Int])      // ok
 ```
 
 When you combine directives producing extractions with the `&` operator all extractions will be properly gathered up:
 
-```
+```scala
 val order = path("order" / IntNumber) & parameters('oem, 'expired ?)
 val route =
   order { (orderId, oem, expired) =>

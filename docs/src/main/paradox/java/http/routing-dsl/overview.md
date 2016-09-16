@@ -22,14 +22,14 @@ Here's the complete example rewritten using the composable high-level API:
 
 The core of the Routing DSL becomes available with a single import:
 
-```
+```java
 import akka.http.javadsl.server.Directives.*;
 ```
 
 Or by extending the `akka.http.javadsl.server.AllDirectives` class which brings together all directives into a single class
 for easier access:
 
-```
+```java
 extends AllDirectives
 ```
 

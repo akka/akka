@@ -8,7 +8,7 @@ the static method `ConnectionContext.https` which is defined like this:
 
 @@snip [ConnectionContext.scala](../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
 
-On the server-side the `bind`, and `bindAndHandleXXX` methods of the [akka.http.javadsl.Http](https://github.com/akka/akka/blob/master/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala) extension define an
+On the server-side the `bind`, and `bindAndHandleXXX` methods of the [akka.http.javadsl.Http](https://github.com/akka/akka-http/blob/master/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala) extension define an
 optional `httpsContext` parameter, which can receive the HTTPS configuration in the form of an `HttpsContext`
 instance.
 If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).

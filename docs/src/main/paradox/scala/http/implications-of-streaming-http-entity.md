@@ -107,5 +107,5 @@ note and issues for further discussion and ideas.
 > **Note:**
 An advanced feature code named "auto draining" has been discussed and proposed for Akka HTTP, and we're hoping
 to implement or help the community implement it.
-You can read more about it in [issue #18716 ](https://github.com/akka/akka/issues/18716)
-as well as [issue #18540 ](https://github.com/akka/akka/issues/18540) ; as always, contributions are very welcome!
+You can read more about it in [issue #183](https://github.com/akka/akka-http/issues/183)
+as well as [issue #117](https://github.com/akka/akka-http/issues/117) ; as always, contributions are very welcome!

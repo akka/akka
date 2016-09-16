@@ -18,7 +18,7 @@ See also @ref[respondWithDefaultHeader-java](respondWithDefaultHeader.md#respond
 The `respondWithDefaultHeaders` directive is equivalent to the `respondWithDefaultHeader` directive which
 is shown in the example below, however it allows including multiple default headers at once in the directive, like so:
 
-```
+```java
 respondWithDefaultHeaders(
   Origin(HttpOrigin("http://akka.io"),
   RawHeader("X-Fish-Name", "Blippy"))) { /*...*/ }

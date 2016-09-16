@@ -77,10 +77,10 @@ all the branches in a depth-first manner until either some node completes it or 
 Consider this schematic example. In place of directiveA, directiveB, etc., you can just imagine any of the available
 directives, e.g. matching a particular path, header or request parameter.:
 
-```
+```java
 import static akka.http.javadsl.server.Directives.*;
 
-val route =
+Route route =
   directiveA(route(() ->
     directiveB(route(() ->
       directiveC(

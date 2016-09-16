@@ -4,8 +4,8 @@
 The "Route" is the central concept of Akka HTTP's Routing DSL. All the structures you build with the DSL, no matter
 whether they consists of a single line or span several hundred lines, are instances of this type:
 
-```
-type Route = RequestContext ⇒ Future[RouteResult]
+```scala
+type Route = RequestContext => Future[RouteResult]
 ```
 
 It's a simple alias for a function turning a `RequestContext` into a `Future[RouteResult]`.
@@ -47,7 +47,7 @@ modified copies.
 `RouteResult` is a simple abstract data type (ADT) that models the possible non-error results of a `Route`.
 It is defined as such:
 
-```
+```scala
 sealed trait RouteResult
 
 object RouteResult {
@@ -84,7 +84,7 @@ all the branches in a depth-first manner until either some node completes it or 
 
 Consider this schematic example:
 
-```
+```scala
 val route =
   a {
     b {

@@ -37,8 +37,8 @@ the @ref[handleRejections](../../../scala/http/routing-dsl/directives/execution-
 The @ref[handleRejections](../../../scala/http/routing-dsl/directives/execution-directives/handleRejections.md#handlerejections) directive delegates the actual job of converting a list of rejections to its argument, a
 [RejectionHandler](@github@/akka-http/src/main/scala/akka/http/scaladsl/server/RejectionHandler.scala), which is defined like this:
 
-```
-trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route])
+```scala
+trait RejectionHandler extends (immutable.Seq[Rejection] => Option[Route])
 ```
 
 Since a `RejectionHandler` returns an `Option[Route]` it can choose whether it would like to handle the current set

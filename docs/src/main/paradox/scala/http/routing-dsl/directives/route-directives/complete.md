@@ -3,7 +3,7 @@
 
 ## Signature
 
-```
+```scala
 def complete[T :ToResponseMarshaller](value: T): StandardRoute
 def complete(response: HttpResponse): StandardRoute
 def complete(status: StatusCode): StandardRoute

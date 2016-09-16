@@ -3,7 +3,7 @@
 
 ## Signature
 
-```
+```scala
 def parameters(param: <ParamDef[T]>): Directive1[T]
 def parameters(params: <ParamDef[T_i]>*): Directive[T_0 :: ... T_i ... :: HNil]
 def parameters(params: <ParamDef[T_0]> :: ... <ParamDef[T_i]> ... :: HNil): Directive[T_0 :: ... T_i ... :: HNil]

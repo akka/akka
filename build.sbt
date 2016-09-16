@@ -135,10 +135,13 @@ lazy val docs = project("docs")
     paradoxTheme := Some(builtinParadoxTheme("generic")),
     paradoxNavigationDepth := 3,
     paradoxProperties ++= Map(
-      "version" -> version.value,
       "akka.version" -> Dependencies.akkaVersion,
       "scala.binaryVersion" -> scalaBinaryVersion.value,
-      "scala.version" -> scalaVersion.value
+      "scala.version" -> scalaVersion.value,
+      "crossString" -> (scalaVersion.value match {
+        case akka.Doc.BinVer(_) => ""
+        case _                  => "cross CrossVersion.full"
+      })
     ),
     akka.Formatting.docFormatSettings
   )

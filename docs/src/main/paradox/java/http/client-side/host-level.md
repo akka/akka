@@ -53,9 +53,9 @@ the same pooled connections.
 
 The "pool client flow" returned by `Http.get(system).cachedHostConnectionPool(...)` has the following type:
 
-```
+```java
 // TODO Tuple2 will be changed to be `akka.japi.Pair`
-Flow[Tuple2[HttpRequest, T], Tuple2[Try[HttpResponse], T], HostConnectionPool]
+Flow<Tuple2<HttpRequest, T>, Tuple2<Try<HttpResponse>, T>, HostConnectionPool>
 ```
 
 This means it consumes tuples of type `(HttpRequest, T)` and produces tuples of type `(Try[HttpResponse], T)`

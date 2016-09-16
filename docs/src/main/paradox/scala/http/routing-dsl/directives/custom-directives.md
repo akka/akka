@@ -51,7 +51,7 @@ One example of a predefined directive relying on `map` is the [optionalHeaderVal
 
 The tmap modifier has this signature (somewhat simplified):
 
-```
+```scala
 def tmap[R](f: L ⇒ R): Directive[Out]
 ```
 
@@ -74,7 +74,7 @@ it into a directive, that doubles all positive `Int` values and rejects all othe
 In order to do the latter you need `flatMap` or `tflatMap`. The `tflatMap`
 modifier has this signature:
 
-```
+```scala
 def tflatMap[R: Tuple](f: L ⇒ Directive[R]): Directive[R]
 ```
 
@@ -107,7 +107,7 @@ All requests, for which the predicate is false are rejected, all others pass unc
 
 The signature of require is this:
 
-```
+```scala
 def require(predicate: T ⇒ Boolean, rejections: Rejection*): Directive0
 ```
 
@@ -127,14 +127,14 @@ directive and, instead of rejecting, produce an alternative directive with the s
 
 The signature of recover is this:
 
-```
+```scala
 def recover[R >: L: Tuple](recovery: Seq[Rejection] ⇒ Directive[R]): Directive[R] =
 ```
 
 In many cases the very similar `recoverPF` modifier might be little bit
 easier to use since it doesn’t require the handling of all rejections:
 
-```
+```scala
 def recoverPF[R >: L: Tuple](
   recovery: PartialFunction[Seq[Rejection], Directive[R]]): Directive[R]
 ```
@@ -160,13 +160,13 @@ Extractions are kept as a Tuple. Here are a few examples:
 A `Directive[Unit]` extracts nothing (like the get directive).
 Because this type is used quite frequently akka-http defines a type alias for it:
 
-```
+```scala
 type Directive0 = Directive[Unit]
 ```
 
 A `Directive[(String)]` extracts one String value (like the hostName directive). The type alias for it is:
 
-```
+```scala
 type Directive1[T] = Directive[Tuple1[T]]
 ```
 

@@ -317,7 +317,7 @@ usually need the same settings, however the `server` most likely has a very diff
 <a id="registeringcustommediatypes"></a>
 ## Registering Custom Media Types
 
-Akka HTTP [predefines](https://github.com/akka/akka/blob/master/akka-http-core/src/main/scala/akka/http/scaladsl/model/MediaType.scala#L297) most commonly encountered media types and emits them in their well-typed form while parsing http messages.
+Akka HTTP [predefines](https://github.com/akka/akka-http/blob/master/akka-http-core/src/main/scala/akka/http/scaladsl/model/MediaType.scala#L297) most commonly encountered media types and emits them in their well-typed form while parsing http messages.
 Sometimes you may want to define a custom media type and inform the parser infrastructure about how to handle these custom
 media types, e.g. that `application/custom` is to be treated as `NonBinary` with `WithFixedCharset`. To achieve this you
 need to register the custom media type in the server's settings by configuring `ParserSettings` like this:

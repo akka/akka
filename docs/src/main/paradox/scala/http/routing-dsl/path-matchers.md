@@ -14,7 +14,7 @@ left until, in most cases, it eventually has been consumed completely.
 What exactly gets matched and consumed as well as extracted from the unmatched path in each directive is defined with
 the patch matching DSL, which is built around these types:
 
-```
+```scala
 trait PathMatcher[L: Tuple]
 type PathMatcher0 = PathMatcher[Unit]
 type PathMatcher1[T] = PathMatcher[Tuple1[T]]

@@ -58,7 +58,7 @@ the same pooled connections.
 
 The "pool client flow" returned by `Http().cachedHostConnectionPool(...)` has the following type:
 
-```
+```scala
 Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool]
 ```
 
