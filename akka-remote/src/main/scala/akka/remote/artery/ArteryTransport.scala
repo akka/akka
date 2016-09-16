@@ -992,7 +992,7 @@ private[remote] object ArteryTransport {
 
   val ProtocolName = "akka"
 
-  val Version = 0
+  val Version: Byte = 0
 
   class AeronTerminated(e: Throwable) extends RuntimeException(e)
 

@@ -3,11 +3,9 @@
  */
 package akka.remote.artery
 
-import akka.actor.InternalActorRef
-import akka.util.OptionVal
-import akka.actor.Address
 import akka.actor.ActorRef
 import akka.remote.RemoteActorRef
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
