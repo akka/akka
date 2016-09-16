@@ -23,7 +23,8 @@ import akka.Done
 import akka.stream.stage.GraphStageWithMaterializedValue
 
 import scala.concurrent.Promise
-import java.util.concurrent.atomic.AtomicInteger
+
+import scala.annotation.switch
 
 /**
  * INTERNAL API
@@ -45,7 +46,7 @@ private[remote] object Encoder {
  */
 private[remote] class Encoder(
   uniqueLocalAddress:   UniqueAddress,
-  system:               ActorSystem,
+  system:               ExtendedActorSystem,
   outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
   bufferPool:           EnvelopeBufferPool)
   extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, EnvelopeBuffer], Encoder.ChangeOutboundCompression] {
@@ -64,6 +65,10 @@ private[remote] class Encoder(
       private val localAddress = uniqueLocalAddress.address
       private val serialization = SerializationExtension(system)
       private val serializationInfo = Serialization.Information(localAddress, system)
+
+      private val instruments: Vector[RemoteInstrument] = RemoteInstruments.create(system)
+      // by being backed by an Array, this allows us to not allocate any wrapper type for the metadata (since we need its ID)
+      private val serializedMetadatas: MetadataMap[ByteString] = MetadataMap() // TODO: possibly can be optimised a more for the specific access pattern (during write)
 
       private val changeActorRefCompressionCb = getAsyncCallback[(CompressionTable[ActorRef], Promise[Done])] {
         case (table, done) ⇒
@@ -106,6 +111,7 @@ private[remote] class Encoder(
               case OptionVal.Some(s) ⇒ headerBuilder setSenderActorRef s
             }
 
+            applyAndRenderRemoteMessageSentMetadata(instruments, outboundEnvelope, headerBuilder)
             MessageSerializer.serializeForArtery(serialization, outboundEnvelope.message, headerBuilder, envelope)
           } finally Serialization.currentTransportInformation.value = oldValue
 
@@ -131,13 +137,42 @@ private[remote] class Encoder(
         } finally {
           outboundEnvelope match {
             case r: ReusableOutboundEnvelope ⇒ outboundEnvelopePool.release(r)
-            case _                           ⇒
+            case _                           ⇒ // no need to release it
           }
         }
-
       }
 
       override def onPull(): Unit = pull(in)
+
+      /**
+       * Renders metadata into `headerBuilder`.
+       *
+       * Replace all AnyRef's that were passed along with the [[OutboundEnvelope]] into their [[ByteString]] representations,
+       * by calling `remoteMessageSent` of each enabled instrumentation. If `context` was attached in the envelope it is passed
+       * into the instrument, otherwise it receives an OptionVal.None as context, and may still decide to attach rendered
+       * metadata by returning it.
+       */
+      private def applyAndRenderRemoteMessageSentMetadata(instruments: Vector[RemoteInstrument], envelope: OutboundEnvelope, headerBuilder: HeaderBuilder): Unit = {
+        if (instruments.nonEmpty) {
+          val n = instruments.length
+
+          var i = 0
+          while (i < n) {
+            val instrument = instruments(i)
+            val instrumentId = instrument.identifier
+
+            val metadata = instrument.remoteMessageSent(envelope.recipient.orNull, envelope.message, envelope.sender.orNull)
+            if (metadata ne null) serializedMetadatas.set(instrumentId, metadata)
+
+            i += 1
+          }
+        }
+
+        if (serializedMetadatas.nonEmpty) {
+          MetadataEnvelopeSerializer.serialize(serializedMetadatas, headerBuilder)
+          serializedMetadatas.clear()
+        }
+      }
 
       /**
        * External call from ChangeOutboundCompression materialized value
@@ -319,6 +354,7 @@ private[remote] class Decoder(
             originUid,
             headerBuilder.serializer,
             classManifest,
+            headerBuilder.flags,
             envelope,
             association)
 
@@ -421,6 +457,7 @@ private[remote] class Deserializer(
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+      private val instruments: Vector[RemoteInstrument] = RemoteInstruments.create(system)
       private val serialization = SerializationExtension(system)
 
       override protected def logSource = classOf[Deserializer]
@@ -432,7 +469,11 @@ private[remote] class Deserializer(
           val deserializedMessage = MessageSerializer.deserializeForArtery(
             system, envelope.originUid, serialization, envelope.serializer, envelope.classManifest, envelope.envelopeBuffer)
 
-          push(out, envelope.withMessage(deserializedMessage))
+          val envelopeWithMessage = envelope.withMessage(deserializedMessage)
+
+          applyIncomingInstruments(envelopeWithMessage)
+
+          push(out, envelopeWithMessage)
         } catch {
           case NonFatal(e) ⇒
             log.warning(
@@ -447,6 +488,22 @@ private[remote] class Deserializer(
       }
 
       override def onPull(): Unit = pull(in)
+
+      private def applyIncomingInstruments(envelope: InboundEnvelope): Unit = {
+        if (envelope.flag(EnvelopeBuffer.MetadataPresentFlag)) {
+          val length = instruments.length
+          if (length == 0) {
+            // TODO do we need to parse, or can we do a fast forward if debug logging is not enabled?
+            val metaMetadataEnvelope = MetadataMapParsing.parse(envelope)
+            if (log.isDebugEnabled)
+              log.debug("Incoming message envelope contains metadata for instruments: {}, " +
+                "however no RemoteInstrument was registered in local system!", metaMetadataEnvelope.metadataMap.keysWithValues.mkString("[", ",", "]"))
+          } else {
+            // we avoid emitting a MetadataMap and instead directly apply the instruments onto the received metadata
+            MetadataMapParsing.applyAllRemoteMessageReceived(instruments, envelope)
+          }
+        }
+      }
 
       setHandlers(in, out, this)
     }
