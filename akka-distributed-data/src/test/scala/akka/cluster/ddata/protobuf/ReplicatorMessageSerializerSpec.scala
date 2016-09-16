@@ -21,6 +21,7 @@ import akka.cluster.ddata.Replicator.Internal._
 import akka.testkit.TestKit
 import akka.util.ByteString
 import akka.cluster.UniqueAddress
+import akka.remote.RARP
 import com.typesafe.config.ConfigFactory
 
 class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
@@ -32,9 +33,11 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
 
   val serializer = new ReplicatorMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
 
-  val address1 = UniqueAddress(Address("akka.tcp", system.name, "some.host.org", 4711), 1)
-  val address2 = UniqueAddress(Address("akka.tcp", system.name, "other.host.org", 4711), 2)
-  val address3 = UniqueAddress(Address("akka.tcp", system.name, "some.host.org", 4712), 3)
+  val Protocol = if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka" else "akka.tcp"
+
+  val address1 = UniqueAddress(Address(Protocol, system.name, "some.host.org", 4711), 1)
+  val address2 = UniqueAddress(Address(Protocol, system.name, "other.host.org", 4711), 2)
+  val address3 = UniqueAddress(Address(Protocol, system.name, "some.host.org", 4712), 3)
 
   val keyA = GSetKey[String]("A")
 
