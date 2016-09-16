@@ -20,7 +20,7 @@ class NewRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
     ConfigFactory.parseString(s"""
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
-      """)))
+      """).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf)))
 
   val master = role("master")
   val slave = role("slave")

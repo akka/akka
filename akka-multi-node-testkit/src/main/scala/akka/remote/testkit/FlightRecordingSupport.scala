@@ -35,7 +35,7 @@ trait FlightRecordingSupport { self: MultiNodeSpec ⇒
    * Delete flight the recorder file if it exists
    */
   final protected def deleteFlightRecorderFile(): Unit = {
-    if (arteryEnabled && Files.exists(flightRecorderFile)) {
+    if (arteryEnabled && destinationIsValidForDump() && Files.exists(flightRecorderFile)) {
       Files.delete(flightRecorderFile)
     }
   }
