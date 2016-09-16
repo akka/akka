@@ -26,6 +26,8 @@ import akka.remote.artery.FlightRecorderReader
  * run and there was a failure and then delete)
  */
 trait FlightRecordingSupport { self: MultiNodeSpec ⇒
+  private lazy val arteryEnabled =
+    RARP(system).provider.remoteSettings.Artery.Enabled
   private lazy val flightRecorderFile: Path =
     FileSystems.getDefault.getPath(RARP(system).provider.remoteSettings.Artery.Advanced.FlightRecorderDestination)
 
@@ -33,7 +35,7 @@ trait FlightRecordingSupport { self: MultiNodeSpec ⇒
    * Delete flight the recorder file if it exists
    */
   final protected def deleteFlightRecorderFile(): Unit = {
-    if (Files.exists(flightRecorderFile)) {
+    if (arteryEnabled && Files.exists(flightRecorderFile)) {
       Files.delete(flightRecorderFile)
     }
   }
@@ -42,7 +44,7 @@ trait FlightRecordingSupport { self: MultiNodeSpec ⇒
    * Dump the contents of the flight recorder file to standard output
    */
   final protected def printFlightRecording(): Unit = {
-    if (destinationIsValidForDump() && Files.exists(flightRecorderFile)) {
+    if (arteryEnabled && destinationIsValidForDump() && Files.exists(flightRecorderFile)) {
       // use stdout/println as we do not know if the system log is alive
       println("Flight recorder dump:")
       FlightRecorderReader.dumpToStdout(flightRecorderFile)
