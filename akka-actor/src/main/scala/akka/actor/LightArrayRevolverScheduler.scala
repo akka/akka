@@ -55,12 +55,15 @@ class LightArrayRevolverScheduler(
   import LightArrayRevolverScheduler._
 
   private val oneNs = Duration.fromNanos(1l)
-  private def roundUp(d: FiniteDuration): FiniteDuration =
-    try {
-      ((d + TickDuration - oneNs) / TickDuration).toLong * TickDuration
-    } catch {
-      case _: IllegalArgumentException ⇒ d // rounding up Long.MaxValue.nanos overflows
-    }
+  private def roundUp(d: FiniteDuration): FiniteDuration = {
+    val dn = d.toNanos
+    if (dn <= 0)
+      Duration.Zero
+    else if (dn > Long.MaxValue - (tickNanos - 1))
+      d // rounding up Long.MaxValue.nanos overflows
+    else
+      (((dn + tickNanos - 1) / tickNanos) * tickNanos).nanos
+  }
 
   /**
    * Clock implementation is replaceable (for testing); the implementation must
