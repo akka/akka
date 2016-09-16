@@ -103,7 +103,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   override protected def afterTermination(): Unit = {
     self.afterTermination()
     stopCoroner()
-    if (failed) {
+    if (failed || sys.props.get("akka.remote.artery.always-dump-flight-recorder").isDefined) {
       printFlightRecording()
     }
     deleteFlightRecorderFile()

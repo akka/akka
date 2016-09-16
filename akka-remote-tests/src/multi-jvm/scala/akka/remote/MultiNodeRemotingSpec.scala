@@ -40,7 +40,7 @@ abstract class MultiNodeRemotingSpec(config: MultiNodeConfig) extends MultiNodeS
   }
 
   override def afterTermination(): Unit = {
-    if (failed) {
+    if (failed || sys.props.get("akka.remote.artery.always-dump-flight-recorder").isDefined) {
       printFlightRecording()
     }
     deleteFlightRecorderFile()
