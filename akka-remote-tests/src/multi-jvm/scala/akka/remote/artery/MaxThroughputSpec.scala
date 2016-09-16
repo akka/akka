@@ -6,9 +6,10 @@ package akka.remote.artery
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
+
 import scala.concurrent.duration._
 import akka.actor._
-import akka.remote.RemoteActorRefProvider
+import akka.remote.{ MultiNodeRemotingSpec, RARP, RemoteActorRefProvider }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -19,7 +20,6 @@ import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.remote.artery.compress.CompressionProtocol.Events.ReceivedActorRefCompressionTable
-import akka.remote.RARP
 
 object MaxThroughputSpec extends MultiNodeConfig {
   val first = role("first")
@@ -67,7 +67,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
            }
          }
        }
-       """)))
+       """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
 
   case object Run
   sealed trait Echo extends DeadLetterSuppression with JavaSerializable
@@ -277,10 +277,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
 class MaxThroughputSpecMultiJvmNode1 extends MaxThroughputSpec
 class MaxThroughputSpecMultiJvmNode2 extends MaxThroughputSpec
 
-abstract class MaxThroughputSpec
-  extends MultiNodeSpec(MaxThroughputSpec)
-  with STMultiNodeSpec with ImplicitSender
-  with PerfFlamesSupport {
+abstract class MaxThroughputSpec extends MultiNodeRemotingSpec(MaxThroughputSpec) with PerfFlamesSupport {
 
   import MaxThroughputSpec._
 

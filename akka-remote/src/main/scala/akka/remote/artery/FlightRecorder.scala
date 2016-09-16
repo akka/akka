@@ -3,9 +3,9 @@
  */
 package akka.remote.artery
 
-import java.io.{ File, RandomAccessFile }
+import java.io.RandomAccessFile
 import java.nio.channels.FileChannel
-import java.nio.file.StandardOpenOption
+import java.nio.file._
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
@@ -184,13 +184,43 @@ private[remote] class RollingEventLogSection(
  */
 private[remote] object FlightRecorder {
 
-  def prepareFileForFlightRecorder(file: File): FileChannel = {
+  /**
+   * @return A created file where the flight recorder file can be written. There are three options, depending
+   *         on ``destination``:
+   *         1. Empty: a file will be generated in the temporary directory of the OS
+   *         2. A relative or absolute path ending with ".afr": this file will be used
+   *         3. A relative or absolute path: this directory will be used, the file will get a random file name
+   */
+  def createFlightRecorderFile(destination: String, fs: FileSystem = FileSystems.getDefault): Path = {
+
+    // TODO safer file permissions (e.g. only user readable on POSIX)?
+    destination match {
+      // not defined, use temporary directory
+      case "" ⇒ Files.createTempFile("artery", ".afr")
+
+      case directory if directory.endsWith(".afr") ⇒
+        val path = fs.getPath(directory).toAbsolutePath
+        if (!Files.exists(path)) {
+          Files.createDirectories(path.getParent)
+          Files.createFile(path)
+        }
+        path
+
+      case directory ⇒
+        val path = fs.getPath(directory).toAbsolutePath
+        if (!Files.exists(path)) Files.createDirectories(path)
+
+        Files.createTempFile(path, "artery", ".afr")
+    }
+  }
+
+  def prepareFileForFlightRecorder(path: Path): FileChannel = {
     // Force the size, otherwise memory mapping will fail on *nixes
-    val randomAccessFile = new RandomAccessFile(file, "rwd")
+    val randomAccessFile = new RandomAccessFile(path.toFile, "rwd")
     randomAccessFile.setLength(FlightRecorder.TotalSize)
     randomAccessFile.close()
 
-    FileChannel.open(file.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
+    FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ)
   }
 
   val Alignment = 64 * 1024 // Windows is picky about mapped section alignments

@@ -4,12 +4,13 @@
 package akka.remote.artery
 
 import akka.remote.transport.AssociationHandle
+
 import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.remote.testconductor.RoleName
-import akka.remote.transport.ThrottlerTransportAdapter.{ ForceDisassociateExplicitly, ForceDisassociate, Direction }
+import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, ForceDisassociate, ForceDisassociateExplicitly }
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
@@ -17,10 +18,9 @@ import akka.testkit._
 import akka.actor.ActorIdentity
 import akka.remote.testconductor.RoleName
 import akka.actor.Identify
+
 import scala.concurrent.Await
-import akka.remote.AddressUidExtension
-import akka.remote.RARP
-import akka.remote.ThisActorSystemQuarantinedEvent
+import akka.remote.{ AddressUidExtension, MultiNodeRemotingSpec, RARP, ThisActorSystemQuarantinedEvent }
 
 object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   val first = role("first")
@@ -31,7 +31,7 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
       akka.loglevel = WARNING
       akka.remote.log-remote-lifecycle-events = WARNING
       akka.remote.artery.enabled = on
-      """)))
+      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
 
   class Subject extends Actor {
     def receive = {
@@ -45,9 +45,7 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
 class RemoteRestartedQuarantinedSpecMultiJvmNode1 extends RemoteRestartedQuarantinedSpec
 class RemoteRestartedQuarantinedSpecMultiJvmNode2 extends RemoteRestartedQuarantinedSpec
 
-abstract class RemoteRestartedQuarantinedSpec
-  extends MultiNodeSpec(RemoteRestartedQuarantinedSpec)
-  with STMultiNodeSpec with ImplicitSender {
+abstract class RemoteRestartedQuarantinedSpec extends MultiNodeRemotingSpec(RemoteRestartedQuarantinedSpec) {
 
   import RemoteRestartedQuarantinedSpec._
 

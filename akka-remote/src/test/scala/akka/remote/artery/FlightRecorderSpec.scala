@@ -6,12 +6,13 @@ package akka.remote.artery
 
 import java.io.{ File, IOException, RandomAccessFile }
 import java.nio.channels.FileChannel
-import java.nio.file.StandardOpenOption
+import java.nio.file.{ Files, Path, StandardOpenOption }
 import java.time.Instant
 import java.util.Arrays
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.testkit.AkkaSpec
+import com.google.common.jimfs.Jimfs
 
 class FlightRecorderSpec extends AkkaSpec {
   import FlightRecorderReader._
@@ -370,6 +371,34 @@ class FlightRecorderSpec extends AkkaSpec {
         // Timestamps are monotonic
         entries.sortBy(_.metadata(0).toInt) should ===(entries.sortBy(_.timeStamp))
       }
+    }
+
+    "create flight recorder file" in {
+      def assertFileIsSound(path: Path) = {
+        Files.exists(path) should ===(true)
+        Files.isRegularFile(path) should ===(true)
+        Files.isWritable(path) should ===(true)
+        Files.isReadable(path) should ===(true)
+      }
+      val fs = Jimfs.newFileSystem()
+
+      try {
+        val tmpPath = FlightRecorder.createFlightRecorderFile("", fs)
+        assertFileIsSound(tmpPath)
+        // this is likely in the actual file system, so lets delete it
+        Files.delete(tmpPath)
+
+        Files.createDirectory(fs.getPath("/directory"))
+        val tmpFileInGivenPath = FlightRecorder.createFlightRecorderFile("/directory", fs)
+        assertFileIsSound(tmpFileInGivenPath)
+
+        val specificFile = FlightRecorder.createFlightRecorderFile("/directory/flight-recorder.afr", fs)
+        assertFileIsSound(specificFile)
+
+      } finally {
+        fs.close()
+      }
+
     }
 
   }

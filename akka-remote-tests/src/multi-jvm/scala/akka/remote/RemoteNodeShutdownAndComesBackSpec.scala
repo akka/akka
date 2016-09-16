@@ -30,7 +30,7 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 60 s
-                              """)))
+    """)))
 
   testTransport(on = true)
 
@@ -47,8 +47,7 @@ class RemoteNodeShutdownAndComesBackMultiJvmNode1 extends RemoteNodeShutdownAndC
 class RemoteNodeShutdownAndComesBackMultiJvmNode2 extends RemoteNodeShutdownAndComesBackSpec
 
 abstract class RemoteNodeShutdownAndComesBackSpec
-  extends MultiNodeSpec(RemoteNodeShutdownAndComesBackSpec)
-  with STMultiNodeSpec with ImplicitSender {
+  extends MultiNodeRemotingSpec(RemoteNodeShutdownAndComesBackSpec) {
 
   import RemoteNodeShutdownAndComesBackSpec._
 

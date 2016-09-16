@@ -3,21 +3,18 @@
  */
 package akka.remote.artery
 
-import java.util.concurrent.TimeUnit.MICROSECONDS
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.{MICROSECONDS, MILLISECONDS}
+
+import akka.Done
+import akka.actor.ExtendedActorSystem
+import akka.dispatch.{AbstractNodeQueue, MonitorableThreadFactory}
+import akka.event.Logging
+import org.agrona.concurrent.{BackoffIdleStrategy, BusySpinIdleStrategy, IdleStrategy, SleepingIdleStrategy}
 
 import scala.annotation.tailrec
+import scala.concurrent.{Future, Promise}
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-
-import akka.actor.ExtendedActorSystem
-import akka.dispatch.AbstractNodeQueue
-import akka.dispatch.MonitorableThreadFactory
-import akka.event.Logging
-import org.agrona.concurrent.BackoffIdleStrategy
-import org.agrona.concurrent.BusySpinIdleStrategy
-import org.agrona.concurrent.IdleStrategy
-import org.agrona.concurrent.SleepingIdleStrategy
 
 /**
  * INTERNAL API
@@ -112,6 +109,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
   private[this] var running = false
   private[this] val cmdQueue = new CommandQueue
   private[this] val tasks = new ArrayBag[Task]
+  private[this] val shutdown = Promise[Done]()
 
   private val idleStrategy = createIdleStrategy(idleCpuLevel)
   private var reset = false
@@ -126,8 +124,9 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
     thread.start()
   }
 
-  def stop(): Unit = {
+  def stop(): Future[Done] = {
     command(Shutdown)
+    shutdown.future
   }
 
   def command(cmd: Command): Unit = {
@@ -177,7 +176,9 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
       case null         ⇒ // no command
       case Add(task)    ⇒ tasks.add(task)
       case Remove(task) ⇒ tasks.remove(task)
-      case Shutdown     ⇒ running = false
+      case Shutdown ⇒
+        running = false
+        shutdown.trySuccess(Done)
     }
   }
 
