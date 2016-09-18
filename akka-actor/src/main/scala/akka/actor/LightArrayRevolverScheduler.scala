@@ -59,10 +59,12 @@ class LightArrayRevolverScheduler(
     val dn = d.toNanos
     if (dn <= 0)
       Duration.Zero
-    else if (dn > Long.MaxValue - (tickNanos - 1))
+    else if (dn > Long.MaxValue - tickNanos)
       d // rounding up Long.MaxValue.nanos overflows
-    else
-      (((dn + tickNanos - 1) / tickNanos) * tickNanos).nanos
+    else {
+      val r = ((dn - 1) / tickNanos + 1) * tickNanos
+      if (r != dn) r.nanos else d
+    }
   }
 
   /**
