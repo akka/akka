@@ -373,6 +373,10 @@ Deleting messages in event sourcing based applications is typically either not u
 up until the sequence number of the data held by that snapshot can be issued to safely delete the previous events
 while still having access to the accumulated state during replays - by loading the snapshot.
 
+.. warning::
+  If you are using :ref:`persistence-query-scala`, query results will be missing deleted messages in a journal.
+  You have to design your application so that it is not affected by missing messages in a journal.
+
 The result of the ``deleteMessages`` request is signaled to the persistent actor with a ``DeleteMessagesSuccess``
 message if the delete was successful or a ``DeleteMessagesFailure`` message if it failed.
 
