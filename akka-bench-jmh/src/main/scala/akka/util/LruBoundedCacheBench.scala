@@ -22,7 +22,7 @@ class LruBoundedCacheBench {
 
   @Param(Array("128", "256"))
   var stringSize = 0
-  var lruCache: LruBoundedCache[String, String] = _
+  private var lruCache: LruBoundedCache[String, String] = _
 
   @Param(Array("90", "99"))
   var loadFactor: Int = _

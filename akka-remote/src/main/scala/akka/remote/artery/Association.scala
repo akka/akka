@@ -152,7 +152,7 @@ private[remote] class Association(
     timeoutAfter(result, changeCompressionTimeout, new ChangeOutboundCompressionFailed)
   }
 
-  private[artery] def clearCompression(): Future[Done] = {
+  private def clearOutboundCompression(): Future[Done] = {
     import transport.system.dispatcher
     val c = changeOutboundCompression
     val result =
@@ -161,6 +161,9 @@ private[remote] class Association(
       else Future.sequence(c.map(_.clearCompression())).map(_ ⇒ Done)
     timeoutAfter(result, changeCompressionTimeout, new ChangeOutboundCompressionFailed)
   }
+
+  private def clearInboundCompression(originUid: Long): Unit =
+    transport.inboundCompressions.foreach(_.close(originUid))
 
   private def timeoutAfter[T](f: Future[T], timeout: FiniteDuration, e: ⇒ Throwable): Future[T] = {
     import transport.system.dispatcher
@@ -227,7 +230,7 @@ private[remote] class Association(
         // completes handshake at same time, but it's important to clear it before
         // we signal that the handshake is completed (uniqueRemoteAddressPromise.trySuccess)
         import transport.system.dispatcher
-        clearCompression().map { _ ⇒
+        clearOutboundCompression().map { _ ⇒
           current.uniqueRemoteAddressPromise.trySuccess(peer)
           current.uniqueRemoteAddressValue() match {
             case Some(`peer`) ⇒
@@ -240,6 +243,7 @@ private[remote] class Association(
                     log.debug(
                       "Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
                       newState.incarnation, peer.address, peer.uid, old.uid)
+                    clearInboundCompression(old.uid)
                   case None ⇒
                   // Failed, nothing to do
                 }
@@ -366,8 +370,8 @@ private[remote] class Association(
                 log.warning(
                   "Association to [{}] with UID [{}] is irrecoverably failed. Quarantining address. {}",
                   remoteAddress, u, reason)
-                // clear outbound compression
-                clearCompression()
+                clearOutboundCompression()
+                clearInboundCompression(u)
                 // FIXME when we complete the switch to Long UID we must use Long here also, issue #20644
                 transport.eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, u.toInt))
                 // end delivery of system messages to that incarnation after this point

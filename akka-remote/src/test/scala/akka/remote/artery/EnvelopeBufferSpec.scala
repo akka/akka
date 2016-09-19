@@ -33,10 +33,10 @@ class EnvelopeBufferSpec extends AkkaSpec {
     val idxToManifest = manifestToIdx.map(_.swap)
 
     val outboundActorRefTable: CompressionTable[ActorRef] =
-      CompressionTable(version = 0xCAFE, refToIdx)
+      CompressionTable(17L, version = 0xCAFE, refToIdx)
 
     val outboundClassManifestTable: CompressionTable[String] =
-      CompressionTable(version = 0xBABE, manifestToIdx)
+      CompressionTable(17L, version = 0xBABE, manifestToIdx)
 
     override def hitActorRef(originUid: Long, remote: Address, ref: ActorRef, n: Int): Unit = ()
     override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] = OptionVal(idxToRef(idx))
@@ -45,6 +45,9 @@ class EnvelopeBufferSpec extends AkkaSpec {
     override def hitClassManifest(originUid: Long, remote: Address, manifest: String, n: Int): Unit = ()
     override def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String] = OptionVal(idxToManifest(idx))
     override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = ()
+
+    override def close(): Unit = ()
+    override def close(originUid: Long): Unit = ()
   }
 
   "EnvelopeBuffer" must {
@@ -83,7 +86,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.senderActorRefPath should ===(OptionVal.None)
       headerOut.recipientActorRef(originUid).get.path.toSerializationFormat should ===("akka://EnvelopeBufferSpec/compressable1")
       headerOut.recipientActorRefPath should ===(OptionVal.None)
-      headerOut.manifest(originUid) should ===("manifest1")
+      headerOut.manifest(originUid).get should ===("manifest1")
     }
 
     "be able to encode and decode headers with uncompressed literals" in {
@@ -116,7 +119,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.senderActorRef(originUid) should ===(OptionVal.None)
       headerOut.recipientActorRefPath should ===(OptionVal.Some("akka://EnvelopeBufferSpec/uncompressable11"))
       headerOut.recipientActorRef(originUid) should ===(OptionVal.None)
-      headerOut.manifest(originUid) should ===("uncompressable3333")
+      headerOut.manifest(originUid).get should ===("uncompressable3333")
     }
 
     "be able to encode and decode headers with mixed literals" in {
@@ -144,7 +147,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.senderActorRefPath should ===(OptionVal.None)
       headerOut.recipientActorRefPath should ===(OptionVal.Some("akka://EnvelopeBufferSpec/uncompressable1"))
       headerOut.recipientActorRef(originUid) should ===(OptionVal.None)
-      headerOut.manifest(originUid) should ===("manifest1")
+      headerOut.manifest(originUid).get should ===("manifest1")
 
       val senderRef = minimalRef("uncompressable0")
 
@@ -171,7 +174,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.senderActorRef(originUid) should ===(OptionVal.None)
       headerOut.recipientActorRef(originUid).get.path.toSerializationFormat should ===("akka://EnvelopeBufferSpec/reallylongcompressablestring")
       headerOut.recipientActorRefPath should ===(OptionVal.None)
-      headerOut.manifest(originUid) should ===("longlonglongliteralmanifest")
+      headerOut.manifest(originUid).get should ===("longlonglongliteralmanifest")
     }
 
     "be able to encode and decode headers with mixed literals and payload" in {
@@ -197,7 +200,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       headerOut.senderActorRefPath should ===(OptionVal.None)
       headerOut.recipientActorRefPath should ===(OptionVal.Some("akka://EnvelopeBufferSpec/uncompressable1"))
       headerOut.recipientActorRef(originUid) should ===(OptionVal.None)
-      headerOut.manifest(originUid) should ===("manifest1")
+      headerOut.manifest(originUid).get should ===("manifest1")
 
       ByteString.fromByteBuffer(envelope.byteBuffer) should ===(payload)
     }
