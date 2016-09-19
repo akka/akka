@@ -18,6 +18,7 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.remote.UniqueAddress
 import akka.util.OptionVal
+import akka.event.Logging
 
 /** INTERNAL API: marker trait for protobuf-serializable artery messages */
 private[akka] trait ArteryMessage extends Serializable
@@ -206,7 +207,7 @@ private[akka] class OutboundControlJunction(
           buffer.offer(wrap(message))
         else {
           // it's alright to drop control messages
-          log.debug("Dropping control message [{}] due to full buffer.", message.getClass.getName)
+          log.debug("Dropping control message [{}] due to full buffer.", Logging.messageClassName(message))
         }
       }
 

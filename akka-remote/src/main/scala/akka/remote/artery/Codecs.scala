@@ -23,6 +23,7 @@ import akka.Done
 import akka.stream.stage.GraphStageWithMaterializedValue
 
 import scala.concurrent.Promise
+import akka.event.Logging
 
 /**
  * INTERNAL API
@@ -126,15 +127,18 @@ private[remote] class Encoder(
             bufferPool.release(envelope)
             outboundEnvelope.message match {
               case _: SystemMessageEnvelope ⇒
-                log.error(e, "Failed to serialize system message [{}].", outboundEnvelope.message.getClass.getName)
+                log.error(e, "Failed to serialize system message [{}].",
+                  Logging.messageClassName(outboundEnvelope.message))
                 throw e
               case _ if e.isInstanceOf[java.nio.BufferOverflowException] ⇒
-                val reason = new OversizedPayloadException(s"Discarding oversized payload sent to ${outboundEnvelope.recipient}: " +
-                  s"max allowed size ${envelope.byteBuffer.limit()} bytes. Message type [${outboundEnvelope.message.getClass.getName}].")
-                log.error(reason, "Failed to serialize oversized message [{}].", outboundEnvelope.message.getClass.getName)
+                val reason = new OversizedPayloadException("Discarding oversized payload sent to " +
+                  s"${outboundEnvelope.recipient}: max allowed size ${envelope.byteBuffer.limit()} " +
+                  s"bytes. Message type [${Logging.messageClassName(outboundEnvelope.message)}].")
+                log.error(reason, "Failed to serialize oversized message [{}].",
+                  Logging.messageClassName(outboundEnvelope.message))
                 pull(in)
               case _ ⇒
-                log.error(e, "Failed to serialize message [{}].", outboundEnvelope.message.getClass.getName)
+                log.error(e, "Failed to serialize message [{}].", Logging.messageClassName(outboundEnvelope.message))
                 pull(in)
             }
         } finally {
