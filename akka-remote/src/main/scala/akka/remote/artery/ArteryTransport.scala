@@ -426,7 +426,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private lazy val shutdownHook = new Thread {
     override def run(): Unit = {
       if (!_shutdown) {
-        Await.result(internalShutdown(system.dispatcher), 20.seconds)
+        Await.result(internalShutdown(), 20.seconds)
       }
     }
   }
@@ -748,10 +748,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         flushingPromise.future
       }
     implicit val ec = remoteDispatcher
-    flushing.recover { case _ ⇒ Done }.flatMap(_ ⇒ internalShutdown(system.dispatcher))
+    flushing.recover { case _ ⇒ Done }.flatMap(_ ⇒ internalShutdown())
   }
 
-  private def internalShutdown(ec: ExecutionContext): Future[Done] = {
+  private def internalShutdown(): Future[Done] = {
     import system.dispatcher
 
     killSwitch.abort(ShutdownSignal)
