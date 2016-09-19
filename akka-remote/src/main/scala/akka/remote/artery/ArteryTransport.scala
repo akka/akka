@@ -7,6 +7,7 @@ import java.io.File
 import java.net.InetSocketAddress
 import java.nio.channels.{ DatagramChannel, FileChannel }
 import java.nio.file.Path
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 import java.util.concurrent.atomic.AtomicBoolean
@@ -58,11 +59,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.OptionVal
 import akka.util.WildcardIndex
-import io.aeron.Aeron
-import io.aeron.AvailableImageHandler
-import io.aeron.CncFileDescriptor
-import io.aeron.Image
-import io.aeron.UnavailableImageHandler
+import io.aeron._
 import io.aeron.driver.MediaDriver
 import io.aeron.driver.ThreadingMode
 import io.aeron.exceptions.ConductorServiceTimeoutException
@@ -436,8 +433,14 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private def startMediaDriver(): Unit = {
     if (settings.Advanced.EmbeddedMediaDriver) {
       val driverContext = new MediaDriver.Context
-      if (settings.Advanced.AeronDirectoryName.nonEmpty)
+      if (settings.Advanced.AeronDirectoryName.nonEmpty) {
         driverContext.aeronDirectoryName(settings.Advanced.AeronDirectoryName)
+      } else {
+        // create a random name but include the actor system name for easier debugging
+        val uniquePart = UUID.randomUUID().toString
+        val randomName = s"${CommonContext.AERON_DIR_PROP_DEFAULT}-${system.name}-$uniquePart"
+        driverContext.aeronDirectoryName(randomName)
+      }
       driverContext.clientLivenessTimeoutNs(settings.Advanced.ClientLivenessTimeout.toNanos)
       driverContext.imageLivenessTimeoutNs(settings.Advanced.ImageLivenessTimeoutNs.toNanos)
       driverContext.driverTimeoutMs(settings.Advanced.DriverTimeout.toMillis)
