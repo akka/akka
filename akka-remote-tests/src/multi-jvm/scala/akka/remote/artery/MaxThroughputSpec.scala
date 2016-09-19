@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import scala.concurrent.duration._
 import akka.actor._
-import akka.remote.{ MultiNodeRemotingSpec, RARP, RemoteActorRefProvider }
+import akka.remote.{ RemotingMultiNodeSpec, RARP, RemoteActorRefProvider }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -67,7 +67,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
            }
          }
        }
-       """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+       """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   case object Run
   sealed trait Echo extends DeadLetterSuppression with JavaSerializable
@@ -277,7 +277,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
 class MaxThroughputSpecMultiJvmNode1 extends MaxThroughputSpec
 class MaxThroughputSpecMultiJvmNode2 extends MaxThroughputSpec
 
-abstract class MaxThroughputSpec extends MultiNodeRemotingSpec(MaxThroughputSpec) with PerfFlamesSupport {
+abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec) with PerfFlamesSupport {
 
   import MaxThroughputSpec._
 

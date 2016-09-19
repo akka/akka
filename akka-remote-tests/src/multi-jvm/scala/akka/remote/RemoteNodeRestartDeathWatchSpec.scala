@@ -63,7 +63,7 @@ object RemoteNodeRestartDeathWatchSpec {
 }
 
 abstract class RemoteNodeRestartDeathWatchSpec(multiNodeConfig: RemoteNodeRestartDeathWatchConfig)
-  extends MultiNodeRemotingSpec(multiNodeConfig) {
+  extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteNodeRestartDeathWatchSpec._
 

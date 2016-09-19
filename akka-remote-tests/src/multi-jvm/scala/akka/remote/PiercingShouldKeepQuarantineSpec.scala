@@ -15,7 +15,7 @@ class PiercingShouldKeepQuarantineConfig(artery: Boolean) extends MultiNodeConfi
     ConfigFactory.parseString(s"""
       akka.remote.retry-gate-closed-for = 0.5s
       akka.remote.artery.enabled = $artery
-      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
 }
 
@@ -38,7 +38,7 @@ object PiercingShouldKeepQuarantineSpec {
 }
 
 abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldKeepQuarantineConfig)
-  extends MultiNodeRemotingSpec(multiNodeConfig) {
+  extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import PiercingShouldKeepQuarantineSpec._
 

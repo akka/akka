@@ -46,7 +46,7 @@ class RemoteNodeRestartGateSpecMultiJvmNode1 extends RemoteNodeRestartGateSpec
 class RemoteNodeRestartGateSpecMultiJvmNode2 extends RemoteNodeRestartGateSpec
 
 abstract class RemoteNodeRestartGateSpec
-  extends MultiNodeRemotingSpec(RemoteNodeRestartGateSpec) {
+  extends RemotingMultiNodeSpec(RemoteNodeRestartGateSpec) {
 
   import RemoteNodeRestartGateSpec._
 

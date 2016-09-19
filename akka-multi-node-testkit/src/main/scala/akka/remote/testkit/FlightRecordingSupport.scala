@@ -46,7 +46,7 @@ trait FlightRecordingSupport { self: MultiNodeSpec ⇒
   final protected def printFlightRecording(): Unit = {
     if (arteryEnabled && destinationIsValidForDump() && Files.exists(flightRecorderFile)) {
       // use stdout/println as we do not know if the system log is alive
-      println("Flight recorder dump:")
+      println(s"Flight recorder dump from '$flightRecorderFile':")
       FlightRecorderReader.dumpToStdout(flightRecorderFile)
     }
   }
