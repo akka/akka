@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.annotation.tailrec
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
@@ -48,6 +48,7 @@ import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
 import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
 import akka.stream.AbruptTerminationException
+import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
 import akka.stream.Materializer
@@ -377,6 +378,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def settings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
+    Runtime.getRuntime.addShutdownHook(shutdownHook)
     startMediaDriver()
     startAeron()
     topLevelFREvents.loFreq(Transport_AeronStarted, NoMetaData)
@@ -424,8 +426,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private lazy val shutdownHook = new Thread {
     override def run(): Unit = {
       if (!_shutdown) {
-        internalShutdown()
-
+        Await.result(internalShutdown(system.dispatcher), 20.seconds)
       }
     }
   }
@@ -470,7 +471,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       val driver = MediaDriver.launchEmbedded(driverContext)
       log.info("Started embedded media driver in directory [{}]", driver.aeronDirectoryName)
       topLevelFREvents.loFreq(Transport_MediaDriverStarted, driver.aeronDirectoryName().getBytes("US-ASCII"))
-      Runtime.getRuntime.addShutdownHook(shutdownHook)
       if (!mediaDriver.compareAndSet(None, Some(driver))) {
         throw new IllegalStateException("media driver started more than once")
       }
@@ -748,10 +748,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         flushingPromise.future
       }
     implicit val ec = remoteDispatcher
-    flushing.recover { case _ ⇒ Done }.flatMap(_ ⇒ internalShutdown())
+    flushing.recover { case _ ⇒ Done }.flatMap(_ ⇒ internalShutdown(system.dispatcher))
   }
 
-  private def internalShutdown(): Future[Done] = {
+  private def internalShutdown(ec: ExecutionContext): Future[Done] = {
     import system.dispatcher
 
     killSwitch.abort(ShutdownSignal)
