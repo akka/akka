@@ -9,7 +9,7 @@ import java.util.concurrent.locks.LockSupport
 
 import scala.concurrent.duration._
 import akka.actor._
-import akka.remote.MultiNodeRemotingSpec
+import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -53,7 +53,7 @@ object LatencySpec extends MultiNodeConfig {
            }
          }
        }
-       """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+       """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   final case object Reset
 
@@ -161,7 +161,7 @@ class LatencySpecMultiJvmNode1 extends LatencySpec
 class LatencySpecMultiJvmNode2 extends LatencySpec
 
 abstract class LatencySpec
-  extends MultiNodeRemotingSpec(LatencySpec) {
+  extends RemotingMultiNodeSpec(LatencySpec) {
 
   import LatencySpec._
 

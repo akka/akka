@@ -51,7 +51,7 @@ class RemoteGatePiercingSpecMultiJvmNode1 extends RemoteGatePiercingSpec
 class RemoteGatePiercingSpecMultiJvmNode2 extends RemoteGatePiercingSpec
 
 abstract class RemoteGatePiercingSpec
-  extends MultiNodeRemotingSpec(RemoteGatePiercingSpec) {
+  extends RemotingMultiNodeSpec(RemoteGatePiercingSpec) {
 
   import RemoteGatePiercingSpec._
 

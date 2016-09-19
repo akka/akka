@@ -27,7 +27,7 @@ class RemoteQuarantinePiercingConfig(artery: Boolean) extends MultiNodeConfig {
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
       akka.remote.artery.enabled = $artery
-      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
 }
 
@@ -51,7 +51,7 @@ object RemoteQuarantinePiercingSpec {
 }
 
 abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePiercingConfig)
-  extends MultiNodeRemotingSpec(multiNodeConfig) {
+  extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteQuarantinePiercingSpec._
 

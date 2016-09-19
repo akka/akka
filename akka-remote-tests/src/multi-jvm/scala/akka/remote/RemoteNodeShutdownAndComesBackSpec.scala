@@ -47,7 +47,7 @@ class RemoteNodeShutdownAndComesBackMultiJvmNode1 extends RemoteNodeShutdownAndC
 class RemoteNodeShutdownAndComesBackMultiJvmNode2 extends RemoteNodeShutdownAndComesBackSpec
 
 abstract class RemoteNodeShutdownAndComesBackSpec
-  extends MultiNodeRemotingSpec(RemoteNodeShutdownAndComesBackSpec) {
+  extends RemotingMultiNodeSpec(RemoteNodeShutdownAndComesBackSpec) {
 
   import RemoteNodeShutdownAndComesBackSpec._
 

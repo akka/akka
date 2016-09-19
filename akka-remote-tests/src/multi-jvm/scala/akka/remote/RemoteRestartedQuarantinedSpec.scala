@@ -56,7 +56,7 @@ class RemoteRestartedQuarantinedSpecMultiJvmNode1 extends RemoteRestartedQuarant
 class RemoteRestartedQuarantinedSpecMultiJvmNode2 extends RemoteRestartedQuarantinedSpec
 
 abstract class RemoteRestartedQuarantinedSpec
-  extends MultiNodeRemotingSpec(RemoteRestartedQuarantinedSpec) {
+  extends RemotingMultiNodeSpec(RemoteRestartedQuarantinedSpec) {
 
   import RemoteRestartedQuarantinedSpec._
 

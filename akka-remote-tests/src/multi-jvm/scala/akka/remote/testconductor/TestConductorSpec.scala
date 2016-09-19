@@ -15,12 +15,12 @@ import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress
 import java.net.InetAddress
 
-import akka.remote.MultiNodeRemotingSpec
+import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   val master = role("master")
   val slave = role("slave")
@@ -31,7 +31,7 @@ object TestConductorMultiJvmSpec extends MultiNodeConfig {
 class TestConductorMultiJvmNode1 extends TestConductorSpec
 class TestConductorMultiJvmNode2 extends TestConductorSpec
 
-class TestConductorSpec extends MultiNodeRemotingSpec(TestConductorMultiJvmSpec) {
+class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec) {
 
   import TestConductorMultiJvmSpec._
 
