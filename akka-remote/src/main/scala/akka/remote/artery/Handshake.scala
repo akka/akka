@@ -200,19 +200,22 @@ private[akka] class InboundHandshake(inboundContext: InboundContext, inControlSt
         })
 
       private def onHandshakeReq(from: UniqueAddress, to: Address): Unit = {
-        if (to != inboundContext.localAddress.address) {
-          if (log.isDebugEnabled)
-            log.debug(
-              s"Dropping Handshake Request addressed to unknown local address [{}]. " +
-                "Local address is [{}]",
-              to, inboundContext.localAddress.address)
-
-          pull(in)
-        } else {
+        if (to == inboundContext.localAddress.address) {
           after(inboundContext.completeHandshake(from)) {
             inboundContext.sendControl(from.address, HandshakeRsp(inboundContext.localAddress))
             pull(in)
           }
+        } else {
+          if (log.isWarningEnabled)
+            log.warning(
+              s"Dropping Handshake Request addressed to unknown local address [{}]. " +
+                "Local address is [{}]. Check that the sending system uses the same " +
+                "address to contact recipient system as defined in the " +
+                "'akka.remote.artery.canonical.hostname' of the recipient system. " +
+                "The name of the ActorSystem must also match.",
+              to, inboundContext.localAddress.address)
+
+          pull(in)
         }
       }
 

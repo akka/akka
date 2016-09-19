@@ -34,7 +34,7 @@ class SystemMessageAckerSpec extends AkkaSpec with ImplicitSender {
     TestSource.probe[AnyRef]
       .map {
         case sysMsg @ SystemMessageEnvelope(_, _, ackReplyTo) ⇒
-          InboundEnvelope(recipient, addressA.address, sysMsg, OptionVal.None, ackReplyTo.uid,
+          InboundEnvelope(recipient, sysMsg, OptionVal.None, ackReplyTo.uid,
             inboundContext.association(ackReplyTo.uid))
       }
       .via(new SystemMessageAcker(inboundContext))

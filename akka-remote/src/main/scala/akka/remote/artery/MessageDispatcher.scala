@@ -71,13 +71,8 @@ private[akka] class MessageDispatcher(
 
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !UntrustedMode ⇒
         if (LogReceive) log.debug("received remote-destined message {}", msgLog)
-        if (provider.transport.addresses(recipientAddress))
-          // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
-          r.!(message)(sender)
-        else
-          log.error(
-            "dropping message [{}] for non-local recipient [{}] arriving at [{}] inbound addresses are [{}]",
-            message.getClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
+        // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
+        r.!(message)(sender)
 
       case r ⇒ log.error(
         "dropping message [{}] for unknown recipient [{}] arriving at [{}] inbound addresses are [{}]",

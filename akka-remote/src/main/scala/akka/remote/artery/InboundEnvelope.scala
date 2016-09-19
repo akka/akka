@@ -16,14 +16,13 @@ private[remote] object InboundEnvelope {
    * Only used in tests
    */
   def apply(
-    recipient:        OptionVal[InternalActorRef],
-    recipientAddress: Address,
-    message:          AnyRef,
-    sender:           OptionVal[ActorRef],
-    originUid:        Long,
-    association:      OptionVal[OutboundContext]): InboundEnvelope = {
+    recipient:   OptionVal[InternalActorRef],
+    message:     AnyRef,
+    sender:      OptionVal[ActorRef],
+    originUid:   Long,
+    association: OptionVal[OutboundContext]): InboundEnvelope = {
     val env = new ReusableInboundEnvelope
-    env.init(recipient, recipientAddress, sender, originUid, -1, "", 0, null, association)
+    env.init(recipient, sender, originUid, -1, "", 0, null, association)
       .withMessage(message)
   }
 
@@ -116,15 +115,14 @@ private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
   }
 
   def init(
-    recipient:        OptionVal[InternalActorRef],
-    recipientAddress: Address,
-    sender:           OptionVal[ActorRef],
-    originUid:        Long,
-    serializer:       Int,
-    classManifest:    String,
-    flags:            Byte,
-    envelopeBuffer:   EnvelopeBuffer,
-    association:      OptionVal[OutboundContext]): InboundEnvelope = {
+    recipient:      OptionVal[InternalActorRef],
+    sender:         OptionVal[ActorRef],
+    originUid:      Long,
+    serializer:     Int,
+    classManifest:  String,
+    flags:          Byte,
+    envelopeBuffer: EnvelopeBuffer,
+    association:    OptionVal[OutboundContext]): InboundEnvelope = {
     _recipient = recipient
     _recipientAddress = recipientAddress
     _sender = sender
