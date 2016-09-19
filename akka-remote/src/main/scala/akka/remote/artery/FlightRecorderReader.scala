@@ -197,11 +197,18 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
   }
 
   case class RichEntry(timeStamp: Instant, dirty: Boolean, code: Long, metadata: Array[Byte]) {
-    override def toString: String = s"[$timeStamp] ${if (dirty) "#" else ""} \t $code | ${metadata.mkString(",")}"
+    override def toString: String = {
+      val textualCode = FlightRecorderEvents.eventDictionary.getOrElse(code, "").take(34)
+      val metadataString = new String(metadata, "UTF-8")
+      f"[$timeStamp] ${if (dirty) "#" else ""} $code%3s $textualCode%-34s | $metadataString"
+    }
   }
 
   case class CompactEntry(timeStamp: Instant, dirty: Boolean, code: Long, param: Long) {
-    override def toString: String = s"[$timeStamp] ${if (dirty) "#" else ""} \t $code | $param"
+    override def toString: String = {
+      val textualCode = FlightRecorderEvents.eventDictionary.getOrElse(code, "").take(34)
+      f"[$timeStamp] ${if (dirty) "#" else ""} $code%3s $textualCode%-34s | $param"
+    }
   }
 
   private val fileBuffer = new MappedResizeableBuffer(fileChannel, 0, TotalSize)
