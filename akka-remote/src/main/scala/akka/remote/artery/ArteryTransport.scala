@@ -489,6 +489,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       try {
         if (settings.Advanced.DeleteAeronDirectory) {
           IoUtil.delete(new File(driver.aeronDirectoryName), false)
+          topLevelFREvents.loFreq(Transport_MediaFileDeleted, NoMetaData)
         }
       } catch {
         case NonFatal(e) ⇒
@@ -766,7 +767,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       if (areonErrorLog != null) areonErrorLog.close()
       if (mediaDriver.get.isDefined) {
         stopMediaDriver()
-        topLevelFREvents.loFreq(Transport_MediaFileDeleted, NoMetaData)
+
       }
       topLevelFREvents.loFreq(Transport_FlightRecorderClose, NoMetaData)
 
