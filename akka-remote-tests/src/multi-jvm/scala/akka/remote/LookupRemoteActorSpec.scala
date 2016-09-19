@@ -18,7 +18,7 @@ class LookupRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
-      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   val master = role("master")
   val slave = role("slave")
@@ -40,7 +40,7 @@ object LookupRemoteActorSpec {
 }
 
 abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmSpec)
-  extends MultiNodeRemotingSpec(multiNodeConfig) {
+  extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import LookupRemoteActorSpec._
 

@@ -3,11 +3,11 @@
  */
 package akka.remote.testkit
 
-import akka.remote.MultiNodeRemotingSpec
+import akka.remote.RemotingMultiNodeSpec
 import akka.testkit.LongRunningTest
 
 object MultiNodeSpecMultiJvmSpec extends MultiNodeConfig {
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   val node1 = role("node1")
   val node2 = role("node2")
@@ -20,7 +20,7 @@ class MultiNodeSpecSpecMultiJvmNode2 extends MultiNodeSpecSpec
 class MultiNodeSpecSpecMultiJvmNode3 extends MultiNodeSpecSpec
 class MultiNodeSpecSpecMultiJvmNode4 extends MultiNodeSpecSpec
 
-class MultiNodeSpecSpec extends MultiNodeRemotingSpec(MultiNodeSpecMultiJvmSpec) {
+class MultiNodeSpecSpec extends RemotingMultiNodeSpec(MultiNodeSpecMultiJvmSpec) {
 
   import MultiNodeSpecMultiJvmSpec._
 

@@ -9,7 +9,7 @@ import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.PoisonPill
 import akka.actor.Props
-import akka.remote.MultiNodeRemotingSpec
+import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.routing.Broadcast
 import akka.routing.ScatterGatherFirstCompletedPool
@@ -28,7 +28,7 @@ class RemoteScatterGatherConfig(artery: Boolean) extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
-      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   deployOnAll("""
       /service-hello {
@@ -57,7 +57,7 @@ object RemoteScatterGatherSpec {
   }
 }
 
-class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extends MultiNodeRemotingSpec(multiNodeConfig)
+class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extends RemotingMultiNodeSpec(multiNodeConfig)
   with DefaultTimeout {
   import multiNodeConfig._
   import RemoteScatterGatherSpec._

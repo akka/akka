@@ -3,31 +3,18 @@
  */
 package akka.remote.routing
 
-import language.postfixOps
-import scala.collection.immutable
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.PoisonPill
-import akka.actor.Address
-
-import scala.concurrent.Await
+import akka.actor.{Actor, ActorRef, Address, PoisonPill, Props}
 import akka.pattern.ask
-import akka.remote.MultiNodeRemotingSpec
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
-import akka.routing.Broadcast
-import akka.routing.GetRoutees
-import akka.routing.Routees
-import akka.routing.RoundRobinPool
-import akka.routing.RoundRobinGroup
-import akka.routing.RoutedActorRef
-import akka.routing.Resizer
-import akka.routing.Routee
-import akka.routing.FromConfig
+import akka.remote.RemotingMultiNodeSpec
+import akka.remote.testkit.MultiNodeConfig
+import akka.routing._
 import akka.testkit._
-
-import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
+
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
 
@@ -39,7 +26,7 @@ class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
-      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   deployOnAll("""
       /service-hello {
@@ -86,10 +73,10 @@ object RemoteRoundRobinSpec {
   }
 }
 
-class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends MultiNodeRemotingSpec(multiNodeConfig)
+class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends RemotingMultiNodeSpec(multiNodeConfig)
   with DefaultTimeout {
-  import multiNodeConfig._
   import RemoteRoundRobinSpec._
+  import multiNodeConfig._
 
   def initialParticipants = roles.size
 

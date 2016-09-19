@@ -5,7 +5,7 @@ package akka.remote
 
 import language.postfixOps
 import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
@@ -31,7 +31,7 @@ class RemoteNodeDeathWatchConfig(artery: Boolean) extends MultiNodeConfig {
       ## Use a tighter setting than the default, otherwise it takes 20s for DeathWatch to trigger
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.artery.enabled = $artery
-      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
 }
 
@@ -92,7 +92,7 @@ object RemoteNodeDeathWatchSpec {
 }
 
 abstract class RemoteNodeDeathWatchSpec(multiNodeConfig: RemoteNodeDeathWatchConfig)
-  extends MultiNodeRemotingSpec(multiNodeConfig) {
+  extends RemotingMultiNodeSpec(multiNodeConfig) {
   import multiNodeConfig._
   import RemoteNodeDeathWatchSpec._
   import RemoteWatcher._

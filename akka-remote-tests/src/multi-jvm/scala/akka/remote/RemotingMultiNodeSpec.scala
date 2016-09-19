@@ -10,7 +10,7 @@ import akka.testkit.{ DefaultTimeout, ImplicitSender }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Outcome, Suite }
 
-object MultiNodeRemotingSpec {
+object RemotingMultiNodeSpec {
 
   def arteryFlightRecordingConf =
     ConfigFactory.parseString(
@@ -23,7 +23,7 @@ object MultiNodeRemotingSpec {
 
 }
 
-abstract class MultiNodeRemotingSpec(config: MultiNodeConfig) extends MultiNodeSpec(config)
+abstract class RemotingMultiNodeSpec(config: MultiNodeConfig) extends MultiNodeSpec(config)
   with Suite
   with STMultiNodeSpec
   with FlightRecordingSupport

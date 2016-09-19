@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.actor.ActorIdentity
 import akka.actor.Identify
-import akka.remote.{ MultiNodeRemotingSpec, QuarantinedEvent, RARP }
+import akka.remote.{ RemotingMultiNodeSpec, QuarantinedEvent, RARP }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -25,7 +25,7 @@ object SurviveNetworkPartitionSpec extends MultiNodeConfig {
       akka.loglevel = INFO
       akka.remote.artery.enabled = on
       akka.remote.artery.advanced.give-up-system-message-after = 4s
-      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   testTransport(on = true)
 }
@@ -33,7 +33,7 @@ object SurviveNetworkPartitionSpec extends MultiNodeConfig {
 class SurviveNetworkPartitionSpecMultiJvmNode1 extends SurviveNetworkPartitionSpec
 class SurviveNetworkPartitionSpecMultiJvmNode2 extends SurviveNetworkPartitionSpec
 
-abstract class SurviveNetworkPartitionSpec extends MultiNodeRemotingSpec(SurviveNetworkPartitionSpec) {
+abstract class SurviveNetworkPartitionSpec extends RemotingMultiNodeSpec(SurviveNetworkPartitionSpec) {
 
   import SurviveNetworkPartitionSpec._
 

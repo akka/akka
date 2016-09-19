@@ -20,7 +20,7 @@ import akka.remote.testconductor.RoleName
 import akka.actor.Identify
 
 import scala.concurrent.Await
-import akka.remote.{ AddressUidExtension, MultiNodeRemotingSpec, RARP, ThisActorSystemQuarantinedEvent }
+import akka.remote.{ AddressUidExtension, RemotingMultiNodeSpec, RARP, ThisActorSystemQuarantinedEvent }
 
 object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   val first = role("first")
@@ -31,7 +31,7 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
       akka.loglevel = WARNING
       akka.remote.log-remote-lifecycle-events = WARNING
       akka.remote.artery.enabled = on
-      """)).withFallback(MultiNodeRemotingSpec.arteryFlightRecordingConf))
+      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   class Subject extends Actor {
     def receive = {
@@ -45,7 +45,7 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
 class RemoteRestartedQuarantinedSpecMultiJvmNode1 extends RemoteRestartedQuarantinedSpec
 class RemoteRestartedQuarantinedSpecMultiJvmNode2 extends RemoteRestartedQuarantinedSpec
 
-abstract class RemoteRestartedQuarantinedSpec extends MultiNodeRemotingSpec(RemoteRestartedQuarantinedSpec) {
+abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(RemoteRestartedQuarantinedSpec) {
 
   import RemoteRestartedQuarantinedSpec._
 

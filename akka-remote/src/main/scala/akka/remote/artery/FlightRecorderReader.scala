@@ -199,7 +199,7 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
   case class RichEntry(timeStamp: Instant, dirty: Boolean, code: Long, metadata: Array[Byte]) {
     override def toString: String = {
       val textualCode = FlightRecorderEvents.eventDictionary.getOrElse(code, "").take(34)
-      val metadataString = new String(metadata, "UTF-8")
+      val metadataString = new String(metadata, "US-ASCII")
       f"[$timeStamp] ${if (dirty) "#" else ""} $code%3s $textualCode%-34s | $metadataString"
     }
   }
