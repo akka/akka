@@ -59,11 +59,8 @@ abstract class ClusterDeathWatchSpec
   }
 
   "An actor watching a remote actor in the cluster" must {
-    "work with artery" in {
-      pending
-    }
 
-    /*    "receive Terminated when watched node becomes Down/Removed" in within(20 seconds) {
+    "receive Terminated when watched node becomes Down/Removed" in within(20 seconds) {
       awaitClusterUp(first, second, third, fourth)
       enterBarrier("cluster-up")
 
@@ -266,7 +263,7 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("after-4")
       }
 
-    }*/
+    }
 
   }
 }
