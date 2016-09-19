@@ -56,6 +56,7 @@ Contributing
 Contributions are *very* welcome!
 
 If you see an issue that you'd like to see fixed, the best way to make it happen is to help out by submitting a pull request.
+For ideas of where to contribute, [tickets marked as "community"](https://github.com/akka/akka-http/issues?q=is%3Aissue+is%3Aopen+label%3Acommunity) are a good starting point.
 
 Refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file for more details about the workflow,
 and general hints on how to prepare your pull request. You can also ask for clarifications or guidance in GitHub issues directly,
