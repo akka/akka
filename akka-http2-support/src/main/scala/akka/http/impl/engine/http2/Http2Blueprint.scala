@@ -5,6 +5,8 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
+import akka.http.impl.engine.http2.rendering.HttpResponseHeaderHpackCompression
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.stream.scaladsl.BidiFlow
@@ -13,7 +15,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
 /** Represents one direction of an Http2 substream */
-case class Http2SubStream(initialFrame: StreamFrameEvent, frames: Source[StreamFrameEvent, _]) {
+final case class Http2SubStream(initialFrame: StreamFrameEvent, frames: Source[StreamFrameEvent, _]) {
   def streamId: Int = initialFrame.streamId
 }
 
@@ -48,6 +50,9 @@ object Http2Blueprint {
    * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
    * bindAndHandle the user needs to take of this manually.
    */
-  def httpLayer(): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] =
-    ???
+  def httpLayer(): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
+    val incomingRequests = Flow[Http2SubStream].via(new HttpRequestHeaderHpackDecompression)
+    val outgoingResponses = Flow[HttpResponse].via(new HttpResponseHeaderHpackCompression)
+    BidiFlow.fromFlows(outgoingResponses, incomingRequests)
+  }
 }

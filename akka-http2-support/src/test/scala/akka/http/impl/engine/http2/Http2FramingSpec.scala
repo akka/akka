@@ -1,23 +1,22 @@
 /**
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
-
 package akka.http.impl.engine.http2
 
-import akka.http.impl.engine.ws.BitBuilder
-import akka.http.impl.engine.ws.WithMaterializerSpec
+import akka.http.impl.engine.ws.{ BitBuilder, WithMaterializerSpec }
 import akka.http.impl.util._
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import org.scalatest.FreeSpec
-import org.scalatest.Matchers
+import org.scalatest.{ FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 
-class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
+class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   import BitBuilder._
+
+  import Http2Protocol.Flags._
 
   "The WebSocket parser/renderer round-trip should work for" - {
     "DATA frames" - {
@@ -36,14 +35,14 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
             xxxxxxxx=63
             xxxxxxxx=64
             xxxxxxxx=65
-         """ should parseTo(DataFrame(0x234223ab, true, ByteString("abcde")))
+         """ should parseTo(DataFrame(END_STREAM, 0x234223ab, ByteString("abcde")))
       }
       "with padding" in {
         b"""xxxxxxxx
             xxxxxxxx
             xxxxxxxx=c   # length = 11 = 1 byte padding size + 5 bytes padding + 6 bytes data
             00000000     # type = 0x0 = DATA
-            00001000     # flags = PADDING
+            00001000     # flags = PADDED
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx
@@ -60,7 +59,7 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
             00000000
             00000000
             00000000
-         """ should parseTo(DataFrame(0x234223ab, false, ByteString("bcdefg")), checkRendering = false)
+         """ should parseTo(DataFrame(PADDED, 0x234223ab, ByteString("bcdefg")), checkRendering = false)
       }
     }
     "HEADER frames" - {
@@ -79,14 +78,14 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
             xxxxxxxx=63
             xxxxxxxx=64
             xxxxxxxx=65
-         """ should parseTo(HeadersFrame(0x3546, endStream = false, endHeaders = true, ByteString("abcde")))
+         """ should parseTo(HeadersFrame(END_HEADERS, 0x3546, ByteString("abcde")))
       }
       "with padding but without priority settings" in {
         b"""xxxxxxxx
             xxxxxxxx
             xxxxxxxx=a   # length = 10 = 1 byte padding size + 3 bytes padding + 6 bytes payload
             xxxxxxxx=1   # type = 0x1 = HEADERS
-            00001000     # flags = PADDING
+            00001000     # flags = PADDED
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx
@@ -101,7 +100,7 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
             00000000     # padding
             00000000
             00000000
-         """ should parseTo(HeadersFrame(0x3546, endStream = false, endHeaders = false, ByteString("bcdefg")), checkRendering = false)
+         """ should parseTo(HeadersFrame(PADDED, 0x3546, ByteString("bcdefg")), checkRendering = false)
       }
       "with padding and priority settings" in pending
     }

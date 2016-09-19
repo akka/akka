@@ -5,7 +5,7 @@
 package akka.http.impl.engine.http2
 
 import java.security.SecureRandom
-import java.util
+import java.{ util ⇒ ju }
 import javax.net.ssl.KeyManager
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLContextSpi
@@ -32,7 +32,7 @@ class WrappedSslContextSPI(underlying: SSLContext) extends SSLContextSpi {
   def engineCreateSSLEngine(): SSLEngine = {
     val engine = underlying.createSSLEngine()
     ALPN.put(engine, new ALPN.ServerProvider {
-      def select(protocols: util.List[String]): String =
+      def select(protocols: ju.List[String]): String =
         try
           if (protocols.contains("h2")) {
             System.out.println("HTTP/2 is supported!")

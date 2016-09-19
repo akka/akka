@@ -40,6 +40,8 @@ import scala.util.control.NonFatal
 
 /** Entry point for Http/2 server */
 class Http2Ext(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension {
+  // FIXME: won't having the same package as top-level break osgi?
+
   private[this] final val DefaultPortForProtocol = -1 // any negative value
 
   val http = Http(system)

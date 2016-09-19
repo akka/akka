@@ -15,4 +15,5 @@ object HttpProtocols extends ObjectRegistry[String, HttpProtocol] {
 
   val `HTTP/1.0` = register(HttpProtocol("HTTP/1.0"))
   val `HTTP/1.1` = register(HttpProtocol("HTTP/1.1"))
+  val `HTTP/2.0` = register(HttpProtocol("HTTP/2.0"))
 }

@@ -13,7 +13,7 @@ import akka.util.ByteString
  *
  * https://tools.ietf.org/html/rfc7540
  */
-object Protocol {
+object Http2Protocol {
   sealed abstract class FrameType(val id: Int) extends Product
   object FrameType {
     case object DATA extends FrameType(0x0)
@@ -159,12 +159,14 @@ object Protocol {
         .grouped(2)
         .map(java.lang.Byte.parseByte(_, 16)).toSeq: _*)
 
-  object Flags {
-    val ACK = 0x1
+  object Flags { flags ⇒
+    val NO_FLAGS = new ByteFlag(0x0)
 
-    val END_STREAM = 0x1 // same as ACK but used for other frame types
-    val END_HEADERS = 0x4
-    val PADDED = 0x8
-    val PRIORITY = 0x20
+    val ACK = new ByteFlag(0x1)
+
+    val END_STREAM = new ByteFlag(0x1) // same as ACK but used for other frame types
+    val END_HEADERS = new ByteFlag(0x4)
+    val PADDED = new ByteFlag(0x8)
+    val PRIORITY = new ByteFlag(0x20)
   }
 }

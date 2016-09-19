@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.http2
 
-import Protocol._
+import Http2Protocol._
 import FrameType._
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
@@ -25,18 +25,17 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
       object ReadPreface extends Step {
         def parse(reader: ByteReader): ParseResult[FrameEvent] =
           if (reader.remainingSize < 24) throw NeedMoreData
-          else if (reader.take(24) == Protocol.ConnectionPreface)
+          else if (reader.take(24) == Http2Protocol.ConnectionPreface)
             ParseResult(None, ReadFrame, false)
           else
             throw new RuntimeException("Expected ConnectionPreface!")
-
       }
 
       object ReadFrame extends Step {
         def parse(reader: ByteReader): ParseResult[FrameEvent] = {
           val length = reader.readShortBE() << 8 | reader.readByte()
           val tpe = reader.readByte() // TODO: make sure it's valid
-          val flags = reader.readByte()
+          val flags = new ByteFlag(reader.readByte().toByte)
           val streamId = reader.readIntBE()
           // TODO: assert that reserved bit is 0 by checking if streamId > 0
           val payload = reader.take(length)
@@ -47,16 +46,15 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
       }
     }
 
-  def parseFrame(tpe: FrameType, flags: Int, streamId: Int, payload: ByteReader): FrameEvent = {
-    def isSet(flag: Int): Boolean = (flags & flag) != 0
+  def parseFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteReader): FrameEvent = {
 
     // TODO: add @switch? seems non-trivial for now
     tpe match {
       case HEADERS ⇒
-        val pad = isSet(Flags.PADDED)
-        val endStream = isSet(Flags.END_STREAM)
-        val endHeaders = isSet(Flags.END_HEADERS)
-        val priority = isSet(Flags.PRIORITY)
+        val pad = Flags.PADDED.isSet(flags)
+        val endStream = Flags.END_STREAM.isSet(flags)
+        val endHeaders = Flags.END_HEADERS.isSet(flags)
+        val priority = Flags.PRIORITY.isSet(flags)
 
         val paddingLength =
           if (pad) payload.readByte() & 0xff
@@ -70,20 +68,20 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
 
         // TODO: check that streamId != 0
         // TODO: also write out Priority frame if priority was set
-        HeadersFrame(streamId, endStream, endHeaders, payload.take(payload.remainingSize - paddingLength))
+        HeadersFrame(flags, streamId, payload.take(payload.remainingSize - paddingLength))
 
       case DATA ⇒
-        val pad = isSet(Flags.PADDED)
-        val endStream = isSet(Flags.END_STREAM)
+        val pad = Flags.PADDED.isSet(flags)
+        val endStream = Flags.END_STREAM.isSet(flags)
 
         val paddingLength =
           if (pad) payload.readByte() & 0xff
           else 0
 
-        DataFrame(streamId, endStream, payload.take(payload.remainingSize - paddingLength))
+        DataFrame(flags, streamId, payload.take(payload.remainingSize - paddingLength))
 
       case SETTINGS ⇒
-        val ack = isSet(Flags.ACK)
+        val ack = Flags.ACK.isSet(flags)
 
         // TODO: validate that streamId = 0
 
@@ -97,7 +95,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
               Setting(SettingIdentifier.byId(id), value) :: read
             } else read.reverse
 
-          SettingsFrame(readSettings(Nil))
+          SettingsFrame(flags, readSettings(Nil))
         }
 
       case WINDOW_UPDATE ⇒
@@ -106,16 +104,16 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         // TODO: check reserved flag
         // TODO: check that increment is > 0
         val increment = payload.readIntBE()
-        WindowUpdateFrame(streamId, increment)
+        WindowUpdateFrame(flags, streamId, increment)
 
       case CONTINUATION ⇒
-        val endHeaders = isSet(Flags.END_HEADERS)
+        val endHeaders = Flags.END_HEADERS.isSet(flags)
         // TODO: check that streamId > 0
 
-        ContinuationFrame(streamId, endHeaders, payload.remainingData)
+        ContinuationFrame(flags, streamId, endHeaders, payload.remainingData)
 
       case tpe ⇒ // TODO: remove once all stream types are defined
-        UnknownFrameEvent(tpe, flags, streamId, payload.remainingData)
+        UnknownFrameEvent(flags, tpe, streamId, payload.remainingData)
     }
   }
 }
