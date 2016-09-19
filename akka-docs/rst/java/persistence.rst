@@ -386,7 +386,7 @@ up until the sequence number of the data held by that snapshot can be issued to 
 while still having access to the accumulated state during replays - by loading the snapshot.
 
 .. warning::
-  If you are using :ref:`persistence-query-scala`, query results will be missing deleted messages in a journal.
+  If you are using :ref:`persistence-query-java`, query results will be missing deleted messages in a journal.
   You have to design your application so that it is not affected by missing messages in a journal.
 
 The result of the ``deleteMessages`` request is signaled to the persistent actor with a ``DeleteMessagesSuccess``
