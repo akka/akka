@@ -11,7 +11,7 @@ import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.util.OptionVal
+import akka.util.{ ByteString, OptionVal }
 import akka.actor.EmptyLocalActorRef
 import akka.remote.artery.compress.InboundCompressions
 import akka.stream.stage.TimerGraphStageLogic

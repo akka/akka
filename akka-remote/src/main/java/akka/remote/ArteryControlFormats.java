@@ -6878,22 +6878,24 @@ public final class ArteryControlFormats {
       "\n\032ArteryControlFormats.proto\"G\n\013Quaranti" +
       "ned\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\032\n\002to\030" +
       "\002 \002(\0132\016.UniqueAddress\"5\n\022MessageWithAddr" +
-      "ess\022\037\n\007address\030\001 \002(\0132\016.UniqueAddress\"\204\001\n" +
-      "\035CompressionTableAdvertisement\022\034\n\004from\030\001" +
-      " \002(\0132\016.UniqueAddress\022\021\n\toriginUid\030\002 \002(\004\022" +
-      "\024\n\014tableVersion\030\003 \002(\r\022\014\n\004keys\030\004 \003(\t\022\016\n\006v" +
-      "alues\030\005 \003(\r\"Q\n CompressionTableAdvertise" +
-      "mentAck\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\017\n" +
-      "\007version\030\002 \002(\r\"\212\001\n\025SystemMessageEnvelope",
-      "\022\017\n\007message\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022" +
-      "\027\n\017messageManifest\030\003 \001(\014\022\r\n\005seqNo\030\004 \002(\004\022" +
-      "\"\n\nackReplyTo\030\005 \002(\0132\016.UniqueAddress\"G\n\030S" +
-      "ystemMessageDeliveryAck\022\r\n\005seqNo\030\001 \002(\004\022\034" +
-      "\n\004from\030\002 \002(\0132\016.UniqueAddress\"K\n\007Address\022" +
-      "\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\020\n\010hos" +
-      "tname\030\003 \002(\t\022\014\n\004port\030\004 \002(\r\"7\n\rUniqueAddre" +
-      "ss\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002" +
-      "(\004B\017\n\013akka.remoteH\001"
+      "ess\022\037\n\007address\030\001 \002(\0132\016.UniqueAddress\"B\n\014" +
+      "HandshakeReq\022\034\n\004from\030\001 \002(\0132\016.UniqueAddre" +
+      "ss\022\024\n\002to\030\002 \002(\0132\010.Address\"\204\001\n\035Compression" +
+      "TableAdvertisement\022\034\n\004from\030\001 \002(\0132\016.Uniqu" +
+      "eAddress\022\021\n\toriginUid\030\002 \002(\004\022\024\n\014tableVers" +
+      "ion\030\003 \002(\r\022\014\n\004keys\030\004 \003(\t\022\016\n\006values\030\005 \003(\r\"" +
+      "Q\n CompressionTableAdvertisementAck\022\034\n\004f",
+      "rom\030\001 \002(\0132\016.UniqueAddress\022\017\n\007version\030\002 \002" +
+      "(\r\"\212\001\n\025SystemMessageEnvelope\022\017\n\007message\030" +
+      "\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageMa" +
+      "nifest\030\003 \001(\014\022\r\n\005seqNo\030\004 \002(\004\022\"\n\nackReplyT" +
+      "o\030\005 \002(\0132\016.UniqueAddress\"G\n\030SystemMessage" +
+      "DeliveryAck\022\r\n\005seqNo\030\001 \002(\004\022\034\n\004from\030\002 \002(\013" +
+      "2\016.UniqueAddress\"K\n\007Address\022\020\n\010protocol\030" +
+      "\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\020\n\010hostname\030\003 \002(\t\022" +
+      "\014\n\004port\030\004 \002(\r\"7\n\rUniqueAddress\022\031\n\007addres" +
+      "s\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\004B\017\n\013akka.r",
+      "emoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
