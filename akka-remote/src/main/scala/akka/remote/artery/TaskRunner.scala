@@ -63,6 +63,14 @@ private[akka] object TaskRunner {
       tryRemove(0)
     }
 
+    def removeAll(): Unit = {
+      var i = 0
+      while (i < elements.length) {
+        elements(i) = null.asInstanceOf[T]
+        i += 1
+      }
+    }
+
     /**
      * All elements as an array for efficient iteration.
      * The elements can be `null`.
@@ -138,12 +146,14 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
       running = true
       while (running) {
         processCommand(cmdQueue.poll())
-        executeTasks()
-        if (reset) {
-          reset = false
-          idleStrategy.reset()
+        if (running) {
+          executeTasks()
+          if (reset) {
+            reset = false
+            idleStrategy.reset()
+          }
+          idleStrategy.idle()
         }
-        idleStrategy.idle()
       }
     } catch {
       case NonFatal(e) ⇒
@@ -178,6 +188,8 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
       case Remove(task) ⇒ tasks.remove(task)
       case Shutdown ⇒
         running = false
+        tasks.removeAll() // gc friendly
+        while (cmdQueue.poll() != null) () // gc friendly
         shutdown.trySuccess(Done)
     }
   }
