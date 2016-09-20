@@ -318,7 +318,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         }.concatSubstreams
 
     def collectBlocking[T](source: Source[T, Any]): Seq[T] =
-      Await.result(source.limit(100000).runWith(Sink.seq), 500.millis)
+      Await.result(source.limit(100000).runWith(Sink.seq), 1000.millis)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
 

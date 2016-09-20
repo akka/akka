@@ -39,7 +39,7 @@ private[http] object WebSocket {
   def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, NotUsed] =
     BidiFlow.fromFlows(
       Flow[ByteString].via(FrameEventParser),
-      Flow[FrameEvent].transform(() ⇒ new FrameEventRenderer))
+      Flow[FrameEvent].via(new FrameEventRenderer))
       .named("ws-framing")
 
   /** The layer that handles masking using the rules defined in the specification */

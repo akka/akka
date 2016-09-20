@@ -4,8 +4,9 @@
 
 package akka.http.impl.engine.ws
 
+import akka.stream.stage._
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.util.ByteString
-import akka.stream.stage.{ StatefulStage, SyncDirective, Context }
 
 import scala.annotation.tailrec
 
@@ -14,46 +15,60 @@ import scala.annotation.tailrec
  *
  * INTERNAL API
  */
-private[http] class FrameEventRenderer extends StatefulStage[FrameEvent, ByteString] {
-  def initial: State = Idle
+private[http] final class FrameEventRenderer extends GraphStage[FlowShape[FrameEvent, ByteString]] {
+  val in = Inlet[FrameEvent]("in")
+  val out = Outlet[ByteString]("out")
+  override val shape = FlowShape(in, out)
 
-  object Idle extends State {
-    def onPush(elem: FrameEvent, ctx: Context[ByteString]): SyncDirective = elem match {
-      case start @ FrameStart(header, data) ⇒
-        require(header.length >= data.size)
-        if (!start.lastPart && header.length > 0) become(renderData(header.length - data.length, this))
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
-        ctx.push(renderStart(start))
+    val Initial = new InHandler {
+      override def onPush(): Unit = grab(in) match {
+        case start @ FrameStart(header, data) ⇒
+          require(header.length >= data.size)
+          if (!start.lastPart && header.length > 0)
+            setHandler(in, renderData(header.length - data.length, this))
 
-      case f: FrameData ⇒
-        ctx.fail(new IllegalStateException("unexpected FrameData (need FrameStart first)"))
-    }
-  }
+          push(out, renderStart(start))
 
-  def renderData(initialRemaining: Long, nextState: State): State =
-    new State {
-      var remaining: Long = initialRemaining
-
-      def onPush(elem: FrameEvent, ctx: Context[ByteString]): SyncDirective = elem match {
-        case FrameData(data, lastPart) ⇒
-          if (data.size > remaining)
-            throw new IllegalStateException(s"Expected $remaining frame bytes but got ${data.size}")
-          else if (data.size == remaining) {
-            if (!lastPart) throw new IllegalStateException(s"Frame data complete but `lastPart` flag not set")
-            become(nextState)
-            ctx.push(data)
-          } else {
-            remaining -= data.size
-            ctx.push(data)
-          }
-
-        case f: FrameStart ⇒
-          ctx.fail(new IllegalStateException("unexpected FrameStart (need more FrameData first)"))
+        case f: FrameData ⇒
+          fail(out, new IllegalStateException("unexpected FrameData (need FrameStart first)"))
       }
     }
 
-  def renderStart(start: FrameStart): ByteString = renderHeader(start.header) ++ start.data
-  def renderHeader(header: FrameHeader): ByteString = {
+    def renderData(initialRemaining: Long, nextState: InHandler): InHandler =
+      new InHandler {
+        var remaining: Long = initialRemaining
+
+        override def onPush(): Unit = {
+          grab(in) match {
+            case FrameData(data, lastPart) ⇒
+              if (data.size > remaining)
+                throw new IllegalStateException(s"Expected $remaining frame bytes but got ${data.size}")
+              else if (data.size == remaining) {
+                if (!lastPart) throw new IllegalStateException(s"Frame data complete but `lastPart` flag not set")
+                setHandler(in, nextState)
+                push(out, data)
+              } else {
+                remaining -= data.size
+                push(out, data)
+              }
+
+            case f: FrameStart ⇒
+              fail(out, new IllegalStateException("unexpected FrameStart (need more FrameData first)"))
+          }
+        }
+      }
+
+    setHandler(in, Initial)
+    setHandler(out, new OutHandler {
+      override def onPull(): Unit = pull(in)
+    })
+  }
+
+  private def renderStart(start: FrameStart): ByteString = renderHeader(start.header) ++ start.data
+
+  private def renderHeader(header: FrameHeader): ByteString = {
     import Protocol._
 
     val length = header.length
