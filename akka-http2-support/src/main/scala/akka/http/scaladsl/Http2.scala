@@ -19,6 +19,7 @@ import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Fusing
 import akka.stream.Materializer
@@ -76,7 +77,13 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
     val fullLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(Fusing.aggressive(
       Flow[HttpRequest]
         .watchTermination()(Keep.right)
-        .mapAsync(parallelism)(handler) // TODO: use mapAsyncUnordered by managing association
+        // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
+        // to buffer requests that cannot be handled in parallel
+        .mapAsyncUnordered(parallelism) { req ⇒
+          val streamIdHeader = req.header[Http2StreamIdHeader].get
+          val response = handler(req)
+          response.map(_.addHeader(streamIdHeader))(system.dispatcher)
+        }
         .joinMat(serverLayer)(Keep.left)))
 
     val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
