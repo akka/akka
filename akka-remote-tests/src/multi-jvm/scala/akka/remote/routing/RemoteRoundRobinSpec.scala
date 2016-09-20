@@ -3,7 +3,7 @@
  */
 package akka.remote.routing
 
-import akka.actor.{Actor, ActorRef, Address, PoisonPill, Props}
+import akka.actor.{ Actor, ActorRef, Address, PoisonPill, Props }
 import akka.pattern.ask
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
