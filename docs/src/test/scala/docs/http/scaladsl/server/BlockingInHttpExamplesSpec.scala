@@ -14,7 +14,7 @@ class BlockingInHttpExamplesSpec extends WordSpec with CompileOnlySpec
   with Directives {
 
   compileOnlySpec {
-    val system: ActorSystem = ???
+    val system: ActorSystem = ActorSystem()
 
     //#blocking-example-in-default-dispatcher
     // BAD (due to blocking in Future, on default dispatcher)
@@ -32,7 +32,7 @@ class BlockingInHttpExamplesSpec extends WordSpec with CompileOnlySpec
   }
 
   compileOnlySpec {
-    val system: ActorSystem = ???
+    val system: ActorSystem = ActorSystem()
 
     //#blocking-example-in-dedicated-dispatcher
     // GOOD (the blocking is now isolated onto a dedicated dispatcher):

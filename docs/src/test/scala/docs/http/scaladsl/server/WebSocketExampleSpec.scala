@@ -9,6 +9,8 @@ import akka.stream.scaladsl.Sink
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
+import scala.io.StdIn
+
 class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
   "core-example" in compileOnlySpec {
     //#websocket-example-using-core
@@ -59,7 +61,7 @@ class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
       Http().bindAndHandleSync(requestHandler, interface = "localhost", port = 8080)
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
-    Console.readLine()
+    StdIn.readLine()
 
     import system.dispatcher // for the future transformations
     bindingFuture
@@ -101,7 +103,7 @@ class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
     val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
-    Console.readLine()
+    StdIn.readLine()
 
     import system.dispatcher // for the future transformations
     bindingFuture

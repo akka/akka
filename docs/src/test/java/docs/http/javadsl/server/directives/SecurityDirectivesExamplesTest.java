@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.Optional;
+import akka.japi.Option;
 
 public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -202,7 +203,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testAuthenticateOrRejectWithChallenge() {
     //#authenticateOrRejectWithChallenge
-    final HttpChallenge challenge = HttpChallenge.create("MyAuth", "MyRealm");
+    final HttpChallenge challenge = HttpChallenge.create("MyAuth", new Option.Some<>("MyRealm"));
 
     // your custom authentication logic:
     final Function<HttpCredentials, Boolean> auth = credentials -> true;

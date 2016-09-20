@@ -172,7 +172,10 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
     implicit val materializer = ActorMaterializer()
     import collection.immutable.Seq
 
-    val flow: Flow[Message, Message, NotUsed] = ???
+    val flow: Flow[Message, Message, NotUsed] =
+      Flow.fromSinkAndSource(
+        Sink.foreach(println),
+        Source.empty)
 
     //#authorized-single-WebSocket-request
     val (upgradeResponse, _) =

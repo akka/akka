@@ -87,7 +87,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     val response1: HttpResponse = ??? // obtained from an HTTP call (see examples below)
 
     val discarded: DiscardedEntity = response1.discardEntityBytes()
-    discarded.future.onComplete { case done => println("Entity discarded completely!") }
+    discarded.future.onComplete { done => println("Entity discarded completely!") }
 
     //#manual-entity-discard-example-1
   }
@@ -104,7 +104,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     val response1: HttpResponse = ??? // obtained from an HTTP call (see examples below)
 
     val discardingComplete: Future[Done] = response1.entity.dataBytes.runWith(Sink.ignore)
-    discardingComplete.onComplete { case done => println("Entity discarded completely!") }
+    discardingComplete.onComplete(done => println("Entity discarded completely!"))
     //#manual-entity-discard-example-2
   }
 

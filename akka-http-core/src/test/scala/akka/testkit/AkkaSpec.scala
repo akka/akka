@@ -3,19 +3,19 @@
  */
 package akka.testkit
 
-import org.scalactic.Constraint
+import org.scalactic.{ CanEqual, TypeCheckedTripleEquals }
 
 import language.postfixOps
-import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
+import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 import org.scalatest.Matchers
 import akka.actor.ActorSystem
 import akka.event.{ Logging, LoggingAdapter }
+
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.dispatch.Dispatchers
 import akka.testkit.TestEvent._
-import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.ScalaFutures
 
 object AkkaSpec {
@@ -56,7 +56,7 @@ object AkkaSpec {
 
 abstract class AkkaSpec(_system: ActorSystem)
   extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
-  with ConversionCheckedTripleEquals with ScalaFutures {
+  with TypeCheckedTripleEquals with ScalaFutures {
 
   implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration)
 
@@ -75,7 +75,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   override val invokeBeforeAllAndAfterAllEvenIfNoTestsAreExpected = true
 
   final override def beforeAll {
-    startCoroner
+    startCoroner()
     atStartup()
   }
 
@@ -106,13 +106,13 @@ abstract class AkkaSpec(_system: ActorSystem)
     }
 
   // for ScalaTest === compare of Class objects
-  implicit def classEqualityConstraint[A, B]: Constraint[Class[A], Class[B]] =
-    new Constraint[Class[A], Class[B]] {
+  implicit def classEqualityConstraint[A, B]: CanEqual[Class[A], Class[B]] =
+    new CanEqual[Class[A], Class[B]] {
       def areEqual(a: Class[A], b: Class[B]) = a == b
     }
 
-  implicit def setEqualityConstraint[A, T <: Set[_ <: A]]: Constraint[Set[A], T] =
-    new Constraint[Set[A], T] {
+  implicit def setEqualityConstraint[A, T <: Set[_ <: A]]: CanEqual[Set[A], T] =
+    new CanEqual[Set[A], T] {
       def areEqual(a: Set[A], b: T) = a == b
     }
 }

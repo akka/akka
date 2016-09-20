@@ -37,7 +37,7 @@ abstract class HttpsServerExampleSpec extends WordSpec with Matchers
 
     // Manual HTTPS configuration
 
-    val password: Array[Char] = ??? // do not store passwords in code, read them from somewhere safe!
+    val password: Array[Char] = "change me".toCharArray // do not store passwords in code, read them from somewhere safe!
 
     val ks: KeyStore = KeyStore.getInstance("PKCS12")
     val keystore: InputStream = getClass.getClassLoader.getResourceAsStream("server.p12")

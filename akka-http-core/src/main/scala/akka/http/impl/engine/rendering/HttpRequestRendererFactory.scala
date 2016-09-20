@@ -112,7 +112,7 @@ private[http] class HttpRequestRendererFactory(
         case None ⇒ headerPart ++ body
         case Some(future) ⇒
           val barrier = Source.fromFuture(future).drop(1).asInstanceOf[Source[ByteString, Any]]
-          (headerPart ++ barrier ++ body).recoverWith { case HttpResponseParser.OneHundredContinueError ⇒ Source.empty }
+          (headerPart ++ barrier ++ body).recoverWithRetries(-1, { case HttpResponseParser.OneHundredContinueError ⇒ Source.empty })
       }
       RequestRenderingOutput.Streamed(stream)
     }
