@@ -77,12 +77,14 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
 
     def encodeAllHeaders(response: HttpResponse): ByteString = {
       encoder.encodeHeader(os, StatusKey, response.status.intValue.toString.getBytes, false) // TODO so wasteful
-      response.headers foreach { h ⇒
-        // TODO so wasteful... (it needs to be lower-cased since it's checking by == in the LUT)
-        val nameBytes = h.name.toRootLowerCase.getBytes
-        val valueBytes = h.value.getBytes
-        encoder.encodeHeader(os, nameBytes, valueBytes, false)
-      }
+      response.headers
+        .filter(_.renderInResponses)
+        .foreach { h ⇒
+          // TODO so wasteful... (it needs to be lower-cased since it's checking by == in the LUT)
+          val nameBytes = h.name.toRootLowerCase.getBytes
+          val valueBytes = h.value.getBytes
+          encoder.encodeHeader(os, nameBytes, valueBytes, false)
+        }
 
       // copy buffer to ByteString
       mkByteString(buf)
