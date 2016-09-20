@@ -41,8 +41,12 @@ with a specific role. It communicates with other ``Replicator`` instances with t
 ``akka.cluster.ddata.DistributedData`` extension.
 
 Cluster members with status :ref:`WeaklyUp <weakly_up_scala>`, if that feature is enabled,
-will currently not participate in Distributed Data, but that is something that should be possible to
-add in a future release.
+will participate in Distributed Data. This means that the data will be replicated to the
+:ref:`WeaklyUp <weakly_up_scala>` nodes with the background gossip protocol. Note that it
+will not participate in any actions where the consistency mode is to read/write from all
+nodes or the majority of nodes. The :ref:`WeaklyUp <weakly_up_scala>` node is not counted
+as part of the cluster. So 3 nodes + 5 :ref:`WeaklyUp <weakly_up_scala>` is essentially a
+3 node cluster as far as consistent actions are concerned.
 
 Below is an example of an actor that schedules tick messages to itself and for each tick 
 adds or removes elements from a ``ORSet`` (observed-remove set). It also subscribes to
