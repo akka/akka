@@ -428,6 +428,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private lazy val shutdownHook = new Thread {
     override def run(): Unit = {
       if (!_shutdown) {
+        _shutdown = true
         Await.result(internalShutdown(), 20.seconds)
       }
     }
