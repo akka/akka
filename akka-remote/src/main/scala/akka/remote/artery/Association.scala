@@ -256,8 +256,12 @@ private[remote] class Association(
 
   // OutboundContext
   override def sendControl(message: ControlMessage): Unit = {
-    if (!transport.isShutdown)
-      outboundControlIngress.sendControlMessage(message)
+    try {
+      if (!transport.isShutdown)
+        outboundControlIngress.sendControlMessage(message)
+    } catch {
+      case ShuttingDown => // silence it
+    }
   }
 
   def send(message: Any, sender: OptionVal[ActorRef], recipient: OptionVal[RemoteActorRef]): Unit = {
@@ -278,40 +282,43 @@ private[remote] class Association(
 
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
     if (message.isInstanceOf[ActorSelectionMessage] || !associationState.isQuarantined() || message == ClearSystemMessageDelivery) {
-      message match {
-        case _: SystemMessage ⇒
-          val outboundEnvelope = createOutboundEnvelope()
-          if (!controlQueue.offer(createOutboundEnvelope())) {
-            quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
-            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
-          }
-        case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | ClearSystemMessageDelivery ⇒
-          // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
-          val outboundEnvelope = createOutboundEnvelope()
-          if (!controlQueue.offer(createOutboundEnvelope())) {
-            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
-          }
-        case _: DaemonMsgCreate ⇒
-          // DaemonMsgCreate is not a SystemMessage, but must be sent over the control stream because
-          // remote deployment process depends on message ordering for DaemonMsgCreate and Watch messages.
-          // It must also be sent over the ordinary message stream so that it arrives (and creates the
-          // destination) before the first ordinary message arrives.
-          val outboundEnvelope1 = createOutboundEnvelope()
-          if (!controlQueue.offer(outboundEnvelope1))
-            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope1)
-          (0 until outboundLanes).foreach { i ⇒
-            val outboundEnvelope2 = createOutboundEnvelope()
-            if (!queues(OrdinaryQueueIndex + i).offer(outboundEnvelope2))
-              dropped(OrdinaryQueueIndex + i, queueSize, outboundEnvelope2)
-          }
-        case _ ⇒
-          val outboundEnvelope = createOutboundEnvelope()
-          val queueIndex = selectQueue(recipient)
-          val queue = queues(queueIndex)
-          val offerOk = queue.offer(outboundEnvelope)
-          if (!offerOk)
-            dropped(queueIndex, queueSize, outboundEnvelope)
-
+      try {
+        message match {
+          case _: SystemMessage ⇒
+            val outboundEnvelope = createOutboundEnvelope()
+            if (!controlQueue.offer(createOutboundEnvelope())) {
+              quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
+              dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
+            }
+          case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | ClearSystemMessageDelivery ⇒
+            // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
+            val outboundEnvelope = createOutboundEnvelope()
+            if (!controlQueue.offer(createOutboundEnvelope())) {
+              dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
+            }
+          case _: DaemonMsgCreate ⇒
+            // DaemonMsgCreate is not a SystemMessage, but must be sent over the control stream because
+            // remote deployment process depends on message ordering for DaemonMsgCreate and Watch messages.
+            // It must also be sent over the ordinary message stream so that it arrives (and creates the
+            // destination) before the first ordinary message arrives.
+            val outboundEnvelope1 = createOutboundEnvelope()
+            if (!controlQueue.offer(outboundEnvelope1))
+              dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope1)
+            (0 until outboundLanes).foreach { i ⇒
+              val outboundEnvelope2 = createOutboundEnvelope()
+              if (!queues(OrdinaryQueueIndex + i).offer(outboundEnvelope2))
+                dropped(OrdinaryQueueIndex + i, queueSize, outboundEnvelope2)
+            }
+          case _ ⇒
+            val outboundEnvelope = createOutboundEnvelope()
+            val queueIndex = selectQueue(recipient)
+            val queue = queues(queueIndex)
+            val offerOk = queue.offer(outboundEnvelope)
+            if (!offerOk)
+              dropped(queueIndex, queueSize, outboundEnvelope)
+        }
+      } catch {
+        case ShuttingDown => // silence it
       }
     } else if (log.isDebugEnabled)
       log.debug(
