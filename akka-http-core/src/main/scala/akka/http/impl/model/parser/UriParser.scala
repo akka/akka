@@ -66,6 +66,12 @@ private[http] final class UriParser(val input: ParserInput,
       case Left(error) => fail(error, "query")
     }
 
+  def parseAuthority(): Authority =
+    rule(authority ~ EOI).run() match {
+      case Right(_) => Authority(_host, _port, _userinfo)
+      case Left(error) => fail(error, "authority")
+    }
+
   def fail(error: ParseError, target: String): Nothing = {
     val formatter = new ErrorFormatter(showLine = false)
     Uri.fail(s"Illegal $target: " + formatter.format(error, input), formatter.formatErrorLine(error, input))
