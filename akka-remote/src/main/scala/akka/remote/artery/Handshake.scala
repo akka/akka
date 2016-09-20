@@ -206,14 +206,13 @@ private[akka] class InboundHandshake(inboundContext: InboundContext, inControlSt
             pull(in)
           }
         } else {
-          if (log.isWarningEnabled)
-            log.warning(
-              s"Dropping Handshake Request addressed to unknown local address [{}]. " +
-                "Local address is [{}]. Check that the sending system uses the same " +
-                "address to contact recipient system as defined in the " +
-                "'akka.remote.artery.canonical.hostname' of the recipient system. " +
-                "The name of the ActorSystem must also match.",
-              to, inboundContext.localAddress.address)
+          log.warning(
+            "Dropping Handshake Request from [{}] addressed to unknown local address [{}]. " +
+              "Local address is [{}]. Check that the sending system uses the same " +
+              "address to contact recipient system as defined in the " +
+              "'akka.remote.artery.canonical.hostname' of the recipient system. " +
+              "The name of the ActorSystem must also match.",
+            from, to, inboundContext.localAddress.address)
 
           pull(in)
         }

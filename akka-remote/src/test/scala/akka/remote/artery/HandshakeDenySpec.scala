@@ -37,7 +37,7 @@ class HandshakeDenySpec extends ArteryMultiNodeSpec(HandshakeDenySpec.commonConf
 
       systemB.actorOf(TestActors.echoActorProps, "echo")
 
-      EventFilter.warning(start = "Dropping Handshake Request addressed to unknown local address").intercept {
+      EventFilter.warning(start = "Dropping Handshake Request from").intercept {
         sel ! Identify(None)
         expectNoMsg(3.seconds)
       }(systemB)
