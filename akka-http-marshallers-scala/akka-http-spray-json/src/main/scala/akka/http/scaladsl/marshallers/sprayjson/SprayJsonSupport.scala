@@ -54,8 +54,10 @@ trait SprayJsonSupport {
       } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(support.supported))
     }
 
+  //#sprayJsonMarshallerConverter
   implicit def sprayJsonMarshallerConverter[T](writer: RootJsonWriter[T])(implicit printer: JsonPrinter = CompactPrinter): ToEntityMarshaller[T] =
     sprayJsonMarshaller[T](writer, printer)
+  //#sprayJsonMarshallerConverter
   implicit def sprayJsonMarshaller[T](implicit writer: RootJsonWriter[T], printer: JsonPrinter = CompactPrinter): ToEntityMarshaller[T] =
     sprayJsValueMarshaller compose writer.write
   implicit def sprayJsValueMarshaller(implicit printer: JsonPrinter = CompactPrinter): ToEntityMarshaller[JsValue] =
