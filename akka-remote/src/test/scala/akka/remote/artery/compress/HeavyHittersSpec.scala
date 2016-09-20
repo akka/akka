@@ -10,7 +10,7 @@ class HeavyHittersSpec extends WordSpecLike with Matchers {
 
   "TopHeavyHitters" must {
     "should work" in {
-      val hitters = new TopHeavyHitters[String](3)
+      val hitters = new TopHeavyHitters[String](4)
       hitters.update("A", 10) shouldBe true
       hitters.snapshot.filter(_ ne null).toSet should ===(Set("A"))
 
@@ -21,20 +21,20 @@ class HeavyHittersSpec extends WordSpecLike with Matchers {
       hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B", "C"))
 
       hitters.update("D", 100) shouldBe true
-      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B", "D"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B", "D", "C"))
 
       hitters.update("E", 200) shouldBe true
-      hitters.snapshot.filter(_ ne null).toSet should ===(Set("B", "D", "E"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B", "D", "E"))
 
       hitters.update("BB", 22) shouldBe true
-      hitters.snapshot.filter(_ ne null).toSet should ===(Set("BB", "D", "E"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("B", "BB", "D", "E"))
 
       hitters.update("a", 1) shouldBe false
-      hitters.snapshot.filter(_ ne null).toSet should ===(Set("BB", "D", "E"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("B", "BB", "D", "E"))
     }
 
     "correctly replace a hitter" in {
-      val hitters = new TopHeavyHitters[String](3)
+      val hitters = new TopHeavyHitters[String](4)
       hitters.update("A", 10) shouldBe true
       hitters.snapshot.filter(_ ne null).toSet should ===(Set("A"))
 
@@ -44,7 +44,7 @@ class HeavyHittersSpec extends WordSpecLike with Matchers {
     }
 
     "correctly drop least heavy hitter when more than N are inserted" in {
-      val hitters = new TopHeavyHitters[String](3)
+      val hitters = new TopHeavyHitters[String](4)
 
       hitters.update("A", 1) shouldBe true
       hitters.snapshot.filter(_ ne null).toSet should ===(Set("A"))
@@ -54,15 +54,15 @@ class HeavyHittersSpec extends WordSpecLike with Matchers {
 
       hitters.update("C", 33) shouldBe true
       hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B", "C"))
-      hitters.lowestHitterWeight should ===(1)
+      hitters.lowestHitterWeight should ===(0)
 
       // first item which forces dropping least heavy hitter
       hitters.update("D", 100) shouldBe true
-      hitters.snapshot.filter(_ ne null).toSet should ===(Set("B", "C", "D"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("A", "B", "C", "D"))
 
       // second item which forces dropping least heavy hitter
       hitters.update("X", 999) shouldBe true
-      hitters.snapshot.filter(_ ne null).toSet should ===(Set("X", "C", "D"))
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set("X", "B", "C", "D"))
     }
 
     "replace the right item even when hashCodes collide" in {
