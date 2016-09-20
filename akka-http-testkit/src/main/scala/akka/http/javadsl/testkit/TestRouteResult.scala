@@ -178,14 +178,6 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
     assertEqualsKind(expected, entity(unmarshaller), "entity")
 
   /**
-   * Assert that a given header instance exists in the response.
-   */
-  def assertHeaderExists(expected: HttpHeader): TestRouteResult = {
-    assertTrue(response.headers.exists(_ == expected), s"Header $expected was missing.")
-    this
-  }
-
-  /**
    * Assert that a header of the given type exists.
    */
   def assertHeaderKindExists(name: String): TestRouteResult = {
@@ -216,6 +208,12 @@ abstract class TestRouteResult(_result: RouteResult, awaitAtMost: FiniteDuration
 
     this
   }
+
+  /**
+   * Assert that a given header instance exists in the response.
+   */
+  def assertHeaderExists(expected: HttpHeader): TestRouteResult =
+    assertHeaderExists(expected.name(), expected.value())
 
   @varargs def assertRejections(expectedRejections: Rejection*): TestRouteResult = {
     if (rejections.asScala == expectedRejections.toSeq) {
