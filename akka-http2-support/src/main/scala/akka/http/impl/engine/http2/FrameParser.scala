@@ -35,7 +35,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         def parse(reader: ByteReader): ParseResult[FrameEvent] = {
           val length = reader.readShortBE() << 8 | reader.readByte()
           val tpe = reader.readByte() // TODO: make sure it's valid
-          val flags = new ByteFlag(reader.readByte().toByte)
+          val flags = new ByteFlag(reader.readByte())
           val streamId = reader.readIntBE()
           // TODO: assert that reserved bit is 0 by checking if streamId > 0
           val payload = reader.take(length)
@@ -60,7 +60,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
           if (pad) payload.readByte() & 0xff
           else 0
         val dependencyAndE =
-          if (priority) payload.readLongBE()
+          if (priority) payload.readIntBE()
           else 0
         val weight =
           if (priority) payload.readByte() & 0xff
