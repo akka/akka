@@ -81,13 +81,10 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
     out
   }
 
-  override protected def beforeTermination(): Unit = {
-    handleFlightRecorderFile()
-  }
-
   override def afterTermination(): Unit = {
     remoteSystems.foreach(sys ⇒ shutdown(sys))
     remoteSystems = Vector.empty
+    handleFlightRecorderFile()
   }
 
   private def handleFlightRecorderFile(): Unit = {

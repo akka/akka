@@ -12,7 +12,7 @@ import java.util.Arrays
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.testkit.AkkaSpec
-import com.google.common.jimfs.Jimfs
+import com.google.common.jimfs.{ Configuration, Jimfs }
 
 class FlightRecorderSpec extends AkkaSpec {
   import FlightRecorderReader._
@@ -380,7 +380,7 @@ class FlightRecorderSpec extends AkkaSpec {
         Files.isWritable(path) should ===(true)
         Files.isReadable(path) should ===(true)
       }
-      val fs = Jimfs.newFileSystem()
+      val fs = Jimfs.newFileSystem(Configuration.unix())
 
       try {
         val tmpPath = FlightRecorder.createFlightRecorderFile("", fs)
