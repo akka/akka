@@ -3,12 +3,9 @@
  */
 package akka.remote.artery
 
-import scala.concurrent.duration._
 import akka.actor.Address
-import akka.actor.InternalActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
-import akka.remote.artery.SystemMessageDelivery._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Keep
@@ -49,14 +46,14 @@ class InboundControlJunctionSpec
       val recipient = OptionVal.None // not used
 
       val ((upstream, controlSubject), downstream) = TestSource.probe[AnyRef]
-        .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, OptionVal.None, addressA.uid, OptionVal.None))
+        .map(msg ⇒ InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid, OptionVal.None))
         .viaMat(new InboundControlJunction)(Keep.both)
         .map { case env: InboundEnvelope ⇒ env.message }
         .toMat(TestSink.probe[Any])(Keep.both)
         .run()
 
       controlSubject.attach(new ControlMessageObserver {
-        override def notify(env: InboundEnvelope) {
+        override def notify(env: InboundEnvelope) = {
           observerProbe.ref ! env.message
         }
       })

@@ -24,8 +24,6 @@ import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.actor.ActorRef
-import akka.remote.PriorityMessage
-import akka.actor.ActorSelectionMessage
 import akka.dispatch.sysmsg.SystemMessage
 import scala.util.control.NoStackTrace
 

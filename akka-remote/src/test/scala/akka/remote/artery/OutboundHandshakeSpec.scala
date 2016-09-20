@@ -53,7 +53,7 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       val (upstream, downstream) = setupStream(outboundContext)
 
       downstream.request(10)
-      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA, addressB.address))
       downstream.cancel()
     }
 
@@ -65,7 +65,7 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
 
       upstream.sendNext("msg1")
       downstream.request(10)
-      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA, addressB.address))
       downstream.expectNext("msg1")
       downstream.cancel()
     }
@@ -76,7 +76,7 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       val (upstream, downstream) = setupStream(outboundContext, timeout = 200.millis)
 
       downstream.request(1)
-      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA, addressB.address))
       downstream.expectError().getClass should be(classOf[HandshakeTimeoutException])
     }
 
@@ -86,9 +86,9 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       val (upstream, downstream) = setupStream(outboundContext, retryInterval = 100.millis)
 
       downstream.request(10)
-      downstream.expectNext(HandshakeReq(addressA))
-      downstream.expectNext(HandshakeReq(addressA))
-      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA, addressB.address))
+      downstream.expectNext(HandshakeReq(addressA, addressB.address))
+      downstream.expectNext(HandshakeReq(addressA, addressB.address))
       downstream.cancel()
     }
 
@@ -98,7 +98,7 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       val (upstream, downstream) = setupStream(outboundContext)
 
       downstream.request(10)
-      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA, addressB.address))
       upstream.sendNext("msg1")
       downstream.expectNoMsg(200.millis)
       // InboundHandshake stage will complete the handshake when receiving HandshakeRsp
@@ -116,7 +116,7 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
 
       downstream.request(10)
       upstream.sendNext("msg1")
-      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA, addressB.address))
       inboundContext.completeHandshake(addressB)
       downstream.expectNext("msg1")
 
@@ -124,7 +124,7 @@ class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       upstream.sendNext("msg2")
       upstream.sendNext("msg3")
       upstream.sendNext("msg4")
-      downstream.expectNext(HandshakeReq(addressA))
+      downstream.expectNext(HandshakeReq(addressA, addressB.address))
       downstream.expectNext("msg2")
       downstream.expectNext("msg3")
       downstream.expectNext("msg4")

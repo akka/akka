@@ -10,12 +10,10 @@ import scala.concurrent.duration._
 import akka.NotUsed
 import akka.actor.ActorIdentity
 import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
-import akka.actor.InternalActorRef
 import akka.actor.PoisonPill
 import akka.actor.RootActorPath
-import akka.remote.{ AddressUidExtension, RARP, RemoteActorRef, UniqueAddress }
+import akka.remote.{ AddressUidExtension, RARP, UniqueAddress }
 import akka.remote.artery.SystemMessageDelivery._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
@@ -79,7 +77,7 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
     Flow[OutboundEnvelope]
       .map(outboundEnvelope ⇒ outboundEnvelope.message match {
         case sysEnv: SystemMessageEnvelope ⇒
-          InboundEnvelope(recipient, addressB.address, sysEnv, OptionVal.None, addressA.uid,
+          InboundEnvelope(recipient, sysEnv, OptionVal.None, addressA.uid,
             inboundContext.association(addressA.uid))
       })
       .async

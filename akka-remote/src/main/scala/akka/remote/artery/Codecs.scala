@@ -11,7 +11,7 @@ import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.util.{ ByteString, OptionVal, PrettyByteString }
+import akka.util.{ ByteString, OptionVal }
 import akka.actor.EmptyLocalActorRef
 import akka.remote.artery.compress.InboundCompressions
 import akka.stream.stage.TimerGraphStageLogic
@@ -23,8 +23,6 @@ import akka.Done
 import akka.stream.stage.GraphStageWithMaterializedValue
 
 import scala.concurrent.Promise
-
-import scala.annotation.switch
 
 /**
  * INTERNAL API
@@ -378,7 +376,6 @@ private[remote] class Decoder(
 
           val decoded = inEnvelopePool.acquire().init(
             recipient,
-            localAddress, // FIXME: this is used for the "non-local recipient" check in MessageDispatcher. Is this needed anymore?
             sender,
             originUid,
             headerBuilder.serializer,
@@ -405,8 +402,9 @@ private[remote] class Decoder(
               scheduleOnce(RetryResolveRemoteDeployedRecipient(
                 retryResolveRemoteDeployedRecipientAttempts,
                 recipientActorRefPath, decoded), retryResolveRemoteDeployedRecipientInterval)
-          } else
+          } else {
             push(out, decoded)
+          }
         }
       }
 
@@ -537,4 +535,3 @@ private[remote] class Deserializer(
       setHandlers(in, out, this)
     }
 }
-

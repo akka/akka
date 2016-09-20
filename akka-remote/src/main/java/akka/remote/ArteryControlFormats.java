@@ -764,7 +764,6 @@ public final class ArteryControlFormats {
    * address field. A message that needs to changed later can be cloned from this one and then adapted.
    * ActorSystemTerminating
    * ActorSystemTerminating.Ack
-   * OutboundHandshake.HandshakeReq
    * OutboundHandshake.HandshakeRsp
    * </pre>
    */
@@ -1016,7 +1015,6 @@ public final class ArteryControlFormats {
      * address field. A message that needs to changed later can be cloned from this one and then adapted.
      * ActorSystemTerminating
      * ActorSystemTerminating.Ack
-     * OutboundHandshake.HandshakeReq
      * OutboundHandshake.HandshakeRsp
      * </pre>
      */
@@ -1278,6 +1276,737 @@ public final class ArteryControlFormats {
     }
 
     // @@protoc_insertion_point(class_scope:MessageWithAddress)
+  }
+
+  public interface HandshakeReqOrBuilder
+      extends akka.protobuf.MessageOrBuilder {
+
+    // required .UniqueAddress from = 1;
+    /**
+     * <code>required .UniqueAddress from = 1;</code>
+     */
+    boolean hasFrom();
+    /**
+     * <code>required .UniqueAddress from = 1;</code>
+     */
+    akka.remote.ArteryControlFormats.UniqueAddress getFrom();
+    /**
+     * <code>required .UniqueAddress from = 1;</code>
+     */
+    akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder();
+
+    // required .Address to = 2;
+    /**
+     * <code>required .Address to = 2;</code>
+     */
+    boolean hasTo();
+    /**
+     * <code>required .Address to = 2;</code>
+     */
+    akka.remote.ArteryControlFormats.Address getTo();
+    /**
+     * <code>required .Address to = 2;</code>
+     */
+    akka.remote.ArteryControlFormats.AddressOrBuilder getToOrBuilder();
+  }
+  /**
+   * Protobuf type {@code HandshakeReq}
+   */
+  public static final class HandshakeReq extends
+      akka.protobuf.GeneratedMessage
+      implements HandshakeReqOrBuilder {
+    // Use HandshakeReq.newBuilder() to construct.
+    private HandshakeReq(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private HandshakeReq(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final HandshakeReq defaultInstance;
+    public static HandshakeReq getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public HandshakeReq getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final akka.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final akka.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private HandshakeReq(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              akka.remote.ArteryControlFormats.UniqueAddress.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                subBuilder = from_.toBuilder();
+              }
+              from_ = input.readMessage(akka.remote.ArteryControlFormats.UniqueAddress.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(from_);
+                from_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000001;
+              break;
+            }
+            case 18: {
+              akka.remote.ArteryControlFormats.Address.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                subBuilder = to_.toBuilder();
+              }
+              to_ = input.readMessage(akka.remote.ArteryControlFormats.Address.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(to_);
+                to_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000002;
+              break;
+            }
+          }
+        }
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.remote.ArteryControlFormats.internal_static_HandshakeReq_descriptor;
+    }
+
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.remote.ArteryControlFormats.internal_static_HandshakeReq_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.remote.ArteryControlFormats.HandshakeReq.class, akka.remote.ArteryControlFormats.HandshakeReq.Builder.class);
+    }
+
+    public static akka.protobuf.Parser<HandshakeReq> PARSER =
+        new akka.protobuf.AbstractParser<HandshakeReq>() {
+      public HandshakeReq parsePartialFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
+        return new HandshakeReq(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public akka.protobuf.Parser<HandshakeReq> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // required .UniqueAddress from = 1;
+    public static final int FROM_FIELD_NUMBER = 1;
+    private akka.remote.ArteryControlFormats.UniqueAddress from_;
+    /**
+     * <code>required .UniqueAddress from = 1;</code>
+     */
+    public boolean hasFrom() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required .UniqueAddress from = 1;</code>
+     */
+    public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
+      return from_;
+    }
+    /**
+     * <code>required .UniqueAddress from = 1;</code>
+     */
+    public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder() {
+      return from_;
+    }
+
+    // required .Address to = 2;
+    public static final int TO_FIELD_NUMBER = 2;
+    private akka.remote.ArteryControlFormats.Address to_;
+    /**
+     * <code>required .Address to = 2;</code>
+     */
+    public boolean hasTo() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required .Address to = 2;</code>
+     */
+    public akka.remote.ArteryControlFormats.Address getTo() {
+      return to_;
+    }
+    /**
+     * <code>required .Address to = 2;</code>
+     */
+    public akka.remote.ArteryControlFormats.AddressOrBuilder getToOrBuilder() {
+      return to_;
+    }
+
+    private void initFields() {
+      from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+      to_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasFrom()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasTo()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!getFrom().isInitialized()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!getTo().isInitialized()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(akka.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeMessage(1, from_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeMessage(2, to_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(1, from_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(2, to_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(byte[] data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
+        byte[] data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
+        akka.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.remote.ArteryControlFormats.HandshakeReq parseFrom(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.HandshakeReq prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code HandshakeReq}
+     */
+    public static final class Builder extends
+        akka.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.remote.ArteryControlFormats.HandshakeReqOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.remote.ArteryControlFormats.internal_static_HandshakeReq_descriptor;
+      }
+
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.remote.ArteryControlFormats.internal_static_HandshakeReq_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.remote.ArteryControlFormats.HandshakeReq.class, akka.remote.ArteryControlFormats.HandshakeReq.Builder.class);
+      }
+
+      // Construct using akka.remote.ArteryControlFormats.HandshakeReq.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getFromFieldBuilder();
+          getToFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        if (fromBuilder_ == null) {
+          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+        } else {
+          fromBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000001);
+        if (toBuilder_ == null) {
+          to_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
+        } else {
+          toBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public akka.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.remote.ArteryControlFormats.internal_static_HandshakeReq_descriptor;
+      }
+
+      public akka.remote.ArteryControlFormats.HandshakeReq getDefaultInstanceForType() {
+        return akka.remote.ArteryControlFormats.HandshakeReq.getDefaultInstance();
+      }
+
+      public akka.remote.ArteryControlFormats.HandshakeReq build() {
+        akka.remote.ArteryControlFormats.HandshakeReq result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.remote.ArteryControlFormats.HandshakeReq buildPartial() {
+        akka.remote.ArteryControlFormats.HandshakeReq result = new akka.remote.ArteryControlFormats.HandshakeReq(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        if (fromBuilder_ == null) {
+          result.from_ = from_;
+        } else {
+          result.from_ = fromBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        if (toBuilder_ == null) {
+          result.to_ = to_;
+        } else {
+          result.to_ = toBuilder_.build();
+        }
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(akka.protobuf.Message other) {
+        if (other instanceof akka.remote.ArteryControlFormats.HandshakeReq) {
+          return mergeFrom((akka.remote.ArteryControlFormats.HandshakeReq)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.remote.ArteryControlFormats.HandshakeReq other) {
+        if (other == akka.remote.ArteryControlFormats.HandshakeReq.getDefaultInstance()) return this;
+        if (other.hasFrom()) {
+          mergeFrom(other.getFrom());
+        }
+        if (other.hasTo()) {
+          mergeTo(other.getTo());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasFrom()) {
+          
+          return false;
+        }
+        if (!hasTo()) {
+          
+          return false;
+        }
+        if (!getFrom().isInitialized()) {
+          
+          return false;
+        }
+        if (!getTo().isInitialized()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.remote.ArteryControlFormats.HandshakeReq parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.remote.ArteryControlFormats.HandshakeReq) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // required .UniqueAddress from = 1;
+      private akka.remote.ArteryControlFormats.UniqueAddress from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+      private akka.protobuf.SingleFieldBuilder<
+          akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
+      /**
+       * <code>required .UniqueAddress from = 1;</code>
+       */
+      public boolean hasFrom() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required .UniqueAddress from = 1;</code>
+       */
+      public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
+        if (fromBuilder_ == null) {
+          return from_;
+        } else {
+          return fromBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>required .UniqueAddress from = 1;</code>
+       */
+      public Builder setFrom(akka.remote.ArteryControlFormats.UniqueAddress value) {
+        if (fromBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          from_ = value;
+          onChanged();
+        } else {
+          fromBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .UniqueAddress from = 1;</code>
+       */
+      public Builder setFrom(
+          akka.remote.ArteryControlFormats.UniqueAddress.Builder builderForValue) {
+        if (fromBuilder_ == null) {
+          from_ = builderForValue.build();
+          onChanged();
+        } else {
+          fromBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .UniqueAddress from = 1;</code>
+       */
+      public Builder mergeFrom(akka.remote.ArteryControlFormats.UniqueAddress value) {
+        if (fromBuilder_ == null) {
+          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+              from_ != akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance()) {
+            from_ =
+              akka.remote.ArteryControlFormats.UniqueAddress.newBuilder(from_).mergeFrom(value).buildPartial();
+          } else {
+            from_ = value;
+          }
+          onChanged();
+        } else {
+          fromBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .UniqueAddress from = 1;</code>
+       */
+      public Builder clearFrom() {
+        if (fromBuilder_ == null) {
+          from_ = akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance();
+          onChanged();
+        } else {
+          fromBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+      /**
+       * <code>required .UniqueAddress from = 1;</code>
+       */
+      public akka.remote.ArteryControlFormats.UniqueAddress.Builder getFromBuilder() {
+        bitField0_ |= 0x00000001;
+        onChanged();
+        return getFromFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>required .UniqueAddress from = 1;</code>
+       */
+      public akka.remote.ArteryControlFormats.UniqueAddressOrBuilder getFromOrBuilder() {
+        if (fromBuilder_ != null) {
+          return fromBuilder_.getMessageOrBuilder();
+        } else {
+          return from_;
+        }
+      }
+      /**
+       * <code>required .UniqueAddress from = 1;</code>
+       */
+      private akka.protobuf.SingleFieldBuilder<
+          akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> 
+          getFromFieldBuilder() {
+        if (fromBuilder_ == null) {
+          fromBuilder_ = new akka.protobuf.SingleFieldBuilder<
+              akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder>(
+                  from_,
+                  getParentForChildren(),
+                  isClean());
+          from_ = null;
+        }
+        return fromBuilder_;
+      }
+
+      // required .Address to = 2;
+      private akka.remote.ArteryControlFormats.Address to_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
+      private akka.protobuf.SingleFieldBuilder<
+          akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder> toBuilder_;
+      /**
+       * <code>required .Address to = 2;</code>
+       */
+      public boolean hasTo() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required .Address to = 2;</code>
+       */
+      public akka.remote.ArteryControlFormats.Address getTo() {
+        if (toBuilder_ == null) {
+          return to_;
+        } else {
+          return toBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>required .Address to = 2;</code>
+       */
+      public Builder setTo(akka.remote.ArteryControlFormats.Address value) {
+        if (toBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          to_ = value;
+          onChanged();
+        } else {
+          toBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .Address to = 2;</code>
+       */
+      public Builder setTo(
+          akka.remote.ArteryControlFormats.Address.Builder builderForValue) {
+        if (toBuilder_ == null) {
+          to_ = builderForValue.build();
+          onChanged();
+        } else {
+          toBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .Address to = 2;</code>
+       */
+      public Builder mergeTo(akka.remote.ArteryControlFormats.Address value) {
+        if (toBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+              to_ != akka.remote.ArteryControlFormats.Address.getDefaultInstance()) {
+            to_ =
+              akka.remote.ArteryControlFormats.Address.newBuilder(to_).mergeFrom(value).buildPartial();
+          } else {
+            to_ = value;
+          }
+          onChanged();
+        } else {
+          toBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .Address to = 2;</code>
+       */
+      public Builder clearTo() {
+        if (toBuilder_ == null) {
+          to_ = akka.remote.ArteryControlFormats.Address.getDefaultInstance();
+          onChanged();
+        } else {
+          toBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      /**
+       * <code>required .Address to = 2;</code>
+       */
+      public akka.remote.ArteryControlFormats.Address.Builder getToBuilder() {
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return getToFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>required .Address to = 2;</code>
+       */
+      public akka.remote.ArteryControlFormats.AddressOrBuilder getToOrBuilder() {
+        if (toBuilder_ != null) {
+          return toBuilder_.getMessageOrBuilder();
+        } else {
+          return to_;
+        }
+      }
+      /**
+       * <code>required .Address to = 2;</code>
+       */
+      private akka.protobuf.SingleFieldBuilder<
+          akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder> 
+          getToFieldBuilder() {
+        if (toBuilder_ == null) {
+          toBuilder_ = new akka.protobuf.SingleFieldBuilder<
+              akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder>(
+                  to_,
+                  getParentForChildren(),
+                  isClean());
+          to_ = null;
+        }
+        return toBuilder_;
+      }
+
+      // @@protoc_insertion_point(builder_scope:HandshakeReq)
+    }
+
+    static {
+      defaultInstance = new HandshakeReq(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:HandshakeReq)
   }
 
   public interface CompressionTableAdvertisementOrBuilder
@@ -6103,6 +6832,11 @@ public final class ArteryControlFormats {
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_MessageWithAddress_fieldAccessorTable;
   private static akka.protobuf.Descriptors.Descriptor
+    internal_static_HandshakeReq_descriptor;
+  private static
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_HandshakeReq_fieldAccessorTable;
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_CompressionTableAdvertisement_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
@@ -6144,22 +6878,24 @@ public final class ArteryControlFormats {
       "\n\032ArteryControlFormats.proto\"G\n\013Quaranti" +
       "ned\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\032\n\002to\030" +
       "\002 \002(\0132\016.UniqueAddress\"5\n\022MessageWithAddr" +
-      "ess\022\037\n\007address\030\001 \002(\0132\016.UniqueAddress\"\204\001\n" +
-      "\035CompressionTableAdvertisement\022\034\n\004from\030\001" +
-      " \002(\0132\016.UniqueAddress\022\021\n\toriginUid\030\002 \002(\004\022" +
-      "\024\n\014tableVersion\030\003 \002(\r\022\014\n\004keys\030\004 \003(\t\022\016\n\006v" +
-      "alues\030\005 \003(\r\"Q\n CompressionTableAdvertise" +
-      "mentAck\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\017\n" +
-      "\007version\030\002 \002(\r\"\212\001\n\025SystemMessageEnvelope",
-      "\022\017\n\007message\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022" +
-      "\027\n\017messageManifest\030\003 \001(\014\022\r\n\005seqNo\030\004 \002(\004\022" +
-      "\"\n\nackReplyTo\030\005 \002(\0132\016.UniqueAddress\"G\n\030S" +
-      "ystemMessageDeliveryAck\022\r\n\005seqNo\030\001 \002(\004\022\034" +
-      "\n\004from\030\002 \002(\0132\016.UniqueAddress\"K\n\007Address\022" +
-      "\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\020\n\010hos" +
-      "tname\030\003 \002(\t\022\014\n\004port\030\004 \002(\r\"7\n\rUniqueAddre" +
-      "ss\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002" +
-      "(\004B\017\n\013akka.remoteH\001"
+      "ess\022\037\n\007address\030\001 \002(\0132\016.UniqueAddress\"B\n\014" +
+      "HandshakeReq\022\034\n\004from\030\001 \002(\0132\016.UniqueAddre" +
+      "ss\022\024\n\002to\030\002 \002(\0132\010.Address\"\204\001\n\035Compression" +
+      "TableAdvertisement\022\034\n\004from\030\001 \002(\0132\016.Uniqu" +
+      "eAddress\022\021\n\toriginUid\030\002 \002(\004\022\024\n\014tableVers" +
+      "ion\030\003 \002(\r\022\014\n\004keys\030\004 \003(\t\022\016\n\006values\030\005 \003(\r\"" +
+      "Q\n CompressionTableAdvertisementAck\022\034\n\004f",
+      "rom\030\001 \002(\0132\016.UniqueAddress\022\017\n\007version\030\002 \002" +
+      "(\r\"\212\001\n\025SystemMessageEnvelope\022\017\n\007message\030" +
+      "\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageMa" +
+      "nifest\030\003 \001(\014\022\r\n\005seqNo\030\004 \002(\004\022\"\n\nackReplyT" +
+      "o\030\005 \002(\0132\016.UniqueAddress\"G\n\030SystemMessage" +
+      "DeliveryAck\022\r\n\005seqNo\030\001 \002(\004\022\034\n\004from\030\002 \002(\013" +
+      "2\016.UniqueAddress\"K\n\007Address\022\020\n\010protocol\030" +
+      "\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\020\n\010hostname\030\003 \002(\t\022" +
+      "\014\n\004port\030\004 \002(\r\"7\n\rUniqueAddress\022\031\n\007addres" +
+      "s\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\004B\017\n\013akka.r",
+      "emoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -6178,38 +6914,44 @@ public final class ArteryControlFormats {
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_MessageWithAddress_descriptor,
               new java.lang.String[] { "Address", });
-          internal_static_CompressionTableAdvertisement_descriptor =
+          internal_static_HandshakeReq_descriptor =
             getDescriptor().getMessageTypes().get(2);
+          internal_static_HandshakeReq_fieldAccessorTable = new
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_HandshakeReq_descriptor,
+              new java.lang.String[] { "From", "To", });
+          internal_static_CompressionTableAdvertisement_descriptor =
+            getDescriptor().getMessageTypes().get(3);
           internal_static_CompressionTableAdvertisement_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_CompressionTableAdvertisement_descriptor,
               new java.lang.String[] { "From", "OriginUid", "TableVersion", "Keys", "Values", });
           internal_static_CompressionTableAdvertisementAck_descriptor =
-            getDescriptor().getMessageTypes().get(3);
+            getDescriptor().getMessageTypes().get(4);
           internal_static_CompressionTableAdvertisementAck_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_CompressionTableAdvertisementAck_descriptor,
               new java.lang.String[] { "From", "Version", });
           internal_static_SystemMessageEnvelope_descriptor =
-            getDescriptor().getMessageTypes().get(4);
+            getDescriptor().getMessageTypes().get(5);
           internal_static_SystemMessageEnvelope_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SystemMessageEnvelope_descriptor,
               new java.lang.String[] { "Message", "SerializerId", "MessageManifest", "SeqNo", "AckReplyTo", });
           internal_static_SystemMessageDeliveryAck_descriptor =
-            getDescriptor().getMessageTypes().get(5);
+            getDescriptor().getMessageTypes().get(6);
           internal_static_SystemMessageDeliveryAck_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SystemMessageDeliveryAck_descriptor,
               new java.lang.String[] { "SeqNo", "From", });
           internal_static_Address_descriptor =
-            getDescriptor().getMessageTypes().get(6);
+            getDescriptor().getMessageTypes().get(7);
           internal_static_Address_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Address_descriptor,
               new java.lang.String[] { "Protocol", "System", "Hostname", "Port", });
           internal_static_UniqueAddress_descriptor =
-            getDescriptor().getMessageTypes().get(7);
+            getDescriptor().getMessageTypes().get(8);
           internal_static_UniqueAddress_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_UniqueAddress_descriptor,
