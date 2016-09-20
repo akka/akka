@@ -63,10 +63,9 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
       val streamId = 0 // FIXME we need to know the streamId here
 
       // FIXME, no idea if END_STREAM too - probably not decided by this stage?
+      //   --> yes, we need to emit the data frames for this response as well
       // TODO in our simple impl we always render all into one frame, but we may need to support rendering continuations
-      val flags = Http2Protocol.Flags.END_HEADERS
-
-      val headers = HeadersFrame(flags, streamId, headerBlockFragment)
+      val headers = HeadersFrame(streamId, endStream = false, endHeaders = true, headerBlockFragment)
       val http2SubStream = Http2SubStream(headers, Source.empty)
       push(out, http2SubStream)
     }

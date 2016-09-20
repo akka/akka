@@ -27,7 +27,7 @@ class HttpRequestHeaderHpackDecompressionSpec extends AkkaSpec with ScalaFutures
       val headers = Map(":path" → "/sample/path")
 
       val bytes = parseHeaderBlock(headerBlock)
-      val http2SubStreams = List(Http2SubStream(HeadersFrame(Http2Protocol.Flags.END_HEADERS, 0, bytes), Source.empty))
+      val http2SubStreams = List(Http2SubStream(HeadersFrame(0, endStream = false, endHeaders = true, bytes), Source.empty))
 
       val request = runToRequest(http2SubStreams)
       request.uri.toString should ===("/sample/path")
@@ -36,7 +36,7 @@ class HttpRequestHeaderHpackDecompressionSpec extends AkkaSpec with ScalaFutures
       val headerBlock = encodedPOST
 
       val bytes = parseHeaderBlock(headerBlock)
-      val http2SubStreams = List(Http2SubStream(HeadersFrame(Http2Protocol.Flags.END_HEADERS, 0, bytes), Source.empty))
+      val http2SubStreams = List(Http2SubStream(HeadersFrame(0, endStream = false, endHeaders = true, bytes), Source.empty))
 
       val request = runToRequest(http2SubStreams)
       request.method should ===(HttpMethods.POST)
@@ -45,10 +45,10 @@ class HttpRequestHeaderHpackDecompressionSpec extends AkkaSpec with ScalaFutures
       val streamId = 0
       val frames = List(
         Http2SubStream(
-          HeadersFrame(Http2Protocol.Flags.NO_FLAGS, streamId, parseHeaderBlock(encodedGET)), // the header here is nog interesting, we'll override it
+          HeadersFrame(streamId, endStream = false, endHeaders = false, parseHeaderBlock(encodedGET)), // the header here is nog interesting, we'll override it
           Source.fromIterator(() ⇒ List(
-            HeadersFrame(Http2Protocol.Flags.NO_FLAGS, streamId, parseHeaderBlock(encodedPOST)),
-            HeadersFrame(Http2Protocol.Flags.END_HEADERS, streamId, parseHeaderBlock(encodedPathSamplePath))
+            HeadersFrame(streamId, endStream = false, endHeaders = false, parseHeaderBlock(encodedPOST)),
+            HeadersFrame(streamId, endStream = false, endHeaders = true, parseHeaderBlock(encodedPathSamplePath))
           ).iterator
           )
         )

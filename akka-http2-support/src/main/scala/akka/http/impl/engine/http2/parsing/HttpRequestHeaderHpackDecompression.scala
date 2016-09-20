@@ -45,7 +45,15 @@ final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Htt
       override def onPush(): Unit = {
         val httpSubStream = grab(in)
 
-        if (httpSubStream.initialFrame.hasFlag(Http2Protocol.Flags.END_STREAM)) {
+        def hasEndStream(frame: StreamFrameEvent): Boolean = frame match {
+          case h: HeadersFrame ⇒ h.endStream
+          case _               ⇒ false
+        }
+
+        // FIXME: ensure that this works for all combinations of events
+        //   (e.g. there can be an initial frame with endStream = true, endHeaders = false
+        //    in which case we need to wait for a continuation, etc.)
+        if (hasEndStream(httpSubStream.initialFrame)) {
           val pushedRequest = processFrame(httpSubStream, httpSubStream.initialFrame)
 
           if (pushedRequest) pull(in)
@@ -116,7 +124,7 @@ final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Htt
           val is = ByteStringInputStream(h.headerBlockFragment)
 
           decoder.decode(is, this) // this: HeaderListener (invoked synchronously)
-          if (h.hasFlag(Http2Protocol.Flags.END_HEADERS)) decoder.endHeaderBlock()
+          if (h.endHeaders) decoder.endHeaderBlock()
 
           pushIfReady(h)
         case _ ⇒

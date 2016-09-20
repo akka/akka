@@ -35,7 +35,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx=63
             xxxxxxxx=64
             xxxxxxxx=65
-         """ should parseTo(DataFrame(END_STREAM, 0x234223ab, ByteString("abcde")))
+         """ should parseTo(DataFrame(0x234223ab, endStream = true, ByteString("abcde")))
       }
       "with padding" in {
         b"""xxxxxxxx
@@ -59,7 +59,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             00000000
             00000000
             00000000
-         """ should parseTo(DataFrame(PADDED, 0x234223ab, ByteString("bcdefg")), checkRendering = false)
+         """ should parseTo(DataFrame(0x234223ab, endStream = false, ByteString("bcdefg")), checkRendering = false)
       }
     }
     "HEADER frames" - {
@@ -78,7 +78,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx=63
             xxxxxxxx=64
             xxxxxxxx=65
-         """ should parseTo(HeadersFrame(END_HEADERS, 0x3546, ByteString("abcde")))
+         """ should parseTo(HeadersFrame(0x3546, endStream = false, endHeaders = true, ByteString("abcde")))
       }
       "with padding but without priority settings" in {
         b"""xxxxxxxx
@@ -100,7 +100,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             00000000     # padding
             00000000
             00000000
-         """ should parseTo(HeadersFrame(PADDED, 0x3546, ByteString("bcdefg")), checkRendering = false)
+         """ should parseTo(HeadersFrame(0x3546, endStream = false, endHeaders = false, ByteString("bcdefg")), checkRendering = false)
       }
       "with padding and priority settings" in pending
     }
