@@ -12,12 +12,10 @@ import scala.util.Success
 import akka.Done
 import akka.actor.ActorRef
 import akka.actor.Address
-import akka.remote.RemoteActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.util.OptionVal
-import akka.actor.InternalActorRef
 import akka.dispatch.ExecutionContexts
 import com.typesafe.config.ConfigFactory
 
@@ -94,7 +92,7 @@ private[remote] class TestOutboundContext(
 
   override def sendControl(message: ControlMessage) = {
     controlProbe.foreach(_ ! message)
-    controlSubject.sendControl(InboundEnvelope(OptionVal.None, remoteAddress, message, OptionVal.None, localAddress.uid,
+    controlSubject.sendControl(InboundEnvelope(OptionVal.None, message, OptionVal.None, localAddress.uid,
       OptionVal.None))
   }
 

@@ -22,8 +22,7 @@ object HandshakeRetrySpec {
        remote.artery.enabled = on
        remote.artery.canonical.hostname = localhost
        remote.artery.canonical.port = 0
-       remote.handshake-timeout = 10s
-
+       remote.artery.advanced.handshake-timeout = 10s
      }
   """)
 

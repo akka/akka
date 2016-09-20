@@ -14,10 +14,14 @@ message Quarantined {
 // address field. A message that needs to changed later can be cloned from this one and then adapted.
 // ActorSystemTerminating
 // ActorSystemTerminating.Ack
-// OutboundHandshake.HandshakeReq
 // OutboundHandshake.HandshakeRsp
 message MessageWithAddress {
   required UniqueAddress address = 1;
+}
+
+message HandshakeReq {
+  required UniqueAddress from = 1;
+  required Address to = 2;
 }
 
 // CompressionProtocol.ActorRefCompressionAdvertisement

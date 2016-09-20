@@ -6,11 +6,9 @@ package akka.remote.artery
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.Address
-import akka.actor.InternalActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.remote.artery.OutboundHandshake.HandshakeRsp
-import akka.remote.artery.SystemMessageDelivery._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Keep
@@ -30,7 +28,6 @@ object InboundHandshakeSpec {
 }
 
 class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
-  import InboundHandshakeSpec._
 
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
   implicit val mat = ActorMaterializer(matSettings)(system)
@@ -41,7 +38,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
   private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
     val recipient = OptionVal.None // not used
     TestSource.probe[AnyRef]
-      .map(msg ⇒ InboundEnvelope(recipient, addressB.address, msg, OptionVal.None, addressA.uid,
+      .map(msg ⇒ InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid,
         inboundContext.association(addressA.uid)))
       .via(new InboundHandshake(inboundContext, inControlStream = true))
       .map { case env: InboundEnvelope ⇒ env.message }
@@ -57,7 +54,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       val (upstream, downstream) = setupStream(inboundContext)
 
       downstream.request(10)
-      upstream.sendNext(HandshakeReq(addressA))
+      upstream.sendNext(HandshakeReq(addressA, addressB.address))
       upstream.sendNext("msg1")
       replyProbe.expectMsg(HandshakeRsp(addressB))
       downstream.expectNext("msg1")
@@ -69,7 +66,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       val (upstream, downstream) = setupStream(inboundContext)
 
       downstream.request(10)
-      upstream.sendNext(HandshakeReq(addressA))
+      upstream.sendNext(HandshakeReq(addressA, addressB.address))
       upstream.sendNext("msg1")
       downstream.expectNext("msg1")
       val uniqueRemoteAddress = Await.result(
@@ -89,7 +86,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       downstream.expectNoMsg(200.millis) // messages from unknown are dropped
 
       // and accept messages after handshake
-      upstream.sendNext(HandshakeReq(addressA))
+      upstream.sendNext(HandshakeReq(addressA, addressB.address))
       upstream.sendNext("msg18")
       replyProbe.expectMsg(HandshakeRsp(addressB))
       downstream.expectNext("msg18")

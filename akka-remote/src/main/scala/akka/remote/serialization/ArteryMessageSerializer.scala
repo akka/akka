@@ -56,7 +56,7 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
   override def toBinary(o: AnyRef): Array[Byte] = (o match { // most frequent ones first
     case env: SystemMessageDelivery.SystemMessageEnvelope   ⇒ serializeSystemMessageEnvelope(env)
     case SystemMessageDelivery.Ack(seqNo, from)             ⇒ serializeSystemMessageDeliveryAck(seqNo, from)
-    case HandshakeReq(from)                                 ⇒ serializeWithAddress(from)
+    case HandshakeReq(from, to)                             ⇒ serializeHandshakeReq(from, to)
     case HandshakeRsp(from)                                 ⇒ serializeWithAddress(from)
     case SystemMessageDelivery.Nack(seqNo, from)            ⇒ serializeSystemMessageDeliveryAck(seqNo, from)
     case q: Quarantined                                     ⇒ serializeQuarantined(q)
@@ -71,7 +71,7 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match { // most frequent ones first (could be made a HashMap in the future)
     case SystemMessageEnvelopeManifest ⇒ deserializeSystemMessageEnvelope(bytes)
     case SystemMessageDeliveryAckManifest ⇒ deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Ack)
-    case HandshakeReqManifest ⇒ deserializeWithFromAddress(bytes, HandshakeReq)
+    case HandshakeReqManifest ⇒ deserializeHandshakeReq(bytes, HandshakeReq)
     case HandshakeRspManifest ⇒ deserializeWithFromAddress(bytes, HandshakeRsp)
     case SystemMessageDeliveryNackManifest ⇒ deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Nack)
     case QuarantinedManifest ⇒ deserializeQuarantined(ArteryControlFormats.Quarantined.parseFrom(bytes))
@@ -191,6 +191,17 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
 
   def deserializeWithFromAddress(bytes: Array[Byte], create: UniqueAddress ⇒ AnyRef): AnyRef =
     create(deserializeUniqueAddress(ArteryControlFormats.MessageWithAddress.parseFrom(bytes).getAddress))
+
+  def serializeHandshakeReq(from: UniqueAddress, to: Address): MessageLite =
+    ArteryControlFormats.HandshakeReq.newBuilder
+      .setFrom(serializeUniqueAddress(from))
+      .setTo(serializeAddress(to))
+      .build()
+
+  def deserializeHandshakeReq(bytes: Array[Byte], create: (UniqueAddress, Address) ⇒ HandshakeReq): HandshakeReq = {
+    val protoEnv = ArteryControlFormats.HandshakeReq.parseFrom(bytes)
+    create(deserializeUniqueAddress(protoEnv.getFrom), deserializeAddress(protoEnv.getTo))
+  }
 
   def serializeUniqueAddress(address: UniqueAddress): ArteryControlFormats.UniqueAddress =
     ArteryControlFormats.UniqueAddress.newBuilder()

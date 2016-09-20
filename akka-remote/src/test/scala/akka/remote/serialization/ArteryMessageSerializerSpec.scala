@@ -22,7 +22,7 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
       "Quarantined" → Quarantined(uniqueAddress(), uniqueAddress()),
       "ActorSystemTerminating" → ActorSystemTerminating(uniqueAddress()),
       "ActorSystemTerminatingAck" → ActorSystemTerminatingAck(uniqueAddress()),
-      "HandshakeReq" → HandshakeReq(uniqueAddress()),
+      "HandshakeReq" → HandshakeReq(uniqueAddress(), uniqueAddress().address),
       "HandshakeRsp" → HandshakeRsp(uniqueAddress()),
       "ActorRefCompressionAdvertisement" → ActorRefCompressionAdvertisement(uniqueAddress(), CompressionTable(17L, 123, Map(actorA → 123, actorB → 456, system.deadLetters → 0))),
       "ActorRefCompressionAdvertisementAck" → ActorRefCompressionAdvertisementAck(uniqueAddress(), 23),
