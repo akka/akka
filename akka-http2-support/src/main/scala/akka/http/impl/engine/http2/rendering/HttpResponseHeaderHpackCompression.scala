@@ -7,9 +7,11 @@ package akka.http.impl.engine.http2.rendering
 import java.io.OutputStream
 import java.nio.{ ByteBuffer, ByteOrder }
 
+import akka.http.impl.engine.http2.DataFrame
 import akka.http.impl.engine.http2.{ HeadersFrame, Http2Protocol, Http2SubStream }
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
@@ -59,14 +61,17 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
       // feed `buf` with compressed header data
       val headerBlockFragment = encodeAllHeaders(response)
 
-      // FIXME: In order to render a REAL HeadersFrame we need to know the streamId and more info like that
-      val streamId = 0 // FIXME we need to know the streamId here
+      // FIXME: emit proper exception if header is missing
+      val streamId = response.header[Http2StreamIdHeader].get.streamId
 
-      // FIXME, no idea if END_STREAM too - probably not decided by this stage?
-      //   --> yes, we need to emit the data frames for this response as well
-      // TODO in our simple impl we always render all into one frame, but we may need to support rendering continuations
-      val headers = HeadersFrame(streamId, endStream = false, endHeaders = true, headerBlockFragment)
-      val http2SubStream = Http2SubStream(headers, Source.empty)
+      val dataFrames =
+        if (response.entity.isKnownEmpty) Source.empty
+        else
+          response.entity.dataBytes.map(bytes ⇒ DataFrame(streamId, endStream = false, bytes)) ++
+            Source.single(DataFrame(streamId, endStream = true, ByteString.empty))
+
+      val headers = HeadersFrame(streamId, endStream = dataFrames == Source.empty, endHeaders = true, headerBlockFragment)
+      val http2SubStream = Http2SubStream(headers, dataFrames)
       push(out, http2SubStream)
     }
 
