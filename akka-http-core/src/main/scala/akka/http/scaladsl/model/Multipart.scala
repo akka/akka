@@ -56,14 +56,13 @@ sealed trait Multipart extends jm.Multipart {
   /**
    * Creates a [[akka.http.scaladsl.model.MessageEntity]] from this multipart object.
    */
-  def toEntity(
-    charset:  HttpCharset = HttpCharsets.`UTF-8`,
-    boundary: String      = BodyPartRenderer.randomBoundary())(implicit log: LoggingAdapter = NoLogging): MessageEntity = {
+  def toEntityWithLog(
+    boundary: String = BodyPartRenderer.randomBoundary())(implicit log: LoggingAdapter = NoLogging): MessageEntity = {
     val chunks =
       parts
-        .via(BodyPartRenderer.streamed(boundary, charset.nioCharset, partHeadersSizeHint = 128, log))
+        .via(BodyPartRenderer.streamed(boundary, partHeadersSizeHint = 128, log))
         .flatMapConcat(ConstantFun.scalaIdentityFunction)
-    HttpEntity.Chunked(mediaType withBoundary boundary withCharset charset, chunks)
+    HttpEntity.Chunked(mediaType withBoundary boundary, chunks)
   }
 
   /** Java API */
@@ -78,8 +77,8 @@ sealed trait Multipart extends jm.Multipart {
     toStrict(FiniteDuration(timeoutMillis, concurrent.duration.MILLISECONDS))(materializer).toJava
 
   /** Java API */
-  def toEntity(charset: jm.HttpCharset, boundary: String): jm.RequestEntity =
-    toEntity(charset.asInstanceOf[HttpCharset], boundary)
+  def toEntity(boundary: String): jm.RequestEntity =
+    toEntityWithLog(boundary)
 }
 
 object Multipart {
@@ -97,9 +96,9 @@ object Multipart {
      */
     def strictParts: immutable.Seq[Multipart.BodyPart.Strict]
 
-    override def toEntity(charset: HttpCharset, boundary: String)(implicit log: LoggingAdapter = NoLogging): HttpEntity.Strict = {
-      val data = BodyPartRenderer.strict(strictParts, boundary, charset.nioCharset, partHeadersSizeHint = 128, log)
-      HttpEntity(mediaType withBoundary boundary withCharset charset, data)
+    override def toEntityWithLog(boundary: String)(implicit log: LoggingAdapter = NoLogging): HttpEntity.Strict = {
+      val data = BodyPartRenderer.strict(strictParts, boundary, partHeadersSizeHint = 128, log)
+      HttpEntity(mediaType withBoundary boundary, data)
     }
 
     /** Java API */
@@ -112,7 +111,7 @@ object Multipart {
 
     /** Java API */
     override def toEntity(charset: jm.HttpCharset, boundary: String): jm.HttpEntity.Strict =
-      super.toEntity(charset, boundary).asInstanceOf[jm.HttpEntity.Strict]
+      super.toEntity(boundary).asInstanceOf[jm.HttpEntity.Strict]
   }
 
   /**

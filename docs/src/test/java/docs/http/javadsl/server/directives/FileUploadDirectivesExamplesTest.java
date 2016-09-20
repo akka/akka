@@ -51,9 +51,8 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
     // test:
     testRoute(route).run(HttpRequest.POST("/")
       .withEntity(
-        multipartForm.toEntity(HttpCharsets.UTF_8,
-          BodyPartRenderer
-            .randomBoundaryWithDefaults())))
+        multipartForm.toEntity(BodyPartRenderer
+		  .randomBoundaryWithDefaults())))
       .assertStatusCode(StatusCodes.OK);
     //#uploadedFile
   }
@@ -86,7 +85,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
 
     // test:
     testRoute(route).run(HttpRequest.POST("/").withEntity(
-      multipartForm.toEntity(HttpCharsets.UTF_8, BodyPartRenderer.randomBoundaryWithDefaults())))
+      multipartForm.toEntity(BodyPartRenderer.randomBoundaryWithDefaults())))
       .assertStatusCode(StatusCodes.OK).assertEntityAs(Unmarshaller.entityToString(), "Sum: 178");
     //#fileUpload
   }
@@ -130,7 +129,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
 
     // test:
     testRoute(route).run(HttpRequest.POST("/").withEntity(
-      multipartForm.toEntity(HttpCharsets.UTF_8, BodyPartRenderer.randomBoundaryWithDefaults())))
+      multipartForm.toEntity(BodyPartRenderer.randomBoundaryWithDefaults())))
       .assertStatusCode(StatusCodes.OK).assertEntityAs(Unmarshaller.entityToString(), "Sum: 178");
     //#fileProcessing
   }

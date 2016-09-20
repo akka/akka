@@ -39,7 +39,7 @@ public interface Multipart {
     /**
      * Creates an entity from this multipart object.
      */
-    RequestEntity toEntity(HttpCharset charset, String boundary);
+    RequestEntity toEntity(String boundary);
 
     interface Strict extends Multipart {
         Source<? extends Multipart.BodyPart.Strict, Object> getParts();
