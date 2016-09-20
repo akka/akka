@@ -16,8 +16,8 @@ import scala.annotation.tailrec
  * INTERNAL API
  */
 private[http] final class FrameEventRenderer extends GraphStage[FlowShape[FrameEvent, ByteString]] {
-  val in = Inlet[FrameEvent]("in")
-  val out = Outlet[ByteString]("out")
+  val in = Inlet[FrameEvent]("FrameEventRenderer.in")
+  val out = Outlet[ByteString]("FrameEventRenderer.out")
   override val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
