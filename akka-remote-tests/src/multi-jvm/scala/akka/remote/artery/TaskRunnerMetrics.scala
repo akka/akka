@@ -36,6 +36,8 @@ class TaskRunnerMetrics(system: ActorSystem) {
               }
             }
           })
+
+          reader.close()
           entryOffset = c
 
           if (aeronSourceHistogram.getTotalCount > 0) {
