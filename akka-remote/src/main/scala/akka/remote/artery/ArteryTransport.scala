@@ -36,6 +36,7 @@ import akka.remote.RemoteTransport
 import akka.remote.RemotingLifecycleEvent
 import akka.remote.ThisActorSystemQuarantinedEvent
 import akka.remote.UniqueAddress
+import akka.remote.artery.ArteryTransport.ShuttingDown
 import akka.remote.artery.Encoder.ChangeOutboundCompression
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
@@ -574,6 +575,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundStreams(): Unit = {
+    if (_shutdown) throw ShuttingDown
     val noCompressions = NoInboundCompressions // TODO possibly enable on other channels too https://github.com/akka/akka/pull/20546/files#r68074082
     val compressions = createInboundCompressions(this)
     _inboundCompressions = Some(compressions)
@@ -834,25 +836,38 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   // InboundContext
   override def sendControl(to: Address, message: ControlMessage) =
-    association(to).sendControl(message)
+    try {
+      association(to).sendControl(message)
+    } catch {
+      case ShuttingDown ⇒ // silence it
+    }
 
-  override def send(message: Any, sender: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = {
-    val cached = recipient.cachedAssociation
+  override def send(message: Any, sender: OptionVal[ActorRef], recipient: RemoteActorRef): Unit =
+    try {
+      val cached = recipient.cachedAssociation
 
-    val a =
-      if (cached ne null) cached
-      else {
-        val a2 = association(recipient.path.address)
-        recipient.cachedAssociation = a2
-        a2
-      }
+      val a =
+        if (cached ne null) cached
+        else {
+          val a2 = association(recipient.path.address)
+          recipient.cachedAssociation = a2
+          a2
+        }
 
-    a.send(message, sender, OptionVal.Some(recipient))
-  }
+      a.send(message, sender, OptionVal.Some(recipient))
+    } catch {
+      case ShuttingDown ⇒ // silence it
+    }
 
   override def association(remoteAddress: Address): Association = {
-    require(remoteAddress != localAddress.address, "Attemted association with self address!")
-    associationRegistry.association(remoteAddress)
+    require(remoteAddress != localAddress.address, "Attempted association with self address!")
+    // only look at isShutdown if there wasn't already an association
+    // races but better than nothing
+    associationRegistry.association(remoteAddress) match {
+      case Some(association)  ⇒ association
+      case None if isShutdown ⇒ throw ShuttingDown // can only happen if we are shutting down
+      case None               ⇒ associationRegistry.getOrCreateAssociation(remoteAddress)
+    }
   }
 
   override def association(uid: Long): OptionVal[Association] =
@@ -1022,6 +1037,9 @@ private[remote] object ArteryTransport {
   class AeronTerminated(e: Throwable) extends RuntimeException(e)
 
   object ShutdownSignal extends RuntimeException with NoStackTrace
+
+  // thrown when the transport is shutting down and something triggers a new association
+  object ShuttingDown extends RuntimeException with NoStackTrace
 
   def autoSelectPort(hostname: String): Int = {
     val socket = DatagramChannel.open().socket()

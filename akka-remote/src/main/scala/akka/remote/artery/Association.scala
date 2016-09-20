@@ -14,7 +14,6 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
-
 import akka.{ Done, NotUsed }
 import akka.actor.ActorRef
 import akka.actor.ActorSelectionMessage
@@ -26,7 +25,7 @@ import akka.remote._
 import akka.remote.DaemonMsgCreate
 import akka.remote.QuarantinedEvent
 import akka.remote.artery.AeronSink.GaveUpMessageException
-import akka.remote.artery.ArteryTransport.AeronTerminated
+import akka.remote.artery.ArteryTransport.{ AeronTerminated, ShuttingDown }
 import akka.remote.artery.Encoder.ChangeOutboundCompression
 import akka.remote.artery.Encoder.ChangeOutboundCompressionFailed
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
@@ -409,6 +408,8 @@ private[remote] class Association(
   }
 
   private def runOutboundStreams(): Unit = {
+    if (transport.isShutdown) throw ShuttingDown
+
     // it's important to materialize the outboundControl stream first,
     // so that outboundControlIngress is ready when stages for all streams start
     runOutboundControlStream()
@@ -621,7 +622,12 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
   private[this] val associationsByAddress = new AtomicReference[Map[Address, Association]](Map.empty)
   private[this] val associationsByUid = new AtomicReference[ImmutableLongMap[Association]](ImmutableLongMap.empty)
 
-  @tailrec final def association(remoteAddress: Address): Association = {
+  final def association(remoteAddress: Address): Option[Association] = {
+    val currentMap = associationsByAddress.get
+    currentMap.get(remoteAddress)
+  }
+
+  @tailrec final def getOrCreateAssociation(remoteAddress: Address): Association = {
     val currentMap = associationsByAddress.get
     currentMap.get(remoteAddress) match {
       case Some(existing) ⇒ existing
@@ -632,7 +638,7 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
           newAssociation.associate() // start it, only once
           newAssociation
         } else
-          association(remoteAddress) // lost CAS, retry
+          getOrCreateAssociation(remoteAddress) // lost CAS, retry
     }
   }
 
@@ -641,7 +647,7 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
 
   @tailrec final def setUID(peer: UniqueAddress): Association = {
     val currentMap = associationsByUid.get
-    val a = association(peer.address)
+    val a = getOrCreateAssociation(peer.address)
 
     currentMap.get(peer.uid) match {
       case OptionVal.Some(previous) ⇒
