@@ -308,7 +308,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val codec: AkkaPduCodec = AkkaPduProtobufCodec
   private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
   private[this] val streamCompletions = new AtomicReference(Map.empty[String, Future[Done]])
-  @volatile private[this] var _shutdown = false
+  private[this] val hasBeenShutdown = new AtomicBoolean(false)
 
   private val testState = new SharedTestState
 
@@ -427,8 +427,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private lazy val shutdownHook = new Thread {
     override def run(): Unit = {
-      if (!_shutdown) {
-        _shutdown = true
+      if (hasBeenShutdown.compareAndSet(false, true)) {
         Await.result(internalShutdown(), 20.seconds)
       }
     }
@@ -576,7 +575,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundStreams(): Unit = {
-    if (_shutdown) throw ShuttingDown
     val noCompressions = NoInboundCompressions // TODO possibly enable on other channels too https://github.com/akka/akka/pull/20546/files#r68074082
     val compressions = createInboundCompressions(this)
     _inboundCompressions = Some(compressions)
@@ -589,6 +587,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundControlStream(compression: InboundCompressions): Unit = {
+    if (isShutdown) throw ShuttingDown
     val (ctrl, completed) =
       aeronSource(controlStreamId, envelopeBufferPool)
         .via(inboundFlow(compression))
@@ -599,66 +598,69 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
     controlSubject.attach(new ControlMessageObserver {
       override def notify(inboundEnvelope: InboundEnvelope): Unit = {
-
-        inboundEnvelope.message match {
-          case m: CompressionMessage ⇒
-            import CompressionProtocol._
-            m match {
-              case ActorRefCompressionAdvertisement(from, table) ⇒
-                if (table.originUid == localAddress.uid) {
-                  log.debug("Incoming ActorRef compression advertisement from [{}], table: [{}]", from, table)
-                  val a = association(from.address)
-                  // make sure uid is same for active association
-                  if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
-                    import system.dispatcher
-                    a.changeActorRefCompression(table).foreach { _ ⇒
-                      a.sendControl(ActorRefCompressionAdvertisementAck(localAddress, table.version))
-                      system.eventStream.publish(Events.ReceivedActorRefCompressionTable(from, table))
+        try {
+          inboundEnvelope.message match {
+            case m: CompressionMessage ⇒
+              import CompressionProtocol._
+              m match {
+                case ActorRefCompressionAdvertisement(from, table) ⇒
+                  if (table.originUid == localAddress.uid) {
+                    log.debug("Incoming ActorRef compression advertisement from [{}], table: [{}]", from, table)
+                    val a = association(from.address)
+                    // make sure uid is same for active association
+                    if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
+                      import system.dispatcher
+                      a.changeActorRefCompression(table).foreach { _ ⇒
+                        a.sendControl(ActorRefCompressionAdvertisementAck(localAddress, table.version))
+                        system.eventStream.publish(Events.ReceivedActorRefCompressionTable(from, table))
+                      }
                     }
-                  }
-                } else
-                  log.debug(
-                    "Discarding incoming ActorRef compression advertisement from [{}] that was " +
-                      "prepared for another incarnation with uid [{}] than current uid [{}], table: [{}]",
-                    from, table.originUid, localAddress.uid, table)
-              case ActorRefCompressionAdvertisementAck(from, tableVersion) ⇒
-                inboundCompressions.foreach(_.confirmActorRefCompressionAdvertisement(from.uid, tableVersion))
-              case ClassManifestCompressionAdvertisement(from, table) ⇒
-                if (table.originUid == localAddress.uid) {
-                  log.debug("Incoming Class Manifest compression advertisement from [{}], table: [{}]", from, table)
-                  val a = association(from.address)
-                  // make sure uid is same for active association
-                  if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
-                    import system.dispatcher
-                    a.changeClassManifestCompression(table).foreach { _ ⇒
-                      a.sendControl(ClassManifestCompressionAdvertisementAck(localAddress, table.version))
-                      system.eventStream.publish(Events.ReceivedClassManifestCompressionTable(from, table))
+                  } else
+                    log.debug(
+                      "Discarding incoming ActorRef compression advertisement from [{}] that was " +
+                        "prepared for another incarnation with uid [{}] than current uid [{}], table: [{}]",
+                      from, table.originUid, localAddress.uid, table)
+                case ActorRefCompressionAdvertisementAck(from, tableVersion) ⇒
+                  inboundCompressions.foreach(_.confirmActorRefCompressionAdvertisement(from.uid, tableVersion))
+                case ClassManifestCompressionAdvertisement(from, table) ⇒
+                  if (table.originUid == localAddress.uid) {
+                    log.debug("Incoming Class Manifest compression advertisement from [{}], table: [{}]", from, table)
+                    val a = association(from.address)
+                    // make sure uid is same for active association
+                    if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
+                      import system.dispatcher
+                      a.changeClassManifestCompression(table).foreach { _ ⇒
+                        a.sendControl(ClassManifestCompressionAdvertisementAck(localAddress, table.version))
+                        system.eventStream.publish(Events.ReceivedClassManifestCompressionTable(from, table))
+                      }
                     }
-                  }
-                } else
-                  log.debug(
-                    "Discarding incoming Class Manifest compression advertisement from [{}] that was " +
-                      "prepared for another incarnation with uid [{}] than current uid [{}], table: [{}]",
-                    from, table.originUid, localAddress.uid, table)
-              case ClassManifestCompressionAdvertisementAck(from, tableVersion) ⇒
-                inboundCompressions.foreach(_.confirmClassManifestCompressionAdvertisement(from.uid, tableVersion))
-            }
+                  } else
+                    log.debug(
+                      "Discarding incoming Class Manifest compression advertisement from [{}] that was " +
+                        "prepared for another incarnation with uid [{}] than current uid [{}], table: [{}]",
+                      from, table.originUid, localAddress.uid, table)
+                case ClassManifestCompressionAdvertisementAck(from, tableVersion) ⇒
+                  inboundCompressions.foreach(_.confirmClassManifestCompressionAdvertisement(from.uid, tableVersion))
+              }
 
-          case Quarantined(from, to) if to == localAddress ⇒
-            // Don't quarantine the other system here, since that will result cluster member removal
-            // and can result in forming two separate clusters (cluster split).
-            // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
-            // use it as a STONITH signal.
-            val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
-            publishLifecycleEvent(lifecycleEvent)
+            case Quarantined(from, to) if to == localAddress ⇒
+              // Don't quarantine the other system here, since that will result cluster member removal
+              // and can result in forming two separate clusters (cluster split).
+              // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
+              // use it as a STONITH signal.
+              val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
+              publishLifecycleEvent(lifecycleEvent)
 
-          case _: ActorSystemTerminating ⇒
-            inboundEnvelope.sender match {
-              case OptionVal.Some(snd) ⇒ snd.tell(ActorSystemTerminatingAck(localAddress), ActorRef.noSender)
-              case OptionVal.None      ⇒ log.error("Expected sender for ActorSystemTerminating message")
-            }
+            case _: ActorSystemTerminating ⇒
+              inboundEnvelope.sender match {
+                case OptionVal.Some(snd) ⇒ snd.tell(ActorSystemTerminatingAck(localAddress), ActorRef.noSender)
+                case OptionVal.None      ⇒ log.error("Expected sender for ActorSystemTerminating message")
+              }
 
-          case _ ⇒ // not interesting
+            case _ ⇒ // not interesting
+          }
+        } catch {
+          case ShuttingDown ⇒ // silence it
         }
       }
     })
@@ -667,6 +669,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundOrdinaryMessagesStream(compression: InboundCompressions): Unit = {
+    if (isShutdown) throw ShuttingDown
     val completed =
       if (inboundLanes == 1) {
         aeronSource(ordinaryStreamId, envelopeBufferPool)
@@ -720,6 +723,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   private def runInboundLargeMessagesStream(): Unit = {
+    if (isShutdown) throw ShuttingDown
     val disableCompression = NoInboundCompressions // no compression on large message stream for now
 
     val completed = aeronSource(largeStreamId, largeEnvelopeBufferPool)
@@ -755,18 +759,21 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   override def shutdown(): Future[Done] = {
-    _shutdown = true
-    val allAssociations = associationRegistry.allAssociations
-    val flushing: Future[Done] =
-      if (allAssociations.isEmpty) Future.successful(Done)
-      else {
-        val flushingPromise = Promise[Done]()
-        system.systemActorOf(FlushOnShutdown.props(flushingPromise, settings.Advanced.ShutdownFlushTimeout,
-          this, allAssociations).withDispatcher(settings.Dispatcher), "remoteFlushOnShutdown")
-        flushingPromise.future
-      }
-    implicit val ec = remoteDispatcher
-    flushing.recover { case _ ⇒ Done }.flatMap(_ ⇒ internalShutdown())
+    if (hasBeenShutdown.compareAndSet(false, true)) {
+      val allAssociations = associationRegistry.allAssociations
+      val flushing: Future[Done] =
+        if (allAssociations.isEmpty) Future.successful(Done)
+        else {
+          val flushingPromise = Promise[Done]()
+          system.systemActorOf(FlushOnShutdown.props(flushingPromise, settings.Advanced.ShutdownFlushTimeout,
+            this, allAssociations).withDispatcher(settings.Dispatcher), "remoteFlushOnShutdown")
+          flushingPromise.future
+        }
+      implicit val ec = remoteDispatcher
+      flushing.recover { case _ ⇒ Done }.flatMap(_ ⇒ internalShutdown())
+    } else {
+      Future.successful(Done)
+    }
   }
 
   private def internalShutdown(): Future[Done] = {
@@ -823,7 +830,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     } yield Done
   }
 
-  private[remote] def isShutdown: Boolean = _shutdown
+  private[remote] def isShutdown: Boolean = hasBeenShutdown.get()
 
   override def managementCommand(cmd: Any): Future[Boolean] = {
     cmd match {
@@ -864,27 +871,31 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     require(remoteAddress != localAddress.address, "Attempted association with self address!")
     // only look at isShutdown if there wasn't already an association
     // races but better than nothing
-    associationRegistry.association(remoteAddress) match {
-      case Some(association)  ⇒ association
-      case None if isShutdown ⇒ throw ShuttingDown // can only happen if we are shutting down
-      case None               ⇒ associationRegistry.getOrCreateAssociation(remoteAddress)
-    }
+    associationRegistry.association(remoteAddress)
   }
 
   override def association(uid: Long): OptionVal[Association] =
     associationRegistry.association(uid)
 
   override def completeHandshake(peer: UniqueAddress): Future[Done] = {
-    val a = associationRegistry.setUID(peer)
-    a.completeHandshake(peer)
+    try {
+      val a = associationRegistry.setUID(peer)
+      a.completeHandshake(peer)
+    } catch {
+      case ShuttingDown ⇒ Future.successful(Done) // silence it
+    }
   }
 
   private def publishLifecycleEvent(event: RemotingLifecycleEvent): Unit =
     eventPublisher.notifyListeners(event)
 
   override def quarantine(remoteAddress: Address, uid: Option[Int], reason: String): Unit = {
-    // FIXME use Long uid
-    association(remoteAddress).quarantine(reason, uid.map(_.toLong))
+    try {
+      // FIXME use Long uid
+      association(remoteAddress).quarantine(reason, uid.map(_.toLong))
+    } catch {
+      case ShuttingDown ⇒ // silence it
+    }
   }
 
   def outboundLarge(outboundContext: OutboundContext): Sink[OutboundEnvelope, Future[Done]] =

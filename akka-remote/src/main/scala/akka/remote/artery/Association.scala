@@ -400,6 +400,8 @@ private[remote] class Association(
    * wins the CAS in the `AssociationRegistry`. It will materialize
    * the streams. It is possible to sending (enqueuing) to the association
    * before this method is called.
+   *
+   * @throws ShuttingDown if called while the transport is shutting down
    */
   def associate(): Unit = {
     if (!controlQueue.isInstanceOf[QueueWrapper])
@@ -408,7 +410,6 @@ private[remote] class Association(
   }
 
   private def runOutboundStreams(): Unit = {
-    if (transport.isShutdown) throw ShuttingDown
 
     // it's important to materialize the outboundControl stream first,
     // so that outboundControlIngress is ready when stages for all streams start
@@ -420,6 +421,7 @@ private[remote] class Association(
   }
 
   private def runOutboundControlStream(): Unit = {
+    if (transport.isShutdown) throw ShuttingDown
     // stage in the control stream may access the outboundControlIngress before returned here
     // using CountDownLatch to make sure that materialization is completed before accessing outboundControlIngress
     materializing = new CountDownLatch(1)
@@ -454,6 +456,7 @@ private[remote] class Association(
   }
 
   private def runOutboundOrdinaryMessagesStream(): Unit = {
+    if (transport.isShutdown) throw ShuttingDown
     if (outboundLanes == 1) {
       val queueIndex = OrdinaryQueueIndex
       val wrapper = getOrCreateQueueWrapper(queueIndex, queueSize)
@@ -531,6 +534,7 @@ private[remote] class Association(
   }
 
   private def runOutboundLargeMessagesStream(): Unit = {
+    if (transport.isShutdown) throw ShuttingDown
     val wrapper = getOrCreateQueueWrapper(LargeQueueIndex, largeQueueSize)
     queues(LargeQueueIndex) = wrapper // use new underlying queue immediately for restarts
     queuesVisibility = true // volatile write for visibility of the queues array
@@ -622,12 +626,10 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
   private[this] val associationsByAddress = new AtomicReference[Map[Address, Association]](Map.empty)
   private[this] val associationsByUid = new AtomicReference[ImmutableLongMap[Association]](ImmutableLongMap.empty)
 
-  final def association(remoteAddress: Address): Option[Association] = {
-    val currentMap = associationsByAddress.get
-    currentMap.get(remoteAddress)
-  }
-
-  @tailrec final def getOrCreateAssociation(remoteAddress: Address): Association = {
+  /**
+   * @throws ShuttingDown if called while the transport is shutting down
+   */
+  @tailrec final def association(remoteAddress: Address): Association = {
     val currentMap = associationsByAddress.get
     currentMap.get(remoteAddress) match {
       case Some(existing) ⇒ existing
@@ -638,16 +640,19 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
           newAssociation.associate() // start it, only once
           newAssociation
         } else
-          getOrCreateAssociation(remoteAddress) // lost CAS, retry
+          association(remoteAddress) // lost CAS, retry
     }
   }
 
   def association(uid: Long): OptionVal[Association] =
     associationsByUid.get.get(uid)
 
+  /**
+   * @throws ShuttingDown if called while the transport is shutting down
+   */
   @tailrec final def setUID(peer: UniqueAddress): Association = {
     val currentMap = associationsByUid.get
-    val a = getOrCreateAssociation(peer.address)
+    val a = association(peer.address)
 
     currentMap.get(peer.uid) match {
       case OptionVal.Some(previous) ⇒
