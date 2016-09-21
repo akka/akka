@@ -20,7 +20,7 @@ settings from the `akka.http.routing` configuration.
 
 This directive is transparent to non-`GET` requests.
 
-See also: [https://tools.ietf.org/html/rfc7233](https://tools.ietf.org/html/rfc7233)
+See also: [RFC 7233](https://tools.ietf.org/html/rfc7233)
 
 ## Example
 

@@ -76,7 +76,7 @@ subsequent messages may be stuck and message traffic in this direction will stal
 
 ### Example
 
-Let's look at an [example](@github@/akka-docs/rst/java/../../../test/java/docs/http/javadsl/server/WebSocketCoreExample.java).
+Let's look at an [example](@github@/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java).
 
 WebSocket requests come in like any other requests. In the example, requests to `/greeter` are expected to be
 WebSocket requests:
@@ -112,4 +112,4 @@ uses the `handleWebSocketRequests` directive in place of the `WebSocket.handleWe
 
 The handling code itself will be the same as with using the low-level API.
 
-See the [full routing example](@github@/akka-docs/rst/java/../../../test/java/docs/http/javadsl/server/WebSocketCoreExample.java).
+See the [full routing example](@github@/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java).

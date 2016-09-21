@@ -50,7 +50,7 @@ The "HTTP Authentication Scheme Registry" defines the namespace for the authenti
 credentials. You can see the currently registered schemes at [http://www.iana.org/assignments/http-authschemes](http://www.iana.org/assignments/http-authschemes).
 
 At this point Akka HTTP only implements the "'Basic' HTTP Authentication Scheme" whose most current specification can be
-found here: [https://datatracker.ietf.org/doc/draft-ietf-httpauth-basicauth-update](https://datatracker.ietf.org/doc/draft-ietf-httpauth-basicauth-update)/.
+found here: <https://datatracker.ietf.org/doc/draft-ietf-httpauth-basicauth-update>.
 
 ## Low-level OAuth2 "Bearer Token" directives
 

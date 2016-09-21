@@ -69,7 +69,7 @@ subsequent messages may be stuck and message traffic in this direction will stal
 
 ### Example
 
-Let's look at an [example](@github@/akka-docs/rst/scala/../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala).
+Let's look at an [example](@github@/docs/src/test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala).
 
 WebSocket requests come in like any other requests. In the example, requests to `/greeter` are expected to be
 WebSocket requests:

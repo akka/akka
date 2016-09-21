@@ -144,7 +144,7 @@ applies to all of `Http.bindAndHandle*` methods. If you use `Http.bind`, incomin
 a `Source<IncomingConnection, ...>`. Use Akka Stream's combinators to apply backpressure to control the flow of
 incoming connections, e.g. by using `throttle` or `mapAsync`.
 
-HTTP pipelining is generally discouraged (and [disabled by most browsers ](https://en.wikipedia.org/w/index.php?title=HTTP_pipelining&oldid=700966692#Implementation_in_web_browsers)) but
+HTTP pipelining is generally discouraged (and [disabled by most browsers](https://en.wikipedia.org/w/index.php?title=HTTP_pipelining&oldid=700966692#Implementation_in_web_browsers)) but
 is nevertheless fully supported in Akka HTTP. The limit is applied on two levels. First, there's the
 `akka.http.server.pipeline-limit` config setting which prevents that more than the given number of outstanding requests
 is ever given to the user-supplied handler-flow. On the other hand, the handler flow itself can apply any kind of throttling

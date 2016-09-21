@@ -43,10 +43,10 @@ authority or created by yourself for local or staging environment purposes.
 
 Signing authorities often provide instructions on how to create a Java keystore (typically with reference to Tomcat
 configuration). If you want to generate your own certificates, the official Oracle documentation on how to generate
-keystores using the JDK keytool utility can be found [here ](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html).
+keystores using the JDK keytool utility can be found [here](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html).
 
 SSL-Config provides a more targeted guide on generating certificates, so we recommend you start with the guide
-titled [Generating X.509 Certificates ](http://typesafehub.github.io/ssl-config/CertificateGeneration.html).
+titled [Generating X.509 Certificates](http://typesafehub.github.io/ssl-config/CertificateGeneration.html).
 
 <a id="using-https-java"></a>
 ## Using HTTPS
@@ -93,6 +93,6 @@ front of your application](https://www.playframework.com/documentation/2.5.x/HTT
 
 Other excellent articles on the subject:
 
- * [Oracle Java SE 8: Creating a Keystore using JSSE ](https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#CreateKeystore)
- * [Java PKI Programmer's Guide ](https://docs.oracle.com/javase/8/docs/technotes/guides/security/certpath/CertPathProgGuide.html)
- * [Fixing X.509 Certificates ](https://tersesystems.com/2014/03/20/fixing-x509-certificates/)
+ * [Oracle Java SE 8: Creating a Keystore using JSSE](https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#CreateKeystore)
+ * [Java PKI Programmer's Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/certpath/CertPathProgGuide.html)
+ * [Fixing X.509 Certificates](https://tersesystems.com/2014/03/20/fixing-x509-certificates/)

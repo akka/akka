@@ -7,10 +7,7 @@ resolvers += "Bintray Jcenter" at "https://jcenter.bintray.com/"
 
 libraryDependencies += "org.kohsuke" % "github-api" % "1.68"
 
-// these comment markers are for including code into the docs
-//#sbt-multi-jvm
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.8")
-//#sbt-multi-jvm
 
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.9")
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
