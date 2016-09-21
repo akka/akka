@@ -39,6 +39,6 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
       if (pulled) {
         outlet.push(elem)
         pulled = false
-      } else buffer.push(elem)
+      } else buffer.addLast(elem)
   }
 }
