@@ -38,7 +38,7 @@ object RemoteWatcherSpec {
 
   object TestRemoteWatcher {
     final case class AddressTerm(address: Address) extends JavaSerializable
-    final case class Quarantined(address: Address, uid: Option[Int]) extends JavaSerializable
+    final case class Quarantined(address: Address, uid: Option[Long]) extends JavaSerializable
   }
 
   class TestRemoteWatcher(heartbeatExpectedResponseAfter: FiniteDuration) extends RemoteWatcher(
@@ -54,7 +54,7 @@ object RemoteWatcherSpec {
       // that doesn't interfere with the real watch that is going on in the background
       context.system.eventStream.publish(TestRemoteWatcher.AddressTerm(address))
 
-    override def quarantine(address: Address, uid: Option[Int], reason: String): Unit = {
+    override def quarantine(address: Address, uid: Option[Long], reason: String): Unit = {
       // don't quarantine in remoting, but publish a testable message
       context.system.eventStream.publish(TestRemoteWatcher.Quarantined(address, uid))
     }
@@ -80,7 +80,7 @@ class RemoteWatcherSpec extends AkkaSpec(
 
   val remoteSystem = ActorSystem("RemoteSystem", system.settings.config)
   val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
-  def remoteAddressUid = AddressUidExtension(remoteSystem).addressUid
+  def remoteAddressUid = AddressUidExtension(remoteSystem).longAddressUid
 
   Seq(system, remoteSystem).foreach(muteDeadLetters(
     akka.remote.transport.AssociationHandle.Disassociated.getClass,

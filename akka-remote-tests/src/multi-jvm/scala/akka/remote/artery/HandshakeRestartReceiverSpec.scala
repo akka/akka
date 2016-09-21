@@ -34,7 +34,7 @@ object HandshakeRestartReceiverSpec extends MultiNodeConfig {
   class Subject extends Actor {
     def receive = {
       case "shutdown" ⇒ context.system.terminate()
-      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).addressUid → self)
+      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).longAddressUid → self)
     }
   }
 
@@ -55,10 +55,10 @@ abstract class HandshakeRestartReceiverSpec
     super.afterAll()
   }
 
-  def identifyWithUid(rootPath: ActorPath, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Int, ActorRef) = {
+  def identifyWithUid(rootPath: ActorPath, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
     within(timeout) {
       system.actorSelection(rootPath / "user" / actorName) ! "identify"
-      expectMsgType[(Int, ActorRef)]
+      expectMsgType[(Long, ActorRef)]
     }
   }
 

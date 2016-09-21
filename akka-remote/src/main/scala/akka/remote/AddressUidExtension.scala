@@ -11,7 +11,9 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 
 /**
- * Extension that holds a uid that is assigned as a random `Int`.
+ * Extension that holds a uid that is assigned as a random `Long` or `Int` depending
+ * on which version of remoting that is used.
+ *
  * The uid is intended to be used together with an [[akka.actor.Address]]
  * to be able to distinguish restarted actor system using the same host
  * and port.
@@ -22,15 +24,18 @@ object AddressUidExtension extends ExtensionId[AddressUidExtension] with Extensi
   override def lookup = AddressUidExtension
 
   override def createExtension(system: ExtendedActorSystem): AddressUidExtension = new AddressUidExtension(system)
+
 }
 
 class AddressUidExtension(val system: ExtendedActorSystem) extends Extension {
-  val longAddressUid: Long = {
-    // FIXME we should use a long here, but then we need to change in Cluster and RemoteWatcher also
-    //ThreadLocalRandom.current.nextLong()
-    ThreadLocalRandom.current.nextInt()
-  }
 
+  val longAddressUid: Long = ThreadLocalRandom.current.nextLong()
+
+  // used by old remoting and part of public api
   @deprecated("Use longAddressUid instead", "2.4.x")
-  val addressUid: Int = longAddressUid.toInt
+  lazy val addressUid: Int = {
+    if (RARP(system).provider.remoteSettings.Artery.Enabled) {
+      throw new IllegalStateException("Int UID must never be used with Artery")
+    } else longAddressUid.toInt
+  }
 }

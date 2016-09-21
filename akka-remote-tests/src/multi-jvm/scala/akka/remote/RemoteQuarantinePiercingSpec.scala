@@ -45,7 +45,7 @@ object RemoteQuarantinePiercingSpec {
   class Subject extends Actor {
     def receive = {
       case "shutdown" ⇒ context.system.terminate()
-      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).addressUid → self)
+      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).longAddressUid → self)
     }
   }
 }
@@ -57,10 +57,10 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
 
   override def initialParticipants = roles.size
 
-  def identifyWithUid(role: RoleName, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Int, ActorRef) = {
+  def identifyWithUid(role: RoleName, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
     within(timeout) {
       system.actorSelection(node(role) / "user" / actorName) ! "identify"
-      expectMsgType[(Int, ActorRef)]
+      expectMsgType[(Long, ActorRef)]
     }
   }
 
@@ -90,7 +90,7 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
           // retry because the Subject actor might not be started yet
           awaitAssert {
             system.actorSelection(RootActorPath(secondAddress) / "user" / "subject") ! "identify"
-            val (uidSecond, subjectSecond) = expectMsgType[(Int, ActorRef)](1.second)
+            val (uidSecond, subjectSecond) = expectMsgType[(Long, ActorRef)](1.second)
             uidSecond should not be (uidFirst)
             subjectSecond should not be (subjectFirst)
           }

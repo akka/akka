@@ -93,7 +93,7 @@ private[cluster] class ClusterRemoteWatcher(
       // The reason we don't quarantine gracefully removed members (leaving) is that
       // Cluster Singleton need to exchange TakeOver/HandOver messages.
       if (previousStatus == MemberStatus.Down) {
-        quarantine(m.address, Some(m.uniqueAddress.uid), s"Cluster member removed, previous status [$previousStatus]")
+        quarantine(m.address, Some(m.uniqueAddress.longUid), s"Cluster member removed, previous status [$previousStatus]")
       }
       publishAddressTerminated(m.address)
     }

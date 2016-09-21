@@ -420,7 +420,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     runInboundStreams()
     topLevelFREvents.loFreq(Transport_StartupFinished, NoMetaData)
 
-    log.info("Remoting started; listening on address: [{}] with uid [{}]", localAddress.address, localAddress.uid)
+    log.info("Remoting started; listening on address: [{}] with UID [{}]", localAddress.address, localAddress.uid)
   }
 
   private lazy val shutdownHook = new Thread {
@@ -885,10 +885,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     }
   }
 
-  override def quarantine(remoteAddress: Address, uid: Option[Int], reason: String): Unit = {
+  override def quarantine(remoteAddress: Address, uid: Option[Long], reason: String): Unit = {
     try {
       // FIXME use Long uid
-      association(remoteAddress).quarantine(reason, uid.map(_.toLong))
+      association(remoteAddress).quarantine(reason, uid)
     } catch {
       case ShuttingDown ⇒ // silence it
     }
