@@ -20,6 +20,7 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
 import akka.util.OptionVal
+import akka.event.Logging
 
 /**
  * INTERNAL API: Thread safe mutable state that is shared among
@@ -98,7 +99,7 @@ private[remote] class OutboundTestStage(outboundContext: OutboundContext, state:
           if (state.isBlackhole(outboundContext.localAddress.address, outboundContext.remoteAddress)) {
             log.debug(
               "dropping outbound message [{}] to [{}] because of blackhole",
-              env.message.getClass.getName, outboundContext.remoteAddress)
+              Logging.messageClassName(env.message), outboundContext.remoteAddress)
             pull(in) // drop message
           } else
             push(out, env)
@@ -144,7 +145,7 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
               if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
                 log.debug(
                   "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
-                  env.message.getClass.getName, association.remoteAddress, env.originUid)
+                  Logging.messageClassName(env.message), association.remoteAddress, env.originUid)
                 pull(in) // drop message
               } else
                 push(out, env)

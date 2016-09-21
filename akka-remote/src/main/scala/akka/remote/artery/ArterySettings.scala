@@ -53,10 +53,6 @@ private[akka] final class ArterySettings private (config: Config) {
       val segments = entry.split('/').tail
       tree.insert(segments, NotUsed)
     }
-  val LifecycleEventsLogLevel: LogLevel = Logging.levelFor(toRootLowerCase(getString("log-lifecycle-events"))) match {
-    case Some(level) ⇒ level
-    case None        ⇒ throw new ConfigurationException("Logging level must be one of (off, debug, info, warning, error)")
-  }
   val Dispatcher = getString("use-dispatcher")
 
   object Advanced {
@@ -103,6 +99,8 @@ private[akka] final class ArterySettings private (config: Config) {
     val OutboundRestartTimeout = config.getMillisDuration("outbound-restart-timeout").requiring(interval ⇒
       interval > Duration.Zero, "outbound-restart-timeout must be more than zero")
     val OutboundMaxRestarts = getInt("outbound-max-restarts")
+    val StopQuarantinedAfterIdle = config.getMillisDuration("stop-quarantined-after-idle").requiring(interval ⇒
+      interval > Duration.Zero, "stop-quarantined-after-idle must be more than zero")
     val ClientLivenessTimeout = config.getMillisDuration("client-liveness-timeout").requiring(interval ⇒
       interval > Duration.Zero, "client-liveness-timeout must be more than zero")
     val ImageLivenessTimeoutNs = config.getMillisDuration("image-liveness-timeout").requiring(interval ⇒

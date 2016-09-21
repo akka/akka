@@ -12,6 +12,7 @@ import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.remote.FailureDetectorRegistry
 import akka.remote.RemoteWatcher
+import akka.remote.RARP
 
 /**
  * INTERNAL API
@@ -51,6 +52,7 @@ private[cluster] class ClusterRemoteWatcher(
     unreachableReaperInterval,
     heartbeatExpectedResponseAfter) {
 
+  private val arteryEnabled = RARP(context.system).provider.remoteSettings.Artery.Enabled
   val cluster = Cluster(context.system)
   import cluster.selfAddress
 
@@ -89,8 +91,10 @@ private[cluster] class ClusterRemoteWatcher(
   def memberRemoved(m: Member, previousStatus: MemberStatus): Unit =
     if (m.address != selfAddress) {
       clusterNodes -= m.address
-      if (previousStatus == MemberStatus.Down) {
-        quarantine(m.address, Some(m.uniqueAddress.uid), "Cluster member removed")
+      // TODO We should probably always quarantine when member is removed,
+      // but keeping old behavior for old remoting for now
+      if (arteryEnabled || previousStatus == MemberStatus.Down) {
+        quarantine(m.address, Some(m.uniqueAddress.uid), s"Cluster member removed, previous status [$previousStatus]")
       }
       publishAddressTerminated(m.address)
     }
