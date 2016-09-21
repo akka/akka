@@ -13,11 +13,10 @@ import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.annotation.tailrec
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
-import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 import akka.Done
@@ -32,7 +31,6 @@ import akka.remote.AddressUidExtension
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransport
-import akka.remote.RemotingLifecycleEvent
 import akka.remote.ThisActorSystemQuarantinedEvent
 import akka.remote.UniqueAddress
 import akka.remote.artery.ArteryTransport.ShuttingDown
@@ -48,7 +46,6 @@ import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
 import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
 import akka.stream.AbruptTerminationException
-import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
 import akka.stream.Materializer

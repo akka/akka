@@ -143,7 +143,7 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
       protoAdv.getKeysList.asScala.map(keyDeserializer).zip(
         protoAdv.getValuesList.asScala.asInstanceOf[Iterable[Int]] /* to avoid having to call toInt explicitly */ )
 
-    val table = CompressionTable(protoAdv.getOriginUid, protoAdv.getTableVersion, kvs.toMap)
+    val table = CompressionTable(protoAdv.getOriginUid, protoAdv.getTableVersion.byteValue, kvs.toMap)
     create(deserializeUniqueAddress(protoAdv.getFrom), table)
   }
 
@@ -153,9 +153,9 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
       .setVersion(version)
       .build()
 
-  def deserializeCompressionTableAdvertisementAck(bytes: Array[Byte], create: (UniqueAddress, Int) ⇒ AnyRef): AnyRef = {
+  def deserializeCompressionTableAdvertisementAck(bytes: Array[Byte], create: (UniqueAddress, Byte) ⇒ AnyRef): AnyRef = {
     val msg = ArteryControlFormats.CompressionTableAdvertisementAck.parseFrom(bytes)
-    create(deserializeUniqueAddress(msg.getFrom), msg.getVersion)
+    create(deserializeUniqueAddress(msg.getFrom), msg.getVersion.toByte)
   }
 
   def serializeSystemMessageEnvelope(env: SystemMessageDelivery.SystemMessageEnvelope): ArteryControlFormats.SystemMessageEnvelope = {
