@@ -1,66 +1,57 @@
-import sbt._
-import Keys._
-
 import com.typesafe.sbt.pgp.PgpKeys._
 import akka._
 
-name := "akka-http"
-
-val commonSettings =
-  Seq(
-    organization := "com.typesafe.akka",
-    organizationName := "Lightbend",
-    startYear := Some(2014),
-    test in assembly := {},
-    licenses := Seq("Apache License 2.0" -> url("http://opensource.org/licenses/Apache-2.0")),
-    scalaVersion := "2.11.8",
-    crossVersion := CrossVersion.binary,
-    scalacOptions ++= Seq(
-      "-deprecation",
-      "-encoding", "UTF-8", // yes, this is 2 args
-      "-unchecked",
-      "-Xlint",
-      // "-Yno-adapted-args", //akka-http heavily depends on adapted args and => Unit implicits break otherwise
-      "-Ywarn-dead-code"
-      // "-Xfuture" // breaks => Unit implicits
-    ),
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")) ++
-      Dependencies.Versions ++ akka.Formatting.formatSettings
-
-val dontPublishSettings = Seq(
-  publishSigned := (),
-  publish := (),
-  publishArtifact /* in Compile */ := false
-)
-
-lazy val parentSettings = Seq(
-  publishArtifact := false
-) ++ dontPublishSettings
+inThisBuild(Def.settings(
+  organization := "com.typesafe.akka",
+  organizationName := "Lightbend",
+  organizationHomepage := Some(url("https://www.lightbend.com")),
+  homepage := Some(url("http://akka.io")),
+  scmInfo := Some(
+    ScmInfo(url("https://github.com/akka/akka-http"), "git@github.com:akka/akka-http.git")),
+  developers := List(
+    Developer("contributors", "Contributors", "akka-user@googlegroups.com",
+      url("https://github.com/akka/akka-http/graphs/contributors"))
+  ),
+  startYear := Some(2014),
+  test in assembly := {},
+  licenses := Seq("Apache License 2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
+  scalaVersion := "2.11.8",
+  crossVersion := CrossVersion.binary,
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-encoding", "UTF-8", // yes, this is 2 args
+    "-unchecked",
+    "-Xlint",
+    // "-Yno-adapted-args", //akka-http heavily depends on adapted args and => Unit implicits break otherwise
+    "-Ywarn-dead-code"
+    // "-Xfuture" // breaks => Unit implicits
+  ),
+  testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
+  Dependencies.Versions,
+  Formatting.formatSettings
+))
 
 lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-    .settings(commonSettings)
-    .settings(Seq(
-      publishArtifact := false,
-      publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))))
-    .aggregate(
-      parsing,
-      httpCore, 
-      http, 
-      httpTestkit, 
-      httpTests, 
-      httpMarshallersScala, 
-      httpMarshallersJava, 
-      docs
-    )
+  .enablePlugins(NoPublish)
+  .aggregate(
+    parsing,
+    httpCore,
+    http,
+    httpTestkit,
+    httpTests,
+    httpMarshallersScala,
+    httpMarshallersJava,
+    docs
+  )
 
 lazy val parsing = project("akka-parsing")
   .settings(Dependencies.parsing)
-  .settings(Seq(
+  .settings(
     scalacOptions := scalacOptions.value.filterNot(_ == "-Xfatal-warnings")
-  ))
+  )
 
 lazy val httpCore = project("akka-http-core")
   .settings(Dependencies.httpCore)
@@ -79,12 +70,12 @@ lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test")
- //.configs(MultiJvm) //.disablePlugins(MimaPlugin)
+  //.configs(MultiJvm) //.disablePlugins(MimaPlugin)
 
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   //.disablePlugins(MimaPlugin)
-  .settings(parentSettings: _*)
+  .enablePlugins(NoPublish)
   .aggregate(httpSprayJson, httpXml)
 
 lazy val httpXml =
@@ -93,9 +84,9 @@ lazy val httpXml =
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
 
-lazy val httpMarshallersJava = project("akka-http-marshallers-java") 
+lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   //.disablePlugins(MimaPlugin)
-  .settings(parentSettings: _*)
+  .enablePlugins(NoPublish)
   .aggregate(httpJackson)
 
 lazy val httpJackson =
@@ -103,14 +94,13 @@ lazy val httpJackson =
 
 def project(name: String) =
   Project(id = name, base = file(name))
-    .settings(commonSettings)
 
 def httpMarshallersScalaSubproject(name: String) =
   Project(
     id = s"akka-http-$name",
     base = file(s"akka-http-marshallers-scala/akka-http-$name"),
     dependencies = Seq(http)
-  ).settings(commonSettings)
+  )
   //.disablePlugins(MimaPlugin)
 
 def httpMarshallersJavaSubproject(name: String) =
@@ -118,20 +108,18 @@ def httpMarshallersJavaSubproject(name: String) =
     id = s"akka-http-$name",
     base = file(s"akka-http-marshallers-java/akka-http-$name"),
     dependencies = Seq(http)
-  ).settings(commonSettings)
+  )
   //.disablePlugins(MimaPlugin)
 
 lazy val docs = project("docs")
-  .enablePlugins(ParadoxPlugin)
+  .enablePlugins(ParadoxPlugin, NoPublish)
   .dependsOn(
     httpCore, http, httpXml, httpMarshallersJava, httpMarshallersScala,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
   )
-  .settings(commonSettings)
   .settings(Dependencies.docs)
   .settings(
     name := "akka-http-docs",
-    publishArtifact := false,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
     paradoxNavigationDepth := 3,
     paradoxProperties ++= Map(
@@ -143,7 +131,7 @@ lazy val docs = project("docs")
         case _                  => "cross CrossVersion.full"
       })
     ),
-    akka.Formatting.docFormatSettings
+    Formatting.docFormatSettings
   )
 
 
