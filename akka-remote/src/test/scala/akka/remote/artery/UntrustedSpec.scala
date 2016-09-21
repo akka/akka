@@ -63,8 +63,8 @@ object UntrustedSpec {
 
 class UntrustedSpec extends AkkaSpec("""
   akka.actor.provider = remote
-  akka.remote.untrusted-mode = on
-  akka.remote.trusted-selection-paths = ["/user/receptionist", ]
+  akka.remote.artery.untrusted-mode = on
+  akka.remote.artery.trusted-selection-paths = ["/user/receptionist", ]
   akka.remote.artery.enabled = on
   akka.remote.artery.canonical.hostname = localhost
   akka.remote.artery.canonical.port = 0

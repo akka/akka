@@ -954,7 +954,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     new InboundCompressionsImpl(system, inboundContext, settings.Advanced.Compression)
 
   def createEncoder(pool: EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, ChangeOutboundCompression] =
-    Flow.fromGraph(new Encoder(localAddress, system, outboundEnvelopePool, pool))
+    Flow.fromGraph(new Encoder(localAddress, system, outboundEnvelopePool, pool, settings.LogSend))
 
   def aeronSource(streamId: Int, pool: EnvelopeBufferPool): Source[EnvelopeBuffer, NotUsed] =
     Source.fromGraph(new AeronSource(inboundChannel, streamId, aeron, taskRunner, pool,

@@ -47,7 +47,8 @@ private[remote] class Encoder(
   uniqueLocalAddress:   UniqueAddress,
   system:               ExtendedActorSystem,
   outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
-  bufferPool:           EnvelopeBufferPool)
+  bufferPool:           EnvelopeBufferPool,
+  debugLogSend:         Boolean)
   extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, EnvelopeBuffer], Encoder.ChangeOutboundCompression] {
   import Encoder._
 
@@ -89,6 +90,12 @@ private[remote] class Encoder(
 
       override protected def logSource = classOf[Encoder]
 
+      private var debugLogEnabled = false
+
+      override def preStart(): Unit = {
+        debugLogEnabled = log.isDebugEnabled
+      }
+
       override def onPush(): Unit = {
         val outboundEnvelope = grab(in)
         val envelope = bufferPool.acquire()
@@ -120,6 +127,13 @@ private[remote] class Encoder(
           } finally Serialization.currentTransportInformation.value = oldValue
 
           envelope.byteBuffer.flip()
+
+          if (debugLogSend && debugLogEnabled)
+            log.debug(
+              "sending remote message [{}] to [{}] from [{}]",
+              Logging.messageClassName(outboundEnvelope.message),
+              outboundEnvelope.recipient.getOrElse(""), outboundEnvelope.sender.getOrElse(""))
+
           push(out, envelope)
 
         } catch {

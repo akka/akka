@@ -3,6 +3,7 @@
  */
 package akka.remote.artery
 
+import akka.japi.Util.immutableSeq
 import akka.ConfigurationException
 import akka.event.Logging
 import akka.event.Logging.LogLevel
@@ -54,6 +55,12 @@ private[akka] final class ArterySettings private (config: Config) {
       tree.insert(segments, NotUsed)
     }
   val Dispatcher = getString("use-dispatcher")
+
+  val UntrustedMode: Boolean = getBoolean("untrusted-mode")
+  val TrustedSelectionPaths: Set[String] = immutableSeq(getStringList("trusted-selection-paths")).toSet
+
+  val LogReceive: Boolean = getBoolean("log-received-messages")
+  val LogSend: Boolean = getBoolean("log-sent-messages")
 
   object Advanced {
     val config = getConfig("advanced")
