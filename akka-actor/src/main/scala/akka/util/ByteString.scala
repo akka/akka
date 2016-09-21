@@ -480,7 +480,7 @@ object ByteString {
       else if (n >= length) ByteString.empty
       else drop0(n)
 
-    private[akka] def drop0(n: Int): ByteString = {
+    private def drop0(n: Int): ByteString = {
       // impl note: could be optimised a bit by using VectorIterator instead,
       //            however then we're forced to call .toVector which halfs performance
       //            We can work around that, as there's a Scala private method "remainingVector" which is fast,
