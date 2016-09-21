@@ -443,7 +443,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         driverContext.aeronDirectoryName(randomName)
       }
       driverContext.clientLivenessTimeoutNs(settings.Advanced.ClientLivenessTimeout.toNanos)
-      driverContext.imageLivenessTimeoutNs(settings.Advanced.ImageLivenessTimeoutNs.toNanos)
+      driverContext.imageLivenessTimeoutNs(settings.Advanced.ImageLivenessTimeout.toNanos)
       driverContext.driverTimeoutMs(settings.Advanced.DriverTimeout.toMillis)
 
       val idleCpuLevel = settings.Advanced.IdleCpuLevel

@@ -20,6 +20,7 @@ object HandshakeDenySpec {
        remote.artery.canonical.hostname = localhost
        remote.artery.canonical.port = 0
        remote.artery.advanced.handshake-timeout = 2s
+       remote.artery.advanced.image-liveness-timeout = 1.9s
      }
   """)
 
