@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2.parsing
 
 import akka.event.Logging
+import akka.http.impl.engine.http2.BufferedOutletSupport
 import akka.http.impl.engine.http2.{ HeadersFrame, Http2Protocol, Http2SubStream, StreamFrameEvent }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
@@ -22,15 +23,15 @@ final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Htt
 
   private final val ColonByte = ':'.toByte
 
-  val in = Inlet[Http2SubStream](Logging.simpleName(this) + ".in")
-  val out = Outlet[HttpRequest](Logging.simpleName(this) + ".out")
-  override val shape = FlowShape.of(in, out)
+  val streamIn = Inlet[Http2SubStream](Logging.simpleName(this) + ".streamIn")
+  val requestOut = Outlet[HttpRequest](Logging.simpleName(this) + ".requestOut")
+  override val shape = FlowShape.of(streamIn, requestOut)
 
   // format: OFF
   override def createLogic(inheritedAttributes: Attributes) =
     new GraphStageLogic(shape)
-      with InHandler with OutHandler
-      with HeaderListener {
+      with InHandler
+      with HeaderListener with BufferedOutletSupport {
       // format: ON
 
       /** While we're pulling a SubStreams frames, we should not pass through completion */
@@ -43,8 +44,16 @@ final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Htt
 
       val decoder = new com.twitter.hpack.Decoder(maxHeaderSize, maxHeaderTableSize)
 
+      // buffer outgoing requests if necessary (total number limited by SETTINGS_MAX_CONCURRENT_STREAMS)
+      val bufferedRequestOut = new BufferedOutlet(requestOut)
+
+      setHandler(streamIn, this)
+      override def preStart(): Unit = pull(streamIn)
+
       override def onPush(): Unit = {
-        val httpSubStream = grab(in)
+        val httpSubStream = grab(streamIn)
+        // no backpressure (limited by SETTINGS_MAX_CONCURRENT_STREAMS)
+        pull(streamIn)
 
         def hasEndStream(frame: StreamFrameEvent): Boolean = frame match {
           case h: HeadersFrame ⇒ h.endStream
@@ -56,11 +65,6 @@ final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Htt
         //    in which case we need to wait for a continuation, etc.)
         if (hasEndStream(httpSubStream.initialFrame)) {
           val pushedRequest = processFrame(httpSubStream, httpSubStream.initialFrame)
-
-          if (pushedRequest) pull(in)
-          else throw new Exception("This is likely a bug. We knew there's END_STREAM, " +
-            "but we did not emit a full response after first frame! " +
-            s"Http2SubStream was: $httpSubStream")
 
           // we know frames should be empty here.
           // but for sanity lets kill that stream anyway I guess (at least for now)
@@ -74,8 +78,6 @@ final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Htt
           processRemainingFrames(httpSubStream)
         }
       }
-
-      override def onPull(): Unit = if (!hasBeenPulled(in)) pull(in)
 
       // this is invoked synchronously from decoder.decode()
       override def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit = {
@@ -112,8 +114,6 @@ final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Htt
           beingBuiltRequest = beingBuiltRequest.addHeader(RawHeader(nameString, new String(value)))
       }
 
-      setHandlers(in, out, this)
-
       override def onUpstreamFinish(): Unit = {
         if (pullingSubStreamFrames) {
           // we're currently pulling Frames out of the SubStream, thus we should not shut-down just yet
@@ -147,7 +147,7 @@ final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Htt
               // FIXME but we need to keep pulling it until completion, as it may contain DataFrames
 
               // FIXME then finally we can pull the outer stream again, which gives us a new substream to work on
-              pull(in) // pull outer stream, we're ready for new SubStream
+              pull(streamIn) // pull outer stream, we're ready for new SubStream
             } else {
               // still more data to read from the SubSource before we can start emitting the HttpResponse (e.g. more headers)
               subIn.pull()
@@ -161,7 +161,7 @@ final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Htt
       /** Returns `true` if it emitted a complete [[HttpRequest]], and `false` otherwise */
       private def pushIfReady(headersFrame: HeadersFrame): Boolean = {
         if (headersFrame.endHeaders) {
-          push(out, beingBuiltRequest)
+          bufferedRequestOut.push(beingBuiltRequest)
           beingBuiltRequest = zeroRequest
           true
         } else {
