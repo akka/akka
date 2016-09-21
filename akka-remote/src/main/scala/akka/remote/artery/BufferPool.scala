@@ -120,8 +120,8 @@ private[remote] sealed trait HeaderBuilder {
   def flag(byteFlag: ByteFlag): Boolean
   def setFlag(byteFlag: ByteFlag, value: Boolean): Unit
 
-  def inboundActorRefCompressionTableVersion: Int
-  def inboundClassManifestCompressionTableVersion: Int
+  def inboundActorRefCompressionTableVersion: Byte
+  def inboundClassManifestCompressionTableVersion: Byte
 
   def useOutboundCompression(on: Boolean): Unit
 
@@ -214,8 +214,8 @@ private[remote] final class HeaderBuilderImpl(
   var _version: Byte = 0
   var _flags: Byte = 0
   var _uid: Long = 0
-  var _inboundActorRefCompressionTableVersion: Int = 0
-  var _inboundClassManifestCompressionTableVersion: Int = 0
+  var _inboundActorRefCompressionTableVersion: Byte = 0
+  var _inboundClassManifestCompressionTableVersion: Byte = 0
   var _useOutboundCompression: Boolean = true
 
   var _senderActorRef: String = null
@@ -254,8 +254,8 @@ private[remote] final class HeaderBuilderImpl(
   override def setUid(uid: Long) = _uid = uid
   override def uid: Long = _uid
 
-  override def inboundActorRefCompressionTableVersion: Int = _inboundActorRefCompressionTableVersion
-  override def inboundClassManifestCompressionTableVersion: Int = _inboundClassManifestCompressionTableVersion
+  override def inboundActorRefCompressionTableVersion: Byte = _inboundActorRefCompressionTableVersion
+  override def inboundClassManifestCompressionTableVersion: Byte = _inboundClassManifestCompressionTableVersion
 
   def useOutboundCompression(on: Boolean): Unit =
     _useOutboundCompression = on
@@ -442,11 +442,11 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     // compression table versions (stored in the Tag)
     val refCompressionVersionTag = byteBuffer.getInt(ActorRefCompressionTableVersionTagOffset)
     if ((refCompressionVersionTag & TagTypeMask) != 0) {
-      header._inboundActorRefCompressionTableVersion = refCompressionVersionTag & TagValueMask
+      header._inboundActorRefCompressionTableVersion = (refCompressionVersionTag & TagValueMask).byteValue
     }
     val manifestCompressionVersionTag = byteBuffer.getInt(ClassManifestCompressionTableVersionTagOffset)
     if ((manifestCompressionVersionTag & TagTypeMask) != 0) {
-      header._inboundClassManifestCompressionTableVersion = manifestCompressionVersionTag & TagValueMask
+      header._inboundClassManifestCompressionTableVersion = (manifestCompressionVersionTag & TagValueMask).byteValue
     }
 
     if (header.flag(MetadataPresentFlag)) {

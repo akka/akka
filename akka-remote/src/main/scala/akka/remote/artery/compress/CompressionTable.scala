@@ -8,7 +8,7 @@ import java.util
 import java.util.Comparator
 
 /** INTERNAL API: Versioned compression table to be advertised between systems */
-private[remote] final case class CompressionTable[T](originUid: Long, version: Int, dictionary: Map[T, Int]) {
+private[remote] final case class CompressionTable[T](originUid: Long, version: Byte, dictionary: Map[T, Int]) {
   import CompressionTable.NotCompressedId
 
   def compress(value: T): Int =

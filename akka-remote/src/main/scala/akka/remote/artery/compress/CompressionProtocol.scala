@@ -4,7 +4,6 @@
 
 package akka.remote.artery.compress
 
-import scala.language.existentials
 import akka.actor.ActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.ControlMessage
@@ -36,7 +35,7 @@ object CompressionProtocol {
    * but we need separate ack in case the sender is not using any of the refs in the advertised
    * table.
    */
-  private[remote] final case class ActorRefCompressionAdvertisementAck(from: UniqueAddress, tableVersion: Int)
+  private[remote] final case class ActorRefCompressionAdvertisementAck(from: UniqueAddress, tableVersion: Byte)
     extends ControlMessage with CompressionMessage
 
   /**
@@ -53,7 +52,7 @@ object CompressionProtocol {
    * but we need separate ack in case the sender is not using any of the refs in the advertised
    * table.
    */
-  private[remote] final case class ClassManifestCompressionAdvertisementAck(from: UniqueAddress, tableVersion: Int)
+  private[remote] final case class ClassManifestCompressionAdvertisementAck(from: UniqueAddress, tableVersion: Byte)
     extends ControlMessage with CompressionMessage
 
   /** INTERNAL API */
