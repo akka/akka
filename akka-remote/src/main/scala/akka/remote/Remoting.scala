@@ -60,6 +60,11 @@ private[akka] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
 private[akka] trait PriorityMessage
 
 /**
+ * Failure detector heartbeat messages are marked with this trait.
+ */
+private[akka] trait HeartbeatMessage extends PriorityMessage
+
+/**
  * INTERNAL API
  */
 private[remote] object Remoting {

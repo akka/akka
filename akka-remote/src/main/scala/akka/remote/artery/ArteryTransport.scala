@@ -29,7 +29,6 @@ import akka.actor.Props
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.remote.AddressUidExtension
-import akka.remote.EventPublisher
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransport
@@ -303,7 +302,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
   override val log: LoggingAdapter = Logging(system, getClass.getName)
-  val eventPublisher = new EventPublisher(system, log, settings.LifecycleEventsLogLevel)
 
   private val codec: AkkaPduCodec = AkkaPduProtobufCodec
   private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
@@ -621,7 +619,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
                         "prepared for another incarnation with uid [{}] than current uid [{}], table: [{}]",
                       from, table.originUid, localAddress.uid, table)
                 case ActorRefCompressionAdvertisementAck(from, tableVersion) ⇒
-                  inboundCompressions.foreach(_.confirmActorRefCompressionAdvertisement(from.uid, tableVersion))
+                  _inboundCompressions.foreach(_.confirmActorRefCompressionAdvertisement(from.uid, tableVersion))
                 case ClassManifestCompressionAdvertisement(from, table) ⇒
                   if (table.originUid == localAddress.uid) {
                     log.debug("Incoming Class Manifest compression advertisement from [{}], table: [{}]", from, table)
@@ -649,7 +647,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
               // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
               // use it as a STONITH signal.
               val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
-              publishLifecycleEvent(lifecycleEvent)
+              system.eventStream.publish(lifecycleEvent)
 
             case _: ActorSystemTerminating ⇒
               inboundEnvelope.sender match {
@@ -760,6 +758,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   override def shutdown(): Future[Done] = {
     if (hasBeenShutdown.compareAndSet(false, true)) {
+      log.debug("Shutting down [{}]", localAddress)
       val allAssociations = associationRegistry.allAssociations
       val flushing: Future[Done] =
         if (allAssociations.isEmpty) Future.successful(Done)
@@ -885,9 +884,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       case ShuttingDown ⇒ Future.successful(Done) // silence it
     }
   }
-
-  private def publishLifecycleEvent(event: RemotingLifecycleEvent): Unit =
-    eventPublisher.notifyListeners(event)
 
   override def quarantine(remoteAddress: Address, uid: Option[Int], reason: String): Unit = {
     try {
@@ -1026,7 +1022,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   /** INTERNAL API: for testing only. */
   private[remote] def triggerCompressionAdvertisements(actorRef: Boolean, manifest: Boolean) = {
-    inboundCompressions.foreach {
+    _inboundCompressions.foreach {
       case c: InboundCompressionsImpl if actorRef || manifest ⇒
         log.info("Triggering compression table advertisement for {}", c)
         if (actorRef) c.runNextActorRefAdvertisement()

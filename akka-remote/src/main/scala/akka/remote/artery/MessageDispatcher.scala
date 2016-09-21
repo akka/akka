@@ -64,7 +64,9 @@ private[akka] class MessageDispatcher(
               // run the receive logic for ActorSelectionMessage here to make sure it is not stuck on busy user actor
               ActorSelection.deliverSelection(l, sender, sel)
           case msg: PossiblyHarmful if UntrustedMode ⇒
-            log.debug("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}]", msg.getClass.getName)
+            log.debug(
+              "operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}]",
+              Logging.messageClassName(msg))
           case msg: SystemMessage ⇒ l.sendSystemMessage(msg)
           case msg                ⇒ l.!(msg)(sender)
         }
@@ -76,7 +78,7 @@ private[akka] class MessageDispatcher(
 
       case r ⇒ log.error(
         "dropping message [{}] for unknown recipient [{}] arriving at [{}] inbound addresses are [{}]",
-        message.getClass, r, recipientAddress, provider.transport.addresses.mkString(", "))
+        Logging.messageClassName(message), r, recipientAddress, provider.transport.addresses.mkString(", "))
 
     }
   }
