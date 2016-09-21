@@ -73,7 +73,7 @@ object FileIO {
    * @param startPosition the start position to read from
    */
   def fromPath(f: Path, chunkSize: Int, startPosition: Long): Source[ByteString, Future[IOResult]] =
-    Source.fromGraph(new FileSource(f, chunkSize, startPosition, DefaultAttributes.fileSource, sourceShape("FileSource")))
+    Source.fromGraph(new FileSource(f, chunkSize, startPosition)).withAttributes(DefaultAttributes.fileSource)
 
   /**
    * Creates a Sink which writes incoming [[ByteString]] elements to the given file. Overwrites existing files

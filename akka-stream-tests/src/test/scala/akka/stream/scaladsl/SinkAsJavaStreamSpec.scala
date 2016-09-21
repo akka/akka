@@ -48,6 +48,10 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
       javaSource.close()
     }
 
+    "allow overriding the dispatcher using Attributes" in Utils.assertAllStagesStopped{
+
+    }
+
     "work in separate IO dispatcher" in Utils.assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
