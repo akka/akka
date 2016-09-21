@@ -1,8 +1,8 @@
 package akka
 
-import akka.typed.internal.ActorRefImpl
-
 package object typed {
+  import internal._
+
   /*
    * These are safe due to the self-type of ActorRef
    */
@@ -14,17 +14,17 @@ package object typed {
     def sorryForNothing: ActorRefImpl[Nothing] = ref.asInstanceOf[ActorRefImpl[Nothing]]
   }
 
-  implicit class ToProcessImpl[U](val p: Sessions.Process[U]) extends AnyVal {
+  private[typed] implicit class ToProcessImpl[U](val p: Sessions.Process[U]) extends AnyVal {
     def sorry: ProcessImpl[U] = p.asInstanceOf[ProcessImpl[U]]
   }
-  implicit class ToProcessImplNothing(val p: Sessions.Process[Nothing]) extends AnyVal {
+  private[typed] implicit class ToProcessImplNothing(val p: Sessions.Process[Nothing]) extends AnyVal {
     def sorryForNothing: ProcessImpl[Nothing] = p.asInstanceOf[ProcessImpl[Nothing]]
   }
 
-  implicit class ToChannelImpl[U](val p: Sessions.Channel[U]) extends AnyVal {
+  private[typed] implicit class ToChannelImpl[U](val p: Sessions.Channel[U]) extends AnyVal {
     def sorry: ChannelImpl[U] = p.asInstanceOf[ChannelImpl[U]]
   }
-  implicit class ToChannelImplNothing(val p: Sessions.Channel[Nothing]) extends AnyVal {
+  private[typed] implicit class ToChannelImplNothing(val p: Sessions.Channel[Nothing]) extends AnyVal {
     def sorryForNothing: ChannelImpl[Nothing] = p.asInstanceOf[ChannelImpl[Nothing]]
   }
 }

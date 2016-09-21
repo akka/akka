@@ -67,13 +67,13 @@ Distributed Data:
  */
 
 private[typed] class ActorSystemImpl[-T](
-  override val name:       String,
-  _config:                 Config,
-  _cl:                     ClassLoader,
-  _ec:                     Option[ExecutionContext],
-  _userGuardianBehavior:   Behavior[T],
+  override val name: String,
+  _config: Config,
+  _cl: ClassLoader,
+  _ec: Option[ExecutionContext],
+  _userGuardianBehavior: Behavior[T],
   _userGuardianDeployment: DeploymentConfig)
-  extends ActorRef[T](a.RootActorPath(a.Address("akka", name)) / "user") with ActorSystem[T] with ActorRefImpl[T] {
+    extends ActorRef[T](a.RootActorPath(a.Address("akka", name)) / "user") with ActorSystem[T] with ActorRefImpl[T] {
 
   import ActorSystemImpl._
 
@@ -255,7 +255,7 @@ private[typed] class ActorSystemImpl[-T](
   }
 
   override val receptionist: ActorRef[patterns.Receptionist.Command] =
-    ActorRef(systemActorOf(Props(patterns.Receptionist.behavior), "receptionist")(settings.CreationTimeout))
+    ActorRef(systemActorOf(patterns.Receptionist.behavior, "receptionist")(settings.untyped.CreationTimeout))
 
   def printTree: String = {
     def printNode(node: ActorRefImpl[Nothing], indent: String): String = {

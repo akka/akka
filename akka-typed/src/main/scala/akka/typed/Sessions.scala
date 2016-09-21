@@ -22,10 +22,9 @@ import akka.util.Timeout
  *
  * This means that in order to decouple the Process from the ActorContext
  * at runtime we must tightly couple the Process DSL to the ActorContext.
- * It is not yet clear which way to go.
  *
  * Sharing Channels between different ActorContexts must be prohibited.
- * Unfortunately we’d need @local types or similar in order to achive this
+ * Unfortunately we’d need `@local` types or similar in order to achive this
  * at compile-time, so a runtime check will have to suffice.
  */
 object Sessions {
@@ -44,7 +43,7 @@ object Sessions {
   /**
    * Create a Behavior that runs the given Process in a new Actor.
    */
-  def toProps(p: ⇒ Process[Any]): Props[Command] = Props(new ProcessInterpreter(p))
+  def toBehavior(p: ⇒ Process[Any]): Behavior[Command] = new ProcessInterpreter(p)
 
   /**
    * Trying out the idea of strong coupling between Sessions and ActorContext:
@@ -232,7 +231,7 @@ object SessionExample extends App {
   /*
    * Server implementation.
    */
-  val server = toProps(for {
+  val server = toBehavior(for {
     backend ← initialize
     server ← register(backend)
   } yield run(server, backend))
@@ -292,7 +291,7 @@ object SessionExample extends App {
   /*
    * Back-end implementation.
    */
-  val backend = toProps(registerBackend.map(runBackend))
+  val backend = toBehavior(registerBackend.map(runBackend))
 
   private def registerBackend: Process[Channel[BackendCommand]] = {
     val service = channel[BackendCommand](128)
@@ -323,14 +322,14 @@ object SessionExample extends App {
   import AskPattern._
   implicit val tt = Timeout(1.second)
 
-  val system = ActorSystem("Session", Props(
+  val system = ActorSystem("Session",
     ContextAware[ServerCommand] { ctx ⇒
       val serverRef = ctx.spawn(server, "server")
       val backendRef = ctx.spawn(backend, "backend")
       Total {
         case g: GetIt ⇒ Same
       }
-    }))
+    })
   io.StdIn.readLine()
   implicit def s = system.scheduler
   import system.executionContext

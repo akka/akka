@@ -1,8 +1,10 @@
-import akka.{ AkkaBuild, Formatting }
+import akka._
 
 AkkaBuild.defaultSettings
 AkkaBuild.experimentalSettings
 Formatting.formatSettings
+
+Dependencies.typed
 
 disablePlugins(MimaPlugin)
 

@@ -78,6 +78,10 @@ object Dependencies {
     val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.1"       // ApacheV2
     val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.1"       // ApacheV2
 
+    // for Akka Typed Session DSL
+    val coroutines = "com.storm-enroute"             %% "coroutines"                   % "0.6" exclude("com.storm-enroute", "scalameter_2.11") // BSD 3-clause
+    val scalameter = "com.storm-enroute"             %% "scalameter"                   % "0.7" // BSD 3-clause
+
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
       val gson        = "com.google.code.gson"        % "gson"                         % "2.3.1"             % "test"
@@ -176,6 +180,8 @@ object Dependencies {
   val contrib = l ++= Seq(Test.junitIntf, Test.commonsIo)
 
   val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
+
+  val typed = l ++= Seq(coroutines, scalameter)
 
   // akka stream & http
 
