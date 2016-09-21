@@ -24,6 +24,7 @@ object LateConnectSpec {
        remote.artery.canonical.hostname = localhost
        remote.artery.canonical.port = 0
        remote.artery.advanced.handshake-timeout = 3s
+       remote.artery.advanced.image-liveness-timeout = 2.9s
      }
   """)
 
