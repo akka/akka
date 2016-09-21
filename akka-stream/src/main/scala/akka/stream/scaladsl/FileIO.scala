@@ -45,9 +45,6 @@ object FileIO {
    * Emitted elements are `chunkSize` sized [[akka.util.ByteString]] elements,
    * except the final element, which will be up to `chunkSize` in size.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
-   *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
    *
@@ -55,7 +52,7 @@ object FileIO {
    * @param chunkSize the size of each read operation, defaults to 8192
    */
   def fromPath(f: Path, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
-    new Source(new FileSource(f, chunkSize, DefaultAttributes.fileSource, sourceShape("FileSource")))
+    Source.fromGraph(new FileSource(f, chunkSize))
 
   /**
    * Creates a Sink which writes incoming [[ByteString]] elements to the given file. Overwrites existing files by default.
