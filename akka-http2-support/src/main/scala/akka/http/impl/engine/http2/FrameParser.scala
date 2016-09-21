@@ -112,6 +112,11 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
 
         ContinuationFrame(streamId, endHeaders, payload.remainingData)
 
+      case PING ⇒
+        val ack = Flags.ACK.isSet(flags)
+        // FIXME: ensure data size is 8
+        PingFrame(ack, payload.remainingData)
+
       case tpe ⇒ // TODO: remove once all stream types are defined
         UnknownFrameEvent(tpe, flags, streamId, payload.remainingData)
     }

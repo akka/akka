@@ -48,6 +48,14 @@ object FrameRenderer {
           0,
           ByteString.empty
         )
+
+      case PingFrame(ack, data) ⇒
+        renderFrame(
+          Http2Protocol.FrameType.PING,
+          Http2Protocol.Flags.ACK.ifSet(ack),
+          0,
+          data
+        )
     }
 
   def renderFrame(tpe: FrameType, flags: Int, streamId: Int, payload: ByteString): ByteString = {

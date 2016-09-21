@@ -144,6 +144,48 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
       "with two settings" in pending
       "ack" in pending
     }
+    "PING frame" - {
+      "without ack" in {
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=8   # length
+            00000110     # type = 0x6 = PING
+            00000000     # no flags
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # no stream ID
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=1234567890abcdef
+         """ should parseTo(PingFrame(ack = false, "1234567890abcdef".parseHexByteString))
+      }
+      "with ack" in {
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=8   # length
+            00000110     # type = 0x6 = PING
+            00000001     # ACK
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # no stream ID
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=fedcba09
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=87654321
+         """ should parseTo(PingFrame(ack = true, "fedcba0987654321".parseHexByteString))
+      }
+    }
   }
 
   private def parseTo(events: FrameEvent*): Matcher[ByteString] =
