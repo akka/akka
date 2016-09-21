@@ -80,7 +80,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         state:    StreamState,
         outlet:   SubSourceOutlet[StreamFrameEvent]
       ) extends BufferedOutlet[StreamFrameEvent](outlet) {
-        override def onDownstreamFinish(): Unit = () // ignore substream cancellation, FIXME: is that correct?
+        override def onDownstreamFinish(): Unit = () // FIXME: when substream (= request entity) is cancelled, we need to RST_STREAM
       }
 
       override def preStart(): Unit = {
@@ -110,6 +110,11 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               // FIXME: do something
 
               bufferedFrameOut.push(SettingsAckFrame)
+
+            case PingFrame(true, _) ⇒ // ignore for now (we don't send any pings)
+            case PingFrame(false, data) ⇒
+              bufferedFrameOut.push(PingFrame(ack = true, data))
+
             case e ⇒
               println(s"Got unknown event $e")
             // ignore unknown frames
