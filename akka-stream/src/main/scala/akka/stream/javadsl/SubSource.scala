@@ -1112,6 +1112,21 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
     new SubSource(delegate.zipWith[Out2, Out3](that)(combinerToScala(combine)))
 
   /**
+   * Combine the elements of current [[Source]] into a stream of tuples consisting
+   * of all elements paired with their index. Indices start at 0.
+   *
+   * '''Emits when''' upstream emits an element and is paired with their index
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipWithIndex: javadsl.SubSource[akka.japi.Pair[Out @uncheckedVariance, Long], Mat] =
+    new SubSource(delegate.zipWithIndex.map { case (elem, index) ⇒ akka.japi.Pair(elem, index) })
+
+  /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
    *

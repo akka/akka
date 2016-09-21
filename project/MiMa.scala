@@ -966,6 +966,10 @@ object MiMa extends AutoPlugin {
 
         // #21131 new implementation for Akka Typed
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.isWatching")
+      ),
+      "2.4.10" -> Seq(
+        // #21290 new zipWithIndex flow op
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipWithIndex")
       )
     )
   }
