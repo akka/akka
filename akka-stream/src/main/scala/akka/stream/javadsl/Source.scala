@@ -874,6 +874,21 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.zipWithMat[Out2, Out3, M, M2](that)(combinerToScala(combine))(combinerToScala(matF)))
 
   /**
+   * Combine the elements of current [[Source]] into a stream of tuples consisting
+   * of all elements paired with their index. Indices start at 0.
+   *
+   * '''Emits when''' upstream emits an element and is paired with their index
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipWithIndex: javadsl.Source[Pair[Out @uncheckedVariance, Long], Mat] =
+    new Source(delegate.zipWithIndex.map { case (elem, index) ⇒ Pair(elem, index) })
+
+  /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
    * for each received element.
    * The returned [[java.util.concurrent.CompletionStage]] will be completed normally when reaching the

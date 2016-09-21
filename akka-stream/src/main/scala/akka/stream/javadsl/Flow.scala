@@ -3,18 +3,20 @@
  */
 package akka.stream.javadsl
 
-import akka.{ NotUsed, Done }
+import akka.{ Done, NotUsed }
 import akka.event.LoggingAdapter
-import akka.japi.{ function, Pair }
+import akka.japi.{ Pair, function }
 import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream._
 import akka.stream.stage.Stage
 import org.reactivestreams.Processor
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util
 import java.util.Comparator
 import java.util.concurrent.CompletionStage
+
 import scala.compat.java8.FutureConverters._
 
 object Flow {
@@ -1633,6 +1635,21 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     combine: function.Function2[Out, Out2, Out3],
     matF:    function.Function2[Mat, M, M2]): javadsl.Flow[In, Out3, M2] =
     new Flow(delegate.zipWithMat[Out2, Out3, M, M2](that)(combinerToScala(combine))(combinerToScala(matF)))
+
+  /**
+   * Combine the elements of current flow into a stream of tuples consisting
+   * of all elements paired with their index. Indices start at 0.
+   *
+   * '''Emits when''' upstream emits an element and is paired with their index
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipWithIndex: Flow[In, Pair[Out @uncheckedVariance, Long], Mat] =
+    new Flow(delegate.zipWithIndex.map { case (elem, index) ⇒ Pair(elem, index) })
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed

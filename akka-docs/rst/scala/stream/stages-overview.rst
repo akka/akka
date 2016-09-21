@@ -1222,6 +1222,16 @@ returned value downstream.
 
 **completes** when any upstream completes
 
+zipWithIndex
+^^^^^^^
+Zips elements of current flow with its indices.
+
+**emits** upstream emits an element and is paired with their index
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
 concat
 ^^^^^^
 After completion of the original upstream the elements of the given source will be emitted.
