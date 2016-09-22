@@ -1,3 +1,5 @@
+.. _http-introduction-scala:
+
 Introduction
 ============
 

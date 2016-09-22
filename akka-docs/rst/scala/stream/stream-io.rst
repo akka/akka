@@ -5,19 +5,14 @@ Working with streaming IO
 #########################
 
 Akka Streams provides a way of handling File IO and TCP connections with Streams.
-While the general approach is very similar to the `Actor based TCP handling`_ using Akka IO,
+While the general approach is very similar to the :ref:`Actor based TCP handling <io-scala-tcp>` using Akka IO,
 by using Akka Streams you are freed of having to manually react to back-pressure signals,
 as the library does it transparently for you.
 
-.. _Actor based TCP handling: http://doc.akka.io/docs/akka/current/scala/io-tcp.html
-
 .. note::
   If you are not familiar with Akka Streams basic concepts, like ``Source``, ``Sink`` and ``Flow``,
-  please refer to the `Streams section`_ of the document. Also higher level APIs like ``bind`` are
-  used in Akka HTTP too. So you may get some hints from the `Akka HTTP introduction section`_.
-
-.. _Streams section: http://doc.akka.io/docs/akka/current/scala/stream/index.html
-.. _Akka HTTP introduction section: http://doc.akka.io/docs/akka/current/scala/http/introduction.html
+  please refer to the :ref:`Streams section <streams-scala>` of the document. Also higher level APIs like ``bind`` are
+  used in Akka HTTP too. So you may get some hints from the Akka HTTP :ref:`introduction <http-introduction-scala>`.
 
 Streaming TCP
 =============
