@@ -15,6 +15,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.io.StdIn
 
 object Http2ServerTest extends App {
   val testConf: Config = ConfigFactory.parseString("""
@@ -49,7 +50,7 @@ object Http2ServerTest extends App {
     Await.result(binding, 1.second) // throws if binding fails
     println("Server online at http://localhost:9001")
     println("Press RETURN to stop...")
-    Console.readLine()
+    StdIn.readLine()
   } finally {
     system.terminate()
   }
