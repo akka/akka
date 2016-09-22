@@ -31,6 +31,7 @@ object HandshakeShouldDropCompressionTableSpec {
        remote.artery.canonical.hostname = localhost
        remote.artery.canonical.port = 0
        remote.artery.advanced.handshake-timeout = 10s
+       remote.artery.advanced.image-liveness-timeout = 7s
 
        remote.artery.advanced.compression {
          actor-refs {

@@ -103,8 +103,9 @@ private[akka] final class ArterySettings private (config: Config) {
       interval > Duration.Zero, "stop-quarantined-after-idle must be more than zero")
     val ClientLivenessTimeout = config.getMillisDuration("client-liveness-timeout").requiring(interval ⇒
       interval > Duration.Zero, "client-liveness-timeout must be more than zero")
-    val ImageLivenessTimeoutNs = config.getMillisDuration("image-liveness-timeout").requiring(interval ⇒
+    val ImageLivenessTimeout = config.getMillisDuration("image-liveness-timeout").requiring(interval ⇒
       interval > Duration.Zero, "image-liveness-timeout must be more than zero")
+    require(ImageLivenessTimeout < HandshakeTimeout, "image-liveness-timeout must be less than handshake-timeout")
     val DriverTimeout = config.getMillisDuration("driver-timeout").requiring(interval ⇒
       interval > Duration.Zero, "driver-timeout must be more than zero")
     val FlightRecorderEnabled: Boolean = getBoolean("flight-recorder.enabled")
