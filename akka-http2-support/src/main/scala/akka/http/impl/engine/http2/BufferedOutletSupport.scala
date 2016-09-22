@@ -29,15 +29,17 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
     val buffer: java.util.ArrayDeque[T] = new java.util.ArrayDeque[T]
     var pulled: Boolean = false
 
+    def doPush(elem: T): Unit = outlet.push(elem)
+
     def onPull(): Unit =
-      if (!buffer.isEmpty) outlet.push(buffer.pop())
+      if (!buffer.isEmpty) doPush(buffer.pop())
       else pulled = true
 
     outlet.setHandler(this)
 
     def push(elem: T): Unit =
       if (pulled) {
-        outlet.push(elem)
+        doPush(elem)
         pulled = false
       } else buffer.addLast(elem)
   }

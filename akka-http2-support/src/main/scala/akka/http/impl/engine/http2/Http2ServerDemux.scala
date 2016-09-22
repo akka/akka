@@ -75,11 +75,14 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with BufferedOutletSupport { logic ⇒
-      case class SubStream(
-        streamId: Int,
-        state:    StreamState,
-        outlet:   SubSourceOutlet[StreamFrameEvent]
+      class SubStream(
+        streamId:                  Int,
+        state:                     StreamState,
+        outlet:                    SubSourceOutlet[StreamFrameEvent],
+        initialOutboundWindowLeft: Long
       ) extends BufferedOutlet[StreamFrameEvent](outlet) {
+        var outboundWindowLeft = initialOutboundWindowLeft
+
         override def onDownstreamFinish(): Unit = () // FIXME: when substream (= request entity) is cancelled, we need to RST_STREAM
       }
 
@@ -89,13 +92,15 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       }
 
       var incomingStreams = Map.empty[Int, SubStream]
+      var totalOutboundWindowLeft = Http2Protocol.InitialConnectionLevelWindow
+      var streamLevelWindow = Http2Protocol.InitialStreamLevelWindow
 
       setHandler(frameIn, new InHandler {
         def onPush(): Unit = {
           grab(frameIn) match {
             case headers @ HeadersFrame(streamId, endStream, endHeaders, fragment) ⇒
               val subSource = new SubSourceOutlet[StreamFrameEvent](s"substream-out-$streamId")
-              val handler = SubStream(streamId, StreamState.Open /* FIXME */ , subSource)
+              val handler = new SubStream(streamId, StreamState.Open /* FIXME */ , subSource, streamLevelWindow)
               incomingStreams += streamId → handler
 
               val sub =
@@ -104,19 +109,36 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
               dispatchSubstream(sub)
 
-            case e: StreamFrameEvent if e.streamId > 0 ⇒ incomingStreams(e.streamId).push(e)
+            case e: StreamFrameEvent if e.streamId > 0 ⇒
+              incomingStreams(e.streamId).push(e)
 
-            case SettingsFrame(_) ⇒
-              // FIXME: do something
+            case SettingsFrame(settings) ⇒
+              println(s"Got ${settings.length} settings!")
+              settings.foreach {
+                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
+                  println(s"Setting initial window to $value")
+                  val delta = value - streamLevelWindow
+                  streamLevelWindow = value
+                  incomingStreams.values.foreach(_.outboundWindowLeft += delta)
+                case Setting(id, value) ⇒ println(s"Ignoring setting $id -> $value")
+              }
 
               bufferedFrameOut.push(SettingsAckFrame)
+
+            case WindowUpdateFrame(0, increment) ⇒
+              totalOutboundWindowLeft += increment
+              println(f"outbound window is now $totalOutboundWindowLeft%10d after increment $increment%6d")
+
+            case WindowUpdateFrame(streamId, increment) ⇒
+              incomingStreams(streamId).outboundWindowLeft += increment
+              println(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
 
             case PingFrame(true, _) ⇒ // ignore for now (we don't send any pings)
             case PingFrame(false, data) ⇒
               bufferedFrameOut.push(PingFrame(ack = true, data))
 
             case e ⇒
-              println(s"Got unknown event $e")
+              println(s"Got unhandled event $e")
             // ignore unknown frames
           }
           pull(frameIn)
@@ -145,7 +167,26 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         }
       })
 
-      val bufferedFrameOut = new BufferedOutlet[FrameEvent](frameOut)
+      val bufferedFrameOut = new BufferedOutlet[FrameEvent](frameOut) {
+        override def push(elem: FrameEvent): Unit = {
+          super.push(elem)
+
+          if (buffer.size > 0) println(s"Now buffered: ${buffer.size()}")
+        }
+
+        override def doPush(elem: FrameEvent): Unit = {
+          super.doPush(elem)
+          elem match {
+            case DataFrame(streamId, _, pl) ⇒
+              val size = pl.size
+              totalOutboundWindowLeft -= size
+              incomingStreams(streamId).outboundWindowLeft -= size
+
+            //println(f"After sending $size%6d bytes to stream [$streamId%3d] totalWindow: $totalOutboundWindowLeft stream: ${incomingStreams(streamId).outboundWindowLeft}")
+            case _ ⇒ // ignore
+          }
+        }
+      }
       bufferedFrameOut.push(SettingsFrame(Nil)) // server side connection preface
     }
 }

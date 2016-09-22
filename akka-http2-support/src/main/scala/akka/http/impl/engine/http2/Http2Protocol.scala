@@ -14,6 +14,9 @@ import akka.util.ByteString
  * https://tools.ietf.org/html/rfc7540
  */
 object Http2Protocol {
+  val InitialConnectionLevelWindow = 65535
+  val InitialStreamLevelWindow = 65535
+
   sealed abstract class FrameType(val id: Int) extends Product
   object FrameType {
     case object DATA extends FrameType(0x0)
