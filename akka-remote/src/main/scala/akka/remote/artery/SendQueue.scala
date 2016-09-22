@@ -27,6 +27,8 @@ import scala.util.Failure
 private[remote] object SendQueue {
   trait ProducerApi[T] {
     def offer(message: T): Boolean
+
+    def isEnabled: Boolean
   }
 
   trait QueueValue[T] extends ProducerApi[T] {
@@ -126,6 +128,8 @@ private[remote] final class SendQueue[T] extends GraphStageWithMaterializedValue
         }
         result
       }
+
+      override def isEnabled: Boolean = true
     }
 
     (logic, queueValue)

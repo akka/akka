@@ -57,6 +57,18 @@ private[remote] object Association {
 
   final case class QueueWrapperImpl(queue: Queue[OutboundEnvelope]) extends QueueWrapper {
     override def offer(message: OutboundEnvelope): Boolean = queue.offer(message)
+
+    override def isEnabled: Boolean = true
+  }
+
+  object DisabledQueueWrapper extends QueueWrapper {
+    override def queue: java.util.Queue[OutboundEnvelope] =
+      throw new UnsupportedOperationException("The Queue is disabled")
+
+    override def offer(message: OutboundEnvelope): Boolean =
+      throw new UnsupportedOperationException("The method offer() is illegal on a disabled queue")
+
+    override def isEnabled: Boolean = false
   }
 
   final case class LazyQueueWrapper(queue: Queue[OutboundEnvelope], materialize: () ⇒ Unit) extends QueueWrapper {
@@ -71,6 +83,8 @@ private[remote] object Association {
       runMaterialize()
       queue.offer(message)
     }
+
+    override def isEnabled: Boolean = true
   }
 
   final val ControlQueueIndex = 0
@@ -120,7 +134,12 @@ private[remote] class Association(
 
   private[this] val queues: Array[SendQueue.ProducerApi[OutboundEnvelope]] = Array.ofDim(2 + outboundLanes)
   queues(ControlQueueIndex) = QueueWrapperImpl(createQueue(controlQueueSize)) // control stream
-  queues(LargeQueueIndex) = QueueWrapperImpl(createQueue(largeQueueSize)) // large messages stream
+  queues(LargeQueueIndex) =
+    if (transport.largeMessageChannelEnabled) // large messages stream
+      QueueWrapperImpl(createQueue(largeQueueSize))
+    else
+      DisabledQueueWrapper
+
   (0 until outboundLanes).foreach { i ⇒
     queues(OrdinaryQueueIndex + i) = QueueWrapperImpl(createQueue(queueSize)) // ordinary messages stream
   }
@@ -377,6 +396,21 @@ private[remote] class Association(
       case OptionVal.None ⇒
         OrdinaryQueueIndex
     }
+  }
+
+  def sendTerminationHint(replyTo: ActorRef): Int = {
+    if (!associationState.isQuarantined()) {
+      val msg = ActorSystemTerminating(localAddress)
+      var sent = 0
+      queues.iterator.filter(_.isEnabled).foreach { queue ⇒
+        val envelope = outboundEnvelopePool.acquire()
+          .init(OptionVal.None, msg, OptionVal.Some(replyTo))
+
+        queue.offer(envelope)
+        sent += 1
+      }
+      sent
+    } else 0
   }
 
   // OutboundContext
