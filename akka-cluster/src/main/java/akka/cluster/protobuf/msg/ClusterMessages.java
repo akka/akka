@@ -16042,20 +16042,20 @@ public final class ClusterMessages {
      */
     int getUid();
 
-    // optional uint32 uid2 = 3 [default = 0];
+    // optional uint32 uid2 = 3;
     /**
-     * <code>optional uint32 uid2 = 3 [default = 0];</code>
+     * <code>optional uint32 uid2 = 3;</code>
      *
      * <pre>
-     * for 64 bit uids but with backward compatibility
+     * 64 bit uids but with backward wire compatibility
      * </pre>
      */
     boolean hasUid2();
     /**
-     * <code>optional uint32 uid2 = 3 [default = 0];</code>
+     * <code>optional uint32 uid2 = 3;</code>
      *
      * <pre>
-     * for 64 bit uids but with backward compatibility
+     * 64 bit uids but with backward wire compatibility
      * </pre>
      */
     int getUid2();
@@ -16217,24 +16217,24 @@ public final class ClusterMessages {
       return uid_;
     }
 
-    // optional uint32 uid2 = 3 [default = 0];
+    // optional uint32 uid2 = 3;
     public static final int UID2_FIELD_NUMBER = 3;
     private int uid2_;
     /**
-     * <code>optional uint32 uid2 = 3 [default = 0];</code>
+     * <code>optional uint32 uid2 = 3;</code>
      *
      * <pre>
-     * for 64 bit uids but with backward compatibility
+     * 64 bit uids but with backward wire compatibility
      * </pre>
      */
     public boolean hasUid2() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>optional uint32 uid2 = 3 [default = 0];</code>
+     * <code>optional uint32 uid2 = 3;</code>
      *
      * <pre>
-     * for 64 bit uids but with backward compatibility
+     * 64 bit uids but with backward wire compatibility
      * </pre>
      */
     public int getUid2() {
@@ -16690,33 +16690,33 @@ public final class ClusterMessages {
         return this;
       }
 
-      // optional uint32 uid2 = 3 [default = 0];
+      // optional uint32 uid2 = 3;
       private int uid2_ ;
       /**
-       * <code>optional uint32 uid2 = 3 [default = 0];</code>
+       * <code>optional uint32 uid2 = 3;</code>
        *
        * <pre>
-       * for 64 bit uids but with backward compatibility
+       * 64 bit uids but with backward wire compatibility
        * </pre>
        */
       public boolean hasUid2() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>optional uint32 uid2 = 3 [default = 0];</code>
+       * <code>optional uint32 uid2 = 3;</code>
        *
        * <pre>
-       * for 64 bit uids but with backward compatibility
+       * 64 bit uids but with backward wire compatibility
        * </pre>
        */
       public int getUid2() {
         return uid2_;
       }
       /**
-       * <code>optional uint32 uid2 = 3 [default = 0];</code>
+       * <code>optional uint32 uid2 = 3;</code>
        *
        * <pre>
-       * for 64 bit uids but with backward compatibility
+       * 64 bit uids but with backward wire compatibility
        * </pre>
        */
       public Builder setUid2(int value) {
@@ -16726,10 +16726,10 @@ public final class ClusterMessages {
         return this;
       }
       /**
-       * <code>optional uint32 uid2 = 3 [default = 0];</code>
+       * <code>optional uint32 uid2 = 3;</code>
        *
        * <pre>
-       * for 64 bit uids but with backward compatibility
+       * 64 bit uids but with backward wire compatibility
        * </pre>
        */
       public Builder clearUid2() {
@@ -16902,14 +16902,14 @@ public final class ClusterMessages {
       "\016\n\nSerialized\020\000\022\n\n\006Double\020\001\022\t\n\005Float\020\002\022\013" +
       "\n\007Integer\020\003\022\010\n\004Long\020\004\"\007\n\005Empty\"K\n\007Addres" +
       "s\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004p" +
-      "ort\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"H\n\rUniqueAdd" +
+      "ort\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"E\n\rUniqueAdd" +
       "ress\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002" +
-      " \002(\r\022\017\n\004uid2\030\003 \001(\r:\0010*D\n\022ReachabilitySta" +
-      "tus\022\r\n\tReachable\020\000\022\017\n\013Unreachable\020\001\022\016\n\nT" +
-      "erminated\020\002*b\n\014MemberStatus\022\013\n\007Joining\020\000" +
-      "\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010\n\004Do" +
-      "wn\020\004\022\013\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035\n\031akka.",
-      "cluster.protobuf.msgH\001"
+      " \002(\r\022\014\n\004uid2\030\003 \001(\r*D\n\022ReachabilityStatus" +
+      "\022\r\n\tReachable\020\000\022\017\n\013Unreachable\020\001\022\016\n\nTerm" +
+      "inated\020\002*b\n\014MemberStatus\022\013\n\007Joining\020\000\022\006\n" +
+      "\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020" +
+      "\004\022\013\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035\n\031akka.clu",
+      "ster.protobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

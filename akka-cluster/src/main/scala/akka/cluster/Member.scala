@@ -274,10 +274,14 @@ final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[
   @deprecated("Use Long UID constructor instead", since = "2.4.11")
   def this(address: Address, uid: Int) = this(address, uid.toLong)
 
-  @deprecated("Use Long UID instead", since = "2.4.11")
+  @deprecated("Use longUid instead", since = "2.4.11")
   def uid = longUid.toInt
 
-  @deprecated("Use Long UID copy method instead", since = "2.4.11")
+  /**
+   * For binary compatibility
+   * Stops `copy(Address, Long)` copy from being generated, use `apply` instead.
+   */
+  @deprecated("Use Long UID constructor instead", since = "2.4.11")
   def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid)
 
 }
