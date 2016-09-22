@@ -191,7 +191,9 @@ private[remote] class Association(
         materializing.await(10, TimeUnit.SECONDS)
         _outboundControlIngress match {
           case OptionVal.Some(o) ⇒ o
-          case OptionVal.None    ⇒ throw new IllegalStateException("outboundControlIngress not initialized yet")
+          case OptionVal.None ⇒
+            if (transport.isShutdown) throw ShuttingDown
+            else throw new IllegalStateException("outboundControlIngress not initialized yet")
         }
     }
   }
@@ -265,13 +267,14 @@ private[remote] class Association(
   // OutboundContext
   override def sendControl(message: ControlMessage): Unit = {
     try {
-      if (!transport.isShutdown)
+      if (!transport.isShutdown) {
         if (associationState.isQuarantined()) {
           log.debug("Send control message [{}] to quarantined [{}]", Logging.messageClassName(message),
             remoteAddress)
           startIdleTimer()
         }
-      outboundControlIngress.sendControlMessage(message)
+        outboundControlIngress.sendControlMessage(message)
+      }
     } catch {
       case ShuttingDown ⇒ // silence it
     }
