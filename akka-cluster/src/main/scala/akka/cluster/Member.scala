@@ -248,7 +248,7 @@ object MemberStatus {
 object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
 
   // for binary compatibility
-  @deprecated("Use Long UID apply instead")
+  @deprecated("Use Long UID apply instead", since = "2.4.11")
   def apply(address: Address, uid: Int) = new UniqueAddress(address, uid.toLong)
 
 }
@@ -271,13 +271,13 @@ final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[
 
   // for binary compatibility
 
-  @deprecated("Use Long UID constructor instead")
+  @deprecated("Use Long UID constructor instead", since = "2.4.11")
   def this(address: Address, uid: Int) = this(address, uid.toLong)
 
-  @deprecated("Use Long UID instead")
+  @deprecated("Use Long UID instead", since = "2.4.11")
   def uid = longUid.toInt
 
-  @deprecated("Use Long UID copy method instead")
+  @deprecated("Use Long UID copy method instead", since = "2.4.11")
   def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid)
 
 }

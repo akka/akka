@@ -170,7 +170,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     UniqueAddress(
       addressFromProto(uniqueAddress.getAddress),
       // join the two parts of the long uid back, where uid2 may possibly be missing
-      // if talking to an older system
+      // if talking to an older system (then it is 0 by way of protobuf default value)
       (uniqueAddress.getUid2.toLong << 32) | (uniqueAddress.getUid & 0xFFFFFFFFL)
     )
   }
