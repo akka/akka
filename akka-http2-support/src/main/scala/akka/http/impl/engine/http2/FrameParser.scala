@@ -25,7 +25,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
       object ReadPreface extends Step {
         def parse(reader: ByteReader): ParseResult[FrameEvent] =
           if (reader.remainingSize < 24) throw NeedMoreData
-          else if (reader.take(24) == Http2Protocol.ConnectionPreface)
+          else if (reader.take(24) == Http2Protocol.ClientConnectionPreface)
             ParseResult(None, ReadFrame, false)
           else
             throw new RuntimeException("Expected ConnectionPreface!")

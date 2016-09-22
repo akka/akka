@@ -1,7 +1,32 @@
 package akka.http.impl.engine.http2
 
+import akka.NotUsed
+import akka.http.impl.engine.http2.Http2Protocol.Flags
+import akka.http.impl.engine.http2.Http2Protocol.FrameType
+import akka.http.impl.engine.ws.ByteStringSinkProbe
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.Http2
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers
+import akka.http.scaladsl.model.headers.CacheDirectives
+import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.stream.ActorMaterializer
+import akka.stream.impl.io.ByteStringParser.ByteReader
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
+import akka.util.ByteString
+
+import scala.concurrent.Future
 
 class Http2ServerSpec extends AkkaSpec {
   implicit val mat = ActorMaterializer()
@@ -31,13 +56,106 @@ class Http2ServerSpec extends AkkaSpec {
 
       "reject even-numbered client-initiated substreams" in pending
 
+      "reject all other frames while waiting for CONTINUATION frames" in pending
+
       "reject double sub-streams creation" in pending
       "reject substream creation for streams invalidated by skipped substream IDs" in pending
+    }
+
+    "support simple round-trips" should {
+      "GET request in one HEADERS frame" in new TestSetup with WithProbes {
+        sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        val request = expectRequest()
+
+        request.method shouldBe HttpMethods.GET
+        request.uri shouldBe Uri("http://www.example.com/")
+
+        val streamIdHeader = request.header[Http2StreamIdHeader].get
+
+        val hs =
+          Vector(
+            headers.`Cache-Control`(CacheDirectives.`private`()),
+            headers.Date.parseFromValueString("Mon, 21 Oct 2013 20:13:21 GMT").right.get,
+            headers.Location("https://www.example.com"),
+            streamIdHeader)
+
+        responseOut.sendNext(HttpResponse(302, headers = hs))
+        val headerPayload = expectFrame(FrameType.HEADERS, Flags.END_STREAM | Flags.END_HEADERS, 1)
+        headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
+      }
+      "fail if Http2StreamIdHeader missing" in pending
+      "automatically add `Date` header" in pending
     }
 
     "support multiple concurrent substreams" should {
       "receive two requests concurrently" in pending
       "send two responses concurrently" in pending
     }
+  }
+
+  abstract class TestSetupWithoutHandshake {
+    implicit def ec = system.dispatcher
+
+    val netIn = ByteStringSinkProbe()
+    val netOut = TestPublisher.probe[ByteString]()
+
+    def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed]
+
+    handlerFlow
+      .join(Http2Blueprint.serverStack())
+      .runWith(Source.fromPublisher(netOut), netIn.sink)
+
+    def sendBytes(bytes: ByteString): Unit = netOut.sendNext(bytes)
+    def expectBytes(bytes: ByteString): Unit = netIn.expectBytes(bytes)
+    def expectBytes(num: Int): ByteString = netIn.expectBytes(num)
+
+    def expectFrame(frameType: FrameType, flags: ByteFlag, streamId: Int): ByteString = {
+      val header = expectHeader()
+      header.frameType shouldBe frameType
+      header.flags shouldBe flags
+      header.streamId shouldBe streamId
+      expectBytes(header.payloadLength)
+    }
+
+    def expectHeader(): FrameHeader = {
+      val headerBytes = expectBytes(9)
+      val reader = new ByteReader(headerBytes)
+      val length = reader.readShortBE() << 8 | reader.readByte()
+      val tpe = Http2Protocol.FrameType.byId(reader.readByte())
+      val flags = new ByteFlag(reader.readByte())
+      val streamId = reader.readIntBE()
+
+      FrameHeader(tpe, flags, streamId, length)
+    }
+
+    def sendFrame(frameType: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): Unit =
+      sendBytes(FrameRenderer.renderFrame(frameType, flags, streamId, payload))
+
+    def sendHEADERS(streamId: Int, endStream: Boolean, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
+      sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment)))
+  }
+  case class FrameHeader(frameType: FrameType, flags: ByteFlag, streamId: Int, payloadLength: Int)
+  abstract class TestSetup extends TestSetupWithoutHandshake {
+    sendBytes(Http2Protocol.ClientConnectionPreface)
+    val serverPreface = expectHeader()
+    serverPreface.frameType shouldBe Http2Protocol.FrameType.SETTINGS
+  }
+
+  trait WithProbes extends TestSetupWithoutHandshake {
+    lazy val requestIn = TestSubscriber.probe[HttpRequest]()
+    lazy val responseOut = TestPublisher.probe[HttpResponse]()
+
+    def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
+      Flow.fromSinkAndSource(Sink.fromSubscriber(requestIn), Source.fromPublisher(responseOut))
+
+    def expectRequest(): HttpRequest = requestIn.requestNext()
+  }
+  trait WithHandler extends TestSetupWithoutHandshake {
+    def parallelism: Int = 2
+    def handler: HttpRequest ⇒ Future[HttpResponse] =
+      _ ⇒ Future.successful(HttpResponse())
+
+    def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
+      Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)
   }
 }
