@@ -90,7 +90,7 @@ class RemoteWatcherSpec extends AkkaSpec(
     shutdown(remoteSystem)
   }
 
-  val heartbeatRspB = HeartbeatRsp(remoteAddressUid)
+  val heartbeatRspB = ArteryHeartbeatRsp(remoteAddressUid)
 
   def createRemoteActor(props: Props, name: String): InternalActorRef = {
     remoteSystem.actorOf(props, name)
@@ -119,14 +119,14 @@ class RemoteWatcherSpec extends AkkaSpec(
       expectMsg(Stats.counts(watching = 3, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       expectNoMsg(100 millis)
       monitorA.tell(heartbeatRspB, monitorB)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       expectNoMsg(100 millis)
 
       monitorA ! UnwatchRemote(b1, a1)
@@ -135,7 +135,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       expectMsg(Stats.counts(watching = 2, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       expectNoMsg(100 millis)
 
       monitorA ! UnwatchRemote(b2, a2)
@@ -144,7 +144,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       expectMsg(Stats.counts(watching = 1, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       expectNoMsg(100 millis)
 
       monitorA ! UnwatchRemote(b2, a1)
@@ -176,17 +176,17 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! WatchRemote(b, a)
 
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       monitorA.tell(heartbeatRspB, monitorB)
       expectNoMsg(1 second)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       monitorA.tell(heartbeatRspB, monitorB)
 
       within(10 seconds) {
         awaitAssert {
           monitorA ! HeartbeatTick
-          expectMsg(Heartbeat)
+          expectMsg(ArteryHeartbeat)
           // but no HeartbeatRsp
           monitorA ! ReapUnreachableTick
           p.expectMsg(1 second, TestRemoteWatcher.AddressTerm(b.path.address))
@@ -215,13 +215,13 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! WatchRemote(b, a)
 
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       // no HeartbeatRsp sent
 
       within(20 seconds) {
         awaitAssert {
           monitorA ! HeartbeatTick
-          expectMsg(Heartbeat)
+          expectMsg(ArteryHeartbeat)
           // but no HeartbeatRsp
           monitorA ! ReapUnreachableTick
           p.expectMsg(1 second, TestRemoteWatcher.AddressTerm(b.path.address))
@@ -249,17 +249,17 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! WatchRemote(b, a)
 
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       monitorA.tell(heartbeatRspB, monitorB)
       expectNoMsg(1 second)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       monitorA.tell(heartbeatRspB, monitorB)
 
       within(10 seconds) {
         awaitAssert {
           monitorA ! HeartbeatTick
-          expectMsg(Heartbeat)
+          expectMsg(ArteryHeartbeat)
           // but no HeartbeatRsp
           monitorA ! ReapUnreachableTick
           p.expectMsg(1 second, TestRemoteWatcher.AddressTerm(b.path.address))
@@ -281,21 +281,21 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! WatchRemote(c, a)
 
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       monitorA.tell(heartbeatRspB, monitorB)
       expectNoMsg(1 second)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       monitorA.tell(heartbeatRspB, monitorB)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       monitorA ! ReapUnreachableTick
       p.expectNoMsg(1 second)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       monitorA.tell(heartbeatRspB, monitorB)
       monitorA ! HeartbeatTick
-      expectMsg(Heartbeat)
+      expectMsg(ArteryHeartbeat)
       monitorA ! ReapUnreachableTick
       p.expectNoMsg(1 second)
       q.expectNoMsg(1 second)
@@ -304,7 +304,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       within(10 seconds) {
         awaitAssert {
           monitorA ! HeartbeatTick
-          expectMsg(Heartbeat)
+          expectMsg(ArteryHeartbeat)
           // but no HeartbeatRsp
           monitorA ! ReapUnreachableTick
           p.expectMsg(1 second, TestRemoteWatcher.AddressTerm(c.path.address))

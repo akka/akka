@@ -5,11 +5,12 @@ package akka.remote.serialization
 
 import akka.actor.{ ActorRef, Address, ExtendedActorSystem }
 import akka.protobuf.MessageLite
+import akka.remote.RemoteWatcher.ArteryHeartbeatRsp
 import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
 import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress.{ CompressionProtocol, CompressionTable }
 import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Quarantined, SystemMessageDelivery }
-import akka.remote.{ ArteryControlFormats, MessageSerializer, UniqueAddress, WireFormats }
+import akka.remote._
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
 
 /** INTERNAL API */
@@ -26,6 +27,9 @@ private[akka] object ArteryMessageSerializer {
   private val SystemMessageEnvelopeManifest = "j"
   private val SystemMessageDeliveryAckManifest = "k"
   private val SystemMessageDeliveryNackManifest = "l"
+
+  private val ArteryHeartbeatManifest = "m"
+  private val ArteryHeartbeatRspManifest = "n"
 
   private final val DeadLettersRepresentation = ""
 }
@@ -49,6 +53,8 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case _: CompressionProtocol.ActorRefCompressionAdvertisementAck ⇒ ActorRefCompressionAdvertisementAckManifest
     case _: CompressionProtocol.ClassManifestCompressionAdvertisement ⇒ ClassManifestCompressionAdvertisementManifest
     case _: CompressionProtocol.ClassManifestCompressionAdvertisementAck ⇒ ClassManifestCompressionAdvertisementAckManifest
+    case _: RemoteWatcher.ArteryHeartbeat.type ⇒ ArteryHeartbeatManifest
+    case _: RemoteWatcher.ArteryHeartbeatRsp ⇒ ArteryHeartbeatRspManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -66,6 +72,8 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case ActorRefCompressionAdvertisementAck(from, id)      ⇒ serializeCompressionTableAdvertisementAck(from, id)
     case adv: ClassManifestCompressionAdvertisement         ⇒ serializeCompressionAdvertisement(adv)(identity)
     case ClassManifestCompressionAdvertisementAck(from, id) ⇒ serializeCompressionTableAdvertisementAck(from, id)
+    case RemoteWatcher.ArteryHeartbeat                      ⇒ serializeArteryHeartbeat()
+    case RemoteWatcher.ArteryHeartbeatRsp(from)             ⇒ serializeArteryHeartbeatRsp(from)
   }).toByteArray
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match { // most frequent ones first (could be made a HashMap in the future)
@@ -81,6 +89,8 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case ActorRefCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ActorRefCompressionAdvertisementAck)
     case ClassManifestCompressionAdvertisementManifest ⇒ deserializeCompressionAdvertisement(bytes, identity, ClassManifestCompressionAdvertisement)
     case ClassManifestCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ClassManifestCompressionAdvertisementAck)
+    case ArteryHeartbeatManifest ⇒ RemoteWatcher.ArteryHeartbeat
+    case ArteryHeartbeatRspManifest ⇒ deserializeArteryHeartbeatRsp(bytes, ArteryHeartbeatRsp)
     case _ ⇒ throw new IllegalArgumentException(s"Manifest '$manifest' not defined for ArteryControlMessageSerializer (serializer id $identifier)")
   }
 
@@ -226,4 +236,16 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
 
   def deserializeAddress(address: ArteryControlFormats.Address): Address =
     Address(address.getProtocol, address.getSystem, address.getHostname, address.getPort)
+
+  def serializeArteryHeartbeat(): ArteryControlFormats.ArteryHeartbeat =
+    // TODO is it immutable, can we reuse one instance?
+    ArteryControlFormats.ArteryHeartbeat.newBuilder().build()
+
+  def serializeArteryHeartbeatRsp(uid: Long): ArteryControlFormats.ArteryHeartbeatRsp =
+    ArteryControlFormats.ArteryHeartbeatRsp.newBuilder().setUid(uid).build()
+
+  def deserializeArteryHeartbeatRsp(bytes: Array[Byte], create: Long ⇒ ArteryHeartbeatRsp): ArteryHeartbeatRsp = {
+    val msg = ArteryControlFormats.ArteryHeartbeatRsp.parseFrom(bytes)
+    create(msg.getUid)
+  }
 }

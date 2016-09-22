@@ -80,7 +80,7 @@ class RemoteWatcherSpec extends AkkaSpec(
 
   val remoteSystem = ActorSystem("RemoteSystem", system.settings.config)
   val remoteAddress = remoteSystem.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-  def remoteAddressUid = AddressUidExtension(remoteSystem).longAddressUid
+  def remoteAddressUid = AddressUidExtension(remoteSystem).addressUid
 
   Seq(system, remoteSystem).foreach(muteDeadLetters(
     akka.remote.transport.AssociationHandle.Disassociated.getClass,

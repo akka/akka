@@ -8,6 +8,7 @@ import akka.actor._
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.AddressTerminatedTopic
+import akka.remote.artery.ArteryMessage
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -32,7 +33,11 @@ private[akka] object RemoteWatcher {
   final case class UnwatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
 
   @SerialVersionUID(1L) case object Heartbeat extends HeartbeatMessage
-  @SerialVersionUID(1L) final case class HeartbeatRsp(addressUid: Long) extends HeartbeatMessage
+  @SerialVersionUID(1L) final case class HeartbeatRsp(uid: Int) extends HeartbeatMessage
+
+  // specific pair of messages for artery to allow for protobuf serialization and long uid
+  case object ArteryHeartbeat extends HeartbeatMessage with ArteryMessage
+  final case class ArteryHeartbeatRsp(uid: Long) extends HeartbeatMessage with ArteryMessage
 
   // sent to self only
   case object HeartbeatTick
@@ -89,13 +94,12 @@ private[akka] class RemoteWatcher(
   import context.dispatcher
   def scheduler = context.system.scheduler
 
-  val remoteProvider: RemoteActorRefProvider = context.system.asInstanceOf[ExtendedActorSystem].provider match {
-    case rarp: RemoteActorRefProvider ⇒ rarp
-    case other ⇒ throw new ConfigurationException(
-      s"ActorSystem [${context.system}] needs to have a 'RemoteActorRefProvider' enabled in the configuration, currently uses [${other.getClass.getName}]")
-  }
+  val remoteProvider: RemoteActorRefProvider = RARP(context.system).provider
+  val artery = remoteProvider.remoteSettings.Artery.Enabled
 
-  val selfHeartbeatRspMsg = HeartbeatRsp(AddressUidExtension(context.system).longAddressUid)
+  val (heartBeatMsg, selfHeartbeatRspMsg) =
+    if (artery) (ArteryHeartbeat, ArteryHeartbeatRsp(AddressUidExtension(context.system).longAddressUid))
+    else (Heartbeat, HeartbeatRsp(AddressUidExtension(context.system).addressUid))
 
   // actors that this node is watching, map of watchee -> Set(watchers)
   val watching = new mutable.HashMap[InternalActorRef, mutable.Set[InternalActorRef]]() with mutable.MultiMap[InternalActorRef, InternalActorRef]
@@ -119,8 +123,9 @@ private[akka] class RemoteWatcher(
 
   def receive = {
     case HeartbeatTick                             ⇒ sendHeartbeat()
-    case Heartbeat                                 ⇒ receiveHeartbeat()
-    case HeartbeatRsp(uid)                         ⇒ receiveHeartbeatRsp(uid)
+    case Heartbeat | ArteryHeartbeat               ⇒ receiveHeartbeat()
+    case HeartbeatRsp(uid)                         ⇒ receiveHeartbeatRsp(uid.toLong)
+    case ArteryHeartbeatRsp(uid)                   ⇒ receiveHeartbeatRsp(uid)
     case ReapUnreachableTick                       ⇒ reapUnreachable()
     case ExpectedFirstHeartbeat(from)              ⇒ triggerFirstHeartbeat(from)
     case WatchRemote(watchee, watcher)             ⇒ addWatch(watchee, watcher)
@@ -256,7 +261,7 @@ private[akka] class RemoteWatcher(
           // other side a chance to reply, and also trigger some resends if needed
           scheduler.scheduleOnce(heartbeatExpectedResponseAfter, self, ExpectedFirstHeartbeat(a))
         }
-        context.actorSelection(RootActorPath(a) / self.path.elements) ! Heartbeat
+        context.actorSelection(RootActorPath(a) / self.path.elements) ! heartBeatMsg
       }
     }
 
