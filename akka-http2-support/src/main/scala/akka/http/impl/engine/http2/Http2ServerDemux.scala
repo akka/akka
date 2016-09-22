@@ -129,6 +129,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
           val sub = grab(substreamIn)
+          pull(substreamIn)
           bufferedFrameOut.push(sub.initialFrame)
           val subIn = new SubSinkInlet[FrameEvent](s"substream-in-${sub.streamId}")
           subIn.pull()
