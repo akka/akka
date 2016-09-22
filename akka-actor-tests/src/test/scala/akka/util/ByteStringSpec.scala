@@ -308,6 +308,19 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteString1.fromString("ab").drop(2) should ===(ByteString(""))
       ByteString1.fromString("ab").drop(3) should ===(ByteString(""))
     }
+    "take" in {
+      ByteString1.empty.take(-1) should ===(ByteString(""))
+      ByteString1.empty.take(0) should ===(ByteString(""))
+      ByteString1.empty.take(1) should ===(ByteString(""))
+      ByteString1.fromString("a").take(1) should ===(ByteString("a"))
+      ByteString1.fromString("ab").take(-1) should ===(ByteString(""))
+      ByteString1.fromString("ab").take(0) should ===(ByteString(""))
+      ByteString1.fromString("ab").take(1) should ===(ByteString("a"))
+      ByteString1.fromString("ab").take(2) should ===(ByteString("ab"))
+      ByteString1.fromString("ab").take(3) should ===(ByteString("ab"))
+      ByteString1.fromString("0123456789").take(3).drop(1) should ===(ByteString("12"))
+      ByteString1.fromString("0123456789").take(10).take(8).drop(3).take(5) should ===(ByteString("34567"))
+    }
   }
   "ByteString1C" must {
     "drop(0)" in {
@@ -415,6 +428,9 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).dropRight(3) should ===(ByteString(""))
     }
     "take" in {
+      ByteString.empty.take(-1) should ===(ByteString(""))
+      ByteString.empty.take(0) should ===(ByteString(""))
+      ByteString.empty.take(1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(0) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(-1) should ===(ByteString(""))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(-2) should ===(ByteString(""))
