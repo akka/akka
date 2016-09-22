@@ -53,17 +53,16 @@ object FrameRenderer {
 
         renderFrame(
           Http2Protocol.FrameType.SETTINGS,
-          0,
-          0,
+          Http2Protocol.Flags.NO_FLAGS,
+          Http2Protocol.NoStreamId,
           bb.result()
         )
 
       case SettingsAckFrame ⇒
-        // FIXME
         renderFrame(
           Http2Protocol.FrameType.SETTINGS,
-          Http2Protocol.Flags.ACK.value,
-          0,
+          Http2Protocol.Flags.ACK,
+          Http2Protocol.NoStreamId,
           ByteString.empty
         )
 
@@ -71,19 +70,19 @@ object FrameRenderer {
         renderFrame(
           Http2Protocol.FrameType.PING,
           Http2Protocol.Flags.ACK.ifSet(ack),
-          0,
+          Http2Protocol.NoStreamId,
           data
         )
     }
 
-  def renderFrame(tpe: FrameType, flags: Int, streamId: Int, payload: ByteString): ByteString = {
+  def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString = {
     val length = payload.length
     val headerBytes = new Array[Byte](9)
     headerBytes(0) = (length >> 16).toByte
     headerBytes(1) = (length >> 8).toByte
     headerBytes(2) = (length >> 0).toByte
     headerBytes(3) = tpe.id.toByte
-    headerBytes(4) = flags.toByte
+    headerBytes(4) = flags.value.toByte
     headerBytes(5) = (streamId >> 24).toByte
     headerBytes(6) = (streamId >> 16).toByte
     headerBytes(7) = (streamId >> 8).toByte

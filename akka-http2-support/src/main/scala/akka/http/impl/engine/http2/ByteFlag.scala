@@ -8,17 +8,15 @@ import scala.language.implicitConversions
 
 /** INTERNAL API */
 private[impl] final class ByteFlag(val value: Int) extends AnyVal {
-
   def |(that: ByteFlag): ByteFlag = new ByteFlag((this.value | that.value).toByte)
   def &(that: ByteFlag): ByteFlag = new ByteFlag((this.value | that.value).toByte)
 
   def isSet(byteFlag: ByteFlag): Boolean = (byteFlag.value & value) != 0
-  def ifSet(flag: Boolean): Int = if (flag) value else 0
+  def ifSet(flag: Boolean): ByteFlag = if (flag) this else ByteFlag.Zero
   override def toString: String = s"ByteFlag(${Integer.toHexString(value)})"
 }
 /** INTERNAL API */
 private[impl] object ByteFlag {
-
   val Zero = new ByteFlag(0)
 
   def binaryLeftPad(byte: Byte): String = {

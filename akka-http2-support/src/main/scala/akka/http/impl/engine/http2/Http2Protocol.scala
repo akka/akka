@@ -17,6 +17,8 @@ object Http2Protocol {
   val InitialConnectionLevelWindow = 65535
   val InitialStreamLevelWindow = 65535
 
+  val NoStreamId = 0
+
   sealed abstract class FrameType(val id: Int) extends Product
   object FrameType {
     case object DATA extends FrameType(0x0)
