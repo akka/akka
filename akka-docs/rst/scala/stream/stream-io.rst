@@ -24,6 +24,8 @@ which will emit an :class:`IncomingConnection` element for each new connection t
 
 .. includecode:: ../code/docs/stream/io/StreamTcpDocSpec.scala#echo-server-simple-bind
 
+.. image:: ../../images/tcp-stream-bind.png
+
 Next, we simply handle *each* incoming connection using a :class:`Flow` which will be used as the processing stage
 to handle and emit ByteStrings from and to the TCP Socket. Since one :class:`ByteString` does not have to necessarily
 correspond to exactly one line of text (the client might be sending the line in chunks) we use the ``Framing.delimiter``
@@ -32,6 +34,8 @@ argument indicates that we require an explicit line ending even for the last mes
 In this example we simply add exclamation marks to each incoming text message and push it through the flow:
 
 .. includecode:: ../code/docs/stream/io/StreamTcpDocSpec.scala#echo-server-simple-handle
+
+.. image:: ../../images/tcp-stream-run.png
 
 Notice that while most building blocks in Akka Streams are reusable and freely shareable, this is *not* the case for the
 incoming connection Flow, since it directly corresponds to an existing, already accepted connection its handling can
