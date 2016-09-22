@@ -627,11 +627,16 @@ private[remote] class Association(
     implicit val ec = materializer.executionContext
     updateStreamCompletion(streamName, (streamKillSwitch, streamCompleted.recover { case _ ⇒ Done }))
     streamCompleted.onFailure {
-      case ArteryTransport.ShutdownSignal ⇒ // shutdown as expected
-      case _: AeronTerminated             ⇒ // shutdown already in progress
+      case ArteryTransport.ShutdownSignal ⇒
+        // shutdown as expected
+        // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
+        materializing.countDown()
+      case _: AeronTerminated ⇒ // shutdown already in progress
       case cause if transport.isShutdown ⇒
         // don't restart after shutdown, but log some details so we notice
         log.error(cause, s"{} to [{}] failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
+        // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
+        materializing.countDown()
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
       case OutboundStreamStopSignal ⇒
         // stop as expected due to quarantine
