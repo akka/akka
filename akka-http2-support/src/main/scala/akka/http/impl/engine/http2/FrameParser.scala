@@ -92,7 +92,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
               // TODO: fail if remaining size isn't exactly 3
               val id = payload.readShortBE()
               val value = payload.readIntBE()
-              Setting(SettingIdentifier.byId(id), value) :: read
+              readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
             } else read.reverse
 
           SettingsFrame(readSettings(Nil))

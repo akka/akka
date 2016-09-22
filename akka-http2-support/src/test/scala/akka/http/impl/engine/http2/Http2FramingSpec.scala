@@ -140,9 +140,63 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx=0   # no stream ID
          """ should parseTo(SettingsFrame(Nil))
       }
-      "with one setting" in pending
-      "with two settings" in pending
-      "ack" in pending
+      "with one setting" in {
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=6   # length
+            00000100     # type = 0x4 = SETTINGS
+            00000000     # no flags
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # no stream ID
+            xxxxxxxx
+            xxxxxxxx=4
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=20000
+         """ should parseTo(SettingsFrame(Seq(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE → 0x20000)))
+      }
+      "with two settings" in {
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=c   # length
+            00000100     # type = 0x4 = SETTINGS
+            00000000     # no flags
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # no stream ID
+            xxxxxxxx
+            xxxxxxxx=5
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=424242
+            xxxxxxxx
+            xxxxxxxx=3
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=123
+         """ should parseTo(SettingsFrame(Seq(
+          Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE → 0x424242,
+          Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS → 0x123
+        )))
+      }
+      "ack" in {
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # length
+            00000100     # type = 0x4 = SETTINGS
+            00000001     # ACK
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # no stream ID
+         """ should parseTo(SettingsAckFrame)
+      }
     }
     "PING frame" - {
       "without ack" in {

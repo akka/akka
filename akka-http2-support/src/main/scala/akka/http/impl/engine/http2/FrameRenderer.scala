@@ -4,9 +4,14 @@
 
 package akka.http.impl.engine.http2
 
+import java.nio.ByteOrder
+
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
+import akka.util.ByteStringBuilder
+
+import scala.annotation.tailrec
 
 object FrameRenderer {
   def render(frame: FrameEvent): ByteString =
@@ -32,12 +37,25 @@ object FrameRenderer {
         )
 
       case SettingsFrame(settings) ⇒
-        // FIXME
+        val bb = new ByteStringBuilder
+        implicit val byteOrder = ByteOrder.BIG_ENDIAN
+        @tailrec def renderNext(remaining: Seq[Setting]): Unit =
+          remaining match {
+            case Setting(id, value) +: remaining ⇒
+              bb.putShort(id.id)
+              bb.putInt(value)
+
+              renderNext(remaining)
+            case Nil ⇒
+          }
+
+        renderNext(settings)
+
         renderFrame(
           Http2Protocol.FrameType.SETTINGS,
           0,
           0,
-          ByteString.empty
+          bb.result()
         )
 
       case SettingsAckFrame ⇒

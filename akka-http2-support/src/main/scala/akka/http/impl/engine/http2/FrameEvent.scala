@@ -44,6 +44,11 @@ final case class Setting(
   identifier: SettingIdentifier,
   value:      Int)
 
+object Setting {
+  implicit def autoConvertFromTuple(tuple: (SettingIdentifier, Int)): Setting =
+    Setting(tuple._1, tuple._2)
+}
+
 /** Dummy event for all unknown frames */
 final case class UnknownFrameEvent(
   tpe:      FrameType,
