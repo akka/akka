@@ -29,7 +29,7 @@ object AddressUidExtension extends ExtensionId[AddressUidExtension] with Extensi
 
 class AddressUidExtension(val system: ExtendedActorSystem) extends Extension {
 
-  private def arteryEnabled = system.asInstanceOf[RemoteActorRefProvider].remoteSettings.Artery.Enabled
+  private def arteryEnabled = system.provider.asInstanceOf[RemoteActorRefProvider].remoteSettings.Artery.Enabled
 
   val longAddressUid: Long = {
     val tlr = ThreadLocalRandom.current
