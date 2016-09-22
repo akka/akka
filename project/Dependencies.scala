@@ -39,7 +39,7 @@ object Dependencies {
     // Compile
     val akkaStream        = "com.typesafe.akka"      %% "akka-stream"                  % akkaVersion // Apache v2
     val akkaStreamTestkit = "com.typesafe.akka"      %% "akka-stream-testkit"          % akkaVersion // Apache v2
-    
+
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val netty         = "io.netty"                    % "netty"                        % "3.10.6.Final" // ApacheV2
 
@@ -75,6 +75,7 @@ object Dependencies {
 
     object Test {
       val akkaTestkit  = "com.typesafe.akka"          %% "akka-testkit"                 % akkaVersion        % "test" // Apache v2
+      val akkaStreamTestkit = Compile.akkaStreamTestkit % "test"
 
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
@@ -138,7 +139,8 @@ object Dependencies {
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
   )
   
-  lazy val httpCore = l ++= Seq(akkaStream, akkaStreamTestkit,
+  lazy val httpCore = l ++= Seq(akkaStream,
+    Test.akkaStreamTestkit,
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest.value, Test.scalacheck.value, Test.junit)
   
@@ -147,7 +149,8 @@ object Dependencies {
   lazy val http2 = l ++= Seq(hpack, alpnApi)
 
   lazy val httpTestkit = l ++= Seq(
-    Test.junit, Test.junitIntf, Compile.junit % "provided", 
+    akkaStreamTestkit,
+    Test.junit, Test.junitIntf, Compile.junit % "provided",
     Test.scalatest.value.copy(configurations = Some("provided; test"))
   )
 
