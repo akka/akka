@@ -426,6 +426,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private lazy val shutdownHook = new Thread {
     override def run(): Unit = {
       if (hasBeenShutdown.compareAndSet(false, true)) {
+        log.debug("Shutting down [{}] via shutdownHook", localAddress)
         Await.result(internalShutdown(), 20.seconds)
       }
     }

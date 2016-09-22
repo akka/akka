@@ -59,6 +59,10 @@ abstract class MultiNodeConfig {
           log-received-messages = on
           log-sent-messages = on
         }
+        akka.remote.artery {
+          log-received-messages = on
+          log-sent-messages = on
+        }
         akka.actor.debug {
           receive = on
           fsm = on

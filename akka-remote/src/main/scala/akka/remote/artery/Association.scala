@@ -191,7 +191,9 @@ private[remote] class Association(
         materializing.await(10, TimeUnit.SECONDS)
         _outboundControlIngress match {
           case OptionVal.Some(o) ⇒ o
-          case OptionVal.None    ⇒ throw new IllegalStateException("outboundControlIngress not initialized yet")
+          case OptionVal.None ⇒
+            if (transport.isShutdown) throw ShuttingDown
+            else throw new IllegalStateException("outboundControlIngress not initialized yet")
         }
     }
   }
@@ -265,13 +267,14 @@ private[remote] class Association(
   // OutboundContext
   override def sendControl(message: ControlMessage): Unit = {
     try {
-      if (!transport.isShutdown)
+      if (!transport.isShutdown) {
         if (associationState.isQuarantined()) {
           log.debug("Send control message [{}] to quarantined [{}]", Logging.messageClassName(message),
             remoteAddress)
           startIdleTimer()
         }
-      outboundControlIngress.sendControlMessage(message)
+        outboundControlIngress.sendControlMessage(message)
+      }
     } catch {
       case ShuttingDown ⇒ // silence it
     }
@@ -624,11 +627,16 @@ private[remote] class Association(
     implicit val ec = materializer.executionContext
     updateStreamCompletion(streamName, (streamKillSwitch, streamCompleted.recover { case _ ⇒ Done }))
     streamCompleted.onFailure {
-      case ArteryTransport.ShutdownSignal ⇒ // shutdown as expected
-      case _: AeronTerminated             ⇒ // shutdown already in progress
+      case ArteryTransport.ShutdownSignal ⇒
+        // shutdown as expected
+        // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
+        materializing.countDown()
+      case _: AeronTerminated ⇒ // shutdown already in progress
       case cause if transport.isShutdown ⇒
         // don't restart after shutdown, but log some details so we notice
         log.error(cause, s"{} to [{}] failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
+        // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
+        materializing.countDown()
       case _: AbruptTerminationException ⇒ // ActorSystem shutdown
       case OutboundStreamStopSignal ⇒
         // stop as expected due to quarantine
