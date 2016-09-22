@@ -45,6 +45,8 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case _: SystemMessageDelivery.Ack ⇒ SystemMessageDeliveryAckManifest
     case _: HandshakeReq ⇒ HandshakeReqManifest
     case _: HandshakeRsp ⇒ HandshakeRspManifest
+    case _: RemoteWatcher.ArteryHeartbeat.type ⇒ ArteryHeartbeatManifest
+    case _: RemoteWatcher.ArteryHeartbeatRsp ⇒ ArteryHeartbeatRspManifest
     case _: SystemMessageDelivery.Nack ⇒ SystemMessageDeliveryNackManifest
     case _: Quarantined ⇒ QuarantinedManifest
     case _: ActorSystemTerminating ⇒ ActorSystemTerminatingManifest
@@ -53,28 +55,26 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case _: CompressionProtocol.ActorRefCompressionAdvertisementAck ⇒ ActorRefCompressionAdvertisementAckManifest
     case _: CompressionProtocol.ClassManifestCompressionAdvertisement ⇒ ClassManifestCompressionAdvertisementManifest
     case _: CompressionProtocol.ClassManifestCompressionAdvertisementAck ⇒ ClassManifestCompressionAdvertisementAckManifest
-    case _: RemoteWatcher.ArteryHeartbeat.type ⇒ ArteryHeartbeatManifest
-    case _: RemoteWatcher.ArteryHeartbeatRsp ⇒ ArteryHeartbeatRspManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
 
-  override def toBinary(o: AnyRef): Array[Byte] = (o match { // most frequent ones first
-    case env: SystemMessageDelivery.SystemMessageEnvelope   ⇒ serializeSystemMessageEnvelope(env)
-    case SystemMessageDelivery.Ack(seqNo, from)             ⇒ serializeSystemMessageDeliveryAck(seqNo, from)
-    case HandshakeReq(from, to)                             ⇒ serializeHandshakeReq(from, to)
-    case HandshakeRsp(from)                                 ⇒ serializeWithAddress(from)
-    case SystemMessageDelivery.Nack(seqNo, from)            ⇒ serializeSystemMessageDeliveryAck(seqNo, from)
-    case q: Quarantined                                     ⇒ serializeQuarantined(q)
-    case ActorSystemTerminating(from)                       ⇒ serializeWithAddress(from)
-    case ActorSystemTerminatingAck(from)                    ⇒ serializeWithAddress(from)
-    case adv: ActorRefCompressionAdvertisement              ⇒ serializeActorRefCompressionAdvertisement(adv)
-    case ActorRefCompressionAdvertisementAck(from, id)      ⇒ serializeCompressionTableAdvertisementAck(from, id)
-    case adv: ClassManifestCompressionAdvertisement         ⇒ serializeCompressionAdvertisement(adv)(identity)
-    case ClassManifestCompressionAdvertisementAck(from, id) ⇒ serializeCompressionTableAdvertisementAck(from, id)
-    case RemoteWatcher.ArteryHeartbeat                      ⇒ serializeArteryHeartbeat()
-    case RemoteWatcher.ArteryHeartbeatRsp(from)             ⇒ serializeArteryHeartbeatRsp(from)
-  }).toByteArray
+  override def toBinary(o: AnyRef): Array[Byte] = o match { // most frequent ones first
+    case env: SystemMessageDelivery.SystemMessageEnvelope   ⇒ serializeSystemMessageEnvelope(env).toByteArray
+    case SystemMessageDelivery.Ack(seqNo, from)             ⇒ serializeSystemMessageDeliveryAck(seqNo, from).toByteArray
+    case HandshakeReq(from, to)                             ⇒ serializeHandshakeReq(from, to).toByteArray
+    case HandshakeRsp(from)                                 ⇒ serializeWithAddress(from).toByteArray
+    case RemoteWatcher.ArteryHeartbeat                      ⇒ Array.emptyByteArray
+    case RemoteWatcher.ArteryHeartbeatRsp(from)             ⇒ serializeArteryHeartbeatRsp(from).toByteArray
+    case SystemMessageDelivery.Nack(seqNo, from)            ⇒ serializeSystemMessageDeliveryAck(seqNo, from).toByteArray
+    case q: Quarantined                                     ⇒ serializeQuarantined(q).toByteArray
+    case ActorSystemTerminating(from)                       ⇒ serializeWithAddress(from).toByteArray
+    case ActorSystemTerminatingAck(from)                    ⇒ serializeWithAddress(from).toByteArray
+    case adv: ActorRefCompressionAdvertisement              ⇒ serializeActorRefCompressionAdvertisement(adv).toByteArray
+    case ActorRefCompressionAdvertisementAck(from, id)      ⇒ serializeCompressionTableAdvertisementAck(from, id).toByteArray
+    case adv: ClassManifestCompressionAdvertisement         ⇒ serializeCompressionAdvertisement(adv)(identity).toByteArray
+    case ClassManifestCompressionAdvertisementAck(from, id) ⇒ serializeCompressionTableAdvertisementAck(from, id).toByteArray
+  }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match { // most frequent ones first (could be made a HashMap in the future)
     case SystemMessageEnvelopeManifest ⇒ deserializeSystemMessageEnvelope(bytes)
@@ -236,10 +236,6 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
 
   def deserializeAddress(address: ArteryControlFormats.Address): Address =
     Address(address.getProtocol, address.getSystem, address.getHostname, address.getPort)
-
-  def serializeArteryHeartbeat(): ArteryControlFormats.ArteryHeartbeat =
-    // TODO is it immutable, can we reuse one instance?
-    ArteryControlFormats.ArteryHeartbeat.newBuilder().build()
 
   def serializeArteryHeartbeatRsp(uid: Long): ArteryControlFormats.ArteryHeartbeatRsp =
     ArteryControlFormats.ArteryHeartbeatRsp.newBuilder().setUid(uid).build()

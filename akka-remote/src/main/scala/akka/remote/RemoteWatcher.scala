@@ -33,7 +33,7 @@ private[akka] object RemoteWatcher {
   final case class UnwatchRemote(watchee: InternalActorRef, watcher: InternalActorRef)
 
   @SerialVersionUID(1L) case object Heartbeat extends HeartbeatMessage
-  @SerialVersionUID(1L) final case class HeartbeatRsp(uid: Int) extends HeartbeatMessage
+  @SerialVersionUID(1L) final case class HeartbeatRsp(addressUid: Int) extends HeartbeatMessage
 
   // specific pair of messages for artery to allow for protobuf serialization and long uid
   case object ArteryHeartbeat extends HeartbeatMessage with ArteryMessage

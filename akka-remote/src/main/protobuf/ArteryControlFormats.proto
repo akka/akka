@@ -80,10 +80,7 @@ message UniqueAddress {
 }
 
 
-// RemoteWatcher.ArteryHeartbeat
-message ArteryHeartbeat {
-}
-
+// RemoteWatcher.ArteryHeartbeat is empty array
 // RemoteWatcher.ArteryHeartbeatRsp
 message ArteryHeartbeatRsp {
   required uint64 uid = 1;

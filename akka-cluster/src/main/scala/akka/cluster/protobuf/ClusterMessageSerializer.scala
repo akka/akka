@@ -169,12 +169,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
     UniqueAddress(
       addressFromProto(uniqueAddress.getAddress),
-      if (!uniqueAddress.hasUid2) {
-        // old remote node
-        uniqueAddress.getUid.toLong
-      } else {
+      if (uniqueAddress.hasUid2) {
         // new remote node join the two parts of the long uid back
         (uniqueAddress.getUid2.toLong << 32) | (uniqueAddress.getUid & 0xFFFFFFFFL)
+      } else {
+        // old remote node
+        uniqueAddress.getUid.toLong
       }
     )
   }

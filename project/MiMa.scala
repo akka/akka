@@ -986,11 +986,7 @@ object MiMa extends AutoPlugin {
         // #20644 long uids
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#UniqueAddressOrBuilder.hasUid2"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#UniqueAddressOrBuilder.getUid2"),
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.RemoteWatcher#HeartbeatRsp.addressUid"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteWatcher.receiveHeartbeatRsp"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteWatcher#HeartbeatRsp.copy"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteWatcher#HeartbeatRsp.this"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteWatcher#HeartbeatRsp.apply")
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteWatcher.receiveHeartbeatRsp")
       )
     )
   }

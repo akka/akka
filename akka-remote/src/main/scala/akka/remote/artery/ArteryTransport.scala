@@ -887,7 +887,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   override def quarantine(remoteAddress: Address, uid: Option[Long], reason: String): Unit = {
     try {
-      // FIXME use Long uid
       association(remoteAddress).quarantine(reason, uid)
     } catch {
       case ShuttingDown ⇒ // silence it
