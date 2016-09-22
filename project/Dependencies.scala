@@ -146,7 +146,7 @@ object Dependencies {
   
   lazy val http = l ++= Seq()
 
-  lazy val http2 = l ++= Seq(hpack, alpnApi)
+  lazy val http2 = l ++= Seq(hpack, alpnApi, Test.akkaStreamTestkit)
 
   lazy val httpTestkit = l ++= Seq(
     akkaStreamTestkit,
