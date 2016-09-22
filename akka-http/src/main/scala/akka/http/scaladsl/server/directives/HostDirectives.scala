@@ -37,7 +37,7 @@ trait HostDirectives {
    * @group host
    */
   def host(predicate: String ⇒ Boolean): Directive0 = extractHost.require(predicate)
-  //#
+  //#require-host
 
   /**
    * Rejects all requests with a host name that doesn't have a prefix matching the given regular expression.

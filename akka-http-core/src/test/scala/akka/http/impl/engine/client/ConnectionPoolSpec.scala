@@ -402,7 +402,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     val (serverEndpoint, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
 
     def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
-      case r: HttpRequest ⇒ HttpResponse(headers = responseHeaders(r, connNr), entity = r.entity)
+      r ⇒ HttpResponse(headers = responseHeaders(r, connNr), entity = r.entity)
     }
 
     def responseHeaders(r: HttpRequest, connNr: Int) =

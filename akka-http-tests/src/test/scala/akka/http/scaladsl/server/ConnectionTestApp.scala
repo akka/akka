@@ -14,6 +14,7 @@ import akka.util.Index
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Future
+import scala.io.StdIn
 import scala.util.{ Failure, Success, Try }
 
 object ConnectionTestApp {
@@ -89,9 +90,9 @@ object ConnectionTestApp {
       //sendSingle(uri, i)
     }
 
-    readLine()
+    StdIn.readLine()
     println("===================== \n\n" + system.asInstanceOf[ActorSystemImpl].printTree + "\n\n========================")
-    readLine()
+    StdIn.readLine()
     system.terminate()
   }
 

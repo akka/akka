@@ -10,6 +10,10 @@ import sbt.Keys._
 import sbt.File
 import scala.annotation.tailrec
 
+object Doc {
+  val BinVer = """(\d+\.\d+)\.\d+""".r
+}
+
 object Scaladoc extends AutoPlugin {
 
   object CliOptions {

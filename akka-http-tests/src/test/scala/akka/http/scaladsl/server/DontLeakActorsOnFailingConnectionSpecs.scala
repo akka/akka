@@ -4,20 +4,19 @@
 
 package akka.http.scaladsl.server
 
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.scaladsl.{ TestUtils, Http }
-import akka.http.scaladsl.model.{ HttpResponse, Uri, HttpRequest }
+import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.Utils.assertAllStagesStopped
+import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, BeforeAndAfterAll, WordSpecLike }
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 
 class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers with BeforeAndAfterAll {
@@ -68,8 +67,5 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
     }
   }
 
-  override def afterAll = {
-    Await.result(system.terminate(), 3.seconds)
-  }
-
+  override def afterAll = TestKit.shutdownActorSystem(system)
 }

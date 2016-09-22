@@ -46,7 +46,7 @@ public class SimpleServerHttpHttpsApp extends AllDirectives { // or import Direc
 
     //Then run HTTPS server
     http.bindAndHandle(flow, ConnectHttp.toHost("localhost", 443), materializer);
-    //#
+    //#both-https-and-http
 
     System.out.println("Type RETURN to exit");
     System.in.read();

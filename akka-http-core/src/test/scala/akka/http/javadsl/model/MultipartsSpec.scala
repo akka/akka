@@ -5,12 +5,16 @@
 package akka.http.javadsl.model
 
 import java.util
+
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Inside, Matchers, WordSpec }
 import akka.stream.ActorMaterializer
 import akka.actor.ActorSystem
+import akka.testkit.TestKit
+
 import scala.compat.java8.FutureConverters
 
 class MultipartsSpec extends WordSpec with Matchers with Inside with BeforeAndAfterAll {
@@ -20,7 +24,7 @@ class MultipartsSpec extends WordSpec with Matchers with Inside with BeforeAndAf
   akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   implicit val materializer = ActorMaterializer()
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   "Multiparts.createFormDataFromParts" should {
     "create a model from Multiparts.createFormDataBodyPartparts" in {

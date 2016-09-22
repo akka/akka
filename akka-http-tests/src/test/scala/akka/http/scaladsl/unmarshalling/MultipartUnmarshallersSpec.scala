@@ -5,7 +5,7 @@
 package akka.http.scaladsl.unmarshalling
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Await, Future }
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.http.scaladsl.testkit.ScalatestUtils
@@ -19,6 +19,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.headers._
 import MediaTypes._
 import HttpCharsets._
+import akka.testkit.TestKit
 
 class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
@@ -327,7 +328,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
     }
   }
 
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   def haveParts[T <: Multipart](parts: Multipart.BodyPart.Strict*): Matcher[Future[T]] =
     equal(parts).matcher[Seq[Multipart.BodyPart.Strict]] compose { x ⇒

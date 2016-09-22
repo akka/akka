@@ -9,7 +9,7 @@ import akka.http.scaladsl.model._
 import akka.util.ByteString
 
 package object unmarshalling {
-  //# unmarshaller-aliases
+  //#unmarshaller-aliases
   type FromEntityUnmarshaller[T] = Unmarshaller[HttpEntity, T]
   type FromMessageUnmarshaller[T] = Unmarshaller[HttpMessage, T]
   type FromResponseUnmarshaller[T] = Unmarshaller[HttpResponse, T]
@@ -17,5 +17,5 @@ package object unmarshalling {
   type FromByteStringUnmarshaller[T] = Unmarshaller[ByteString, T]
   type FromStringUnmarshaller[T] = Unmarshaller[String, T]
   type FromStrictFormFieldUnmarshaller[T] = Unmarshaller[StrictForm.Field, T]
-  //#
+  //#unmarshaller-aliases
 }

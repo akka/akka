@@ -674,7 +674,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    * }}}
    */
   type ServerLayer = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed]
-  //#
+  //#server-layer
 
   //#client-layer
   /**
@@ -690,7 +690,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    * }}}
    */
   type ClientLayer = BidiFlow[HttpRequest, SslTlsOutbound, SslTlsInbound, HttpResponse, NotUsed]
-  //#
+  //#client-layer
 
   /**
    * The type of the client-side WebSocket layer as a stand-alone BidiFlow

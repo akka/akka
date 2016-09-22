@@ -5,11 +5,13 @@
 package akka.http.scaladsl.model
 
 import java.util.concurrent.TimeoutException
+
 import akka.NotUsed
-import com.typesafe.config.{ ConfigFactory, Config }
-import scala.concurrent.{ Promise, Await }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
-import org.scalatest.{ BeforeAndAfterAll, MustMatchers, FreeSpec }
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, MustMatchers }
 import org.scalatest.matchers.{ MatchResult, Matcher }
 import akka.util.ByteString
 import akka.actor.ActorSystem
@@ -17,6 +19,7 @@ import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.impl.util.StreamUtils
+import akka.testkit.TestKit
 
 import scala.util.Random
 
@@ -33,7 +36,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
 
   implicit val materializer = ActorMaterializer()
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   val awaitAtMost = 3.seconds
 

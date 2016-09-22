@@ -85,7 +85,7 @@ trait MethodDirectives {
       case `httpMethod` ⇒ pass
       case _            ⇒ reject(MethodRejection(httpMethod))
     } & cancelRejections(classOf[MethodRejection])
-  //#
+  //#method
 
   /**
    * Changes the HTTP method of the request to the value of the specified query string parameter. If the query string

@@ -5,9 +5,10 @@
 package akka.http.impl.engine.rendering
 
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import org.scalatest.{ FreeSpec, Matchers, BeforeAndAfterAll }
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
 import akka.actor.ActorSystem
 import akka.event.NoLogging
@@ -18,6 +19,7 @@ import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import HttpEntity._
+import akka.testkit.TestKit
 
 import scala.util.control.NonFatal
 
@@ -589,7 +591,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
     }
   }
 
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   class TestSetup(val serverHeader: Option[Server] = Some(Server("akka-http/1.0.0")))
     extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging) {

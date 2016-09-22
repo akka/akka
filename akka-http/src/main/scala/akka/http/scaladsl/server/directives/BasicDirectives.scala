@@ -69,7 +69,7 @@ trait BasicDirectives {
    * @group basic
    */
   def mapRouteResultPF(f: PartialFunction[RouteResult, RouteResult]): Directive0 =
-    mapRouteResult(f.applyOrElse(_, conforms[RouteResult]))
+    mapRouteResult(f.applyOrElse(_, identity[RouteResult]))
 
   /**
    * @group basic

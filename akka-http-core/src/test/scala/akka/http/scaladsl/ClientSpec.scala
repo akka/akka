@@ -26,9 +26,7 @@ class ClientSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   implicit val materializer = ActorMaterializer()
 
-  override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system)
-  }
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   "HTTP Client" should {
 

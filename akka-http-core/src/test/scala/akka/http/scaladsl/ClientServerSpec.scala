@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
-import scala.util.{ Try, Success }
+import scala.util.{ Success, Try }
 import akka.actor.ActorSystem
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.ServerBinding
@@ -20,12 +20,12 @@ import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Accept, Age, Date, Host, Server, `User-Agent` }
-import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ClientConnectionSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.stream.scaladsl._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.testkit._
 import akka.stream._
-import akka.testkit.EventFilter
+import akka.testkit.{ EventFilter, TestKit }
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
@@ -505,8 +505,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
   }
 
   override def afterAll() = {
-    system.terminate()
-    system2.shutdown()
+    TestKit.shutdownActorSystem(system)
+    TestKit.shutdownActorSystem(system2)
   }
 
   class TestSetup {

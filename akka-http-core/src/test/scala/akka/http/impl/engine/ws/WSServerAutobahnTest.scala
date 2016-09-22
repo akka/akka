@@ -8,7 +8,6 @@ import akka.NotUsed
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods._
@@ -16,6 +15,8 @@ import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebSocket }
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
+
+import scala.io.StdIn
 
 object WSServerAutobahnTest extends App {
   implicit val system = ActorSystem("WSServerTest")
@@ -40,10 +41,10 @@ object WSServerAutobahnTest extends App {
       port = port)
 
     Await.result(binding, 3.second) // throws if binding fails
-    println(s"Server online at http://${host}:${port}")
+    println(s"Server online at http://$host:$port")
     mode match {
       case "sleep" ⇒ while (true) Thread.sleep(1.minute.toMillis)
-      case "read"  ⇒ Console.readLine("Press RETURN to stop...")
+      case "read"  ⇒ StdIn.readLine("Press RETURN to stop...")
       case _       ⇒ throw new Exception("akka.ws-mode MUST be sleep or read.")
     }
   } finally {

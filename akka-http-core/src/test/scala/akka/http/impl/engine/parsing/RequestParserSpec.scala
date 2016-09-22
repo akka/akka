@@ -8,21 +8,14 @@ import akka.NotUsed
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import akka.util.ByteString
-
 import akka.actor.ActorSystem
-
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-
 import akka.stream.TLSProtocol._
-
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
-
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.util._
@@ -36,6 +29,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
+import akka.testkit.TestKit
 
 class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -516,7 +510,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-  override def afterAll() = system.terminate()
+  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   private class Test {
     def awaitAtMost: FiniteDuration = 3.seconds

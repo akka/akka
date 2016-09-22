@@ -14,9 +14,11 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
 import akka.stream._
-import akka.stream.scaladsl.{ Source, Flow }
-import com.typesafe.config.{ ConfigFactory, Config }
+import akka.stream.scaladsl.{ Flow, Source }
+import com.typesafe.config.{ Config, ConfigFactory }
 import HttpMethods._
+
+import scala.io.StdIn
 
 object TestServer extends App {
   val testConf: Config = ConfigFactory.parseString("""
@@ -55,7 +57,7 @@ object TestServer extends App {
     Await.result(binding, 1.second) // throws if binding fails
     println("Server online at http://localhost:9001")
     println("Press RETURN to stop...")
-    Console.readLine()
+    StdIn.readLine()
   } finally {
     system.terminate()
   }

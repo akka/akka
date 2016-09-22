@@ -1,60 +1,74 @@
-Akka
-====
+Akka HTTP
+=========
 
-We believe that writing correct concurrent & distributed, resilient and elastic applications is too hard.
-Most of the time it's because we are using the wrong tools and the wrong level of abstraction.
+The Akka HTTP modules implement a full server- and client-side HTTP stack on top
+of akka-actor and akka-stream. It's not a web-framework but rather a more
+general toolkit for providing and consuming HTTP-based services. While
+interaction with a browser is of course also in scope it is not the primary
+focus of Akka HTTP.
 
-Akka is here to change that.
-
-Using the Actor Model we raise the abstraction level and provide a better platform to build correct concurrent and scalable applications. This model is a perfect match for the principles laid out in the [Reactive Manifesto](http://www.reactivemanifesto.org/).
-
-For resilience we adopt the "Let it crash" model which the telecom industry has used with great success to build applications that self-heal and systems that never stop.
-
-Actors also provide the abstraction for transparent distribution and the basis for truly scalable and fault-tolerant applications.
+Akka HTTP follows a rather open design and many times offers several different
+API levels for "doing the same thing". You get to pick the API level of
+abstraction that is most suitable for your application. This means that, if you
+have trouble achieving something using a high-level API, there's a good chance
+that you can get it done with a low-level API, which offers more flexibility but
+might require you to write more application code.
 
 Learn more at [akka.io](http://akka.io/).
 
-Reference Documentation
------------------------
+Documentation
+-------------
 
-The reference documentation is available at [doc.akka.io](http://doc.akka.io),
-for [Scala](http://doc.akka.io/docs/akka/current/scala.html) and [Java](http://doc.akka.io/docs/akka/current/java.html).
+The documentation is available at [doc.akka.io](http://doc.akka.io),
+for [Scala](http://doc.akka.io/docs/akka/current/scala/http/) and
+[Java](http://doc.akka.io/docs/akka/current/java/http/).
 
 
 Community
 ---------
 You can join these groups and chats to discuss and ask Akka related questions:
 
-- Mailing list: [![google groups: akka-user](https://img.shields.io/badge/group%3A-akka--user-blue.svg?style=flat-square)](https://groups.google.com/forum/#!forum/akka-user)
-- Chat room about *using* Akka: [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka)
-- Issue tracker: [![github: akka/akka](https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square)](https://github.com/akka/akka/issues)
+- Mailing list: [![google groups: akka-user][groups-user-badge]][groups-user]
+- Chat room about *using* Akka HTTP: [![gitter: akka/akka][gitter-user-badge]][gitter-user]
+- Q&A: [![stackoverflow: #akka-http][stackoverflow-badge]][stackoverflow]
+- Issue tracker: [![github: akka/akka-http][github-issues-badge]][github-issues]
 
 In addition to that, you may enjoy following:
 
 - The [news](http://akka.io/news) section of the page, which is updated whenever a new version is released
 - The [Akka Team Blog](http://blog.akka.io)
 - [@akkateam](https://twitter.com/akkateam) on Twitter
-- Questions tagged [#akka on StackOverflow](http://stackoverflow.com/questions/tagged/akka)
-- Projects built with Akka: [![akka-dependency-badge]][akka-dependency-scaladex]
+- Projects built with Akka HTTP: [![Built with Akka HTTP][scaladex-badge]][scaladex-projects]
+
+[groups-user-badge]:   https://img.shields.io/badge/group%3A-akka--user-blue.svg?style=flat-square
+[groups-user]:         https://groups.google.com/forum/#!forum/akka-user
+[gitter-user-badge]:   https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square
+[gitter-user]:         https://gitter.im/akka/akka
+[stackoverflow-badge]: https://img.shields.io/badge/stackoverflow%3A-akka--http-blue.svg?style=flat-square
+[stackoverflow]:       http://stackoverflow.com/questions/tagged/akka-http
+[github-issues-badge]: https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square
+[github-issues]:       https://github.com/akka/akka-http/issues
+[scaladex-badge]:      https://index.scala-lang.org/count.svg?q=dependencies:akka/akka-http*&subject=scaladex:&color=blue&style=flat-square
+[scaladex-projects]:   https://index.scala-lang.org/search?q=dependencies:akka/akka-http*
 
 Contributing
 ------------
 Contributions are *very* welcome!
 
-If you see an issue that you'd like to see fixed, the best way to make it happen is to help out by submitting a PullRequest implementing it.
+If you see an issue that you'd like to see fixed, the best way to make it happen is to help out by submitting a pull request.
+For ideas of where to contribute, [tickets marked as "community"](https://github.com/akka/akka-http/issues?q=is%3Aissue+is%3Aopen+label%3Acommunity) are a good starting point.
 
-Refer to the [CONTRIBUTING.md](https://github.com/akka/akka/blob/master/CONTRIBUTING.md) file for more details about the workflow,
-and general hints how to prepare your pull request. You can also chat ask for clarifications or guidance in GitHub issues directly,
-or in the akka/dev chat if a more real time communication would be of benefit.
+Refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file for more details about the workflow,
+and general hints on how to prepare your pull request. You can also ask for clarifications or guidance in GitHub issues directly,
+or in the [akka/dev][gitter-dev] chat if a more real-time communication would be of benefit.
 
 A chat room is available for all questions related to *developing and contributing* to Akka:
-[![gitter: akka/dev](https://img.shields.io/badge/gitter%3A-akka%2Fdev-blue.svg?style=flat-square)](https://gitter.im/akka/dev)
+[![gitter: akka/dev][gitter-dev-badge]][gitter-dev]
 
+[gitter-dev-badge]: https://img.shields.io/badge/gitter%3A-akka%2Fdev-blue.svg?style=flat-square
+[gitter-dev]:       https://gitter.im/akka/dev
 
 License
 -------
 
-Akka is Open Source and available under the Apache 2 License.
-
-[akka-dependency-badge]: https://index.scala-lang.org/count.svg?q=dependencies:akka/*&subject=scaladex:&color=blue&style=flat-square "Built with Akka"
-[akka-dependency-scaladex]: https://index.scala-lang.org/search?q=dependencies:akka/*
+Akka HTTP is Open Source and available under the Apache 2 License.

@@ -24,7 +24,7 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
    * which is added by an implicit conversion (see `Directive.addDirectiveApply`).
    */
   def tapply(f: L ⇒ Route): Route
-  //#
+  //#basic
   /**
    * Joins two directives into one which runs the second directive if the first one rejects.
    */
@@ -104,7 +104,7 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
 
   //#basic
 }
-//#
+//#basic
 
 object Directive {
 
