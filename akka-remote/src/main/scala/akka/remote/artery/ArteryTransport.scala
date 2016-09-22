@@ -240,15 +240,19 @@ private[remote] object FlushOnShutdown {
 private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDuration,
                                       inboundContext: InboundContext, associations: Set[Association]) extends Actor {
 
-  var remaining = associations.flatMap(_.associationState.uniqueRemoteAddressValue)
+  var remaining = Map.empty[UniqueAddress, Int]
 
   val timeoutTask = context.system.scheduler.scheduleOnce(timeout, self, FlushOnShutdown.Timeout)(context.dispatcher)
 
   override def preStart(): Unit = {
-    // FIXME shall we also try to flush the ordinary message stream, not only control stream?
-    val msg = ActorSystemTerminating(inboundContext.localAddress)
     try {
-      associations.foreach { a ⇒ a.send(msg, OptionVal.Some(self), OptionVal.None) }
+      associations.foreach { a ⇒
+        val acksExpected = a.sendTerminationHint(self)
+        a.associationState.uniqueRemoteAddressValue() match {
+          case Some(address) ⇒ remaining += address → acksExpected
+          case None          ⇒ // Ignore, handshake was not completed on this association
+        }
+      }
     } catch {
       case NonFatal(e) ⇒
         // send may throw
@@ -264,7 +268,14 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
 
   def receive = {
     case ActorSystemTerminatingAck(from) ⇒
-      remaining -= from
+      // Just treat unexpected acks as systems from which zero acks are expected
+      val acksRemaining = remaining.getOrElse(from, 0)
+      if (acksRemaining <= 1) {
+        remaining -= from
+      } else {
+        remaining = remaining.updated(from, acksRemaining - 1)
+      }
+
       if (remaining.isEmpty)
         context.stop(self)
     case FlushOnShutdown.Timeout ⇒
@@ -650,12 +661,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
               val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress.address, from.address)
               system.eventStream.publish(lifecycleEvent)
 
-            case _: ActorSystemTerminating ⇒
-              inboundEnvelope.sender match {
-                case OptionVal.Some(snd) ⇒ snd.tell(ActorSystemTerminatingAck(localAddress), ActorRef.noSender)
-                case OptionVal.None      ⇒ log.error("Expected sender for ActorSystemTerminating message")
-              }
-
             case _ ⇒ // not interesting
           }
         } catch {
@@ -976,10 +981,28 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def createDeserializer(bufferPool: EnvelopeBufferPool): Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
     Flow.fromGraph(new Deserializer(this, system, bufferPool))
 
+  // Checks for termination hint messages and sends an ACK for those (not processing them further)
+  // Purpose of this stage is flushing, the sender can wait for the ACKs up to try flushing
+  // pending messages.
+  def terminationHintReplier(): Flow[InboundEnvelope, InboundEnvelope, NotUsed] = {
+    Flow[InboundEnvelope].filter { envelope ⇒
+      envelope.message match {
+        case _: ActorSystemTerminating ⇒
+          envelope.sender match {
+            case OptionVal.Some(snd) ⇒ snd.tell(ActorSystemTerminatingAck(localAddress), ActorRef.noSender)
+            case OptionVal.None      ⇒ log.error("Expected sender for ActorSystemTerminating message")
+          }
+          false
+        case _ ⇒ true
+      }
+    }
+  }
+
   def inboundSink(bufferPool: EnvelopeBufferPool): Sink[InboundEnvelope, Future[Done]] =
     Flow[InboundEnvelope]
       .via(createDeserializer(bufferPool))
       .via(new InboundTestStage(this, testState, settings.Advanced.TestMode))
+      .via(terminationHintReplier())
       .via(new InboundHandshake(this, inControlStream = false))
       .via(new InboundQuarantineCheck(this))
       .toMat(messageDispatcherSink)(Keep.right)
@@ -1000,6 +1023,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     Flow[InboundEnvelope]
       .via(createDeserializer(envelopeBufferPool))
       .via(new InboundTestStage(this, testState, settings.Advanced.TestMode))
+      .via(terminationHintReplier())
       .via(new InboundHandshake(this, inControlStream = true))
       .via(new InboundQuarantineCheck(this))
       .viaMat(new InboundControlJunction)(Keep.right)
