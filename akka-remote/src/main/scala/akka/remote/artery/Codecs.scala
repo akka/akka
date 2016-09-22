@@ -44,11 +44,11 @@ private[remote] object Encoder {
  * INTERNAL API
  */
 private[remote] class Encoder(
-  uniqueLocalAddress: UniqueAddress,
-  system: ExtendedActorSystem,
+  uniqueLocalAddress:   UniqueAddress,
+  system:               ExtendedActorSystem,
   outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
-  bufferPool: EnvelopeBufferPool,
-  debugLogSend: Boolean)
+  bufferPool:           EnvelopeBufferPool,
+  debugLogSend:         Boolean)
   extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, EnvelopeBuffer], Encoder.ChangeOutboundCompression] {
   import Encoder._
 
@@ -245,8 +245,8 @@ private[remote] class Encoder(
  */
 private[remote] object Decoder {
   private final case class RetryResolveRemoteDeployedRecipient(
-    attemptsLeft: Int,
-    recipientPath: String,
+    attemptsLeft:    Int,
+    recipientPath:   String,
     inboundEnvelope: InboundEnvelope)
 
   private object Tick
@@ -270,12 +270,12 @@ private[akka] final class ActorRefResolveCache(provider: RemoteActorRefProvider,
  * INTERNAL API
  */
 private[remote] class Decoder(
-  inboundContext: InboundContext,
-  system: ExtendedActorSystem,
+  inboundContext:     InboundContext,
+  system:             ExtendedActorSystem,
   uniqueLocalAddress: UniqueAddress,
-  compression: InboundCompressions,
-  bufferPool: EnvelopeBufferPool,
-  inEnvelopePool: ObjectPool[ReusableInboundEnvelope]) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
+  compression:        InboundCompressions,
+  bufferPool:         EnvelopeBufferPool,
+  inEnvelopePool:     ObjectPool[ReusableInboundEnvelope]) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
   import Decoder.Tick
   val in: Inlet[EnvelopeBuffer] = Inlet("Artery.Decoder.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Decoder.out")
@@ -493,8 +493,8 @@ private[remote] class Decoder(
  */
 private[remote] class Deserializer(
   inboundContext: InboundContext,
-  system: ExtendedActorSystem,
-  bufferPool: EnvelopeBufferPool) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+  system:         ExtendedActorSystem,
+  bufferPool:     EnvelopeBufferPool) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
 
   val in: Inlet[InboundEnvelope] = Inlet("Artery.Deserializer.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Deserializer.out")

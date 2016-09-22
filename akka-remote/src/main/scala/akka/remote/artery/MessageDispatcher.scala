@@ -23,7 +23,7 @@ import akka.event.LoggingReceive
  * INTERNAL API
  */
 private[akka] class MessageDispatcher(
-  system: ExtendedActorSystem,
+  system:   ExtendedActorSystem,
   provider: RemoteActorRefProvider) {
 
   private val remoteDaemon = provider.remoteDaemon
@@ -31,10 +31,10 @@ private[akka] class MessageDispatcher(
   private val debugLogEnabled = log.isDebugEnabled
 
   def dispatch(
-    recipient: InternalActorRef,
-    recipientAddress: Address,
-    message: AnyRef,
-    senderOption: OptionVal[ActorRef]): Unit = {
+    recipient:     InternalActorRef,
+    message:       AnyRef,
+    senderOption:  OptionVal[ActorRef],
+    originAddress: OptionVal[Address]): Unit = {
 
     import provider.remoteSettings.Artery._
     import Logging.messageClassName
@@ -52,7 +52,7 @@ private[akka] class MessageDispatcher(
         } else {
           if (LogReceive && debugLogEnabled) log.debug(
             "received daemon message [{}] from [{}]",
-            messageClassName(message), senderOption.getOrElse(""))
+            messageClassName(message), senderOption.getOrElse(originAddress.getOrElse("")))
           remoteDaemon ! message
         }
 
@@ -74,7 +74,7 @@ private[akka] class MessageDispatcher(
           case msg: PossiblyHarmful if UntrustedMode ⇒
             if (debugLogEnabled) log.debug(
               "operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}] to [{}] from [{}]",
-              messageClassName(msg), recipient, senderOption.getOrElse(""))
+              messageClassName(msg), recipient, senderOption.getOrElse(originAddress.getOrElse("")))
           case msg: SystemMessage ⇒ l.sendSystemMessage(msg)
           case msg                ⇒ l.!(msg)(sender)
         }
@@ -82,12 +82,13 @@ private[akka] class MessageDispatcher(
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !UntrustedMode ⇒
         if (LogReceive && debugLogEnabled) log.debug(
           "received remote-destined message [{}] to [{}] from [{}]",
-          messageClassName(message), recipient, senderOption.getOrElse(""))
+          messageClassName(message), recipient, senderOption.getOrElse(originAddress.getOrElse("")))
         // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
         r.!(message)(sender)
 
       case r ⇒ log.error(
-        "dropping message [{}] for unknown recipient [{}]", messageClassName(message), r, recipientAddress)
+        "dropping message [{}] for unknown recipient [{}] from [{}]",
+        messageClassName(message), r, senderOption.getOrElse(originAddress.getOrElse("")))
 
     }
   }
