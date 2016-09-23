@@ -39,6 +39,7 @@ object Stages {
     val takeWhile = name("takeWhile")
     val dropWhile = name("dropWhile")
     val scan = name("scan")
+    val scanAsync = name("scanAsync")
     val fold = name("fold")
     val foldAsync = name("foldAsync")
     val reduce = name("reduce")

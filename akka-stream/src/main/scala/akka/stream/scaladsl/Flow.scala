@@ -761,8 +761,24 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.scanAsync]]
    */
   def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = via(Scan(zero, f))
+
+  /**
+   * TODO write proper description
+   * The asynchronous version of `scan`
+   *
+   * '''Emits when''' the future returned by `f` completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and the last future returned by `f` completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def scanAsync[T](zero: T)(f: (T, Out) ⇒ Future[T]): Repr[T] = via(new ScanAsync(zero, f))
 
   /**
    * Similar to `scan` but only emits its result when the upstream completes,

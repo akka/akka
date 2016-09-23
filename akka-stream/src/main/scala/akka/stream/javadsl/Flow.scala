@@ -551,6 +551,12 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     new Flow(delegate.scan(zero)(f.apply))
 
   /**
+   * TODO copy javadoc from [[scaladsl.Flow.scanAsync]]
+   */
+  def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.scanAsync(zero) { (out, in) ⇒ f(out, in).toScala })
+
+  /**
    * Similar to `scan` but only emits its result when the upstream completes,
    * after which it also completes. Applies the given function `f` towards its current and next value,
    * yielding the next current value.
