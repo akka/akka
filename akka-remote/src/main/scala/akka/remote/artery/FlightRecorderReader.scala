@@ -83,8 +83,6 @@ private[akka] object FlightRecorderReader {
       raFile = new RandomAccessFile(flightRecorderFile.toFile, "rw")
       channel = raFile.getChannel
       reader = new FlightRecorderReader(channel)
-      println(reader.structure)
-
       val alerts: Seq[FlightRecorderReader#Entry] = reader.structure.alertLog.logs.flatMap(_.richEntries)
       val hiFreq: Seq[FlightRecorderReader#Entry] = reader.structure.hiFreqLog.logs.flatMap(_.compactEntries)
       val loFreq: Seq[FlightRecorderReader#Entry] = reader.structure.loFreqLog.logs.flatMap(_.richEntries)
@@ -92,7 +90,7 @@ private[akka] object FlightRecorderReader {
       implicit val ordering = Ordering.fromLessThan[FlightRecorderReader#Entry]((a, b) ⇒ a.timeStamp.isBefore(b.timeStamp))
       val sorted = SortedSet[FlightRecorderReader#Entry](alerts: _*) ++ hiFreq ++ loFreq
 
-      println("--- ENTRIES")
+      println("--- FLIGHT RECORDER LOG")
       sorted.foreach(println)
 
     } finally {
