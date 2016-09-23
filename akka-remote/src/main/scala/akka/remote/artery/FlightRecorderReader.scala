@@ -2,12 +2,23 @@ package akka.remote.artery
 
 import java.io.{ IOException, RandomAccessFile }
 import java.nio.channels.FileChannel
-import java.nio.file.Path
+import java.nio.file.{ FileSystems, Path }
 import java.time.Instant
 
 import org.agrona.concurrent.MappedResizeableBuffer
 
-import scala.collection.immutable
+import scala.collection.{ SortedSet, immutable }
+
+/**
+ * Internal API
+ *
+ * Minimal utility for dumping a given afr file as text to stdout
+ */
+object FlightRecorderDump extends App {
+  require(args.size == 1, "Usage: FlightRecorderDump afr-file")
+  val path = FileSystems.getDefault.getPath(args(0))
+  FlightRecorderReader.dumpToStdout(path)
+}
 
 /**
  * Internal API
@@ -72,16 +83,15 @@ private[akka] object FlightRecorderReader {
       raFile = new RandomAccessFile(flightRecorderFile.toFile, "rw")
       channel = raFile.getChannel
       reader = new FlightRecorderReader(channel)
-      println(reader.structure)
+      val alerts: Seq[FlightRecorderReader#Entry] = reader.structure.alertLog.logs.flatMap(_.richEntries)
+      val hiFreq: Seq[FlightRecorderReader#Entry] = reader.structure.hiFreqLog.logs.flatMap(_.compactEntries)
+      val loFreq: Seq[FlightRecorderReader#Entry] = reader.structure.loFreqLog.logs.flatMap(_.richEntries)
 
-      println("--- ALERT ENTRIES")
-      reader.structure.alertLog.logs.foreach(log ⇒ println(log.richEntries.mkString("\n")))
+      implicit val ordering = Ordering.fromLessThan[FlightRecorderReader#Entry]((a, b) ⇒ a.timeStamp.isBefore(b.timeStamp))
+      val sorted = SortedSet[FlightRecorderReader#Entry](alerts: _*) ++ hiFreq ++ loFreq
 
-      println("--- HI FREQUENCY ENTRIES")
-      reader.structure.hiFreqLog.logs.foreach(log ⇒ println(log.compactEntries.mkString("\n")))
-
-      println("--- LO FREQUENCY ENTRIES")
-      reader.structure.loFreqLog.logs.foreach(log ⇒ println(log.richEntries.mkString("\n")))
+      println("--- FLIGHT RECORDER LOG")
+      sorted.foreach(println)
 
     } finally {
       if (reader ne null) reader.close()
@@ -196,7 +206,11 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
     }
   }
 
-  case class RichEntry(timeStamp: Instant, dirty: Boolean, code: Long, metadata: Array[Byte]) {
+  trait Entry {
+    def timeStamp: Instant
+  }
+
+  case class RichEntry(timeStamp: Instant, dirty: Boolean, code: Long, metadata: Array[Byte]) extends Entry {
     override def toString: String = {
       val textualCode = FlightRecorderEvents.eventDictionary.getOrElse(code, "").take(34)
       val metadataString = new String(metadata, "US-ASCII")
@@ -204,7 +218,7 @@ private[akka] final class FlightRecorderReader(fileChannel: FileChannel) {
     }
   }
 
-  case class CompactEntry(timeStamp: Instant, dirty: Boolean, code: Long, param: Long) {
+  case class CompactEntry(timeStamp: Instant, dirty: Boolean, code: Long, param: Long) extends Entry {
     override def toString: String = {
       val textualCode = FlightRecorderEvents.eventDictionary.getOrElse(code, "").take(34)
       f"[$timeStamp] ${if (dirty) "#" else ""} $code%3s $textualCode%-34s | $param"
