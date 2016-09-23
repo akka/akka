@@ -2,12 +2,23 @@ package akka.remote.artery
 
 import java.io.{ IOException, RandomAccessFile }
 import java.nio.channels.FileChannel
-import java.nio.file.Path
+import java.nio.file.{ FileSystems, Path }
 import java.time.Instant
 
 import org.agrona.concurrent.MappedResizeableBuffer
 
 import scala.collection.immutable
+
+/**
+ * Internal API
+ * 
+ * Minimal utility for dumping a given afr file as text to stdout
+ */
+object FlightRecorderDump extends App {
+  require(args.size == 1, "Usage: FlightRecorderDump afr-file")
+  val path = FileSystems.getDefault.getPath(args(0))
+  FlightRecorderReader.dumpToStdout(path)
+}
 
 /**
  * Internal API
