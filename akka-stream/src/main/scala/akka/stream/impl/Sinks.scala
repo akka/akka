@@ -5,34 +5,31 @@ package akka.stream.impl
 
 import akka.dispatch.ExecutionContexts
 import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.Supervision.{ stoppingDecider, Stop }
+import akka.stream.Supervision.stoppingDecider
 import akka.stream.impl.QueueSink.{ Output, Pull }
-import akka.stream.impl.fusing.GraphInterpreter
 import akka.{ Done, NotUsed }
-import akka.actor.{ ActorRef, Actor, Props }
-import akka.stream.Attributes.InputBuffer
-import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
-import java.util.concurrent.atomic.AtomicReference
-import java.util.function.BiConsumer
+
 import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Promise, Future }
+import scala.concurrent.{ Future, Promise }
 import scala.language.postfixOps
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
-import akka.stream.scaladsl.{ Source, Sink, SinkQueueWithCancel, SinkQueue }
+import akka.stream.scaladsl.{ Sink, SinkQueueWithCancel, Source }
 import java.util.concurrent.CompletionStage
+
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import java.util.Optional
+
 import akka.event.Logging
 
 /**
@@ -547,4 +544,211 @@ final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]
     }
     (stageLogic, promise.future)
   }
+}
+
+/**
+ * INTERNAL API
+ */
+final class FoldResourceSink[T, S](
+  open:      () ⇒ S,
+  writeData: (S, T) ⇒ Unit,
+  close:     (S) ⇒ Unit) extends GraphStageWithMaterializedValue[SinkShape[T], Future[Done]] {
+  val in = Inlet[T]("FoldResourceSink.in")
+  override val shape = SinkShape(in)
+  override def initialAttributes: Attributes = DefaultAttributes.foldResourceSink
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+    val completion = Promise[Done]()
+
+    val logic: GraphStageLogic = new GraphStageLogic(shape) with InHandler {
+      lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+      var resource: S = _
+      setHandler(in, this)
+
+      override def preStart(): Unit = {
+        try {
+          resource = open()
+        } catch {
+          case NonFatal(e) ⇒
+            completion.failure(e)
+            throw e
+        }
+        pull(in)
+      }
+
+      final override def onPush(): Unit = {
+        try {
+          writeData(resource, grab(in))
+          pull(in)
+        } catch {
+          case NonFatal(ex) ⇒ decider(ex) match {
+            case Supervision.Stop ⇒
+              close(resource)
+              doFailStage(ex)
+            case Supervision.Restart ⇒
+              restartState()
+              pull(in)
+            case Supervision.Resume ⇒
+              pull(in)
+          }
+        }
+      }
+
+      override def onUpstreamFinish(): Unit = closeStage()
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        close(resource)
+        doFailStage(ex)
+      }
+
+      private def restartState(): Unit = {
+        close(resource)
+        resource = open()
+      }
+
+      private def closeStage(): Unit =
+        try {
+          close(resource)
+          doCompleteStage()
+        } catch {
+          case NonFatal(ex) ⇒ doFailStage(ex)
+        }
+
+      private def doFailStage(th: Throwable): Unit = {
+        completion.failure(th)
+        failStage(th)
+      }
+
+      private def doCompleteStage(): Unit = {
+        completion.success(Done)
+        completeStage()
+      }
+    }
+
+    (logic, completion.future)
+  }
+
+  override def toString = "FoldResourceSink"
+}
+
+/**
+ * INTERNAL API
+ */
+final class FoldResourceSinkAsync[T, S](
+  open:      () ⇒ Future[S],
+  writeData: (S, T) ⇒ Future[Unit],
+  close:     (S) ⇒ Future[Unit])
+  extends GraphStageWithMaterializedValue[SinkShape[T], Future[Done]] {
+  val in = Inlet[T]("FoldResourceSinkAsync.out")
+  override val shape = SinkShape(in)
+  override def initialAttributes: Attributes = DefaultAttributes.foldResourceSinkAsync
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    val completion = Promise[Done]()
+    val logic: GraphStageLogic = new GraphStageLogic(shape) with InHandler {
+
+      lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+      var resource = Promise[S]()
+      implicit val context = ExecutionContexts.sameThreadExecutionContext
+
+      setHandler(in, this)
+
+      override def preStart(): Unit = {
+        createStream()
+        setKeepGoing(true)
+      }
+
+      private def createStream(): Unit = {
+        val cb = getAsyncCallback[Try[S]] {
+          case scala.util.Success(res) ⇒
+            resource.success(res)
+            if (!isClosed(in)) {
+              pull(in)
+            }
+          case scala.util.Failure(t) ⇒ doFailStage(t)
+        }
+        try {
+          open().onComplete(cb.invoke)
+        } catch {
+          case NonFatal(ex) ⇒ doFailStage(ex)
+        }
+      }
+
+      private def onResourceReady(f: (S) ⇒ Unit): Unit = {
+        val cb = getAsyncCallback[S](f)
+        resource.future.onSuccess {
+          case r ⇒ cb.invoke(r)
+        }
+      }
+
+      val errorHandler: PartialFunction[Throwable, Unit] = {
+        case NonFatal(ex) ⇒ decider(ex) match {
+          case Supervision.Stop    ⇒ closeAndThen(() ⇒ doFailStage(ex))
+          case Supervision.Restart ⇒ restartState()
+          case Supervision.Resume ⇒
+            if (!isClosed(in)) {
+              pull(in)
+            }
+        }
+      }
+      val callback = getAsyncCallback[Try[Unit]] {
+        case scala.util.Success(_) ⇒
+          if (!isClosed(in)) {
+            pull(in)
+          }
+        case scala.util.Failure(t) ⇒ errorHandler(t)
+      }.invoke _
+
+      final override def onPush(): Unit = onResourceReady {
+        r ⇒
+          val elem = grab(in)
+          try {
+            writeData(r, elem).onComplete(callback)
+          } catch errorHandler
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        closeStage()
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit = closeAndThen(() ⇒ doFailStage(ex))
+
+      private def closeAndThen(f: () ⇒ Unit): Unit = {
+        val cb = getAsyncCallback[Try[Unit]] {
+          case scala.util.Success(_) ⇒ f()
+          case scala.util.Failure(t) ⇒ doFailStage(t)
+        }
+
+        onResourceReady(res ⇒
+          try {
+            close(res).onComplete(t ⇒ {
+              cb.invoke(t)
+            })
+          } catch {
+            case NonFatal(ex) ⇒ doFailStage(ex)
+          })
+      }
+
+      private def restartState(): Unit = closeAndThen(() ⇒ {
+        resource = Promise[S]()
+        createStream()
+      })
+
+      private def closeStage(): Unit = closeAndThen(doCompleteStage)
+
+      private def doFailStage(th: Throwable): Unit = {
+        completion.failure(th)
+        failStage(th)
+      }
+
+      private def doCompleteStage(): Unit = {
+        completion.success(Done)
+        completeStage()
+      }
+    }
+
+    (logic, completion.future)
+  }
+  override def toString = "FoldResourceSinkAsync"
+
 }
