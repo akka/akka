@@ -33,7 +33,6 @@ private[remote] object InboundEnvelope {
  */
 private[remote] trait InboundEnvelope {
   def recipient: OptionVal[InternalActorRef]
-  def recipientAddress: Address
   def sender: OptionVal[ActorRef]
   def originUid: Long
   def association: OptionVal[OutboundContext]
@@ -67,7 +66,6 @@ private[remote] object ReusableInboundEnvelope {
  */
 private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
   private var _recipient: OptionVal[InternalActorRef] = OptionVal.None
-  private var _recipientAddress: Address = null
   private var _sender: OptionVal[ActorRef] = OptionVal.None
   private var _originUid: Long = 0L
   private var _association: OptionVal[OutboundContext] = OptionVal.None
@@ -78,7 +76,6 @@ private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
   private var _envelopeBuffer: EnvelopeBuffer = null
 
   override def recipient: OptionVal[InternalActorRef] = _recipient
-  override def recipientAddress: Address = _recipientAddress
   override def sender: OptionVal[ActorRef] = _sender
   override def originUid: Long = _originUid
   override def association: OptionVal[OutboundContext] = _association
@@ -107,7 +104,6 @@ private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
 
   def clear(): Unit = {
     _recipient = OptionVal.None
-    _recipientAddress = null
     _message = null
     _sender = OptionVal.None
     _originUid = 0L
@@ -124,7 +120,6 @@ private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
     envelopeBuffer: EnvelopeBuffer,
     association:    OptionVal[OutboundContext]): InboundEnvelope = {
     _recipient = recipient
-    _recipientAddress = recipientAddress
     _sender = sender
     _originUid = originUid
     _serializer = serializer
@@ -136,5 +131,5 @@ private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
   }
 
   override def toString: String =
-    s"InboundEnvelope($recipient, $recipientAddress, $message, $sender, $originUid, $association)"
+    s"InboundEnvelope($recipient, $message, $sender, $originUid, $association)"
 }
