@@ -140,7 +140,7 @@ class CodecBenchmark {
     val N = 100000
 
     val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, Encoder.ChangeOutboundCompression] =
-      Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool, envelopePool))
+      Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool, envelopePool, false))
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
@@ -197,7 +197,7 @@ class CodecBenchmark {
     val N = 100000
 
     val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, Encoder.ChangeOutboundCompression] =
-      Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool, envelopePool))
+      Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool, envelopePool, false))
 
     val localRecipient = resolvedRef.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)
     val provider = RARP(system).provider
