@@ -305,6 +305,17 @@ object ByteString {
       }
     }
 
+    override def indexOf[B >: Byte](elem: B, from: Int): Int = {
+      if (from >= length) -1
+      var found = -1
+      var i = if (from < 0) 0 else from
+      while (i < length && found == -1) {
+        if (bytes(i) == elem) found = i
+        i += 1
+      }
+      found
+    }
+
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
@@ -505,6 +516,32 @@ object ByteString {
         new ByteStrings(bytestrings(fullDrops).drop1(remainingToDrop) +: bytestrings.drop(fullDrops + 1), length - n)
     }
 
+    override def indexOf[B >: Byte](elem: B, from: Int): Int = {
+      if (from >= length) -1
+      else {
+        val byteStringsSize = bytestrings.size
+
+        @tailrec
+        def find(bsIdx: Int, relativeIndex: Int, bytesPassed: Int): Int = {
+          if (bsIdx >= byteStringsSize) -1
+          else {
+            val bs = bytestrings(bsIdx)
+
+            if (bs.length <= relativeIndex) {
+              find(bsIdx + 1, relativeIndex - bs.length, bytesPassed + bs.length)
+            } else {
+              val subIndexOf = bs.indexOf(elem, relativeIndex)
+              if (subIndexOf < 0) {
+                val nextString = bsIdx + 1
+                find(nextString, relativeIndex - bs.length, bytesPassed + bs.length)
+              } else subIndexOf + bytesPassed
+            }
+          }
+        }
+
+        find(0, if (from < 0) 0 else from, 0)
+      }
+    }
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 

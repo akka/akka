@@ -458,6 +458,39 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).take(100) should ===(ByteString("abc"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(100) should ===(ByteString("bc"))
     }
+    "indexOf from offset" in {
+      ByteString.empty.indexOf(5, -1) should ===(-1)
+      ByteString.empty.indexOf(5, 0) should ===(-1)
+      ByteString.empty.indexOf(5, 1) should ===(-1)
+      val byteString1 = ByteString1.fromString("abc")
+      byteString1.indexOf('d', -1) should ===(-1)
+      byteString1.indexOf('d', 0) should ===(-1)
+      byteString1.indexOf('d', 1) should ===(-1)
+      byteString1.indexOf('d', 4) should ===(-1)
+      byteString1.indexOf('a', -1) should ===(0)
+      byteString1.indexOf('a', 0) should ===(0)
+      byteString1.indexOf('a', 1) should ===(-1)
+
+      val byteStrings = ByteStrings(ByteString1.fromString("abc"), ByteString1.fromString("efg"))
+      byteStrings.indexOf('c', -1) should ===(2)
+      byteStrings.indexOf('c', 0) should ===(2)
+      byteStrings.indexOf('c', 2) should ===(2)
+      byteStrings.indexOf('c', 3) should ===(-1)
+
+      byteStrings.indexOf('e', -1) should ===(3)
+      byteStrings.indexOf('e', 0) should ===(3)
+      byteStrings.indexOf('e', 1) should ===(3)
+      byteStrings.indexOf('e', 4) should ===(-1)
+      byteStrings.indexOf('e', 6) should ===(-1)
+
+      byteStrings.indexOf('g', -1) should ===(5)
+      byteStrings.indexOf('g', 0) should ===(5)
+      byteStrings.indexOf('g', 1) should ===(5)
+      byteStrings.indexOf('g', 4) should ===(5)
+      byteStrings.indexOf('g', 5) should ===(5)
+      byteStrings.indexOf('g', 6) should ===(-1)
+      byteStrings.indexWhere(_ == 'g', 5)
+    }
   }
 
   "A ByteString" must {
