@@ -68,6 +68,7 @@ import io.aeron.exceptions.DriverTimeoutException
 import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import org.agrona.concurrent.BackoffIdleStrategy
+import akka.remote.artery.Association.OutboundStreamMatValues
 
 /**
  * INTERNAL API
@@ -290,6 +291,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   extends RemoteTransport(_system, _provider) with InboundContext {
   import ArteryTransport.AeronTerminated
   import ArteryTransport.ShutdownSignal
+  import ArteryTransport.InboundStreamMatValues
   import FlightRecorderEvents._
 
   // these vars are initialized once in the start method
@@ -316,7 +318,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private val codec: AkkaPduCodec = AkkaPduProtobufCodec
   private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
-  private[this] val streamCompletions = new AtomicReference(Map.empty[String, Future[Done]])
+  // keyed by the streamId
+  private[this] val streamMatValues = new AtomicReference(Map.empty[Int, InboundStreamMatValues])
   private[this] val hasBeenShutdown = new AtomicBoolean(false)
 
   private val testState = new SharedTestState
@@ -531,7 +534,11 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       override def onUnavailableImage(img: Image): Unit = {
         if (log.isDebugEnabled)
           log.debug(s"onUnavailableImage from ${img.sourceIdentity} session ${img.sessionId}")
-        // FIXME we should call FragmentAssembler.freeSessionBuffer when image is unavailable
+
+        // freeSessionBuffer in AeronSource FragmentAssembler
+        streamMatValues.get.valuesIterator.foreach {
+          case InboundStreamMatValues(resourceLife, _) ⇒ resourceLife.onUnavailableImage(img.sessionId)
+        }
       }
     })
 
@@ -598,10 +605,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def runInboundControlStream(compression: InboundCompressions): Unit = {
     if (isShutdown) throw ShuttingDown
-    val (ctrl, completed) =
+    val (resourceLife, (ctrl, completed)) =
       aeronSource(controlStreamId, envelopeBufferPool)
         .via(inboundFlow(compression))
-        .toMat(inboundControlSink)(Keep.right)
+        .toMat(inboundControlSink)(Keep.both)
         .run()(materializer)
 
     controlSubject = ctrl
@@ -669,16 +676,17 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       }
     })
 
+    updateStreamMatValues(controlStreamId, resourceLife, completed)
     attachStreamRestart("Inbound control stream", completed, () ⇒ runInboundControlStream(compression))
   }
 
   private def runInboundOrdinaryMessagesStream(compression: InboundCompressions): Unit = {
     if (isShutdown) throw ShuttingDown
-    val completed =
+    val (resourceLife, completed) =
       if (inboundLanes == 1) {
         aeronSource(ordinaryStreamId, envelopeBufferPool)
           .via(inboundFlow(compression))
-          .toMat(inboundSink(envelopeBufferPool))(Keep.right)
+          .toMat(inboundSink(envelopeBufferPool))(Keep.both)
           .run()(materializer)
 
       } else {
@@ -688,7 +696,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           .via(inboundFlow(compression))
           .map(env ⇒ (env.recipient, env))
 
-        val broadcastHub = source.runWith(BroadcastHub.sink(bufferSize = settings.Advanced.InboundBroadcastHubBufferSize))(materializer)
+        val (resourceLife, broadcastHub) =
+          source
+            .toMat(BroadcastHub.sink(bufferSize = settings.Advanced.InboundBroadcastHubBufferSize))(Keep.both)
+            .run()(materializer)
 
         val lane = inboundSink(envelopeBufferPool)
 
@@ -720,9 +731,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           case reason: Throwable ⇒ hubKillSwitch.abort(reason)
         }
 
-        completed
+        (resourceLife, completed)
       }
 
+    updateStreamMatValues(ordinaryStreamId, resourceLife, completed)
     attachStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream(compression))
   }
 
@@ -730,17 +742,17 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     if (isShutdown) throw ShuttingDown
     val disableCompression = NoInboundCompressions // no compression on large message stream for now
 
-    val completed = aeronSource(largeStreamId, largeEnvelopeBufferPool)
+    val (resourceLife, completed) = aeronSource(largeStreamId, largeEnvelopeBufferPool)
       .via(inboundLargeFlow(disableCompression))
-      .toMat(inboundSink(largeEnvelopeBufferPool))(Keep.right)
+      .toMat(inboundSink(largeEnvelopeBufferPool))(Keep.both)
       .run()(materializer)
 
+    updateStreamMatValues(largeStreamId, resourceLife, completed)
     attachStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
   }
 
   private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
     implicit val ec = materializer.executionContext
-    updateStreamCompletion(streamName, streamCompleted.recover { case _ ⇒ Done })
     streamCompleted.onFailure {
       case ShutdownSignal     ⇒ // shutdown as expected
       case _: AeronTerminated ⇒ // shutdown already in progress
@@ -814,12 +826,15 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     }
   }
 
-  // set the future that completes when the current stream for a given name completes
-  @tailrec
-  private def updateStreamCompletion(streamName: String, streamCompleted: Future[Done]): Unit = {
-    val prev = streamCompletions.get()
-    if (!streamCompletions.compareAndSet(prev, prev + (streamName → streamCompleted))) {
-      updateStreamCompletion(streamName, streamCompleted)
+  private def updateStreamMatValues(streamId: Int, aeronSourceLifecycle: AeronSource.ResourceLifecycle, completed: Future[Done]): Unit = {
+    implicit val ec = materializer.executionContext
+    updateStreamMatValues(streamId, InboundStreamMatValues(aeronSourceLifecycle, completed.recover { case _ ⇒ Done }))
+  }
+
+  @tailrec private def updateStreamMatValues(streamId: Int, values: InboundStreamMatValues): Unit = {
+    val prev = streamMatValues.get()
+    if (!streamMatValues.compareAndSet(prev, prev + (streamId → values))) {
+      updateStreamMatValues(streamId, values)
     }
   }
 
@@ -831,7 +846,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     implicit val ec = remoteDispatcher
     for {
       _ ← Future.traverse(associationRegistry.allAssociations)(_.streamsCompleted)
-      _ ← Future.sequence(streamCompletions.get().valuesIterator)
+      _ ← Future.sequence(streamMatValues.get().valuesIterator.map {
+        case InboundStreamMatValues(_, done) ⇒ done
+      })
     } yield Done
   }
 
@@ -961,7 +978,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def createEncoder(pool: EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, ChangeOutboundCompression] =
     Flow.fromGraph(new Encoder(localAddress, system, outboundEnvelopePool, pool, settings.LogSend))
 
-  def aeronSource(streamId: Int, pool: EnvelopeBufferPool): Source[EnvelopeBuffer, NotUsed] =
+  def aeronSource(streamId: Int, pool: EnvelopeBufferPool): Source[EnvelopeBuffer, AeronSource.ResourceLifecycle] =
     Source.fromGraph(new AeronSource(inboundChannel, streamId, aeron, taskRunner, pool,
       createFlightRecorderEventSink()))
 
@@ -1077,6 +1094,10 @@ private[remote] object ArteryTransport {
 
   // thrown when the transport is shutting down and something triggers a new association
   object ShuttingDown extends RuntimeException with NoStackTrace
+
+  final case class InboundStreamMatValues(
+    aeronSourceLifecycle: AeronSource.ResourceLifecycle,
+    completed:            Future[Done])
 
   def autoSelectPort(hostname: String): Int = {
     val socket = DatagramChannel.open().socket()
