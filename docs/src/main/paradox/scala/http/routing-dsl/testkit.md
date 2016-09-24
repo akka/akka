@@ -87,4 +87,4 @@ and translates them to the respective `HttpResponse`.
 ## Examples
 
 A great pool of examples are the tests for all the predefined directives in Akka HTTP.
-They can be found [here](@github@/akka-http-tests/src/test/scala/akka/http/scaladsl/server/directives/).
+They can be found @github[here](/akka-http-tests/src/test/scala/akka/http/scaladsl/server/directives/).

@@ -49,7 +49,7 @@ the @ref[HTTP Model](../http-model.md#http-model-java) for more information on h
 
 ## Starting and Stopping
 
-On the most basic level an Akka HTTP server is bound by invoking the `bind` method of the [akka.http.javadsl.Http](@github@/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala)
+On the most basic level an Akka HTTP server is bound by invoking the `bind` method of the @github[akka.http.javadsl.Http](/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala)
 extension:
 
 @@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-example }

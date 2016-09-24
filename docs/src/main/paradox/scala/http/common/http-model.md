@@ -256,7 +256,7 @@ Connection
 the potential wish of the application to close the connection after the respective response has been sent out.
 The actual logic for determining whether to close the connection is quite involved. It takes into account the
 request's method, protocol and potential `Connection` header as well as the response's protocol, entity and
-potential `Connection` header. See [this test](@github@/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala#L422) for a full table of what happens when.
+potential `Connection` header. See @github[this test](/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala#L422) for a full table of what happens when.
 
 Strict-Transport-Security
 : HTTP Strict Transport Security (HSTS) is a web security policy mechanism which is communicated by the

@@ -9,7 +9,7 @@ Other JSON libraries are supported by the community. See [the list of current co
 
 ## spray-json Support
 
-The [SprayJsonSupport](@github@/akka-http-marshallers-scala/akka-http-spray-json/src/main/scala/akka/http/scaladsl/marshallers/sprayjson/SprayJsonSupport.scala) trait provides a `FromEntityUnmarshaller[T]` and `ToEntityMarshaller[T]` for every type `T`
+The @github[SprayJsonSupport](/akka-http-marshallers-scala/akka-http-spray-json/src/main/scala/akka/http/scaladsl/marshallers/sprayjson/SprayJsonSupport.scala) trait provides a `FromEntityUnmarshaller[T]` and `ToEntityMarshaller[T]` for every type `T`
 that an implicit `spray.json.RootJsonReader` and/or `spray.json.RootJsonWriter` (respectively) is available for.
 
 To enable automatic support for (un)marshalling from and to JSON with [spray-json], add a library dependency onto:

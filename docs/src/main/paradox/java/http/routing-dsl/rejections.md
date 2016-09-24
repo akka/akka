@@ -25,7 +25,7 @@ and handle any rejection.
 ## Predefined Rejections
 
 A rejection encapsulates a specific reason why a route was not able to handle a request. It is modeled as an object of
-type `Rejection`. Akka HTTP comes with a set of [predefined rejections](@github@/akka-http/src/main/scala/akka/http/scaladsl/server/Rejection.scala), which are used by the many
+type `Rejection`. Akka HTTP comes with a set of @github[predefined rejections](/akka-http/src/main/scala/akka/http/scaladsl/server/Rejection.scala), which are used by the many
 @ref[predefined directives](directives/alphabetically.md#predefined-directives-java).
 
 Rejections are gathered up over the course of a Route evaluation and finally converted to `HttpResponse` replies by
@@ -35,7 +35,7 @@ the @ref[handleRejections](../../../scala/http/routing-dsl/directives/execution-
 ## The RejectionHandler
 
 The @ref[handleRejections](../../../scala/http/routing-dsl/directives/execution-directives/handleRejections.md#handlerejections) directive delegates the actual job of converting a list of rejections to its argument, a
-[RejectionHandler](@github@/akka-http/src/main/scala/akka/http/scaladsl/server/RejectionHandler.scala), which is defined like this:
+@github[RejectionHandler](/akka-http/src/main/scala/akka/http/scaladsl/server/RejectionHandler.scala), which is defined like this:
 
 ```scala
 trait RejectionHandler extends (immutable.Seq[Rejection] => Option[Route])

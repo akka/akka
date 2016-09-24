@@ -28,7 +28,7 @@ together in the @ref[BasicDirectives](basic-directives/index.md#basicdirectives)
 ## Transforming Directives
 
 The second option for creating new directives is to transform an existing one using one of the
-“transformation methods”, which are defined on the [Directive](@github@/akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) class, the base class of all “regular” directives.
+“transformation methods”, which are defined on the @github[Directive](/akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) class, the base class of all “regular” directives.
 
 Apart from the combinator operators (`|` and `&`) and the case-class extractor (`as[T]`)
 there following transformations is also defined on all `Directive` instances:
@@ -47,7 +47,7 @@ for simple transformations:
 
 @@snip [CustomDirectivesExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #map-0 }
 
-One example of a predefined directive relying on `map` is the [optionalHeaderValue](@github@/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala#L67) directive.
+One example of a predefined directive relying on `map` is the @github[optionalHeaderValue](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala#L67) directive.
 
 The tmap modifier has this signature (somewhat simplified):
 

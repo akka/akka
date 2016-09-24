@@ -122,7 +122,7 @@ lazy val docs = project("docs")
     name := "akka-http-docs",
     paradoxTheme := Some(builtinParadoxTheme("generic")),
     paradoxNavigationDepth := 3,
-    paradoxProperties ++= Map(
+    paradoxProperties in Compile ++= Map(
       "akka.version" -> Dependencies.akkaVersion,
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scala.version" -> scalaVersion.value,
@@ -130,7 +130,8 @@ lazy val docs = project("docs")
         case akka.Doc.BinVer(_) => ""
         case _                  => "cross CrossVersion.full"
       }),
-      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion}/%s"
+      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion}/%s",
+      "github.base_url" -> GitHub.url(version.value)
     ),
     Formatting.docFormatSettings
   )

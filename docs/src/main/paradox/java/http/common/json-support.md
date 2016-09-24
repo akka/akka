@@ -15,7 +15,7 @@ To make use of the support module, you need to add a dependency on *akka-http-ja
 Use `akka.http.javadsl.marshallers.jackson.Jackson.unmarshaller(T.class)` to create an `Unmarshaller<HttpEntity,T>` which expects the request
 body (HttpEntity) to be of type `application/json` and converts it to `T` using Jackson.
 
-See [this example](@github@/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) in the sources for an example.
+See @github[this example](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) in the sources for an example.
 
 Use `akka.http.javadsl.marshallers.jackson.Jackson.marshaller(T.class)` to create a `Marshaller<T,RequestEntity>` which can be used with
 `RequestContext.complete` or `RouteDirectives.complete` to convert a POJO to an HttpResponse.

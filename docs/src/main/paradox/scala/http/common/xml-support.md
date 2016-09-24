@@ -10,7 +10,7 @@ For XML Akka HTTP currently provides support for [Scala XML](https://github.com/
 
 ## Scala XML Support
 
-The [ScalaXmlSupport](@github@/akka-http-marshallers-scala/akka-http-xml/src/main/scala/akka/http/scaladsl/marshallers/xml/ScalaXmlSupport.scala) trait provides a `FromEntityUnmarshaller[NodeSeq]` and `ToEntityMarshaller[NodeSeq]` that
+The @github[ScalaXmlSupport](/akka-http-marshallers-scala/akka-http-xml/src/main/scala/akka/http/scaladsl/marshallers/xml/ScalaXmlSupport.scala) trait provides a `FromEntityUnmarshaller[NodeSeq]` and `ToEntityMarshaller[NodeSeq]` that
 you can use directly or build upon.
 
 This is how you enable support for (un)marshalling from and to JSON with [Scala XML](https://github.com/scala/scala-xml) `NodeSeq`:

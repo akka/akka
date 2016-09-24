@@ -13,7 +13,7 @@ the static method `ConnectionContext.https` which is defined like this:
 @@snip [ConnectionContext.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
 
 In addition to the `outgoingConnection`, `newHostConnectionPool` and `cachedHostConnectionPool` methods the
-[akka.http.javadsl.Http](@github@/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala) extension also defines `outgoingConnectionTls`, `newHostConnectionPoolTls` and
+@github[akka.http.javadsl.Http](/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala) extension also defines `outgoingConnectionTls`, `newHostConnectionPoolTls` and
 `cachedHostConnectionPoolTls`. These methods work identically to their counterparts without the `-Tls` suffix,
 with the exception that all connections will always be encrypted.
 
