@@ -387,6 +387,12 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
     new SubFlow(delegate.scan(zero)(f.apply))
 
   /**
+   * TODO documentation
+   */
+  def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): SubFlow[In, T, Mat] =
+    new SubFlow(delegate.scanAsync(zero) { (out, in) ⇒ f(out, in).toScala })
+
+  /**
    * Similar to `scan` but only emits its result when the upstream completes,
    * after which it also completes. Applies the given function `f` towards its current and next value,
    * yielding the next current value.

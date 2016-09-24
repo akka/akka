@@ -1243,6 +1243,11 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.scan(zero)(f.apply))
 
   /**
+   * TODO documentation
+   */
+  def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
+    new Source(delegate.scanAsync(zero) { (out, in) ⇒ f(out, in).toScala })
+  /**
    * Similar to `scan` but only emits its result when the upstream completes,
    * after which it also completes. Applies the given function `f` towards its current and next value,
    * yielding the next current value.

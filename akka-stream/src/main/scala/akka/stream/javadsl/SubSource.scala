@@ -385,6 +385,12 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
     new SubSource(delegate.scan(zero)(f.apply))
 
   /**
+   * TODO documentation
+   */
+  def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): SubSource[T, Mat] =
+    new SubSource(delegate.scanAsync(zero) { (out, in) ⇒ f(out, in).toScala })
+
+  /**
    * Similar to `scan` but only emits its result when the upstream completes,
    * after which it also completes. Applies the given function `f` towards its current and next value,
    * yielding the next current value.
