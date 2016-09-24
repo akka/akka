@@ -491,7 +491,7 @@ object ByteString {
       else if (n >= length) ByteString.empty
       else dropRight0(n)
 
-    private[akka] def dropRight0(n: Int): ByteString = {
+    private def dropRight0(n: Int): ByteString = {
       @tailrec def go(last: Int, restToDropRight: Int): (Int, Int) = {
         val bs = bytestrings(last)
         if (bs.length > restToDropRight) (last, restToDropRight)
