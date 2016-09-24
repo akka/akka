@@ -49,7 +49,14 @@ hiding them behind a *shape* that looks like a :class:`Source`, :class:`Flow`, e
 
 One interesting example above is a :class:`Flow` which is composed of a disconnected :class:`Sink` and :class:`Source`.
 This can be achieved by using the ``fromSinkAndSource()`` constructor method on :class:`Flow` which takes the two parts as
-parameters.
+parameters. 
+
+Please note that when combining a :class:`Flow` using that method, the termination signals are not carried 
+"through" as the :class:`Sink` and :class:`Source` are assumed to be fully independent. If however you want to construct
+a :class:`Flow` like this but need the termination events to trigger "the other side" of the composite flow, you can use
+``CoupledTerminationFlow.fromSinkAndSource`` which does just that. For example the cancelation of the composite flows 
+source-side will then lead to completion of its sink-side. Read :class:`CoupledTerminationFlow`'s scaladoc for a 
+detailed explanation how this works.
 
 The example :class:`BidiFlow` demonstrates that internally a module can be of arbitrary complexity, and the exposed
 ports can be wired in flexible ways. The only constraint is that all the ports of enclosed modules must be either
