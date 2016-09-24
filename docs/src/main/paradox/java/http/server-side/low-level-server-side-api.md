@@ -2,7 +2,7 @@
 # Low-Level Server-Side API
 
 Apart from the @ref[HTTP Client](../client-side/index.md#http-client-side-java) Akka HTTP also provides an embedded,
-[Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of <!-- FIXME: unresolved link reference: streams-java --> streams-java.
+[Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of @extref[Streams](akka-docs:java/stream/index.html).
 
 It sports the following features:
 
@@ -35,10 +35,10 @@ easier.
 
 ## Streams and HTTP
 
-The Akka HTTP server is implemented on top of <!-- FIXME: unresolved link reference: streams-java --> streams-java and makes heavy use of it - in its
+The Akka HTTP server is implemented on top of @extref[Streams](akka-docs:java/stream/index.html) and makes heavy use of it - in its
 implementation as well as on all levels of its API.
 
-On the connection level Akka HTTP offers basically the same kind of interface as <!-- FIXME: unresolved link reference: stream-io-java --> stream-io-java:
+On the connection level Akka HTTP offers basically the same kind of interface as @extref[Working with streaming IO](akka-docs:java/stream/stream-io.html):
 A socket binding is represented as a stream of incoming connections. The application pulls connections from this stream
 source and, for each of them, provides a `Flow<HttpRequest, HttpResponse, ?>` to "translate" requests into responses.
 
@@ -190,7 +190,7 @@ through the stream starting from the stage which failed, all the way downstream 
 
 #### Connections Source failures
 
-In the example below we add a custom `GraphStage` (see <!-- FIXME: unresolved link reference: stream-customize-java --> stream-customize-java) in order to react to the
+In the example below we add a custom `GraphStage` (see @extref[Custom stream processing](akka-docs:java/stream/stream-customize.html)) in order to react to the
 stream's failure. We signal a `failureMonitor` actor with the cause why the stream is going down, and let the Actor
 handle the rest – maybe it'll decide to restart the server or shutdown the ActorSystem, that however is not our concern anymore.
 

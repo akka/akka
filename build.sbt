@@ -129,7 +129,8 @@ lazy val docs = project("docs")
       "crossString" -> (scalaVersion.value match {
         case akka.Doc.BinVer(_) => ""
         case _                  => "cross CrossVersion.full"
-      })
+      }),
+      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion}/%s"
     ),
     Formatting.docFormatSettings
   )

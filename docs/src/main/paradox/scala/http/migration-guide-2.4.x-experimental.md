@@ -12,7 +12,7 @@ versions of the **experimental** part of Akka HTTP.
 > **Note:**
 Please note that experimental modules are allowed (and are expected to) break compatibility
 in search of the best API we can offer, before the API is frozen in a stable release.
-Please read <!-- FIXME: unresolved link reference: bincompatrules --> BinCompatRules to understand in depth what bin-compat rules are, and where they are applied.
+Please read @extref[Binary Compatibility Rules](akka-docs:common/binary-compatibility-rules.html) to understand in depth what bin-compat rules are, and where they are applied.
 
 ## Akka HTTP 2.4.7 -> 2.4.8
 
