@@ -397,17 +397,17 @@ final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) ext
       private val ZeroHandler: OutHandler with InHandler = new OutHandler with InHandler {
         override def onPush(): Unit = ()
 
+        override def onPull(): Unit = {
+          push(out, aggregator)
+          setHandlers(in, out, self)
+        }
+
         override def onUpstreamFinish(): Unit = setHandler(out, new OutHandler {
           override def onPull(): Unit = {
             push(out, aggregator)
             completeStage()
           }
         })
-
-        override def onPull(): Unit = {
-          push(out, aggregator)
-          setHandlers(in, out, self)
-        }
       }
 
       private def onRestart(t: Throwable): Unit = {
