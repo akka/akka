@@ -363,7 +363,7 @@ object GraphStages {
       (logic, materialized.future)
     }
 
-    override def toString: String = "FutureSource"
+    override def toString: String = "FutureFlattenSource"
   }
 
   final class FutureSource[T](val future: Future[T]) extends GraphStage[SourceShape[T]] {
