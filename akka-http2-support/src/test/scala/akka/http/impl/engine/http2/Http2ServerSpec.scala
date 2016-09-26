@@ -71,18 +71,59 @@ class Http2ServerSpec extends AkkaSpec {
         request.uri shouldBe Uri("http://www.example.com/")
 
         val streamIdHeader = request.header[Http2StreamIdHeader].get
-
-        val hs =
-          Vector(
-            headers.`Cache-Control`(CacheDirectives.`private`()),
-            headers.Date.parseFromValueString("Mon, 21 Oct 2013 20:13:21 GMT").right.get,
-            headers.Location("https://www.example.com"),
-            streamIdHeader)
-
-        responseOut.sendNext(HttpResponse(302, headers = hs))
-        val headerPayload = expectFrame(FrameType.HEADERS, Flags.END_STREAM | Flags.END_HEADERS, 1)
+        responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
+        val headerPayload = expectHeaderBlock(1)
         headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
       }
+      "Two consecutive GET requests" in new TestSetup with WithProbes {
+        {
+          sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+          val request = expectRequest()
+
+          request.method shouldBe HttpMethods.GET
+          request.uri shouldBe Uri("http://www.example.com/")
+
+          val streamIdHeader = request.header[Http2StreamIdHeader].get
+          responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
+          val headerPayload = expectHeaderBlock(1)
+          headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
+        }
+        {
+          sendHEADERS(3, endStream = true, endHeaders = true, HPackSpecExamples.C42SecondRequestWithHuffman)
+          val request = expectRequest()
+
+          request.method shouldBe HttpMethods.GET
+          request.uri shouldBe Uri("http://www.example.com/")
+
+          val streamIdHeader = request.header[Http2StreamIdHeader].get
+          responseOut.sendNext(HPackSpecExamples.SecondResponse.addHeader(streamIdHeader))
+          val headerPayload = expectHeaderBlock(3)
+          headerPayload shouldBe HPackSpecExamples.C52SecondResponseWithoutHuffman
+        }
+      }
+      "GET request in one HEADERS and one CONTINUATION frame" in new TestSetup with WithProbes {
+        pending // needs CONTINUATION frame parsing and actual support in decompression
+
+        val headerBlock = HPackSpecExamples.C41FirstRequestWithHuffman
+        val fragment1 = headerBlock.take(5)
+        val fragment2 = headerBlock.drop(5)
+
+        sendHEADERS(1, endStream = true, endHeaders = false, fragment1)
+        requestIn.ensureSubscription()
+        requestIn.expectNoMsg()
+        sendCONTINUATION(1, endHeaders = true, fragment2)
+
+        val request = expectRequest()
+
+        request.method shouldBe HttpMethods.GET
+        request.uri shouldBe Uri("http://www.example.com/")
+
+        val streamIdHeader = request.header[Http2StreamIdHeader].get
+        responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
+        val headerPayload = expectHeaderBlock(1)
+        headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
+      }
+
       "fail if Http2StreamIdHeader missing" in pending
       "automatically add `Date` header" in pending
     }
@@ -110,14 +151,14 @@ class Http2ServerSpec extends AkkaSpec {
     def expectBytes(num: Int): ByteString = netIn.expectBytes(num)
 
     def expectFrame(frameType: FrameType, flags: ByteFlag, streamId: Int): ByteString = {
-      val header = expectHeader()
+      val header = expectFrameHeader()
       header.frameType shouldBe frameType
       header.flags shouldBe flags
       header.streamId shouldBe streamId
       expectBytes(header.payloadLength)
     }
 
-    def expectHeader(): FrameHeader = {
+    def expectFrameHeader(): FrameHeader = {
       val headerBytes = expectBytes(9)
       val reader = new ByteReader(headerBytes)
       val length = reader.readShortBE() << 8 | reader.readByte()
@@ -128,16 +169,23 @@ class Http2ServerSpec extends AkkaSpec {
       FrameHeader(tpe, flags, streamId, length)
     }
 
+    /** Collect a header block maybe spanning several frames */
+    def expectHeaderBlock(streamId: Int): ByteString =
+      // FIXME: also collect CONTINUATION frames as long as END_HEADERS is not set
+      expectFrame(FrameType.HEADERS, Flags.END_STREAM | Flags.END_HEADERS, streamId)
+
     def sendFrame(frameType: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): Unit =
       sendBytes(FrameRenderer.renderFrame(frameType, flags, streamId, payload))
 
     def sendHEADERS(streamId: Int, endStream: Boolean, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment)))
+    def sendCONTINUATION(streamId: Int, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
+      sendBytes(FrameRenderer.render(ContinuationFrame(streamId, endHeaders, headerBlockFragment)))
   }
   case class FrameHeader(frameType: FrameType, flags: ByteFlag, streamId: Int, payloadLength: Int)
   abstract class TestSetup extends TestSetupWithoutHandshake {
     sendBytes(Http2Protocol.ClientConnectionPreface)
-    val serverPreface = expectHeader()
+    val serverPreface = expectFrameHeader()
     serverPreface.frameType shouldBe Http2Protocol.FrameType.SETTINGS
   }
 
