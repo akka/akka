@@ -179,35 +179,41 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
         sendRequest(1, theRequest)
         expectRequest() shouldBe theRequest
 
-        val byteOut = TestPublisher.probe[ByteString]()
-        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(byteOut)))
+        val entityDataOut = TestPublisher.probe[ByteString]()
+        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
         emitResponse(1, response)
         expectResponseHEADERS(streamId = 1, endStream = false) shouldBe response.withEntity(HttpEntity.Empty)
       }
 
       "send entity data as data frames" in new WaitingForResponseDataSetup {
         val data1 = ByteString("abcd")
-        byteOut.sendNext(data1)
+        entityDataOut.sendNext(data1)
         expectDATA(1, endStream = false, data1)
 
         val data2 = ByteString("efghij")
-        byteOut.sendNext(data2)
+        entityDataOut.sendNext(data2)
         expectDATA(1, endStream = false, data2)
 
-        byteOut.sendComplete()
+        entityDataOut.sendComplete()
         expectDATA(1, endStream = true, ByteString.empty)
       }
       "cancel entity data source when peer sends RST_STREAM" inPendingUntilFixed new WaitingForResponseDataSetup {
         val data1 = ByteString("abcd")
-        byteOut.sendNext(data1)
+        entityDataOut.sendNext(data1)
         expectDATA(1, endStream = false, data1)
 
         sendRST_STREAM(1, ErrorCode.CANCEL)
-        byteOut.expectCancellation()
+        entityDataOut.expectCancellation()
       }
 
-      "send RST_STREAM when entity data stream fails" in pending
+      "send RST_STREAM when entity data stream fails" inPendingUntilFixed new WaitingForResponseDataSetup {
+        val data1 = ByteString("abcd")
+        entityDataOut.sendNext(data1)
+        expectDATA(1, endStream = false, data1)
 
+        entityDataOut.sendError(new RuntimeException)
+        expectRST_STREAM(1, ErrorCode.INTERNAL_ERROR)
+      }
       "fail if advertised content-length is exceed" in pending
     }
 
@@ -257,6 +263,14 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
 
     def expectDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit =
       expectDATA(streamId, endStream, data.length) shouldBe data
+
+    def expectRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit =
+      expectRST_STREAM(streamId) shouldBe errorCode
+
+    def expectRST_STREAM(streamId: Int): ErrorCode = {
+      val payload = expectFramePayload(FrameType.RST_STREAM, ByteFlag.Zero, streamId)
+      ErrorCode.byId(new ByteReader(payload).readIntBE())
+    }
 
     def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString) = {
       val header = expectFrameHeader()
