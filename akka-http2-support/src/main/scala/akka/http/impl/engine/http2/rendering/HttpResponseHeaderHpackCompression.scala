@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2.rendering
 
+import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.nio.{ ByteBuffer, ByteOrder }
 
@@ -23,46 +24,28 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
   import HttpResponseHeaderHpackCompression._
 
   // FIXME Make configurable
-  final val maxHeaderSize = 4096
   final val maxHeaderTableSize = 4096
-  //  final val useIndexing = false
-  //  final val forceHuffmanOn = false
-  //  final val forceHuffmanOff = false
 
   val in = Inlet[HttpResponse]("HeaderDecompression.in")
   val out = Outlet[Http2SubStream]("HeaderDecompression.out")
 
   override def shape = FlowShape.of(in, out)
 
-  // format: OFF
-  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape)
-    with InHandler with OutHandler {
-    // format: ON
-
-    val buf = {
-      val b = ByteBuffer.allocate(4 * maxHeaderSize) // FIXME, just guessed a number here
-      b.order(ByteOrder.LITTLE_ENDIAN)
-      b
-    }
-
-    // receives bytes to be written from encoder
-    private val os = new OutputStream {
-      override def write(b: Int): Unit =
-        buf.put(b.toByte)
-      override def write(b: Array[Byte], off: Int, len: Int): Unit =
-        buf.put(b, off, len)
-    }
-
-    private val encoder = new com.twitter.hpack.Encoder(maxHeaderTableSize)
+  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+    val encoder = new com.twitter.hpack.Encoder(maxHeaderTableSize)
+    val os = new ByteArrayOutputStream() // FIXME: use a reasonable default size
 
     override def onPush(): Unit = {
       val response = grab(in)
       // TODO possibly specialize static table? https://http2.github.io/http2-spec/compression.html#static.table.definition
-      // feed `buf` with compressed header data
-      val headerBlockFragment = encodeAllHeaders(response)
+      val headerBlockFragment = encodeResponse(response)
 
-      // FIXME: emit proper exception if header is missing
-      val streamId = response.header[Http2StreamIdHeader].get.streamId
+      def failBecauseOfMissingHeader: Nothing =
+        // header is missing, shutting down because we will most likely otherwise miss a response and leak a substream
+        // TODO: optionally a less drastic measure would be only resetting all the active substreams
+        throw new RuntimeException("Received response for HTTP/2 request without Http2StreamIdHeader. Failing connection.")
+
+      val streamId = response.header[Http2StreamIdHeader].getOrElse(failBecauseOfMissingHeader).streamId
 
       val dataFrames =
         if (response.entity.isKnownEmpty) Source.empty
@@ -75,7 +58,7 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
       push(out, http2SubStream)
     }
 
-    def encodeAllHeaders(response: HttpResponse): ByteString = {
+    def encodeResponse(response: HttpResponse): ByteString = {
       encoder.encodeHeader(os, StatusKey, response.status.intValue.toString.getBytes, false) // TODO so wasteful
       response.headers
         .filter(_.renderInResponses)
@@ -85,20 +68,12 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
           encoder.encodeHeader(os, nameBytes, valueBytes, false)
         }
 
-      // copy buffer to ByteString
-      mkByteString(buf)
+      val res = ByteString(os.toByteArray)
+      os.reset()
+      res
     }
 
-    override def onPull(): Unit =
-      pull(in)
-
-    def mkByteString(buf: ByteBuffer): ByteString = {
-      buf.flip()
-      val headerBlockFragment = ByteString(buf)
-      buf.flip().limit(buf.capacity())
-      buf.limit
-      headerBlockFragment
-    }
+    override def onPull(): Unit = pull(in)
 
     setHandlers(in, out, this)
   }
@@ -106,8 +81,5 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
 }
 
 object HttpResponseHeaderHpackCompression {
-  final val AuthorityKey = ":authority".getBytes
   final val StatusKey = ":status".getBytes
-  final val MethofKey = ":method".getBytes
-
 }
