@@ -412,10 +412,21 @@ private[remote] class Decoder(
             // down other messages.
             val recipientActorRefPath = headerBuilder.recipientActorRefPath.get
             if (bannedRemoteDeployedActorRefs.contains(recipientActorRefPath)) {
-              log.debug(
-                "Dropping message for banned (terminated) remote deployed recipient [{}].",
-                recipientActorRefPath)
-              pull(in)
+
+              headerBuilder.recipientActorRefPath match {
+                case OptionVal.Some(path) ⇒
+                  val ref = actorRefResolver.getOrCompute(path)
+                  if (ref.isInstanceOf[EmptyLocalActorRef]) log.warning(
+                    "Message for banned (terminated, unresolved) remote deployed recipient [{}].",
+                    recipientActorRefPath)
+                  push(out, decoded.withRecipient(ref))
+                case OptionVal.None ⇒
+                  log.warning(
+                    "Dropping message for banned (terminated, unresolved) remote deployed recipient [{}].",
+                    recipientActorRefPath)
+                  pull(in)
+              }
+
             } else
               scheduleOnce(RetryResolveRemoteDeployedRecipient(
                 retryResolveRemoteDeployedRecipientAttempts,
