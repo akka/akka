@@ -3,6 +3,7 @@
  */
 package akka.http.impl.engine.http2
 
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.ws.{ BitBuilder, WithMaterializerSpec }
 import akka.http.impl.util._
 import akka.stream.scaladsl.Source
@@ -239,6 +240,22 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx=87654321
          """ should parseTo(PingFrame(ack = true, "fedcba0987654321".parseHexByteString))
       }
+    }
+    "RST_FRAME" in {
+      b"""xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=4   # length
+          00000011     # type = 0x3 = RST_STREAM
+          00000000     # no flags
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=23  # stream ID = 23
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=2   # error code = 0x2 = INTERNAL_ERROR
+         """ should parseTo(RstStreamFrame(0x23, ErrorCode.INTERNAL_ERROR))
     }
   }
 

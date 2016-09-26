@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2
 
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.util.ByteString
@@ -25,7 +26,7 @@ final case class HeadersFrame(
   headerBlockFragment: ByteString) extends StreamFrameEvent
 
 //final case class PriorityFrame(streamId: Int, streamDependency: Int, weight: Int) extends StreamFrameEvent
-//final case class RstStreamFrame(streamId: Int, errorCode: Int) extends StreamFrameEvent
+final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends StreamFrameEvent
 final case class SettingsFrame(
   settings: Seq[Setting]) extends FrameEvent
 case object SettingsAckFrame extends FrameEvent

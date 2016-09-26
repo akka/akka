@@ -117,6 +117,10 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         // FIXME: ensure data size is 8
         PingFrame(ack, payload.remainingData)
 
+      case RST_STREAM ⇒
+        // FIXME: ensure data size
+        RstStreamFrame(streamId, ErrorCode.byId(payload.readIntBE()))
+
       case tpe ⇒ // TODO: remove once all stream types are defined
         UnknownFrameEvent(tpe, flags, streamId, payload.remainingData)
     }
