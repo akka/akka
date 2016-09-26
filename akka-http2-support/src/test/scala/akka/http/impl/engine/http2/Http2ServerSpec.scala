@@ -71,7 +71,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     }
 
     "support simple round-trips" should {
-      abstract class SimpleRequestResponseRoundtripSetup extends TestSetup with WithProbes {
+      abstract class SimpleRequestResponseRoundtripSetup extends TestSetup with RequestResponseProbes {
         def requestResponseRoundtrip(
           streamId:                    Int,
           requestHeaderBlock:          ByteString,
@@ -130,7 +130,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
           expectedResponseHeaderBlock = HPackSpecExamples.C63ThirdResponseWithHuffman
         )
       }
-      "GET request in one HEADERS and one CONTINUATION frame" inPendingUntilFixed new TestSetup with WithProbes {
+      "GET request in one HEADERS and one CONTINUATION frame" inPendingUntilFixed new TestSetup with RequestResponseProbes {
         // FIXME: needs CONTINUATION frame parsing and actual support in decompression
 
         val headerBlock = HPackSpecExamples.C41FirstRequestWithHuffman
@@ -165,7 +165,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     }
 
     "support stream support for sending response entity data" should {
-      class WaitingForResponseDataSetup extends TestSetup with WithProbes with AutomaticHpackWireSupport {
+      class WaitingForResponseDataSetup extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(1, theRequest)
         expectRequest() shouldBe theRequest
@@ -210,7 +210,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
 
     "support multiple concurrent substreams" should {
       "receive two requests concurrently" in pending
-      "send two responses concurrently" in new TestSetup with WithProbes with AutomaticHpackWireSupport {
+      "send two responses concurrently" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(1, theRequest)
         expectRequest() shouldBe theRequest
@@ -351,6 +351,8 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     }
   }
   case class FrameHeader(frameType: FrameType, flags: ByteFlag, streamId: Int, payloadLength: Int)
+
+  /** Basic TestSetup that has already passed the exchange of the connection preface */
   abstract class TestSetup extends TestSetupWithoutHandshake {
     sendBytes(Http2Protocol.ClientConnectionPreface)
     val serverPreface = expectFrameHeader()
@@ -400,7 +402,8 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     }
   }
 
-  trait WithProbes extends TestSetupWithoutHandshake {
+  /** Provides the user handler flow as `requestIn` and `responseOut` probes for manual stream interaction */
+  trait RequestResponseProbes extends TestSetupWithoutHandshake {
     lazy val requestIn = TestSubscriber.probe[HttpRequest]()
     lazy val responseOut = TestPublisher.probe[HttpResponse]()
 
@@ -411,7 +414,9 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     def emitResponse(streamId: Int, response: HttpResponse): Unit =
       responseOut.sendNext(response.addHeader(Http2StreamIdHeader(streamId)))
   }
-  trait WithHandler extends TestSetupWithoutHandshake {
+
+  /** Provides the user handler flow as a handler function */
+  trait HandlerFunctionSupport extends TestSetupWithoutHandshake {
     def parallelism: Int = 2
     def handler: HttpRequest ⇒ Future[HttpResponse] =
       _ ⇒ Future.successful(HttpResponse())
