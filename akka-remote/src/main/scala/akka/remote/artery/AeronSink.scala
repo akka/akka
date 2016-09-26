@@ -122,12 +122,15 @@ class AeronSink(
       }
 
       override def postStop(): Unit = {
-        taskRunner.command(Remove(addOfferTask.task))
-        flightRecorder.loFreq(AeronSink_TaskRunnerRemoved, channelMetadata)
-        pub.close()
-        flightRecorder.loFreq(AeronSink_PublicationClosed, channelMetadata)
-        completed.complete(completedValue)
-        flightRecorder.loFreq(AeronSink_Stopped, channelMetadata)
+        try {
+          taskRunner.command(Remove(addOfferTask.task))
+          flightRecorder.loFreq(AeronSink_TaskRunnerRemoved, channelMetadata)
+          pub.close()
+          flightRecorder.loFreq(AeronSink_PublicationClosed, channelMetadata)
+        } finally {
+          flightRecorder.loFreq(AeronSink_Stopped, channelMetadata)
+          completed.complete(completedValue)
+        }
       }
 
       // InHandler
