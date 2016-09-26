@@ -9,22 +9,14 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
-import akka.http.impl.engine.http2.rendering.HttpResponseHeaderHpackCompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.enhanceString_
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.Http2
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.HttpProtocols
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers
-import akka.http.scaladsl.model.headers.CacheDirectives
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.stream.ActorMaterializer
@@ -34,7 +26,6 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import akka.util.ByteStringBuilder
@@ -219,7 +210,49 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
 
     "support multiple concurrent substreams" should {
       "receive two requests concurrently" in pending
-      "send two responses concurrently" in pending
+      "send two responses concurrently" in new TestSetup with WithProbes with AutomaticHpackWireSupport {
+        val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
+        sendRequest(1, theRequest)
+        expectRequest() shouldBe theRequest
+
+        val entity1DataOut = TestPublisher.probe[ByteString]()
+        val response1 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entity1DataOut)))
+        emitResponse(1, response1)
+        expectResponseHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty)
+
+        def sendDataAndExpectOnNet(outStream: TestPublisher.Probe[ByteString], streamId: Int, dataString: String, endStream: Boolean = false): Unit = {
+          val data = ByteString(dataString)
+          if (dataString.nonEmpty) outStream.sendNext(data)
+          if (endStream) outStream.sendComplete()
+          if (data.nonEmpty || endStream) expectDATA(streamId, endStream = endStream, data)
+        }
+
+        sendDataAndExpectOnNet(entity1DataOut, 1, "abc")
+
+        // send second request
+        sendRequest(3, theRequest)
+        expectRequest() shouldBe theRequest
+
+        val entity2DataOut = TestPublisher.probe[ByteString]()
+        val response2 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entity2DataOut)))
+        emitResponse(3, response2)
+        expectResponseHEADERS(streamId = 3, endStream = false) shouldBe response2.withEntity(HttpEntity.Empty)
+
+        // send again on stream 1
+        sendDataAndExpectOnNet(entity1DataOut, 1, "zyx")
+
+        // now send on stream 2
+        sendDataAndExpectOnNet(entity2DataOut, 3, "mnopq")
+
+        // now again on stream 1
+        sendDataAndExpectOnNet(entity1DataOut, 1, "jklm")
+
+        // last data of stream 2
+        sendDataAndExpectOnNet(entity2DataOut, 3, "uvwx", endStream = true)
+
+        // also complete stream 1
+        sendDataAndExpectOnNet(entity1DataOut, 1, "", endStream = true)
+      }
     }
   }
 
