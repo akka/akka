@@ -356,7 +356,7 @@ private[remote] final class HeaderBuilderImpl(
     "HeaderBuilderImpl(" +
       "version:" + version + ", " +
       "flags:" + ByteFlag.binaryLeftPad(flags) + ", " +
-      "uid:" + uid + ", " +
+      "UID:" + uid + ", " +
       "_senderActorRef:" + _senderActorRef + ", " +
       "_senderActorRefIdx:" + _senderActorRefIdx + ", " +
       "_recipientActorRef:" + _recipientActorRef + ", " +

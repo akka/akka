@@ -64,7 +64,7 @@ class CodecBenchmark {
 
   val uniqueLocalAddress = UniqueAddress(
     system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
-    AddressUidExtension(system).addressUid
+    AddressUidExtension(system).longAddressUid
   )
   val payload = Array.ofDim[Byte](1000)
 

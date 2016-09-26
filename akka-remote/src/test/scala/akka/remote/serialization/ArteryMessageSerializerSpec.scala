@@ -5,7 +5,7 @@
 package akka.remote.serialization
 
 import akka.actor._
-import akka.remote.UniqueAddress
+import akka.remote.{ RemoteWatcher, UniqueAddress }
 import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
 import akka.remote.artery.compress.CompressionProtocol.{ ActorRefCompressionAdvertisement, ActorRefCompressionAdvertisementAck, ClassManifestCompressionAdvertisement, ClassManifestCompressionAdvertisementAck }
 import akka.remote.artery.compress.CompressionTable
@@ -30,7 +30,10 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
       "ClassManifestCompressionAdvertisementAck" → ClassManifestCompressionAdvertisementAck(uniqueAddress(), 23),
       "SystemMessageDelivery.SystemMessageEnvelop" → SystemMessageDelivery.SystemMessageEnvelope("test", 1234567890123L, uniqueAddress()),
       "SystemMessageDelivery.Ack" → SystemMessageDelivery.Ack(98765432109876L, uniqueAddress()),
-      "SystemMessageDelivery.Nack" → SystemMessageDelivery.Nack(98765432109876L, uniqueAddress())).foreach {
+      "SystemMessageDelivery.Nack" → SystemMessageDelivery.Nack(98765432109876L, uniqueAddress()),
+      "RemoteWatcher.ArteryHeartbeat" → RemoteWatcher.ArteryHeartbeat,
+      "RemoteWatcher.ArteryHeartbeatRsp" → RemoteWatcher.ArteryHeartbeatRsp(Long.MaxValue)
+    ).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for $scenario" in {
             val serializer = SerializationExtension(system)

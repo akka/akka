@@ -52,11 +52,11 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
 
   val addressA = UniqueAddress(
     RARP(system).provider.getDefaultAddress,
-    AddressUidExtension(system).addressUid)
+    AddressUidExtension(system).longAddressUid)
   val systemB = ActorSystem("systemB", system.settings.config)
   val addressB = UniqueAddress(
     RARP(systemB).provider.getDefaultAddress,
-    AddressUidExtension(systemB).addressUid)
+    AddressUidExtension(systemB).longAddressUid)
   val rootB = RootActorPath(addressB.address)
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
   implicit val mat = ActorMaterializer(matSettings)(system)

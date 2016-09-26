@@ -32,7 +32,7 @@ class ArteryPiercingShouldKeepQuarantineSpecMultiJvmNode2 extends PiercingShould
 object PiercingShouldKeepQuarantineSpec {
   class Subject extends Actor {
     def receive = {
-      case "getuid" ⇒ sender() ! AddressUidExtension(context.system).addressUid
+      case "getuid" ⇒ sender() ! AddressUidExtension(context.system).longAddressUid
     }
   }
 }
@@ -52,7 +52,7 @@ abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldK
 
         // Communicate with second system
         system.actorSelection(node(second) / "user" / "subject") ! "getuid"
-        val uid = expectMsgType[Int](10.seconds)
+        val uid = expectMsgType[Long](10.seconds)
         enterBarrier("actor-identified")
 
         // Manually Quarantine the other system
