@@ -75,7 +75,9 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "Status.Failure JavaSer" → Status.Failure(new OtherException("exc")), // exc with JavaSerializer
       "ActorRef" → ref,
       "Some" → Some("value"),
-      "None" → None).foreach {
+      "None" → None,
+      "Kill" → Kill,
+      "PoisonPill" → PoisonPill).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for $scenario" in {
             val serializer = SerializationExtension(system)
