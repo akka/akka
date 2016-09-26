@@ -54,7 +54,7 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config) extends AkkaSpe
 
       val remoteRef = {
         system.actorSelection(rootB / "user" / "echo") ! Identify(None)
-        expectMsgType[ActorIdentity].ref.get
+        expectMsgType[ActorIdentity](5.seconds).ref.get
       }
 
       remoteRef ! "ping"
