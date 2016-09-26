@@ -119,10 +119,15 @@ private[akka] final class ArterySettings private (config: Config) {
     val FlightRecorderDestination: String = getString("flight-recorder.destination")
     val Compression = new Compression(getConfig("compression"))
 
-    final val MaximumFrameSize = 1024 * 1024
-    final val MaximumPooledBuffers = 128
-    final val MaximumLargeFrameSize = MaximumFrameSize * 5
-    final val InboundBroadcastHubBufferSize = MaximumPooledBuffers / 2
+    final val MaximumFrameSize: Int = math.min(getBytes("maximum-frame-size"), Int.MaxValue).toInt
+      .requiring(_ >= 32 * 1024, "maximum-frame-size must be greater than or equal to 32 KiB")
+    final val BufferPoolSize: Int = getInt("buffer-pool-size")
+      .requiring(_ > 0, "buffer-pool-size must be greater than 0")
+    final val InboundBroadcastHubBufferSize = BufferPoolSize / 2
+    final val MaximumLargeFrameSize: Int = math.min(getBytes("maximum-large-frame-size"), Int.MaxValue).toInt
+      .requiring(_ >= 32 * 1024, "maximum-large-frame-size must be greater than or equal to 32 KiB")
+    final val LargeBufferPoolSize: Int = getInt("large-buffer-pool-size")
+      .requiring(_ > 0, "large-buffer-pool-size must be greater than 0")
   }
 }
 
