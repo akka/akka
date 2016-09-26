@@ -14,6 +14,7 @@ import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.model.headers.CacheDirectives
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.stream.ActorMaterializer
 import akka.stream.impl.io.ByteStringParser.ByteReader
@@ -75,7 +76,7 @@ class Http2ServerSpec extends AkkaSpec {
         val headerPayload = expectHeaderBlock(1)
         headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
       }
-      "Two consecutive GET requests" in new TestSetup with WithProbes {
+      "Three consecutive GET requests" in new TestSetup with WithProbes {
         {
           sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
           val request = expectRequest()
@@ -99,6 +100,19 @@ class Http2ServerSpec extends AkkaSpec {
           responseOut.sendNext(HPackSpecExamples.SecondResponse.addHeader(streamIdHeader))
           val headerPayload = expectHeaderBlock(3)
           headerPayload shouldBe HPackSpecExamples.C52SecondResponseWithoutHuffman
+        }
+        {
+          sendHEADERS(5, endStream = true, endHeaders = true, HPackSpecExamples.C43ThirdRequestWithHuffman)
+          val request = expectRequest()
+
+          request.method shouldBe HttpMethods.GET
+          request.uri shouldBe Uri("https://www.example.com/index.html")
+          request.headers should contain(RawHeader("custom-key", "custom-value"))
+
+          val streamIdHeader = request.header[Http2StreamIdHeader].get
+          responseOut.sendNext(HPackSpecExamples.ThirdResponse.addHeader(streamIdHeader))
+          val headerPayload = expectHeaderBlock(5)
+          headerPayload shouldBe HPackSpecExamples.C63ThirdResponseWithHuffman
         }
       }
       "GET request in one HEADERS and one CONTINUATION frame" in new TestSetup with WithProbes {
