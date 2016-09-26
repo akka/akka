@@ -92,8 +92,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       }
 
       var incomingStreams = Map.empty[Int, SubStream]
-      var totalOutboundWindowLeft = Http2Protocol.InitialConnectionLevelWindow
-      var streamLevelWindow = Http2Protocol.InitialStreamLevelWindow
+      var totalOutboundWindowLeft = Http2Protocol.InitialWindowSize
+      var streamLevelWindow = Http2Protocol.InitialWindowSize
 
       setHandler(frameIn, new InHandler {
         def onPush(): Unit = {

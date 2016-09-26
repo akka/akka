@@ -14,10 +14,30 @@ import akka.util.ByteString
  * https://tools.ietf.org/html/rfc7540
  */
 object Http2Protocol {
-  val InitialConnectionLevelWindow = 65535
-  val InitialStreamLevelWindow = 65535
+  // constants defined in the spec
 
-  val NoStreamId = 0
+  /**
+   * The initial window size for both new streams and the overall connection
+   * as defined by the specification.
+   *
+   * See https://tools.ietf.org/html/rfc7540#section-5.2.1:
+   *    4.  The initial value for the flow-control window is 65,535 octets
+   *        for both new streams and the overall connection.
+   */
+  final val InitialWindowSize = 65535
+
+  /**
+   * The stream id to be used for frames not associated with any individual stream
+   * as defined by the specification.
+   *
+   * See https://tools.ietf.org/html/rfc7540#section-4.1:
+   *
+   *   Stream Identifier:  A stream identifier (see Section 5.1.1) expressed
+   *   as an unsigned 31-bit integer.  The value 0x0 is reserved for
+   *   frames that are associated with the connection as a whole as
+   *   opposed to an individual stream.
+   */
+  final val NoStreamId = 0
 
   sealed abstract class FrameType(val id: Int) extends Product
   object FrameType {
