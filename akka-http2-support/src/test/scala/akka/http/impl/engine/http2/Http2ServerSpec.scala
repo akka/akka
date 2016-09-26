@@ -7,6 +7,7 @@ import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http2
 import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.HttpProtocols
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes
@@ -64,56 +65,64 @@ class Http2ServerSpec extends AkkaSpec {
     }
 
     "support simple round-trips" should {
-      "GET request in one HEADERS frame" in new TestSetup with WithProbes {
-        sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        val request = expectRequest()
+      abstract class SimpleRequestResponseRoundtripSetup extends TestSetup with WithProbes {
+        def requestResponseRoundtrip(
+          streamId:                    Int,
+          requestHeaderBlock:          ByteString,
+          expectedRequest:             HttpRequest,
+          response:                    HttpResponse,
+          expectedResponseHeaderBlock: ByteString
+        ): Unit = {
+          sendHEADERS(streamId, endStream = true, endHeaders = true, requestHeaderBlock)
+          expectRequest().removeHeader("x-http2-stream-id") shouldBe expectedRequest
 
-        request.method shouldBe HttpMethods.GET
-        request.uri shouldBe Uri("http://www.example.com/")
-
-        val streamIdHeader = request.header[Http2StreamIdHeader].get
-        responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
-        val headerPayload = expectHeaderBlock(1)
-        headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
+          responseOut.sendNext(response.addHeader(Http2StreamIdHeader(streamId)))
+          val headerPayload = expectHeaderBlock(streamId)
+          headerPayload shouldBe expectedResponseHeaderBlock
+        }
       }
-      "Three consecutive GET requests" in new TestSetup with WithProbes {
-        {
-          sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-          val request = expectRequest()
 
-          request.method shouldBe HttpMethods.GET
-          request.uri shouldBe Uri("http://www.example.com/")
-
-          val streamIdHeader = request.header[Http2StreamIdHeader].get
-          responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
-          val headerPayload = expectHeaderBlock(1)
-          headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
-        }
-        {
-          sendHEADERS(3, endStream = true, endHeaders = true, HPackSpecExamples.C42SecondRequestWithHuffman)
-          val request = expectRequest()
-
-          request.method shouldBe HttpMethods.GET
-          request.uri shouldBe Uri("http://www.example.com/")
-
-          val streamIdHeader = request.header[Http2StreamIdHeader].get
-          responseOut.sendNext(HPackSpecExamples.SecondResponse.addHeader(streamIdHeader))
-          val headerPayload = expectHeaderBlock(3)
-          headerPayload shouldBe HPackSpecExamples.C52SecondResponseWithoutHuffman
-        }
-        {
-          sendHEADERS(5, endStream = true, endHeaders = true, HPackSpecExamples.C43ThirdRequestWithHuffman)
-          val request = expectRequest()
-
-          request.method shouldBe HttpMethods.GET
-          request.uri shouldBe Uri("https://www.example.com/index.html")
-          request.headers should contain(RawHeader("custom-key", "custom-value"))
-
-          val streamIdHeader = request.header[Http2StreamIdHeader].get
-          responseOut.sendNext(HPackSpecExamples.ThirdResponse.addHeader(streamIdHeader))
-          val headerPayload = expectHeaderBlock(5)
-          headerPayload shouldBe HPackSpecExamples.C63ThirdResponseWithHuffman
-        }
+      "GET request in one HEADERS frame" in new SimpleRequestResponseRoundtripSetup {
+        requestResponseRoundtrip(
+          streamId = 1,
+          requestHeaderBlock = HPackSpecExamples.C41FirstRequestWithHuffman,
+          expectedRequest = HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`),
+          response = HPackSpecExamples.FirstResponse,
+          expectedResponseHeaderBlock = HPackSpecExamples.C61FirstResponseWithHuffman
+        )
+      }
+      "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
+        requestResponseRoundtrip(
+          streamId = 1,
+          requestHeaderBlock = HPackSpecExamples.C41FirstRequestWithHuffman,
+          expectedRequest = HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`),
+          response = HPackSpecExamples.FirstResponse,
+          expectedResponseHeaderBlock = HPackSpecExamples.C61FirstResponseWithHuffman
+        )
+        requestResponseRoundtrip(
+          streamId = 3,
+          requestHeaderBlock = HPackSpecExamples.C42SecondRequestWithHuffman,
+          expectedRequest = HttpRequest(
+            method = HttpMethods.GET,
+            uri = "http://www.example.com/",
+            // FIXME: should be modeled header: headers.`Cache-Control`(CacheDirectives.`no-cache`()) :: Nil,
+            headers = RawHeader("cache-control", "no-cache") :: Nil,
+            protocol = HttpProtocols.`HTTP/2.0`),
+          response = HPackSpecExamples.SecondResponse,
+          // our hpack compressor chooses the non-huffman form probably because it seems to have same length
+          expectedResponseHeaderBlock = HPackSpecExamples.C52SecondResponseWithoutHuffman
+        )
+        requestResponseRoundtrip(
+          streamId = 5,
+          requestHeaderBlock = HPackSpecExamples.C43ThirdRequestWithHuffman,
+          expectedRequest = HttpRequest(
+            method = HttpMethods.GET,
+            uri = "https://www.example.com/index.html",
+            headers = RawHeader("custom-key", "custom-value") :: Nil,
+            protocol = HttpProtocols.`HTTP/2.0`),
+          response = HPackSpecExamples.ThirdResponse,
+          expectedResponseHeaderBlock = HPackSpecExamples.C63ThirdResponseWithHuffman
+        )
       }
       "GET request in one HEADERS and one CONTINUATION frame" in new TestSetup with WithProbes {
         pending // needs CONTINUATION frame parsing and actual support in decompression
@@ -140,6 +149,7 @@ class Http2ServerSpec extends AkkaSpec {
 
       "fail if Http2StreamIdHeader missing" in pending
       "automatically add `Date` header" in pending
+      "parse headers to modeled headers" in pending
     }
 
     "support multiple concurrent substreams" should {
