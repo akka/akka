@@ -40,12 +40,16 @@ object ByteStringSinkProbe {
       val probe = TestSubscriber.probe[ByteString]()
       val sink: Sink[ByteString, NotUsed] = Sink.fromSubscriber(probe)
 
-      def expectNoBytes(): Unit = {
+      def ensureRequested(): Unit = {
         probe.ensureSubscription()
+        probe.request(1)
+      }
+      def expectNoBytes(): Unit = {
+        ensureRequested()
         probe.expectNoMsg()
       }
       def expectNoBytes(timeout: FiniteDuration): Unit = {
-        probe.ensureSubscription()
+        ensureRequested()
         probe.expectNoMsg(timeout)
       }
 

@@ -26,7 +26,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         def parse(reader: ByteReader): ParseResult[FrameEvent] =
           if (reader.remainingSize < 24) throw NeedMoreData
           else if (reader.take(24) == Http2Protocol.ClientConnectionPreface)
-            ParseResult(None, ReadFrame, false)
+            ParseResult(None, ReadFrame, acceptUpstreamFinish = false)
           else
             throw new RuntimeException("Expected ConnectionPreface!")
       }
@@ -41,7 +41,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
           val payload = reader.take(length)
           val frame = parseFrame(FrameType.byId(tpe), flags, streamId, new ByteReader(payload))
 
-          ParseResult(Some(frame), ReadFrame, true)
+          ParseResult(Some(frame), ReadFrame, acceptUpstreamFinish = true)
         }
       }
     }

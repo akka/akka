@@ -75,10 +75,11 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with BufferedOutletSupport { logic ⇒
-      class SubStream(
+      case class SubStream(
         streamId:                  Int,
         state:                     StreamState,
         outlet:                    SubSourceOutlet[StreamFrameEvent],
+        inlet:                     Option[SubSinkInlet[FrameEvent]],
         initialOutboundWindowLeft: Long
       ) extends BufferedOutlet[StreamFrameEvent](outlet) {
         var outboundWindowLeft = initialOutboundWindowLeft
@@ -100,7 +101,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           grab(frameIn) match {
             case headers @ HeadersFrame(streamId, endStream, endHeaders, fragment) ⇒
               val subSource = new SubSourceOutlet[StreamFrameEvent](s"substream-out-$streamId")
-              val handler = new SubStream(streamId, StreamState.Open /* FIXME */ , subSource, streamLevelWindow)
+              val handler = new SubStream(streamId, StreamState.Open /* FIXME */ , subSource, None, streamLevelWindow)
               incomingStreams += streamId → handler
 
               val sub =
@@ -108,6 +109,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                 else Http2SubStream(headers, Source.fromGraph(subSource.source))
 
               dispatchSubstream(sub)
+
+            case RstStreamFrame(streamId, errorCode) ⇒
+              // FIXME: also need to handle the other case when no response has been produced yet (inlet still None)
+              incomingStreams(streamId).inlet.foreach(_.cancel())
 
             case e: StreamFrameEvent if e.streamId > 0 ⇒
               incomingStreams(e.streamId).push(e)
@@ -154,6 +159,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           pull(substreamIn)
           bufferedFrameOut.push(sub.initialFrame)
           val subIn = new SubSinkInlet[FrameEvent](s"substream-in-${sub.streamId}")
+          incomingStreams = incomingStreams.updated(sub.streamId, incomingStreams(sub.streamId).copy(inlet = Some(subIn)))
           subIn.pull()
           subIn.setHandler(new InHandler {
             def onPush(): Unit = {

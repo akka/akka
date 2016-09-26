@@ -228,12 +228,25 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
         entityDataOut.sendComplete()
         expectDATA(1, endStream = true, ByteString.empty)
       }
-      "cancel entity data source when peer sends RST_STREAM" inPendingUntilFixed new WaitingForResponseDataSetup {
+      "cancel entity data source when peer sends RST_STREAM" in new WaitingForResponseDataSetup {
         val data1 = ByteString("abcd")
         entityDataOut.sendNext(data1)
         expectDATA(1, endStream = false, data1)
 
         sendRST_STREAM(1, ErrorCode.CANCEL)
+        entityDataOut.expectCancellation()
+      }
+      "cancel entity data source when peer sends RST_STREAM before entity is subscribed" inPendingUntilFixed new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+        val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
+        sendRequest(1, theRequest)
+        expectRequest() shouldBe theRequest
+
+        sendRST_STREAM(1, ErrorCode.CANCEL)
+
+        val entityDataOut = TestPublisher.probe[ByteString]()
+        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
+        emitResponse(1, response)
+        expectNoBytes() // don't expect response on closed connection
         entityDataOut.expectCancellation()
       }
 
@@ -245,7 +258,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
         entityDataOut.sendError(new RuntimeException)
         expectRST_STREAM(1, ErrorCode.INTERNAL_ERROR)
       }
-      "fail if advertised content-length is exceed" in pending
+      "fail if advertised content-length doesn't match" in pending
     }
 
     "support multiple concurrent substreams" should {
@@ -299,18 +312,19 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
   abstract class TestSetupWithoutHandshake {
     implicit def ec = system.dispatcher
 
-    val netIn = ByteStringSinkProbe()
-    val netOut = TestPublisher.probe[ByteString]()
+    val toNet = ByteStringSinkProbe()
+    val fromNet = TestPublisher.probe[ByteString]()
 
     def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed]
 
     handlerFlow
       .join(Http2Blueprint.serverStack())
-      .runWith(Source.fromPublisher(netOut), netIn.sink)
+      .runWith(Source.fromPublisher(fromNet), toNet.sink)
 
-    def sendBytes(bytes: ByteString): Unit = netOut.sendNext(bytes)
-    def expectBytes(bytes: ByteString): Unit = netIn.expectBytes(bytes)
-    def expectBytes(num: Int): ByteString = netIn.expectBytes(num)
+    def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)
+    def expectBytes(bytes: ByteString): Unit = toNet.expectBytes(bytes)
+    def expectBytes(num: Int): ByteString = toNet.expectBytes(num)
+    def expectNoBytes(): Unit = toNet.expectNoBytes()
 
     def expectDATAFrame(streamId: Int): (Boolean, ByteString) = {
       val (flags, payload) = expectFrameFlagsAndPayload(FrameType.DATA, streamId)
@@ -390,7 +404,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
       implicit val bigEndian = ByteOrder.BIG_ENDIAN
       val bb = new ByteStringBuilder
       bb.putInt(errorCode.id)
-      sendFrame(FrameType.RST_STREAM, ByteFlag.Zero, streamId, ByteString.empty)
+      sendFrame(FrameType.RST_STREAM, ByteFlag.Zero, streamId, bb.result())
     }
   }
   case class FrameHeader(frameType: FrameType, flags: ByteFlag, streamId: Int, payloadLength: Int)
