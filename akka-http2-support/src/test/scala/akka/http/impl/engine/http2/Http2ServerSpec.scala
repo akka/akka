@@ -2,8 +2,10 @@ package akka.http.impl.engine.http2
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.nio.ByteOrder
 
 import akka.NotUsed
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
@@ -35,6 +37,7 @@ import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
+import akka.util.ByteStringBuilder
 import com.twitter.hpack.Decoder
 import com.twitter.hpack.Encoder
 import com.twitter.hpack.HeaderListener
@@ -42,7 +45,7 @@ import com.twitter.hpack.HeaderListener
 import scala.annotation.tailrec
 import scala.concurrent.Future
 
-class Http2ServerSpec extends AkkaSpec {
+class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
   implicit val mat = ActorMaterializer()
 
   "The Http/2 server implementation" should {
@@ -136,8 +139,8 @@ class Http2ServerSpec extends AkkaSpec {
           expectedResponseHeaderBlock = HPackSpecExamples.C63ThirdResponseWithHuffman
         )
       }
-      "GET request in one HEADERS and one CONTINUATION frame" in new TestSetup with WithProbes {
-        pending // needs CONTINUATION frame parsing and actual support in decompression
+      "GET request in one HEADERS and one CONTINUATION frame" inPendingUntilFixed new TestSetup with WithProbes {
+        // FIXME: needs CONTINUATION frame parsing and actual support in decompression
 
         val headerBlock = HPackSpecExamples.C41FirstRequestWithHuffman
         val fragment1 = headerBlock.take(5)
@@ -194,7 +197,15 @@ class Http2ServerSpec extends AkkaSpec {
         byteOut.sendComplete()
         expectDATA(1, endStream = true, ByteString.empty)
       }
-      "cancel entity data source when peer sends RST_STREAM" in pending
+      "cancel entity data source when peer sends RST_STREAM" inPendingUntilFixed new WaitingForResponseDataSetup {
+        val data1 = ByteString("abcd")
+        byteOut.sendNext(data1)
+        expectDATA(1, endStream = false, data1)
+
+        sendRST_STREAM(1, ErrorCode.CANCEL)
+        byteOut.expectCancellation()
+      }
+
       "send RST_STREAM when entity data stream fails" in pending
 
       "fail if advertised content-length is exceed" in pending
@@ -284,6 +295,13 @@ class Http2ServerSpec extends AkkaSpec {
       sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment)))
     def sendCONTINUATION(streamId: Int, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(ContinuationFrame(streamId, endHeaders, headerBlockFragment)))
+
+    def sendRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit = {
+      implicit val bigEndian = ByteOrder.BIG_ENDIAN
+      val bb = new ByteStringBuilder
+      bb.putInt(errorCode.id)
+      sendFrame(FrameType.RST_STREAM, ByteFlag.Zero, streamId, ByteString.empty)
+    }
   }
   case class FrameHeader(frameType: FrameType, flags: ByteFlag, streamId: Int, payloadLength: Int)
   abstract class TestSetup extends TestSetupWithoutHandshake {
