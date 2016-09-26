@@ -4,9 +4,14 @@
 
 package akka.http.impl.engine.http2
 
+import java.nio.ByteOrder
+
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
+import akka.util.ByteStringBuilder
+
+import scala.annotation.tailrec
 
 object FrameRenderer {
   def render(frame: FrameEvent): ByteString =
@@ -32,20 +37,32 @@ object FrameRenderer {
         )
 
       case SettingsFrame(settings) ⇒
-        // FIXME
+        val bb = new ByteStringBuilder
+        implicit val byteOrder = ByteOrder.BIG_ENDIAN
+        @tailrec def renderNext(remaining: Seq[Setting]): Unit =
+          remaining match {
+            case Setting(id, value) +: remaining ⇒
+              bb.putShort(id.id)
+              bb.putInt(value)
+
+              renderNext(remaining)
+            case Nil ⇒
+          }
+
+        renderNext(settings)
+
         renderFrame(
           Http2Protocol.FrameType.SETTINGS,
-          0,
-          0,
-          ByteString.empty
+          Http2Protocol.Flags.NO_FLAGS,
+          Http2Protocol.NoStreamId,
+          bb.result()
         )
 
       case SettingsAckFrame ⇒
-        // FIXME
         renderFrame(
           Http2Protocol.FrameType.SETTINGS,
-          Http2Protocol.Flags.ACK.value,
-          0,
+          Http2Protocol.Flags.ACK,
+          Http2Protocol.NoStreamId,
           ByteString.empty
         )
 
@@ -53,19 +70,19 @@ object FrameRenderer {
         renderFrame(
           Http2Protocol.FrameType.PING,
           Http2Protocol.Flags.ACK.ifSet(ack),
-          0,
+          Http2Protocol.NoStreamId,
           data
         )
     }
 
-  def renderFrame(tpe: FrameType, flags: Int, streamId: Int, payload: ByteString): ByteString = {
+  def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString = {
     val length = payload.length
     val headerBytes = new Array[Byte](9)
     headerBytes(0) = (length >> 16).toByte
     headerBytes(1) = (length >> 8).toByte
     headerBytes(2) = (length >> 0).toByte
     headerBytes(3) = tpe.id.toByte
-    headerBytes(4) = flags.toByte
+    headerBytes(4) = flags.value.toByte
     headerBytes(5) = (streamId >> 24).toByte
     headerBytes(6) = (streamId >> 16).toByte
     headerBytes(7) = (streamId >> 8).toByte

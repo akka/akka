@@ -79,11 +79,7 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
         .watchTermination()(Keep.right)
         // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
         // to buffer requests that cannot be handled in parallel
-        .mapAsyncUnordered(parallelism) { req ⇒
-          val streamIdHeader = req.header[Http2StreamIdHeader].get
-          val response = handler(req)
-          response.map(_.addHeader(streamIdHeader))(system.dispatcher)
-        }
+        .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
         .joinMat(serverLayer)(Keep.left)))
 
     val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)

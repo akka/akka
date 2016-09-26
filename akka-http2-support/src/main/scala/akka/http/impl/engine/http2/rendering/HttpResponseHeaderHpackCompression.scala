@@ -80,8 +80,7 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
       response.headers
         .filter(_.renderInResponses)
         .foreach { h ⇒
-          // TODO so wasteful... (it needs to be lower-cased since it's checking by == in the LUT)
-          val nameBytes = h.name.toRootLowerCase.getBytes
+          val nameBytes = h.lowercaseName.getBytes
           val valueBytes = h.value.getBytes
           encoder.encodeHeader(os, nameBytes, valueBytes, false)
         }

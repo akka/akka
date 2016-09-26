@@ -25,7 +25,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
       object ReadPreface extends Step {
         def parse(reader: ByteReader): ParseResult[FrameEvent] =
           if (reader.remainingSize < 24) throw NeedMoreData
-          else if (reader.take(24) == Http2Protocol.ConnectionPreface)
+          else if (reader.take(24) == Http2Protocol.ClientConnectionPreface)
             ParseResult(None, ReadFrame, false)
           else
             throw new RuntimeException("Expected ConnectionPreface!")
@@ -92,7 +92,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
               // TODO: fail if remaining size isn't exactly 3
               val id = payload.readShortBE()
               val value = payload.readIntBE()
-              Setting(SettingIdentifier.byId(id), value) :: read
+              readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
             } else read.reverse
 
           SettingsFrame(readSettings(Nil))

@@ -9,10 +9,14 @@ import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
 import akka.http.impl.engine.http2.rendering.HttpResponseHeaderHpackCompression
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 /** Represents one direction of an Http2 substream */
 final case class Http2SubStream(initialFrame: StreamFrameEvent, frames: Source[StreamFrameEvent, _]) {
@@ -23,17 +27,12 @@ object Http2Blueprint {
   def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer() atop
       demux() atop
-      flowControl() atop
       framing()
 
   def framing(): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
       Flow[FrameEvent].map(FrameRenderer.render),
       Flow[ByteString].via(new FrameParser(shouldReadPreface = true)))
-
-  /** Manages flow control for streams */
-  def flowControl(): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
-    BidiFlow.identity
 
   /**
    * Creates substreams for every stream and manages stream state machines
@@ -55,4 +54,16 @@ object Http2Blueprint {
     val outgoingResponses = Flow[HttpResponse].via(new HttpResponseHeaderHpackCompression)
     BidiFlow.fromFlows(outgoingResponses, incomingRequests)
   }
+
+  /**
+   * Returns a flow that handles `parallelism` requests in parallel, automatically keeping track of the
+   * Http2StreamIdHeader between request and responses.
+   */
+  def handleWithStreamIdHeader(parallelism: Int)(handler: HttpRequest ⇒ Future[HttpResponse])(implicit ec: ExecutionContext): Flow[HttpRequest, HttpResponse, NotUsed] =
+    Flow[HttpRequest]
+      .mapAsyncUnordered(parallelism) { req ⇒
+        val streamIdHeader = req.header[Http2StreamIdHeader].get
+        val response = handler(req)
+        response.map(_.addHeader(streamIdHeader))
+      }
 }

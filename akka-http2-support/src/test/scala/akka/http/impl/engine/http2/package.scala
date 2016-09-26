@@ -9,7 +9,7 @@ package object http2 {
   implicit class RichString(val str: String) extends AnyVal {
     def parseHexByteString: ByteString =
       ByteString(
-        str.grouped(2).map(Integer.parseInt(_, 16).toByte).toArray
+        str.replaceAll("\\s", "").trim.grouped(2).map(Integer.parseInt(_, 16).toByte).toArray
       )
   }
 }
