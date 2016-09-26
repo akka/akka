@@ -19,6 +19,9 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case identity: ActorIdentity ⇒ serializeActorIdentity(identity)
     case Some(value)             ⇒ serializeSome(value)
     case None                    ⇒ NoneSerialized
+    case s: Status.Success       ⇒ serializeStatusSuccess(s)
+    case f: Status.Failure       ⇒ serializeStatusFailure(f)
+    case t: Throwable            ⇒ serializeThrowable(t)
     case _                       ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
@@ -74,21 +77,62 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     builder
   }
 
+  private def serializeStatusSuccess(success: Status.Success): Array[Byte] =
+    payloadBuilder(success.status).build().toByteArray
+
+  private def serializeStatusFailure(failure: Status.Failure): Array[Byte] =
+    payloadBuilder(failure.cause).build().toByteArray
+
+  private def serializeThrowable(t: Throwable): Array[Byte] = {
+    val b = ContainerFormats.Throwable.newBuilder()
+      .setClazzName(t.getClass.getName)
+    if (t.getMessage != null)
+      b.setMessage(t.getMessage)
+    if (t.getCause != null)
+      b.setCause(payloadBuilder(t.getCause))
+    val stackTrace = t.getStackTrace
+    if (stackTrace != null) {
+      var i = 0
+      while (i < stackTrace.length) {
+        b.addStackTrace(stackTraceElementBuilder(stackTrace(i)))
+        i += 1
+      }
+    }
+
+    b.build().toByteArray
+  }
+
+  private def stackTraceElementBuilder(elem: StackTraceElement): ContainerFormats.StackTraceElement.Builder = {
+    ContainerFormats.StackTraceElement.newBuilder()
+      .setClazzName(elem.getClassName)
+      .setMethodName(elem.getMethodName)
+      .setFileName(elem.getFileName)
+      .setLineNumber(elem.getLineNumber)
+  }
+
   private val IdentifyManifest = "A"
   private val ActorIdentifyManifest = "B"
   private val OptionManifest = "C"
+  private val StatusSuccessManifest = "D"
+  private val StatusFailureManifest = "E"
+  private val ThrowableManifest = "F"
 
   private val fromBinaryMap = Map[String, Array[Byte] ⇒ AnyRef](
     IdentifyManifest → deserializeIdentify,
     ActorIdentifyManifest → deserializeActorIdentity,
-    OptionManifest → deserializeOption
-  )
+    OptionManifest → deserializeOption,
+    StatusSuccessManifest → deserializeStatusSuccess,
+    StatusFailureManifest → deserializeStatusFailure,
+    ThrowableManifest → deserializeThrowable)
 
   override def manifest(o: AnyRef): String =
     o match {
-      case _: Identify      ⇒ IdentifyManifest
-      case _: ActorIdentity ⇒ ActorIdentifyManifest
-      case _: Option[Any]   ⇒ OptionManifest
+      case _: Identify       ⇒ IdentifyManifest
+      case _: ActorIdentity  ⇒ ActorIdentifyManifest
+      case _: Option[Any]    ⇒ OptionManifest
+      case _: Status.Success ⇒ StatusSuccessManifest
+      case _: Status.Failure ⇒ StatusFailureManifest
+      case _: Throwable      ⇒ ThrowableManifest
       case _ ⇒
         throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
     }
@@ -127,6 +171,34 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       val optionProto = ContainerFormats.Option.parseFrom(bytes)
       Some(deserializePayload(optionProto.getValue))
     }
+  }
+
+  private def deserializeStatusSuccess(bytes: Array[Byte]): Status.Success =
+    Status.Success(deserializePayload(ContainerFormats.Payload.parseFrom(bytes)))
+
+  private def deserializeStatusFailure(bytes: Array[Byte]): Status.Failure =
+    Status.Failure(deserializePayload(ContainerFormats.Payload.parseFrom(bytes)).asInstanceOf[Throwable])
+
+  private def deserializeThrowable(bytes: Array[Byte]): Throwable = {
+    val protoT = ContainerFormats.Throwable.parseFrom(bytes)
+    val t: Throwable =
+      if (protoT.hasCause) {
+        val cause = deserializePayload(protoT.getCause).asInstanceOf[Throwable]
+        system.dynamicAccess.createInstanceFor[Throwable](
+          protoT.getClazzName,
+          List(classOf[String] → protoT.getMessage, classOf[Throwable] → cause)).get
+      } else
+        system.dynamicAccess.createInstanceFor[Throwable](
+          protoT.getClazzName,
+          List(classOf[String] → protoT.getMessage)).get
+
+    import scala.collection.JavaConverters._
+    val stackTrace =
+      (protoT.getStackTraceList.asScala.map { elem ⇒
+        new StackTraceElement(elem.getClazzName, elem.getMethodName, elem.getFileName, elem.getLineNumber)
+      }).toArray
+    t.setStackTrace(stackTrace)
+    t
   }
 
   private def deserializePayload(payload: ContainerFormats.Payload): Any = {
