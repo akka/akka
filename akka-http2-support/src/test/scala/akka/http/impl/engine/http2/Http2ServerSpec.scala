@@ -1,11 +1,19 @@
 package akka.http.impl.engine.http2
 
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
+import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
+import akka.http.impl.engine.http2.rendering.HttpResponseHeaderHpackCompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
+import akka.http.impl.util.enhanceString_
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http2
+import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpMethods
 import akka.http.scaladsl.model.HttpProtocols
 import akka.http.scaladsl.model.HttpRequest
@@ -27,7 +35,11 @@ import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
+import com.twitter.hpack.Decoder
+import com.twitter.hpack.Encoder
+import com.twitter.hpack.HeaderListener
 
+import scala.annotation.tailrec
 import scala.concurrent.Future
 
 class Http2ServerSpec extends AkkaSpec {
@@ -74,7 +86,7 @@ class Http2ServerSpec extends AkkaSpec {
           expectedResponseHeaderBlock: ByteString
         ): Unit = {
           sendHEADERS(streamId, endStream = true, endHeaders = true, requestHeaderBlock)
-          expectRequest().removeHeader("x-http2-stream-id") shouldBe expectedRequest
+          expectRequest() shouldBe expectedRequest
 
           responseOut.sendNext(response.addHeader(Http2StreamIdHeader(streamId)))
           val headerPayload = expectHeaderBlock(streamId)
@@ -152,6 +164,42 @@ class Http2ServerSpec extends AkkaSpec {
       "parse headers to modeled headers" in pending
     }
 
+    "support stream support for request entity data" should {
+      "send data frames to entity stream" in pending
+      "fail entity stream if peer sends RST_STREAM frame" in pending
+      "send RST_STREAM if entity stream is canceled" in pending
+    }
+
+    "support stream support for sending response entity data" should {
+      class WaitingForResponseDataSetup extends TestSetup with WithProbes with AutomaticHpackWireSupport {
+        val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
+        sendRequest(1, theRequest)
+        expectRequest() shouldBe theRequest
+
+        val byteOut = TestPublisher.probe[ByteString]()
+        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(byteOut)))
+        emitResponse(1, response)
+        expectResponseHEADERS(streamId = 1, endStream = false) shouldBe response.withEntity(HttpEntity.Empty)
+      }
+
+      "send entity data as data frames" in new WaitingForResponseDataSetup {
+        val data1 = ByteString("abcd")
+        byteOut.sendNext(data1)
+        expectDATA(1, endStream = false, data1)
+
+        val data2 = ByteString("efghij")
+        byteOut.sendNext(data2)
+        expectDATA(1, endStream = false, data2)
+
+        byteOut.sendComplete()
+        expectDATA(1, endStream = true, ByteString.empty)
+      }
+      "cancel entity data source when peer sends RST_STREAM" in pending
+      "send RST_STREAM when entity data stream fails" in pending
+
+      "fail if advertised content-length is exceed" in pending
+    }
+
     "support multiple concurrent substreams" should {
       "receive two requests concurrently" in pending
       "send two responses concurrently" in pending
@@ -174,12 +222,43 @@ class Http2ServerSpec extends AkkaSpec {
     def expectBytes(bytes: ByteString): Unit = netIn.expectBytes(bytes)
     def expectBytes(num: Int): ByteString = netIn.expectBytes(num)
 
-    def expectFrame(frameType: FrameType, flags: ByteFlag, streamId: Int): ByteString = {
+    def expectDATAFrame(streamId: Int): (Boolean, ByteString) = {
+      val (flags, payload) = expectFrameFlagsAndPayload(FrameType.DATA, streamId)
+      (Flags.END_STREAM.isSet(flags), payload)
+    }
+
+    def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString = {
+      @tailrec def collectMore(collected: ByteString, remainingBytes: Int): ByteString = {
+        val (completed, data) = expectDATAFrame(streamId)
+        data.size should be <= remainingBytes // cannot have more data pending
+        if (data.size < remainingBytes) {
+          completed shouldBe false
+          collectMore(collected ++ data, remainingBytes - data.size)
+        } else {
+          // data.size == remainingBytes, i.e. collection finished
+          if (endStream && !completed) // wait for final empty data frame
+            expectFramePayload(FrameType.DATA, Flags.END_STREAM, streamId) shouldBe ByteString.empty
+          collected ++ data
+        }
+      }
+      collectMore(ByteString.empty, numBytes)
+    }
+
+    def expectDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit =
+      expectDATA(streamId, endStream, data.length) shouldBe data
+
+    def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString) = {
       val header = expectFrameHeader()
       header.frameType shouldBe frameType
-      header.flags shouldBe flags
+
       header.streamId shouldBe streamId
-      expectBytes(header.payloadLength)
+      val data = expectBytes(header.payloadLength)
+      (header.flags, data)
+    }
+    def expectFramePayload(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int): ByteString = {
+      val (flags, data) = expectFrameFlagsAndPayload(frameType, streamId)
+      expectedFlags shouldBe flags
+      data
     }
 
     def expectFrameHeader(): FrameHeader = {
@@ -194,9 +273,9 @@ class Http2ServerSpec extends AkkaSpec {
     }
 
     /** Collect a header block maybe spanning several frames */
-    def expectHeaderBlock(streamId: Int): ByteString =
+    def expectHeaderBlock(streamId: Int, endStream: Boolean = true): ByteString =
       // FIXME: also collect CONTINUATION frames as long as END_HEADERS is not set
-      expectFrame(FrameType.HEADERS, Flags.END_STREAM | Flags.END_HEADERS, streamId)
+      expectFramePayload(FrameType.HEADERS, Flags.END_STREAM.ifSet(endStream) | Flags.END_HEADERS, streamId)
 
     def sendFrame(frameType: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): Unit =
       sendBytes(FrameRenderer.renderFrame(frameType, flags, streamId, payload))
@@ -213,6 +292,49 @@ class Http2ServerSpec extends AkkaSpec {
     serverPreface.frameType shouldBe Http2Protocol.FrameType.SETTINGS
   }
 
+  /** Helper that allows automatic HPACK encoding/decoding for wire sends / expectations */
+  trait AutomaticHpackWireSupport extends TestSetupWithoutHandshake {
+    def sendRequest(streamId: Int, request: HttpRequest): Unit = {
+      require(request.entity.isKnownEmpty, "Only empty entities supported for `sendRequest`")
+      sendHEADERS(streamId, endStream = true, endHeaders = true, encodeHeaders(request))
+    }
+    def expectResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
+      val headerBlockBytes = expectHeaderBlock(streamId, endStream)
+      decodeHeaders(headerBlockBytes)
+    }
+
+    val encoder = new Encoder(HttpRequestHeaderHpackDecompression.maxHeaderTableSize)
+    def encodeHeaders(request: HttpRequest): ByteString = {
+      val bos = new ByteArrayOutputStream()
+      def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
+      encode(":method", request.method.value)
+      encode(":scheme", request.uri.scheme.toString)
+      encode(":path", request.uri.path.toString)
+      encode(":authority", request.uri.authority.toString)
+
+      request.headers.filter(_.renderInRequests()).foreach { h ⇒
+        encode(h.lowercaseName, h.value)
+      }
+
+      ByteString(bos.toByteArray)
+    }
+
+    val decoder = new Decoder(HttpRequestHeaderHpackDecompression.maxHeaderSize, HttpRequestHeaderHpackDecompression.maxHeaderTableSize)
+    def decodeHeaders(bytes: ByteString): HttpResponse = {
+      val bis = new ByteArrayInputStream(bytes.toArray)
+      var response = HttpResponse()
+      def update(f: HttpResponse ⇒ HttpResponse): Unit = response = f(response)
+      decoder.decode(bis, new HeaderListener {
+        def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
+          new String(name) match {
+            case ":status" ⇒ update(_.copy(status = new String(value).toInt))
+            case x         ⇒ update(_.addHeader(RawHeader(x, new String(value)))) // FIXME: decode to modeled headers
+          }
+      })
+      response
+    }
+  }
+
   trait WithProbes extends TestSetupWithoutHandshake {
     lazy val requestIn = TestSubscriber.probe[HttpRequest]()
     lazy val responseOut = TestPublisher.probe[HttpResponse]()
@@ -220,7 +342,9 @@ class Http2ServerSpec extends AkkaSpec {
     def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
       Flow.fromSinkAndSource(Sink.fromSubscriber(requestIn), Source.fromPublisher(responseOut))
 
-    def expectRequest(): HttpRequest = requestIn.requestNext()
+    def expectRequest(): HttpRequest = requestIn.requestNext().removeHeader("x-http2-stream-id")
+    def emitResponse(streamId: Int, response: HttpResponse): Unit =
+      responseOut.sendNext(response.addHeader(Http2StreamIdHeader(streamId)))
   }
   trait WithHandler extends TestSetupWithoutHandshake {
     def parallelism: Int = 2
