@@ -66,7 +66,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
           if (priority) payload.readByte() & 0xff
           else 0
 
-        // TODO: check that streamId != 0
+        Http2Compliance.requirePositiveStreamId(streamId)
         // TODO: also write out Priority frame if priority was set
         HeadersFrame(streamId, endStream, endHeaders, payload.take(payload.remainingSize - paddingLength))
 
@@ -82,8 +82,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
 
       case SETTINGS ⇒
         val ack = Flags.ACK.isSet(flags)
-
-        // TODO: validate that streamId = 0
+        Http2Compliance.requireZeroStreamId(streamId)
 
         if (ack) SettingsAckFrame // TODO: validate that payload is empty
         else {
@@ -108,7 +107,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
 
       case CONTINUATION ⇒
         val endHeaders = Flags.END_HEADERS.isSet(flags)
-        // TODO: check that streamId > 0
+        Http2Compliance.requirePositiveStreamId(streamId)
 
         ContinuationFrame(streamId, endHeaders, payload.remainingData)
 

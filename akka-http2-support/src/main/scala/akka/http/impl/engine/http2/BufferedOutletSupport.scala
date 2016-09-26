@@ -35,7 +35,7 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
      */
     protected def doPush(elem: T): Unit = outlet.push(elem)
 
-    def onPull(): Unit =
+    override def onPull(): Unit =
       if (!buffer.isEmpty) doPush(buffer.pop())
       else pulled = true
 
