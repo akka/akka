@@ -54,7 +54,6 @@ private[akka] final class ArterySettings private (config: Config) {
       val segments = entry.split('/').tail
       tree.insert(segments, NotUsed)
     }
-  val Dispatcher = getString("use-dispatcher")
 
   val UntrustedMode: Boolean = getBoolean("untrusted-mode")
   val TrustedSelectionPaths: Set[String] = immutableSeq(getStringList("trusted-selection-paths")).toSet
@@ -67,7 +66,20 @@ private[akka] final class ArterySettings private (config: Config) {
     import config._
 
     val TestMode: Boolean = getBoolean("test-mode")
-    val MaterializerSettings = ActorMaterializerSettings(config.getConfig("materializer"))
+
+    val Dispatcher = getString("use-dispatcher")
+    val ControlStreamDispatcher = getString("use-control-stream-dispatcher")
+    val MaterializerSettings = {
+      val settings = ActorMaterializerSettings(config.getConfig("materializer"))
+      if (Dispatcher.isEmpty) settings
+      else settings.withDispatcher(Dispatcher)
+    }
+    val ControlStreamMaterializerSettings = {
+      val settings = ActorMaterializerSettings(config.getConfig("materializer"))
+      if (ControlStreamDispatcher.isEmpty) settings
+      else settings.withDispatcher(ControlStreamDispatcher)
+    }
+
     val EmbeddedMediaDriver = getBoolean("embedded-media-driver")
     val AeronDirectoryName = getString("aeron-dir") requiring (dir ⇒
       EmbeddedMediaDriver || dir.nonEmpty, "aeron-dir must be defined when using external media driver")

@@ -300,6 +300,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var _bindAddress: UniqueAddress = _
   @volatile private[this] var _addresses: Set[Address] = _
   @volatile private[this] var materializer: Materializer = _
+  @volatile private[this] var controlMaterializer: Materializer = _
   @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
   private[this] val mediaDriver = new AtomicReference[Option[MediaDriver]](None)
@@ -326,8 +327,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val testState = new SharedTestState
 
   private val inboundLanes = settings.Advanced.InboundLanes
-
-  private val remoteDispatcher = system.dispatchers.lookup(settings.Dispatcher)
 
   // TODO use WildcardIndex.isEmpty when merged from master
   val largeMessageChannelEnabled =
@@ -384,6 +383,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     remoteAddress ⇒ new Association(
       this,
       materializer,
+      controlMaterializer,
       remoteAddress,
       controlSubject,
       settings.LargeMessageDestinations,
@@ -413,8 +413,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       else ArteryTransport.autoSelectPort(settings.Bind.Hostname)
     } else settings.Bind.Port
 
-    // TODO: Configure materializer properly
-    // TODO: Have a supervisor actor
     _localAddress = UniqueAddress(
       Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port),
       AddressUidExtension(system).longAddressUid)
@@ -428,6 +426,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     topLevelFREvents.loFreq(Transport_UniqueAddressSet, _localAddress.toString().getBytes("US-ASCII"))
 
     materializer = ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remote", system)
+    controlMaterializer = ActorMaterializer.systemMaterializer(
+      settings.Advanced.MaterializerSettings,
+      "remoteControl", system)
 
     messageDispatcher = new MessageDispatcher(system, provider)
     topLevelFREvents.loFreq(Transport_MaterializerStarted, NoMetaData)
@@ -610,7 +611,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       aeronSource(controlStreamId, envelopeBufferPool)
         .via(inboundFlow(compression))
         .toMat(inboundControlSink)(Keep.both)
-        .run()(materializer)
+        .run()(controlMaterializer)
 
     controlSubject = ctrl
 
@@ -784,10 +785,10 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         else {
           val flushingPromise = Promise[Done]()
           system.systemActorOf(FlushOnShutdown.props(flushingPromise, settings.Advanced.ShutdownFlushTimeout,
-            this, allAssociations).withDispatcher(settings.Dispatcher), "remoteFlushOnShutdown")
+            this, allAssociations), "remoteFlushOnShutdown")
           flushingPromise.future
         }
-      implicit val ec = remoteDispatcher
+      implicit val ec = system.dispatcher
       flushing.recover { case _ ⇒ Done }.flatMap(_ ⇒ internalShutdown())
     } else {
       Future.successful(Done)
@@ -844,7 +845,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
    * Will complete successfully even if one of the stream completion futures failed
    */
   private def streamsCompleted: Future[Done] = {
-    implicit val ec = remoteDispatcher
+    implicit val ec = system.dispatcher
     for {
       _ ← Future.traverse(associationRegistry.allAssociations)(_.streamsCompleted)
       _ ← Future.sequence(streamMatValues.get().valuesIterator.map {
