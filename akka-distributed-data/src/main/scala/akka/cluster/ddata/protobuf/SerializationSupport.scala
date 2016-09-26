@@ -88,10 +88,21 @@ trait SerializationSupport {
     Address(addressProtocol, system.name, address.getHostname, address.getPort)
 
   def uniqueAddressToProto(uniqueAddress: UniqueAddress): dm.UniqueAddress.Builder =
-    dm.UniqueAddress.newBuilder().setAddress(addressToProto(uniqueAddress.address)).setUid(uniqueAddress.uid)
+    dm.UniqueAddress.newBuilder().setAddress(addressToProto(uniqueAddress.address))
+      .setUid(uniqueAddress.longUid.toInt)
+      .setUid2((uniqueAddress.longUid >> 32).toInt)
 
   def uniqueAddressFromProto(uniqueAddress: dm.UniqueAddress): UniqueAddress =
-    UniqueAddress(addressFromProto(uniqueAddress.getAddress), uniqueAddress.getUid)
+    UniqueAddress(
+      addressFromProto(uniqueAddress.getAddress),
+      if (uniqueAddress.hasUid2) {
+        // new remote node join the two parts of the long uid back
+        (uniqueAddress.getUid2.toLong << 32) | (uniqueAddress.getUid & 0xFFFFFFFFL)
+      } else {
+        // old remote node
+        uniqueAddress.getUid.toLong
+      }
+    )
 
   def resolveActorRef(path: String): ActorRef =
     system.provider.resolveActorRef(path)

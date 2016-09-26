@@ -230,10 +230,11 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     case None ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send management command but Remoting is not running.", null)
   }
 
-  override def quarantine(remoteAddress: Address, uid: Option[Int], reason: String): Unit = endpointManager match {
-    case Some(manager) ⇒ manager ! Quarantine(remoteAddress, uid)
+  override def quarantine(remoteAddress: Address, uid: Option[Long], reason: String): Unit = endpointManager match {
+    case Some(manager) ⇒
+      manager ! Quarantine(remoteAddress, uid.map(_.toInt))
     case _ ⇒ throw new RemoteTransportExceptionNoStackTrace(
-      s"Attempted to quarantine address [$remoteAddress] with uid [$uid] but Remoting is not running", null)
+      s"Attempted to quarantine address [$remoteAddress] with UID [$uid] but Remoting is not running", null)
   }
 
   private[akka] def boundAddresses: Map[String, Set[Address]] = {

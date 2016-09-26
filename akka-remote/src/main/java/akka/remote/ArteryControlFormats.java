@@ -6821,6 +6821,420 @@ public final class ArteryControlFormats {
     // @@protoc_insertion_point(class_scope:UniqueAddress)
   }
 
+  public interface ArteryHeartbeatRspOrBuilder
+      extends akka.protobuf.MessageOrBuilder {
+
+    // required uint64 uid = 1;
+    /**
+     * <code>required uint64 uid = 1;</code>
+     */
+    boolean hasUid();
+    /**
+     * <code>required uint64 uid = 1;</code>
+     */
+    long getUid();
+  }
+  /**
+   * Protobuf type {@code ArteryHeartbeatRsp}
+   *
+   * <pre>
+   * RemoteWatcher.ArteryHeartbeat is empty array
+   * RemoteWatcher.ArteryHeartbeatRsp
+   * </pre>
+   */
+  public static final class ArteryHeartbeatRsp extends
+      akka.protobuf.GeneratedMessage
+      implements ArteryHeartbeatRspOrBuilder {
+    // Use ArteryHeartbeatRsp.newBuilder() to construct.
+    private ArteryHeartbeatRsp(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private ArteryHeartbeatRsp(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final ArteryHeartbeatRsp defaultInstance;
+    public static ArteryHeartbeatRsp getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public ArteryHeartbeatRsp getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final akka.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final akka.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private ArteryHeartbeatRsp(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              uid_ = input.readUInt64();
+              break;
+            }
+          }
+        }
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.remote.ArteryControlFormats.internal_static_ArteryHeartbeatRsp_descriptor;
+    }
+
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.remote.ArteryControlFormats.internal_static_ArteryHeartbeatRsp_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.remote.ArteryControlFormats.ArteryHeartbeatRsp.class, akka.remote.ArteryControlFormats.ArteryHeartbeatRsp.Builder.class);
+    }
+
+    public static akka.protobuf.Parser<ArteryHeartbeatRsp> PARSER =
+        new akka.protobuf.AbstractParser<ArteryHeartbeatRsp>() {
+      public ArteryHeartbeatRsp parsePartialFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
+        return new ArteryHeartbeatRsp(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public akka.protobuf.Parser<ArteryHeartbeatRsp> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // required uint64 uid = 1;
+    public static final int UID_FIELD_NUMBER = 1;
+    private long uid_;
+    /**
+     * <code>required uint64 uid = 1;</code>
+     */
+    public boolean hasUid() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required uint64 uid = 1;</code>
+     */
+    public long getUid() {
+      return uid_;
+    }
+
+    private void initFields() {
+      uid_ = 0L;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasUid()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(akka.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeUInt64(1, uid_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeUInt64Size(1, uid_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(byte[] data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
+        byte[] data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
+        akka.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parseFrom(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.remote.ArteryControlFormats.ArteryHeartbeatRsp prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code ArteryHeartbeatRsp}
+     *
+     * <pre>
+     * RemoteWatcher.ArteryHeartbeat is empty array
+     * RemoteWatcher.ArteryHeartbeatRsp
+     * </pre>
+     */
+    public static final class Builder extends
+        akka.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.remote.ArteryControlFormats.ArteryHeartbeatRspOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.remote.ArteryControlFormats.internal_static_ArteryHeartbeatRsp_descriptor;
+      }
+
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.remote.ArteryControlFormats.internal_static_ArteryHeartbeatRsp_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.remote.ArteryControlFormats.ArteryHeartbeatRsp.class, akka.remote.ArteryControlFormats.ArteryHeartbeatRsp.Builder.class);
+      }
+
+      // Construct using akka.remote.ArteryControlFormats.ArteryHeartbeatRsp.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        uid_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public akka.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.remote.ArteryControlFormats.internal_static_ArteryHeartbeatRsp_descriptor;
+      }
+
+      public akka.remote.ArteryControlFormats.ArteryHeartbeatRsp getDefaultInstanceForType() {
+        return akka.remote.ArteryControlFormats.ArteryHeartbeatRsp.getDefaultInstance();
+      }
+
+      public akka.remote.ArteryControlFormats.ArteryHeartbeatRsp build() {
+        akka.remote.ArteryControlFormats.ArteryHeartbeatRsp result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.remote.ArteryControlFormats.ArteryHeartbeatRsp buildPartial() {
+        akka.remote.ArteryControlFormats.ArteryHeartbeatRsp result = new akka.remote.ArteryControlFormats.ArteryHeartbeatRsp(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.uid_ = uid_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(akka.protobuf.Message other) {
+        if (other instanceof akka.remote.ArteryControlFormats.ArteryHeartbeatRsp) {
+          return mergeFrom((akka.remote.ArteryControlFormats.ArteryHeartbeatRsp)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.remote.ArteryControlFormats.ArteryHeartbeatRsp other) {
+        if (other == akka.remote.ArteryControlFormats.ArteryHeartbeatRsp.getDefaultInstance()) return this;
+        if (other.hasUid()) {
+          setUid(other.getUid());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasUid()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.remote.ArteryControlFormats.ArteryHeartbeatRsp parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.remote.ArteryControlFormats.ArteryHeartbeatRsp) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // required uint64 uid = 1;
+      private long uid_ ;
+      /**
+       * <code>required uint64 uid = 1;</code>
+       */
+      public boolean hasUid() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required uint64 uid = 1;</code>
+       */
+      public long getUid() {
+        return uid_;
+      }
+      /**
+       * <code>required uint64 uid = 1;</code>
+       */
+      public Builder setUid(long value) {
+        bitField0_ |= 0x00000001;
+        uid_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required uint64 uid = 1;</code>
+       */
+      public Builder clearUid() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        uid_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:ArteryHeartbeatRsp)
+    }
+
+    static {
+      defaultInstance = new ArteryHeartbeatRsp(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:ArteryHeartbeatRsp)
+  }
+
   private static akka.protobuf.Descriptors.Descriptor
     internal_static_Quarantined_descriptor;
   private static
@@ -6866,6 +7280,11 @@ public final class ArteryControlFormats {
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_UniqueAddress_fieldAccessorTable;
+  private static akka.protobuf.Descriptors.Descriptor
+    internal_static_ArteryHeartbeatRsp_descriptor;
+  private static
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_ArteryHeartbeatRsp_fieldAccessorTable;
 
   public static akka.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -6894,8 +7313,9 @@ public final class ArteryControlFormats {
       "2\016.UniqueAddress\"K\n\007Address\022\020\n\010protocol\030" +
       "\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\020\n\010hostname\030\003 \002(\t\022" +
       "\014\n\004port\030\004 \002(\r\"7\n\rUniqueAddress\022\031\n\007addres" +
-      "s\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\004B\017\n\013akka.r",
-      "emoteH\001"
+      "s\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\004\"!\n\022Artery",
+      "HeartbeatRsp\022\013\n\003uid\030\001 \002(\004B\017\n\013akka.remote" +
+      "H\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -6956,6 +7376,12 @@ public final class ArteryControlFormats {
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_UniqueAddress_descriptor,
               new java.lang.String[] { "Address", "Uid", });
+          internal_static_ArteryHeartbeatRsp_descriptor =
+            getDescriptor().getMessageTypes().get(9);
+          internal_static_ArteryHeartbeatRsp_fieldAccessorTable = new
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_ArteryHeartbeatRsp_descriptor,
+              new java.lang.String[] { "Uid", });
           return null;
         }
       };

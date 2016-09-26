@@ -773,7 +773,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         inboundHandleProbe.expectNoMsg(1.second)
 
         // Quarantine the connection
-        RARP(thisSystem).provider.quarantine(remoteAddress, Some(remoteUID), "test")
+        RARP(thisSystem).provider.quarantine(remoteAddress, Some(remoteUID.toLong), "test")
 
         // Even though the connection is stashed it will be disassociated
         inboundHandleProbe.expectMsgType[AssociationHandle.Disassociated]

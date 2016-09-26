@@ -434,8 +434,7 @@ private[remote] class Association(
                     "messages to this UID will be delivered to dead letters. " +
                     "Remote actorsystem must be restarted to recover from this situation. {}",
                   remoteAddress, u, reason)
-                // FIXME when we complete the switch to Long UID we must use Long here also, issue #20644
-                transport.system.eventStream.publish(QuarantinedEvent(remoteAddress, u.toInt))
+                transport.system.eventStream.publish(QuarantinedEvent(remoteAddress, u))
                 clearOutboundCompression()
                 clearInboundCompression(u)
                 // end delivery of system messages to that incarnation after this point

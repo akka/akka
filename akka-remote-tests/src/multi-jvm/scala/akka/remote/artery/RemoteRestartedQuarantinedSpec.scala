@@ -36,7 +36,7 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   class Subject extends Actor {
     def receive = {
       case "shutdown" ⇒ context.system.terminate()
-      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).addressUid → self)
+      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).longAddressUid → self)
     }
   }
 
@@ -51,10 +51,10 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
   override def initialParticipants = 2
 
-  def identifyWithUid(role: RoleName, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Int, ActorRef) = {
+  def identifyWithUid(role: RoleName, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
     within(timeout) {
       system.actorSelection(node(role) / "user" / actorName) ! "identify"
-      expectMsgType[(Int, ActorRef)]
+      expectMsgType[(Long, ActorRef)]
     }
   }
 

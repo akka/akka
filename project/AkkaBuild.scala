@@ -168,19 +168,19 @@ object AkkaBuild extends Build {
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test")
-  ).configs(MultiJvm).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).configs(MultiJvm).disablePlugins(ValidatePullRequest)
 
   lazy val clusterMetrics = Project(
     id = "akka-cluster-metrics",
     base = file("akka-cluster-metrics"),
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", slf4j % "test->compile")
-  ).configs(MultiJvm).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).configs(MultiJvm).disablePlugins(ValidatePullRequest)
 
   lazy val clusterTools = Project(
     id = "akka-cluster-tools",
     base = file("akka-cluster-tools"),
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
-  ).configs(MultiJvm).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).configs(MultiJvm).disablePlugins(ValidatePullRequest)
 
   lazy val clusterSharding = Project(
     id = "akka-cluster-sharding",
@@ -191,13 +191,13 @@ object AkkaBuild extends Build {
     //      provided.
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
         persistence % "compile;test->provided", distributedData % "provided;test", clusterTools)
-  ).configs(MultiJvm).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).configs(MultiJvm).disablePlugins(ValidatePullRequest)
 
   lazy val distributedData = Project(
     id = "akka-distributed-data-experimental",
     base = file("akka-distributed-data"),
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm")
-  ).configs(MultiJvm).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).configs(MultiJvm).disablePlugins(ValidatePullRequest)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
@@ -215,7 +215,7 @@ object AkkaBuild extends Build {
     id = "akka-persistence",
     base = file("akka-persistence"),
     dependencies = Seq(actor, testkit % "test->test", protobuf)
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val persistenceQuery = Project(
     id = "akka-persistence-query-experimental",
@@ -225,37 +225,37 @@ object AkkaBuild extends Build {
       persistence % "compile;provided->provided;test->test",
       testkit % "compile;test->test",
       streamTestkit % "compile;test->test")
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val persistenceTck = Project(
     id = "akka-persistence-tck",
     base = file("akka-persistence-tck"),
     dependencies = Seq(persistence % "compile;provided->provided;test->test", testkit % "compile;test->test")
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val persistenceShared = Project(
     id = "akka-persistence-shared",
     base = file("akka-persistence-shared"),
     dependencies = Seq(persistence % "test->test", testkit % "test->test", remote % "test", protobuf)
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val httpCore = Project(
     id = "akka-http-core",
     base = file("akka-http-core"),
     dependencies = Seq(stream, parsing, streamTestkit % "test->test")
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val http = Project(
     id = "akka-http-experimental",
     base = file("akka-http"),
     dependencies = Seq(httpCore)
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val httpTestkit = Project(
     id = "akka-http-testkit",
     base = file("akka-http-testkit"),
     dependencies = Seq(http, streamTestkit)
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val httpTests = Project(
     id = "akka-http-tests",
@@ -263,12 +263,12 @@ object AkkaBuild extends Build {
     dependencies = Seq(
       httpTestkit % "test", streamTestkit % "test->test", testkit % "test->test", httpSprayJson, httpXml, httpJackson, 
       multiNodeTestkit, remoteTests % "test->test") // required for multi-node latency/throughput Spec
-  ).configs(MultiJvm).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).configs(MultiJvm).disablePlugins(ValidatePullRequest)
 
   lazy val httpMarshallersScala = Project(
     id = "akka-http-marshallers-scala-experimental",
     base = file("akka-http-marshallers-scala")
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
   .settings(parentSettings: _*)
   .aggregate(httpSprayJson, httpXml)
 
@@ -281,7 +281,7 @@ object AkkaBuild extends Build {
   lazy val httpMarshallersJava = Project(
     id = "akka-http-marshallers-java-experimental",
     base = file("akka-http-marshallers-java")
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
   .settings(parentSettings: _*)
   .aggregate(httpJackson)
 
@@ -293,61 +293,61 @@ object AkkaBuild extends Build {
       id = s"akka-http-$name-experimental",
       base = file(s"akka-http-marshallers-scala/akka-http-$name"),
       dependencies = Seq(http)
-    ).disablePlugins(ValidatePullRequest, MimaPlugin)
+    ).disablePlugins(ValidatePullRequest)
 
   def httpMarshallersJavaSubproject(name: String) =
     Project(
       id = s"akka-http-$name-experimental",
       base = file(s"akka-http-marshallers-java/akka-http-$name"),
       dependencies = Seq(http)
-    ).disablePlugins(ValidatePullRequest, MimaPlugin)
+    ).disablePlugins(ValidatePullRequest)
 
   lazy val parsing = Project(
     id = "akka-parsing",
     base = file("akka-parsing")
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val stream = Project(
     id = "akka-stream",
     base = file("akka-stream"),
     dependencies = Seq(actor)
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val streamTestkit = Project(
     id = "akka-stream-testkit",
     base = file("akka-stream-testkit"),
     dependencies = Seq(stream, testkit % "compile;test->test")
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val streamTests = Project(
     id = "akka-stream-tests",
     base = file("akka-stream-tests"),
     dependencies = Seq(streamTestkit % "test->test", stream)
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val streamTestsTck = Project(
     id = "akka-stream-tests-tck",
     base = file("akka-stream-tests-tck"),
     dependencies = Seq(streamTestkit % "test->test", stream)
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val kernel = Project(
     id = "akka-kernel",
     base = file("akka-kernel"),
     dependencies = Seq(actor, testkit % "test->test")
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val camel = Project(
     id = "akka-camel",
     base = file("akka-camel"),
     dependencies = Seq(actor, slf4j, testkit % "test->test")
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val osgi = Project(
     id = "akka-osgi",
     base = file("akka-osgi"),
     dependencies = Seq(actor)
-  ).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val docs = Project(
     id = "akka-docs",
@@ -368,7 +368,7 @@ object AkkaBuild extends Build {
     id = "akka-contrib",
     base = file("akka-contrib"),
     dependencies = Seq(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile;test->provided")
-  ).configs(MultiJvm).disablePlugins(ValidatePullRequest, MimaPlugin)
+  ).configs(MultiJvm).disablePlugins(ValidatePullRequest)
 
   lazy val samplesSettings = parentSettings ++ ActivatorDist.settings
 

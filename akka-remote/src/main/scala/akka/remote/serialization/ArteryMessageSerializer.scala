@@ -5,11 +5,12 @@ package akka.remote.serialization
 
 import akka.actor.{ ActorRef, Address, ExtendedActorSystem }
 import akka.protobuf.MessageLite
+import akka.remote.RemoteWatcher.ArteryHeartbeatRsp
 import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
 import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress.{ CompressionProtocol, CompressionTable }
 import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Quarantined, SystemMessageDelivery }
-import akka.remote.{ ArteryControlFormats, MessageSerializer, UniqueAddress, WireFormats }
+import akka.remote._
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
 
 /** INTERNAL API */
@@ -27,6 +28,9 @@ private[akka] object ArteryMessageSerializer {
   private val SystemMessageDeliveryAckManifest = "k"
   private val SystemMessageDeliveryNackManifest = "l"
 
+  private val ArteryHeartbeatManifest = "m"
+  private val ArteryHeartbeatRspManifest = "n"
+
   private final val DeadLettersRepresentation = ""
 }
 
@@ -41,6 +45,8 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case _: SystemMessageDelivery.Ack ⇒ SystemMessageDeliveryAckManifest
     case _: HandshakeReq ⇒ HandshakeReqManifest
     case _: HandshakeRsp ⇒ HandshakeRspManifest
+    case _: RemoteWatcher.ArteryHeartbeat.type ⇒ ArteryHeartbeatManifest
+    case _: RemoteWatcher.ArteryHeartbeatRsp ⇒ ArteryHeartbeatRspManifest
     case _: SystemMessageDelivery.Nack ⇒ SystemMessageDeliveryNackManifest
     case _: Quarantined ⇒ QuarantinedManifest
     case _: ActorSystemTerminating ⇒ ActorSystemTerminatingManifest
@@ -53,20 +59,22 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
 
-  override def toBinary(o: AnyRef): Array[Byte] = (o match { // most frequent ones first
-    case env: SystemMessageDelivery.SystemMessageEnvelope   ⇒ serializeSystemMessageEnvelope(env)
-    case SystemMessageDelivery.Ack(seqNo, from)             ⇒ serializeSystemMessageDeliveryAck(seqNo, from)
-    case HandshakeReq(from, to)                             ⇒ serializeHandshakeReq(from, to)
-    case HandshakeRsp(from)                                 ⇒ serializeWithAddress(from)
-    case SystemMessageDelivery.Nack(seqNo, from)            ⇒ serializeSystemMessageDeliveryAck(seqNo, from)
-    case q: Quarantined                                     ⇒ serializeQuarantined(q)
-    case ActorSystemTerminating(from)                       ⇒ serializeWithAddress(from)
-    case ActorSystemTerminatingAck(from)                    ⇒ serializeWithAddress(from)
-    case adv: ActorRefCompressionAdvertisement              ⇒ serializeActorRefCompressionAdvertisement(adv)
-    case ActorRefCompressionAdvertisementAck(from, id)      ⇒ serializeCompressionTableAdvertisementAck(from, id)
-    case adv: ClassManifestCompressionAdvertisement         ⇒ serializeCompressionAdvertisement(adv)(identity)
-    case ClassManifestCompressionAdvertisementAck(from, id) ⇒ serializeCompressionTableAdvertisementAck(from, id)
-  }).toByteArray
+  override def toBinary(o: AnyRef): Array[Byte] = o match { // most frequent ones first
+    case env: SystemMessageDelivery.SystemMessageEnvelope   ⇒ serializeSystemMessageEnvelope(env).toByteArray
+    case SystemMessageDelivery.Ack(seqNo, from)             ⇒ serializeSystemMessageDeliveryAck(seqNo, from).toByteArray
+    case HandshakeReq(from, to)                             ⇒ serializeHandshakeReq(from, to).toByteArray
+    case HandshakeRsp(from)                                 ⇒ serializeWithAddress(from).toByteArray
+    case RemoteWatcher.ArteryHeartbeat                      ⇒ Array.emptyByteArray
+    case RemoteWatcher.ArteryHeartbeatRsp(from)             ⇒ serializeArteryHeartbeatRsp(from).toByteArray
+    case SystemMessageDelivery.Nack(seqNo, from)            ⇒ serializeSystemMessageDeliveryAck(seqNo, from).toByteArray
+    case q: Quarantined                                     ⇒ serializeQuarantined(q).toByteArray
+    case ActorSystemTerminating(from)                       ⇒ serializeWithAddress(from).toByteArray
+    case ActorSystemTerminatingAck(from)                    ⇒ serializeWithAddress(from).toByteArray
+    case adv: ActorRefCompressionAdvertisement              ⇒ serializeActorRefCompressionAdvertisement(adv).toByteArray
+    case ActorRefCompressionAdvertisementAck(from, id)      ⇒ serializeCompressionTableAdvertisementAck(from, id).toByteArray
+    case adv: ClassManifestCompressionAdvertisement         ⇒ serializeCompressionAdvertisement(adv)(identity).toByteArray
+    case ClassManifestCompressionAdvertisementAck(from, id) ⇒ serializeCompressionTableAdvertisementAck(from, id).toByteArray
+  }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match { // most frequent ones first (could be made a HashMap in the future)
     case SystemMessageEnvelopeManifest ⇒ deserializeSystemMessageEnvelope(bytes)
@@ -81,6 +89,8 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case ActorRefCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ActorRefCompressionAdvertisementAck)
     case ClassManifestCompressionAdvertisementManifest ⇒ deserializeCompressionAdvertisement(bytes, identity, ClassManifestCompressionAdvertisement)
     case ClassManifestCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ClassManifestCompressionAdvertisementAck)
+    case ArteryHeartbeatManifest ⇒ RemoteWatcher.ArteryHeartbeat
+    case ArteryHeartbeatRspManifest ⇒ deserializeArteryHeartbeatRsp(bytes, ArteryHeartbeatRsp)
     case _ ⇒ throw new IllegalArgumentException(s"Manifest '$manifest' not defined for ArteryControlMessageSerializer (serializer id $identifier)")
   }
 
@@ -226,4 +236,12 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
 
   def deserializeAddress(address: ArteryControlFormats.Address): Address =
     Address(address.getProtocol, address.getSystem, address.getHostname, address.getPort)
+
+  def serializeArteryHeartbeatRsp(uid: Long): ArteryControlFormats.ArteryHeartbeatRsp =
+    ArteryControlFormats.ArteryHeartbeatRsp.newBuilder().setUid(uid).build()
+
+  def deserializeArteryHeartbeatRsp(bytes: Array[Byte], create: Long ⇒ ArteryHeartbeatRsp): ArteryHeartbeatRsp = {
+    val msg = ArteryControlFormats.ArteryHeartbeatRsp.parseFrom(bytes)
+    create(msg.getUid)
+  }
 }

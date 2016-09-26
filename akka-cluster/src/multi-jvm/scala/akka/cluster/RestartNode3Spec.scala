@@ -137,7 +137,7 @@ abstract class RestartNode3Spec
         awaitAssert {
           Cluster(system).readView.members.size should ===(3)
           Cluster(system).readView.members.exists { m ⇒
-            m.address == secondUniqueAddress.address && m.uniqueAddress.uid != secondUniqueAddress.uid
+            m.address == secondUniqueAddress.address && m.uniqueAddress.longUid != secondUniqueAddress.longUid
           }
         }
       }
