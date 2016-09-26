@@ -159,9 +159,49 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     }
 
     "support stream support for request entity data" should {
-      "send data frames to entity stream" in pending
-      "fail entity stream if peer sends RST_STREAM frame" in pending
-      "send RST_STREAM if entity stream is canceled" in pending
+      abstract class WaitingForRequestData extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+        val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
+        sendRequest(1, request, endStream = false)
+
+        val receivedRequest = expectRequest()
+        receivedRequest.withEntity(HttpEntity.Empty) shouldBe request
+        val entityDataIn = ByteStringSinkProbe()
+        receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
+        entityDataIn.ensureSubscription()
+      }
+
+      "send data frames to entity stream" inPendingUntilFixed new WaitingForRequestData {
+        val data1 = ByteString("abcdef")
+        sendDATA(1, endStream = false, data1)
+        entityDataIn.expectBytes(data1)
+
+        val data2 = ByteString("zyxwvu")
+        sendDATA(1, endStream = false, data2)
+        entityDataIn.expectBytes(data2)
+
+        val data3 = ByteString("mnopq")
+        sendDATA(1, endStream = true, data3)
+        entityDataIn.expectBytes(data3)
+        entityDataIn.expectComplete()
+      }
+      "fail entity stream if peer sends RST_STREAM frame" inPendingUntilFixed new WaitingForRequestData {
+        val data1 = ByteString("abcdef")
+        sendDATA(1, endStream = false, data1)
+        entityDataIn.expectBytes(data1)
+
+        sendRST_STREAM(1, ErrorCode.INTERNAL_ERROR)
+        val error = entityDataIn.expectError()
+        error.getMessage should contain("Peer canceled stream with INTERNAL_ERROR(0x2) error code.")
+      }
+      "send RST_STREAM if entity stream is canceled" inPendingUntilFixed new WaitingForRequestData {
+        val data1 = ByteString("abcdef")
+        sendDATA(1, endStream = false, data1)
+        entityDataIn.expectBytes(data1)
+
+        entityDataIn.cancel()
+        expectRST_STREAM(1, ErrorCode.CANCEL)
+      }
+      "fail if advertised content-length doesn't match" in pending
     }
 
     "support stream support for sending response entity data" should {
@@ -338,6 +378,9 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     def sendFrame(frameType: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): Unit =
       sendBytes(FrameRenderer.renderFrame(frameType, flags, streamId, payload))
 
+    def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit =
+      sendFrame(FrameType.DATA, Flags.END_STREAM.ifSet(endStream), streamId, data)
+
     def sendHEADERS(streamId: Int, endStream: Boolean, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment)))
     def sendCONTINUATION(streamId: Int, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
@@ -361,9 +404,9 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
 
   /** Helper that allows automatic HPACK encoding/decoding for wire sends / expectations */
   trait AutomaticHpackWireSupport extends TestSetupWithoutHandshake {
-    def sendRequest(streamId: Int, request: HttpRequest): Unit = {
+    def sendRequest(streamId: Int, request: HttpRequest, endStream: Boolean = true): Unit = {
       require(request.entity.isKnownEmpty, "Only empty entities supported for `sendRequest`")
-      sendHEADERS(streamId, endStream = true, endHeaders = true, encodeHeaders(request))
+      sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeHeaders(request))
     }
     def expectResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
       val headerBlockBytes = expectHeaderBlock(streamId, endStream)
@@ -377,7 +420,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
       encode(":method", request.method.value)
       encode(":scheme", request.uri.scheme.toString)
       encode(":path", request.uri.path.toString)
-      encode(":authority", request.uri.authority.toString)
+      encode(":authority", request.uri.authority.toString.drop(2) /* Authority.toString prefixes two slashes */ )
 
       request.headers.filter(_.renderInRequests()).foreach { h ⇒
         encode(h.lowercaseName, h.value)
