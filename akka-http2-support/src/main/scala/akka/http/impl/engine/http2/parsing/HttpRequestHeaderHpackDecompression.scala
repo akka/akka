@@ -14,13 +14,10 @@ import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.stage._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import com.twitter.hpack.HeaderListener
+import HttpRequestHeaderHpackDecompression._
 
-final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Http2SubStream, HttpRequest]] {
-
-  // FIXME Make configurable
-  private final val maxHeaderSize = 4096
-  private final val maxHeaderTableSize = 4096
-
+/** INTERNAL API */
+private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Http2SubStream, HttpRequest]] {
   private final val ColonByte = ':'.toByte
 
   val streamIn = Inlet[Http2SubStream](Logging.simpleName(this) + ".streamIn")
@@ -183,4 +180,10 @@ final class HttpRequestHeaderHpackDecompression extends GraphStage[FlowShape[Htt
       }
     }
 
+}
+
+/** INTERNAL API */
+private[http2] object HttpRequestHeaderHpackDecompression {
+  final val maxHeaderSize = 4096
+  final val maxHeaderTableSize = 4096
 }

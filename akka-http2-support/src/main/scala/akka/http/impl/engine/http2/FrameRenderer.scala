@@ -14,6 +14,8 @@ import akka.util.ByteStringBuilder
 import scala.annotation.tailrec
 
 object FrameRenderer {
+  implicit val byteOrder = ByteOrder.BIG_ENDIAN
+
   def render(frame: FrameEvent): ByteString =
     frame match {
       case DataFrame(streamId, endStream, payload) ⇒
@@ -38,7 +40,6 @@ object FrameRenderer {
 
       case SettingsFrame(settings) ⇒
         val bb = new ByteStringBuilder
-        implicit val byteOrder = ByteOrder.BIG_ENDIAN
         @tailrec def renderNext(remaining: Seq[Setting]): Unit =
           remaining match {
             case Setting(id, value) +: remaining ⇒
@@ -72,6 +73,14 @@ object FrameRenderer {
           Http2Protocol.Flags.ACK.ifSet(ack),
           Http2Protocol.NoStreamId,
           data
+        )
+
+      case RstStreamFrame(streamId, errorCode) ⇒
+        renderFrame(
+          Http2Protocol.FrameType.RST_STREAM,
+          Http2Protocol.Flags.NO_FLAGS,
+          streamId,
+          new ByteStringBuilder().putInt(errorCode.id).result
         )
     }
 

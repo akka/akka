@@ -26,7 +26,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         def parse(reader: ByteReader): ParseResult[FrameEvent] =
           if (reader.remainingSize < 24) throw NeedMoreData
           else if (reader.take(24) == Http2Protocol.ClientConnectionPreface)
-            ParseResult(None, ReadFrame, false)
+            ParseResult(None, ReadFrame, acceptUpstreamFinish = false)
           else
             throw new RuntimeException("Expected ConnectionPreface!")
       }
@@ -41,7 +41,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
           val payload = reader.take(length)
           val frame = parseFrame(FrameType.byId(tpe), flags, streamId, new ByteReader(payload))
 
-          ParseResult(Some(frame), ReadFrame, true)
+          ParseResult(Some(frame), ReadFrame, acceptUpstreamFinish = true)
         }
       }
     }
@@ -116,6 +116,10 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         val ack = Flags.ACK.isSet(flags)
         // FIXME: ensure data size is 8
         PingFrame(ack, payload.remainingData)
+
+      case RST_STREAM ⇒
+        // FIXME: ensure data size
+        RstStreamFrame(streamId, ErrorCode.byId(payload.readIntBE()))
 
       case tpe ⇒ // TODO: remove once all stream types are defined
         UnknownFrameEvent(tpe, flags, streamId, payload.remainingData)

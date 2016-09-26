@@ -172,6 +172,121 @@ object Http2Protocol {
     def byId(id: Int): SettingIdentifier = All(id - 1)
   }
 
+  sealed abstract class ErrorCode(val id: Int) extends Product
+  object ErrorCode {
+    /**
+     * NO_ERROR (0x0):  The associated condition is not a result of an
+     *    error.  For example, a GOAWAY might include this code to indicate
+     *    graceful shutdown of a connection.
+     */
+    case object NO_ERROR extends ErrorCode(0x0)
+
+    /**
+     * PROTOCOL_ERROR (0x1):  The endpoint detected an unspecific protocol
+     *    error.  This error is for use when a more specific error code is
+     *    not available.
+     */
+    case object PROTOCOL_ERROR extends ErrorCode(0x1)
+
+    /**
+     * INTERNAL_ERROR (0x2):  The endpoint encountered an unexpected
+     *    internal error.
+     */
+    case object INTERNAL_ERROR extends ErrorCode(0x2)
+
+    /**
+     * FLOW_CONTROL_ERROR (0x3):  The endpoint detected that its peer
+     *    violated the flow-control protocol.
+     */
+    case object FLOW_CONTROL_ERROR extends ErrorCode(0x3)
+
+    /**
+     * SETTINGS_TIMEOUT (0x4):  The endpoint sent a SETTINGS frame but did
+     *    not receive a response in a timely manner.  See Section 6.5.3
+     *    ("Settings Synchronization").
+     */
+    case object SETTINGS_TIMEOUT extends ErrorCode(0x4)
+
+    /**
+     * STREAM_CLOSED (0x5):  The endpoint received a frame after a stream
+     *    was half-closed.
+     */
+    case object STREAM_CLOSED extends ErrorCode(0x5)
+
+    /**
+     * FRAME_SIZE_ERROR (0x6):  The endpoint received a frame with an
+     *    invalid size.
+     */
+    case object FRAME_SIZE_ERROR extends ErrorCode(0x6)
+
+    /**
+     * REFUSED_STREAM (0x7):  The endpoint refused the stream prior to
+     *    performing any application processing (see Section 8.1.4 for
+     *    details).
+     */
+    case object REFUSED_STREAM extends ErrorCode(0x7)
+
+    /**
+     * CANCEL (0x8):  Used by the endpoint to indicate that the stream is no
+     *    longer needed.
+     */
+    case object CANCEL extends ErrorCode(0x8)
+
+    /**
+     * COMPRESSION_ERROR (0x9):  The endpoint is unable to maintain the
+     *    header compression context for the connection.
+     */
+    case object COMPRESSION_ERROR extends ErrorCode(0x9)
+
+    /**
+     * CONNECT_ERROR (0xa):  The connection established in response to a
+     *    CONNECT request (Section 8.3) was reset or abnormally closed.
+     */
+    case object CONNECT_ERROR extends ErrorCode(0xa)
+
+    /**
+     * ENHANCE_YOUR_CALM (0xb):  The endpoint detected that its peer is
+     *    exhibiting a behavior that might be generating excessive load.
+     */
+    case object ENHANCE_YOUR_CALM extends ErrorCode(0xb)
+
+    /**
+     * INADEQUATE_SECURITY (0xc):  The underlying transport has properties
+     *    that do not meet minimum security requirements (see Section 9.2).
+     */
+    case object INADEQUATE_SECURITY extends ErrorCode(0xc)
+
+    /**
+     * HTTP_1_1_REQUIRED (0xd):  The endpoint requires that HTTP/1.1 be used
+     *    instead of HTTP/2.
+     */
+    case object HTTP_1_1_REQUIRED extends ErrorCode(0xd)
+
+    val All =
+      Array( // must start with id = 0 and don't have holes between ids
+        NO_ERROR,
+        PROTOCOL_ERROR,
+        INTERNAL_ERROR,
+        FLOW_CONTROL_ERROR,
+        SETTINGS_TIMEOUT,
+        STREAM_CLOSED,
+        FRAME_SIZE_ERROR,
+        REFUSED_STREAM,
+        CANCEL,
+        COMPRESSION_ERROR,
+        CONNECT_ERROR,
+        ENHANCE_YOUR_CALM,
+        INADEQUATE_SECURITY,
+        HTTP_1_1_REQUIRED
+      ).toSeq
+
+    // make sure that lookup works and `All` ordering isn't broken
+    All.foreach(f ⇒ require(f == byId(f.id), s"ErrorCode $f with id ${f.id} must be found"))
+
+    def isKnownId(id: Int): Boolean = id < All.size
+    def byId(id: Int): ErrorCode = All(id)
+  }
+
   /**
    *  The client connection preface starts with a sequence of 24 octets,
    *  which in hex notation is:
