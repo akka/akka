@@ -14,7 +14,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val payloadSupport = new WrappedPayloadSupport(system)
   private val throwableSupport = new ThrowableSupport(system)
 
-  private val NoneSerialized = Array.empty[Byte]
+  private val ParameterlessSerialized = Array.empty[Byte]
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case identify: Identify      ⇒ serializeIdentify(identify)
@@ -25,6 +25,9 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case s: Status.Success       ⇒ serializeStatusSuccess(s)
     case f: Status.Failure       ⇒ serializeStatusFailure(f)
     case t: Throwable            ⇒ throwableSupport.serializeThrowable(t)
+    case None                    ⇒ ParameterlessSerialized
+    case PoisonPill              ⇒ ParameterlessSerialized
+    case Kill                    ⇒ ParameterlessSerialized
     case _                       ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
@@ -68,12 +71,14 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     payloadSupport.payloadBuilder(failure.cause).build().toByteArray
 
   private val IdentifyManifest = "A"
-  private val ActorIdentifyManifest = "B"
+  private val ActorIdentityManifest = "B"
   private val OptionManifest = "C"
   private val StatusSuccessManifest = "D"
   private val StatusFailureManifest = "E"
   private val ThrowableManifest = "F"
   private val ActorRefManifest = "G"
+  private val PoisonPillManifest = "P"
+  private val KillManifest = "K"
 
   private val fromBinaryMap = Map[String, Array[Byte] ⇒ AnyRef](
     IdentifyManifest → deserializeIdentify,
@@ -83,6 +88,10 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     StatusFailureManifest → deserializeStatusFailure,
     ThrowableManifest → throwableSupport.deserializeThrowable,
     ActorRefManifest → deserializeActorRefBytes)
+    OptionManifest → deserializeOption,
+    PoisonPillManifest → ((_) ⇒ PoisonPill),
+    KillManifest → ((_) ⇒ Kill)
+  )
 
   override def manifest(o: AnyRef): String =
     o match {
@@ -93,6 +102,11 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       case _: Status.Success ⇒ StatusSuccessManifest
       case _: Status.Failure ⇒ StatusFailureManifest
       case _: Throwable      ⇒ ThrowableManifest
+      case _: Identify        ⇒ IdentifyManifest
+      case _: ActorIdentity   ⇒ ActorIdentityManifest
+      case _: Option[Any]     ⇒ OptionManifest
+      case _: PoisonPill.type ⇒ PoisonPillManifest
+      case _: Kill.type       ⇒ KillManifest
       case _ ⇒
         throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
     }
