@@ -403,11 +403,15 @@ private[remote] class Association(
       val msg = ActorSystemTerminating(localAddress)
       var sent = 0
       queues.iterator.filter(_.isEnabled).foreach { queue ⇒
-        val envelope = outboundEnvelopePool.acquire()
-          .init(OptionVal.None, msg, OptionVal.Some(replyTo))
+        try {
+          val envelope = outboundEnvelopePool.acquire()
+            .init(OptionVal.None, msg, OptionVal.Some(replyTo))
 
-        queue.offer(envelope)
-        sent += 1
+          queue.offer(envelope)
+          sent += 1
+        } catch {
+          case ShuttingDown ⇒ // can be thrown if `offer` triggers new materialization
+        }
       }
       sent
     } else 0
