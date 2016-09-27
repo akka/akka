@@ -7,7 +7,7 @@ package akka.http.impl.engine.http2
 import scala.language.implicitConversions
 
 /** INTERNAL API */
-private[impl] final class ByteFlag(val value: Int) extends AnyVal {
+private[http] final class ByteFlag(val value: Int) extends AnyVal {
   def |(that: ByteFlag): ByteFlag = new ByteFlag((this.value | that.value).toByte)
   def &(that: ByteFlag): ByteFlag = new ByteFlag((this.value | that.value).toByte)
 

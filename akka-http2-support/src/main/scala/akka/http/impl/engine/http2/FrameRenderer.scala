@@ -37,6 +37,12 @@ object FrameRenderer {
           streamId,
           headerBlockFragment
         )
+      case ContinuationFrame(streamId, endHeaders, payload) ⇒
+        renderFrame(
+          Http2Protocol.FrameType.CONTINUATION,
+          Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
+          streamId,
+          payload)
 
       case SettingsFrame(settings) ⇒
         val bb = new ByteStringBuilder

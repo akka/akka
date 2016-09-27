@@ -47,7 +47,6 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
     }
 
   def parseFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteReader): FrameEvent = {
-
     // TODO: add @switch? seems non-trivial for now
     tpe match {
       case HEADERS ⇒
@@ -66,7 +65,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
           if (priority) payload.readByte() & 0xff
           else 0
 
-        Http2Compliance.requirePositiveStreamId(streamId)
+        // TODO: check that streamId != 0
         // TODO: also write out Priority frame if priority was set
         HeadersFrame(streamId, endStream, endHeaders, payload.take(payload.remainingSize - paddingLength))
 

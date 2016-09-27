@@ -130,24 +130,22 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
           expectedResponseHeaderBlock = HPackSpecExamples.C63ThirdResponseWithHuffman
         )
       }
-      "GET request in one HEADERS and one CONTINUATION frame" inPendingUntilFixed new TestSetup with RequestResponseProbes {
-        // FIXME: needs CONTINUATION frame parsing and actual support in decompression
-
+      "GET request in one HEADERS and one CONTINUATION frame" in new TestSetup with RequestResponseProbes {
         val headerBlock = HPackSpecExamples.C41FirstRequestWithHuffman
-        val fragment1 = headerBlock.take(5)
-        val fragment2 = headerBlock.drop(5)
+        val fragment1 = headerBlock.take(8) // must be grouped by octets
+        val fragment2 = headerBlock.drop(8)
 
         sendHEADERS(1, endStream = true, endHeaders = false, fragment1)
         requestIn.ensureSubscription()
         requestIn.expectNoMsg()
         sendCONTINUATION(1, endHeaders = true, fragment2)
 
-        val request = expectRequest()
+        val request = expectRequestRaw()
 
         request.method shouldBe HttpMethods.GET
         request.uri shouldBe Uri("http://www.example.com/")
 
-        val streamIdHeader = request.header[Http2StreamIdHeader].get
+        val streamIdHeader = request.header[Http2StreamIdHeader].getOrElse(Http2Compliance.missingHttpIdHeaderException)
         responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
         val headerPayload = expectHeaderBlock(1)
         headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
@@ -468,6 +466,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
       Flow.fromSinkAndSource(Sink.fromSubscriber(requestIn), Source.fromPublisher(responseOut))
 
     def expectRequest(): HttpRequest = requestIn.requestNext().removeHeader("x-http2-stream-id")
+    def expectRequestRaw(): HttpRequest = requestIn.requestNext() // TODO, make it so that internal headers are not listed in `headers` etc?
     def emitResponse(streamId: Int, response: HttpResponse): Unit =
       responseOut.sendNext(response.addHeader(Http2StreamIdHeader(streamId)))
   }
