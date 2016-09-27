@@ -101,7 +101,7 @@ private[cluster] class ClusterRemoteWatcher(
         // don't quarantine gracefully removed members (leaving) directly,
         // give Cluster Singleton some time to exchange TakeOver/HandOver messages.
         import context.dispatcher
-        context.system.scheduler.scheduleOnce(cluster.settings.QuarantineDownedNodeAfter, self, DelayedQuarantine(m, previousStatus))
+        context.system.scheduler.scheduleOnce(cluster.settings.QuarantineRemovedNodeAfter, self, DelayedQuarantine(m, previousStatus))
       }
 
       publishAddressTerminated(m.address)

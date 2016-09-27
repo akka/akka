@@ -88,8 +88,8 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     else classOf[NoDowning].getName
   }
 
-  val QuarantineDownedNodeAfter: FiniteDuration =
-    cc.getMillisDuration("quarantine-downed-node-after") requiring (_ > Duration.Zero, "quarantine-downed-node-after must be > 0")
+  val QuarantineRemovedNodeAfter: FiniteDuration =
+    cc.getMillisDuration("quarantine-removed-node-after") requiring (_ > Duration.Zero, "quarantine-removed-node-after must be > 0")
 
   val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
 
