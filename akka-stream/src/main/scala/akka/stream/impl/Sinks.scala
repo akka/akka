@@ -691,19 +691,28 @@ final class FoldResourceSinkAsync[T, S](
             }
         }
       }
-      val callback = getAsyncCallback[Try[Unit]] {
+
+      def handleWriteResult(t: Try[Unit]): Unit = t match {
         case scala.util.Success(_) ⇒
           if (!isClosed(in)) {
             pull(in)
           }
-        case scala.util.Failure(t) ⇒ errorHandler(t)
-      }.invoke _
+        case scala.util.Failure(ex) ⇒ errorHandler(ex)
+      }
+
+      val handleWriteResultCallback = getAsyncCallback[Try[Unit]](handleWriteResult).invoke _
 
       final override def onPush(): Unit = onResourceReady {
         r ⇒
           val elem = grab(in)
           try {
-            writeData(r, elem).onComplete(callback)
+            val fut = writeData(r, elem)
+            // Optimization
+            fut.value match {
+              case None    ⇒ fut.onComplete(handleWriteResultCallback)
+              case Some(v) ⇒ handleWriteResult(v)
+            }
+
           } catch errorHandler
       }
 
