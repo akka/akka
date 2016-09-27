@@ -737,8 +737,8 @@ final class FoldResourceSinkAsync[T, S](
           case scala.util.Failure(t) ⇒ doFailStage(t)
         }
 
-        onResourceReady(res ⇒
-          onWriteComplete(_ ⇒
+        onWriteComplete(_ ⇒
+          onResourceReady(res ⇒
             try {
               close(res).onComplete(t ⇒ {
                 cb.invoke(t)
