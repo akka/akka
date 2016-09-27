@@ -156,9 +156,7 @@ object Source {
   def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, NotUsed] =
     fromIterator[Integer](new function.Creator[util.Iterator[Integer]]() {
       def create(): util.Iterator[Integer] =
-        new Inclusive(start, end, step) {
-          override def toString: String = s"Range($start to $end, step = $step)"
-        }.iterator.asJava.asInstanceOf[util.Iterator[Integer]]
+        Range.inclusive(start, end, step).iterator.asJava.asInstanceOf[util.Iterator[Integer]]
     })
 
   /**
