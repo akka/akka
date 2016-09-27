@@ -5,12 +5,14 @@ package akka.remote.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.remote.ContainerFormats
+import akka.serialization.SerializationExtension
 
 /**
  * INTERNAL API
  */
 private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
 
+  private lazy val serialization = SerializationExtension(system)
   private val payloadSupport = new WrappedPayloadSupport(system)
 
   def serializeThrowable(t: Throwable): Array[Byte] = {
@@ -48,10 +50,16 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
         system.dynamicAccess.createInstanceFor[Throwable](
           protoT.getClassName,
           List(classOf[String] → protoT.getMessage, classOf[Throwable] → cause)).get
-      } else
+      } else {
+        // Important security note: before creating an instance of from the class name we
+        // check that the class is a Throwable and that it has a configured serializer.
+        val clazz = system.dynamicAccess.getClassFor[Throwable](protoT.getClassName).get
+        serialization.serializerFor(clazz) // this will throw NotSerializableException if no serializer configured
+
         system.dynamicAccess.createInstanceFor[Throwable](
-          protoT.getClassName,
+          clazz,
           List(classOf[String] → protoT.getMessage)).get
+      }
 
     import scala.collection.JavaConverters._
     val stackTrace =
