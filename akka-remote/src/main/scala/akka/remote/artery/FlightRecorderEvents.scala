@@ -37,8 +37,8 @@ object FlightRecorderEvents {
   val AeronSource_Started = 70
   val AeronSource_Stopped = 71
   val AeronSource_Received = 72
-  val AeronSource_DelegateToTaskRunner = 72
-  val AeronSource_ReturnFromTaskRunner = 73
+  val AeronSource_DelegateToTaskRunner = 73
+  val AeronSource_ReturnFromTaskRunner = 74
 
   // Compression events
   val Compression_CompressedActorRef = 90
@@ -85,6 +85,5 @@ object FlightRecorderEvents {
     Compression_CompressedActorRef → "Compression: Compressed ActorRef",
     Compression_AllocatedActorRefCompressionId → "Compression: Allocated ActorRef compression id",
     Compression_CompressedManifest → "Compression: Compressed manifest",
-    Compression_AllocatedManifestCompressionId → "Compression: Allocated manifest compression id"
-  ).map { case (int, str) ⇒ int.toLong → str }
+    Compression_AllocatedManifestCompressionId → "Compression: Allocated manifest compression id").map { case (int, str) ⇒ int.toLong → str }
 }
