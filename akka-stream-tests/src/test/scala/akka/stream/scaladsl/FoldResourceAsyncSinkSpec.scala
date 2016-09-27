@@ -3,30 +3,94 @@
  */
 package akka.stream.scaladsl
 
-import java.io.{ BufferedWriter, File, FileWriter, Writer }
-import java.util.concurrent.Executors
-
 import akka.Done
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSource
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import org.scalatest.BeforeAndAfter
 
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ Await, Future, Promise }
 
 class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with BeforeAndAfter {
+
+  class TestResource[T] {
+
+    var autoCompleteOpen: Boolean = true
+    var autoCompleteWrite: Boolean = true
+    var autoCompleteClose: Boolean = true
+
+    var isOpened = false
+    var isClosed = false
+    var written: Vector[T] = _
+    var completeOpen: Promise[Unit] = _
+    var completeWrite: Promise[Unit] = _
+    var completeClose: Promise[Unit] = _
+
+    def open(): Future[TestResource[T]] = {
+      def syncOpen(): TestResource[T] = {
+        isOpened = true
+        isClosed = false
+        // written is cleared on open
+        written = Vector.empty[T]
+        this
+      }
+
+      if (autoCompleteOpen) {
+        Future.successful(syncOpen())
+      } else {
+        completeOpen = Promise[Unit]
+        completeOpen.future.map { _ ⇒
+          syncOpen()
+        }
+      }
+    }
+
+    def write(t: T): Future[Unit] = {
+      def syncWrite(): Unit = {
+        if (!isOpened) {
+          sys.error("Writing to a not opened resource")
+        }
+        if (isClosed) {
+          sys.error("Writing to a closed resource")
+        }
+        written = written :+ t
+      }
+
+      if (autoCompleteWrite) {
+        Future.successful(syncWrite())
+      } else {
+        completeWrite = Promise[Unit]
+        completeWrite.future.map { _ ⇒
+          syncWrite()
+        }
+      }
+    }
+
+    def close(): Future[Unit] = {
+      def syncClose(): Unit = {
+        if (!isOpened) {
+          sys.error("Closing a not opened resource")
+        }
+        isClosed = true
+      }
+      if (autoCompleteClose) {
+        Future.successful(syncClose())
+      } else {
+        completeClose = Promise[Unit]
+        completeClose.future.map { _ ⇒
+          syncClose()
+        }
+      }
+    }
+
+  }
+
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
-
-  val ioExecutor = Executors.newFixedThreadPool(4)
-  val ioExecutionContext = ExecutionContext.fromExecutor(ioExecutor)
-
-  override def afterTermination(): Unit = {
-    ioExecutor.shutdown()
-  }
 
   val manyLines = {
     ("a" * 100 + "\n") * 10 +
@@ -37,30 +101,6 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
       ("f" * 100 + "\n") * 10
   }
   val manyLinesArray = manyLines.split("\n")
-
-  var sinkFile: File = _
-  var isOpened: Boolean = _
-  var isClosed: Boolean = _
-  before {
-    sinkFile = File.createTempFile("blocking-sink-spec", ".tmp")
-    isOpened = false
-    isClosed = false
-  }
-  after {
-    sinkFile.delete()
-  }
-
-  val open: () ⇒ Future[Writer] = () ⇒ Future { isOpened = true; new BufferedWriter(new FileWriter(sinkFile)) }(ioExecutionContext)
-  val write: (Writer, String) ⇒ Future[Unit] = (w, s) ⇒ Future(w.write(s))(ioExecutionContext)
-  val close: Writer ⇒ Future[Unit] = w ⇒ Future { isClosed = true; w.close() }(ioExecutionContext)
-
-  val writeErrorSync: (Writer, String) ⇒ Future[Unit] = (w, s) ⇒ {
-    if (s.contains("b")) throw TE("")
-    else Future(w.write(s))(ioExecutionContext)
-  }
-  val writeErrorAsync: (Writer, String) ⇒ Future[Unit] = (w, s) ⇒ {
-    Future(if (s.contains("b")) throw TE("") else w.write(s))(ioExecutionContext)
-  }
 
   "FoldResourceSinkAsync" must {
     "call open, write, close in order" in assertAllStagesStopped {
@@ -107,105 +147,100 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
     }
 
     "fail a materialized value when write throws an exception" in assertAllStagesStopped {
-      val sink = Sink.foldResourceAsync[String, Writer](
-        open,
+      val r = new TestResource[String]()
+      val sink = Sink.foldResourceAsync[String, TestResource[String]](
+        () ⇒ r.open(),
         (w, s) ⇒ Future {
           if (s.contains("b")) throw TE("")
           else w.write(s)
-        }(ioExecutionContext),
-        close
+        },
+        _.close()
       )
 
       val fut = Source.fromIterator(() ⇒ manyLines.grouped(64)).runWith(sink)
       Await.result(fut.failed, remainingOrDefault) should be(TE(""))
-      (isOpened, isClosed) should be((true, true))
+      (r.isOpened, r.isClosed) should be((true, true))
     }
 
-    "write contents to a file" in assertAllStagesStopped {
-      val sink = Sink.foldResourceAsync(open, write, close)
+    "write contents to a resource" in assertAllStagesStopped {
+      val r = new TestResource[String]()
+      val sink = Sink.foldResourceAsync[String, TestResource[String]](() ⇒ r.open(), _ write _, _.close())
       val fut = Source.fromIterator(() ⇒ manyLines.grouped(64)).runWith(sink)
 
       Await.result(fut, remainingOrDefault) should be(Done)
-      (isOpened, isClosed) should be((true, true))
-
-      val src = scala.io.Source.fromFile(sinkFile)
-      try {
-        src.mkString should be(manyLines)
-      } finally {
-        src.close()
-      }
+      (r.isOpened, r.isClosed) should be((true, true))
+      r.written.mkString should be(manyLines)
     }
 
     "continue when Strategy is Resume and exception happened synchronously" in assertAllStagesStopped {
-      val sink = Sink.foldResourceAsync[String, Writer](open, writeErrorSync, close)
+      val r = new TestResource[String]()
+      val sink = Sink.foldResourceAsync[String, TestResource[String]](
+        () ⇒ r.open(),
+        (r, s) ⇒ if (s.contains("b")) throw TE("") else r.write(s),
+        _.close()
+      )
         .withAttributes(supervisionStrategy(resumingDecider))
       val fut = Source.fromIterator(() ⇒ manyLinesArray.iterator).runWith(sink)
 
       Await.result(fut, remainingOrDefault) should be(Done)
-      (isOpened, isClosed) should be((true, true))
-
-      val src = scala.io.Source.fromFile(sinkFile)
-      try {
-        src.mkString should be(manyLinesArray.filterNot(_.contains("b")).mkString)
-      } finally {
-        src.close()
-      }
+      (r.isOpened, r.isClosed) should be((true, true))
+      r.written.mkString should be(manyLinesArray.filterNot(_.contains("b")).mkString)
     }
 
     "continue when Strategy is Resume and exception happened asynchronously" in assertAllStagesStopped {
-      val sink = Sink.foldResourceAsync[String, Writer](open, writeErrorAsync, close)
+      val r = new TestResource[String]()
+      val sink = Sink.foldResourceAsync[String, TestResource[String]](
+        () ⇒ r.open(),
+        (r, s) ⇒ Future(if (s.contains("b")) throw TE("")).flatMap(_ ⇒ r.write(s)),
+        _.close()
+      )
         .withAttributes(supervisionStrategy(resumingDecider))
       val fut = Source.fromIterator(() ⇒ manyLinesArray.iterator).runWith(sink)
 
       Await.result(fut, remainingOrDefault) should be(Done)
-      (isOpened, isClosed) should be((true, true))
-
-      val src = scala.io.Source.fromFile(sinkFile)
-      try {
-        src.mkString should be(manyLinesArray.filterNot(_.contains("b")).mkString)
-      } finally {
-        src.close()
-      }
+      (r.isOpened, r.isClosed) should be((true, true))
+      r.written.mkString should be(manyLinesArray.filterNot(_.contains("b")).mkString)
     }
 
     "continue when Strategy is Restart and exception happened synchronously" in assertAllStagesStopped {
-      val sink = Sink.foldResourceAsync[String, Writer](open, writeErrorSync, close)
+      val r = new TestResource[String]()
+      val sink = Sink.foldResourceAsync[String, TestResource[String]](
+        () ⇒ r.open(),
+        (r, s) ⇒ if (s.contains("b")) throw TE("") else r.write(s),
+        _.close()
+      )
         .withAttributes(supervisionStrategy(restartingDecider))
       val fut = Source.fromIterator(() ⇒ manyLinesArray.iterator).runWith(sink)
 
       Await.result(fut, remainingOrDefault) should be(Done)
-      (isOpened, isClosed) should be((true, true))
+      (r.isOpened, r.isClosed) should be((true, true))
+      r.written.mkString should be(manyLinesArray.filterNot(line ⇒ line.contains("a") || line.contains("b")).mkString)
 
-      val src = scala.io.Source.fromFile(sinkFile)
-      try {
-        src.mkString should be(manyLinesArray.filterNot(line ⇒ line.contains("a") || line.contains("b")).mkString)
-      } finally {
-        src.close()
-      }
     }
 
     "continue when Strategy is Restart and exception happened asynchronously" in assertAllStagesStopped {
-      val sink = Sink.foldResourceAsync[String, Writer](open, writeErrorAsync, close)
+      val r = new TestResource[String]()
+      val sink = Sink.foldResourceAsync[String, TestResource[String]](
+        () ⇒ r.open(),
+        (r, s) ⇒ Future(if (s.contains("b")) throw TE("")).flatMap(_ ⇒ r.write(s)),
+        _.close()
+      )
         .withAttributes(supervisionStrategy(restartingDecider))
       val fut = Source.fromIterator(() ⇒ manyLinesArray.iterator).runWith(sink)
 
       Await.result(fut, remainingOrDefault) should be(Done)
-      (isOpened, isClosed) should be((true, true))
-
-      val src = scala.io.Source.fromFile(sinkFile)
-      try {
-        src.mkString should be(manyLinesArray.filterNot(line ⇒ line.contains("a") || line.contains("b")).mkString)
-      } finally {
-        src.close()
-      }
+      (r.isOpened, r.isClosed) should be((true, true))
+      r.written.mkString should be(manyLinesArray.filterNot(line ⇒ line.contains("a") || line.contains("b")).mkString)
     }
 
     "fail when upstream fails" in assertAllStagesStopped {
-      val sink = Sink.foldResourceAsync(open, write, close)
+      val r = new TestResource[String]()
+      val sink = Sink.foldResourceAsync[String, TestResource[String]](() ⇒ r.open(), _ write _, _.close)
       val (probe, fut) = TestSource.probe[String].toMat(sink)(Keep.both).run()
       probe.sendError(TE(""))
       Await.result(fut.failed, remainingOrDefault) should be(TE(""))
-      (isOpened, isClosed) should be((true, true))
+      (r.isOpened, r.isClosed) should be((true, true))
     }
+
   }
 }

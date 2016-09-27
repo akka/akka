@@ -649,6 +649,8 @@ final class FoldResourceSinkAsync[T, S](
 
       lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
       var resource = Promise[S]()
+      var writeFuture: Future[Unit] = Future.successful(())
+
       implicit val context = ExecutionContexts.sameThreadExecutionContext
 
       setHandler(in, this)
@@ -681,6 +683,11 @@ final class FoldResourceSinkAsync[T, S](
         }
       }
 
+      private def onWriteComplete(f: Try[Unit] ⇒ Unit): Unit = {
+        val cb = getAsyncCallback[Try[Unit]](f)
+        writeFuture.onComplete(cb.invoke)
+      }
+
       val errorHandler: PartialFunction[Throwable, Unit] = {
         case NonFatal(ex) ⇒ decider(ex) match {
           case Supervision.Stop    ⇒ closeAndThen(() ⇒ doFailStage(ex))
@@ -706,10 +713,10 @@ final class FoldResourceSinkAsync[T, S](
         r ⇒
           val elem = grab(in)
           try {
-            val fut = writeData(r, elem)
+            writeFuture = writeData(r, elem)
             // Optimization
-            fut.value match {
-              case None    ⇒ fut.onComplete(handleWriteResultCallback)
+            writeFuture.value match {
+              case None    ⇒ writeFuture.onComplete(handleWriteResultCallback)
               case Some(v) ⇒ handleWriteResult(v)
             }
 
@@ -717,10 +724,12 @@ final class FoldResourceSinkAsync[T, S](
       }
 
       override def onUpstreamFinish(): Unit = {
-        closeStage()
+        closeAndThen(doCompleteStage)
       }
 
-      override def onUpstreamFailure(ex: Throwable): Unit = closeAndThen(() ⇒ doFailStage(ex))
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        closeAndThen(() ⇒ doFailStage(ex))
+      }
 
       private def closeAndThen(f: () ⇒ Unit): Unit = {
         val cb = getAsyncCallback[Try[Unit]] {
@@ -729,21 +738,21 @@ final class FoldResourceSinkAsync[T, S](
         }
 
         onResourceReady(res ⇒
-          try {
-            close(res).onComplete(t ⇒ {
-              cb.invoke(t)
+          onWriteComplete(_ ⇒
+            try {
+              close(res).onComplete(t ⇒ {
+                cb.invoke(t)
+              })
+            } catch {
+              case NonFatal(ex) ⇒ doFailStage(ex)
             })
-          } catch {
-            case NonFatal(ex) ⇒ doFailStage(ex)
-          })
+        )
       }
 
       private def restartState(): Unit = closeAndThen(() ⇒ {
         resource = Promise[S]()
         createStream()
       })
-
-      private def closeStage(): Unit = closeAndThen(doCompleteStage)
 
       private def doFailStage(th: Throwable): Unit = {
         completion.failure(th)
