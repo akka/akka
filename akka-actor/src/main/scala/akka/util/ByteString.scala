@@ -162,6 +162,19 @@ object ByteString {
       if (n <= 0) this
       else toByteString1.drop(n)
 
+    override def indexOf[B >: Byte](elem: B, from: Int): Int = {
+      if (from >= length) -1
+      else {
+        var found = -1
+        var i = math.max(from, 0)
+        while (i < length && found == -1) {
+          if (bytes(i) == elem) found = i
+          i += 1
+        }
+        found
+      }
+    }
+
     override def slice(from: Int, until: Int): ByteString =
       if (from <= 0 && until >= length) this
       else if (from >= length || until <= 0 || from >= until) ByteString.empty
@@ -307,13 +320,15 @@ object ByteString {
 
     override def indexOf[B >: Byte](elem: B, from: Int): Int = {
       if (from >= length) -1
-      var found = -1
-      var i = if (from < 0) 0 else from
-      while (i < length && found == -1) {
-        if (bytes(i) == elem) found = i
-        i += 1
+      else {
+        var found = -1
+        var i = math.max(from, 0)
+        while (i < length && found == -1) {
+          if (bytes(i) == elem) found = i
+          i += 1
+        }
+        found
       }
-      found
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
@@ -539,9 +554,10 @@ object ByteString {
           }
         }
 
-        find(0, if (from < 0) 0 else from, 0)
+        find(0, math.max(from, 0), 0)
       }
     }
+
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
@@ -623,7 +639,9 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def splitAt(n: Int): (ByteString, ByteString) = (take(n), drop(n))
 
   override def indexWhere(p: Byte ⇒ Boolean): Int = iterator.indexWhere(p)
-  override def indexOf[B >: Byte](elem: B): Int = iterator.indexOf(elem)
+
+  // optimized in subclasses
+  override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
 
   override def toString(): String = {
     val maxSize = 100
