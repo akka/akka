@@ -4566,20 +4566,20 @@ public final class ContainerFormats {
   public interface ThrowableOrBuilder
       extends akka.protobuf.MessageOrBuilder {
 
-    // required string clazzName = 1;
+    // required string className = 1;
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
-    boolean hasClazzName();
+    boolean hasClassName();
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
-    java.lang.String getClazzName();
+    java.lang.String getClassName();
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
     akka.protobuf.ByteString
-        getClazzNameBytes();
+        getClassNameBytes();
 
     // optional string message = 2;
     /**
@@ -4688,7 +4688,7 @@ public final class ContainerFormats {
             }
             case 10: {
               bitField0_ |= 0x00000001;
-              clazzName_ = input.readBytes();
+              className_ = input.readBytes();
               break;
             }
             case 18: {
@@ -4760,20 +4760,20 @@ public final class ContainerFormats {
     }
 
     private int bitField0_;
-    // required string clazzName = 1;
-    public static final int CLAZZNAME_FIELD_NUMBER = 1;
-    private java.lang.Object clazzName_;
+    // required string className = 1;
+    public static final int CLASSNAME_FIELD_NUMBER = 1;
+    private java.lang.Object className_;
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
-    public boolean hasClazzName() {
+    public boolean hasClassName() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
-    public java.lang.String getClazzName() {
-      java.lang.Object ref = clazzName_;
+    public java.lang.String getClassName() {
+      java.lang.Object ref = className_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
@@ -4781,22 +4781,22 @@ public final class ContainerFormats {
             (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
-          clazzName_ = s;
+          className_ = s;
         }
         return s;
       }
     }
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
     public akka.protobuf.ByteString
-        getClazzNameBytes() {
-      java.lang.Object ref = clazzName_;
+        getClassNameBytes() {
+      java.lang.Object ref = className_;
       if (ref instanceof java.lang.String) {
         akka.protobuf.ByteString b = 
             akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        clazzName_ = b;
+        className_ = b;
         return b;
       } else {
         return (akka.protobuf.ByteString) ref;
@@ -4905,7 +4905,7 @@ public final class ContainerFormats {
     }
 
     private void initFields() {
-      clazzName_ = "";
+      className_ = "";
       message_ = "";
       cause_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
       stackTrace_ = java.util.Collections.emptyList();
@@ -4915,7 +4915,7 @@ public final class ContainerFormats {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
 
-      if (!hasClazzName()) {
+      if (!hasClassName()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -4939,7 +4939,7 @@ public final class ContainerFormats {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getClazzNameBytes());
+        output.writeBytes(1, getClassNameBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeBytes(2, getMessageBytes());
@@ -4961,7 +4961,7 @@ public final class ContainerFormats {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getClazzNameBytes());
+          .computeBytesSize(1, getClassNameBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += akka.protobuf.CodedOutputStream
@@ -5093,7 +5093,7 @@ public final class ContainerFormats {
 
       public Builder clear() {
         super.clear();
-        clazzName_ = "";
+        className_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
         message_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -5140,7 +5140,7 @@ public final class ContainerFormats {
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.clazzName_ = clazzName_;
+        result.className_ = className_;
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
@@ -5178,9 +5178,9 @@ public final class ContainerFormats {
 
       public Builder mergeFrom(akka.remote.ContainerFormats.Throwable other) {
         if (other == akka.remote.ContainerFormats.Throwable.getDefaultInstance()) return this;
-        if (other.hasClazzName()) {
+        if (other.hasClassName()) {
           bitField0_ |= 0x00000001;
-          clazzName_ = other.clazzName_;
+          className_ = other.className_;
           onChanged();
         }
         if (other.hasMessage()) {
@@ -5222,7 +5222,7 @@ public final class ContainerFormats {
       }
 
       public final boolean isInitialized() {
-        if (!hasClazzName()) {
+        if (!hasClassName()) {
           
           return false;
         }
@@ -5260,76 +5260,76 @@ public final class ContainerFormats {
       }
       private int bitField0_;
 
-      // required string clazzName = 1;
-      private java.lang.Object clazzName_ = "";
+      // required string className = 1;
+      private java.lang.Object className_ = "";
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
-      public boolean hasClazzName() {
+      public boolean hasClassName() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
-      public java.lang.String getClazzName() {
-        java.lang.Object ref = clazzName_;
+      public java.lang.String getClassName() {
+        java.lang.Object ref = className_;
         if (!(ref instanceof java.lang.String)) {
           java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
-          clazzName_ = s;
+          className_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
       public akka.protobuf.ByteString
-          getClazzNameBytes() {
-        java.lang.Object ref = clazzName_;
+          getClassNameBytes() {
+        java.lang.Object ref = className_;
         if (ref instanceof String) {
           akka.protobuf.ByteString b = 
               akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          clazzName_ = b;
+          className_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
-      public Builder setClazzName(
+      public Builder setClassName(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-        clazzName_ = value;
+        className_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
-      public Builder clearClazzName() {
+      public Builder clearClassName() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        clazzName_ = getDefaultInstance().getClazzName();
+        className_ = getDefaultInstance().getClassName();
         onChanged();
         return this;
       }
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
-      public Builder setClazzNameBytes(
+      public Builder setClassNameBytes(
           akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-        clazzName_ = value;
+        className_ = value;
         onChanged();
         return this;
       }
@@ -5779,20 +5779,20 @@ public final class ContainerFormats {
   public interface StackTraceElementOrBuilder
       extends akka.protobuf.MessageOrBuilder {
 
-    // required string clazzName = 1;
+    // required string className = 1;
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
-    boolean hasClazzName();
+    boolean hasClassName();
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
-    java.lang.String getClazzName();
+    java.lang.String getClassName();
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
     akka.protobuf.ByteString
-        getClazzNameBytes();
+        getClassNameBytes();
 
     // required string methodName = 2;
     /**
@@ -5887,7 +5887,7 @@ public final class ContainerFormats {
             }
             case 10: {
               bitField0_ |= 0x00000001;
-              clazzName_ = input.readBytes();
+              className_ = input.readBytes();
               break;
             }
             case 18: {
@@ -5945,20 +5945,20 @@ public final class ContainerFormats {
     }
 
     private int bitField0_;
-    // required string clazzName = 1;
-    public static final int CLAZZNAME_FIELD_NUMBER = 1;
-    private java.lang.Object clazzName_;
+    // required string className = 1;
+    public static final int CLASSNAME_FIELD_NUMBER = 1;
+    private java.lang.Object className_;
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
-    public boolean hasClazzName() {
+    public boolean hasClassName() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
-    public java.lang.String getClazzName() {
-      java.lang.Object ref = clazzName_;
+    public java.lang.String getClassName() {
+      java.lang.Object ref = className_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
@@ -5966,22 +5966,22 @@ public final class ContainerFormats {
             (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
-          clazzName_ = s;
+          className_ = s;
         }
         return s;
       }
     }
     /**
-     * <code>required string clazzName = 1;</code>
+     * <code>required string className = 1;</code>
      */
     public akka.protobuf.ByteString
-        getClazzNameBytes() {
-      java.lang.Object ref = clazzName_;
+        getClassNameBytes() {
+      java.lang.Object ref = className_;
       if (ref instanceof java.lang.String) {
         akka.protobuf.ByteString b = 
             akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        clazzName_ = b;
+        className_ = b;
         return b;
       } else {
         return (akka.protobuf.ByteString) ref;
@@ -6091,7 +6091,7 @@ public final class ContainerFormats {
     }
 
     private void initFields() {
-      clazzName_ = "";
+      className_ = "";
       methodName_ = "";
       fileName_ = "";
       lineNumber_ = 0;
@@ -6101,7 +6101,7 @@ public final class ContainerFormats {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
 
-      if (!hasClazzName()) {
+      if (!hasClassName()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -6125,7 +6125,7 @@ public final class ContainerFormats {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getClazzNameBytes());
+        output.writeBytes(1, getClassNameBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeBytes(2, getMethodNameBytes());
@@ -6147,7 +6147,7 @@ public final class ContainerFormats {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getClazzNameBytes());
+          .computeBytesSize(1, getClassNameBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += akka.protobuf.CodedOutputStream
@@ -6277,7 +6277,7 @@ public final class ContainerFormats {
 
       public Builder clear() {
         super.clear();
-        clazzName_ = "";
+        className_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
         methodName_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -6316,7 +6316,7 @@ public final class ContainerFormats {
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.clazzName_ = clazzName_;
+        result.className_ = className_;
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
@@ -6345,9 +6345,9 @@ public final class ContainerFormats {
 
       public Builder mergeFrom(akka.remote.ContainerFormats.StackTraceElement other) {
         if (other == akka.remote.ContainerFormats.StackTraceElement.getDefaultInstance()) return this;
-        if (other.hasClazzName()) {
+        if (other.hasClassName()) {
           bitField0_ |= 0x00000001;
-          clazzName_ = other.clazzName_;
+          className_ = other.className_;
           onChanged();
         }
         if (other.hasMethodName()) {
@@ -6368,7 +6368,7 @@ public final class ContainerFormats {
       }
 
       public final boolean isInitialized() {
-        if (!hasClazzName()) {
+        if (!hasClassName()) {
           
           return false;
         }
@@ -6406,76 +6406,76 @@ public final class ContainerFormats {
       }
       private int bitField0_;
 
-      // required string clazzName = 1;
-      private java.lang.Object clazzName_ = "";
+      // required string className = 1;
+      private java.lang.Object className_ = "";
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
-      public boolean hasClazzName() {
+      public boolean hasClassName() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
-      public java.lang.String getClazzName() {
-        java.lang.Object ref = clazzName_;
+      public java.lang.String getClassName() {
+        java.lang.Object ref = className_;
         if (!(ref instanceof java.lang.String)) {
           java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
-          clazzName_ = s;
+          className_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
       public akka.protobuf.ByteString
-          getClazzNameBytes() {
-        java.lang.Object ref = clazzName_;
+          getClassNameBytes() {
+        java.lang.Object ref = className_;
         if (ref instanceof String) {
           akka.protobuf.ByteString b = 
               akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          clazzName_ = b;
+          className_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
-      public Builder setClazzName(
+      public Builder setClassName(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-        clazzName_ = value;
+        className_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
-      public Builder clearClazzName() {
+      public Builder clearClassName() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        clazzName_ = getDefaultInstance().getClazzName();
+        className_ = getDefaultInstance().getClassName();
         onChanged();
         return this;
       }
       /**
-       * <code>required string clazzName = 1;</code>
+       * <code>required string className = 1;</code>
        */
-      public Builder setClazzNameBytes(
+      public Builder setClassNameBytes(
           akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-        clazzName_ = value;
+        className_ = value;
         onChanged();
         return this;
       }
@@ -6738,10 +6738,10 @@ public final class ContainerFormats {
       "path\030\001 \002(\t\"!\n\006Option\022\027\n\005value\030\001 \001(\0132\010.Pa",
       "yload\"Q\n\007Payload\022\027\n\017enclosedMessage\030\001 \002(" +
       "\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageManife" +
-      "st\030\004 \001(\014\"p\n\tThrowable\022\021\n\tclazzName\030\001 \002(\t" +
+      "st\030\004 \001(\014\"p\n\tThrowable\022\021\n\tclassName\030\001 \002(\t" +
       "\022\017\n\007message\030\002 \001(\t\022\027\n\005cause\030\003 \001(\0132\010.Paylo" +
       "ad\022&\n\nstackTrace\030\004 \003(\0132\022.StackTraceEleme" +
-      "nt\"`\n\021StackTraceElement\022\021\n\tclazzName\030\001 \002" +
+      "nt\"`\n\021StackTraceElement\022\021\n\tclassName\030\001 \002" +
       "(\t\022\022\n\nmethodName\030\002 \002(\t\022\020\n\010fileName\030\003 \002(\t" +
       "\022\022\n\nlineNumber\030\004 \002(\005*<\n\013PatternType\022\n\n\006P" +
       "ARENT\020\000\022\016\n\nCHILD_NAME\020\001\022\021\n\rCHILD_PATTERN" +
@@ -6799,13 +6799,13 @@ public final class ContainerFormats {
           internal_static_Throwable_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Throwable_descriptor,
-              new java.lang.String[] { "ClazzName", "Message", "Cause", "StackTrace", });
+              new java.lang.String[] { "ClassName", "Message", "Cause", "StackTrace", });
           internal_static_StackTraceElement_descriptor =
             getDescriptor().getMessageTypes().get(8);
           internal_static_StackTraceElement_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_StackTraceElement_descriptor,
-              new java.lang.String[] { "ClazzName", "MethodName", "FileName", "LineNumber", });
+              new java.lang.String[] { "ClassName", "MethodName", "FileName", "LineNumber", });
           return null;
         }
       };
