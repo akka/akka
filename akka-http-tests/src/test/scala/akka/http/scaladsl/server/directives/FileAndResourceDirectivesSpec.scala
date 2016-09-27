@@ -171,6 +171,15 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         headers should contain(`Last-Modified`(DateTime(lastModified)))
       }
     }
+    "return the file content with the MediaType matching the file extension (unicode chars in filename)" in {
+      Get("sample%20sp%c3%a4ce.PDF") ~> _getFromDirectory("sübdir") ~> check {
+        mediaType shouldEqual `application/pdf`
+        charsetOption shouldEqual None
+        responseAs[String] shouldEqual "This is PDF"
+        val lastModified = new File(testRoot, "sübdir/sample späce.PDF").lastModified()
+        headers should contain(`Last-Modified`(DateTime(lastModified)))
+      }
+    }
   }
 
   "getFromResource" should {
