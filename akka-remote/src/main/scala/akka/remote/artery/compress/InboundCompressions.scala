@@ -9,14 +9,12 @@ import java.util.function.LongFunction
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.actor.{ ActorRef, ActorSystem, Address }
-import akka.event.{ Logging, NoLogging }
+import akka.event.Logging
 import akka.remote.artery.{ ArterySettings, InboundContext, OutboundContext }
-import akka.util.{ OptionVal, PrettyDuration }
+import akka.util.OptionVal
 import org.agrona.collections.Long2ObjectHashMap
 
 import scala.annotation.tailrec
-import scala.concurrent.Future
-import akka.Done
 import akka.actor.Cancellable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -29,12 +27,12 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 private[remote] trait InboundCompressions {
   def hitActorRef(originUid: Long, remote: Address, ref: ActorRef, n: Int): Unit
-  def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef]
-  def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit
+  def decompressActorRef(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[ActorRef]
+  def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit
 
   def hitClassManifest(originUid: Long, remote: Address, manifest: String, n: Int): Unit
-  def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String]
-  def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit
+  def decompressClassManifest(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[String]
+  def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit
 
   /**
    * Cancel advertisement scheduling
@@ -85,7 +83,7 @@ private[remote] final class InboundCompressionsImpl(
 
   // actor ref compression ---
 
-  override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] =
+  override def decompressActorRef(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[ActorRef] =
     actorRefsIn(originUid) match {
       case Some(a) ⇒ a.decompress(tableVersion, idx)
       case None    ⇒ OptionVal.None
@@ -99,7 +97,7 @@ private[remote] final class InboundCompressionsImpl(
     }
   }
 
-  override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = {
+  override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = {
     _actorRefsIns.get(originUid) match {
       case null    ⇒ // ignore
       case Some(a) ⇒ a.confirmAdvertisement(tableVersion)
@@ -109,7 +107,7 @@ private[remote] final class InboundCompressionsImpl(
 
   // class manifest compression ---
 
-  override def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String] =
+  override def decompressClassManifest(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[String] =
     classManifestsIn(originUid) match {
       case Some(a) ⇒ a.decompress(tableVersion, idx)
       case None    ⇒ OptionVal.None
@@ -122,7 +120,7 @@ private[remote] final class InboundCompressionsImpl(
       case None    ⇒ // closed
     }
   }
-  override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = {
+  override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = {
     _classManifestsIns.get(originUid) match {
       case null    ⇒ // ignore
       case Some(a) ⇒ a.confirmAdvertisement(tableVersion)
@@ -191,7 +189,7 @@ private[remote] final class InboundActorRefCompression(
   stopped:        AtomicBoolean)
   extends InboundCompression[ActorRef](system, settings, originUid, inboundContext, heavyHitters, stopped) {
 
-  override def decompress(tableVersion: Int, idx: Int): OptionVal[ActorRef] =
+  override def decompress(tableVersion: Byte, idx: Int): OptionVal[ActorRef] =
     super.decompressInternal(tableVersion, idx, 0)
 
   override protected def tableAdvertisementInterval = settings.ActorRefs.AdvertisementInterval
@@ -223,7 +221,7 @@ final class InboundManifestCompression(
   override def increment(remoteAddress: Address, value: String, n: Long): Unit =
     if (value != "") super.increment(remoteAddress, value, n)
 
-  override def decompress(incomingTableVersion: Int, idx: Int): OptionVal[String] =
+  override def decompress(incomingTableVersion: Byte, idx: Int): OptionVal[String] =
     decompressInternal(incomingTableVersion, idx, 0)
 }
 /**
@@ -245,12 +243,16 @@ private[remote] object InboundCompression {
     nextTable:               DecompressionTable[T],
     advertisementInProgress: Option[CompressionTable[T]]) {
 
-    def startUsingNextTable(): State[T] =
+    def startUsingNextTable(): State[T] = {
+      // wrap around to positive values
+      val nextVersion = (nextTable.version + 1) & 0x7F
       State(
         oldTable = activeTable,
         activeTable = nextTable,
-        nextTable = DecompressionTable.empty[T].copy(version = nextTable.version + 1),
+        // skip 0 when wrapped around
+        nextTable = DecompressionTable.empty[T].copy(version = (if (nextVersion == 0) 1 else nextVersion).byteValue),
         advertisementInProgress = None)
+    }
   }
 
 }
@@ -295,7 +297,7 @@ private[remote] abstract class InboundCompression[T >: Null](
   /* ==== COMPRESSION ==== */
 
   /** Override and specialize if needed, for default compression logic delegate to 3-param overload */
-  def decompress(incomingTableVersion: Int, idx: Int): OptionVal[T]
+  def decompress(incomingTableVersion: Byte, idx: Int): OptionVal[T]
 
   /**
    * Decompress given identifier into its original representation.
@@ -304,7 +306,7 @@ private[remote] abstract class InboundCompression[T >: Null](
    *
    * @throws UnknownCompressedIdException if given id is not known, this may indicate a bug – such situation should not happen.
    */
-  @tailrec final def decompressInternal(incomingTableVersion: Int, idx: Int, attemptCounter: Int): OptionVal[T] = {
+  @tailrec final def decompressInternal(incomingTableVersion: Byte, idx: Int, attemptCounter: Int): OptionVal[T] = {
     // effectively should never loop more than once, to avoid infinite recursion blow up eagerly
     if (attemptCounter > 2) throw new IllegalStateException(s"Unable to decompress $idx from table $incomingTableVersion. Internal state: ${state.get}")
 
@@ -345,7 +347,7 @@ private[remote] abstract class InboundCompression[T >: Null](
     }
   }
 
-  @tailrec final def confirmAdvertisement(tableVersion: Int): Unit = {
+  @tailrec final def confirmAdvertisement(tableVersion: Byte): Unit = {
     val current = state.get
     current.advertisementInProgress match {
       case Some(inProgress) if tableVersion == inProgress.version ⇒
@@ -455,7 +457,7 @@ private[remote] abstract class InboundCompression[T >: Null](
    */
   protected def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[T]): Unit
 
-  private def prepareCompressionAdvertisement(nextTableVersion: Int): CompressionTable[T] = {
+  private def prepareCompressionAdvertisement(nextTableVersion: Byte): CompressionTable[T] = {
     // TODO surely we can do better than that, optimise
     CompressionTable(originUid, nextTableVersion, Map(heavyHitters.snapshot.filterNot(_ == null).zipWithIndex: _*))
   }
@@ -479,16 +481,16 @@ final class UnknownCompressedIdException(id: Long)
  */
 case object NoInboundCompressions extends InboundCompressions {
   override def hitActorRef(originUid: Long, remote: Address, ref: ActorRef, n: Int): Unit = ()
-  override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] =
+  override def decompressActorRef(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[ActorRef] =
     if (idx == -1) throw new IllegalArgumentException("Attemted decompression of illegal compression id: -1")
     else OptionVal.None
-  override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = ()
+  override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = ()
 
   override def hitClassManifest(originUid: Long, remote: Address, manifest: String, n: Int): Unit = ()
-  override def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String] =
+  override def decompressClassManifest(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[String] =
     if (idx == -1) throw new IllegalArgumentException("Attemted decompression of illegal compression id: -1")
     else OptionVal.None
-  override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = ()
+  override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = ()
 
   override def close(): Unit = ()
 

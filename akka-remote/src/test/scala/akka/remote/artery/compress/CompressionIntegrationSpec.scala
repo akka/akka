@@ -77,13 +77,13 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
         awaitAssert {
           val a1 = aManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
           info("System [A] received: " + a1)
-          a1.table.version should be >= (1)
+          a1.table.version.toInt should be >= (1)
           a1.table.dictionary.keySet should contain("TestMessageManifest")
         }
         awaitAssert {
           val a1 = aRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
           info("System [A] received: " + a1)
-          a1.table.version should be >= (1)
+          a1.table.version.toInt should be >= (1)
           a1.table.dictionary.keySet should contain(echoRefA) // recipient
           a1.table.dictionary.keySet should contain(testActor) // sender
         }
@@ -92,13 +92,13 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
         awaitAssert {
           val b1 = bManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
           info("System [B] received: " + b1)
-          b1.table.version should be >= (1)
+          b1.table.version.toInt should be >= (1)
           b1.table.dictionary.keySet should contain("TestMessageManifest")
         }
         awaitAssert {
           val b1 = bRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
           info("System [B] received: " + b1)
-          b1.table.version should be >= (1)
+          b1.table.version.toInt should be >= (1)
           b1.table.dictionary.keySet should contain(echoRefB)
         }
       }
@@ -110,29 +110,30 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
           echoRefA.tell(TestMessage("hello2"), ignore.ref)
           val a2 = aManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
           info("System [A] received more: " + a2)
-          a2.table.version should be >= (3)
+          a2.table.version.toInt should be >= (3)
         }
         awaitAssert {
           echoRefA.tell(TestMessage("hello2"), ignore.ref)
           val a2 = aRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
           info("System [A] received more: " + a2)
-          a2.table.version should be >= (3)
+          a2.table.version.toInt should be >= (3)
         }
 
         awaitAssert {
           echoRefA.tell(TestMessage("hello3"), ignore.ref)
           val b2 = bManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
           info("System [B] received more: " + b2)
-          b2.table.version should be >= (3)
+          b2.table.version.toInt should be >= (3)
         }
         awaitAssert {
           echoRefA.tell(TestMessage("hello3"), ignore.ref)
           val b2 = bRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
           info("System [B] received more: " + b2)
-          b2.table.version should be >= (3)
+          b2.table.version.toInt should be >= (3)
         }
       }
     }
+
   }
 
   "handle noSender sender" in {
@@ -229,15 +230,15 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
       awaitAssert {
         val a2 = aManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
         info("System [A] received: " + a2)
-        a2.table.version should be >= (1)
-        a2.table.version should be < (3)
+        a2.table.version.toInt should be >= (1)
+        a2.table.version.toInt should be < (3)
         a2.table.dictionary.keySet should contain("TestMessageManifest")
       }
       awaitAssert {
         val a2 = aRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
         info("System [A] received: " + a2)
-        a2.table.version should be >= (1)
-        a2.table.version should be < (3)
+        a2.table.version.toInt should be >= (1)
+        a2.table.version.toInt should be < (3)
         a2.table.dictionary.keySet should contain(echoRefA) // recipient
         a2.table.dictionary.keySet should contain(testActor) // sender
       }
@@ -246,17 +247,69 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
       awaitAssert {
         val b2 = bManifestProbe.expectMsgType[Events.ReceivedClassManifestCompressionTable](2.seconds)
         info("System [B2] received: " + b2)
-        b2.table.version should be >= (1)
+        b2.table.version.toInt should be >= (1)
         b2.table.dictionary.keySet should contain("TestMessageManifest")
       }
       awaitAssert {
         val b2 = bRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
         info("System [B] received: " + b2)
-        b2.table.version should be >= (1)
+        b2.table.version.toInt should be >= (1)
         b2.table.dictionary.keySet should contain(echoRefB2)
       }
     }
+  }
 
+  "wrap around" in {
+    val extraConfig = """
+      akka.remote.artery.advanced.compression {
+        actor-refs.advertisement-interval = 10 millis
+      }
+    """
+
+    val systemWrap = newRemoteSystem(extraConfig = Some(extraConfig))
+
+    val wrapRefProbe = TestProbe()(systemWrap)
+    system.eventStream.subscribe(wrapRefProbe.ref, classOf[CompressionProtocol.Events.ReceivedActorRefCompressionTable])
+
+    def createAndIdentify(i: Int) = {
+      val echoWrap = systemWrap.actorOf(TestActors.echoActorProps, s"echo_$i")
+      system.actorSelection(rootActorPath(systemWrap) / "user" / s"echo_$i") ! Identify(None)
+      expectMsgType[ActorIdentity].ref.get
+    }
+
+    val maxTableVersions = 130 // so table version wraps around at least once
+    val maxDuplicateTables = 40 // max duplicate tables that will not fail the test
+    var tableVersionsSeen = 0
+    var lastTableVersion = 0
+    var wrapAroundCount = 0
+    var iteration = 0
+
+    while (tableVersionsSeen < maxTableVersions) {
+      iteration += 1
+      if (iteration - maxTableVersions > maxDuplicateTables) {
+        throw new Error("Too much duplicate tables. Giving up on the test.")
+      }
+
+      val echoWrap = createAndIdentify(iteration) // create a different actor for every iteration
+
+      // cause echo to become a heavy hitter
+      (1 to messagesToExchange).foreach { i ⇒ echoWrap ! TestMessage("hello") }
+      receiveN(messagesToExchange) // the replies
+
+      // on system A side
+      val a1 = wrapRefProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
+      val currentTableVersion = a1.table.version.toInt
+
+      if (currentTableVersion != lastTableVersion) { // if we get a new table
+        lastTableVersion = currentTableVersion
+        tableVersionsSeen += 1
+
+        if ((tableVersionsSeen & 0x7F) == 0) {
+          wrapAroundCount += 1
+        }
+      }
+      currentTableVersion should ===((tableVersionsSeen & 0x7F) + wrapAroundCount)
+    }
   }
 
 }

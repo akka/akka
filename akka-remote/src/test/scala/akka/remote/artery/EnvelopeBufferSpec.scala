@@ -33,19 +33,18 @@ class EnvelopeBufferSpec extends AkkaSpec {
     val idxToManifest = manifestToIdx.map(_.swap)
 
     val outboundActorRefTable: CompressionTable[ActorRef] =
-      CompressionTable(17L, version = 0xCAFE, refToIdx)
+      CompressionTable(17L, version = 0xCA.byteValue, refToIdx)
 
     val outboundClassManifestTable: CompressionTable[String] =
-      CompressionTable(17L, version = 0xBABE, manifestToIdx)
+      CompressionTable(17L, version = 0xBA.byteValue, manifestToIdx)
 
     override def hitActorRef(originUid: Long, remote: Address, ref: ActorRef, n: Int): Unit = ()
-    override def decompressActorRef(originUid: Long, tableVersion: Int, idx: Int): OptionVal[ActorRef] = OptionVal(idxToRef(idx))
-    override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = ()
+    override def decompressActorRef(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[ActorRef] = OptionVal(idxToRef(idx))
+    override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = ()
 
     override def hitClassManifest(originUid: Long, remote: Address, manifest: String, n: Int): Unit = ()
-    override def decompressClassManifest(originUid: Long, tableVersion: Int, idx: Int): OptionVal[String] = OptionVal(idxToManifest(idx))
-    override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Int): Unit = ()
-
+    override def decompressClassManifest(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[String] = OptionVal(idxToManifest(idx))
+    override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = ()
     override def close(): Unit = ()
     override def close(originUid: Long): Unit = ()
   }
@@ -79,8 +78,8 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
-      headerOut.inboundActorRefCompressionTableVersion should ===(0xCAFE)
-      headerOut.inboundClassManifestCompressionTableVersion should ===(0xBABE)
+      headerOut.inboundActorRefCompressionTableVersion should ===(0xCA.byteValue)
+      headerOut.inboundClassManifestCompressionTableVersion should ===(0xBA.byteValue)
       headerOut.serializer should ===(4)
       headerOut.senderActorRef(originUid).get.path.toSerializationFormat should ===("akka://EnvelopeBufferSpec/compressable0")
       headerOut.senderActorRefPath should ===(OptionVal.None)

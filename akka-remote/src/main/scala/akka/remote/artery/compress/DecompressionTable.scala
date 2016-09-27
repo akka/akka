@@ -5,8 +5,8 @@
 package akka.remote.artery.compress
 
 /** INTERNAL API */
-private[artery] final case class DecompressionTable[T](originUid: Long, version: Int, table: Array[T]) {
-  // TODO version maybe better as Long? // OR implement roll-over
+private[artery] final case class DecompressionTable[T](originUid: Long, version: Byte, table: Array[T]) {
+
   private[this] val length = table.length
 
   def get(idx: Int): T = {
