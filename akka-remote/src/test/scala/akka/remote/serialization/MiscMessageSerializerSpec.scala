@@ -58,6 +58,8 @@ object MiscMessageSerializerSpec {
 class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testConfig) {
   import MiscMessageSerializerSpec._
 
+  val ref = system.actorOf(Props.empty, "hello")
+
   "MiscMessageSerializer" must {
     Seq(
       "Identify" → Identify("some-message"),
@@ -71,6 +73,7 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "Status.Success" → Status.Success("value"),
       "Status.Failure" → Status.Failure(new TestException("err")),
       "Status.Failure JavaSer" → Status.Failure(new OtherException("exc")), // exc with JavaSerializer
+      "ActorRef" → ref,
       "Some" → Some("value"),
       "None" → None).foreach {
         case (scenario, item) ⇒
