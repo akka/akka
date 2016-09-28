@@ -648,7 +648,7 @@ final class FoldResourceSinkAsync[T, S](
     val logic: GraphStageLogic = new GraphStageLogic(shape) with InHandler {
 
       lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
-      var resource = Promise[S]()
+      var resource: S = _
       var writeFuture: Future[Unit] = Future.successful(())
 
       implicit val context = ExecutionContexts.sameThreadExecutionContext
@@ -663,7 +663,7 @@ final class FoldResourceSinkAsync[T, S](
       private def createStream(): Unit = {
         val cb = getAsyncCallback[Try[S]] {
           case scala.util.Success(res) ⇒
-            resource.success(res)
+            resource = res
             if (!isClosed(in)) {
               pull(in)
             }
@@ -673,13 +673,6 @@ final class FoldResourceSinkAsync[T, S](
           open().onComplete(cb.invoke)
         } catch {
           case NonFatal(ex) ⇒ doFailStage(ex)
-        }
-      }
-
-      private def onResourceReady(f: (S) ⇒ Unit): Unit = {
-        val cb = getAsyncCallback[S](f)
-        resource.future.onSuccess {
-          case r ⇒ cb.invoke(r)
         }
       }
 
@@ -709,18 +702,17 @@ final class FoldResourceSinkAsync[T, S](
 
       val handleWriteResultCallback = getAsyncCallback[Try[Unit]](handleWriteResult).invoke _
 
-      final override def onPush(): Unit = onResourceReady {
-        r ⇒
-          val elem = grab(in)
-          try {
-            writeFuture = writeData(r, elem)
-            // Optimization
-            writeFuture.value match {
-              case None    ⇒ writeFuture.onComplete(handleWriteResultCallback)
-              case Some(v) ⇒ handleWriteResult(v)
-            }
+      final override def onPush(): Unit = {
+        val elem = grab(in)
+        try {
+          writeFuture = writeData(resource, elem)
+          // Optimization
+          writeFuture.value match {
+            case None    ⇒ writeFuture.onComplete(handleWriteResultCallback)
+            case Some(v) ⇒ handleWriteResult(v)
+          }
 
-          } catch errorHandler
+        } catch errorHandler
       }
 
       override def onUpstreamFinish(): Unit = {
@@ -738,19 +730,18 @@ final class FoldResourceSinkAsync[T, S](
         }
 
         onWriteComplete(_ ⇒
-          onResourceReady(res ⇒
-            try {
-              close(res).onComplete(t ⇒ {
-                cb.invoke(t)
-              })
-            } catch {
-              case NonFatal(ex) ⇒ doFailStage(ex)
+          try {
+            close(resource).onComplete(t ⇒ {
+              cb.invoke(t)
             })
+          } catch {
+            case NonFatal(ex) ⇒ doFailStage(ex)
+          }
         )
       }
 
       private def restartState(): Unit = closeAndThen(() ⇒ {
-        resource = Promise[S]()
+        resource = null.asInstanceOf[S]
         createStream()
       })
 
