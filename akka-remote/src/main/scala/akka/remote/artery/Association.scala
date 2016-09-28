@@ -92,6 +92,8 @@ private[remote] object Association {
   final val OrdinaryQueueIndex = 2
 
   private object OutboundStreamStopSignal extends RuntimeException with NoStackTrace
+
+  final case class OutboundStreamMatValues(streamKillSwitch: SharedKillSwitch, completed: Future[Done])
 }
 
 /**
@@ -163,7 +165,8 @@ private[remote] class Association(
       else Future.sequence(c.map(_.changeActorRefCompression(table))).map(_ ⇒ Done)
     timeoutAfter(result, changeCompressionTimeout, new ChangeOutboundCompressionFailed)
   }
-  private[this] val streamCompletions = new AtomicReference(Map.empty[String, (SharedKillSwitch, Future[Done])])
+  // keyed by stream queue index
+  private[this] val streamMatValues = new AtomicReference(Map.empty[Int, OutboundStreamMatValues])
   private[this] val idle = new AtomicReference[Option[Cancellable]](None)
 
   private[artery] def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] = {
@@ -470,8 +473,8 @@ private[remote] class Association(
     cancelIdleTimer()
     idle.set(Some(transport.system.scheduler.scheduleOnce(advancedSettings.StopQuarantinedAfterIdle) {
       if (associationState.isQuarantined())
-        streamCompletions.get.valuesIterator.foreach {
-          case (killSwitch, _) ⇒ killSwitch.abort(OutboundStreamStopSignal)
+        streamMatValues.get.valuesIterator.foreach {
+          case OutboundStreamMatValues(killSwitch, _) ⇒ killSwitch.abort(OutboundStreamStopSignal)
         }
     }(transport.system.dispatcher)))
   }
@@ -523,8 +526,10 @@ private[remote] class Association(
     queuesVisibility = true // volatile write for visibility of the queues array
     _outboundControlIngress = OptionVal.Some(control)
     materializing.countDown()
+
+    updateStreamMatValues(ControlQueueIndex, streamKillSwitch, completed)
     attachStreamRestart("Outbound control stream", ControlQueueIndex, controlQueueSize,
-      streamKillSwitch, completed, () ⇒ runOutboundControlStream())
+      completed, () ⇒ runOutboundControlStream())
   }
 
   private def getOrCreateQueueWrapper(queueIndex: Int, capacity: Int): QueueWrapper = {
@@ -561,8 +566,9 @@ private[remote] class Association(
       queuesVisibility = true // volatile write for visibility of the queues array
       changeOutboundCompression = Vector(changeCompression)
 
+      updateStreamMatValues(OrdinaryQueueIndex, streamKillSwitch, completed)
       attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
-        streamKillSwitch, completed, () ⇒ runOutboundOrdinaryMessagesStream())
+        completed, () ⇒ runOutboundOrdinaryMessagesStream())
 
     } else {
       log.debug("Starting outbound message stream to [{}] with [{}] lanes", remoteAddress, outboundLanes)
@@ -616,7 +622,7 @@ private[remote] class Association(
       changeOutboundCompression = changeCompressionValues
 
       attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
-        streamKillSwitch, completed, () ⇒ runOutboundOrdinaryMessagesStream())
+        completed, () ⇒ runOutboundOrdinaryMessagesStream())
     }
   }
 
@@ -639,12 +645,14 @@ private[remote] class Association(
     // replace with the materialized value, still same underlying queue
     queues(LargeQueueIndex) = queueValue
     queuesVisibility = true // volatile write for visibility of the queues array
+
+    updateStreamMatValues(LargeQueueIndex, streamKillSwitch, completed)
     attachStreamRestart("Outbound large message stream", LargeQueueIndex, largeQueueSize,
-      streamKillSwitch, completed, () ⇒ runOutboundLargeMessagesStream())
+      completed, () ⇒ runOutboundLargeMessagesStream())
   }
 
   private def attachStreamRestart(streamName: String, queueIndex: Int, queueCapacity: Int,
-                                  streamKillSwitch: SharedKillSwitch, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
+                                  streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
 
     def lazyRestart(): Unit = {
       changeOutboundCompression = Vector.empty
@@ -658,7 +666,6 @@ private[remote] class Association(
     }
 
     implicit val ec = materializer.executionContext
-    updateStreamCompletion(streamName, (streamKillSwitch, streamCompleted.recover { case _ ⇒ Done }))
     streamCompleted.onFailure {
       case ArteryTransport.ShutdownSignal ⇒
         // shutdown as expected
@@ -698,12 +705,15 @@ private[remote] class Association(
     }
   }
 
-  // set the future that completes when the current stream for a given name completes
-  @tailrec
-  private def updateStreamCompletion(streamName: String, streamCompletion: (SharedKillSwitch, Future[Done])): Unit = {
-    val prev = streamCompletions.get()
-    if (!streamCompletions.compareAndSet(prev, prev + (streamName → streamCompletion))) {
-      updateStreamCompletion(streamName, streamCompletion)
+  private def updateStreamMatValues(streamId: Int, streamKillSwitch: SharedKillSwitch, completed: Future[Done]): Unit = {
+    implicit val ec = materializer.executionContext
+    updateStreamMatValues(streamId, OutboundStreamMatValues(streamKillSwitch, completed.recover { case _ ⇒ Done }))
+  }
+
+  @tailrec private def updateStreamMatValues(streamId: Int, values: OutboundStreamMatValues): Unit = {
+    val prev = streamMatValues.get()
+    if (!streamMatValues.compareAndSet(prev, prev + (streamId → values))) {
+      updateStreamMatValues(streamId, values)
     }
   }
 
@@ -713,7 +723,9 @@ private[remote] class Association(
    */
   def streamsCompleted: Future[Done] = {
     implicit val ec = materializer.executionContext
-    Future.sequence(streamCompletions.get().values.map(_._2)).map(_ ⇒ Done)
+    Future.sequence(streamMatValues.get().values.map {
+      case OutboundStreamMatValues(_, done) ⇒ done
+    }).map(_ ⇒ Done)
   }
 
   override def toString: String =

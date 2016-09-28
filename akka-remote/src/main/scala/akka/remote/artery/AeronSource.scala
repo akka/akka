@@ -21,6 +21,8 @@ import io.aeron.logbuffer.Header
 import org.agrona.DirectBuffer
 import org.agrona.concurrent.BackoffIdleStrategy
 import org.agrona.hints.ThreadHints
+import akka.stream.stage.GraphStageWithMaterializedValue
+import scala.util.control.NonFatal
 
 object AeronSource {
 
@@ -55,6 +57,10 @@ object AeronSource {
       onMessage(envelope)
     }
   })
+
+  trait ResourceLifecycle {
+    def onUnavailableImage(sessionId: Int): Unit
+  }
 }
 
 /**
@@ -67,7 +73,7 @@ class AeronSource(
   taskRunner:     TaskRunner,
   pool:           EnvelopeBufferPool,
   flightRecorder: EventSink)
-  extends GraphStage[SourceShape[EnvelopeBuffer]] {
+  extends GraphStageWithMaterializedValue[SourceShape[EnvelopeBuffer], AeronSource.ResourceLifecycle] {
   import AeronSource._
   import TaskRunner._
   import FlightRecorderEvents._
@@ -75,8 +81,8 @@ class AeronSource(
   val out: Outlet[EnvelopeBuffer] = Outlet("AeronSource")
   override val shape: SourceShape[EnvelopeBuffer] = SourceShape(out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with OutHandler {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+    val logic = new GraphStageLogic(shape) with OutHandler with ResourceLifecycle {
 
       private val sub = aeron.addSubscription(channel, streamId)
       // spin between 100 to 10000 depending on idleCpuLevel
@@ -90,6 +96,14 @@ class AeronSource(
       private val addPollTask: Add = Add(pollTask(sub, messageHandler, getAsyncCallback(taskOnMessage)))
 
       private val channelMetadata = channel.getBytes("US-ASCII")
+
+      private var delegatingToTaskRunner = false
+
+      private var pendingUnavailableImages: List[Int] = Nil
+      private val onUnavailableImageCb = getAsyncCallback[Int] { sessionId ⇒
+        pendingUnavailableImages = sessionId :: pendingUnavailableImages
+        freeSessionBuffers()
+      }
 
       override def preStart(): Unit = {
         flightRecorder.loFreq(AeronSource_Started, channelMetadata)
@@ -126,6 +140,7 @@ class AeronSource(
           } else {
             // delegate backoff to shared TaskRunner
             flightRecorder.hiFreq(AeronSource_DelegateToTaskRunner, countBeforeDelegate)
+            delegatingToTaskRunner = true
             delegateTaskStartTime = System.nanoTime()
             taskRunner.command(addPollTask)
           }
@@ -134,7 +149,9 @@ class AeronSource(
 
       private def taskOnMessage(data: EnvelopeBuffer): Unit = {
         countBeforeDelegate = 0
+        delegatingToTaskRunner = false
         flightRecorder.hiFreq(AeronSource_ReturnFromTaskRunner, System.nanoTime() - delegateTaskStartTime)
+        freeSessionBuffers()
         onMessage(data)
       }
 
@@ -143,6 +160,32 @@ class AeronSource(
         push(out, data)
       }
 
+      private def freeSessionBuffers(): Unit =
+        if (!delegatingToTaskRunner) {
+          def loop(remaining: List[Int]): Unit = {
+            remaining match {
+              case Nil ⇒
+              case sessionId :: tail ⇒
+                messageHandler.fragmentsHandler.freeSessionBuffer(sessionId)
+                loop(tail)
+            }
+          }
+
+          loop(pendingUnavailableImages)
+          pendingUnavailableImages = Nil
+        }
+
+      // External callback from ResourceLifecycle
+      def onUnavailableImage(sessionId: Int): Unit =
+        try {
+          onUnavailableImageCb.invoke(sessionId)
+        } catch {
+          case NonFatal(_) ⇒ // just in case it's called before stage is initialized, ignore
+        }
+
       setHandler(out, this)
     }
+
+    (logic, logic)
+  }
 }
