@@ -33,10 +33,10 @@ class EnvelopeBufferSpec extends AkkaSpec {
     val idxToManifest = manifestToIdx.map(_.swap)
 
     val outboundActorRefTable: CompressionTable[ActorRef] =
-      CompressionTable(17L, version = 0xCA.byteValue, refToIdx)
+      CompressionTable(17L, version = 28.toByte, refToIdx)
 
     val outboundClassManifestTable: CompressionTable[String] =
-      CompressionTable(17L, version = 0xBA.byteValue, manifestToIdx)
+      CompressionTable(17L, version = 35.toByte, manifestToIdx)
 
     override def hitActorRef(originUid: Long, remote: Address, ref: ActorRef, n: Int): Unit = ()
     override def decompressActorRef(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[ActorRef] = OptionVal(idxToRef(idx))
@@ -78,8 +78,8 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       headerOut.version should ===(1)
       headerOut.uid should ===(42)
-      headerOut.inboundActorRefCompressionTableVersion should ===(0xCA.byteValue)
-      headerOut.inboundClassManifestCompressionTableVersion should ===(0xBA.byteValue)
+      headerOut.inboundActorRefCompressionTableVersion should ===(28.toByte)
+      headerOut.inboundClassManifestCompressionTableVersion should ===(35.toByte)
       headerOut.serializer should ===(4)
       headerOut.senderActorRef(originUid).get.path.toSerializationFormat should ===("akka://EnvelopeBufferSpec/compressable0")
       headerOut.senderActorRefPath should ===(OptionVal.None)
