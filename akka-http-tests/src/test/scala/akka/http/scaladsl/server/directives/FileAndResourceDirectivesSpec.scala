@@ -457,6 +457,36 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "reject requests to file resources" in {
       Get() ~> listDirectoryContents(base + "subDirectory/empty.pdf") ~> check { handled shouldEqual false }
     }
+    "reject path traversal attempts" in {
+      def _listDirectoryContents(directory: String) = listDirectoryContents(new File(testRoot, directory).getCanonicalPath)
+      def route(uri: String) =
+        mapRequestContext(_.withUnmatchedPath(Path("/" + uri)).mapRequest(_.copy(uri = "/" + uri))) {
+          _listDirectoryContents("someDir/sub")
+        }
+
+      Get() ~> route("") ~> check {
+        handled shouldEqual true
+      }
+
+      def shouldReject(prefix: String) =
+        Get() ~> route(prefix) ~> check {
+          handled shouldEqual false
+        }
+      shouldReject("../") // resolved
+      shouldReject("%5c../")
+      shouldReject("%2e%2e%2f")
+      shouldReject("%2e%2e/") // resolved
+      shouldReject("..%2f")
+      shouldReject("%2e%2e%5c")
+      shouldReject("%2e%2e\\")
+      shouldReject("..\\")
+      shouldReject("\\")
+      shouldReject("%5c")
+      shouldReject("..%5c")
+      shouldReject("..%255c")
+      shouldReject("..%c0%af")
+      shouldReject("..%c1%9c")
+    }
   }
 
   def prep(s: String) = s.stripMarginWithNewline("\n")
