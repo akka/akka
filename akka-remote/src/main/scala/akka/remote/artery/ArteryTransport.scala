@@ -251,9 +251,13 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
           case None          ⇒ // Ignore, handshake was not completed on this association
         }
       }
+      if (remaining.valuesIterator.sum == 0) {
+        done.trySuccess(Done)
+        context.stop(self)
+      }
     } catch {
       case NonFatal(e) ⇒
-        // send may throw
+        // sendTerminationHint may throw
         done.tryFailure(e)
         throw e
     }
