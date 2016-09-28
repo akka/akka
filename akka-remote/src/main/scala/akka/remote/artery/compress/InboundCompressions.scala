@@ -247,8 +247,13 @@ private[remote] object InboundCompression {
     advertisementInProgress: Option[CompressionTable[T]]) {
 
     def startUsingNextTable(): State[T] = {
-      // wrap around to positive values
-      val nextVersion = (nextTable.version + 1) & 0x7F
+      // only use positive values (to make it easier to debug)
+      val nextVersion = {
+        // negative and zero is reserved for empty table
+        val wrappedAround = (nextTable.version + 1) & 0x7F
+        if (wrappedAround == 0) 1
+        else wrappedAround
+      }
       State(
         oldTable = activeTable,
         activeTable = nextTable,
