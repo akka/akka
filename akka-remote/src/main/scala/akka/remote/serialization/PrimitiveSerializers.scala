@@ -1,9 +1,11 @@
 package akka.remote.serialization
 
-import java.nio.ByteBuffer
+import java.nio.{ BufferOverflowException, ByteBuffer }
 
 import akka.actor.{ ExtendedActorSystem, Kill, PoisonPill }
+import akka.remote.OversizedPayloadException
 import akka.serialization.{ BaseSerializer, ByteBufferSerializer }
+import akka.util.ByteString
 
 class LongSerializer(val system: ExtendedActorSystem) extends BaseSerializer with ByteBufferSerializer {
   override def includeManifest: Boolean = false
@@ -85,5 +87,32 @@ class StringSerializer(val system: ExtendedActorSystem) extends BaseSerializer w
   override def toBinary(o: AnyRef): Array[Byte] = o.asInstanceOf[String].getBytes("UTF-8")
 
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = new String(bytes, "UTF-8")
+
+}
+
+class ByteStringSerializer(val system: ExtendedActorSystem) extends BaseSerializer with ByteBufferSerializer {
+  override def includeManifest: Boolean = false
+
+  override def toBinary(o: AnyRef, buf: ByteBuffer): Unit = {
+    val bs = o.asInstanceOf[ByteString]
+
+    // ByteString.copyToBuffer does not throw BufferOverflowException
+    if (bs.copyToBuffer(buf) < bs.length)
+      throw new BufferOverflowException()
+  }
+
+  override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef =
+    ByteString.fromByteBuffer(buf)
+
+  override def toBinary(o: AnyRef): Array[Byte] = {
+    val bs = o.asInstanceOf[ByteString]
+    val result = Array.ofDim[Byte](bs.length)
+    bs.copyToArray(result, 0, bs.length)
+    result
+  }
+
+  override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = {
+    ByteString(bytes)
+  }
 
 }
