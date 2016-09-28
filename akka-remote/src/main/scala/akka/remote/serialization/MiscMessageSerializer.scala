@@ -21,6 +21,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case identity: ActorIdentity ⇒ serializeActorIdentity(identity)
     case Some(value)             ⇒ serializeSome(value)
     case None                    ⇒ NoneSerialized
+    case r: ActorRef             ⇒ serializeActorRef(r)
     case s: Status.Success       ⇒ serializeStatusSuccess(s)
     case f: Status.Failure       ⇒ serializeStatusFailure(f)
     case t: Throwable            ⇒ throwableSupport.serializeThrowable(t)
@@ -53,6 +54,9 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       .build()
       .toByteArray
 
+  private def serializeActorRef(ref: ActorRef): Array[Byte] =
+    actorRefBuilder(ref).build().toByteArray
+
   private def actorRefBuilder(actorRef: ActorRef): ContainerFormats.ActorRef.Builder =
     ContainerFormats.ActorRef.newBuilder()
       .setPath(Serialization.serializedActorPath(actorRef))
@@ -69,6 +73,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val StatusSuccessManifest = "D"
   private val StatusFailureManifest = "E"
   private val ThrowableManifest = "F"
+  private val ActorRefManifest = "G"
 
   private val fromBinaryMap = Map[String, Array[Byte] ⇒ AnyRef](
     IdentifyManifest → deserializeIdentify,
@@ -76,13 +81,15 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     OptionManifest → deserializeOption,
     StatusSuccessManifest → deserializeStatusSuccess,
     StatusFailureManifest → deserializeStatusFailure,
-    ThrowableManifest → throwableSupport.deserializeThrowable)
+    ThrowableManifest → throwableSupport.deserializeThrowable,
+    ActorRefManifest → deserializeActorRefBytes)
 
   override def manifest(o: AnyRef): String =
     o match {
       case _: Identify       ⇒ IdentifyManifest
       case _: ActorIdentity  ⇒ ActorIdentifyManifest
       case _: Option[Any]    ⇒ OptionManifest
+      case _: ActorRef       ⇒ ActorRefManifest
       case _: Status.Success ⇒ StatusSuccessManifest
       case _: Status.Failure ⇒ StatusFailureManifest
       case _: Throwable      ⇒ ThrowableManifest
@@ -113,6 +120,9 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
         None
     ActorIdentity(correlationId, actorRef)
   }
+
+  private def deserializeActorRefBytes(bytes: Array[Byte]): ActorRef =
+    deserializeActorRef(ContainerFormats.ActorRef.parseFrom(bytes))
 
   private def deserializeActorRef(actorRef: ContainerFormats.ActorRef): ActorRef =
     serialization.system.provider.resolveActorRef(actorRef.getPath)

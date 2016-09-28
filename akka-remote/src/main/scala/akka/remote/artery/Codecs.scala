@@ -255,7 +255,7 @@ private[remote] object Decoder {
 /**
  * INTERNAL API
  */
-private[akka] final class ActorRefResolveCache(provider: RemoteActorRefProvider, localAddress: UniqueAddress)
+private[akka] final class ActorRefResolveCacheWithAddress(provider: RemoteActorRefProvider, localAddress: UniqueAddress)
   extends LruBoundedCache[String, InternalActorRef](capacity = 1024, evictAgeThreshold = 600) {
 
   override protected def compute(k: String): InternalActorRef =
@@ -286,8 +286,8 @@ private[remote] class Decoder(
       import Decoder.RetryResolveRemoteDeployedRecipient
       private val localAddress = inboundContext.localAddress.address
       private val headerBuilder = HeaderBuilder.in(compression)
-      private val actorRefResolver: ActorRefResolveCache =
-        new ActorRefResolveCache(system.provider.asInstanceOf[RemoteActorRefProvider], uniqueLocalAddress)
+      private val actorRefResolver: ActorRefResolveCacheWithAddress =
+        new ActorRefResolveCacheWithAddress(system.provider.asInstanceOf[RemoteActorRefProvider], uniqueLocalAddress)
       private val bannedRemoteDeployedActorRefs = new java.util.HashSet[String]
 
       private val retryResolveRemoteDeployedRecipientInterval = 50.millis
