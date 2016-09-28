@@ -11,6 +11,8 @@ import akka.serialization.{ Serialization, BaseSerializer, SerializationExtensio
 class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 
   private lazy val serialization = SerializationExtension(system)
+  private val payloadSupport = new WrappedPayloadSupport(system)
+  private val throwableSupport = new ThrowableSupport(system)
 
   private val NoneSerialized = Array.empty[Byte]
 
@@ -19,19 +21,22 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case identity: ActorIdentity ⇒ serializeActorIdentity(identity)
     case Some(value)             ⇒ serializeSome(value)
     case None                    ⇒ NoneSerialized
+    case s: Status.Success       ⇒ serializeStatusSuccess(s)
+    case f: Status.Failure       ⇒ serializeStatusFailure(f)
+    case t: Throwable            ⇒ throwableSupport.serializeThrowable(t)
     case _                       ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
   private def serializeIdentify(identify: Identify): Array[Byte] =
     ContainerFormats.Identify.newBuilder()
-      .setMessageId(payloadBuilder(identify.messageId))
+      .setMessageId(payloadSupport.payloadBuilder(identify.messageId))
       .build()
       .toByteArray
 
   private def serializeActorIdentity(actorIdentity: ActorIdentity): Array[Byte] = {
     val builder =
       ContainerFormats.ActorIdentity.newBuilder()
-        .setCorrelationId(payloadBuilder(actorIdentity.correlationId))
+        .setCorrelationId(payloadSupport.payloadBuilder(actorIdentity.correlationId))
 
     actorIdentity.ref.foreach { actorRef ⇒
       builder.setRef(actorRefBuilder(actorRef))
@@ -44,7 +49,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   private def serializeSome(someValue: Any): Array[Byte] =
     ContainerFormats.Option.newBuilder()
-      .setValue(payloadBuilder(someValue))
+      .setValue(payloadSupport.payloadBuilder(someValue))
       .build()
       .toByteArray
 
@@ -52,43 +57,35 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     ContainerFormats.ActorRef.newBuilder()
       .setPath(Serialization.serializedActorPath(actorRef))
 
-  private def payloadBuilder(input: Any): ContainerFormats.Payload.Builder = {
-    val payload = input.asInstanceOf[AnyRef]
-    val builder = ContainerFormats.Payload.newBuilder()
-    val serializer = serialization.findSerializerFor(payload)
+  private def serializeStatusSuccess(success: Status.Success): Array[Byte] =
+    payloadSupport.payloadBuilder(success.status).build().toByteArray
 
-    builder
-      .setEnclosedMessage(ByteString.copyFrom(serializer.toBinary(payload)))
-      .setSerializerId(serializer.identifier)
-
-    serializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(payload)
-        if (manifest != "")
-          builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
-      case _ ⇒
-        if (serializer.includeManifest)
-          builder.setMessageManifest(ByteString.copyFromUtf8(payload.getClass.getName))
-    }
-
-    builder
-  }
+  private def serializeStatusFailure(failure: Status.Failure): Array[Byte] =
+    payloadSupport.payloadBuilder(failure.cause).build().toByteArray
 
   private val IdentifyManifest = "A"
   private val ActorIdentifyManifest = "B"
   private val OptionManifest = "C"
+  private val StatusSuccessManifest = "D"
+  private val StatusFailureManifest = "E"
+  private val ThrowableManifest = "F"
 
   private val fromBinaryMap = Map[String, Array[Byte] ⇒ AnyRef](
     IdentifyManifest → deserializeIdentify,
     ActorIdentifyManifest → deserializeActorIdentity,
-    OptionManifest → deserializeOption
-  )
+    OptionManifest → deserializeOption,
+    StatusSuccessManifest → deserializeStatusSuccess,
+    StatusFailureManifest → deserializeStatusFailure,
+    ThrowableManifest → throwableSupport.deserializeThrowable)
 
   override def manifest(o: AnyRef): String =
     o match {
-      case _: Identify      ⇒ IdentifyManifest
-      case _: ActorIdentity ⇒ ActorIdentifyManifest
-      case _: Option[Any]   ⇒ OptionManifest
+      case _: Identify       ⇒ IdentifyManifest
+      case _: ActorIdentity  ⇒ ActorIdentifyManifest
+      case _: Option[Any]    ⇒ OptionManifest
+      case _: Status.Success ⇒ StatusSuccessManifest
+      case _: Status.Failure ⇒ StatusFailureManifest
+      case _: Throwable      ⇒ ThrowableManifest
       case _ ⇒
         throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
     }
@@ -102,13 +99,13 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   private def deserializeIdentify(bytes: Array[Byte]): Identify = {
     val identifyProto = ContainerFormats.Identify.parseFrom(bytes)
-    val messageId = deserializePayload(identifyProto.getMessageId)
+    val messageId = payloadSupport.deserializePayload(identifyProto.getMessageId)
     Identify(messageId)
   }
 
   private def deserializeActorIdentity(bytes: Array[Byte]): ActorIdentity = {
     val actorIdentityProto = ContainerFormats.ActorIdentity.parseFrom(bytes)
-    val correlationId = deserializePayload(actorIdentityProto.getCorrelationId)
+    val correlationId = payloadSupport.deserializePayload(actorIdentityProto.getCorrelationId)
     val actorRef =
       if (actorIdentityProto.hasRef)
         Some(deserializeActorRef(actorIdentityProto.getRef))
@@ -125,16 +122,14 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       None
     else {
       val optionProto = ContainerFormats.Option.parseFrom(bytes)
-      Some(deserializePayload(optionProto.getValue))
+      Some(payloadSupport.deserializePayload(optionProto.getValue))
     }
   }
 
-  private def deserializePayload(payload: ContainerFormats.Payload): Any = {
-    val manifest = if (payload.hasMessageManifest) payload.getMessageManifest.toStringUtf8 else ""
-    serialization.deserialize(
-      payload.getEnclosedMessage.toByteArray,
-      payload.getSerializerId,
-      manifest).get
-  }
+  private def deserializeStatusSuccess(bytes: Array[Byte]): Status.Success =
+    Status.Success(payloadSupport.deserializePayload(ContainerFormats.Payload.parseFrom(bytes)))
+
+  private def deserializeStatusFailure(bytes: Array[Byte]): Status.Failure =
+    Status.Failure(payloadSupport.deserializePayload(ContainerFormats.Payload.parseFrom(bytes)).asInstanceOf[Throwable])
 
 }
