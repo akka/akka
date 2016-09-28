@@ -183,10 +183,12 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         headers should contain(`Last-Modified`(DateTime(lastModified)))
       }
     }
-    "follow symbolic links to find a file" in {
+    "not follow symbolic links to find a file" in {
       Get("linked-dir/empty.pdf") ~> _getFromDirectory("dirWithLink") ~> check {
-        mediaType shouldEqual `application/pdf`
+        handled shouldBe false
+        /* TODO: resurrect following links under an option
         responseAs[String] shouldEqual "123"
+        mediaType shouldEqual `application/pdf`*/
       }
     }
   }
