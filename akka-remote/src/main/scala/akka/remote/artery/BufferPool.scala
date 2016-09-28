@@ -78,12 +78,12 @@ private[remote] object EnvelopeBuffer {
   val FlagsOffset = 1 // Byte
   val UidOffset = 2 // Long
   val SerializerOffset = 10 // Int
+  val ActorRefCompressionTableVersionOffset = 14 // Byte
+  val ClassManifestCompressionTableVersionOffset = 15 // Byte
 
-  val SenderActorRefTagOffset = 14 // Int
-  val RecipientActorRefTagOffset = 18 // Int
-  val ClassManifestTagOffset = 22 // Int
-  val ActorRefCompressionTableVersionOffset = 26 // Byte
-  val ClassManifestCompressionTableVersionOffset = 27 // Byte
+  val SenderActorRefTagOffset = 16 // Int
+  val RecipientActorRefTagOffset = 20 // Int
+  val ClassManifestTagOffset = 24 // Int
 
   // EITHER metadata followed by literals directly OR literals directly in this spot.
   // Mode depends on the `MetadataPresentFlag`.
