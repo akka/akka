@@ -5,30 +5,33 @@ package akka.remote.serialization
 
 import akka.actor._
 import akka.protobuf.ByteString
-import akka.remote.ContainerFormats
-import akka.serialization.{ Serialization, BaseSerializer, SerializationExtension, SerializerWithStringManifest }
+import akka.remote.{ ContainerFormats, RemoteWatcher }
+import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
 
 class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 
+  // WARNING! This must lazy otherwise it will deadlock the ActorSystem creation
   private lazy val serialization = SerializationExtension(system)
   private val payloadSupport = new WrappedPayloadSupport(system)
   private val throwableSupport = new ThrowableSupport(system)
 
-  private val ParameterlessSerialized = Array.empty[Byte]
+  private val ParameterlessSerializedMessage = Array.empty[Byte]
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case identify: Identify      ⇒ serializeIdentify(identify)
-    case identity: ActorIdentity ⇒ serializeActorIdentity(identity)
-    case Some(value)             ⇒ serializeSome(value)
-    case None                    ⇒ NoneSerialized
-    case r: ActorRef             ⇒ serializeActorRef(r)
-    case s: Status.Success       ⇒ serializeStatusSuccess(s)
-    case f: Status.Failure       ⇒ serializeStatusFailure(f)
-    case t: Throwable            ⇒ throwableSupport.serializeThrowable(t)
-    case None                    ⇒ ParameterlessSerialized
-    case PoisonPill              ⇒ ParameterlessSerialized
-    case Kill                    ⇒ ParameterlessSerialized
-    case _                       ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
+    case identify: Identify                ⇒ serializeIdentify(identify)
+    case identity: ActorIdentity           ⇒ serializeActorIdentity(identity)
+    case Some(value)                       ⇒ serializeSome(value)
+    case None                              ⇒ ParameterlessSerializedMessage
+    case r: ActorRef                       ⇒ serializeActorRef(r)
+    case s: Status.Success                 ⇒ serializeStatusSuccess(s)
+    case f: Status.Failure                 ⇒ serializeStatusFailure(f)
+    case ex: ActorInitializationException  ⇒ serializeActorInitializationException(ex)
+    case t: Throwable                      ⇒ throwableSupport.serializeThrowable(t)
+    case PoisonPill                        ⇒ ParameterlessSerializedMessage
+    case Kill                              ⇒ ParameterlessSerializedMessage
+    case RemoteWatcher.Heartbeat           ⇒ ParameterlessSerializedMessage
+    case hbrsp: RemoteWatcher.HeartbeatRsp ⇒ serializeHeartbeatRsp(hbrsp)
+    case _                                 ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
   private def serializeIdentify(identify: Identify): Array[Byte] =
@@ -60,6 +63,10 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private def serializeActorRef(ref: ActorRef): Array[Byte] =
     actorRefBuilder(ref).build().toByteArray
 
+  private def serializeHeartbeatRsp(hbrsp: RemoteWatcher.HeartbeatRsp): Array[Byte] = {
+    ContainerFormats.WatcherHeartbeatResponse.newBuilder().setUid(hbrsp.addressUid).build().toByteArray
+  }
+
   private def actorRefBuilder(actorRef: ActorRef): ContainerFormats.ActorRef.Builder =
     ContainerFormats.ActorRef.newBuilder()
       .setPath(Serialization.serializedActorPath(actorRef))
@@ -70,6 +77,17 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private def serializeStatusFailure(failure: Status.Failure): Array[Byte] =
     payloadSupport.payloadBuilder(failure.cause).build().toByteArray
 
+  private def serializeActorInitializationException(ex: ActorInitializationException): Array[Byte] = {
+    val builder = ContainerFormats.ActorInitializationException.newBuilder()
+    if (ex.getActor ne null)
+      builder.setActor(actorRefBuilder(ex.getActor))
+
+    builder
+      .setMessage(ex.getMessage)
+      .setCause(payloadSupport.payloadBuilder(ex.getCause))
+      .build().toByteArray
+  }
+
   private val IdentifyManifest = "A"
   private val ActorIdentityManifest = "B"
   private val OptionManifest = "C"
@@ -79,34 +97,40 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val ActorRefManifest = "G"
   private val PoisonPillManifest = "P"
   private val KillManifest = "K"
+  private val RemoteWatcherHBManifest = "RWHB"
+  private val RemoteWatcherHBRespManifest = "RWHR"
+  private val ActorInitializationExceptionManifest = "AIEX"
 
   private val fromBinaryMap = Map[String, Array[Byte] ⇒ AnyRef](
     IdentifyManifest → deserializeIdentify,
-    ActorIdentifyManifest → deserializeActorIdentity,
+    ActorIdentityManifest → deserializeActorIdentity,
     OptionManifest → deserializeOption,
     StatusSuccessManifest → deserializeStatusSuccess,
     StatusFailureManifest → deserializeStatusFailure,
     ThrowableManifest → throwableSupport.deserializeThrowable,
-    ActorRefManifest → deserializeActorRefBytes)
+    ActorRefManifest → deserializeActorRefBytes,
     OptionManifest → deserializeOption,
     PoisonPillManifest → ((_) ⇒ PoisonPill),
-    KillManifest → ((_) ⇒ Kill)
+    KillManifest → ((_) ⇒ Kill),
+    RemoteWatcherHBManifest → ((_) ⇒ RemoteWatcher.Heartbeat),
+    RemoteWatcherHBRespManifest → deserializeHeartbeatRsp,
+    ActorInitializationExceptionManifest → deserializeActorInitializationException
   )
 
   override def manifest(o: AnyRef): String =
     o match {
-      case _: Identify       ⇒ IdentifyManifest
-      case _: ActorIdentity  ⇒ ActorIdentifyManifest
-      case _: Option[Any]    ⇒ OptionManifest
-      case _: ActorRef       ⇒ ActorRefManifest
-      case _: Status.Success ⇒ StatusSuccessManifest
-      case _: Status.Failure ⇒ StatusFailureManifest
-      case _: Throwable      ⇒ ThrowableManifest
-      case _: Identify        ⇒ IdentifyManifest
-      case _: ActorIdentity   ⇒ ActorIdentityManifest
-      case _: Option[Any]     ⇒ OptionManifest
-      case _: PoisonPill.type ⇒ PoisonPillManifest
-      case _: Kill.type       ⇒ KillManifest
+      case _: Identify                     ⇒ IdentifyManifest
+      case _: ActorIdentity                ⇒ ActorIdentityManifest
+      case _: Option[Any]                  ⇒ OptionManifest
+      case _: ActorRef                     ⇒ ActorRefManifest
+      case _: Status.Success               ⇒ StatusSuccessManifest
+      case _: Status.Failure               ⇒ StatusFailureManifest
+      case _: ActorInitializationException ⇒ ActorInitializationExceptionManifest
+      case _: Throwable                    ⇒ ThrowableManifest
+      case PoisonPill                      ⇒ PoisonPillManifest
+      case Kill                            ⇒ KillManifest
+      case RemoteWatcher.Heartbeat         ⇒ RemoteWatcherHBManifest
+      case _: RemoteWatcher.HeartbeatRsp   ⇒ RemoteWatcherHBRespManifest
       case _ ⇒
         throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
     }
@@ -155,5 +179,26 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   private def deserializeStatusFailure(bytes: Array[Byte]): Status.Failure =
     Status.Failure(payloadSupport.deserializePayload(ContainerFormats.Payload.parseFrom(bytes)).asInstanceOf[Throwable])
+
+  private def deserializeHeartbeatRsp(bytes: Array[Byte]): RemoteWatcher.HeartbeatRsp = {
+    RemoteWatcher.HeartbeatRsp(ContainerFormats.WatcherHeartbeatResponse.parseFrom(bytes).getUid.toInt)
+  }
+
+  private def deserializeActorInitializationException(bytes: Array[Byte]): ActorInitializationException = {
+    val serializedEx = ContainerFormats.ActorInitializationException.parseFrom(bytes)
+    val ref = deserializeActorRef(serializedEx.getActor)
+    val refString = ref.path.toString
+    val message = serializedEx.getMessage
+
+    val reconstructedMessage =
+      if (message.startsWith(refString)) message.drop(refString.length + 2)
+      else message
+
+    ActorInitializationException(
+      if (serializedEx.hasActor) ref else null,
+      reconstructedMessage,
+      payloadSupport.deserializePayload(serializedEx.getCause).asInstanceOf[Throwable]
+    )
+  }
 
 }

@@ -8,6 +8,7 @@ import java.nio.ByteBuffer
 import akka.actor.{ ActorIdentity, ExtendedActorSystem, Identify }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
+import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 
 import scala.util.Random
@@ -119,6 +120,42 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
 
     def verifySerializationByteBuffer(msg: AnyRef): Unit = {
       val serializer = new StringSerializer(system.asInstanceOf[ExtendedActorSystem])
+      buffer.clear()
+      serializer.toBinary(msg, buffer)
+      buffer.flip()
+      serializer.fromBinary(buffer, "") should ===(msg)
+    }
+  }
+
+  "ByteStringSerializer" must {
+    Seq(
+      "empty string" → ByteString.empty,
+      "simple content" → ByteString("hello"),
+      "concatenated content" → (ByteString("hello") ++ ByteString("world")),
+      "sliced content" → ByteString("helloabc").take(5)
+    ).foreach {
+        case (scenario, item) ⇒
+          s"resolve serializer for [$scenario]" in {
+            val serializer = SerializationExtension(system)
+            serializer.serializerFor(item.getClass).getClass should ===(classOf[ByteStringSerializer])
+          }
+
+          s"serialize and de-serialize [$scenario]" in {
+            verifySerialization(item)
+          }
+
+          s"serialize and de-serialize value [$scenario] using ByteBuffers" in {
+            verifySerializationByteBuffer(item)
+          }
+      }
+
+    def verifySerialization(msg: AnyRef): Unit = {
+      val serializer = new ByteStringSerializer(system.asInstanceOf[ExtendedActorSystem])
+      serializer.fromBinary(serializer.toBinary(msg), None) should ===(msg)
+    }
+
+    def verifySerializationByteBuffer(msg: AnyRef): Unit = {
+      val serializer = new ByteStringSerializer(system.asInstanceOf[ExtendedActorSystem])
       buffer.clear()
       serializer.toBinary(msg, buffer)
       buffer.flip()

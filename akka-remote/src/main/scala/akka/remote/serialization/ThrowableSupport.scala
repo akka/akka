@@ -16,6 +16,10 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
   private val payloadSupport = new WrappedPayloadSupport(system)
 
   def serializeThrowable(t: Throwable): Array[Byte] = {
+    toProtobufThrowable(t).build().toByteArray
+  }
+
+  def toProtobufThrowable(t: Throwable): ContainerFormats.Throwable.Builder = {
     val b = ContainerFormats.Throwable.newBuilder()
       .setClassName(t.getClass.getName)
     if (t.getMessage != null)
@@ -31,7 +35,7 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
       }
     }
 
-    b.build().toByteArray
+    b
   }
 
   def stackTraceElementBuilder(elem: StackTraceElement): ContainerFormats.StackTraceElement.Builder = {
@@ -43,7 +47,10 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
   }
 
   def deserializeThrowable(bytes: Array[Byte]): Throwable = {
-    val protoT = ContainerFormats.Throwable.parseFrom(bytes)
+    fromProtobufThrowable(ContainerFormats.Throwable.parseFrom(bytes))
+  }
+
+  def fromProtobufThrowable(protoT: ContainerFormats.Throwable): Throwable = {
     val t: Throwable =
       if (protoT.hasCause) {
         val cause = payloadSupport.deserializePayload(protoT.getCause).asInstanceOf[Throwable]
@@ -63,9 +70,9 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
 
     import scala.collection.JavaConverters._
     val stackTrace =
-      (protoT.getStackTraceList.asScala.map { elem ⇒
+      protoT.getStackTraceList.asScala.map { elem ⇒
         new StackTraceElement(elem.getClassName, elem.getMethodName, elem.getFileName, elem.getLineNumber)
-      }).toArray
+      }.toArray
     t.setStackTrace(stackTrace)
     t
   }
