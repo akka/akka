@@ -23,7 +23,7 @@ object StatsSampleOneMaster {
     ports foreach { port =>
       // Override the configuration of the port when specified as program argument
       val config =
-        ConfigFactory.parseString(s"akka.remote.artery.port=" + port).withFallback(
+        ConfigFactory.parseString(s"akka.remote.artery.canonical.port=" + port).withFallback(
           ConfigFactory.parseString("akka.cluster.roles = [compute]")).
           withFallback(ConfigFactory.load("stats2"))
 
