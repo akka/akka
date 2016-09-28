@@ -23,12 +23,12 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
     var autoCompleteWrite: Boolean = true
     var autoCompleteClose: Boolean = true
 
-    var isOpened = false
-    var isClosed = false
-    var written: Vector[T] = _
-    var completeOpen: Promise[Unit] = _
-    var completeWrite: Promise[Unit] = _
-    var completeClose: Promise[Unit] = _
+    @volatile var isOpened = false
+    @volatile var isClosed = false
+    @volatile var written: Vector[T] = _
+    @volatile var completeOpen: Promise[Unit] = _
+    @volatile var completeWrite: Promise[Unit] = _
+    @volatile var completeClose: Promise[Unit] = _
 
     def open(): Future[TestResource[T]] = {
       def syncOpen(): TestResource[T] = {
