@@ -21,6 +21,8 @@ import akka.remote.artery.ArteryTransport
 import akka.util.OptionVal
 import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
+import akka.remote.serialization.ActorRefResolveCache
+import akka.remote.serialization.ActorRefResolveThreadLocalCache
 
 /**
  * INTERNAL API
@@ -175,8 +177,12 @@ private[akka] class RemoteActorRefProvider(
 
   @volatile private var remoteDeploymentWatcher: ActorRef = _
 
+  @volatile private var actorRefResolveThreadLocalCache: ActorRefResolveThreadLocalCache = _
+
   def init(system: ActorSystemImpl): Unit = {
     local.init(system)
+
+    actorRefResolveThreadLocalCache = ActorRefResolveThreadLocalCache(system)
 
     remotingTerminator = system.systemActorOf(
       remoteSettings.configureDispatcher(Props(classOf[RemotingTerminator], local.systemGuardian)),
@@ -389,7 +395,20 @@ private[akka] class RemoteActorRefProvider(
     }
   }
 
-  def resolveActorRef(path: String): ActorRef = path match {
+  def resolveActorRef(path: String): ActorRef = {
+    // using thread local LRU cache, which will call internalRresolveActorRef
+    // if the value is not cached
+    actorRefResolveThreadLocalCache match {
+      case null ⇒ internalResolveActorRef(path) // not initalized yet
+      case c    ⇒ c.threadLocalCache(this).getOrCompute(path)
+    }
+  }
+
+  /**
+   * INTERNAL API: This is used by the `ActorRefResolveCache` via the
+   * public `resolveActorRef(path: String)`.
+   */
+  private[akka] def internalResolveActorRef(path: String): ActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
       if (hasAddress(address)) local.resolveActorRef(rootGuardian, elems)
       else {
