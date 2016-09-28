@@ -27,7 +27,10 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
   // operations touch files, can be randomly hit by slowness
   implicit val routeTestTimeout = RouteTestTimeout(3.seconds)
 
-  val testRoot = new File(getClass.getClassLoader.getResource("").toURI)
+  // need to serve from the src directory, when sbt copies the resource directory over to the
+  // target directory it will resolve symlinks in the process
+  val testRoot = new File("akka-http-tests/src/test/resources")
+  require(testRoot.exists(), s"testRoot was not found at ${testRoot.getAbsolutePath}")
 
   override def testConfigSource = "akka.http.routing.range-coalescing-threshold = 1"
 
@@ -178,6 +181,12 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         responseAs[String] shouldEqual "This is PDF"
         val lastModified = new File(testRoot, "sübdir/sample späce.PDF").lastModified()
         headers should contain(`Last-Modified`(DateTime(lastModified)))
+      }
+    }
+    "follow symbolic links to find a file" in {
+      Get("linked-dir/empty.pdf") ~> _getFromDirectory("dirWithLink") ~> check {
+        mediaType shouldEqual `application/pdf`
+        responseAs[String] shouldEqual "123"
       }
     }
   }
