@@ -7,7 +7,7 @@ package akka.remote.artery.compress
 /**
  * INTERNAL API
  *
- * @param version Either -1 for empty table or a version between 1 and 127
+ * @param version Either -1 for disabled or a version between 0 and 127
  */
 private[remote] final case class DecompressionTable[T](originUid: Long, version: Byte, table: Array[T]) {
 

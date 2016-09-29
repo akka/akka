@@ -247,12 +247,14 @@ private[remote] object InboundCompression {
     advertisementInProgress: Option[CompressionTable[T]]) {
 
     def startUsingNextTable(): State[T] = {
-      // wraparound to only use positive values
-      val nextVersion = ((nextTable.version + 1) & 0x7F).toByte
+      def incrementTableVersion(version: Byte): Byte =
+        if (version == 127) 0
+        else (version + 1).toByte
+
       State(
         oldTable = activeTable,
         activeTable = nextTable,
-        nextTable = DecompressionTable.empty[T].copy(version = nextVersion),
+        nextTable = DecompressionTable.empty[T].copy(version = incrementTableVersion(nextTable.version)),
         advertisementInProgress = None)
     }
   }
