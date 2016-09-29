@@ -36,7 +36,7 @@ object DistributedPubSubRestartSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.cluster.pub-sub.gossip-interval = 500ms
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = cluster
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = off
     """))
