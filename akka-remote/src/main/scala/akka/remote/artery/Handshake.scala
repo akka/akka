@@ -25,7 +25,7 @@ import akka.actor.Address
 /**
  * INTERNAL API
  */
-private[akka] object OutboundHandshake {
+private[remote] object OutboundHandshake {
 
   /**
    * Stream is failed with this exception if the handshake is not completed
@@ -50,7 +50,7 @@ private[akka] object OutboundHandshake {
 /**
  * INTERNAL API
  */
-private[akka] class OutboundHandshake(
+private[remote] class OutboundHandshake(
   system:               ActorSystem,
   outboundContext:      OutboundContext,
   outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
@@ -162,7 +162,7 @@ private[akka] class OutboundHandshake(
 /**
  * INTERNAL API
  */
-private[akka] class InboundHandshake(inboundContext: InboundContext, inControlStream: Boolean) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+private[remote] class InboundHandshake(inboundContext: InboundContext, inControlStream: Boolean) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   val in: Inlet[InboundEnvelope] = Inlet("InboundHandshake.in")
   val out: Outlet[InboundEnvelope] = Outlet("InboundHandshake.out")
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)

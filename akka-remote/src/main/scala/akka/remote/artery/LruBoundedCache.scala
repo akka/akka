@@ -8,7 +8,10 @@ import akka.util.{ OptionVal, Unsafe }
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
-object FastHash {
+/**
+ * INTERNAL API
+ */
+private[remote] object FastHash {
 
   // Fast hash based on the 128 bit Xorshift128+ PRNG. Mixes in character bits into the random generator state.
   def ofString(s: String): Int = {

@@ -10,7 +10,7 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-private[akka] object OutboundEnvelope {
+private[remote] object OutboundEnvelope {
   def apply(
     recipient: OptionVal[RemoteActorRef],
     message:   AnyRef,
@@ -24,7 +24,7 @@ private[akka] object OutboundEnvelope {
 /**
  * INTERNAL API
  */
-private[akka] trait OutboundEnvelope {
+private[remote] trait OutboundEnvelope {
   def recipient: OptionVal[RemoteActorRef]
   def message: AnyRef
   def sender: OptionVal[ActorRef]
@@ -37,7 +37,7 @@ private[akka] trait OutboundEnvelope {
 /**
  * INTERNAL API
  */
-private[akka] object ReusableOutboundEnvelope {
+private[remote] object ReusableOutboundEnvelope {
   def createObjectPool(capacity: Int) = new ObjectPool[ReusableOutboundEnvelope](
     capacity,
     create = () ⇒ new ReusableOutboundEnvelope, clear = outEnvelope ⇒ outEnvelope.clear())
@@ -46,7 +46,7 @@ private[akka] object ReusableOutboundEnvelope {
 /**
  * INTERNAL API
  */
-private[akka] final class ReusableOutboundEnvelope extends OutboundEnvelope {
+private[remote] final class ReusableOutboundEnvelope extends OutboundEnvelope {
   private var _recipient: OptionVal[RemoteActorRef] = OptionVal.None
   private var _message: AnyRef = null
   private var _sender: OptionVal[ActorRef] = OptionVal.None

@@ -72,7 +72,7 @@ import akka.remote.artery.Association.OutboundStreamMatValues
  * Inbound API that is used by the stream stages.
  * Separate trait to facilitate testing without real transport.
  */
-private[akka] trait InboundContext {
+private[remote] trait InboundContext {
   /**
    * The local inbound address.
    */
@@ -105,7 +105,7 @@ private[akka] trait InboundContext {
 /**
  * INTERNAL API
  */
-private[akka] object AssociationState {
+private[remote] object AssociationState {
   def apply(): AssociationState =
     new AssociationState(
       incarnation = 1,
@@ -121,7 +121,7 @@ private[akka] object AssociationState {
 /**
  * INTERNAL API
  */
-private[akka] final class AssociationState(
+private[remote] final class AssociationState(
   val incarnation:                Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
   val quarantined:                ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
@@ -188,7 +188,7 @@ private[akka] final class AssociationState(
  * Outbound association API that is used by the stream stages.
  * Separate trait to facilitate testing without real transport.
  */
-private[akka] trait OutboundContext {
+private[remote] trait OutboundContext {
   /**
    * The local inbound address.
    */

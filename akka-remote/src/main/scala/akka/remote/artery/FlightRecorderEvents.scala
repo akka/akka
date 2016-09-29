@@ -1,6 +1,9 @@
 package akka.remote.artery
 
-object FlightRecorderEvents {
+/**
+ * INTERNAL API
+ */
+private[remote] object FlightRecorderEvents {
 
   // Note: Remember to update dictionary when adding new events!
 

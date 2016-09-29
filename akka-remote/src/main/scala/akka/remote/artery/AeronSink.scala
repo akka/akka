@@ -27,7 +27,10 @@ import io.aeron.Publication
 import org.agrona.concurrent.UnsafeBuffer
 import org.agrona.hints.ThreadHints
 
-object AeronSink {
+/**
+ * INTERNAL API
+ */
+private[remote] object AeronSink {
 
   final class GaveUpMessageException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
@@ -73,9 +76,10 @@ object AeronSink {
 }
 
 /**
+ * INTERNAL API
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSink(
+private[remote] class AeronSink(
   channel:        String,
   streamId:       Int,
   aeron:          Aeron,

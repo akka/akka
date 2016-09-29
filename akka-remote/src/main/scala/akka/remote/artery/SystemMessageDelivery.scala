@@ -30,7 +30,7 @@ import scala.util.control.NoStackTrace
 /**
  * INTERNAL API
  */
-private[akka] object SystemMessageDelivery {
+private[remote] object SystemMessageDelivery {
   // FIXME serialization of these messages
   final case class SystemMessageEnvelope(message: AnyRef, seqNo: Long, ackReplyTo: UniqueAddress) extends ArteryMessage
   final case class Ack(seqNo: Long, from: UniqueAddress) extends Reply
@@ -51,7 +51,7 @@ private[akka] object SystemMessageDelivery {
 /**
  * INTERNAL API
  */
-private[akka] class SystemMessageDelivery(
+private[remote] class SystemMessageDelivery(
   outboundContext: OutboundContext,
   deadLetters:     ActorRef,
   resendInterval:  FiniteDuration,
@@ -260,7 +260,7 @@ private[akka] class SystemMessageDelivery(
 /**
  * INTERNAL API
  */
-private[akka] class SystemMessageAcker(inboundContext: InboundContext) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+private[remote] class SystemMessageAcker(inboundContext: InboundContext) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   import SystemMessageDelivery._
 
   val in: Inlet[InboundEnvelope] = Inlet("SystemMessageAcker.in")
