@@ -1,0 +1,87 @@
+/**
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+
+option java_package = "akka.remote";
+option optimize_for = SPEED;
+
+message Quarantined {
+  required UniqueAddress from = 1;
+  required UniqueAddress to = 2;
+}
+
+// Generic message declaration that is used for all types of message that (currently) have a single
+// address field. A message that needs to changed later can be cloned from this one and then adapted.
+// ActorSystemTerminating
+// ActorSystemTerminating.Ack
+// OutboundHandshake.HandshakeRsp
+message MessageWithAddress {
+  required UniqueAddress address = 1;
+}
+
+message HandshakeReq {
+  required UniqueAddress from = 1;
+  required Address to = 2;
+}
+
+// CompressionProtocol.ActorRefCompressionAdvertisement
+// CompressionProtocol.ClassManifestCompressionAdvertisement
+message CompressionTableAdvertisement {
+  required UniqueAddress from = 1;
+  required uint64 originUid = 2;
+  required uint32 tableVersion = 3;
+
+  // actual Map is represented by separate sequences of keys and values,
+  // relies on both sequences using the same order so that corresponding entries can be
+  // associated again when deserializing
+  repeated string keys = 4;
+  repeated uint32 values = 5;
+}
+
+// CompressionProtocol.ActorRefCompressionAdvertisementAck
+// CompressionProtocol.ClassManifestCompressionAdvertisementAck
+message CompressionTableAdvertisementAck {
+  required UniqueAddress from = 1;
+  required uint32 version = 2;
+}
+
+// SystemMessageDelivery.SystemMessageEnvelope
+message SystemMessageEnvelope {
+  required bytes message = 1;
+  required int32 serializerId = 2;
+  optional bytes messageManifest = 3;
+  required uint64 seqNo = 4;
+  required UniqueAddress ackReplyTo = 5;
+}
+
+// SystemMessageDelivery.Ack
+// SystemMessageDelivery.Nack
+message SystemMessageDeliveryAck {
+  required uint64 seqNo = 1;
+  required UniqueAddress from = 2;
+}
+
+/**
+ * Defines a remote address.
+ */
+message Address {
+  required string protocol = 1;
+  required string system = 2;
+  required string hostname = 3;
+  required uint32 port = 4;
+}
+
+/**
+ * Defines a remote address with uid.
+ */
+message UniqueAddress {
+  required Address address = 1;
+  required uint64 uid = 2;
+}
+
+
+// RemoteWatcher.ArteryHeartbeat is empty array
+// RemoteWatcher.ArteryHeartbeatRsp
+message ArteryHeartbeatRsp {
+  required uint64 uid = 1;
+}

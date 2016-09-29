@@ -153,7 +153,7 @@ A custom ``application.conf`` might look like this::
     logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
 
     actor {
-      provider = "akka.cluster.ClusterActorRefProvider"
+      provider = "cluster"
       
       default-dispatcher {
         # Throughput for default Dispatcher, set to 1 for as fair as possible

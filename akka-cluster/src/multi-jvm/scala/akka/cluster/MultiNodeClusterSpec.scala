@@ -5,20 +5,24 @@ package akka.cluster
 
 // TODO remove metrics
 
+import java.util.UUID
+
 import language.implicitConversions
-import org.scalatest.{ Suite, Outcome, Canceled }
+import org.scalatest.{ Canceled, Outcome, Suite }
 import org.scalatest.exceptions.TestCanceledException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec }
+import akka.remote.testkit.{ FlightRecordingSupport, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit._
 import akka.testkit.TestEvent._
 import akka.actor.{ ActorSystem, Address }
 import akka.event.Logging.ErrorLevel
+
 import scala.concurrent.duration._
 import scala.collection.immutable
 import java.util.concurrent.ConcurrentHashMap
+
 import akka.remote.DefaultFailureDetectorRegistry
 import akka.actor.ActorRef
 import akka.actor.Actor
@@ -33,8 +37,8 @@ object MultiNodeClusterSpec {
   def clusterConfig(failureDetectorPuppet: Boolean): Config =
     if (failureDetectorPuppet) clusterConfigWithFailureDetectorPuppet else clusterConfig
 
-  def clusterConfig: Config = ConfigFactory.parseString("""
-    akka.actor.provider = akka.cluster.ClusterActorRefProvider
+  def clusterConfig: Config = ConfigFactory.parseString(s"""
+    akka.actor.provider = cluster
     akka.cluster {
       jmx.enabled                         = off
       gossip-interval                     = 200 ms
@@ -47,11 +51,18 @@ object MultiNodeClusterSpec {
     akka.loglevel = INFO
     akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
-    akka.remote.log-remote-lifecycle-events = off
+    akka.remote {
+      log-remote-lifecycle-events = off
+      artery.advanced.flight-recorder {
+        enabled=on
+        destination=target/flight-recorder-${UUID.randomUUID().toString}.afr
+      }
+    }
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.test {
       single-expect-default = 5 s
     }
+
     """)
 
   // sometimes we need to coordinate test shutdown with messages instead of barriers
@@ -77,19 +88,25 @@ object MultiNodeClusterSpec {
   }
 }
 
-trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with FlightRecordingSupport { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 
-  override def atStartup(): Unit = {
+  override protected def atStartup(): Unit = {
     startCoroner()
     muteLog()
+    self.atStartup()
   }
 
-  override def afterTermination(): Unit = {
+  override protected def afterTermination(): Unit = {
+    self.afterTermination()
     stopCoroner()
+    if (failed || sys.props.get("akka.remote.artery.always-dump-flight-recorder").isDefined) {
+      printFlightRecording()
+    }
+    deleteFlightRecorderFile()
   }
 
   override def expectedTestDuration = 60.seconds

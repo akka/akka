@@ -81,6 +81,22 @@ object ActorMaterializer {
     apply(Some(materializerSettings), None)
 
   /**
+   * INTERNAL API: Creates the `StreamSupervisor` as a system actor.
+   */
+  private[akka] def systemMaterializer(materializerSettings: ActorMaterializerSettings, namePrefix: String,
+                                       system: ExtendedActorSystem): ActorMaterializer = {
+    val haveShutDown = new AtomicBoolean(false)
+    new ActorMaterializerImpl(
+      system,
+      materializerSettings,
+      system.dispatchers,
+      system.systemActorOf(StreamSupervisor.props(materializerSettings, haveShutDown)
+        .withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName()),
+      haveShutDown,
+      FlowNames(system).name.copy(namePrefix))
+  }
+
+  /**
    * Java API: Creates a ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])

@@ -6,11 +6,13 @@ package akka.cluster.metrics
 
 import scala.language.postfixOps
 import java.util.logging.LogManager
+
 import org.slf4j.bridge.SLF4JBridgeHandler
 import akka.testkit.AkkaSpec
 import akka.actor.ExtendedActorSystem
 import akka.actor.Address
 import java.io.Closeable
+
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Actor
@@ -22,6 +24,7 @@ import akka.actor.ActorLogging
 import org.scalatest.mock.MockitoSugar
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
+import akka.remote.RARP
 
 /**
  * Redirect different logging sources to SLF4J.
@@ -132,7 +135,7 @@ trait MetricsCollectorFactory { this: AkkaSpec ⇒
  */
 class MockitoSigarMetricsCollector(system: ActorSystem)
   extends SigarMetricsCollector(
-    Address("akka.tcp", system.name),
+    Address(if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka" else "akka.tcp", system.name),
     MetricsConfig.defaultDecayFactor,
     MockitoSigarProvider().createSigarInstance) {
 }
@@ -153,7 +156,7 @@ object MetricsConfig {
         gossip-interval = 1s
       }
     }
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
   """
 
   /** Test w/o cluster, with collection disabled. */
@@ -163,7 +166,7 @@ object MetricsConfig {
         enabled = off
       }
     }
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
   """
 
   /** Test in cluster, with manual collection activation, collector mock, fast. */
@@ -178,7 +181,7 @@ object MetricsConfig {
         fallback = false
       }
     }
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
   """
 }
 

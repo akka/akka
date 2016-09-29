@@ -16,6 +16,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.cluster.pubsub._
+import akka.remote.RARP
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.util.Timeout
 
@@ -30,7 +31,7 @@ object ClusterClientSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
     akka.cluster.client.heartbeat-interval = 1s
@@ -430,10 +431,13 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
       runOn(remainingServerRoleNames.toSeq: _*) {
         Await.ready(system.whenTerminated, 20.seconds)
         // start new system on same port
+        val port = Cluster(system).selfAddress.port.get
         val sys2 = ActorSystem(
           system.name,
-          ConfigFactory.parseString("akka.remote.netty.tcp.port=" + Cluster(system).selfAddress.port.get)
-            .withFallback(system.settings.config))
+          ConfigFactory.parseString(
+            if (RARP(system).provider.remoteSettings.Artery.Enabled) s"akka.remote.artery.canonical.port=$port"
+            else s"akka.remote.netty.tcp.port=$port"
+          ).withFallback(system.settings.config))
         Cluster(sys2).join(Cluster(sys2).selfAddress)
         val service2 = sys2.actorOf(Props(classOf[TestService], testActor), "service2")
         ClusterClientReceptionist(sys2).registerService(service2)

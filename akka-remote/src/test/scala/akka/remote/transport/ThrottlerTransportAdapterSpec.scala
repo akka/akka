@@ -15,7 +15,7 @@ import akka.remote.EndpointException
 object ThrottlerTransportAdapterSpec {
   val configA: Config = ConfigFactory parseString ("""
     akka {
-      actor.provider = "akka.remote.RemoteActorRefProvider"
+      actor.provider = remote
 
       remote.netty.tcp.hostname = "localhost"
       remote.log-remote-lifecycle-events = off

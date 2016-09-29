@@ -15,7 +15,7 @@ case class UnwrappedMessage(msg: String)
 object DistributedPubSubMediatorRouterSpec {
   def config(routingLogic: String) = s"""
     akka.loglevel = INFO
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port=0
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.pub-sub.routing-logic = $routingLogic

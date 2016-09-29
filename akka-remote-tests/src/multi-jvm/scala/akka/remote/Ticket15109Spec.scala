@@ -47,9 +47,7 @@ object Ticket15109Spec extends MultiNodeConfig {
 class Ticket15109SpecMultiJvmNode1 extends Ticket15109Spec
 class Ticket15109SpecMultiJvmNode2 extends Ticket15109Spec
 
-abstract class Ticket15109Spec extends MultiNodeSpec(Ticket15109Spec)
-  with STMultiNodeSpec
-  with ImplicitSender {
+abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
 
   import Ticket15109Spec._
 
