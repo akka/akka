@@ -394,7 +394,8 @@ object AkkaBuild extends Build {
           version := streamAndHttpVersion,
           Dependencies.http,
           previousArtifact := akkaPreviousArtifact("akka-http-experimental", version = streamAndHttpBinCompVersion),
-          scalacOptions in Compile += "-language:_"
+          scalacOptions in Compile += "-language:_",
+          binaryIssueFilters ++= MimaIgnoredProblems.akkaHttp
         )
   )
 
@@ -1352,6 +1353,12 @@ object AkkaBuild extends Build {
 
       // #Changing QuueueSink internal implementation
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.QueueSink$RequestElementCallback")
+    )
+
+    val akkaHttp = Seq(
+      // private methods
+      ProblemFilters.exclude[MissingMethodProblem]("akka.http.scaladsl.server.directives.FileAndResourceDirectives.akka$http$scaladsl$server$directives$FileAndResourceDirectives$$fileSystemPath$default$4"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.http.scaladsl.server.directives.FileAndResourceDirectives.akka$http$scaladsl$server$directives$FileAndResourceDirectives$$fileSystemPath")
     )
   }
 
