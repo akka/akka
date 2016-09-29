@@ -76,10 +76,11 @@ private[remote] object EnvelopeBuffer {
 
   val VersionOffset = 0 // Byte
   val FlagsOffset = 1 // Byte
-  val UidOffset = 2 // Long
-  val SerializerOffset = 10 // Int
-  val ActorRefCompressionTableVersionOffset = 14 // Byte
-  val ClassManifestCompressionTableVersionOffset = 15 // Byte
+  val ActorRefCompressionTableVersionOffset = 2 // Byte
+  val ClassManifestCompressionTableVersionOffset = 3 // Byte
+
+  val UidOffset = 4 // Long
+  val SerializerOffset = 12 // Int
 
   val SenderActorRefTagOffset = 16 // Int
   val RecipientActorRefTagOffset = 20 // Int
