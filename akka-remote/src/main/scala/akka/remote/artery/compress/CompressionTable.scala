@@ -7,7 +7,11 @@ package akka.remote.artery.compress
 import java.util
 import java.util.Comparator
 
-/** INTERNAL API: Versioned compression table to be advertised between systems */
+/**
+ * INTERNAL API: Versioned compression table to be advertised between systems
+ *
+ * @param version Either -1 for disabled or a version between 0 and 127
+ */
 private[remote] final case class CompressionTable[T](originUid: Long, version: Byte, dictionary: Map[T, Int]) {
   import CompressionTable.NotCompressedId
 

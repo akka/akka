@@ -76,19 +76,19 @@ private[remote] object EnvelopeBuffer {
 
   val VersionOffset = 0 // Byte
   val FlagsOffset = 1 // Byte
-  // 2 bytes free // TODO re-align values to not have this empty space
+  val ActorRefCompressionTableVersionOffset = 2 // Byte
+  val ClassManifestCompressionTableVersionOffset = 3 // Byte
+
   val UidOffset = 4 // Long
   val SerializerOffset = 12 // Int
 
   val SenderActorRefTagOffset = 16 // Int
   val RecipientActorRefTagOffset = 20 // Int
   val ClassManifestTagOffset = 24 // Int
-  val ActorRefCompressionTableVersionTagOffset = 28 // Int // TODO handle roll-over and move to Short
-  val ClassManifestCompressionTableVersionTagOffset = 32 // Int // TODO handle roll-over and move to Short
 
   // EITHER metadata followed by literals directly OR literals directly in this spot.
   // Mode depends on the `MetadataPresentFlag`.
-  val MetadataContainerAndLiteralSectionOffset = 36 // Int
+  val MetadataContainerAndLiteralSectionOffset = 28 // Int
 
   val UsAscii = Charset.forName("US-ASCII")
 
@@ -386,29 +386,20 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     byteBuffer.clear()
 
     // Write fixed length parts
-    byteBuffer.put(header.version)
-    byteBuffer.put(header.flags)
-    // 1 empty byte slot // TODO avoid having these empty slots
-    // 1 empty byte slot
-    byteBuffer.position(UidOffset) // skips the above 2 empty slots
-    byteBuffer.putLong(header.uid)
-    byteBuffer.putInt(header.serializer)
+    byteBuffer.put(VersionOffset, header.version)
+    byteBuffer.put(FlagsOffset, header.flags)
+    byteBuffer.putLong(UidOffset, header.uid)
+    byteBuffer.putInt(SerializerOffset, header.serializer)
 
     // compression table version numbers
-    byteBuffer.putInt(ActorRefCompressionTableVersionTagOffset, header.outboundActorRefCompression.version | TagTypeMask)
-    byteBuffer.putInt(ClassManifestCompressionTableVersionTagOffset, header.outboundClassManifestCompression.version | TagTypeMask)
-    byteBuffer.putInt(SenderActorRefTagOffset, header._senderActorRefIdx | TagTypeMask)
+    byteBuffer.put(ActorRefCompressionTableVersionOffset, header.outboundActorRefCompression.version)
+    byteBuffer.put(ClassManifestCompressionTableVersionOffset, header.outboundClassManifestCompression.version)
 
+    byteBuffer.position(MetadataContainerAndLiteralSectionOffset)
     if (header.flag(MetadataPresentFlag)) {
       // tag if we have metadata or not, as the layout next follows different patterns depending on that
-      byteBuffer.position(MetadataContainerAndLiteralSectionOffset)
-
       header.metadataContainer.copyToBuffer(byteBuffer)
       // after metadata is written, buffer is at correct position to continue writing literals (they "moved forward")
-    } else {
-      // Write compressable, variable-length parts always to the actual position of the buffer
-      // Write tag values explicitly in their proper offset
-      byteBuffer.position(MetadataContainerAndLiteralSectionOffset)
     }
 
     // Serialize sender
@@ -435,22 +426,14 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     val header = h.asInstanceOf[HeaderBuilderImpl]
 
     // Read fixed length parts
-    header setVersion byteBuffer.get()
-    header setFlags byteBuffer.get()
-    byteBuffer.get() // skip 1 byte
-    byteBuffer.get() // skip 1 byte
-    header setUid byteBuffer.getLong
-    header setSerializer byteBuffer.getInt
+    header.setVersion(byteBuffer.get(VersionOffset))
+    header.setFlags(byteBuffer.get(FlagsOffset))
+    header.setUid(byteBuffer.getLong(UidOffset))
+    header.setSerializer(byteBuffer.getInt(SerializerOffset))
 
     // compression table versions (stored in the Tag)
-    val refCompressionVersionTag = byteBuffer.getInt(ActorRefCompressionTableVersionTagOffset)
-    if ((refCompressionVersionTag & TagTypeMask) != 0) {
-      header._inboundActorRefCompressionTableVersion = (refCompressionVersionTag & TagValueMask).byteValue
-    }
-    val manifestCompressionVersionTag = byteBuffer.getInt(ClassManifestCompressionTableVersionTagOffset)
-    if ((manifestCompressionVersionTag & TagTypeMask) != 0) {
-      header._inboundClassManifestCompressionTableVersion = (manifestCompressionVersionTag & TagValueMask).byteValue
-    }
+    header._inboundActorRefCompressionTableVersion = byteBuffer.get(ActorRefCompressionTableVersionOffset)
+    header._inboundClassManifestCompressionTableVersion = byteBuffer.get(ClassManifestCompressionTableVersionOffset)
 
     if (header.flag(MetadataPresentFlag)) {
       byteBuffer.position(MetadataContainerAndLiteralSectionOffset)
