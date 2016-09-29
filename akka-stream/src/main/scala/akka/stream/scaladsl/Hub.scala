@@ -586,7 +586,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
       override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
         private[this] var untilNextAdvanceSignal = DemandThreshold
         private[this] val id = idCounter.getAndIncrement()
-        private[this] var initialized = false
+        private[this] var offsetInitialized = false
         private[this] var hubCallback: AsyncCallback[HubEvent] = _
 
         /*
@@ -604,6 +604,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
           val onHubReady: Try[AsyncCallback[HubEvent]] ⇒ Unit = {
             case Success(callback) ⇒
               hubCallback = callback
+              if (isAvailable(out) && offsetInitialized) onPull()
               callback.invoke(RegistrationPending)
             case Failure(ex) ⇒
               failStage(ex)
@@ -621,12 +622,19 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             }
           }
 
+          /*
+           * Note that there is a potential race here. First we add ourselves to the pending registrations, then
+           * we send RegistrationPending. However, another downstream might have triggered our registration by its
+           * own RegistrationPending message, since we are in the list already.
+           * This means we might receive an onCommand(Initialize(offset)) *before* onHubReady fires so it is important
+           * to only serve elements after both offsetInitialized = true and hubCallback is not null.
+           */
           register()
 
         }
 
         override def onPull(): Unit = {
-          if (initialized) {
+          if (offsetInitialized && (hubCallback ne null)) {
             val elem = logic.poll(offset)
 
             elem match {
@@ -661,10 +669,10 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
           case Wakeup ⇒
             if (isAvailable(out)) onPull()
           case Initialize(initialOffset) ⇒
-            initialized = true
+            offsetInitialized = true
             previousPublishedOffset = initialOffset
             offset = initialOffset
-            if (isAvailable(out)) onPull()
+            if (isAvailable(out) && (hubCallback ne null)) onPull()
         }
 
         setHandler(out, this)

@@ -42,8 +42,10 @@ object StepWise {
   private final case class ThunkV(f: Any ⇒ Any) extends AST
   private final case class Message(timeout: FiniteDuration, f: (Any, Any) ⇒ Any, trace: Trace) extends AST
   private final case class MultiMessage(timeout: FiniteDuration, count: Int, f: (Seq[Any], Any) ⇒ Any, trace: Trace) extends AST
-  private final case class Failure(timeout: FiniteDuration, f: (Failed, Any) ⇒ (Failed.Decision, Any), trace: Trace) extends AST
   private final case class Termination(timeout: FiniteDuration, f: (Terminated, Any) ⇒ Any, trace: Trace) extends AST
+  private final case class Multi(timeout: FiniteDuration, count: Int, f: (Seq[Either[Signal, Any]], Any) ⇒ Any, trace: Trace) extends AST
+
+  private case object ReceiveTimeout
 
   private sealed trait Trace {
     def getStackTrace: Array[StackTraceElement]
@@ -78,11 +80,11 @@ object StepWise {
     def expectMultipleMessages[V](timeout: FiniteDuration, count: Int)(f: (Seq[T], U) ⇒ V): Steps[T, V] =
       copy(ops = MultiMessage(timeout, count, f.asInstanceOf[(Seq[Any], Any) ⇒ Any], getTrace()) :: ops)
 
-    def expectFailure[V](timeout: FiniteDuration)(f: (Failed, U) ⇒ (Failed.Decision, V)): Steps[T, V] =
-      copy(ops = Failure(timeout, f.asInstanceOf[(Failed, Any) ⇒ (Failed.Decision, Any)], getTrace()) :: ops)
-
     def expectTermination[V](timeout: FiniteDuration)(f: (Terminated, U) ⇒ V): Steps[T, V] =
       copy(ops = Termination(timeout, f.asInstanceOf[(Terminated, Any) ⇒ Any], getTrace()) :: ops)
+
+    def expectMulti[V](timeout: FiniteDuration, count: Int)(f: (Seq[Either[Signal, T]], U) ⇒ V): Steps[T, V] =
+      copy(ops = Multi(timeout, count, f.asInstanceOf[(Seq[Either[Signal, Any]], Any) ⇒ Any], getTrace()) :: ops)
 
     def expectMessageKeep(timeout: FiniteDuration)(f: (T, U) ⇒ Unit): Steps[T, U] =
       copy(ops = Message(timeout, (msg, value) ⇒ { f.asInstanceOf[(Any, Any) ⇒ Any](msg, value); value }, getTrace()) :: ops)
@@ -90,11 +92,11 @@ object StepWise {
     def expectMultipleMessagesKeep(timeout: FiniteDuration, count: Int)(f: (Seq[T], U) ⇒ Unit): Steps[T, U] =
       copy(ops = MultiMessage(timeout, count, (msgs, value) ⇒ { f.asInstanceOf[(Seq[Any], Any) ⇒ Any](msgs, value); value }, getTrace()) :: ops)
 
-    def expectFailureKeep(timeout: FiniteDuration)(f: (Failed, U) ⇒ Failed.Decision): Steps[T, U] =
-      copy(ops = Failure(timeout, (failed, value) ⇒ f.asInstanceOf[(Failed, Any) ⇒ Failed.Decision](failed, value) → value, getTrace()) :: ops)
-
     def expectTerminationKeep(timeout: FiniteDuration)(f: (Terminated, U) ⇒ Unit): Steps[T, U] =
       copy(ops = Termination(timeout, (t, value) ⇒ { f.asInstanceOf[(Terminated, Any) ⇒ Any](t, value); value }, getTrace()) :: ops)
+
+    def expectMultiKeep(timeout: FiniteDuration, count: Int)(f: (Seq[Either[Signal, T]], U) ⇒ Unit): Steps[T, U] =
+      copy(ops = Multi(timeout, count, (msgs, value) ⇒ { f.asInstanceOf[(Seq[Either[Signal, Any]], Any) ⇒ Any](msgs, value); value }, getTrace()) :: ops)
 
     def withKeepTraces(b: Boolean): Steps[T, U] = copy(keepTraces = b)
   }
@@ -105,9 +107,9 @@ object StepWise {
   }
 
   def apply[T](f: (ActorContext[T], StartWith[T]) ⇒ Steps[T, _]): Behavior[T] =
-    Full {
-      case Sig(ctx, PreStart) ⇒ run(ctx, f(ctx, new StartWith(keepTraces = false)).ops.reverse, ())
-    }
+    Full[Any] {
+      case Sig(ctx, PreStart) ⇒ run(ctx, f(ctx.asInstanceOf[ActorContext[T]], new StartWith(keepTraces = false)).ops.reverse, ())
+    }.narrow
 
   private def throwTimeout(trace: Trace, message: String): Nothing =
     throw new TimeoutException(message) {
@@ -125,48 +127,66 @@ object StepWise {
       }
     }
 
-  private def run[T](ctx: ActorContext[T], ops: List[AST], value: Any): Behavior[T] =
+  private def run[T](ctx: ActorContext[Any], ops: List[AST], value: Any): Behavior[Any] =
     ops match {
       case Thunk(f) :: tail  ⇒ run(ctx, tail, f())
       case ThunkV(f) :: tail ⇒ run(ctx, tail, f(value))
       case Message(t, f, trace) :: tail ⇒
-        ctx.setReceiveTimeout(t)
+        ctx.setReceiveTimeout(t, ReceiveTimeout)
         Full {
-          case Sig(_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for a message")
-          case Msg(_, msg)            ⇒ run(ctx, tail, f(msg, value))
-          case Sig(_, other)          ⇒ throwIllegalState(trace, s"unexpected $other while waiting for a message")
+          case Msg(_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for a message")
+          case Msg(_, msg) ⇒
+            ctx.cancelReceiveTimeout()
+            run(ctx, tail, f(msg, value))
+          case Sig(_, other) ⇒ throwIllegalState(trace, s"unexpected $other while waiting for a message")
         }
       case MultiMessage(t, c, f, trace) :: tail ⇒
         val deadline = Deadline.now + t
-        def behavior(count: Int, acc: List[Any]): Behavior[T] = {
-          ctx.setReceiveTimeout(deadline.timeLeft)
+        def behavior(count: Int, acc: List[Any]): Behavior[Any] = {
+          ctx.setReceiveTimeout(deadline.timeLeft, ReceiveTimeout)
           Full {
-            case Sig(_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for $c messages (got only $count)")
+            case Msg(_, ReceiveTimeout) ⇒
+              throwTimeout(trace, s"timeout of $t expired while waiting for $c messages (got only $count)")
             case Msg(_, msg) ⇒
               val nextCount = count + 1
               if (nextCount == c) {
+                ctx.cancelReceiveTimeout()
                 run(ctx, tail, f((msg :: acc).reverse, value))
               } else behavior(nextCount, msg :: acc)
             case Sig(_, other) ⇒ throwIllegalState(trace, s"unexpected $other while waiting for $c messages (got $count valid ones)")
           }
         }
         behavior(0, Nil)
-      case Failure(t, f, trace) :: tail ⇒
-        ctx.setReceiveTimeout(t)
-        Full {
-          case Sig(_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for a failure")
-          case Sig(_, failure: Failed) ⇒
-            val (response, v) = f(failure, value)
-            failure.decide(response)
-            run(ctx, tail, v)
-          case other ⇒ throwIllegalState(trace, s"unexpected $other while waiting for a message")
+      case Multi(t, c, f, trace) :: tail ⇒
+        val deadline = Deadline.now + t
+        def behavior(count: Int, acc: List[Either[Signal, Any]]): Behavior[Any] = {
+          ctx.setReceiveTimeout(deadline.timeLeft, ReceiveTimeout)
+          Full {
+            case Msg(_, ReceiveTimeout) ⇒
+              throwTimeout(trace, s"timeout of $t expired while waiting for $c messages (got only $count)")
+            case Msg(_, msg) ⇒
+              val nextCount = count + 1
+              if (nextCount == c) {
+                ctx.cancelReceiveTimeout()
+                run(ctx, tail, f((Right(msg) :: acc).reverse, value))
+              } else behavior(nextCount, Right(msg) :: acc)
+            case Sig(_, other) ⇒
+              val nextCount = count + 1
+              if (nextCount == c) {
+                ctx.cancelReceiveTimeout()
+                run(ctx, tail, f((Left(other) :: acc).reverse, value))
+              } else behavior(nextCount, Left(other) :: acc)
+          }
         }
+        behavior(0, Nil)
       case Termination(t, f, trace) :: tail ⇒
-        ctx.setReceiveTimeout(t)
+        ctx.setReceiveTimeout(t, ReceiveTimeout)
         Full {
-          case Sig(_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for termination")
-          case Sig(_, t: Terminated)  ⇒ run(ctx, tail, f(t, value))
-          case other                  ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
+          case Msg(_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for termination")
+          case Sig(_, t: Terminated) ⇒
+            ctx.cancelReceiveTimeout()
+            run(ctx, tail, f(t, value))
+          case other ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
         }
       case Nil ⇒ Stopped
     }

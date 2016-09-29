@@ -176,6 +176,29 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
         encodeResponseWith(Deflate) { nope }
       } ~> check { strictify(responseEntity) shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), nopeDeflated) }
     }
+    "not encode the response content with GZIP if the response is of status not allowing entity" in {
+      Post() ~> {
+        encodeResponseWith(Gzip) { complete { StatusCodes.NoContent } }
+      } ~> check {
+        response should haveNoContentEncoding
+        response shouldEqual HttpResponse(StatusCodes.NoContent, entity = HttpEntity.Empty)
+      }
+    }
+    "not encode the response content with Deflate if the response is of status not allowing entity" in {
+      Post() ~> {
+        encodeResponseWith(Deflate) { complete((100, "Let's continue!")) }
+      } ~> check {
+        response should haveNoContentEncoding
+        response shouldEqual HttpResponse(StatusCodes.Continue, entity = HttpEntity.Empty)
+      }
+    }
+    "encode the response content with GZIP if the response is of status allowing entity" in {
+      Post() ~> {
+        encodeResponseWith(Gzip) { nope }
+      } ~> check {
+        response should haveContentEncoding(gzip)
+      }
+    }
   }
 
   "the Gzip encoder" should {
@@ -474,6 +497,27 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       } ~> check {
         response should haveContentEncoding(gzip)
         strictify(responseEntity) shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), helloGzipped)
+      }
+    }
+  }
+
+  "the default marshaller" should {
+    "allow compressed responses with no body for informational messages" in {
+      Get() ~> `Accept-Encoding`(HttpEncodings.compress) ~> {
+        encodeResponse {
+          complete { StatusCodes.Continue }
+        }
+      } ~> check {
+        status shouldBe StatusCodes.Continue
+      }
+    }
+    "allow gzipped responses with no body for 204 messages" in {
+      Get() ~> `Accept-Encoding`(HttpEncodings.gzip) ~> {
+        encodeResponse {
+          complete { StatusCodes.NoContent }
+        }
+      } ~> check {
+        status shouldBe StatusCodes.NoContent
       }
     }
   }

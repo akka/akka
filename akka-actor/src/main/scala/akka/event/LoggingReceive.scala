@@ -8,6 +8,7 @@ import language.existentials
 import akka.actor.Actor.Receive
 import akka.actor.ActorContext
 import akka.actor.ActorCell
+import akka.actor.DiagnosticActorLogging
 import akka.event.Logging.Debug
 
 object LoggingReceive {
@@ -52,13 +53,18 @@ class LoggingReceive(source: Option[AnyRef], r: Receive, label: Option[String])(
   def isDefinedAt(o: Any): Boolean = {
     val handled = r.isDefinedAt(o)
     if (context.system.eventStream.logLevel >= Logging.DebugLevel) {
-      val (str, clazz) = LogSource.fromAnyRef(source getOrElse context.asInstanceOf[ActorCell].actor)
-      context.system.eventStream.publish(Debug(str, clazz, "received " + (if (handled) "handled" else "unhandled") + " message " + o
-        + " from " + context.sender()
-        + (label match {
+      val src = source getOrElse context.asInstanceOf[ActorCell].actor
+      val (str, clazz) = LogSource.fromAnyRef(src)
+      val message = "received " + (if (handled) "handled" else "unhandled") + " message " + o + " from " + context.sender() +
+        (label match {
           case Some(l) ⇒ " in state " + l
           case _       ⇒ ""
-        })))
+        })
+      val event = src match {
+        case a: DiagnosticActorLogging ⇒ Debug(str, clazz, message, a.log.mdc)
+        case _                         ⇒ Debug(str, clazz, message)
+      }
+      context.system.eventStream.publish(event)
     }
     handled
   }
