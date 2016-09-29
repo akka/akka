@@ -258,7 +258,7 @@ private[remote] object InboundCompression {
         oldTable = activeTable,
         activeTable = nextTable,
         // skip 0 when wrapped around
-        nextTable = DecompressionTable.empty[T].copy(version = (if (nextVersion == 0) 1 else nextVersion).byteValue),
+        nextTable = DecompressionTable.empty[T].copy(version = nextVersion.toByte),
         advertisementInProgress = None)
     }
   }
@@ -332,11 +332,6 @@ private[remote] abstract class InboundCompression[T >: Null](
       val value: T = current.oldTable.get(idx)
       if (value != null) OptionVal.Some[T](value)
       else throw new UnknownCompressedIdException(idx)
-    } else if (incomingTableVersion < activeVersion) {
-      log.debug(
-        "Received value from originUid [{}] compressed with old table: [{}], current table version is: [{}]",
-        originUid, incomingTableVersion, activeVersion)
-      OptionVal.None
     } else if (current.advertisementInProgress.isDefined && incomingTableVersion == current.advertisementInProgress.get.version) {
       log.debug(
         "Received first value from originUid [{}] compressed using the advertised compression table, flipping to it (version: {})",
@@ -348,7 +343,7 @@ private[remote] abstract class InboundCompression[T >: Null](
       // it is using a table that was built for previous incarnation of this system
       log.warning(
         "Inbound message from originUid [{}] is using unknown compression table version. " +
-          "It was probably sent with compression table built for previous incarnation of this system. " +
+          "It may have been sent with compression table built for previous incarnation of this system. " +
           "Versions activeTable: {}, nextTable: {}, incomingTable: {}",
         originUid, activeVersion, current.nextTable.version, incomingTableVersion)
       OptionVal.None
