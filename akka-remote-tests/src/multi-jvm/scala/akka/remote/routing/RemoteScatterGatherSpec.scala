@@ -9,27 +9,26 @@ import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.PoisonPill
 import akka.actor.Props
-import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
+import akka.remote.RemotingMultiNodeSpec
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.routing.Broadcast
 import akka.routing.ScatterGatherFirstCompletedPool
 import akka.routing.RoutedActorRef
 import akka.testkit._
 import akka.testkit.TestEvent._
+import com.typesafe.config.ConfigFactory
 
-object RemoteScatterGatherMultiJvmSpec extends MultiNodeConfig {
-
-  class SomeActor extends Actor {
-    def receive = {
-      case "hit" ⇒ sender() ! self
-    }
-  }
+class RemoteScatterGatherConfig(artery: Boolean) extends MultiNodeConfig {
 
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false))
+  commonConfig(debugConfig(on = false).withFallback(
+    ConfigFactory.parseString(s"""
+      akka.remote.artery.enabled = $artery
+      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   deployOnAll("""
       /service-hello {
@@ -40,14 +39,28 @@ object RemoteScatterGatherMultiJvmSpec extends MultiNodeConfig {
     """)
 }
 
-class RemoteScatterGatherMultiJvmNode1 extends RemoteScatterGatherSpec
-class RemoteScatterGatherMultiJvmNode2 extends RemoteScatterGatherSpec
-class RemoteScatterGatherMultiJvmNode3 extends RemoteScatterGatherSpec
-class RemoteScatterGatherMultiJvmNode4 extends RemoteScatterGatherSpec
+class RemoteScatterGatherMultiJvmNode1 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = false))
+class RemoteScatterGatherMultiJvmNode2 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = false))
+class RemoteScatterGatherMultiJvmNode3 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = false))
+class RemoteScatterGatherMultiJvmNode4 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = false))
 
-class RemoteScatterGatherSpec extends MultiNodeSpec(RemoteScatterGatherMultiJvmSpec)
-  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
-  import RemoteScatterGatherMultiJvmSpec._
+class ArteryRemoteScatterGatherMultiJvmNode1 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
+class ArteryRemoteScatterGatherMultiJvmNode2 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
+class ArteryRemoteScatterGatherMultiJvmNode3 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
+class ArteryRemoteScatterGatherMultiJvmNode4 extends RemoteScatterGatherSpec(new RemoteScatterGatherConfig(artery = true))
+
+object RemoteScatterGatherSpec {
+  class SomeActor extends Actor {
+    def receive = {
+      case "hit" ⇒ sender() ! self
+    }
+  }
+}
+
+class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extends RemotingMultiNodeSpec(multiNodeConfig)
+  with DefaultTimeout {
+  import multiNodeConfig._
+  import RemoteScatterGatherSpec._
 
   def initialParticipants = roles.size
 

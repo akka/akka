@@ -15,7 +15,7 @@ object PersistencePluginProxySpec {
     """
       akka {
         actor {
-          provider = "akka.remote.RemoteActorRefProvider"
+          provider = remote
         }
         persistence {
           journal {

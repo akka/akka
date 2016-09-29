@@ -5,7 +5,8 @@ package akka.remote.testconductor
 
 import language.postfixOps
 import com.typesafe.config.ConfigFactory
-import akka.actor.{ Props, Actor, ActorIdentity, Identify, Deploy }
+import akka.actor.{ Actor, ActorIdentity, Deploy, Identify, Props }
+
 import scala.concurrent.Await
 import scala.concurrent.Awaitable
 import scala.concurrent.duration._
@@ -13,11 +14,13 @@ import akka.testkit.ImplicitSender
 import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress
 import java.net.InetAddress
-import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec, MultiNodeConfig }
+
+import akka.remote.RemotingMultiNodeSpec
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
-  commonConfig(debugConfig(on = false))
+  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   val master = role("master")
   val slave = role("slave")
@@ -28,7 +31,7 @@ object TestConductorMultiJvmSpec extends MultiNodeConfig {
 class TestConductorMultiJvmNode1 extends TestConductorSpec
 class TestConductorMultiJvmNode2 extends TestConductorSpec
 
-class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with STMultiNodeSpec with ImplicitSender {
+class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec) {
 
   import TestConductorMultiJvmSpec._
 

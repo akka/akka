@@ -7,19 +7,24 @@ package akka.cluster.routing
 import com.typesafe.config.ConfigFactory
 import akka.actor.Address
 import akka.actor.RootActorPath
+import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import akka.routing.ActorSelectionRoutee
 import akka.routing.ActorRefRoutee
 
 class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
-      akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+      akka.actor.provider = "cluster"
       akka.remote.netty.tcp.port = 0
       """)) {
 
-  val a1 = Address("akka.tcp", "sys", "a1", 2551)
-  val b1 = Address("akka.tcp", "sys", "b1", 2551)
-  val c1 = Address("akka.tcp", "sys", "c1", 2551)
-  val d1 = Address("akka.tcp", "sys", "d1", 2551)
+  val protocol =
+    if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
+    else "akka.tcp"
+
+  val a1 = Address(protocol, "sys", "a1", 2551)
+  val b1 = Address(protocol, "sys", "b1", 2551)
+  val c1 = Address(protocol, "sys", "c1", 2551)
+  val d1 = Address(protocol, "sys", "d1", 2551)
 
   val routeeA = ActorSelectionRoutee(system.actorSelection(RootActorPath(a1) / "user" / "a"))
   val routeeB = ActorSelectionRoutee(system.actorSelection(RootActorPath(b1) / "user" / "b"))

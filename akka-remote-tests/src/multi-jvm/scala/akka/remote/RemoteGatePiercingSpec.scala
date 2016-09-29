@@ -29,7 +29,7 @@ object RemoteGatePiercingSpec extends MultiNodeConfig {
       akka.loglevel = INFO
       akka.remote.log-remote-lifecycle-events = INFO
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 5 s
-                              """)))
+    """)))
 
   nodeConfig(first)(
     ConfigFactory.parseString("akka.remote.retry-gate-closed-for  = 1 d # Keep it long"))
@@ -51,8 +51,7 @@ class RemoteGatePiercingSpecMultiJvmNode1 extends RemoteGatePiercingSpec
 class RemoteGatePiercingSpecMultiJvmNode2 extends RemoteGatePiercingSpec
 
 abstract class RemoteGatePiercingSpec
-  extends MultiNodeSpec(RemoteGatePiercingSpec)
-  with STMultiNodeSpec with ImplicitSender {
+  extends RemotingMultiNodeSpec(RemoteGatePiercingSpec) {
 
   import RemoteGatePiercingSpec._
 

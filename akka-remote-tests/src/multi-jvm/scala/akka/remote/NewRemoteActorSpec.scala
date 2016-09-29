@@ -14,22 +14,13 @@ import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
-object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
-
-  class SomeActor extends Actor {
-    def receive = {
-      case "identify" ⇒ sender() ! self
-    }
-  }
-
-  class SomeActorWithParam(ignored: String) extends Actor {
-    def receive = {
-      case "identify" ⇒ sender() ! self
-    }
-  }
+class NewRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("akka.remote.log-remote-lifecycle-events = off")))
+    ConfigFactory.parseString(s"""
+      akka.remote.log-remote-lifecycle-events = off
+      akka.remote.artery.enabled = $artery
+      """).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf)))
 
   val master = role("master")
   val slave = role("slave")
@@ -43,12 +34,30 @@ object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
   deployOnAll("""/service-hello2.remote = "@slave@" """)
 }
 
-class NewRemoteActorMultiJvmNode1 extends NewRemoteActorSpec
-class NewRemoteActorMultiJvmNode2 extends NewRemoteActorSpec
+class NewRemoteActorMultiJvmNode1 extends NewRemoteActorSpec(new NewRemoteActorMultiJvmSpec(artery = false))
+class NewRemoteActorMultiJvmNode2 extends NewRemoteActorSpec(new NewRemoteActorMultiJvmSpec(artery = false))
 
-class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
-  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
-  import NewRemoteActorMultiJvmSpec._
+class ArteryNewRemoteActorMultiJvmNode1 extends NewRemoteActorSpec(new NewRemoteActorMultiJvmSpec(artery = true))
+class ArteryNewRemoteActorMultiJvmNode2 extends NewRemoteActorSpec(new NewRemoteActorMultiJvmSpec(artery = true))
+
+object NewRemoteActorSpec {
+  class SomeActor extends Actor {
+    def receive = {
+      case "identify" ⇒ sender() ! self
+    }
+  }
+
+  class SomeActorWithParam(ignored: String) extends Actor {
+    def receive = {
+      case "identify" ⇒ sender() ! self
+    }
+  }
+}
+
+abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
+  extends RemotingMultiNodeSpec(multiNodeConfig) {
+  import multiNodeConfig._
+  import NewRemoteActorSpec._
 
   def initialParticipants = roles.size
 

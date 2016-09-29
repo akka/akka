@@ -50,3 +50,27 @@ message Payload {
   required int32 serializerId = 2;
   optional bytes messageManifest = 4;
 }
+
+message WatcherHeartbeatResponse {
+  required uint64 uid = 1;
+}
+
+message Throwable {
+  required string className = 1;
+  optional string message = 2;
+  optional Payload cause = 3;
+  repeated StackTraceElement stackTrace = 4;
+}
+
+message ActorInitializationException {
+  optional ActorRef actor = 1;
+  required string message = 2;
+  required Payload cause = 3;
+}
+
+message StackTraceElement {
+  required string className = 1;
+  required string methodName = 2;
+  required string fileName = 3;
+  required int32 lineNumber = 4;
+}

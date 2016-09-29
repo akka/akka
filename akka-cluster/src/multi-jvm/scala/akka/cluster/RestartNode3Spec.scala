@@ -5,7 +5,6 @@ package akka.cluster
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -13,6 +12,7 @@ import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.cluster.MemberStatus._
+import akka.remote.RARP
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
@@ -50,8 +50,12 @@ abstract class RestartNode3Spec
 
   lazy val restartedSecondSystem = ActorSystem(
     system.name,
-    ConfigFactory.parseString("akka.remote.netty.tcp.port=" + secondUniqueAddress.address.port.get).
-      withFallback(system.settings.config))
+    ConfigFactory.parseString(
+      if (RARP(system).provider.remoteSettings.Artery.Enabled)
+        "akka.remote.artery.canonical.port=" + secondUniqueAddress.address.port.get
+      else
+        "akka.remote.netty.tcp.port=" + secondUniqueAddress.address.port.get
+    ).withFallback(system.settings.config))
 
   override def afterAll(): Unit = {
     runOn(second) {
@@ -133,7 +137,7 @@ abstract class RestartNode3Spec
         awaitAssert {
           Cluster(system).readView.members.size should ===(3)
           Cluster(system).readView.members.exists { m ⇒
-            m.address == secondUniqueAddress.address && m.uniqueAddress.uid != secondUniqueAddress.uid
+            m.address == secondUniqueAddress.address && m.uniqueAddress.longUid != secondUniqueAddress.longUid
           }
         }
       }

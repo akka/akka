@@ -7,6 +7,8 @@ package akka.cluster
 import akka.actor.Address
 import MemberStatus._
 
+import scala.runtime.AbstractFunction2
+
 /**
  * Represents the address, current status, and roles of a cluster member node.
  *
@@ -243,18 +245,43 @@ object MemberStatus {
       Removed → Set.empty[MemberStatus])
 }
 
+object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
+
+  // for binary compatibility
+  @deprecated("Use Long UID apply instead", since = "2.4.11")
+  def apply(address: Address, uid: Int) = new UniqueAddress(address, uid.toLong)
+
+}
+
 /**
  * Member identifier consisting of address and random `uid`.
  * The `uid` is needed to be able to distinguish different
  * incarnations of a member with same hostname and port.
  */
 @SerialVersionUID(1L)
-final case class UniqueAddress(address: Address, uid: Int) extends Ordered[UniqueAddress] {
-  override def hashCode = uid
+final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[UniqueAddress] {
+
+  override def hashCode = java.lang.Long.hashCode(longUid)
 
   def compare(that: UniqueAddress): Int = {
     val result = Member.addressOrdering.compare(this.address, that.address)
-    if (result == 0) if (this.uid < that.uid) -1 else if (this.uid == that.uid) 0 else 1
+    if (result == 0) if (this.longUid < that.longUid) -1 else if (this.longUid == that.longUid) 0 else 1
     else result
   }
+
+  // for binary compatibility
+
+  @deprecated("Use Long UID constructor instead", since = "2.4.11")
+  def this(address: Address, uid: Int) = this(address, uid.toLong)
+
+  @deprecated("Use longUid instead", since = "2.4.11")
+  def uid = longUid.toInt
+
+  /**
+   * For binary compatibility
+   * Stops `copy(Address, Long)` copy from being generated, use `apply` instead.
+   */
+  @deprecated("Use Long UID constructor instead", since = "2.4.11")
+  def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid)
+
 }

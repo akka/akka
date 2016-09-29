@@ -58,27 +58,27 @@ object ClusterSingletonProxySpec {
     }
   }
 
-  val cfg = """akka {
-
-                loglevel = INFO
-
-                cluster {
-                  auto-down-unreachable-after = 10s
-
-                  min-nr-of-members = 2
-                }
-
-                actor.provider = "akka.cluster.ClusterActorRefProvider"
-
-                remote {
-                  log-remote-lifecycle-events = off
-                  netty.tcp {
-                    hostname = "127.0.0.1"
-                    port = 0
-                  }
-                }
-              }
-            """
+  val cfg = """
+    akka {
+      loglevel = INFO
+      cluster {
+        auto-down-unreachable-after = 10s
+        min-nr-of-members = 2
+      }
+      actor.provider = "cluster"
+      remote {
+        log-remote-lifecycle-events = off
+        netty.tcp {
+          hostname = "127.0.0.1"
+          port = 0
+        }
+        artery.canonical {
+          hostname  = "127.0.0.1"
+          port = 0
+        }
+      }
+    }
+  """
 
   class Singleton extends Actor with ActorLogging {
 

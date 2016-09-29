@@ -397,6 +397,17 @@ object Logging {
   }
 
   /**
+   * Class name representation of a message.
+   * `ActorSelectionMessage` representation includes class name of
+   * wrapped message.
+   */
+  def messageClassName(message: Any): String = message match {
+    case null                           ⇒ "null"
+    case ActorSelectionMessage(m, _, _) ⇒ s"ActorSelectionMessage(${m.getClass.getName})"
+    case m                              ⇒ m.getClass.getName
+  }
+
+  /**
    * INTERNAL API
    */
   private[akka] object Extension extends ExtensionKey[LogExt]
