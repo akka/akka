@@ -17,7 +17,7 @@ trait CurrentEventsByTagQuery extends ReadJournal {
    * is completed immediately when it reaches the end of the "result set". Events that are
    * stored after the query is completed are not included in the event stream.
    */
-  def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed]
+  def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed]
 
 }
 

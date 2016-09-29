@@ -165,22 +165,30 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def eventsByTag(tag: String, offset: Long = 0L): Source[EventEnvelope, NotUsed] = {
-    Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offset, Long.MaxValue,
-      refreshInterval, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
-      .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
-  }
+  override def eventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
+    offset match {
+      case Sequence(offsetValue) ⇒
+        Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offsetValue, Long.MaxValue,
+          refreshInterval, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
+          .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+      case _ ⇒
+        throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
+    }
 
   /**
    * Same type of query as [[#eventsByTag]] but the event stream
    * is completed immediately when it reaches the end of the "result set". Events that are
    * stored after the query is completed are not included in the event stream.
    */
-  override def currentEventsByTag(tag: String, offset: Long = 0L): Source[EventEnvelope, NotUsed] = {
-    Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offset, Long.MaxValue,
-      None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
-      .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
-  }
+  override def currentEventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
+    offset match {
+      case Sequence(offsetValue) ⇒
+        Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offsetValue, Long.MaxValue,
+          None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
+          .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+      case _ ⇒
+        throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
+    }
 
 }
 

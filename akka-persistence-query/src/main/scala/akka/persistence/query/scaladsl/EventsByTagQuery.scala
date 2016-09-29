@@ -35,7 +35,7 @@ trait EventsByTagQuery extends ReadJournal {
    * Corresponding query that is completed when it reaches the end of the currently
    * stored events is provided by [[CurrentEventsByTagQuery#currentEventsByTag]].
    */
-  def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed]
+  def eventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed]
 
 }
 
