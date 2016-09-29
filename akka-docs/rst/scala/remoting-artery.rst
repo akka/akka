@@ -281,11 +281,58 @@ untrusted mode when incoming via the remoting layer:
   marking them :class:`PossiblyHarmful` so that a client cannot forge them.
 
 
-Lifecycle and Failure Recovery Model
-------------------------------------
+Quarantine
+----------
 
-TODO
+Akka remoting is using Aeron as underlying message transport. Aeron is using UDP and adds
+among other things reliable delivery and session semantics, very similar to TCP. This means that
+the order of the messages are preserved, which is needed for the :ref:`Actor message ordering guarantees <message-ordering>`.
+Under normal circumstances all messages will be delivered but there are cases when messages
+may not be delivered to the destination:
 
+* during a network partition and the Aeron session is broken, this automatically recovered once the partition is over
+* when sending too many messages without flow control and thereby filling up the outbound send queue (``outbound-message-queue-size`` config)
+* if serialization or deserialization of a message fails (only that message will be dropped) 
+* if an unexpected exception occurs in the remoting infrastructure
+
+In short, Actor message delivery is “at-most-once” as described in :ref:`message-delivery-reliability`
+
+Some messages in Akka are called system messages and those cannot be dropped because that would result
+in an inconsistent state between the systems. Such messages are used for essentially two features; remote death
+watch and remote deployment. These messages are delivered by Akka remoting with “exactly-once” guarantee by
+confirming each message and resending unconfirmed messages. If a system message anyway cannot be delivered the 
+association with the destination system is irrecoverable failed, and Terminated is signaled for all watched 
+actors on the remote system. It is placed in a so called quarantined state. Quarantine usually does not
+happen if remote watch or remote deployment is not used.
+
+Each ``ActorSystem`` instance has an unique identifier (UID), which is important for differentiating between
+incarnations of a system when it is restarted with the same hostname and port. It is the specific
+incarnation (UID) that is quarantined. The only way to recover from this state is to restart one of the 
+actor systems. 
+
+Messages that are sent to and received from a quarantined system will be dropped. However, it is possible to
+send messages with ``actorSelection`` to the address of a quarantined system, which is useful to probe if the
+system has been restarted.
+
+An association will be quarantined when: 
+
+* Cluster node is removed from the cluster membership.
+* Remote failure detector triggers, i.e. remote watch is used. This is different when :ref:`Akka Cluster <cluster_usage_scala>`
+  is used. The unreachable observation by the cluster failure detector can go back to reachable if the network
+  partition heals. A cluster member is not quarantined when the failure detector triggers. 
+* Overflow of the system message delivery buffer, e.g. because of too many ``watch`` requests at the same time 
+  (``system-message-buffer-size`` config).
+* Unexpected exception occurs in the control subchannel of the remoting infrastructure.
+
+The UID of the ``ActorSystem`` is exchanged in a two-way handshake when the first message is sent to
+a destination. The handshake will be retried until the other system replies and no other messages will
+pass through until the handshake is completed. If the handshake cannot be established within a timeout 
+(``handshake-timeout`` config) the association is stopped (freeing up resources). Queued messages will be
+dropped if the handshake cannot be established. It will not be quarantined, because the UID is unknown.
+New handshake attempt will start when next message is sent to the destination.
+
+Handshake requests are actually also sent periodically to be able to establish a working connection 
+when the destination system has been restarted. 
 
 Watching Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^
