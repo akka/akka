@@ -11,14 +11,14 @@ import scala.annotation.tailrec
 /**
  * INTERNAL API
  */
-private[akka] object RestartCounter {
+private[remote] object RestartCounter {
   final case class State(count: Int, deadline: Deadline)
 }
 
 /**
  * INTERNAL API: Thread safe "restarts with duration" counter
  */
-private[akka] class RestartCounter(maxRestarts: Int, restartTimeout: FiniteDuration) {
+private[remote] class RestartCounter(maxRestarts: Int, restartTimeout: FiniteDuration) {
   import RestartCounter._
 
   private val state = new AtomicReference[State](State(0, Deadline.now + restartTimeout))

@@ -52,7 +52,10 @@ private[remote] final class ByteFlag(val mask: Byte) extends AnyVal {
   def isEnabled(byteFlags: Byte): Boolean = (byteFlags.toInt & mask) != 0
   override def toString = s"ByteFlag(${ByteFlag.binaryLeftPad(mask)})"
 }
-object ByteFlag {
+/**
+ * INTERNAL API
+ */
+private[remote] object ByteFlag {
   def binaryLeftPad(byte: Byte): String = {
     val string = Integer.toBinaryString(byte)
     val pad = "0" * (8 - string.length) // leftPad

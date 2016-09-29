@@ -285,7 +285,10 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
     s"${getClass.getSimpleName}(max:$max)"
 }
 
-object TopHeavyHitters {
+/**
+ * INTERNAL API
+ */
+private[remote] object TopHeavyHitters {
 
   /** Value class to avoid mixing up count and hashCode in APIs. */
   private[compress] final class HashCodeVal(val get: Int) extends AnyVal {

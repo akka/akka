@@ -148,7 +148,7 @@ private[akka] object ArterySettings {
   def apply(config: Config) = new ArterySettings(config)
 
   /** INTERNAL API */
-  private[akka] final class Compression private[ArterySettings] (config: Config) {
+  private[remote] final class Compression private[ArterySettings] (config: Config) {
     import config._
 
     final val Enabled = true

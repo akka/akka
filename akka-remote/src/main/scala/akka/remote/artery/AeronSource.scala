@@ -24,7 +24,10 @@ import org.agrona.hints.ThreadHints
 import akka.stream.stage.GraphStageWithMaterializedValue
 import scala.util.control.NonFatal
 
-object AeronSource {
+/**
+ * INTERNAL API
+ */
+private[remote] object AeronSource {
 
   private def pollTask(sub: Subscription, handler: MessageHandler, onMessage: AsyncCallback[EnvelopeBuffer]): () ⇒ Boolean = {
     () ⇒
@@ -64,9 +67,10 @@ object AeronSource {
 }
 
 /**
+ * INTERNAL API
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
  */
-class AeronSource(
+private[remote] class AeronSource(
   channel:        String,
   streamId:       Int,
   aeron:          Aeron,

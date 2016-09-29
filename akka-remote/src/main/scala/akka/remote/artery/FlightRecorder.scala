@@ -263,15 +263,15 @@ private[remote] object FlightRecorder {
 /**
  * INTERNAL API
  */
-private[akka] sealed trait FlightRecorderStatus
-case object Running extends FlightRecorderStatus
-case object ShutDown extends FlightRecorderStatus
-final case class SnapshotInProgress(latch: CountDownLatch) extends FlightRecorderStatus
+private[remote] sealed trait FlightRecorderStatus
+private[remote] case object Running extends FlightRecorderStatus
+private[remote] case object ShutDown extends FlightRecorderStatus
+private[remote] final case class SnapshotInProgress(latch: CountDownLatch) extends FlightRecorderStatus
 
 /**
  * INTERNAL API
  */
-private[akka] class FlightRecorder(val fileChannel: FileChannel) extends AtomicReference[FlightRecorderStatus](Running) {
+private[remote] class FlightRecorder(val fileChannel: FileChannel) extends AtomicReference[FlightRecorderStatus](Running) {
   import FlightRecorder._
 
   private[this] val globalSection = new MappedResizeableBuffer(fileChannel, 0, GlobalSectionSize)

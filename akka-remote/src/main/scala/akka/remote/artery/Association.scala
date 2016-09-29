@@ -157,7 +157,7 @@ private[remote] class Association(
   // in case there is a restart at the same time as a compression table update
   private val changeCompressionTimeout = 5.seconds
 
-  private[artery] def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] = {
+  private[remote] def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] = {
     import transport.system.dispatcher
     val c = changeOutboundCompression
     val result =
@@ -170,7 +170,7 @@ private[remote] class Association(
   private[this] val streamMatValues = new AtomicReference(Map.empty[Int, OutboundStreamMatValues])
   private[this] val idle = new AtomicReference[Option[Cancellable]](None)
 
-  private[artery] def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] = {
+  private[remote] def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] = {
     import transport.system.dispatcher
     val c = changeOutboundCompression
     val result =

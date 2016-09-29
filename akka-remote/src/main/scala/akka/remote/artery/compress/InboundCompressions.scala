@@ -201,7 +201,10 @@ private[remote] final class InboundActorRefCompression(
   }
 }
 
-final class InboundManifestCompression(
+/**
+ * INTERNAL API
+ */
+private[remote] final class InboundManifestCompression(
   system:         ActorSystem,
   settings:       ArterySettings.Compression,
   originUid:      Long,
@@ -452,8 +455,8 @@ private[remote] abstract class InboundCompression[T >: Null](
   }
 
   /**
-   * Must be implementeed by extending classes in order to send a [[akka.remote.artery.ControlMessage]]
-   * of apropriate type to the remote system in order to advertise the compression table to it.
+   * Must be implemented by extending classes in order to send a `ControlMessage`
+   * of appropriate type to the remote system in order to advertise the compression table to it.
    */
   protected def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[T]): Unit
 
@@ -467,7 +470,10 @@ private[remote] abstract class InboundCompression[T >: Null](
 
 }
 
-final class UnknownCompressedIdException(id: Long)
+/**
+ * INTERNAL API
+ */
+private[akka] final class UnknownCompressedIdException(id: Long)
   extends RuntimeException(
     s"Attempted de-compress unknown id [$id]! " +
       s"This could happen if this node has started a new ActorSystem bound to the same address as previously, " +
@@ -479,7 +485,7 @@ final class UnknownCompressedIdException(id: Long)
  *
  * Literarily, no compression!
  */
-case object NoInboundCompressions extends InboundCompressions {
+private[remote] case object NoInboundCompressions extends InboundCompressions {
   override def hitActorRef(originUid: Long, remote: Address, ref: ActorRef, n: Int): Unit = ()
   override def decompressActorRef(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[ActorRef] =
     if (idx == -1) throw new IllegalArgumentException("Attemted decompression of illegal compression id: -1")
