@@ -5,10 +5,11 @@
 package akka.remote.serialization
 
 import akka.actor._
-import akka.remote.MessageSerializer
+import akka.remote.{ MessageSerializer, RemoteWatcher }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
+
 import scala.util.control.NoStackTrace
 
 object MiscMessageSerializerSpec {
@@ -75,7 +76,12 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "Status.Failure JavaSer" → Status.Failure(new OtherException("exc")), // exc with JavaSerializer
       "ActorRef" → ref,
       "Some" → Some("value"),
-      "None" → None).foreach {
+      "None" → None,
+      "Kill" → Kill,
+      "PoisonPill" → PoisonPill,
+      "RemoteWatcher.Heartbeat" → RemoteWatcher.Heartbeat,
+      "RemoteWatcher.HertbeatRsp" → RemoteWatcher.HeartbeatRsp(65537)
+    ).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for $scenario" in {
             val serializer = SerializationExtension(system)
@@ -104,6 +110,45 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
     def verifySerialization(msg: AnyRef): Unit = {
       val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
       serializer.fromBinary(serializer.toBinary(msg), serializer.manifest(msg)) should ===(msg)
+    }
+
+    // Separate tests due to missing equality on ActorInitializationException
+    "resolve serializer for ActorInitializationException" in {
+      val serializer = SerializationExtension(system)
+      serializer.serializerFor(classOf[ActorInitializationException]).getClass should ===(classOf[MiscMessageSerializer])
+    }
+
+    "serialize and deserialze ActorInitializationException" in {
+      val aiex = ActorInitializationException(ref, "test", new TestException("err"))
+      val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+      val deserialized = serializer.fromBinary(serializer.toBinary(aiex), serializer.manifest(aiex))
+        .asInstanceOf[ActorInitializationException]
+
+      deserialized.getCause should ===(aiex.getCause)
+      deserialized.getMessage should ===(aiex.getMessage)
+      deserialized.getActor should ===(aiex.getActor)
+    }
+
+    "serialize and deserialze ActorInitializationException if ref is null" in {
+      val aiex = ActorInitializationException(null, "test", new TestException("err"))
+      val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+      val deserialized = serializer.fromBinary(serializer.toBinary(aiex), serializer.manifest(aiex))
+        .asInstanceOf[ActorInitializationException]
+
+      deserialized.getCause should ===(aiex.getCause)
+      deserialized.getMessage should ===(aiex.getMessage)
+      deserialized.getActor should ===(aiex.getActor)
+    }
+
+    "serialize and deserialze ActorInitializationException if cause  is null" in {
+      val aiex = ActorInitializationException(ref, "test", null)
+      val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
+      val deserialized = serializer.fromBinary(serializer.toBinary(aiex), serializer.manifest(aiex))
+        .asInstanceOf[ActorInitializationException]
+
+      deserialized.getCause should ===(aiex.getCause)
+      deserialized.getMessage should ===(aiex.getMessage)
+      deserialized.getActor should ===(aiex.getActor)
     }
   }
 }

@@ -303,7 +303,7 @@ class NullSerializer extends Serializer {
   val nullAsBytes = Array[Byte]()
   def includeManifest: Boolean = false
   def identifier = 0
-  def toBinary(o: AnyRef) = nullAsBytes
+  def toBinary(o: AnyRef): Array[Byte] = nullAsBytes
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
 }
 
@@ -322,7 +322,7 @@ class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerialize
     else identifierFromConfig
 
   def includeManifest: Boolean = false
-  def toBinary(o: AnyRef) = o match {
+  def toBinary(o: AnyRef): Array[Byte] = o match {
     case null           ⇒ null
     case o: Array[Byte] ⇒ o
     case other ⇒ throw new IllegalArgumentException(
