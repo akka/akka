@@ -234,7 +234,7 @@ private[remote] object InboundCompression {
 
   object State {
     def empty[T] = State(
-      oldTable = DecompressionTable.empty[T].copy(version = -1),
+      oldTable = DecompressionTable.disabled[T],
       activeTable = DecompressionTable.empty[T],
       nextTable = DecompressionTable.empty[T].copy(version = 1),
       advertisementInProgress = None)
@@ -247,18 +247,12 @@ private[remote] object InboundCompression {
     advertisementInProgress: Option[CompressionTable[T]]) {
 
     def startUsingNextTable(): State[T] = {
-      // only use positive values (to make it easier to debug)
-      val nextVersion = {
-        // negative and zero is reserved for empty table
-        val wrappedAround = (nextTable.version + 1) & 0x7F
-        if (wrappedAround == 0) 1
-        else wrappedAround
-      }
+      // wraparound to only use positive values
+      val nextVersion = ((nextTable.version + 1) & 0x7F).toByte
       State(
         oldTable = activeTable,
         activeTable = nextTable,
-        // skip 0 when wrapped around
-        nextTable = DecompressionTable.empty[T].copy(version = nextVersion.toByte),
+        nextTable = DecompressionTable.empty[T].copy(version = nextVersion),
         advertisementInProgress = None)
     }
   }
@@ -322,7 +316,7 @@ private[remote] abstract class InboundCompression[T >: Null](
     val oldVersion = current.oldTable.version
     val activeVersion = current.activeTable.version
 
-    if (incomingTableVersion == -1) OptionVal.None // no compression, bail out early
+    if (incomingTableVersion == DecompressionTable.DisabledVersion) OptionVal.None // no compression, bail out early
     else if (incomingTableVersion == activeVersion) {
       val value: T = current.activeTable.get(idx)
       if (value != null) OptionVal.Some[T](value)
