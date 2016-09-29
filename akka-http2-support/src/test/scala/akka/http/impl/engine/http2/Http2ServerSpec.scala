@@ -40,36 +40,6 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
   implicit val mat = ActorMaterializer()
 
   "The Http/2 server implementation" should {
-    "respect settings" should {
-      "initial MAX_FRAME_SIZE" in pending
-      "received SETTINGS_MAX_FRAME_SIZE" in pending
-
-      "not exceed connection-level window while sending" in pending
-      "not exceed stream-level window while sending" in pending
-      "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed" in pending
-      "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed when window became negative through setting" in pending
-
-      "received SETTINGS_MAX_CONCURRENT_STREAMS" in pending
-    }
-
-    "support low-level features" should {
-      "eventually send WINDOW_UPDATE frames for received data" in pending
-      "respond to PING frames" in pending
-      "acknowledge SETTINGS frames" in pending
-    }
-
-    "respect the substream state machine" should {
-      "reject other frame than HEADERS/PUSH_PROMISE in idle state with connection-level PROTOCOL_ERROR (5.1)" in pending
-      "reject incoming frames on already half-closed substream" in pending
-
-      "reject even-numbered client-initiated substreams" in pending
-
-      "reject all other frames while waiting for CONTINUATION frames" in pending
-
-      "reject double sub-streams creation" in pending
-      "reject substream creation for streams invalidated by skipped substream IDs" in pending
-    }
-
     "support simple round-trips" should {
       abstract class SimpleRequestResponseRoundtripSetup extends TestSetup with RequestResponseProbes {
         def requestResponseRoundtrip(
@@ -304,6 +274,47 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
         // also complete stream 1
         sendDataAndExpectOnNet(entity1DataOut, 1, "", endStream = true)
       }
+    }
+    "respect flow-control" should {
+      "not exceed connection-level window while sending" in pending
+      "not exceed stream-level window while sending" in pending
+      "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed" in pending
+      "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed when window became negative through setting" in pending
+
+      "eventually send WINDOW_UPDATE frames for received data" in pending
+    }
+
+    "respect settings" should {
+      "initial MAX_FRAME_SIZE" in pending
+      "received SETTINGS_MAX_FRAME_SIZE" in pending
+
+      "received SETTINGS_MAX_CONCURRENT_STREAMS" in pending
+
+      "received SETTINGS_HEADER_TABLE_SIZE" in {
+        // if the sender of the new size wants to shrink its decoding table, the encoding table on
+        // our side needs to be shrunk *before* sending the SETTINGS ACK. So a mechanism needs to be
+        // found that prevents race-conditions in the encoder between sending out an encoded message
+        // which still uses the old table size and sending the SETTINGS ACK.
+        pending
+      }
+    }
+
+    "support low-level features" should {
+      "respond to PING frames" in pending
+      "respond to PING frames giving precedence over any other kind pending frame" in pending
+      "acknowledge SETTINGS frames" in pending
+    }
+
+    "respect the substream state machine" should {
+      "reject other frame than HEADERS/PUSH_PROMISE in idle state with connection-level PROTOCOL_ERROR (5.1)" in pending
+      "reject incoming frames on already half-closed substream" in pending
+
+      "reject even-numbered client-initiated substreams" in pending
+
+      "reject all other frames while waiting for CONTINUATION frames" in pending
+
+      "reject double sub-streams creation" in pending
+      "reject substream creation for streams invalidated by skipped substream IDs" in pending
     }
   }
 
