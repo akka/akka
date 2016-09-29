@@ -10,7 +10,10 @@ import akka.remote.artery.ControlMessage
 
 // FIXME serialization
 /** INTERNAL API */
-object CompressionProtocol {
+/**
+ * INTERNAL API
+ */
+private[remote] object CompressionProtocol {
 
   /** INTERNAL API */
   sealed trait CompressionMessage
@@ -56,9 +59,9 @@ object CompressionProtocol {
     extends ControlMessage with CompressionMessage
 
   /** INTERNAL API */
-  private[akka] object Events {
+  private[remote] object Events {
     /** INTERNAL API */
-    private[akka] sealed trait Event
+    private[remote] sealed trait Event
 
     /** INTERNAL API */
     final case class HeavyHitterDetected(key: Any, id: Int, count: Long) extends Event
