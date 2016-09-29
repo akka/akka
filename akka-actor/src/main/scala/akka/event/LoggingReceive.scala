@@ -44,10 +44,15 @@ object LoggingReceive {
   /**
    * Create a decorated logger which will append `" in state " + label` to each message it logs.
    */
-  def withLabel(label: String, logLevel: LogLevel = Logging.DebugLevel)(r: Receive)(implicit context: ActorContext): Receive = r match {
+  def withLabel(label: String, logLevel: LogLevel)(r: Receive)(implicit context: ActorContext): Receive = r match {
     case _: LoggingReceive ⇒ r
     case _                 ⇒ if (context.system.settings.AddLoggingReceive) new LoggingReceive(None, r, Option(label), logLevel) else r
   }
+
+  /**
+   * Create a decorated logger which will append `" in state " + label` to each message it logs.
+   */
+  def withLabel(label: String)(r: Receive)(implicit context: ActorContext): Receive = withLabel(label, Logging.DebugLevel)(r)
 }
 
 /**
@@ -55,6 +60,7 @@ object LoggingReceive {
  * @param source the log source, if not defined the actor of the context will be used
  */
 class LoggingReceive(source: Option[AnyRef], r: Receive, label: Option[String], logLevel: LogLevel)(implicit context: ActorContext) extends Receive {
+  def this(source: Option[AnyRef], r: Receive, label: Option[String])(implicit context: ActorContext) = this(source, r, label, Logging.DebugLevel)
   def this(source: Option[AnyRef], r: Receive)(implicit context: ActorContext) = this(source, r, None, Logging.DebugLevel)
   def isDefinedAt(o: Any): Boolean = {
     val handled = r.isDefinedAt(o)
