@@ -767,18 +767,30 @@ trait FlowOps[+Out, +Mat] {
   def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = via(Scan(zero, f))
 
   /**
-   * TODO write proper description
-   * The asynchronous version of `scan`
+   * Similar to `scan` but with a asynchronous function,
+   * emits its current value which starts at `zero` and then
+   * applies the current and next value to the given function `f`,
+   * emitting a `Future` that resolves to the next current value.
    *
-   * '''Emits when''' the future returned by `f` completes
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
+   * the stream will continue.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Resume]] current value starts at the previous
+   * current value, or zero when it doesn't have one, and the stream will continue.
+   *
+   * '''Emits when''' the future returned by f` completes
    *
    * '''Backpressures when''' downstream backpressures
    *
    * '''Completes when''' upstream completes and the last future returned by `f` completes
    *
    * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.scan]]
    */
-  def scanAsync[T](zero: T)(f: (T, Out) ⇒ Future[T]): Repr[T] = via(new ScanAsync(zero, f))
+  def scanAsync[T](zero: T)(f: (T, Out) ⇒ Future[T]): Repr[T] = via(ScanAsync(zero, f))
 
   /**
    * Similar to `scan` but only emits its result when the upstream completes,
