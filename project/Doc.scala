@@ -118,10 +118,9 @@ object UnidocRoot extends AutoPlugin {
     ))
   }
 
-  // FIXME temporary removal of samples in artery-dev branch
   override lazy val projectSettings =
     CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++
-    settings(Seq(), Seq(AkkaBuild.remoteTests, AkkaBuild.benchJmh, AkkaBuild.parsing, AkkaBuild.protobuf))
+    settings(Seq(AkkaBuild.samples), Seq(AkkaBuild.remoteTests, AkkaBuild.benchJmh, AkkaBuild.parsing, AkkaBuild.protobuf, AkkaBuild.osgiDiningHakkersSampleMavenTest, AkkaBuild.akkaScalaNightly))
 }
 
 /**

@@ -33,8 +33,7 @@ object Release {
     val (state2, Seq(api, japi)) = extracted.runTask(unidoc in Compile, state1)
     val (state3, docs) = extracted.runTask(generate in Sphinx, state2)
     val (state4, _) = extracted.runTask(Dist.dist, state3)
-// FIXME temporary in artery-dev branch    
-//    val (state5, activatorDist) = extracted.runTask(ActivatorDist.activatorDist in LocalProject(AkkaBuild.samples.id), state4)
+    val (state5, activatorDist) = extracted.runTask(ActivatorDist.activatorDist in LocalProject(AkkaBuild.samples.id), state4)
 
     IO.delete(release)
     IO.createDirectory(release)
@@ -48,11 +47,10 @@ object Release {
     for (f <- (dist * "akka_*.zip").get)
       IO.copyFile(f, release / "downloads" / f.name)
 
-// FIXME temporary in artery-dev branch
-//    for (f <- (activatorDist * "*.zip").get)
-//      IO.copyFile(f, release / "downloads" / f.name)
-// state5
-    state4
+    for (f <- (activatorDist * "*.zip").get)
+      IO.copyFile(f, release / "downloads" / f.name)
+
+    state5
   }
 
   def uploadReleaseCommand = Command.command("uploadRelease") { state =>
