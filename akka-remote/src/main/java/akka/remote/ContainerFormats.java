@@ -4563,6 +4563,410 @@ public final class ContainerFormats {
     // @@protoc_insertion_point(class_scope:Payload)
   }
 
+  public interface WatcherHeartbeatResponseOrBuilder
+      extends akka.protobuf.MessageOrBuilder {
+
+    // required uint64 uid = 1;
+    /**
+     * <code>required uint64 uid = 1;</code>
+     */
+    boolean hasUid();
+    /**
+     * <code>required uint64 uid = 1;</code>
+     */
+    long getUid();
+  }
+  /**
+   * Protobuf type {@code WatcherHeartbeatResponse}
+   */
+  public static final class WatcherHeartbeatResponse extends
+      akka.protobuf.GeneratedMessage
+      implements WatcherHeartbeatResponseOrBuilder {
+    // Use WatcherHeartbeatResponse.newBuilder() to construct.
+    private WatcherHeartbeatResponse(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private WatcherHeartbeatResponse(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final WatcherHeartbeatResponse defaultInstance;
+    public static WatcherHeartbeatResponse getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public WatcherHeartbeatResponse getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final akka.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final akka.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private WatcherHeartbeatResponse(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              uid_ = input.readUInt64();
+              break;
+            }
+          }
+        }
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.remote.ContainerFormats.internal_static_WatcherHeartbeatResponse_descriptor;
+    }
+
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.remote.ContainerFormats.internal_static_WatcherHeartbeatResponse_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.remote.ContainerFormats.WatcherHeartbeatResponse.class, akka.remote.ContainerFormats.WatcherHeartbeatResponse.Builder.class);
+    }
+
+    public static akka.protobuf.Parser<WatcherHeartbeatResponse> PARSER =
+        new akka.protobuf.AbstractParser<WatcherHeartbeatResponse>() {
+      public WatcherHeartbeatResponse parsePartialFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
+        return new WatcherHeartbeatResponse(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public akka.protobuf.Parser<WatcherHeartbeatResponse> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // required uint64 uid = 1;
+    public static final int UID_FIELD_NUMBER = 1;
+    private long uid_;
+    /**
+     * <code>required uint64 uid = 1;</code>
+     */
+    public boolean hasUid() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required uint64 uid = 1;</code>
+     */
+    public long getUid() {
+      return uid_;
+    }
+
+    private void initFields() {
+      uid_ = 0L;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasUid()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(akka.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeUInt64(1, uid_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeUInt64Size(1, uid_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseFrom(
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseFrom(
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseFrom(byte[] data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseFrom(
+        byte[] data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseFrom(
+        akka.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.remote.ContainerFormats.WatcherHeartbeatResponse parseFrom(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.remote.ContainerFormats.WatcherHeartbeatResponse prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code WatcherHeartbeatResponse}
+     */
+    public static final class Builder extends
+        akka.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.remote.ContainerFormats.WatcherHeartbeatResponseOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.remote.ContainerFormats.internal_static_WatcherHeartbeatResponse_descriptor;
+      }
+
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.remote.ContainerFormats.internal_static_WatcherHeartbeatResponse_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.remote.ContainerFormats.WatcherHeartbeatResponse.class, akka.remote.ContainerFormats.WatcherHeartbeatResponse.Builder.class);
+      }
+
+      // Construct using akka.remote.ContainerFormats.WatcherHeartbeatResponse.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        uid_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public akka.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.remote.ContainerFormats.internal_static_WatcherHeartbeatResponse_descriptor;
+      }
+
+      public akka.remote.ContainerFormats.WatcherHeartbeatResponse getDefaultInstanceForType() {
+        return akka.remote.ContainerFormats.WatcherHeartbeatResponse.getDefaultInstance();
+      }
+
+      public akka.remote.ContainerFormats.WatcherHeartbeatResponse build() {
+        akka.remote.ContainerFormats.WatcherHeartbeatResponse result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.remote.ContainerFormats.WatcherHeartbeatResponse buildPartial() {
+        akka.remote.ContainerFormats.WatcherHeartbeatResponse result = new akka.remote.ContainerFormats.WatcherHeartbeatResponse(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.uid_ = uid_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(akka.protobuf.Message other) {
+        if (other instanceof akka.remote.ContainerFormats.WatcherHeartbeatResponse) {
+          return mergeFrom((akka.remote.ContainerFormats.WatcherHeartbeatResponse)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.remote.ContainerFormats.WatcherHeartbeatResponse other) {
+        if (other == akka.remote.ContainerFormats.WatcherHeartbeatResponse.getDefaultInstance()) return this;
+        if (other.hasUid()) {
+          setUid(other.getUid());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasUid()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.remote.ContainerFormats.WatcherHeartbeatResponse parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.remote.ContainerFormats.WatcherHeartbeatResponse) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // required uint64 uid = 1;
+      private long uid_ ;
+      /**
+       * <code>required uint64 uid = 1;</code>
+       */
+      public boolean hasUid() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required uint64 uid = 1;</code>
+       */
+      public long getUid() {
+        return uid_;
+      }
+      /**
+       * <code>required uint64 uid = 1;</code>
+       */
+      public Builder setUid(long value) {
+        bitField0_ |= 0x00000001;
+        uid_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required uint64 uid = 1;</code>
+       */
+      public Builder clearUid() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        uid_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:WatcherHeartbeatResponse)
+    }
+
+    static {
+      defaultInstance = new WatcherHeartbeatResponse(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:WatcherHeartbeatResponse)
+  }
+
   public interface ThrowableOrBuilder
       extends akka.protobuf.MessageOrBuilder {
 
@@ -5776,6 +6180,897 @@ public final class ContainerFormats {
     // @@protoc_insertion_point(class_scope:Throwable)
   }
 
+  public interface ActorInitializationExceptionOrBuilder
+      extends akka.protobuf.MessageOrBuilder {
+
+    // optional .ActorRef actor = 1;
+    /**
+     * <code>optional .ActorRef actor = 1;</code>
+     */
+    boolean hasActor();
+    /**
+     * <code>optional .ActorRef actor = 1;</code>
+     */
+    akka.remote.ContainerFormats.ActorRef getActor();
+    /**
+     * <code>optional .ActorRef actor = 1;</code>
+     */
+    akka.remote.ContainerFormats.ActorRefOrBuilder getActorOrBuilder();
+
+    // required string message = 2;
+    /**
+     * <code>required string message = 2;</code>
+     */
+    boolean hasMessage();
+    /**
+     * <code>required string message = 2;</code>
+     */
+    java.lang.String getMessage();
+    /**
+     * <code>required string message = 2;</code>
+     */
+    akka.protobuf.ByteString
+        getMessageBytes();
+
+    // required .Payload cause = 3;
+    /**
+     * <code>required .Payload cause = 3;</code>
+     */
+    boolean hasCause();
+    /**
+     * <code>required .Payload cause = 3;</code>
+     */
+    akka.remote.ContainerFormats.Payload getCause();
+    /**
+     * <code>required .Payload cause = 3;</code>
+     */
+    akka.remote.ContainerFormats.PayloadOrBuilder getCauseOrBuilder();
+  }
+  /**
+   * Protobuf type {@code ActorInitializationException}
+   */
+  public static final class ActorInitializationException extends
+      akka.protobuf.GeneratedMessage
+      implements ActorInitializationExceptionOrBuilder {
+    // Use ActorInitializationException.newBuilder() to construct.
+    private ActorInitializationException(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private ActorInitializationException(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final ActorInitializationException defaultInstance;
+    public static ActorInitializationException getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public ActorInitializationException getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final akka.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final akka.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private ActorInitializationException(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              akka.remote.ContainerFormats.ActorRef.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                subBuilder = actor_.toBuilder();
+              }
+              actor_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(actor_);
+                actor_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000001;
+              break;
+            }
+            case 18: {
+              bitField0_ |= 0x00000002;
+              message_ = input.readBytes();
+              break;
+            }
+            case 26: {
+              akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                subBuilder = cause_.toBuilder();
+              }
+              cause_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(cause_);
+                cause_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000004;
+              break;
+            }
+          }
+        }
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.remote.ContainerFormats.internal_static_ActorInitializationException_descriptor;
+    }
+
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.remote.ContainerFormats.internal_static_ActorInitializationException_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.remote.ContainerFormats.ActorInitializationException.class, akka.remote.ContainerFormats.ActorInitializationException.Builder.class);
+    }
+
+    public static akka.protobuf.Parser<ActorInitializationException> PARSER =
+        new akka.protobuf.AbstractParser<ActorInitializationException>() {
+      public ActorInitializationException parsePartialFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
+        return new ActorInitializationException(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public akka.protobuf.Parser<ActorInitializationException> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // optional .ActorRef actor = 1;
+    public static final int ACTOR_FIELD_NUMBER = 1;
+    private akka.remote.ContainerFormats.ActorRef actor_;
+    /**
+     * <code>optional .ActorRef actor = 1;</code>
+     */
+    public boolean hasActor() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>optional .ActorRef actor = 1;</code>
+     */
+    public akka.remote.ContainerFormats.ActorRef getActor() {
+      return actor_;
+    }
+    /**
+     * <code>optional .ActorRef actor = 1;</code>
+     */
+    public akka.remote.ContainerFormats.ActorRefOrBuilder getActorOrBuilder() {
+      return actor_;
+    }
+
+    // required string message = 2;
+    public static final int MESSAGE_FIELD_NUMBER = 2;
+    private java.lang.Object message_;
+    /**
+     * <code>required string message = 2;</code>
+     */
+    public boolean hasMessage() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required string message = 2;</code>
+     */
+    public java.lang.String getMessage() {
+      java.lang.Object ref = message_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          message_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string message = 2;</code>
+     */
+    public akka.protobuf.ByteString
+        getMessageBytes() {
+      java.lang.Object ref = message_;
+      if (ref instanceof java.lang.String) {
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        message_ = b;
+        return b;
+      } else {
+        return (akka.protobuf.ByteString) ref;
+      }
+    }
+
+    // required .Payload cause = 3;
+    public static final int CAUSE_FIELD_NUMBER = 3;
+    private akka.remote.ContainerFormats.Payload cause_;
+    /**
+     * <code>required .Payload cause = 3;</code>
+     */
+    public boolean hasCause() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>required .Payload cause = 3;</code>
+     */
+    public akka.remote.ContainerFormats.Payload getCause() {
+      return cause_;
+    }
+    /**
+     * <code>required .Payload cause = 3;</code>
+     */
+    public akka.remote.ContainerFormats.PayloadOrBuilder getCauseOrBuilder() {
+      return cause_;
+    }
+
+    private void initFields() {
+      actor_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+      message_ = "";
+      cause_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasMessage()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasCause()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (hasActor()) {
+        if (!getActor().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      if (!getCause().isInitialized()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(akka.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeMessage(1, actor_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeBytes(2, getMessageBytes());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeMessage(3, cause_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(1, actor_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeBytesSize(2, getMessageBytes());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(3, cause_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.remote.ContainerFormats.ActorInitializationException parseFrom(
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ContainerFormats.ActorInitializationException parseFrom(
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.ActorInitializationException parseFrom(byte[] data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ContainerFormats.ActorInitializationException parseFrom(
+        byte[] data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.ActorInitializationException parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.remote.ContainerFormats.ActorInitializationException parseFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.ActorInitializationException parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.remote.ContainerFormats.ActorInitializationException parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.ActorInitializationException parseFrom(
+        akka.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.remote.ContainerFormats.ActorInitializationException parseFrom(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.remote.ContainerFormats.ActorInitializationException prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code ActorInitializationException}
+     */
+    public static final class Builder extends
+        akka.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.remote.ContainerFormats.ActorInitializationExceptionOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.remote.ContainerFormats.internal_static_ActorInitializationException_descriptor;
+      }
+
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.remote.ContainerFormats.internal_static_ActorInitializationException_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.remote.ContainerFormats.ActorInitializationException.class, akka.remote.ContainerFormats.ActorInitializationException.Builder.class);
+      }
+
+      // Construct using akka.remote.ContainerFormats.ActorInitializationException.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getActorFieldBuilder();
+          getCauseFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        if (actorBuilder_ == null) {
+          actor_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+        } else {
+          actorBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000001);
+        message_ = "";
+        bitField0_ = (bitField0_ & ~0x00000002);
+        if (causeBuilder_ == null) {
+          cause_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
+        } else {
+          causeBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public akka.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.remote.ContainerFormats.internal_static_ActorInitializationException_descriptor;
+      }
+
+      public akka.remote.ContainerFormats.ActorInitializationException getDefaultInstanceForType() {
+        return akka.remote.ContainerFormats.ActorInitializationException.getDefaultInstance();
+      }
+
+      public akka.remote.ContainerFormats.ActorInitializationException build() {
+        akka.remote.ContainerFormats.ActorInitializationException result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.remote.ContainerFormats.ActorInitializationException buildPartial() {
+        akka.remote.ContainerFormats.ActorInitializationException result = new akka.remote.ContainerFormats.ActorInitializationException(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        if (actorBuilder_ == null) {
+          result.actor_ = actor_;
+        } else {
+          result.actor_ = actorBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.message_ = message_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        if (causeBuilder_ == null) {
+          result.cause_ = cause_;
+        } else {
+          result.cause_ = causeBuilder_.build();
+        }
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(akka.protobuf.Message other) {
+        if (other instanceof akka.remote.ContainerFormats.ActorInitializationException) {
+          return mergeFrom((akka.remote.ContainerFormats.ActorInitializationException)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.remote.ContainerFormats.ActorInitializationException other) {
+        if (other == akka.remote.ContainerFormats.ActorInitializationException.getDefaultInstance()) return this;
+        if (other.hasActor()) {
+          mergeActor(other.getActor());
+        }
+        if (other.hasMessage()) {
+          bitField0_ |= 0x00000002;
+          message_ = other.message_;
+          onChanged();
+        }
+        if (other.hasCause()) {
+          mergeCause(other.getCause());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasMessage()) {
+          
+          return false;
+        }
+        if (!hasCause()) {
+          
+          return false;
+        }
+        if (hasActor()) {
+          if (!getActor().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (!getCause().isInitialized()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.remote.ContainerFormats.ActorInitializationException parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.remote.ContainerFormats.ActorInitializationException) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // optional .ActorRef actor = 1;
+      private akka.remote.ContainerFormats.ActorRef actor_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+      private akka.protobuf.SingleFieldBuilder<
+          akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> actorBuilder_;
+      /**
+       * <code>optional .ActorRef actor = 1;</code>
+       */
+      public boolean hasActor() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>optional .ActorRef actor = 1;</code>
+       */
+      public akka.remote.ContainerFormats.ActorRef getActor() {
+        if (actorBuilder_ == null) {
+          return actor_;
+        } else {
+          return actorBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .ActorRef actor = 1;</code>
+       */
+      public Builder setActor(akka.remote.ContainerFormats.ActorRef value) {
+        if (actorBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          actor_ = value;
+          onChanged();
+        } else {
+          actorBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>optional .ActorRef actor = 1;</code>
+       */
+      public Builder setActor(
+          akka.remote.ContainerFormats.ActorRef.Builder builderForValue) {
+        if (actorBuilder_ == null) {
+          actor_ = builderForValue.build();
+          onChanged();
+        } else {
+          actorBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>optional .ActorRef actor = 1;</code>
+       */
+      public Builder mergeActor(akka.remote.ContainerFormats.ActorRef value) {
+        if (actorBuilder_ == null) {
+          if (((bitField0_ & 0x00000001) == 0x00000001) &&
+              actor_ != akka.remote.ContainerFormats.ActorRef.getDefaultInstance()) {
+            actor_ =
+              akka.remote.ContainerFormats.ActorRef.newBuilder(actor_).mergeFrom(value).buildPartial();
+          } else {
+            actor_ = value;
+          }
+          onChanged();
+        } else {
+          actorBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>optional .ActorRef actor = 1;</code>
+       */
+      public Builder clearActor() {
+        if (actorBuilder_ == null) {
+          actor_ = akka.remote.ContainerFormats.ActorRef.getDefaultInstance();
+          onChanged();
+        } else {
+          actorBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+      /**
+       * <code>optional .ActorRef actor = 1;</code>
+       */
+      public akka.remote.ContainerFormats.ActorRef.Builder getActorBuilder() {
+        bitField0_ |= 0x00000001;
+        onChanged();
+        return getActorFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .ActorRef actor = 1;</code>
+       */
+      public akka.remote.ContainerFormats.ActorRefOrBuilder getActorOrBuilder() {
+        if (actorBuilder_ != null) {
+          return actorBuilder_.getMessageOrBuilder();
+        } else {
+          return actor_;
+        }
+      }
+      /**
+       * <code>optional .ActorRef actor = 1;</code>
+       */
+      private akka.protobuf.SingleFieldBuilder<
+          akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> 
+          getActorFieldBuilder() {
+        if (actorBuilder_ == null) {
+          actorBuilder_ = new akka.protobuf.SingleFieldBuilder<
+              akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder>(
+                  actor_,
+                  getParentForChildren(),
+                  isClean());
+          actor_ = null;
+        }
+        return actorBuilder_;
+      }
+
+      // required string message = 2;
+      private java.lang.Object message_ = "";
+      /**
+       * <code>required string message = 2;</code>
+       */
+      public boolean hasMessage() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required string message = 2;</code>
+       */
+      public java.lang.String getMessage() {
+        java.lang.Object ref = message_;
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
+              .toStringUtf8();
+          message_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string message = 2;</code>
+       */
+      public akka.protobuf.ByteString
+          getMessageBytes() {
+        java.lang.Object ref = message_;
+        if (ref instanceof String) {
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          message_ = b;
+          return b;
+        } else {
+          return (akka.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string message = 2;</code>
+       */
+      public Builder setMessage(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+        message_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string message = 2;</code>
+       */
+      public Builder clearMessage() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        message_ = getDefaultInstance().getMessage();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string message = 2;</code>
+       */
+      public Builder setMessageBytes(
+          akka.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+        message_ = value;
+        onChanged();
+        return this;
+      }
+
+      // required .Payload cause = 3;
+      private akka.remote.ContainerFormats.Payload cause_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
+      private akka.protobuf.SingleFieldBuilder<
+          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> causeBuilder_;
+      /**
+       * <code>required .Payload cause = 3;</code>
+       */
+      public boolean hasCause() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>required .Payload cause = 3;</code>
+       */
+      public akka.remote.ContainerFormats.Payload getCause() {
+        if (causeBuilder_ == null) {
+          return cause_;
+        } else {
+          return causeBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>required .Payload cause = 3;</code>
+       */
+      public Builder setCause(akka.remote.ContainerFormats.Payload value) {
+        if (causeBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          cause_ = value;
+          onChanged();
+        } else {
+          causeBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /**
+       * <code>required .Payload cause = 3;</code>
+       */
+      public Builder setCause(
+          akka.remote.ContainerFormats.Payload.Builder builderForValue) {
+        if (causeBuilder_ == null) {
+          cause_ = builderForValue.build();
+          onChanged();
+        } else {
+          causeBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /**
+       * <code>required .Payload cause = 3;</code>
+       */
+      public Builder mergeCause(akka.remote.ContainerFormats.Payload value) {
+        if (causeBuilder_ == null) {
+          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+              cause_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
+            cause_ =
+              akka.remote.ContainerFormats.Payload.newBuilder(cause_).mergeFrom(value).buildPartial();
+          } else {
+            cause_ = value;
+          }
+          onChanged();
+        } else {
+          causeBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /**
+       * <code>required .Payload cause = 3;</code>
+       */
+      public Builder clearCause() {
+        if (causeBuilder_ == null) {
+          cause_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
+          onChanged();
+        } else {
+          causeBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+      /**
+       * <code>required .Payload cause = 3;</code>
+       */
+      public akka.remote.ContainerFormats.Payload.Builder getCauseBuilder() {
+        bitField0_ |= 0x00000004;
+        onChanged();
+        return getCauseFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>required .Payload cause = 3;</code>
+       */
+      public akka.remote.ContainerFormats.PayloadOrBuilder getCauseOrBuilder() {
+        if (causeBuilder_ != null) {
+          return causeBuilder_.getMessageOrBuilder();
+        } else {
+          return cause_;
+        }
+      }
+      /**
+       * <code>required .Payload cause = 3;</code>
+       */
+      private akka.protobuf.SingleFieldBuilder<
+          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
+          getCauseFieldBuilder() {
+        if (causeBuilder_ == null) {
+          causeBuilder_ = new akka.protobuf.SingleFieldBuilder<
+              akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder>(
+                  cause_,
+                  getParentForChildren(),
+                  isClean());
+          cause_ = null;
+        }
+        return causeBuilder_;
+      }
+
+      // @@protoc_insertion_point(builder_scope:ActorInitializationException)
+    }
+
+    static {
+      defaultInstance = new ActorInitializationException(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:ActorInitializationException)
+  }
+
   public interface StackTraceElementOrBuilder
       extends akka.protobuf.MessageOrBuilder {
 
@@ -6708,10 +8003,20 @@ public final class ContainerFormats {
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Payload_fieldAccessorTable;
   private static akka.protobuf.Descriptors.Descriptor
+    internal_static_WatcherHeartbeatResponse_descriptor;
+  private static
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_WatcherHeartbeatResponse_fieldAccessorTable;
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Throwable_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Throwable_fieldAccessorTable;
+  private static akka.protobuf.Descriptors.Descriptor
+    internal_static_ActorInitializationException_descriptor;
+  private static
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_ActorInitializationException_fieldAccessorTable;
   private static akka.protobuf.Descriptors.Descriptor
     internal_static_StackTraceElement_descriptor;
   private static
@@ -6738,14 +8043,17 @@ public final class ContainerFormats {
       "path\030\001 \002(\t\"!\n\006Option\022\027\n\005value\030\001 \001(\0132\010.Pa",
       "yload\"Q\n\007Payload\022\027\n\017enclosedMessage\030\001 \002(" +
       "\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageManife" +
-      "st\030\004 \001(\014\"p\n\tThrowable\022\021\n\tclassName\030\001 \002(\t" +
-      "\022\017\n\007message\030\002 \001(\t\022\027\n\005cause\030\003 \001(\0132\010.Paylo" +
-      "ad\022&\n\nstackTrace\030\004 \003(\0132\022.StackTraceEleme" +
-      "nt\"`\n\021StackTraceElement\022\021\n\tclassName\030\001 \002" +
-      "(\t\022\022\n\nmethodName\030\002 \002(\t\022\020\n\010fileName\030\003 \002(\t" +
-      "\022\022\n\nlineNumber\030\004 \002(\005*<\n\013PatternType\022\n\n\006P" +
-      "ARENT\020\000\022\016\n\nCHILD_NAME\020\001\022\021\n\rCHILD_PATTERN" +
-      "\020\002B\017\n\013akka.remoteH\001"
+      "st\030\004 \001(\014\"\'\n\030WatcherHeartbeatResponse\022\013\n\003" +
+      "uid\030\001 \002(\004\"p\n\tThrowable\022\021\n\tclassName\030\001 \002(" +
+      "\t\022\017\n\007message\030\002 \001(\t\022\027\n\005cause\030\003 \001(\0132\010.Payl" +
+      "oad\022&\n\nstackTrace\030\004 \003(\0132\022.StackTraceElem" +
+      "ent\"b\n\034ActorInitializationException\022\030\n\005a" +
+      "ctor\030\001 \001(\0132\t.ActorRef\022\017\n\007message\030\002 \002(\t\022\027" +
+      "\n\005cause\030\003 \002(\0132\010.Payload\"`\n\021StackTraceEle" +
+      "ment\022\021\n\tclassName\030\001 \002(\t\022\022\n\nmethodName\030\002 ",
+      "\002(\t\022\020\n\010fileName\030\003 \002(\t\022\022\n\nlineNumber\030\004 \002(" +
+      "\005*<\n\013PatternType\022\n\n\006PARENT\020\000\022\016\n\nCHILD_NA" +
+      "ME\020\001\022\021\n\rCHILD_PATTERN\020\002B\017\n\013akka.remoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -6794,14 +8102,26 @@ public final class ContainerFormats {
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Payload_descriptor,
               new java.lang.String[] { "EnclosedMessage", "SerializerId", "MessageManifest", });
-          internal_static_Throwable_descriptor =
+          internal_static_WatcherHeartbeatResponse_descriptor =
             getDescriptor().getMessageTypes().get(7);
+          internal_static_WatcherHeartbeatResponse_fieldAccessorTable = new
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_WatcherHeartbeatResponse_descriptor,
+              new java.lang.String[] { "Uid", });
+          internal_static_Throwable_descriptor =
+            getDescriptor().getMessageTypes().get(8);
           internal_static_Throwable_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Throwable_descriptor,
               new java.lang.String[] { "ClassName", "Message", "Cause", "StackTrace", });
+          internal_static_ActorInitializationException_descriptor =
+            getDescriptor().getMessageTypes().get(9);
+          internal_static_ActorInitializationException_fieldAccessorTable = new
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_ActorInitializationException_descriptor,
+              new java.lang.String[] { "Actor", "Message", "Cause", });
           internal_static_StackTraceElement_descriptor =
-            getDescriptor().getMessageTypes().get(8);
+            getDescriptor().getMessageTypes().get(10);
           internal_static_StackTraceElement_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_StackTraceElement_descriptor,
