@@ -22,7 +22,7 @@ import akka.event.LoggingReceive
 /**
  * INTERNAL API
  */
-private[akka] class MessageDispatcher(
+private[remote] class MessageDispatcher(
   system:   ExtendedActorSystem,
   provider: RemoteActorRefProvider) {
 

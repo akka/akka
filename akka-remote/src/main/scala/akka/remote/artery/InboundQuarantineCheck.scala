@@ -20,7 +20,7 @@ import akka.actor.ActorSelectionMessage
 /**
  * INTERNAL API
  */
-private[akka] class InboundQuarantineCheck(inboundContext: InboundContext) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+private[remote] class InboundQuarantineCheck(inboundContext: InboundContext) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   val in: Inlet[InboundEnvelope] = Inlet("InboundQuarantineCheck.in")
   val out: Outlet[InboundEnvelope] = Outlet("InboundQuarantineCheck.out")
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)

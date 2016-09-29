@@ -184,6 +184,9 @@ private[remote] final class MetadataMap[T >: Null] {
     else s"MetadataMap(${backing.toList.mkString("[", ",", "]")})"
 }
 
-object MetadataMap {
+/**
+ * INTERNAL API
+ */
+private[remote] object MetadataMap {
   def apply[T >: Null]() = new MetadataMap[T]
 }

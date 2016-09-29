@@ -64,7 +64,7 @@ private[remote] object ReusableInboundEnvelope {
 /**
  * INTERNAL API
  */
-private[akka] final class ReusableInboundEnvelope extends InboundEnvelope {
+private[remote] final class ReusableInboundEnvelope extends InboundEnvelope {
   private var _recipient: OptionVal[InternalActorRef] = OptionVal.None
   private var _sender: OptionVal[ActorRef] = OptionVal.None
   private var _originUid: Long = 0L

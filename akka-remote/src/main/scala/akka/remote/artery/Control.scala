@@ -21,39 +21,39 @@ import akka.util.OptionVal
 import akka.event.Logging
 
 /** INTERNAL API: marker trait for protobuf-serializable artery messages */
-private[akka] trait ArteryMessage extends Serializable
+private[remote] trait ArteryMessage extends Serializable
 
 /**
  * INTERNAL API: Marker trait for reply messages
  */
-private[akka] trait Reply extends ControlMessage
+private[remote] trait Reply extends ControlMessage
 
 /**
  * INTERNAL API
  * Marker trait for control messages that can be sent via the system message sub-channel
  * but don't need full reliable delivery. E.g. `HandshakeReq` and `Reply`.
  */
-private[akka] trait ControlMessage extends ArteryMessage
+private[remote] trait ControlMessage extends ArteryMessage
 
 /**
  * INTERNAL API
  */
-private[akka] final case class Quarantined(from: UniqueAddress, to: UniqueAddress) extends ControlMessage
+private[remote] final case class Quarantined(from: UniqueAddress, to: UniqueAddress) extends ControlMessage
 
 /**
  * INTERNAL API
  */
-private[akka] case class ActorSystemTerminating(from: UniqueAddress) extends ControlMessage
+private[remote] case class ActorSystemTerminating(from: UniqueAddress) extends ControlMessage
 
 /**
  * INTERNAL API
  */
-private[akka] case class ActorSystemTerminatingAck(from: UniqueAddress) extends ArteryMessage
+private[remote] case class ActorSystemTerminatingAck(from: UniqueAddress) extends ArteryMessage
 
 /**
  * INTERNAL API
  */
-private[akka] object InboundControlJunction {
+private[remote] object InboundControlJunction {
 
   /**
    * Observer subject for inbound control messages.
@@ -86,7 +86,7 @@ private[akka] object InboundControlJunction {
 /**
  * INTERNAL API
  */
-private[akka] class InboundControlJunction
+private[remote] class InboundControlJunction
   extends GraphStageWithMaterializedValue[FlowShape[InboundEnvelope, InboundEnvelope], InboundControlJunction.ControlMessageSubject] {
   import InboundControlJunction._
 
@@ -154,8 +154,8 @@ private[akka] class InboundControlJunction
 /**
  * INTERNAL API
  */
-private[akka] object OutboundControlJunction {
-  private[akka] trait OutboundControlIngress {
+private[remote] object OutboundControlJunction {
+  private[remote] trait OutboundControlIngress {
     def sendControlMessage(message: ControlMessage): Unit
   }
 }
@@ -163,7 +163,7 @@ private[akka] object OutboundControlJunction {
 /**
  * INTERNAL API
  */
-private[akka] class OutboundControlJunction(
+private[remote] class OutboundControlJunction(
   outboundContext: OutboundContext, outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope])
   extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, OutboundEnvelope], OutboundControlJunction.OutboundControlIngress] {
   import OutboundControlJunction._

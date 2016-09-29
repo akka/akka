@@ -255,7 +255,7 @@ private[remote] object Decoder {
 /**
  * INTERNAL API
  */
-private[akka] final class ActorRefResolveCacheWithAddress(provider: RemoteActorRefProvider, localAddress: UniqueAddress)
+private[remote] final class ActorRefResolveCacheWithAddress(provider: RemoteActorRefProvider, localAddress: UniqueAddress)
   extends LruBoundedCache[String, InternalActorRef](capacity = 1024, evictAgeThreshold = 600) {
 
   override protected def compute(k: String): InternalActorRef =
