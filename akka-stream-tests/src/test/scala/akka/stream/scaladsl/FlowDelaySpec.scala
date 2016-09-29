@@ -13,12 +13,14 @@ import akka.stream.{ ActorMaterializer, Attributes, BufferOverflowException, Del
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import akka.stream.ThrottleMode
 
 class FlowDelaySpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
   "A Delay" must {
+
     "deliver elements with some time shift" in {
       Await.result(
         Source(1 to 10).delay(1.seconds).grouped(100).runWith(Sink.head),
@@ -154,6 +156,17 @@ class FlowDelaySpec extends StreamSpec {
 
       expectNoMsg(900.millis)
       expectMsg(Done)
+    }
+
+    "not overflow buffer when DelayOverflowStrategy.backpressure" in {
+      val probe = Source(1 to 6).delay(100.millis, DelayOverflowStrategy.backpressure)
+        .withAttributes(Attributes.inputBuffer(2, 2))
+        .throttle(1, 200.millis, 1, ThrottleMode.Shaping)
+        .runWith(TestSink.probe)
+
+      probe.request(10)
+        .expectNextN(1 to 6)
+        .expectComplete()
     }
 
   }

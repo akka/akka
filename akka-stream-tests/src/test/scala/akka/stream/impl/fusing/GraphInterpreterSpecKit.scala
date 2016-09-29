@@ -4,6 +4,8 @@
 package akka.stream.impl.fusing
 
 import akka.event.Logging
+import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.Supervision.Decider
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, Failed, GraphAssembly, UpstreamBoundaryStageLogic }
 import akka.stream.stage.AbstractStage.PushPullGraphStage
@@ -176,9 +178,28 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
   }
 
-  abstract class PortTestSetup extends TestSetup {
+  abstract class PortTestSetup(chasing: Boolean = false) extends TestSetup {
     val out = new UpstreamPortProbe[Int]
     val in = new DownstreamPortProbe[Int]
+
+    class EventPropagateStage extends GraphStage[FlowShape[Int, Int]] {
+      val in = Inlet[Int]("Propagate.in")
+      val out = Outlet[Int]("Propagate.out")
+      override val shape: FlowShape[Int, Int] = FlowShape(in, out)
+
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def onPush(): Unit = push(out, grab(in))
+        override def onPull(): Unit = pull(in)
+        override def onUpstreamFinish(): Unit = complete(out)
+        override def onUpstreamFailure(ex: Throwable): Unit = fail(out, ex)
+        override def onDownstreamFinish(): Unit = cancel(in)
+
+        setHandlers(in, out, this)
+      }
+    }
+
+    // step() means different depending whether we have a stage between the two probes or not
+    override def step(): Unit = interpreter.execute(eventLimit = if (!chasing) 1 else 2)
 
     class UpstreamPortProbe[T] extends UpstreamProbe[T]("upstreamPort") {
       def isAvailable: Boolean = isAvailable(out)
@@ -215,16 +236,27 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       })
     }
 
-    private val assembly = new GraphAssembly(
-      stages = Array.empty,
-      originalAttributes = Array.empty,
-      ins = Array(null),
-      inOwners = Array(-1),
-      outs = Array(null),
-      outOwners = Array(-1))
+    private val assembly = if (!chasing) {
+      new GraphAssembly(
+        stages = Array.empty,
+        originalAttributes = Array.empty,
+        ins = Array(null),
+        inOwners = Array(-1),
+        outs = Array(null),
+        outOwners = Array(-1))
+    } else {
+      val propagateStage = new EventPropagateStage
+      new GraphAssembly(
+        stages = Array(propagateStage),
+        originalAttributes = Array(Attributes.none),
+        ins = Array(propagateStage.in, null),
+        inOwners = Array(0, -1),
+        outs = Array(null, propagateStage.out),
+        outOwners = Array(-1, 0))
+    }
 
     manualInit(assembly)
-    interpreter.attachDownstreamBoundary(interpreter.connections(0), in)
+    interpreter.attachDownstreamBoundary(interpreter.connections(if (chasing) 1 else 0), in)
     interpreter.attachUpstreamBoundary(interpreter.connections(0), out)
     interpreter.init(null)
   }
@@ -307,7 +339,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
     }
   }
 
-  abstract class OneBoundedSetup[T](_ops: GraphStageWithMaterializedValue[Shape, Any]*) extends Builder {
+  abstract class OneBoundedSetupWithDecider[T](decider: Decider, _ops: GraphStageWithMaterializedValue[Shape, Any]*) extends Builder {
     val ops = _ops.toArray
 
     val upstream = new UpstreamOneBoundedProbe[T]
@@ -329,7 +361,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       import GraphInterpreter.Boundary
 
       var i = 0
-      val attributes = Array.fill[Attributes](ops.length)(Attributes.none)
+      val attributes = Array.fill[Attributes](ops.length)(ActorAttributes.supervisionStrategy(decider))
       val ins = Array.ofDim[Inlet[_]](ops.length + 1)
       val inOwners = Array.ofDim[Int](ops.length + 1)
       val outs = Array.ofDim[Outlet[_]](ops.length + 1)
@@ -429,4 +461,5 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
   }
 
+  abstract class OneBoundedSetup[T](_ops: GraphStageWithMaterializedValue[Shape, Any]*) extends OneBoundedSetupWithDecider[T](Supervision.stoppingDecider, _ops: _*)
 }

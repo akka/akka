@@ -52,15 +52,15 @@ protocol but Actors can model arbitrarily complex protocols when needed. The
 protocol is bundled together with the behavior that implements it in a nicely
 wrapped scope—the ``HelloWorld`` object.
 
-Now we want to try out this Actor, so we must start an Actor system to host it:
+Now we want to try out this Actor, so we must start an ActorSystem to host it:
 
 .. includecode:: code/docs/akka/typed/IntroSpec.scala#hello-world
 
 After importing the Actor’s protocol definition we start an Actor system from
 the defined behavior, wrapping it in :class:`Props` like an actor on stage. The
 props we are giving to this one are just the defaults, we could at this point
-also configure how and where the Actor should be deployed in a clustered
-system.
+also configure which thread pool will be used to run it or its mailbox capacity
+for incoming messages.
 
 As Carl Hewitt said, one Actor is no Actor—it would be quite lonely with
 nobody to talk to. In this sense the example is a little cruel because we only
@@ -72,7 +72,7 @@ Note that the :class:`Future` that is returned by the “ask” operation is
 properly typed already, no type checks or casts needed. This is possible due to
 the type information that is part of the message protocol: the ``?`` operator
 takes as argument a function that accepts an :class:`ActorRef[U]` (which
-explains the ``_`` hole in the expression on line 6 above) and the ``replyTo``
+explains the ``_`` hole in the expression on line 7 above) and the ``replyTo``
 parameter which we fill in like that is of type ``ActorRef[Greeted]``, which
 means that the value that fulfills the :class:`Promise` can only be of type
 :class:`Greeted`.

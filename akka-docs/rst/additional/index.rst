@@ -7,5 +7,4 @@ Additional Information
    ../common/binary-compatibility-rules
    faq
    books
-   language-bindings
    osgi

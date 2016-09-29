@@ -156,9 +156,7 @@ object Source {
   def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, NotUsed] =
     fromIterator[Integer](new function.Creator[util.Iterator[Integer]]() {
       def create(): util.Iterator[Integer] =
-        new Inclusive(start, end, step) {
-          override def toString: String = s"Range($start to $end, step = $step)"
-        }.iterator.asJava.asInstanceOf[util.Iterator[Integer]]
+        Range.inclusive(start, end, step).iterator.asJava.asInstanceOf[util.Iterator[Integer]]
     })
 
   /**
@@ -872,6 +870,21 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     combine: function.Function2[Out, Out2, Out3],
     matF:    function.Function2[Mat, M, M2]): javadsl.Source[Out3, M2] =
     new Source(delegate.zipWithMat[Out2, Out3, M, M2](that)(combinerToScala(combine))(combinerToScala(matF)))
+
+  /**
+   * Combine the elements of current [[Source]] into a stream of tuples consisting
+   * of all elements paired with their index. Indices start at 0.
+   *
+   * '''Emits when''' upstream emits an element and is paired with their index
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipWithIndex: javadsl.Source[Pair[Out @uncheckedVariance, Long], Mat] =
+    new Source(delegate.zipWithIndex.map { case (elem, index) ⇒ Pair(elem, index) })
 
   /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked

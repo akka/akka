@@ -15,7 +15,7 @@ object PersistentActorRecoveryTimeoutSpec {
     SteppingInmemJournal.config(PersistentActorRecoveryTimeoutSpec.journalId).withFallback(
       ConfigFactory.parseString(
         """
-          |akka.persistence.journal.stepping-inmem.recovery-event-timeout=100ms
+          |akka.persistence.journal.stepping-inmem.recovery-event-timeout=1s
         """.stripMargin)).withFallback(PersistenceSpec.config("stepping-inmem", "PersistentActorRecoveryTimeoutSpec"))
 
   class TestActor(probe: ActorRef) extends NamedPersistentActor("recovery-timeout-actor") {

@@ -253,8 +253,11 @@ object ByteString {
     }
 
     override def take(n: Int): ByteString =
-      if (n <= 0) ByteString.empty
-      else ByteString1(bytes, startIndex, Math.min(n, length))
+      if (n <= 0) ByteString.empty else take1(n)
+
+    private[akka] def take1(n: Int): ByteString1 =
+      if (n >= length) this
+      else ByteString1(bytes, startIndex, n)
 
     override def slice(from: Int, until: Int): ByteString =
       drop(from).take(until - Math.max(0, from))
@@ -436,18 +439,23 @@ object ByteString {
       bytestrings.foreach(_.writeToOutputStream(os))
     }
 
-    override def take(n: Int): ByteString = {
-      @tailrec def take0(n: Int, b: ByteStringBuilder, bs: Vector[ByteString1]): ByteString =
-        if (bs.isEmpty || n <= 0) b.result
-        else {
-          val head = bs.head
-          if (n <= head.length) b.append(head.take(n)).result
-          else take0(n - head.length, b.append(head), bs.tail)
-        }
-
+    override def take(n: Int): ByteString =
       if (n <= 0) ByteString.empty
       else if (n >= length) this
-      else take0(n, ByteString.newBuilder, bytestrings)
+      else take0(n)
+
+    private[akka] def take0(n: Int): ByteString = {
+      @tailrec def go(last: Int, restToTake: Int): (Int, Int) = {
+        val bs = bytestrings(last)
+        if (bs.length > restToTake) (last, restToTake)
+        else go(last + 1, restToTake - bs.length)
+      }
+
+      val (last, restToTake) = go(0, n)
+
+      if (last == 0) bytestrings(last).take(restToTake)
+      else if (restToTake == 0) new ByteStrings(bytestrings.take(last), n)
+      else new ByteStrings(bytestrings.take(last) :+ bytestrings(last).take1(restToTake), n)
     }
 
     override def dropRight(n: Int): ByteString =
@@ -473,7 +481,7 @@ object ByteString {
 
     override def drop(n: Int): ByteString =
       if (n <= 0) this
-      else if (n > length) ByteString.empty
+      else if (n >= length) ByteString.empty
       else drop0(n)
 
     private def drop0(n: Int): ByteString = {

@@ -1656,6 +1656,29 @@ trait FlowOps[+Out, +Mat] {
     }
 
   /**
+   * Combine the elements of current flow into a stream of tuples consisting
+   * of all elements paired with their index. Indices start at 0.
+   *
+   * '''Emits when''' upstream emits an element and is paired with their index
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipWithIndex: Repr[(Out, Long)] = {
+    statefulMapConcat[(Out, Long)] { () ⇒
+      var index: Long = 0L
+      elem ⇒ {
+        val zipped = (elem, index)
+        index += 1
+        immutable.Iterable[(Out, Long)](zipped)
+      }
+    }
+  }
+
+  /**
    * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
    * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that`
    * source, then repeat process.
