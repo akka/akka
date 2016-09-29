@@ -158,18 +158,39 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
       )
 
       val fut = Source.fromIterator(() ⇒ manyLines.grouped(64)).runWith(sink)
-      Await.result(fut.failed, remainingOrDefault) should be(TE(""))
+      fut.failed.futureValue should be(TE(""))
       (r.isOpened, r.isClosed) should be((true, true))
     }
 
-    "write contents to a resource" in assertAllStagesStopped {
+    trait WithTestResource {
       val r = new TestResource[String]()
       val sink = Sink.foldResourceAsync[String, TestResource[String]](() ⇒ r.open(), _ write _, _.close())
-      val fut = Source.fromIterator(() ⇒ manyLines.grouped(64)).runWith(sink)
+    }
 
-      Await.result(fut, remainingOrDefault) should be(Done)
-      (r.isOpened, r.isClosed) should be((true, true))
-      r.written.mkString should be(manyLines)
+    "write contents to a resource" in assertAllStagesStopped {
+      new WithTestResource {
+        val fut = Source.fromIterator(() ⇒ manyLines.grouped(64)).runWith(sink)
+        fut.futureValue should be(Done)
+        (r.isOpened, r.isClosed) should be((true, true))
+        r.written.mkString should be(manyLines)
+      }
+    }
+
+    "run with an empty source" in assertAllStagesStopped {
+      new WithTestResource {
+        val fut = Source.empty[String].runWith(sink)
+        fut.futureValue should be(Done)
+        (r.isOpened, r.isClosed) should be((true, true))
+        r.written should be(empty)
+      }
+    }
+
+    "run with a failed source" in assertAllStagesStopped {
+      new WithTestResource {
+        val fut = Source.failed[String](TE("")).runWith(sink)
+        fut.failed.futureValue should be(TE(""))
+        (r.isOpened, r.isClosed) should be((true, true))
+      }
     }
 
     "continue when Strategy is Resume and exception happened synchronously" in assertAllStagesStopped {
@@ -182,7 +203,7 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
         .withAttributes(supervisionStrategy(resumingDecider))
       val fut = Source.fromIterator(() ⇒ manyLinesArray.iterator).runWith(sink)
 
-      Await.result(fut, remainingOrDefault) should be(Done)
+      fut.futureValue should be(Done)
       (r.isOpened, r.isClosed) should be((true, true))
       r.written.mkString should be(manyLinesArray.filterNot(_.contains("b")).mkString)
     }
@@ -197,7 +218,7 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
         .withAttributes(supervisionStrategy(resumingDecider))
       val fut = Source.fromIterator(() ⇒ manyLinesArray.iterator).runWith(sink)
 
-      Await.result(fut, remainingOrDefault) should be(Done)
+      fut.futureValue should be(Done)
       (r.isOpened, r.isClosed) should be((true, true))
       r.written.mkString should be(manyLinesArray.filterNot(_.contains("b")).mkString)
     }
@@ -212,7 +233,7 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
         .withAttributes(supervisionStrategy(restartingDecider))
       val fut = Source.fromIterator(() ⇒ manyLinesArray.iterator).runWith(sink)
 
-      Await.result(fut, remainingOrDefault) should be(Done)
+      fut.futureValue should be(Done)
       (r.isOpened, r.isClosed) should be((true, true))
       r.written.mkString should be(manyLinesArray.filterNot(line ⇒ line.contains("a") || line.contains("b")).mkString)
 
@@ -228,17 +249,17 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
         .withAttributes(supervisionStrategy(restartingDecider))
       val fut = Source.fromIterator(() ⇒ manyLinesArray.iterator).runWith(sink)
 
-      Await.result(fut, remainingOrDefault) should be(Done)
+      fut.futureValue should be(Done)
       (r.isOpened, r.isClosed) should be((true, true))
       r.written.mkString should be(manyLinesArray.filterNot(line ⇒ line.contains("a") || line.contains("b")).mkString)
     }
 
     "fail when upstream fails" in assertAllStagesStopped {
       val r = new TestResource[String]()
-      val sink = Sink.foldResourceAsync[String, TestResource[String]](() ⇒ r.open(), _ write _, _.close)
+      val sink = Sink.foldResourceAsync[String, TestResource[String]](() ⇒ r.open(), _ write _, _.close())
       val (probe, fut) = TestSource.probe[String].toMat(sink)(Keep.both).run()
       probe.sendError(TE(""))
-      Await.result(fut.failed, remainingOrDefault) should be(TE(""))
+      fut.failed.futureValue should be(TE(""))
       (r.isOpened, r.isClosed) should be((true, true))
     }
 
