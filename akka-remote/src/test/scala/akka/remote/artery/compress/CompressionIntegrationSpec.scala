@@ -281,7 +281,6 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
     val maxDuplicateTables = 40 // max duplicate tables that will not fail the test
     var tableVersionsSeen = 0
     var lastTableVersion = 0
-    var wrapAroundCount = 0
     var iteration = 0
 
     while (tableVersionsSeen < maxTableVersions) {
@@ -303,12 +302,8 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
       if (currentTableVersion != lastTableVersion) { // if we get a new table
         lastTableVersion = currentTableVersion
         tableVersionsSeen += 1
-
-        if ((tableVersionsSeen & 0x7F) == 0) {
-          wrapAroundCount += 1
-        }
       }
-      currentTableVersion should ===((tableVersionsSeen & 0x7F) + wrapAroundCount)
+      currentTableVersion should ===(tableVersionsSeen & 0x7F)
     }
   }
 

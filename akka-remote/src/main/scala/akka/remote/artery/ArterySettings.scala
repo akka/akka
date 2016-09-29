@@ -170,7 +170,7 @@ private[akka] object ArterySettings {
   }
   object Compression {
     // Compile time constants
-    final val Debug = false // unlocks additional very verbose debug logging of compression events (on DEBUG log level)
+    final val Debug = false // unlocks additional very verbose debug logging of compression events (to stdout)
   }
 
   def getHostname(key: String, config: Config) = config.getString(key) match {
