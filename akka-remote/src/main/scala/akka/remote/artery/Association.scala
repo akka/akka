@@ -105,6 +105,7 @@ private[remote] object Association {
 private[remote] class Association(
   val transport:               ArteryTransport,
   val materializer:            Materializer,
+  val controlMaterializer:     Materializer,
   override val remoteAddress:  Address,
   override val controlSubject: ControlMessageSubject,
   largeMessageDestinations:    WildcardIndex[NotUsed],
