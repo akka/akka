@@ -650,6 +650,7 @@ final class FoldResourceSinkAsync[T, S](
       lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
       var resource: S = _
       var writeFuture: Future[Unit] = Future.successful(())
+      var upstreamThrowable: Throwable = _
 
       implicit val context = ExecutionContexts.sameThreadExecutionContext
 
@@ -664,7 +665,13 @@ final class FoldResourceSinkAsync[T, S](
         val cb = getAsyncCallback[Try[S]] {
           case scala.util.Success(res) ⇒
             resource = res
-            if (!isClosed(in)) {
+            if (isClosed(in)) {
+              if (upstreamThrowable == null) {
+                closeAndThen(doCompleteStage)
+              } else {
+                closeAndThen(() ⇒ doFailStage(upstreamThrowable))
+              }
+            } else {
               pull(in)
             }
           case scala.util.Failure(t) ⇒ doFailStage(t)
@@ -716,11 +723,16 @@ final class FoldResourceSinkAsync[T, S](
       }
 
       override def onUpstreamFinish(): Unit = {
-        closeAndThen(doCompleteStage)
+        if (resource != null.asInstanceOf[S]) {
+          closeAndThen(doCompleteStage)
+        }
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        closeAndThen(() ⇒ doFailStage(ex))
+        upstreamThrowable = ex
+        if (resource != null.asInstanceOf[S]) {
+          closeAndThen(() ⇒ doFailStage(ex))
+        }
       }
 
       private def closeAndThen(f: () ⇒ Unit): Unit = {
