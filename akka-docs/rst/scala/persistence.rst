@@ -133,14 +133,13 @@ The identifier must be defined with the ``persistenceId`` method.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#persistence-id-override
 
-.. _recovery:
-
 .. note::
   ``persistenceId`` must be unique to a given entity in the journal (database table/keyspace).
   When replaying messages persisted to the journal, you query messages with a ``persistenceId``.
   So, if two different entities share the same ``persistenceId``, message-replaying
   behavior is corrupted.
 
+.. _recovery-scala:
 
 Recovery
 --------
@@ -190,7 +189,7 @@ Internal stash
 --------------
 
 The persistent actor has a private :ref:`stash <stash-scala>` for internally caching incoming messages during 
-:ref:`recovery <recovery>` or the ``persist\persistAll`` method persisting events. You can still use/inherit from the 
+:ref:`recovery <recovery-scala>` or the ``persist\persistAll`` method persisting events. You can still use/inherit from the 
 ``Stash`` interface. The internal stash cooperates with the normal stash by hooking into ``unstashAll`` method and 
 making sure messages are unstashed properly to the internal stash to maintain ordering guarantees.
 
@@ -542,7 +541,7 @@ Recovery
 
 Initial recovery of persistent views works the very same way as for persistent actors (i.e. by sending a ``Recover`` message
 to self). The maximum number of replayed messages during initial recovery is determined by ``autoUpdateReplayMax``.
-Further possibilities to customize initial recovery are explained in section :ref:`recovery`.
+Further possibilities to customize initial recovery are explained in section :ref:`recovery-scala`.
 
 .. _persistence-identifiers:
 

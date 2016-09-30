@@ -446,6 +446,18 @@ public class RouterDocTest extends AbstractJavaTest {
     //#remoteRoutees
   }
   
+  // only compile
+  public void demonstrateRemoteDeployWithArtery() {
+    //#remoteRoutees-artery
+    Address[] addresses = {
+      new Address("akka", "remotesys", "otherhost", 1234),
+      AddressFromURIString.parse("akka://othersys@anotherhost:1234")};
+    ActorRef routerRemote = system.actorOf(
+      new RemoteRouterConfig(new RoundRobinPool(5), addresses).props(
+        Props.create(Echo.class)));
+    //#remoteRoutees-artery
+  }
+  
   @Test
   public void demonstrateSupervisor() {
     //#supervision
