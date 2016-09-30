@@ -446,10 +446,39 @@ demonstrates both remote deployment and look-up of remote actors.
 Performance tuning
 ------------------
 
-Dedicated lane for large messages
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Dedicated subchannel for large messages
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO
+All the communication between user defined remote actors are isolated from the channel of Akka internal messages so
+a large user message cannot block an urgent system message. While this provides good isolation for Akka services, all
+user communications by default happen through a shared network connection (an Aeron stream). When some actors
+send large messages this can cause other messages to suffer higher latency as they need to wait until the full
+message has been transported on the shared channel (and hence, shared bottleneck). In these cases it is usually
+helpful to separate actors that have different QoS requirements: large messages vs. low latency.
+
+Akka remoting provides a dedicated channel for large messages if configured. Since actor message ordering must
+not be violated the channel is actually dedicated for *actors* instead of messages, to ensure all of the messages
+arrive in send order. It is possible to assign actors on given paths to use this dedicated channel by using
+path patterns:
+
+   akka.remote.artery.large-message-destinations = [
+      "/user/largeMessageActor",
+      "/user/largeMessagesGroup/*",
+      "/user/anotherGroup/*/largeMesssages",
+      "/user/thirdGroup/**",
+   ]
+
+This means that all messages sent to the following actors will pass through the dedicated, large messages channel:
+
+* ``/user/largeMessageActor``
+* ``/user/largeMessageActorGroup/actor1``
+* ``/user/largeMessageActorGroup/actor2``
+* ``/user/anotherGroup/actor1/largeMessages``
+* ``/user/anotherGroup/actor2/largeMessages``
+* ``/user/thirdGroup/actor3/``
+* ``/user/thirdGroup/actor4/actor5``
+
+Messages destined for actors not matching any of these patterns are sent using the default channel as before.
 
 External, shared Aeron media driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -459,7 +488,20 @@ TODO
 Fine-tuning CPU usage latency tradeoff
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO
+Artery has been designed for low latency and as a result it can be CPU hungry when the system is mostly idle.
+This is not always desirable. It is possible to tune the tradeoff between CPU usage and latency with
+the following configuration:
+
+  # Values can be from 1 to 10, where 10 strongly prefers latency
+  # and 1 strongly prefers less CPU usage
+  akka.remote.artery.advanced.idle-cpu-level = 1
+
+By setting this value to a lower number, it tells Akka to do longer "sleeping" periods on its thread dedicated
+for `spin-waiting <https://en.wikipedia.org/wiki/Busy_waiting>`_ and hence reducing CPU load when there is no
+immediate task to execute at the cost of a longer reaction time to an event when it actually happens. It is worth
+to be noted though that during a continuously high-throughput period this setting makes not much difference
+as the thread mostly has tasks to execute. This also means that under high throughput (but below maximum capacity)
+the system might have less latency than at low message rates.
 
 Remote Configuration
 --------------------
