@@ -19,7 +19,8 @@ class ByteBufferSerializerDocSpec {
 
     // Implement this method for compatibility with `SerializerWithStringManifest`.
     override def toBinary(o: AnyRef): Array[Byte] = {
-      val buf = ByteBuffer.allocate(256) // in production code, aquire this from a BufferPool
+      // in production code, aquire this from a BufferPool
+      val buf = ByteBuffer.allocate(256)
 
       toBinary(o, buf)
       buf.flip()
@@ -32,7 +33,7 @@ class ByteBufferSerializerDocSpec {
     override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
       fromBinary(ByteBuffer.wrap(bytes), manifest)
 
-    // Actual implementation in the ByteBuffer versions of to/fromBinary: 
+    // Actual implementation in the ByteBuffer versions of to/fromBinary:
     override def toBinary(o: AnyRef, buf: ByteBuffer): Unit = ??? // implement actual logic here
     override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = ??? // implement actual logic here
   }

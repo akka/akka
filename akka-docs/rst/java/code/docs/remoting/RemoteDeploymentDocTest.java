@@ -35,6 +35,14 @@ public class RemoteDeploymentDocTest {
 
   private final ActorSystem system = actorSystemResource.getSystem();
   
+  @SuppressWarnings("unused")
+  void makeAddress() {
+    //#make-address-artery
+    Address addr = new Address("akka", "sys", "host", 1234);
+    addr = AddressFromURIString.parse("akka://sys@host:1234"); // the same
+    //#make-address-artery
+  }
+  
   @Test
   public void demonstrateDeployment() {
     //#make-address
@@ -63,6 +71,11 @@ public class RemoteDeploymentDocTest {
     ConfigFactory.parseString("akka.remote.netty.tcp.hostname=\"1.2.3.4\"")
         .withFallback(ConfigFactory.load());
     //#programmatic
+    
+    //#programmatic-artery
+    ConfigFactory.parseString("akka.remote.artery.canonical.hostname=\"1.2.3.4\"")
+        .withFallback(ConfigFactory.load());
+    //#programmatic-artery
   }
 
   

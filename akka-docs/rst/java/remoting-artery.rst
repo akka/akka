@@ -1,4 +1,4 @@
-.. _remoting-artery-scala:
+.. _remoting-artery-java:
 
 ##########################
 Remoting (codename Artery)
@@ -7,7 +7,7 @@ Remoting (codename Artery)
 .. note::
 
   This page describes the experimental remoting subsystem, codenamed *Artery* that will eventually replace the
-  old remoting implementation. For the current stable remoting system please refer to :ref:`remoting-scala`.
+  old remoting implementation. For the current stable remoting system please refer to :ref:`remoting-java`.
 
 Remoting enables Actor systems on different hosts or JVMs to communicate with each other. By enabling remoting
 the system will start listening on a provided network address and also gains the ability to connect to other
@@ -25,7 +25,7 @@ What is new in Artery
 ---------------------
 
 Artery is a reimplementation of the old remoting module aimed at improving performance and stability. It is mostly
-backwards compatible with the old implementation and it is a drop-in replacement in many cases. Main features
+source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
 of Artery compared to the previous implementation:
 
 * Based on `Aeron <https://github.com/real-logic/Aeron>`_ (UDP) instead of TCP
@@ -36,7 +36,7 @@ of Artery compared to the previous implementation:
 * Support for a separate subchannel for large messages to avoid interference with smaller messages
 * Compression of actor paths on the wire to reduce overhead for smaller messages
 * Support for faster serialization/deserialization using ByteBuffers directly
-* Built-in Flight-Recorder to help debugging implementation issues without polluting users logs with implementaiton
+* Built-in Flight-Recorder to help debugging implementation issues without polluting users logs with implementation
   specific events
 * Providing protocol stability across major Akka versions to support rolling updates of large-scale systems
 
@@ -85,7 +85,7 @@ As you can see in the example above there are four things you need to add to get
   listening for connections and handling messages as not to interfere with other actor systems.
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-All settings are described in :ref:`remote-configuration-artery-scala`.
+All settings are described in :ref:`remote-configuration-artery-java`.
 
 Canonical address
 ^^^^^^^^^^^^^^^^^
@@ -104,7 +104,7 @@ real network.
 
 In cases, where Network Address Translation (NAT) is used or other network bridging is involved, it is important
 to configure the system so that it understands that there is a difference between his externally visible, canonical
-address and between the host-port pair that is used to listen for connections. See :ref:`remote-configuration-nat-artery-scala`
+address and between the host-port pair that is used to listen for connections. See :ref:`remote-configuration-nat-artery-java`
 for details.
 
 Acquiring references to remote actors
@@ -191,7 +191,7 @@ which in this sample corresponds to ``sampleActorSystem@127.0.0.1:2553``.
 
 Once you have configured the properties above you would do the following in code:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#sample-actor
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#sample-actor
 
 The actor class ``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
@@ -226,15 +226,15 @@ precedence.
 
 With these imports:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#import
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#import
 
 and a remote address like this:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#make-address-artery
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#make-address-artery
 
 you can advise the system to create a child on that remote node like so:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#deploy
 
 Untrusted Mode
 ^^^^^^^^^^^^^^
@@ -323,7 +323,7 @@ system has been restarted.
 An association will be quarantined when: 
 
 * Cluster node is removed from the cluster membership.
-* Remote failure detector triggers, i.e. remote watch is used. This is different when :ref:`Akka Cluster <cluster_usage_scala>`
+* Remote failure detector triggers, i.e. remote watch is used. This is different when :ref:`Akka Cluster <cluster_usage_java>`
   is used. The unreachable observation by the cluster failure detector can go back to reachable if the network
   partition heals. A cluster member is not quarantined when the failure detector triggers. 
 * Overflow of the system message delivery buffer, e.g. because of too many ``watch`` requests at the same time 
@@ -344,7 +344,7 @@ Watching Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^
 
 Watching a remote actor is API wise not different than watching a local actor, as described in
-:ref:`deathwatch-scala`. However, it is important to note, that unlike in the local case, remoting has to handle
+:ref:`deathwatch-java`. However, it is important to note, that unlike in the local case, remoting has to handle
 when a remote actor does not terminate in a graceful way sending a system message to notify the watcher actor about
 the event, but instead being hosted on a system which stopped abruptly (crashed). These situations are handled
 by the built-in failure detector.
@@ -370,7 +370,7 @@ The value of *phi* is calculated as::
 where F is the cumulative distribution function of a normal distribution with mean
 and standard deviation estimated from historical heartbeat inter-arrival times.
 
-In the :ref:`remote-configuration-artery-scala` you can adjust the ``akka.remote.watch-failure-detector.threshold``
+In the :ref:`remote-configuration-artery-java` you can adjust the ``akka.remote.watch-failure-detector.threshold``
 to define when a *phi* value is considered to be a failure.
 
 A low ``threshold`` is prone to generate many false positives but ensures
@@ -396,7 +396,7 @@ a standard deviation of 100 ms.
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
 ``akka.remote.watch-failure-detector.acceptable-heartbeat-pause``. You may want to
-adjust the :ref:`remote-configuration-artery-scala` of this depending on you environment.
+adjust the :ref:`remote-configuration-artery-java` of this depending on you environment.
 This is how the curve looks like for ``acceptable-heartbeat-pause`` configured to
 3 seconds.
 
@@ -408,9 +408,9 @@ Serialization
 When using remoting for actors you must ensure that the ``props`` and ``messages`` used for
 those actors are serializable. Failing to do so will cause the system to behave in an unintended way.
 
-For more information please see :ref:`serialization-scala`.
+For more information please see :ref:`serialization-java`.
 
-.. _remote-bytebuffer-serialization-scala:
+.. _remote-bytebuffer-serialization-java:
 
 ByteBuffer based serialization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -424,14 +424,14 @@ This new API also plays well with new versions of Google Protocol Buffers and ot
 the ability to serialize directly into and from ByteBuffers.
 
 As the new feature only changes how bytes are read and written, and the rest of the serializatio infrastructure
-remained the same, we recommend reading the :ref:`serialization-scala` documentation first.
+remained the same, we recommend reading the :ref:`serialization-java` documentation first.
 
 Implementing an :class:`akka.serialization.ByteBufferSerializer` works the same way as any other serializer,
 
-.. includecode:: ../../../akka-actor/src/main/scala/akka/serialization/Serializer.scala#ByteBufferSerializer
+.. includecode:: code/docs/actor/ByteBufferSerializerDocTest.java#ByteBufferSerializer-interface
 
 Implementing a serializer for Artery is therefore as simple as implementing this interface, and binding the serializer 
-as usual (which is explained in :ref:`serialization-scala`).
+as usual (which is explained in :ref:`serialization-java`).
 
 Implementations should typically extend ``SerializerWithStringManifest`` and in addition to the ``ByteBuffer`` based 
 ``toBinary`` and ``fromBinary`` methods also implement the array based ``toBinary`` and ``fromBinary`` methods. 
@@ -439,7 +439,7 @@ The array based methods will be used when ``ByteBuffer`` is not used, e.g. in Ak
  
 Note that the array based methods can be implemented by delegation like this:
 
-.. includecode:: code/docs/actor/ByteBufferSerializerDocSpec.scala#bytebufserializer-with-manifest
+.. includecode:: code/docs/actor/ByteBufferSerializerDocTest.java#bytebufserializer-with-manifest
 
 Disabling the Java Serializer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -477,7 +477,7 @@ your ``application.conf``:
   } 
 
 Please note that this means that you will have to configure different serializers which will able to handle all of your
-remote messages. Please refer to the :ref:`serialization-scala` documentation as well as :ref:`ByteBuffer based serialization <remote-bytebuffer-serialization-scala>` to learn how to do this.
+remote messages. Please refer to the :ref:`serialization-java` documentation as well as :ref:`ByteBuffer based serialization <remote-bytebuffer-serialization-java>` to learn how to do this.
 
 .. _Kryo: https://github.com/EsotericSoftware/kryo
 .. _akka-kryo-serialization: https://github.com/romix/akka-kryo-serialization
@@ -486,7 +486,7 @@ remote messages. Please refer to the :ref:`serialization-scala` documentation as
 Routers with Remote Destinations
 --------------------------------
 
-It is absolutely feasible to combine remoting with :ref:`routing-scala`.
+It is absolutely feasible to combine remoting with :ref:`routing-java`.
 
 A pool of remote deployed routees can be configured as:
 
@@ -503,13 +503,13 @@ This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
 That is not done by the router.
 
-.. _remote-sample-scala-artery:
+.. _remote-sample-java-artery:
 
 Remoting Sample
 ---------------
 
 There is a more extensive remote example that comes with `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_.
-The tutorial named `Akka Remote Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-remote-scala>`_
+The tutorial named `Akka Remote Samples with Java <http://www.lightbend.com/activator/template/akka-sample-remote-java>`_
 demonstrates both remote deployment and look-up of remote actors.
 
 Performance tuning
@@ -679,7 +679,7 @@ The location of the file can be controlled via the `akka.remote.artery.advanced.
 directory of the operating system. In cases where the flight recorder casuses issues, it can be disabled by adding the
 setting `akka.remote.artery.advanced.flight-recorder.enabled=off`, although this is not recommended.
 
-.. _remote-configuration-artery-scala:
+.. _remote-configuration-artery-java:
 
 Remote Configuration
 --------------------
@@ -695,7 +695,7 @@ There are lots of configuration properties that are related to remoting in Akka.
    .. includecode:: ../java/code/docs/remoting/RemoteDeploymentDocTest.java#programmatic-artery
 
 
-.. _remote-configuration-nat-artery-scala:
+.. _remote-configuration-nat-artery-java:
 
 Akka behind NAT or in a Docker container
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -74,7 +74,7 @@ Processors / PersistentActor
 
 - Trait that adds journaling to actors (see :ref:`event-sourcing-scala`) and used by applications for
   *event sourcing* or *command sourcing*. Corresponds to ``Eventsourced`` processors in Eventsourced but is not a stackable trait.
-- Automatically recovers on start and re-start, by default. :ref:`recovery` can be customized or turned off by
+- Automatically recovers on start and re-start, by default. :ref:`recovery-scala` can be customized or turned off by
   overriding actor life cycle hooks ``preStart`` and ``preRestart``. ``Processor`` takes care that new messages
   never interfere with replayed messages. New messages are internally buffered until recovery completes.
 - No special-purpose behavior change methods. Default behavior change methods ``context.become`` and

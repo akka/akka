@@ -42,6 +42,13 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
     expectMsgType[ActorRef].path.address should be(address)
   }
 
+  def makeAddress(): Unit = {
+    //#make-address-artery
+    val one = AddressFromURIString("akka://sys@host:1234")
+    val two = Address("akka", "sys", "host", 1234) // this gives the same
+    //#make-address-artery
+  }
+
   "demonstrate address extractor" in {
     //#make-address
     val one = AddressFromURIString("akka.tcp://sys@host:1234")
