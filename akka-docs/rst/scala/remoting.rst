@@ -294,58 +294,6 @@ There is a more extensive remote example that comes with `Lightbend Activator <h
 The tutorial named `Akka Remote Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-remote-scala>`_
 demonstrates both remote deployment and look-up of remote actors.
 
-Pluggable transport support
----------------------------
-
-Akka can be configured to use various transports to communicate with remote systems. The core
-component of this feature is the :meth:`akka.remote.transport.Transport` SPI. Transport implementations must extend this trait.
-Transports can be loaded by setting the ``akka.remote.enabled-transports`` configuration key to point to one or
-more configuration sections containing driver descriptions.
-
-An example of setting up the default Netty based SSL driver as default::
-
-  akka {
-    remote {
-      enabled-transports = [akka.remote.netty.ssl]
-
-      netty.ssl.security {
-        key-store = "mykeystore"
-        trust-store = "mytruststore"
-        key-store-password = "changeme"
-        key-password = "changeme"
-        trust-store-password = "changeme"
-        protocol = "TLSv1.2"
-        random-number-generator = "AES128CounterSecureRNG"
-        enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
-      }
-    }
-  }
-
-An example of setting up a custom transport implementation::
-
-  akka {
-    remote {
-      applied-transports = ["akka.remote.mytransport"]
-
-      mytransport {
-        # The transport-class configuration entry is required, and
-        # it must contain the fully qualified name of the transport
-        # implementation
-        transport-class = "my.package.MyTransport"
-
-        # It is possible to decorate Transports with additional services.
-        # Adapters should be registered in the "adapters" sections to
-        # be able to apply them to transports
-        applied-adapters = []
-
-        # Driver specific configuration options has to be in the same
-        # section:
-        some-config = foo
-        another-config = bar
-      }
-
-
-
 Remote Events
 -------------
 
@@ -461,6 +409,25 @@ SSL
 SSL can be used as the remote transport by adding ``akka.remote.netty.ssl``
 to the ``enabled-transport`` configuration section. See a description of the settings
 in the :ref:`remote-configuration-scala` section.
+
+An example of setting up the default Netty based SSL driver as default::
+
+  akka {
+    remote {
+      enabled-transports = [akka.remote.netty.ssl]
+
+      netty.ssl.security {
+        key-store = "mykeystore"
+        trust-store = "mytruststore"
+        key-store-password = "changeme"
+        key-password = "changeme"
+        trust-store-password = "changeme"
+        protocol = "TLSv1.2"
+        random-number-generator = "AES128CounterSecureRNG"
+        enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
+      }
+    }
+  }
 
 The SSL support is implemented with Java Secure Socket Extension, please consult the official
 `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
