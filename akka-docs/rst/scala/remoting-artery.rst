@@ -674,7 +674,7 @@ There are various important features of this event log:
   for production systems.
 
 The location of the file can be controlled via the `akka.remote.artery.advanced.flight-recoder.destination` setting (see
-:ref:`config-akka-remote` for details). By default, a file with the `.afr` extension is produced in the temporary
+:ref:`config-akka-remote-artery` for details). By default, a file with the `.afr` extension is produced in the temporary
 directory of the operating system. In cases where the flight recorder casuses issues, it can be disabled by adding the
 setting `akka.remote.artery.advanced.flight-recorder.enabled=off`, although this is not recommended.
 
@@ -682,7 +682,7 @@ Remote Configuration
 --------------------
 
 There are lots of configuration properties that are related to remoting in Akka. We refer to the
-:ref:`reference configuration <config-akka-remote>` for more information.
+:ref:`reference configuration <config-akka-remote-artery>` for more information.
 
 .. note::
 
