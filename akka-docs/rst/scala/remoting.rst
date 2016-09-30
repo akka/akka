@@ -265,10 +265,13 @@ those actors are serializable. Failing to do so will cause the system to behave 
 For more information please see :ref:`serialization-scala`.
 
 Disabling the Java Serializer
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
 
 Since the ``2.4.11`` release of Akka it is possible to entirely disable the default Java Serialization mechanism.
-The :ref:`new remoting implementation (codename Artery) <remoting-artery-scala>` 
+Please note that :ref:`new remoting implementation (codename Artery) <remoting-artery-scala>` does not use Java 
+serialization for internal messages by default. For compatibility reasons, the current remoting still uses Java 
+serialization for some classes, however you can disable it in this remoting implementation as well by following 
+the steps below.
 
 Java serialization is known to be slow and prone to attacks of various kinds - it never was designed for high 
 throughput messaging after all. However it is very convenient to use, thus it remained the default serialization 
