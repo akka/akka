@@ -15,7 +15,7 @@ val publishedAkkaVersion = "2.3.15"
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %%      "akka-actor"                       % publishedAkkaVersion,
   "com.typesafe.akka" %%      "akka-testkit"                     % publishedAkkaVersion % "test",
-  "com.typesafe.akka" %%      "akka-stream-experimental"         % "2.0-SNAPSHOT",
-  "com.typesafe.akka" %%      "akka-stream-testkit-experimental" % "2.0-SNAPSHOT" % "test",
+  "com.typesafe.akka" %%      "akka-stream-experimental"         % "2.0.5",
+  "com.typesafe.akka" %%      "akka-stream-testkit-experimental" % "2.0.5" % "test",
               "junit"  %      "junit"                            % "4.11"         % "test",
        "com.novocode"  %      "junit-interface"                  % "0.10"         % "test")
