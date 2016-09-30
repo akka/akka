@@ -43,8 +43,8 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
   // extension point
   def setTimeout: Timeout = Timeout(1.minute)
 
-  val nativeSystem = ActorSystem(AkkaSpec.getCallerName(classOf[TypedSpec]), Props(guardian()), Some(config withFallback AkkaSpec.testConf))
-  val adaptedSystem = ActorSystem.adapter(AkkaSpec.getCallerName(classOf[TypedSpec]), Props(guardian()), Some(config withFallback AkkaSpec.testConf))
+  lazy val nativeSystem = ActorSystem(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
+  lazy val adaptedSystem = ActorSystem.adapter(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
 
   trait NativeSystem {
     def system = nativeSystem
@@ -55,7 +55,7 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
 
   implicit val timeout = setTimeout
   implicit val patience = PatienceConfig(3.seconds)
-  implicit val scheduler = nativeSystem.scheduler
+  implicit def scheduler = nativeSystem.scheduler
 
   override def afterAll(): Unit = {
     Await.result(nativeSystem ? (Terminate(_)), timeout.duration): Status
@@ -66,14 +66,14 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
   import akka.testkit._
   def await[T](f: Future[T]): T = Await.result(f, timeout.duration * 1.1)
 
-  val blackhole = await(nativeSystem ? Create(Props(ScalaDSL.Full[Any] { case _ ⇒ ScalaDSL.Same }), "blackhole"))
+  lazy val blackhole = await(nativeSystem ? Create(ScalaDSL.Full[Any] { case _ ⇒ ScalaDSL.Same }, "blackhole"))
 
   /**
    * Run an Actor-based test. The test procedure is most conveniently
    * formulated using the [[StepWise$]] behavior type.
    */
   def runTest[T: ClassTag](name: String)(behavior: Behavior[T])(implicit system: ActorSystem[Command]): Future[Status] =
-    system ? (RunTest(name, Props(behavior), _, timeout.duration))
+    system ? (RunTest(name, behavior, _, timeout.duration))
 
   // TODO remove after basing on ScalaTest 3 with async support
   def sync(f: Future[Status])(implicit system: ActorSystem[Command]): Unit = {
@@ -135,9 +135,9 @@ object TypedSpec {
   case object Start extends Start
 
   sealed trait Command
-  case class RunTest[T](name: String, props: Props[T], replyTo: ActorRef[Status], timeout: FiniteDuration) extends Command
+  case class RunTest[T](name: String, behavior: Behavior[T], replyTo: ActorRef[Status], timeout: FiniteDuration) extends Command
   case class Terminate(reply: ActorRef[Status]) extends Command
-  case class Create[T](props: Props[T], name: String)(val replyTo: ActorRef[ActorRef[T]]) extends Command
+  case class Create[T](behavior: Behavior[T], name: String)(val replyTo: ActorRef[ActorRef[T]]) extends Command
 
   sealed trait Status
   case object Success extends Status
@@ -156,7 +156,7 @@ object TypedSpec {
         }
       case _: Sig[_] ⇒ Same
       case Msg(ctx, r: RunTest[t]) ⇒
-        val test = ctx.spawn(r.props, r.name)
+        val test = ctx.spawn(r.behavior, r.name)
         ctx.schedule(r.timeout, r.replyTo, Timedout)
         ctx.watch(test)
         guardian(outstanding + ((test, r.replyTo)))
@@ -164,7 +164,7 @@ object TypedSpec {
         reply ! Success
         Stopped
       case Msg(ctx, c: Create[t]) ⇒
-        c.replyTo ! ctx.spawn(c.props, c.name)
+        c.replyTo ! ctx.spawn(c.behavior, c.name)
         Same
     }
 

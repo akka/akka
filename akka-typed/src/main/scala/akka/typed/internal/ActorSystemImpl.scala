@@ -20,18 +20,22 @@ import scala.collection.JavaConverters._
 import scala.util.Success
 import akka.util.Timeout
 import java.io.Closeable
+import java.util.concurrent.atomic.AtomicInteger
 
 object ActorSystemImpl {
   import ScalaDSL._
 
   sealed trait SystemCommand
-  case class CreateSystemActor[T](props: Props[T])(val replyTo: ActorRef[ActorRef[T]]) extends SystemCommand
+  case class CreateSystemActor[T](behavior: Behavior[T], name: String, deployment: DeploymentConfig)(val replyTo: ActorRef[ActorRef[T]]) extends SystemCommand
 
   val systemGuardianBehavior: Behavior[SystemCommand] =
     ContextAware { ctx ⇒
+      var i = 1
       Static {
         case create: CreateSystemActor[t] ⇒
-          create.replyTo ! ctx.spawnAnonymous(create.props)
+          val name = s"$i-${create.name}"
+          i += 1
+          create.replyTo ! ctx.spawn(create.behavior, name, create.deployment)
       }
     }
 }
@@ -63,11 +67,12 @@ Distributed Data:
  */
 
 private[typed] class ActorSystemImpl[-T](
-  override val name:  String,
-  _config:            Config,
-  _cl:                ClassLoader,
-  _ec:                Option[ExecutionContext],
-  _userGuardianProps: Props[T])
+  override val name:       String,
+  _config:                 Config,
+  _cl:                     ClassLoader,
+  _ec:                     Option[ExecutionContext],
+  _userGuardianBehavior:   Behavior[T],
+  _userGuardianDeployment: DeploymentConfig)
   extends ActorRef[T](a.RootActorPath(a.Address("akka", name)) / "user") with ActorSystem[T] with ActorRefImpl[T] {
 
   import ActorSystemImpl._
@@ -77,7 +82,6 @@ private[typed] class ActorSystemImpl[-T](
       "invalid ActorSystem name [" + name +
         "], must contain only word characters (i.e. [a-zA-Z0-9] plus non-leading '-' or '_')")
 
-  import a.ActorSystem.Settings
   override val settings: Settings = new Settings(_cl, _config, name)
 
   override def logConfiguration(): Unit = log.info(settings.toString)
@@ -88,7 +92,7 @@ private[typed] class ActorSystemImpl[-T](
         cause match {
           case NonFatal(_) | _: InterruptedException | _: NotImplementedError | _: ControlThrowable ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
           case _ ⇒
-            if (settings.JvmExitOnFatalError) {
+            if (settings.untyped.JvmExitOnFatalError) {
               try {
                 log.error(cause, "Uncaught error from thread [{}] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled", thread.getName)
                 import System.err
@@ -111,21 +115,23 @@ private[typed] class ActorSystemImpl[-T](
     }
 
   override val threadFactory: d.MonitorableThreadFactory =
-    d.MonitorableThreadFactory(name, settings.Daemonicity, Option(_cl), uncaughtExceptionHandler)
+    d.MonitorableThreadFactory(name, settings.untyped.Daemonicity, Option(_cl), uncaughtExceptionHandler)
 
   override val dynamicAccess: a.DynamicAccess = new a.ReflectiveDynamicAccess(_cl)
 
+  private val loggerIds = new AtomicInteger
+  def loggerId(): Int = loggerIds.incrementAndGet()
+
   // this provides basic logging (to stdout) until .start() is called below
-  // FIXME!!!
-  private val untypedSystem = a.ActorSystem(name + "-untyped", _config)
-  override def eventStream = untypedSystem.eventStream
+  override val eventStream = new EventStreamImpl(settings.untyped.DebugEventStream)(settings.untyped.LoggerStartTimeout)
+  eventStream.startStdoutLogger(settings)
 
   override val logFilter: e.LoggingFilter = {
-    val arguments = Vector(classOf[Settings] → settings, classOf[e.EventStream] → eventStream)
+    val arguments = Vector(classOf[Settings] → settings, classOf[EventStream] → eventStream)
     dynamicAccess.createInstanceFor[e.LoggingFilter](settings.LoggingFilter, arguments).get
   }
 
-  override val log: e.LoggingAdapter = new e.BusLogging(eventStream, getClass.getName + "(" + name + ")", this.getClass, logFilter)
+  override val log: e.LoggingAdapter = new BusLogging(eventStream, getClass.getName + "(" + name + ")", this.getClass, logFilter)
 
   /**
    * Create the scheduler service. This one needs one special behavior: if
@@ -137,7 +143,7 @@ private[typed] class ActorSystemImpl[-T](
    * executed upon close(), the task may execute before its timeout.
    */
   protected def createScheduler(): a.Scheduler =
-    dynamicAccess.createInstanceFor[a.Scheduler](settings.SchedulerClass, immutable.Seq(
+    dynamicAccess.createInstanceFor[a.Scheduler](settings.untyped.SchedulerClass, immutable.Seq(
       classOf[Config] → settings.config,
       classOf[e.LoggingAdapter] → log,
       classOf[ThreadFactory] → threadFactory.withName(threadFactory.name + "-scheduler"))).get
@@ -148,8 +154,27 @@ private[typed] class ActorSystemImpl[-T](
     case _            ⇒
   }
 
-  override val dispatchers: Dispatchers = new DispatchersImpl(settings, log)
-  override val executionContext: ExecutionContextExecutor = dispatchers.lookup(DispatcherDefault)
+  /**
+   * Stub implementation of untyped EventStream to allow reuse of previous DispatcherConfigurator infrastructure
+   */
+  private object eventStreamStub extends e.EventStream(null, false) {
+    override def subscribe(ref: a.ActorRef, ch: Class[_]): Boolean =
+      throw new UnsupportedOperationException("cannot use this eventstream for subscribing")
+    override def publish(event: AnyRef): Unit = eventStream.publish(event)
+  }
+  /**
+   * Stub implementation of untyped Mailboxes to allow reuse of previous DispatcherConfigurator infrastructure
+   */
+  private val mailboxesStub = new d.Mailboxes(settings.untyped, eventStreamStub, dynamicAccess,
+    new a.MinimalActorRef {
+      override def path = rootPath
+      override def provider = throw new UnsupportedOperationException("Mailboxes’ deadletter reference does not provide")
+    })
+
+  private val dispatcherPrequisites =
+    d.DefaultDispatcherPrerequisites(threadFactory, eventStreamStub, scheduler, dynamicAccess, settings.untyped, mailboxesStub, _ec)
+  override val dispatchers: Dispatchers = new DispatchersImpl(settings, log, dispatcherPrequisites)
+  override val executionContext: ExecutionContextExecutor = dispatchers.lookup(DispatcherDefault())
 
   override val startTime: Long = System.currentTimeMillis()
   override def uptime: Long = (System.currentTimeMillis() - startTime) / 1000
@@ -171,9 +196,9 @@ private[typed] class ActorSystemImpl[-T](
           topLevelActors.remove(ref)
           if (topLevelActors.isEmpty) {
             if (terminationPromise.tryComplete(Success(Terminated(this)(null)))) {
+              eventStream.stopDefaultLoggers(ActorSystemImpl.this)
               closeScheduler()
               dispatchers.shutdown()
-              untypedSystem.terminate()
             }
           } else if (terminateTriggered.compareAndSet(false, true))
             topLevelActors.asScala.foreach(ref ⇒ ref.sendSystem(Terminate()))
@@ -182,8 +207,10 @@ private[typed] class ActorSystemImpl[-T](
       override def isLocal: Boolean = true
     }
 
-  private def createTopLevel[U](props: Props[U], name: String): ActorRefImpl[U] = {
-    val cell = new ActorCell(this, props, theOneWhoWalksTheBubblesOfSpaceTime)
+  private def createTopLevel[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig): ActorRefImpl[U] = {
+    val dispatcher = deployment.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
+    val capacity = deployment.firstOrElse(MailboxCapacity(settings.DefaultMailboxCapacity))
+    val cell = new ActorCell(this, behavior, dispatchers.lookup(dispatcher), capacity.capacity, theOneWhoWalksTheBubblesOfSpaceTime)
     val ref = new LocalActorRef(rootPath / name, cell)
     cell.setSelf(ref)
     topLevelActors.add(ref)
@@ -191,8 +218,12 @@ private[typed] class ActorSystemImpl[-T](
     ref
   }
 
-  private val systemGuardian: ActorRefImpl[SystemCommand] = createTopLevel(Props(systemGuardianBehavior), "system")
-  private val userGuardian: ActorRefImpl[T] = createTopLevel(_userGuardianProps, "user")
+  private val systemGuardian: ActorRefImpl[SystemCommand] = createTopLevel(systemGuardianBehavior, "system", EmptyDeploymentConfig)
+  private val userGuardian: ActorRefImpl[T] = createTopLevel(_userGuardianBehavior, "user", _userGuardianDeployment)
+
+  // now we can start up the loggers
+  eventStream.startUnsubscriber(this)
+  eventStream.startDefaultLoggers(this)
 
   override def terminate(): Future[Terminated] = {
     theOneWhoWalksTheBubblesOfSpaceTime.sendSystem(Terminate())
@@ -217,10 +248,10 @@ private[typed] class ActorSystemImpl[-T](
   override def sendSystem(msg: SystemMessage): Unit = userGuardian.sendSystem(msg)
   override def isLocal: Boolean = true
 
-  def systemActorOf[U](props: Props[U], name: String)(implicit timeout: Timeout): Future[ActorRef[U]] = {
+  def systemActorOf[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig)(implicit timeout: Timeout): Future[ActorRef[U]] = {
     import AskPattern._
     implicit val sched = scheduler
-    systemGuardian ? CreateSystemActor(props)
+    systemGuardian ? CreateSystemActor(behavior, name, deployment)
   }
 
   def printTree: String = {
