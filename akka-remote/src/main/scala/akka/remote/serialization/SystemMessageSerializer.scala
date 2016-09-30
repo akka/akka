@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.remote.serialization
 
 import akka.actor.{ ActorInitializationException, ActorRef, ExtendedActorSystem, InternalActorRef }
@@ -118,14 +121,12 @@ class SystemMessageSerializer(val system: ExtendedActorSystem) extends BaseSeria
       case WATCH ⇒
         Watch(
           deserializeActorRef(sysmsg.getWatchData.getWatchee).asInstanceOf[InternalActorRef],
-          deserializeActorRef(sysmsg.getWatchData.getWatcher).asInstanceOf[InternalActorRef]
-        )
+          deserializeActorRef(sysmsg.getWatchData.getWatcher).asInstanceOf[InternalActorRef])
 
       case UNWATCH ⇒
         Unwatch(
           deserializeActorRef(sysmsg.getWatchData.getWatchee).asInstanceOf[InternalActorRef],
-          deserializeActorRef(sysmsg.getWatchData.getWatcher).asInstanceOf[InternalActorRef]
-        )
+          deserializeActorRef(sysmsg.getWatchData.getWatcher).asInstanceOf[InternalActorRef])
 
       case FAILED ⇒
         Failed(
@@ -137,8 +138,7 @@ class SystemMessageSerializer(val system: ExtendedActorSystem) extends BaseSeria
         DeathWatchNotification(
           deserializeActorRef(sysmsg.getDwNotificationData.getActor),
           sysmsg.getDwNotificationData.getExistenceConfirmed,
-          sysmsg.getDwNotificationData.getAddressTerminated
-        )
+          sysmsg.getDwNotificationData.getAddressTerminated)
     }
 
   private def serializeThrowable(throwable: Throwable): ContainerFormats.Payload.Builder = {

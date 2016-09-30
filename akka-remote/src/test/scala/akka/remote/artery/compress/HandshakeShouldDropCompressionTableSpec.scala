@@ -26,7 +26,7 @@ object HandshakeShouldDropCompressionTableSpec {
      akka {
        loglevel = INFO
 
-       actor.provider = "akka.remote.RemoteActorRefProvider"
+       actor.provider = remote
        remote.artery.enabled = on
        remote.artery.canonical.hostname = localhost
        remote.artery.canonical.port = 0
