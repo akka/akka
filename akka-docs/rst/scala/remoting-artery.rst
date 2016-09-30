@@ -106,8 +106,8 @@ to configure the system so that it understands that there is a difference betwee
 address and between the host-port pair that is used to listen for connections. See :ref:`remote-configuration-nat-artery`
 for details.
 
-Aquiring references to remote actors
-------------------------------------
+Acquiring references to remote actors
+-------------------------------------
 
 In order to communicate with an actor, it is necessary to have its :class:`ActorRef`. In the local case it is usually
 the creator of the actor (the caller of ``actorOf()``) is who gets the :class:`ActorRef` for an actor that it can
@@ -454,7 +454,77 @@ TODO
 External, shared Aeron media driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO
+The Aeron transport is running in a so called `media driver <https://github.com/real-logic/Aeron/wiki/Media-Driver-Operation>`_. 
+By default, Akka starts the media driver embedded in the same JVM process as application. This is
+convenient and simplifies operational concerns by only having one process to start and monitor.
+
+The media driver may use rather much CPU resources. If you run more than one Akka application JVM on the
+same machine it can therefore be wise to share the media driver by running it as a separate process.
+
+The media driver has also different resource usage characteristics than a normal application and it can
+therefore be more efficient and stable to run the media driver as a separate process.
+
+Given that Aeron jar files are in the classpath the standalone media driver can be started with::
+
+  java io.aeron.driver.MediaDriver
+
+The needed classpath::
+
+  Agrona-0.5.4.jar:aeron-driver-1.0.1.jar:aeron-client-1.0.1.jar
+
+You find those jar files on `maven central <http://search.maven.org/>`_, or you can create a 
+package with your preferred build tool.
+
+You can pass `Aeron properties <https://github.com/real-logic/Aeron/wiki/Configuration-Options>`_ as 
+command line `-D` system properties::
+
+  -Daeron.dir=/dev/shm/aeron
+
+You can also define Aeron properties in a file:: 
+
+  java io.aeron.driver.MediaDriver config/aeron.properties
+
+An example of such a properties file::
+
+	aeron.mtu.length=16384
+	aeron.socket.so_sndbuf=2097152
+	aeron.socket.so_rcvbuf=2097152
+	aeron.rcv.buffer.length=16384
+	aeron.rcv.initial.window.length=2097152
+	agrona.disable.bounds.checks=true
+	
+	aeron.threading.mode=SHARED_NETWORK
+	
+	# low latency settings
+	#aeron.threading.mode=DEDICATED
+	#aeron.sender.idle.strategy=org.agrona.concurrent.BusySpinIdleStrategy
+	#aeron.receiver.idle.strategy=org.agrona.concurrent.BusySpinIdleStrategy
+	
+	# use same director in akka.remote.artery.advanced.aeron-dir config 
+	# of the Akka application 
+	aeron.dir=/dev/shm/aeron
+
+Read more about the media driver in the `Aeron documentation <https://github.com/real-logic/Aeron/wiki/Media-Driver-Operation>`_.
+
+To use the external media driver from the Akka application you need to define the following two 
+configuration properties::
+
+  akka.remote.artery.advanced {
+    embedded-media-driver = off
+    aeron-dir = /dev/shm/aeron
+  }
+
+The ``aeron-dir`` must match the directory you started the media driver with, i.e. the ``aeron.dir`` property.
+
+Several Akka applications can then be configured to use the same media driver by pointing to the
+same directory.
+
+Note that if the media driver process is stopped the Akka applications that are using it will also be stopped.
+
+Aeron Tuning
+^^^^^^^^^^^^
+
+See Aeron documentation about `Performance Testing <https://github.com/real-logic/Aeron/wiki/Performance-Testing>`_.
 
 Fine-tuning CPU usage latency tradeoff
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
