@@ -30,7 +30,8 @@ public class ByteBufferSerializerDocTest {
 
     @Override
     public byte[] toBinary(Object o) {
-      final ByteBuffer buf = ByteBuffer.allocate(256); // in production code, aquire this from a BufferPool
+      // in production code, aquire this from a BufferPool
+      final ByteBuffer buf = ByteBuffer.allocate(256);
 
       toBinary(o, buf);
       buf.flip();
@@ -56,5 +57,23 @@ public class ByteBufferSerializerDocTest {
     }
   }
   //#bytebufserializer-with-manifest
+  
+  static class OnlyForDocInclude {
+    static
+    //#ByteBufferSerializer-interface
+    interface ByteBufferSerializer {
+      /**
+       * Serializes the given object into the `ByteBuffer`.
+       */
+      void toBinary(Object o, ByteBuffer buf);
+  
+      /**
+       * Produces an object from a `ByteBuffer`, with an optional type-hint;
+       * the class should be loaded using ActorSystem.dynamicAccess.
+       */
+      void fromBinary(ByteBuffer buf, String manifest);
+    }
+    //#ByteBufferSerializer-interface
+  }
 
 }
