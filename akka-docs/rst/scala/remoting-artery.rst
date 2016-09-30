@@ -414,7 +414,31 @@ For more information please see :ref:`serialization-scala`.
 ByteBuffer based serialization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TODO
+Artery introduces a new serialization mechanism which allows the ``ByteBufferSerializer`` to directly write into a 
+shared :class:`java.nio.ByteBuffer` instead of being forced to allocate and return an ``Array[Byte]`` for each serialized
+message. For high-throughput messaging this API change can yield significant performance benefits, so we recommend
+changing your serializers to use this new mechanism.
+
+This new API also plays well with new versions of Google Protocol Buffers and other serialization libraries, which gained 
+the ability to serialize directly into and from ByteBuffers.
+
+As the new feature only changes how bytes are read and written, and the rest of the serializatio infrastructure
+remained the same, we recommend reading the :ref:`serialization-scala` documentation first.
+
+Implementing an :class:`akka.serialization.ByteBufferSerializer` works the same way as any other serializer,
+
+.. includecode:: ../../../akka-actor/src/main/scala/akka/serialization/Serializer.scala#ByteBufferSerializer
+
+Implementing a serializer for Artery is therefore as simple as implementing this interface, and binding the serializer 
+as usual (which is explained in :ref:`serialization-scala`).
+
+Implementations should typically extend ``SerializerWithStringManifest`` and in addition to the ``ByteBuffer`` based 
+``toBinary`` and ``fromBinary`` methods also implement the array based ``toBinary`` and ``fromBinary`` methods. 
+The array based methods will be used when ``ByteBuffer`` is not used, e.g. in Akka Persistence.
+ 
+Note that the array based methods can be implemented by delegation like this:
+
+.. includecode:: code/docs/actor/ByteBufferSerializerDocSpec.scala#bytebufserializer-with-manifest
 
 Disabling the Java Serializer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -503,7 +527,7 @@ helpful to separate actors that have different QoS requirements: large messages 
 Akka remoting provides a dedicated channel for large messages if configured. Since actor message ordering must
 not be violated the channel is actually dedicated for *actors* instead of messages, to ensure all of the messages
 arrive in send order. It is possible to assign actors on given paths to use this dedicated channel by using
-path patterns:
+path patterns::
 
    akka.remote.artery.large-message-destinations = [
       "/user/largeMessageActor",
