@@ -43,14 +43,6 @@ final case object PreStart extends Signal
 final case object PreRestart extends Signal
 
 /**
- * Lifecycle signal that is fired upon restart of the Actor after replacing
- * the behavior with the fresh one (i.e. this signal is received within the
- * fresh replacement behavior).
- */
-@SerialVersionUID(1L)
-final case object PostRestart extends Signal
-
-/**
  * Lifecycle signal that is fired after this actor and all its child actors
  * (transitively) have terminated. The [[Terminated]] signal is only sent to
  * registered watchers after this signal has been processed.

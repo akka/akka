@@ -25,34 +25,39 @@ class ReceiverSpec extends TypedSpec {
 
   private def afterGetOneFirst(ctx: ActorContext[Command[Msg]]): Behavior[Command[Msg]] =
     behavior[Msg]
+      .management(ctx, PreStart)
       .asInstanceOf[Behavior[Msg]].message(ctx.asInstanceOf[ActorContext[Msg]], Msg(1)).asInstanceOf[Behavior[Command[Msg]]]
       .message(ctx, GetOne(Duration.Zero)(dummyInbox.ref))
 
   private def afterGetOneLater(ctx: ActorContext[Command[Msg]]): Behavior[Command[Msg]] =
     behavior[Msg]
+      .management(ctx, PreStart)
       .message(ctx, GetOne(1.second)(dummyInbox.ref))
       .asInstanceOf[Behavior[Msg]].message(ctx.asInstanceOf[ActorContext[Msg]], Msg(1)).asInstanceOf[Behavior[Command[Msg]]]
 
   private def afterGetOneTimeout(ctx: ActorContext[Command[Msg]]): Behavior[Command[Msg]] =
     behavior[Msg]
+      .management(ctx, PreStart)
       .message(ctx, GetOne(1.nano)(dummyInbox.ref))
       .asInstanceOf[Behavior[InternalCommand[Msg]]].message(ctx.asInstanceOf[ActorContext[InternalCommand[Msg]]], ReceiveTimeout()).asInstanceOf[Behavior[Command[Msg]]]
 
   private def afterGetAll(ctx: ActorContext[Command[Msg]]): Behavior[Command[Msg]] =
     behavior[Msg]
+      .management(ctx, PreStart)
       .message(ctx, GetAll(1.nano)(dummyInbox.ref))
       .asInstanceOf[Behavior[Msg]].message(ctx.asInstanceOf[ActorContext[Msg]], Msg(1)).asInstanceOf[Behavior[Command[Msg]]]
       .message(ctx, GetAll(Duration.Zero)(dummyInbox.ref))
 
   private def afterGetAllTimeout(ctx: ActorContext[Command[Msg]]): Behavior[Command[Msg]] =
     behavior[Msg]
+      .management(ctx, PreStart)
       .message(ctx, GetAll(1.nano)(dummyInbox.ref))
       .message(ctx, GetAll(Duration.Zero)(dummyInbox.ref))
 
   private def setup(name: String, behv: Behavior[Command[Msg]] = behavior[Msg])(
     proc: (EffectfulActorContext[Command[Msg]], EffectfulActorContext[Msg], Inbox[Replies[Msg]]) ⇒ Unit): Unit =
     for (Setup(description, behv, messages, effects) ← startingPoints) {
-      val ctx = new EffectfulActorContext("ctx", Props(ScalaDSL.ContextAware(behv)), nativeSystem)
+      val ctx = new EffectfulActorContext("ctx", ScalaDSL.ContextAware(behv), 1000, nativeSystem)
       withClue(s"[running for starting point '$description' (${ctx.currentBehavior})]: ") {
         dummyInbox.receiveAll() should have size messages
         ctx.getAllEffects() should have size effects
