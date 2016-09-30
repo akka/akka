@@ -484,7 +484,18 @@ akka-persistence
 akka-remote
 ~~~~~~~~~~~
 
-.. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
+.. includecode:: ../../../akka-remote/src/main/resources/reference.conf
+   :include: shared,classic
+   :language: none
+
+
+.. _config-akka-remote-artery:
+
+akka-remote (artery)
+~~~~~~~~~~~~~~~~~~~~
+
+.. includecode:: ../../../akka-remote/src/main/resources/reference.conf
+   :include: shared,artery
    :language: none
 
 .. _config-akka-testkit:
