@@ -96,7 +96,7 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes -= m.address
 
       if (previousStatus == MemberStatus.Down) {
-        quarantine(m.address, Some(m.uniqueAddress.uid), s"Cluster member removed, previous status [$previousStatus]")
+        quarantine(m.address, Some(m.uniqueAddress.longUid), s"Cluster member removed, previous status [$previousStatus]")
       } else if (arteryEnabled) {
         // don't quarantine gracefully removed members (leaving) directly,
         // give Cluster Singleton some time to exchange TakeOver/HandOver messages.
