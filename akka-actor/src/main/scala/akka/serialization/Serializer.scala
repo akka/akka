@@ -168,6 +168,7 @@ abstract class SerializerWithStringManifest extends Serializer {
  *
  * }}}
  */
+//#ByteBufferSerializer
 trait ByteBufferSerializer {
 
   /**
@@ -182,6 +183,7 @@ trait ByteBufferSerializer {
   def fromBinary(buf: ByteBuffer, manifest: String): AnyRef
 
 }
+//#ByteBufferSerializer
 
 /**
  *  Base serializer trait with serialization identifiers configuration contract,
