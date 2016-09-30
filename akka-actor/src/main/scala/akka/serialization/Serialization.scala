@@ -39,7 +39,7 @@ object Serialization {
       val defaultBindings = config.getConfig("akka.actor.serialization-bindings")
       val bindings =
         if (config.getBoolean("akka.actor.enable-additional-serialization-bindings") ||
-          config.getBoolean("akka.remote.artery.enabled"))
+          config.hasPath("akka.remote.artery.enabled") && config.getBoolean("akka.remote.artery.enabled"))
           defaultBindings.withFallback(config.getConfig("akka.actor.additional-serialization-bindings"))
         else defaultBindings
       configToMap(bindings)
