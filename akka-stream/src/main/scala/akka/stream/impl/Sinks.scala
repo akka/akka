@@ -10,7 +10,6 @@ import akka.stream.impl.QueueSink.{ Output, Pull }
 import akka.{ Done, NotUsed }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
-
 import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
@@ -31,6 +30,8 @@ import scala.compat.java8.OptionConverters._
 import java.util.Optional
 
 import akka.event.Logging
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * INTERNAL API
@@ -648,9 +649,33 @@ final class FoldResourceSinkAsync[T, S](
     val logic: GraphStageLogic = new GraphStageLogic(shape) with InHandler {
       implicit val context = ExecutionContexts.sameThreadExecutionContext
       val handleWriteResultCallback = getAsyncCallback[Try[Unit]](handleWriteResult).invoke _
+
+      /**
+       * Exceptions occurred in this stage.
+       * This stage will fail if any exception exists. This is checked after every close().
+       * The second one and after will be added as suppressed exceptions of the first one.
+       */
+      val exceptions: ArrayBuffer[Throwable] = ArrayBuffer()
+
+      lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+
+      var resource: Option[S] = None
+
+      /** Flag to avoid double close() the resource. */
+      var isCloseRequested = false
+
+      /** Flag to indicate this stage is finishing. This flag is checked after each close(). */
+      var isFinishing = false
+
+      var writeFuture: Future[Unit] = Future.successful(())
+      var closeFuture: Future[Unit] = Future.successful(())
+
       val errorHandler: PartialFunction[Throwable, Unit] = {
         case NonFatal(ex) ⇒ decider(ex) match {
-          case Supervision.Stop    ⇒ closeAndThen(() ⇒ doFailStage(ex))
+          case Supervision.Stop ⇒
+            exceptions += ex
+            isFinishing = true
+            closeThen(() ⇒ {})
           case Supervision.Restart ⇒ restartState()
           case Supervision.Resume ⇒
             if (!isClosed(in)) {
@@ -658,11 +683,6 @@ final class FoldResourceSinkAsync[T, S](
             }
         }
       }
-      lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
-
-      var resource: Option[S] = None
-      var writeFuture: Future[Unit] = Future.successful(())
-      var upstreamThrowable: Option[Throwable] = None
 
       setHandler(in, this)
 
@@ -675,20 +695,23 @@ final class FoldResourceSinkAsync[T, S](
         val cb = getAsyncCallback[Try[S]] {
           case scala.util.Success(res) ⇒
             resource = Some(res)
+            isCloseRequested = false
+
             if (isClosed(in)) {
-              upstreamThrowable match {
-                case Some(th) ⇒ closeAndThen(() ⇒ doFailStage(th))
-                case None     ⇒ closeAndThen(doCompleteStage)
-              }
+              closeThen(() ⇒ {})
             } else {
               pull(in)
             }
-          case scala.util.Failure(t) ⇒ doFailStage(t)
+          case scala.util.Failure(t) ⇒
+            exceptions += t
+            finishStage()
         }
         try {
           open().onComplete(cb.invoke)
         } catch {
-          case NonFatal(ex) ⇒ doFailStage(ex)
+          case NonFatal(t) ⇒
+            exceptions += t
+            finishStage()
         }
       }
 
@@ -723,49 +746,65 @@ final class FoldResourceSinkAsync[T, S](
       }
 
       override def onUpstreamFinish(): Unit = {
-        resource.foreach(_ ⇒ closeAndThen(doCompleteStage))
+        isFinishing = true
+        resource.foreach(_ ⇒ closeThen(() ⇒ {}))
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        upstreamThrowable = Some(ex)
-        resource.foreach(_ ⇒ closeAndThen(() ⇒ doFailStage(ex)))
+        exceptions += ex
+        isFinishing = true
+        resource.foreach(_ ⇒ closeThen(() ⇒ {}))
       }
 
-      private def closeAndThen(f: () ⇒ Unit): Unit = {
-        val cb = getAsyncCallback[Try[Unit]] {
-          case scala.util.Success(_) ⇒ f()
-          case scala.util.Failure(t) ⇒ doFailStage(t)
-        }
-
+      // f will be called on this stage's thread
+      private def closeThen(f: () ⇒ Unit): Unit = {
         resource match {
           case Some(r) ⇒
-            onWriteComplete(_ ⇒
-              try {
-                close(r).onComplete(t ⇒ {
-                  cb.invoke(t)
-                })
-              } catch {
-                case NonFatal(ex) ⇒ doFailStage(ex)
+
+            val closeCallback = getAsyncCallback[Try[Unit]] { tu ⇒
+              tu.failed.foreach(exceptions += _)
+              if (exceptions.nonEmpty || isFinishing) {
+                finishStage()
+              } else {
+                f()
               }
-            )
-          case None ⇒
-            f()
+            }
+
+            if (!isCloseRequested) {
+              isCloseRequested = true
+              onWriteComplete(_ ⇒
+                try {
+                  closeFuture = close(r)
+                  closeFuture.onComplete(closeCallback.invoke)
+                } catch {
+                  case NonFatal(ex) ⇒
+                    exceptions += ex
+                    finishStage()
+                }
+              )
+            } else {
+              closeFuture.onComplete(closeCallback.invoke)
+            }
+          case None ⇒ f()
         }
       }
 
-      private def restartState(): Unit = closeAndThen(() ⇒ {
+      private def restartState(): Unit = closeThen { () ⇒
         resource = None
+        isCloseRequested = false
         openResource()
-      })
-
-      private def doFailStage(th: Throwable): Unit = {
-        completion.failure(th)
-        failStage(th)
       }
 
-      private def doCompleteStage(): Unit = {
-        completion.success(Done)
-        completeStage()
+      private def finishStage(): Unit = {
+        exceptions.headOption match {
+          case None ⇒
+            completion.success(Done)
+            completeStage()
+          case Some(ex) ⇒
+            exceptions.tail.foreach { th ⇒ ex.addSuppressed(th) }
+            completion.failure(ex)
+            failStage(ex)
+        }
       }
     }
 

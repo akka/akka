@@ -26,9 +26,9 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
     @volatile var isOpened = false
     @volatile var isClosed = false
     @volatile var written: Vector[T] = _
-    @volatile var completeOpen: Promise[Unit] = _
-    @volatile var completeWrite: Promise[Unit] = _
-    @volatile var completeClose: Promise[Unit] = _
+    val firstOpenPromise: Promise[Unit] = Promise()
+    val firstWritePromise: Promise[Unit] = Promise()
+    val firstClosePromise: Promise[Unit] = Promise()
 
     def open(): Future[TestResource[T]] = {
       def syncOpen(): TestResource[T] = {
@@ -42,8 +42,7 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
       if (autoCompleteOpen) {
         Future.successful(syncOpen())
       } else {
-        completeOpen = Promise[Unit]
-        completeOpen.future.map { _ ⇒
+        firstOpenPromise.future.map { _ ⇒
           syncOpen()
         }
       }
@@ -63,8 +62,7 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
       if (autoCompleteWrite) {
         Future.successful(syncWrite())
       } else {
-        completeWrite = Promise[Unit]
-        completeWrite.future.map { _ ⇒
+        firstWritePromise.future.map { _ ⇒
           syncWrite()
         }
       }
@@ -80,8 +78,7 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
       if (autoCompleteClose) {
         Future.successful(syncClose())
       } else {
-        completeClose = Promise[Unit]
-        completeClose.future.map { _ ⇒
+        firstClosePromise.future.map { _ ⇒
           syncClose()
         }
       }
@@ -261,6 +258,21 @@ class FoldResourceAsyncSinkSpec extends StreamSpec(UnboundedMailboxConfig) with 
       probe.sendError(TE(""))
       fut.failed.futureValue should be(TE(""))
       (r.isOpened, r.isClosed) should be((true, true))
+    }
+
+    "fail with a suppressed exception when both write() and close() throw exceptions" in assertAllStagesStopped {
+      val r = new TestResource[String]()
+      r.autoCompleteWrite = false
+      r.autoCompleteClose = false
+      val sink = Sink.foldResourceAsync[String, TestResource[String]](() ⇒ r.open(), _ write _, _.close())
+
+      val fut = Source.single("Hello").runWith(sink)
+      r.firstWritePromise.failure(TE("write"))
+      r.firstClosePromise.failure(TE("close"))
+
+      val ex = fut.failed.futureValue
+      ex should be(TE("write"))
+      ex.getSuppressed should be(Array(TE("close")))
     }
 
   }
