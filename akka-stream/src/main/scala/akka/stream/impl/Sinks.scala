@@ -657,11 +657,11 @@ final class FoldResourceSinkAsync[T, S](
       setHandler(in, this)
 
       override def preStart(): Unit = {
-        createStream()
+        openResource()
         setKeepGoing(true)
       }
 
-      private def createStream(): Unit = {
+      private def openResource(): Unit = {
         val cb = getAsyncCallback[Try[S]] {
           case scala.util.Success(res) ⇒
             resource = res
@@ -754,7 +754,7 @@ final class FoldResourceSinkAsync[T, S](
 
       private def restartState(): Unit = closeAndThen(() ⇒ {
         resource = null.asInstanceOf[S]
-        createStream()
+        openResource()
       })
 
       private def doFailStage(th: Throwable): Unit = {
