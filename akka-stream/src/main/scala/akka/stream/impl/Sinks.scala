@@ -648,9 +648,9 @@ final class FoldResourceSinkAsync[T, S](
     val logic: GraphStageLogic = new GraphStageLogic(shape) with InHandler {
 
       lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
-      var resource: S = _
+      var resource: Option[S] = None
       var writeFuture: Future[Unit] = Future.successful(())
-      var upstreamThrowable: Throwable = _
+      var upstreamThrowable: Option[Throwable] = None
 
       implicit val context = ExecutionContexts.sameThreadExecutionContext
 
@@ -664,12 +664,11 @@ final class FoldResourceSinkAsync[T, S](
       private def openResource(): Unit = {
         val cb = getAsyncCallback[Try[S]] {
           case scala.util.Success(res) ⇒
-            resource = res
+            resource = Some(res)
             if (isClosed(in)) {
-              if (upstreamThrowable == null) {
-                closeAndThen(doCompleteStage)
-              } else {
-                closeAndThen(() ⇒ doFailStage(upstreamThrowable))
+              upstreamThrowable match {
+                case Some(th) ⇒ closeAndThen(() ⇒ doFailStage(th))
+                case None     ⇒ closeAndThen(doCompleteStage)
               }
             } else {
               pull(in)
@@ -712,27 +711,27 @@ final class FoldResourceSinkAsync[T, S](
       final override def onPush(): Unit = {
         val elem = grab(in)
         try {
-          writeFuture = writeData(resource, elem)
-          // Optimization
-          writeFuture.value match {
-            case None    ⇒ writeFuture.onComplete(handleWriteResultCallback)
-            case Some(v) ⇒ handleWriteResult(v)
+          resource match {
+            case Some(r) ⇒
+              writeFuture = writeData(r, elem)
+              // Optimization
+              writeFuture.value match {
+                case None    ⇒ writeFuture.onComplete(handleWriteResultCallback)
+                case Some(v) ⇒ handleWriteResult(v)
+              }
+            case None ⇒
+              throw new IllegalStateException("An element pushed while the resource is None")
           }
-
         } catch errorHandler
       }
 
       override def onUpstreamFinish(): Unit = {
-        if (resource != null.asInstanceOf[S]) {
-          closeAndThen(doCompleteStage)
-        }
+        resource.foreach(_ ⇒ closeAndThen(doCompleteStage))
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        upstreamThrowable = ex
-        if (resource != null.asInstanceOf[S]) {
-          closeAndThen(() ⇒ doFailStage(ex))
-        }
+        upstreamThrowable = Some(ex)
+        resource.foreach(_ ⇒ closeAndThen(() ⇒ doFailStage(ex)))
       }
 
       private def closeAndThen(f: () ⇒ Unit): Unit = {
@@ -741,19 +740,24 @@ final class FoldResourceSinkAsync[T, S](
           case scala.util.Failure(t) ⇒ doFailStage(t)
         }
 
-        onWriteComplete(_ ⇒
-          try {
-            close(resource).onComplete(t ⇒ {
-              cb.invoke(t)
-            })
-          } catch {
-            case NonFatal(ex) ⇒ doFailStage(ex)
-          }
-        )
+        resource match {
+          case Some(r) ⇒
+            onWriteComplete(_ ⇒
+              try {
+                close(r).onComplete(t ⇒ {
+                  cb.invoke(t)
+                })
+              } catch {
+                case NonFatal(ex) ⇒ doFailStage(ex)
+              }
+            )
+          case None ⇒
+            f()
+        }
       }
 
       private def restartState(): Unit = closeAndThen(() ⇒ {
-        resource = null.asInstanceOf[S]
+        resource = None
         openResource()
       })
 
