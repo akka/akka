@@ -646,13 +646,23 @@ final class FoldResourceSinkAsync[T, S](
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val completion = Promise[Done]()
     val logic: GraphStageLogic = new GraphStageLogic(shape) with InHandler {
-
+      implicit val context = ExecutionContexts.sameThreadExecutionContext
+      val handleWriteResultCallback = getAsyncCallback[Try[Unit]](handleWriteResult).invoke _
+      val errorHandler: PartialFunction[Throwable, Unit] = {
+        case NonFatal(ex) ⇒ decider(ex) match {
+          case Supervision.Stop    ⇒ closeAndThen(() ⇒ doFailStage(ex))
+          case Supervision.Restart ⇒ restartState()
+          case Supervision.Resume ⇒
+            if (!isClosed(in)) {
+              pull(in)
+            }
+        }
+      }
       lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+
       var resource: Option[S] = None
       var writeFuture: Future[Unit] = Future.successful(())
       var upstreamThrowable: Option[Throwable] = None
-
-      implicit val context = ExecutionContexts.sameThreadExecutionContext
 
       setHandler(in, this)
 
@@ -687,17 +697,6 @@ final class FoldResourceSinkAsync[T, S](
         writeFuture.onComplete(cb.invoke)
       }
 
-      val errorHandler: PartialFunction[Throwable, Unit] = {
-        case NonFatal(ex) ⇒ decider(ex) match {
-          case Supervision.Stop    ⇒ closeAndThen(() ⇒ doFailStage(ex))
-          case Supervision.Restart ⇒ restartState()
-          case Supervision.Resume ⇒
-            if (!isClosed(in)) {
-              pull(in)
-            }
-        }
-      }
-
       def handleWriteResult(t: Try[Unit]): Unit = t match {
         case scala.util.Success(_) ⇒
           if (!isClosed(in)) {
@@ -705,8 +704,6 @@ final class FoldResourceSinkAsync[T, S](
           }
         case scala.util.Failure(ex) ⇒ errorHandler(ex)
       }
-
-      val handleWriteResultCallback = getAsyncCallback[Try[Unit]](handleWriteResult).invoke _
 
       final override def onPush(): Unit = {
         val elem = grab(in)
