@@ -125,9 +125,8 @@ object ClusterShardingSettings {
         waitingForStateTimeout,
         updatingStateTimeout,
         "all",
-        100 milliseconds,
-        5
-      )
+        100.milliseconds,
+        5)
     }
   }
 }
