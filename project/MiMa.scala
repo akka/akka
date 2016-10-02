@@ -1005,7 +1005,11 @@ object MiMa extends AutoPlugin {
 
         // #21727 moved all of Unfold.scala in package akka.stream.impl
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.UnfoldAsync"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.Unfold")
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.Unfold"),
+        
+        // #21194 renamed internal actor method 
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.allocateShardHomes")
+
       )
     )
   }
