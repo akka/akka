@@ -110,6 +110,32 @@ class StreamTestKitSpec extends AkkaSpec {
         .expectNextOrComplete(1337)
     }
 
+    "#expectNextChainingPF should pass with right element" in {
+      Source.single(1).runWith(TestSink.probe)
+        .request(1)
+        .expectNextChainingPF{
+          case 1 =>
+        }
+    }
+
+    "#expectNextChainingPF should allow to chain test methods" in {
+      Source(1 to 2).runWith(TestSink.probe)
+        .request(2)
+        .expectNextChainingPF{
+          case 1 =>
+        }.expectNext(2)
+    }
+
+    "#expectNextChainingPF should fail with wrong element" in {
+      intercept[AssertionError] {
+        Source.single(1).runWith(TestSink.probe)
+          .request(1)
+          .expectNextChainingPF {
+            case 2 =>
+          }
+      }.getMessage should include("assertion failed")
+    }
+
     "#expectNextN given a number of elements" in {
       Source(1 to 4).runWith(TestSink.probe)
         .request(4)

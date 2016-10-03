@@ -536,6 +536,19 @@ object TestSubscriber {
       }
     }
 
+    /**
+      * Expect next element and test it with partial function.
+      *
+      * Allows chaining probe methods.
+      */
+    def expectNextChainingPF(f: PartialFunction[Any, Any]): Self = {
+      expectEventPF {
+        case OnNext(n) ⇒
+          assert(f.isDefinedAt(n))
+          self
+      }
+    }
+
     def expectEventPF[T](f: PartialFunction[SubscriberEvent, T]): T =
       probe.expectMsgPF[T]()(f.asInstanceOf[PartialFunction[Any, T]])
 
