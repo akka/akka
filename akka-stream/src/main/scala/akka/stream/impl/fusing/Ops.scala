@@ -418,7 +418,7 @@ final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) ext
         push(out, update)
         if (isClosed(in)) {
           completeStage()
-        } else if (isAvailable(out) && !hasBeenPulled(in)) {
+        } else if (!hasBeenPulled(in)) {
           tryPull(in)
         }
       }
