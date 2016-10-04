@@ -88,7 +88,7 @@ private[akka] object DirectByteBufferPool {
         try
           if (bb.isDirect) {
             val cleaner = cleanerMethod.invoke(bb)
-            cleanerMethod.invoke(cleaner)
+            cleanMethod.invoke(cleaner)
           }
         catch { case NonFatal(e) ⇒ /* ok, best effort attempt to cleanup failed */ }
       }
