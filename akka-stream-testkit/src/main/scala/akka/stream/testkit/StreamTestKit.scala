@@ -537,10 +537,10 @@ object TestSubscriber {
     }
 
     /**
-      * Expect next element and test it with partial function.
-      *
-      * Allows chaining probe methods.
-      */
+     * Expect next element and test it with partial function.
+     *
+     * Allows chaining probe methods.
+     */
     def expectNextChainingPF(f: PartialFunction[Any, Any]): Self = {
       expectEventPF {
         case OnNext(n) ⇒
