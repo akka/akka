@@ -135,6 +135,21 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
       }
     }
 
+    "support various log level" in {
+      new TestKit(appLogging) with ImplicitSender {
+        system.eventStream.subscribe(testActor, classOf[Logging.Info])
+        val actor = TestActorRef(new Actor {
+          def receive = LoggingReceive(Logging.InfoLevel) {
+            case _ ⇒ sender() ! "x"
+          }
+        })
+        actor ! "buh"
+        expectMsg(Logging.Info(actor.path.toString, actor.underlyingActor.getClass,
+          "received handled message buh from " + self))
+        expectMsg("x")
+      }
+    }
+
   }
 
   "An Actor" must {
