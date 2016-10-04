@@ -387,8 +387,8 @@ final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) ext
     new GraphStageLogic(shape) with InHandler with OutHandler {
       self ⇒
 
-      private var aggregator: Out = zero
-      private var aggregating: Future[Out] = Future.successful(aggregator)
+      private var current: Out = zero
+      private var eventualCurrent: Future[Out] = Future.successful(current)
 
       private def ec = ExecutionContexts.sameThreadExecutionContext
 
@@ -398,20 +398,20 @@ final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) ext
         override def onPush(): Unit = ()
 
         override def onPull(): Unit = {
-          push(out, aggregator)
+          push(out, current)
           setHandlers(in, out, self)
         }
 
         override def onUpstreamFinish(): Unit = setHandler(out, new OutHandler {
           override def onPull(): Unit = {
-            push(out, aggregator)
+            push(out, current)
             completeStage()
           }
         })
       }
 
       private def onRestart(t: Throwable): Unit = {
-        aggregator = zero
+        current = zero
       }
 
       private def pushAndPullOrFinish(update: Out): Unit = {
@@ -425,7 +425,7 @@ final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) ext
 
       private val futureCB = getAsyncCallback[Try[Out]] {
         case Success(update) if update != null ⇒
-          aggregator = update
+          current = update
           pushAndPullOrFinish(update)
         case other ⇒
           val ex = other match {
@@ -439,7 +439,7 @@ final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) ext
             case Supervision.Stop ⇒ failStage(ex)
             case _ ⇒
               if (supervision == Supervision.Restart) onRestart(ex)
-              pushAndPullOrFinish(aggregator)
+              pushAndPullOrFinish(current)
           }
       }.invoke _
 
@@ -449,11 +449,11 @@ final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) ext
 
       def onPush(): Unit = {
         try {
-          aggregating = f(aggregator, grab(in))
+          eventualCurrent = f(current, grab(in))
 
-          aggregating.value match {
+          eventualCurrent.value match {
             case Some(result) ⇒ futureCB(result)
-            case _            ⇒ aggregating.onComplete(futureCB)(ec)
+            case _            ⇒ eventualCurrent.onComplete(futureCB)(ec)
           }
         } catch {
           case NonFatal(ex) ⇒
@@ -468,7 +468,7 @@ final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) ext
 
       override def onUpstreamFinish(): Unit = {}
 
-      override val toString: String = s"ScanAsync.Logic(completed=${aggregating.isCompleted})"
+      override val toString: String = s"ScanAsync.Logic(completed=${eventualCurrent.isCompleted})"
     }
 }
 
