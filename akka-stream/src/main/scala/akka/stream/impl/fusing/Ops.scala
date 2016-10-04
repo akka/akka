@@ -414,38 +414,42 @@ final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) ext
         current = zero
       }
 
-      private def pushAndPullOrFinish(update: Out): Unit = {
-        push(out, update)
-        if (isClosed(in)) {
-          completeStage()
-        } else if (!hasBeenPulled(in)) {
+      private def safePull(): Unit = {
+        if (!hasBeenPulled(in)) {
           tryPull(in)
         }
       }
 
+      private def pushAndPullOrFinish(update: Out): Unit = {
+        push(out, update)
+        if (isClosed(in)) {
+          completeStage()
+        } else if (isAvailable(out)) {
+          safePull()
+        }
+      }
+
+      private def doSupervision(t: Throwable): Unit = {
+        decider(t) match {
+          case Supervision.Stop   ⇒ failStage(t)
+          case Supervision.Resume ⇒ safePull()
+          case Supervision.Restart ⇒
+            onRestart(t)
+            safePull()
+        }
+      }
+
       private val futureCB = getAsyncCallback[Try[Out]] {
-        case Success(update) if update != null ⇒
-          current = update
-          pushAndPullOrFinish(update)
-        case other ⇒
-          val ex = other match {
-            case Failure(t)              ⇒ t
-            case Success(s) if s == null ⇒ ReactiveStreamsCompliance.elementMustNotBeNullException
-          }
-
-          val supervision = decider(ex)
-
-          supervision match {
-            case Supervision.Stop ⇒ failStage(ex)
-            case _ ⇒
-              if (supervision == Supervision.Restart) onRestart(ex)
-              pushAndPullOrFinish(current)
-          }
+        case Success(next) if next != null ⇒
+          current = next
+          pushAndPullOrFinish(next)
+        case Success(null) ⇒ doSupervision(ReactiveStreamsCompliance.elementMustNotBeNullException)
+        case Failure(t)    ⇒ doSupervision(t)
       }.invoke _
 
       setHandlers(in, out, ZeroHandler)
 
-      def onPull(): Unit = if (!hasBeenPulled(in)) tryPull(in)
+      def onPull(): Unit = safePull()
 
       def onPush(): Unit = {
         try {
@@ -460,7 +464,7 @@ final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) ext
             decider(ex) match {
               case Supervision.Stop    ⇒ failStage(ex)
               case Supervision.Restart ⇒ onRestart(ex)
-              case _                   ⇒ ()
+              case Supervision.Resume  ⇒ ()
             }
             tryPull(in)
         }

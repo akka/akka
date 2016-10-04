@@ -3,7 +3,6 @@
  */
 package akka.stream.scaladsl
 
-import akka.NotUsed
 import akka.stream.{ ActorMaterializer, Supervision, ActorAttributes }
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.scaladsl._
@@ -23,11 +22,6 @@ class FlowScanAsyncSpec extends StreamSpec {
 
     val sumScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) ⇒
       Future(accumulator + next)
-    }
-
-    val failOnNegativeScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) ⇒
-      if (next >= 0) Future(accumulator + next)
-      else Future.failed(Utils.TE("this function doesn't work with negative numbers"))
     }
 
     "work with a empty source" in {
@@ -57,7 +51,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       whenReady(eventualActual) { actual ⇒ assert(actual === expectedSum) }
     }
 
-    "work slow futures" in {
+    "work with slow futures" in {
       val delay = 500.milliseconds
       val delayedFutureScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) ⇒
         val promise = Promise[Int]()
@@ -94,7 +88,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       "emit zero with a failed future" in {
         val elements = 1 :: -1 :: 1 :: Nil
         whenFailedFuture(elements, 0, decider = Supervision.restartingDecider)
-          .expectNext(1, 0, 1)
+          .expectNext(1, 1)
           .expectComplete()
       }
     }
@@ -110,7 +104,7 @@ class FlowScanAsyncSpec extends StreamSpec {
       "skip values with a failed future" in {
         val elements = 1 :: -1 :: 1 :: Nil
         whenFailedFuture(elements, 0, decider = Supervision.resumingDecider)
-          .expectNext(1, 1, 2)
+          .expectNext(1, 2)
           .expectComplete()
       }
     }
