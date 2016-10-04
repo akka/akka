@@ -4,19 +4,16 @@
 package akka.stream.scaladsl
 
 import scala.util.control.NoStackTrace
-
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.stream.ActorMaterializer
 import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Supervision.{ restartingDecider, resumingDecider }
+import akka.stream.Supervision.{restartingDecider, resumingDecider}
 import akka.stream.impl.ReactiveStreamsCompliance
-
-import akka.testkit.{ AkkaSpec, TestLatch }
-import akka.stream.testkit._, Utils._
-
+import akka.testkit.{AkkaSpec, TestLatch}
+import akka.stream.testkit._
+import Utils._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 class FlowFoldAsyncSpec extends StreamSpec {
@@ -260,6 +257,14 @@ class FlowFoldAsyncSpec extends StreamSpec {
       sub.expectSubscription().cancel()
 
       upstream.expectCancellation()
+    }
+
+    "complete future and return zero given an empty stream" in assertAllStagesStopped {
+      val futureValue =
+        Source.fromIterator[Int](() ⇒ Iterator.empty)
+          .runFoldAsync(0)((acc, elem) ⇒ Future.successful(acc + elem))
+
+      Await.result(futureValue, 3.seconds) should be(0)
     }
   }
 

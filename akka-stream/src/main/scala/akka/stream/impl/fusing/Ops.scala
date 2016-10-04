@@ -503,7 +503,9 @@ final class FoldAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) extends 
       }
     }
 
-    override def onUpstreamFinish(): Unit = {}
+    override def onUpstreamFinish(): Unit = {
+      return;
+    }
 
     def onPull(): Unit = if (!hasBeenPulled(in)) tryPull(in)
 
