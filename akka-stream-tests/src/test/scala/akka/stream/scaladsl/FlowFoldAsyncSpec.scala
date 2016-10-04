@@ -4,14 +4,14 @@
 package akka.stream.scaladsl
 
 import scala.util.control.NoStackTrace
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import akka.NotUsed
 import akka.stream.ActorMaterializer
 import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Supervision.{restartingDecider, resumingDecider}
+import akka.stream.Supervision.{ restartingDecider, resumingDecider }
 import akka.stream.impl.ReactiveStreamsCompliance
-import akka.testkit.{AkkaSpec, TestLatch}
+import akka.testkit.{ AkkaSpec, TestLatch }
 import akka.stream.testkit._
 import Utils._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
