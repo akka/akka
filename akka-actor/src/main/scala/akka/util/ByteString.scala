@@ -485,32 +485,24 @@ object ByteString {
       else drop0(n)
 
     private def drop0(n: Int): ByteString = {
-      var continue = true
-      var fullDrops = 0
-      var remainingToDrop = n
-      do {
-        // impl note: could be optimised a bit by using VectorIterator instead, 
-        //            however then we're forced to call .toVector which halfs performance
-        //            We can work around that, as there's a Scala private method "remainingVector" which is fast, 
-        //            but let's not go into calling private APIs here just yet.
-        val currentLength = bytestrings(fullDrops).length
-        if (remainingToDrop >= currentLength) {
-          fullDrops += 1
-          remainingToDrop -= currentLength
-        } else continue = false
-      } while (remainingToDrop > 0 && continue)
+      // impl note: could be optimised a bit by using VectorIterator instead,
+      //            however then we're forced to call .toVector which halfs performance
+      //            We can work around that, as there's a Scala private method "remainingVector" which is fast,
+      //            but let's not go into calling private APIs here just yet.
+      @tailrec def findSplit(fullDrops: Int, remainingToDrop: Int): (Int, Int) = {
+        val bs = bytestrings(fullDrops)
+        if (bs.length > remainingToDrop) (fullDrops, remainingToDrop)
+        else findSplit(fullDrops + 1, remainingToDrop - bs.length)
+      }
 
-      val remainingByteStrings = bytestrings.drop(fullDrops)
-      if (remainingByteStrings.isEmpty) ByteString.empty
-      else if (remainingToDrop > 0) {
-        val h: ByteString1 = remainingByteStrings.head.drop1(remainingToDrop)
-        val bs = remainingByteStrings.tail
+      val (fullDrops, remainingToDrop) = findSplit(0, n)
 
-        if (h.isEmpty)
-          if (bs.isEmpty) ByteString.empty
-          else new ByteStrings(bs, length - n)
-        else new ByteStrings(h +: bs, length - n)
-      } else ByteStrings(remainingByteStrings, length - n)
+      if (remainingToDrop == 0)
+        new ByteStrings(bytestrings.drop(fullDrops), length - n)
+      else if (fullDrops == bytestrings.length - 1)
+        bytestrings(fullDrops).drop(remainingToDrop)
+      else
+        new ByteStrings(bytestrings(fullDrops).drop1(remainingToDrop) +: bytestrings.drop(fullDrops + 1), length - n)
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
