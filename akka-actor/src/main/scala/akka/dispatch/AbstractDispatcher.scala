@@ -174,7 +174,13 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
       override def execute(runnable: Runnable): Unit = runnable.run()
       override def reportFailure(t: Throwable): Unit = MessageDispatcher.this.reportFailure(t)
     }) catch {
-      case _: IllegalStateException ⇒ shutdown()
+      case _: IllegalStateException ⇒
+        shutdown()
+        // Since there is no scheduler anymore, restore the state to UNSCHEDULED.
+        // When this dispatcher is used again,
+        // shutdown is only attempted if the state is UNSCHEDULED
+        // (as per ifSensibleToDoSoThenScheduleShutdown above)
+        updateShutdownSchedule(SCHEDULED, UNSCHEDULED)
     }
   }
 
