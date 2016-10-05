@@ -113,7 +113,10 @@ class FutureDirectivesSpec extends RoutingSpec with Inside {
         responseAs[String] shouldEqual "yes"
       }
     }
-    "propagate the exception in the failure case" in EventFilter[Exception](occurrences = 1, message = "XXX").intercept {
+    "propagate the exception in the failure case" in EventFilter.error(
+      occurrences = 1,
+      message = "Error during processing of request: 'XXX'. Completing with 500 Internal Server Error response."
+    ).intercept {
       Get() ~> onSuccess(Future.failed(TestException)) { echoComplete } ~> check {
         status shouldEqual StatusCodes.InternalServerError
       }
@@ -124,7 +127,10 @@ class FutureDirectivesSpec extends RoutingSpec with Inside {
         responseAs[String] shouldEqual s"Oops. akka.http.scaladsl.server.directives.FutureDirectivesSpec$$TestException: EX when ok"
       }
     }
-    "catch an exception in the failure case" in EventFilter[Exception](occurrences = 1, message = "XXX").intercept {
+    "catch an exception in the failure case" in EventFilter.error(
+      occurrences = 1,
+      message = "Error during processing of request: 'XXX'. Completing with 500 Internal Server Error response."
+    ).intercept {
       Get() ~> onSuccess(Future.failed(TestException)) { throwTestException("EX when ") } ~> check {
         status shouldEqual StatusCodes.InternalServerError
         responseAs[String] shouldEqual "There was an internal server error."

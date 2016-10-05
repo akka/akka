@@ -29,5 +29,4 @@ object RoutingSettingsImpl extends SettingsCompanion[RoutingSettingsImpl]("akka.
     c getBytes "range-coalescing-threshold",
     c getIntBytes "decode-max-bytes-per-chunk",
     c getString "file-io-dispatcher")
-
 }

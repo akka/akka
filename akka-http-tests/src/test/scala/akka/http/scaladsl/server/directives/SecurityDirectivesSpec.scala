@@ -61,8 +61,11 @@ class SecurityDirectivesSpec extends RoutingSpec {
       } ~> check { responseAs[String] shouldEqual "We are Legion" }
     }
     "properly handle exceptions thrown in its inner route" in {
-      object TestException extends RuntimeException
-      EventFilter[TestException.type](occurrences = 1).intercept {
+      object TestException extends RuntimeException("Boom")
+      EventFilter.error(
+        occurrences = 1,
+        message = "Error during processing of request: 'Boom'. Completing with 500 Internal Server Error response."
+      ).intercept {
         Get() ~> Authorization(BasicHttpCredentials("Alice", "")) ~> {
           Route.seal {
             doBasicAuth { _ ⇒ throw TestException }
@@ -111,8 +114,11 @@ class SecurityDirectivesSpec extends RoutingSpec {
       } ~> check { responseAs[String] shouldEqual "We are Legion" }
     }
     "properly handle exceptions thrown in its inner route" in {
-      object TestException extends RuntimeException
-      EventFilter[TestException.type](occurrences = 1).intercept {
+      object TestException extends RuntimeException("Boom")
+      EventFilter.error(
+        occurrences = 1,
+        message = "Error during processing of request: 'Boom'. Completing with 500 Internal Server Error response."
+      ).intercept {
         Get() ~> Authorization(OAuth2BearerToken("myToken")) ~> {
           Route.seal {
             doOAuth2Auth { _ ⇒ throw TestException }

@@ -34,7 +34,6 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   override def withRangeCoalescingThreshold(rangeCoalescingThreshold: Long): RoutingSettings = self.copy(rangeCoalescingThreshold = rangeCoalescingThreshold)
   override def withDecodeMaxBytesPerChunk(decodeMaxBytesPerChunk: Int): RoutingSettings = self.copy(decodeMaxBytesPerChunk = decodeMaxBytesPerChunk)
   override def withFileIODispatcher(fileIODispatcher: String): RoutingSettings = self.copy(fileIODispatcher = fileIODispatcher)
-
 }
 
 object RoutingSettings extends SettingsCompanion[RoutingSettings] {
