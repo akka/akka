@@ -103,7 +103,7 @@ MediaType.custom("application/vnd.acme+json")
 Replace with:
 
 ```scala
-MediaType.applicationWithFixedCharset("application/vnd.acme+json", HttpCharsets.`UTF-8`)
+MediaType.applicationWithFixedCharset("vnd.acme+json", HttpCharsets.`UTF-8`)
 ```
 
 ## Changes in Rejection Handling
