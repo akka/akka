@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import akka.pattern.after
 import akka.stream.{ ActorMaterializer, Supervision, ActorAttributes }
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.scaladsl._
@@ -10,7 +11,7 @@ import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 
 import scala.collection.immutable
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class FlowScanAsyncSpec extends StreamSpec {
@@ -54,9 +55,7 @@ class FlowScanAsyncSpec extends StreamSpec {
     "work with slow futures" in {
       val delay = 500.milliseconds
       val delayedFutureScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) ⇒
-        val promise = Promise[Int]()
-        system.scheduler.scheduleOnce(delay) { promise.success(accumulator + next) }
-        promise.future
+        after(delay, system.scheduler)(Future.successful(accumulator + next))
       }
       val elements = 1 :: 1 :: Nil
       Source(elements)
