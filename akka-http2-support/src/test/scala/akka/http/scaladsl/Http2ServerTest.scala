@@ -60,9 +60,13 @@ object Http2ServerTest extends App {
     req ⇒ Future.successful(syncHandler(req))
 
   try {
-    val binding = Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9001, ExampleHttpContexts.exampleServerContext)
+    val bindings =
+      for {
+        binding1 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9000, ExampleHttpContexts.exampleServerContext)
+        binding2 ← Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9001, ExampleHttpContexts.exampleServerContext)
+      } yield (binding1, binding2)
 
-    Await.result(binding, 1.second) // throws if binding fails
+    Await.result(bindings, 1.second) // throws if binding fails
     println("Server online at http://localhost:9001")
     println("Press RETURN to stop...")
     StdIn.readLine()
