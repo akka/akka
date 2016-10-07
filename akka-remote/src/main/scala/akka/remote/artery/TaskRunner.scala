@@ -102,7 +102,7 @@ private[akka] object TaskRunner {
       val minParkNanos = 1
       // park between 250 and 10 micros depending on idleCpuLevel
       val maxParkNanos = MICROSECONDS.toNanos(280 - 30 * idleCpuLevel)
-      new BackoffIdleStrategy(spinning, yielding, 1, maxParkNanos)
+      new BackoffIdleStrategy(spinning, yielding, minParkNanos, maxParkNanos)
     }
   }
 }
