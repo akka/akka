@@ -34,7 +34,7 @@ end-point explicitly.
 
 For example the server might be unable to bind to the given port. For example when the port
 is already taken by another application, or if the port is privileged (i.e. only usable by `root`).
-In this case the "binding future" will fail immediately, and we can react to if by listening on the CompletionStage's completion:
+In this case the "binding future" will fail immediately, and we can react to it by listening on the CompletionStage's completion:
 
 @@snip [HighLevelServerBindFailureExample.java](../../../../../test/java/docs/http/javadsl/server/HighLevelServerBindFailureExample.java) { #binding-failure-high-level-example }
 
@@ -45,8 +45,8 @@ refer to the @ref[Handling HTTP Server failures in the Low-Level API](../server-
 ### Failures and exceptions inside the Routing DSL
 
 Exception handling within the Routing DSL is done by providing `ExceptionHandler` s which are documented in-depth
-in the @ref[Exception Handling](exception-handling.md#exception-handling-java) section of the documtnation. You can use them to transform exceptions into
-`HttpResponse` s with apropriate error codes and human-readable failure descriptions.
+in the @ref[Exception Handling](exception-handling.md#exception-handling-java) section of the documentation. You can use them to transform exceptions into
+`HttpResponse` s with appropriate error codes and human-readable failure descriptions.
 
 ### File uploads
 
