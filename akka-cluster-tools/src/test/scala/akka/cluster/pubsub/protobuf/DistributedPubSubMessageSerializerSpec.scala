@@ -38,6 +38,7 @@ class DistributedPubSubMessageSerializerSpec extends AkkaSpec {
       checkSerialization(Send("/user/u3", "hello", localAffinity = true))
       checkSerialization(SendToAll("/user/u3", "hello", allButSelf = true))
       checkSerialization(Publish("mytopic", "hello"))
+      checkSerialization(SendToOneSubscriber("hello"))
     }
   }
 }
