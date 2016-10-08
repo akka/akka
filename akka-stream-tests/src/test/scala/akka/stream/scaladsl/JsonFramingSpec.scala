@@ -216,8 +216,8 @@ class JsonFramingSpec extends AkkaSpec {
 
         "successfully parse single field having decimal value" in {
           val buffer = new JsonObjectParser()
-          buffer.offer(ByteString("""{ "age": 101}"""))
-          buffer.poll().get.utf8String shouldBe """{ "age": 101}"""
+          buffer.offer(ByteString("""{ "age": 10.1}"""))
+          buffer.poll().get.utf8String shouldBe """{ "age": 10.1}"""
         }
 
         "successfully parse single field having nested object" in {
