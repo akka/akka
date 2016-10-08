@@ -6,9 +6,9 @@ package akka.persistence.query.journal.leveldb
 import scala.concurrent.duration._
 import akka.persistence.journal.Tagged
 import akka.persistence.journal.WriteEventAdapter
-import akka.persistence.query.{EventEnvelope, PersistenceQuery, Sequence}
+import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.query.scaladsl.EventsByTagQuery2
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
@@ -55,7 +55,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
 
   "Leveldb query EventsByTag" must {
     "implement standard EventsByTagQuery" in {
-      queries.isInstanceOf[EventsByTagQuery] should ===(true)
+      queries.isInstanceOf[EventsByTagQuery2] should ===(true)
     }
 
     "find existing events" in {

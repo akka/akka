@@ -40,7 +40,9 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
   with EventsByPersistenceIdQuery
   with CurrentEventsByPersistenceIdQuery
   with EventsByTagQuery
-  with CurrentEventsByTagQuery {
+  with EventsByTagQuery2
+  with CurrentEventsByTagQuery
+  with CurrentEventsByTagQuery2 {
 
   private val serialization = SerializationExtension(system)
   private val refreshInterval = Some(config.getDuration("refresh-interval", MILLISECONDS).millis)
@@ -174,6 +176,12 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
         throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
     }
 
+  override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] = {
+    Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offset, Long.MaxValue,
+      refreshInterval, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
+      .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+  }
+
   /**
    * Same type of query as [[#eventsByTag]] but the event stream
    * is completed immediately when it reaches the end of the "result set". Events that are
@@ -188,6 +196,12 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
       case _ ⇒
         throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
     }
+
+  override def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] = {
+    Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offset, Long.MaxValue,
+      None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
+      .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+  }
 
 }
 

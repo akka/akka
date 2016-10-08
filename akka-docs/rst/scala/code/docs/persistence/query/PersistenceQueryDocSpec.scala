@@ -46,7 +46,7 @@ object PersistenceQueryDocSpec {
 
   class MyScaladslReadJournal(system: ExtendedActorSystem, config: Config)
     extends akka.persistence.query.scaladsl.ReadJournal
-    with akka.persistence.query.scaladsl.EventsByTagQuery
+    with akka.persistence.query.scaladsl.EventsByTagQuery2
     with akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
     with akka.persistence.query.scaladsl.AllPersistenceIdsQuery
     with akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery {
@@ -94,7 +94,7 @@ object PersistenceQueryDocSpec {
 
   class MyJavadslReadJournal(scaladslReadJournal: MyScaladslReadJournal)
     extends akka.persistence.query.javadsl.ReadJournal
-    with akka.persistence.query.javadsl.EventsByTagQuery
+    with akka.persistence.query.javadsl.EventsByTagQuery2
     with akka.persistence.query.javadsl.EventsByPersistenceIdQuery
     with akka.persistence.query.javadsl.AllPersistenceIdsQuery
     with akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {

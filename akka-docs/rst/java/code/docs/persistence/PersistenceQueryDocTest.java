@@ -88,7 +88,7 @@ public class PersistenceQueryDocTest {
   //#my-read-journal
   public class MyJavadslReadJournal implements 
   akka.persistence.query.javadsl.ReadJournal,
-  akka.persistence.query.javadsl.EventsByTagQuery,
+  akka.persistence.query.javadsl.EventsByTagQuery2,
   akka.persistence.query.javadsl.EventsByPersistenceIdQuery,
   akka.persistence.query.javadsl.AllPersistenceIdsQuery,
   akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
@@ -148,7 +148,7 @@ public class PersistenceQueryDocTest {
   //#my-read-journal
   public class MyScaladslReadJournal implements 
   akka.persistence.query.scaladsl.ReadJournal,
-  akka.persistence.query.scaladsl.EventsByTagQuery,
+  akka.persistence.query.scaladsl.EventsByTagQuery2,
   akka.persistence.query.scaladsl.EventsByPersistenceIdQuery,
   akka.persistence.query.scaladsl.AllPersistenceIdsQuery,
   akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery {
