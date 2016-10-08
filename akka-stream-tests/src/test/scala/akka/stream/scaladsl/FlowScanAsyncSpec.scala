@@ -3,10 +3,10 @@
  */
 package akka.stream.scaladsl
 
-import akka.pattern.after
-import akka.stream.{ ActorMaterializer, Supervision, ActorAttributes }
+import akka.pattern
+import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.impl.ReactiveStreamsCompliance
-import akka.stream.scaladsl._
+import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 
@@ -55,7 +55,7 @@ class FlowScanAsyncSpec extends StreamSpec {
     "work with slow futures" in {
       val delay = 500.milliseconds
       val delayedFutureScanFlow = Flow[Int].scanAsync(0) { (accumulator, next) ⇒
-        after(delay, system.scheduler)(Future.successful(accumulator + next))
+        pattern.after(delay, system.scheduler)(Future.successful(accumulator + next))
       }
       val elements = 1 :: 1 :: Nil
       Source(elements)
@@ -70,7 +70,7 @@ class FlowScanAsyncSpec extends StreamSpec {
 
     "throw error with a failed source" in {
       val expected = Utils.TE("failed source")
-      val actual = Source.failed[Int](expected)
+      Source.failed[Int](expected)
         .via(sumScanFlow)
         .runWith(TestSink.probe[Int])
         .expectSubscriptionAndError(expected)
@@ -112,14 +112,14 @@ class FlowScanAsyncSpec extends StreamSpec {
       "throw error with a failed scan function" in {
         val expected = Utils.TE("failed scan function")
         val elements = -1 :: Nil
-        val actual = whenFailedScan(elements, 0, expected)
+        whenFailedScan(elements, 0, expected)
           .expectError(expected)
       }
 
       "throw error with a failed future" in {
         val expected = Utils.TE("failed future generated from scan function")
         val elements = -1 :: Nil
-        val actual = whenFailedFuture(elements, 0, expected)
+        whenFailedFuture(elements, 0, expected)
           .expectError(expected)
       }
 
@@ -128,13 +128,17 @@ class FlowScanAsyncSpec extends StreamSpec {
         val elements = "null" :: Nil
         val actual = whenNullElement(elements, "")
           .expectError()
-        assert(actual.getClass() === classOf[NullPointerException])
-        assert(actual.getMessage() === expectedMessage)
+        assert(actual.getClass === classOf[NullPointerException])
+        assert(actual.getMessage === expectedMessage)
       }
     }
 
-    def whenFailedScan(elements: immutable.Seq[Int], zero: Int, throwable: Throwable = new Exception("non fatal exception"), decider: Supervision.Decider = Supervision.stoppingDecider) = {
-      val failedScanFlow = Flow[Int].scanAsync(zero) { (accumulator, next) ⇒
+    def whenFailedScan(
+      elements:  immutable.Seq[Int],
+      zero:      Int,
+      throwable: Throwable           = new Exception("non fatal exception"),
+      decider:   Supervision.Decider = Supervision.stoppingDecider): Probe[Int] = {
+      val failedScanFlow = Flow[Int].scanAsync(zero) { (accumulator: Int, next: Int) ⇒
         if (next >= 0) Future(accumulator + next)
         else throw throwable
       }
@@ -146,8 +150,12 @@ class FlowScanAsyncSpec extends StreamSpec {
         .expectNext(zero)
     }
 
-    def whenFailedFuture(elements: immutable.Seq[Int], zero: Int, throwable: Throwable = new Exception("non fatal exception"), decider: Supervision.Decider = Supervision.stoppingDecider) = {
-      val failedFutureScanFlow = Flow[Int].scanAsync(zero) { (accumulator, next) ⇒
+    def whenFailedFuture(
+      elements:  immutable.Seq[Int],
+      zero:      Int,
+      throwable: Throwable           = new Exception("non fatal exception"),
+      decider:   Supervision.Decider = Supervision.stoppingDecider): Probe[Int] = {
+      val failedFutureScanFlow = Flow[Int].scanAsync(zero) { (accumulator: Int, next: Int) ⇒
         if (next >= 0) Future(accumulator + next)
         else Future.failed(throwable)
       }
@@ -159,8 +167,11 @@ class FlowScanAsyncSpec extends StreamSpec {
         .expectNext(zero)
     }
 
-    def whenNullElement(elements: immutable.Seq[String], zero: String, decider: Supervision.Decider = Supervision.stoppingDecider) = {
-      val nullFutureScanFlow: Flow[String, String, _] = Flow[String].scanAsync(zero) { (_, next) ⇒
+    def whenNullElement(
+      elements: immutable.Seq[String],
+      zero:     String,
+      decider:  Supervision.Decider   = Supervision.stoppingDecider): Probe[String] = {
+      val nullFutureScanFlow: Flow[String, String, _] = Flow[String].scanAsync(zero) { (_: String, next: String) ⇒
         if (next != "null") Future(next)
         else Future(null)
       }
