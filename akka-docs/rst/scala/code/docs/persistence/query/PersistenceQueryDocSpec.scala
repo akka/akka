@@ -8,7 +8,6 @@ import akka.NotUsed
 import akka.actor._
 import akka.persistence.{ PersistentActor, Recovery }
 import akka.persistence.query._
-import akka.persistence.query.scaladsl.{ Offset, Sequence }
 import akka.stream.{ ActorMaterializer, FlowShape }
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.javadsl
@@ -100,11 +99,9 @@ object PersistenceQueryDocSpec {
     with akka.persistence.query.javadsl.AllPersistenceIdsQuery
     with akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
 
-    import akka.persistence.query.javadsl.Offset
-
     override def eventsByTag(
       tag: String, offset: Offset = Sequence(0L)): javadsl.Source[EventEnvelope, NotUsed] =
-      scaladslReadJournal.eventsByTag(tag, offset.asScala).asJava
+      scaladslReadJournal.eventsByTag(tag, offset).asJava
 
     override def eventsByPersistenceId(
       persistenceId: String, fromSequenceNr: Long = 0L,

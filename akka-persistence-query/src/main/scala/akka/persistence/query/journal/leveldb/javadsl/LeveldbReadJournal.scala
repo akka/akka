@@ -4,9 +4,8 @@
 package akka.persistence.query.journal.leveldb.javadsl
 
 import akka.NotUsed
-import akka.persistence.query.EventEnvelope
+import akka.persistence.query.{ EventEnvelope, Offset }
 import akka.persistence.query.javadsl._
-import akka.persistence.query.javadsl.Sequence
 import akka.stream.javadsl.Source
 
 /**
@@ -138,7 +137,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * backend journal.
    */
   override def eventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed] =
-    scaladslReadJournal.eventsByTag(tag, offset.asScala).asJava
+    scaladslReadJournal.eventsByTag(tag, offset).asJava
 
   /**
    * Same type of query as [[#eventsByTag]] but the event stream
@@ -146,7 +145,7 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * stored after the query is completed are not included in the event stream.
    */
   override def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed] =
-    scaladslReadJournal.currentEventsByTag(tag, offset.asScala).asJava
+    scaladslReadJournal.currentEventsByTag(tag, offset).asJava
 }
 
 object LeveldbReadJournal {

@@ -8,9 +8,8 @@ import java.net.URLEncoder
 import akka.NotUsed
 
 import scala.concurrent.duration._
-
 import akka.actor.ExtendedActorSystem
-import akka.persistence.query.EventEnvelope
+import akka.persistence.query.{ EventEnvelope, Offset, Sequence }
 import akka.persistence.query.journal.leveldb.AllPersistenceIdsPublisher
 import akka.persistence.query.journal.leveldb.EventsByPersistenceIdPublisher
 import akka.persistence.query.journal.leveldb.EventsByTagPublisher

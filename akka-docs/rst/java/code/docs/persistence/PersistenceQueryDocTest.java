@@ -7,42 +7,26 @@ package docs.persistence;
 import static akka.pattern.PatternsCS.ask;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Iterator;
 
 import akka.NotUsed;
-import akka.persistence.query.javadsl.Sequence;
-import akka.persistence.query.javadsl.Offset;
+import akka.persistence.query.Sequence;
+import akka.persistence.query.Offset;
 import com.typesafe.config.Config;
 
 import akka.actor.*;
-import akka.dispatch.Mapper;
-import akka.event.EventStreamSpec;
-import akka.japi.Function;
-import akka.japi.Procedure;
 import akka.japi.pf.ReceiveBuilder;
-import akka.pattern.BackoffSupervisor;
-import akka.persistence.*;
 import akka.persistence.query.*;
-import akka.persistence.query.javadsl.ReadJournal;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.Timeout;
 
 import docs.persistence.query.MyEventsByTagPublisher;
-import docs.persistence.query.PersistenceQueryDocSpec;
 import org.reactivestreams.Subscriber;
-import scala.collection.Seq;
-import scala.collection.immutable.Vector;
-import scala.concurrent.Await;
 import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.Boxed;
-import scala.runtime.BoxedUnit;
-import java.io.Serializable;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -177,7 +161,7 @@ public class PersistenceQueryDocTest {
 
     @Override
     public akka.stream.scaladsl.Source<EventEnvelope, NotUsed> eventsByTag(
-        String tag, akka.persistence.query.scaladsl.Offset offset) {
+        String tag, akka.persistence.query.Offset offset) {
       return javadslReadJournal.eventsByTag(tag, offset).asScala();
     }
 

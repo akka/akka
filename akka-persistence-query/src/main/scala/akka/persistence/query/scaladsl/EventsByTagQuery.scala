@@ -5,7 +5,7 @@ package akka.persistence.query.scaladsl
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import akka.persistence.query.EventEnvelope
+import akka.persistence.query.{ EventEnvelope, Offset }
 
 /**
  * A plugin may optionally support this query by implementing this trait.

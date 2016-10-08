@@ -5,7 +5,7 @@ package akka.persistence.query.javadsl
 
 import akka.NotUsed
 import akka.stream.javadsl.Source
-import akka.persistence.query.EventEnvelope
+import akka.persistence.query.{ EventEnvelope, Offset }
 
 /**
  * A plugin may optionally support this query by implementing this interface.
