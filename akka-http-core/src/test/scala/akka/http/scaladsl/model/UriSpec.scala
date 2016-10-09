@@ -273,21 +273,83 @@ class UriSpec extends WordSpec with Matchers {
   }
 
   "Uri.Query instances" should {
-    def parser(mode: Uri.ParsingMode): String ⇒ Query = Query(_, mode = mode)
     "be parsed correctly in strict mode" in {
-      val strict = parser(Uri.ParsingMode.Strict)
+      //#query-strict-definition
+      def strict(queryString: String): Query = Query(queryString, mode = Uri.ParsingMode.Strict)
+      //#query-strict-definition
+
+      //#query-strict-mode
+      //query component "a=b" is parsed into parameter name: "a", and value: "b"
+      strict("a=b") shouldEqual ("a", "b") +: Query.Empty
+
       strict("") shouldEqual ("", "") +: Query.Empty
       strict("a") shouldEqual ("a", "") +: Query.Empty
       strict("a=") shouldEqual ("a", "") +: Query.Empty
-      strict("a=+") shouldEqual ("a", " ") +: Query.Empty
+      strict("a=+") shouldEqual ("a", " ") +: Query.Empty //'+' is parsed to ' '
       strict("a=%2B") shouldEqual ("a", "+") +: Query.Empty
       strict("=a") shouldEqual ("", "a") +: Query.Empty
       strict("a&") shouldEqual ("a", "") +: ("", "") +: Query.Empty
       strict("a=%62") shouldEqual ("a", "b") +: Query.Empty
-      a[IllegalUriException] should be thrownBy strict("a^=b")
+
+      strict("a%3Db=c") shouldEqual ("a=b", "c") +: Query.Empty
+      strict("a%26b=c") shouldEqual ("a&b", "c") +: Query.Empty
+      strict("a%2Bb=c") shouldEqual ("a+b", "c") +: Query.Empty
+      strict("a%3Bb=c") shouldEqual ("a;b", "c") +: Query.Empty
+
+      strict("a=b%3Dc") shouldEqual ("a", "b=c") +: Query.Empty
+      strict("a=b%26c") shouldEqual ("a", "b&c") +: Query.Empty
+      strict("a=b%2Bc") shouldEqual ("a", "b+c") +: Query.Empty
+      strict("a=b%3Bc") shouldEqual ("a", "b;c") +: Query.Empty
+
+      strict("a+b=c") shouldEqual ("a b", "c") +: Query.Empty //'+' is parsed to ' '
+      strict("a=b+c") shouldEqual ("a", "b c") +: Query.Empty //'+' is parsed to ' '
+      //#query-strict-mode
+
+      //#query-strict-without-percent-encode
+      strict("a?b=c") shouldEqual ("a?b", "c") +: Query.Empty
+      strict("a/b=c") shouldEqual ("a/b", "c") +: Query.Empty
+
+      strict("a=b?c") shouldEqual ("a", "b?c") +: Query.Empty
+      strict("a=b/c") shouldEqual ("a", "b/c") +: Query.Empty
+      //#query-strict-without-percent-encode
+
+      //#query-strict-mode-exception-1
+      the[IllegalUriException] thrownBy strict("a^=b") shouldBe {
+        IllegalUriException(
+          "Illegal query: Invalid input '^', expected '+', '=', query-char, 'EOI', '&' or pct-encoded (line 1, column 2)",
+          "a^=b\n" +
+            " ^")
+      }
+      the[IllegalUriException] thrownBy strict("a;=b") shouldBe {
+        IllegalUriException(
+          "Illegal query: Invalid input ';', expected '+', '=', query-char, 'EOI', '&' or pct-encoded (line 1, column 2)",
+          "a;=b\n" +
+            " ^")
+      }
+      //#query-strict-mode-exception-1
+
+      //#query-strict-mode-exception-2
+      //double '=' in query string is invalid
+      the[IllegalUriException] thrownBy strict("a=b=c") shouldBe {
+        IllegalUriException(
+          "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
+          "a=b=c\n" +
+            "   ^")
+      }
+      //following '%', it should be percent encoding (HEXDIG), but "%b=" is not a valid percent encoding
+      the[IllegalUriException] thrownBy strict("a%b=c") shouldBe {
+        IllegalUriException(
+          "Illegal query: Invalid input '=', expected HEXDIG (line 1, column 4)",
+          "a%b=c\n" +
+            "   ^")
+      }
+      //#query-strict-mode-exception-2
     }
     "be parsed correctly in relaxed mode" in {
-      val relaxed = parser(Uri.ParsingMode.Relaxed)
+      //#query-relaxed-mode
+      def relaxed(queryString: String): Query = Query(queryString, mode = Uri.ParsingMode.Relaxed)
+      //#query-relaxed-mode
+
       relaxed("") shouldEqual ("", "") +: Query.Empty
       relaxed("a") shouldEqual ("a", "") +: Query.Empty
       relaxed("a=") shouldEqual ("a", "") +: Query.Empty
@@ -296,7 +358,49 @@ class UriSpec extends WordSpec with Matchers {
       relaxed("=a") shouldEqual ("", "a") +: Query.Empty
       relaxed("a&") shouldEqual ("a", "") +: ("", "") +: Query.Empty
       relaxed("a=%62") shouldEqual ("a", "b") +: Query.Empty
+
+      relaxed("a%3Db=c") shouldEqual ("a=b", "c") +: Query.Empty
+      relaxed("a%26b=c") shouldEqual ("a&b", "c") +: Query.Empty
+      relaxed("a%2Bb=c") shouldEqual ("a+b", "c") +: Query.Empty
+      relaxed("a%3Bb=c") shouldEqual ("a;b", "c") +: Query.Empty
+
+      relaxed("a=b%3Dc") shouldEqual ("a", "b=c") +: Query.Empty
+      relaxed("a=b%26c") shouldEqual ("a", "b&c") +: Query.Empty
+      relaxed("a=b%2Bc") shouldEqual ("a", "b+c") +: Query.Empty
+      relaxed("a=b%3Bc") shouldEqual ("a", "b;c") +: Query.Empty
+
+      relaxed("a+b=c") shouldEqual ("a b", "c") +: Query.Empty //'+' is parsed to ' '
+      relaxed("a=b+c") shouldEqual ("a", "b c") +: Query.Empty //'+' is parsed to ' '
+
+      //without percent encoding
+      relaxed("a?b=c") shouldEqual ("a?b", "c") +: Query.Empty
+      relaxed("a/b=c") shouldEqual ("a/b", "c") +: Query.Empty
+
+      relaxed("a=b?c") shouldEqual ("a", "b?c") +: Query.Empty
+      relaxed("a=b/c") shouldEqual ("a", "b/c") +: Query.Empty
+
+      //#query-relaxed-mode-success
       relaxed("a^=b") shouldEqual ("a^", "b") +: Query.Empty
+      relaxed("a;=b") shouldEqual ("a;", "b") +: Query.Empty
+      //#query-relaxed-mode-success
+
+      //#query-relaxed-mode-exception
+      //double '=' in query string is invalid, even in relaxed mode
+      the[IllegalUriException] thrownBy relaxed("a=b=c") shouldBe {
+        IllegalUriException(
+          "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
+          "a=b=c\n" +
+            "   ^")
+      }
+      //following '%', it should be percent encoding (HEXDIG), but "%b=" is not a valid percent encoding
+      //still invalid even in relaxed mode
+      the[IllegalUriException] thrownBy relaxed("a%b=c") shouldBe {
+        IllegalUriException(
+          "Illegal query: Invalid input '=', expected HEXDIG (line 1, column 4)",
+          "a%b=c\n" +
+            "   ^")
+      }
+      //#query-relaxed-mode-exception
     }
     "properly support the retrieval interface" in {
       val query = Query("a=1&b=2&c=3&b=4&b")
@@ -336,6 +440,8 @@ class UriSpec extends WordSpec with Matchers {
 
     // http://tools.ietf.org/html/rfc3986#section-1.1.2
     "be correctly parsed from and rendered to simple test examples" in {
+
+      //#valid-uri-examples
       Uri("ftp://ftp.is.co.za/rfc/rfc1808.txt") shouldEqual
         Uri.from(scheme = "ftp", host = "ftp.is.co.za", path = "/rfc/rfc1808.txt")
 
@@ -359,6 +465,7 @@ class UriSpec extends WordSpec with Matchers {
 
       Uri("urn:oasis:names:specification:docbook:dtd:xml:4.1.2") shouldEqual
         Uri.from(scheme = "urn", path = "oasis:names:specification:docbook:dtd:xml:4.1.2")
+      //#valid-uri-examples
 
       // more examples
       Uri("http://") shouldEqual Uri(scheme = "http", authority = Authority(Host.Empty))
@@ -373,9 +480,11 @@ class UriSpec extends WordSpec with Matchers {
       // handle query parameters with more than percent-encoded character
       Uri("?%7Ba%7D=$%7B%7D", UTF8, Uri.ParsingMode.Strict).query() shouldEqual Query.Cons("{a}", s"$${}", Query.Empty)
 
+      //#dont-double-decode
       // don't double decode
       Uri("%2520").path.head shouldEqual "%20"
       Uri("/%2F%5C").path shouldEqual Path / """/\"""
+      //#dont-double-decode
 
       // render
       Uri("https://server.com/path/to/here?st=12345").toString shouldEqual "https://server.com/path/to/here?st=12345"
@@ -465,7 +574,8 @@ class UriSpec extends WordSpec with Matchers {
     }
 
     "produce proper error messages for illegal URIs" in {
-      // illegal scheme
+      //#illegal-cases-immediate-exception
+      //illegal scheme
       the[IllegalUriException] thrownBy Uri("foö:/a") shouldBe {
         IllegalUriException(
           "Illegal URI reference: Invalid input 'ö', expected scheme-char, 'EOI', '#', ':', '?', slashSegments or pchar (line 1, column 3)",
@@ -504,6 +614,7 @@ class UriSpec extends WordSpec with Matchers {
           "http:///with\n" +
             "            ^")
       }
+      //#illegal-cases-immediate-exception
 
       // illegal query
       the[IllegalUriException] thrownBy Uri("?a=b=c").query() shouldBe {

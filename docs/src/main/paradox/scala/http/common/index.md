@@ -11,6 +11,7 @@ which are specific to one side only.
 
 @@@ index
 
+* [uri-parsing](uri-parsing.md)
 * [marshalling](marshalling.md)
 * [unmarshalling](unmarshalling.md)
 * [de-coding](de-coding.md)
