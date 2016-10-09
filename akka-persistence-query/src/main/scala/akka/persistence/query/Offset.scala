@@ -6,16 +6,9 @@ package akka.persistence.query
 
 import java.util.UUID
 
-trait Offset {
-  def hashCode: Int
-}
+trait Offset
 
 final case class Sequence(val value: Long) extends Offset with Ordered[Sequence] {
-
-  override def hashCode: Int = value.hashCode
-
-  override def toString: String = value.toString
-
   override def compare(that: Sequence): Int = value.compare(that.value)
 }
 
@@ -24,15 +17,7 @@ final case class TimeBasedUUID(val value: UUID) extends Offset with Ordered[Time
     throw new IllegalArgumentException("UUID " + value + " is not a time-based UUID")
   }
 
-  override def hashCode: Int = value.hashCode
-
-  override def toString: String = value.toString
-
   override def compare(other: TimeBasedUUID): Int = value.compareTo(other.value)
 }
 
-final case object NoOffset extends Offset {
-  override def hashCode: Int = 0
-
-  override def toString: String = "NoOffset"
-}
+final case object NoOffset extends Offset
