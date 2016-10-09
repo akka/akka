@@ -530,9 +530,7 @@ object TestSubscriber {
 
     def expectNextPF[T](f: PartialFunction[Any, T]): T = {
       expectEventPF {
-        case OnNext(n) ⇒
-          assert(f.isDefinedAt(n))
-          f(n)
+        case OnNext(n) if f.isDefinedAt(n) ⇒ f(n)
       }
     }
 
@@ -542,15 +540,11 @@ object TestSubscriber {
      * Allows chaining probe methods.
      */
     def expectNextChainingPF(f: PartialFunction[Any, Any]): Self = {
-      expectEventPF {
-        case OnNext(n) ⇒
-          assert(f.isDefinedAt(n))
-          self
-      }
+      expectNextPF(f.andThen(_ ⇒ self))
     }
 
     def expectEventPF[T](f: PartialFunction[SubscriberEvent, T]): T =
-      probe.expectMsgPF[T]()(f.asInstanceOf[PartialFunction[Any, T]])
+      probe.expectMsgPF[T](hint = "message matching partial function")(f.asInstanceOf[PartialFunction[Any, T]])
 
     /**
      * Receive messages for a given duration or until one does not match a given partial function.
