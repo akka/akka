@@ -73,21 +73,13 @@ To run this example, go to the <a href="#run" class="shortcut">Run</a> tab, and 
 <div>
 <h2>Persistent actor views</h2>
 <p>
-<a href="#code/src/main/java/sample/persistence/ProcessorFailureExample.java" class="shortcut">ProcessorFailureExample.java</a>
-shows how a processor can delete persistent messages from the journal if they threw an exception. Throwing an exception
-restarts the processor and replays messages. In order to prevent that the message that caused the exception is replayed,
-it is marked as deleted in the journal (during invocation of <code>preRestart</code>). This is a common pattern in
-command-sourcing to compensate write-ahead logging of messages.
+In a command sourced system you may persist the commands to the journal immediately. However this might cause problems
+in the case where you persist a command that corrupts your state. The corrupt command will be replayed again whenever you recover your state and you would have
+to delete the corrupt commands from the journal.
 </p>
-
 <p>
-To run this example, go to the <a href="#run" class="shortcut">Run</a> tab, and run the application main class
-<b><code>sample.persistence.ProcessorFailureExample</code></b> several times.
-</p>
-
-<p>
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/persistence.html#event-sourcing" target="_blank">Event sourcing</a>
-on the other hand, does not persist commands directly but rather events that have been derived from received commands
+In an <a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/persistence.html#event-sourcing" target="_blank">event sourced</a>
+system, one does not persist commands directly but rather events that have been derived from received commands
 (not shown here). These events are known to be successfully applicable to current processor state i.e. there's
 no need for deleting them from the journal. Event sourced processors usually have a lower throughput than command
 sourced processors, as the maximum size of a write batch is limited by the number of persisted events per received
