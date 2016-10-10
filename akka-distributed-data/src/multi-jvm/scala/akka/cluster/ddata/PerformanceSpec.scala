@@ -23,7 +23,7 @@ object PerformanceSpec extends MultiNodeConfig {
   val n4 = role("n4")
   val n5 = role("n5")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(ConfigFactory.parseString(s"""
     akka.loglevel = ERROR
     akka.stdout-loglevel = ERROR
     akka.actor.provider = "cluster"
@@ -34,6 +34,10 @@ object PerformanceSpec extends MultiNodeConfig {
     akka.testconductor.barrier-timeout = 60 s
     akka.cluster.distributed-data.gossip-interval = 1 s
     akka.actor.serialize-messages = off
+
+    #akka.cluster.distributed-data.durable.keys = ["*"]
+    #akka.cluster.distributed-data.durable.lmdb.dir = target/PerformanceSpec-${System.currentTimeMillis}-ddata
+    #akka.cluster.distributed-data.durable.lmdb.write-behind-interval = 200ms
     """))
 
   def countDownProps(latch: TestLatch): Props = Props(new CountDown(latch)).withDeploy(Deploy.local)
