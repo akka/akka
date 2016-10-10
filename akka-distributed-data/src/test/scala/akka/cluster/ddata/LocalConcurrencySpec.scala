@@ -46,6 +46,7 @@ class LocalConcurrencySpec(_system: ActorSystem) extends TestKit(_system)
       ConfigFactory.parseString("""
       akka.actor.provider = "cluster"
       akka.remote.netty.tcp.port=0
+      akka.remote.artery.canonical.port = 0
       """)))
   }
 

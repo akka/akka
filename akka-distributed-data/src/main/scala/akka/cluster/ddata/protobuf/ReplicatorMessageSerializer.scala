@@ -25,6 +25,8 @@ import akka.cluster.ddata.Key.KeyR
 import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
+import akka.cluster.ddata.DurableStore.DurableDataEnvelope
+import akka.cluster.ddata.DurableStore.DurableDataEnvelope
 
 /**
  * INTERNAL API
@@ -167,6 +169,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   val ReadResultManifest = "L"
   val StatusManifest = "M"
   val GossipManifest = "N"
+  val WriteNackManifest = "O"
+  val DurableDataEnvelopeManifest = "P"
 
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
     GetManifest → getFromBinary,
@@ -182,42 +186,48 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     ReadManifest → readFromBinary,
     ReadResultManifest → readResultFromBinary,
     StatusManifest → statusFromBinary,
-    GossipManifest → gossipFromBinary)
+    GossipManifest → gossipFromBinary,
+    WriteNackManifest → (_ ⇒ WriteNack),
+    DurableDataEnvelopeManifest → durableDataEnvelopeFromBinary)
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: DataEnvelope   ⇒ DataEnvelopeManifest
-    case _: Write          ⇒ WriteManifest
-    case WriteAck          ⇒ WriteAckManifest
-    case _: Read           ⇒ ReadManifest
-    case _: ReadResult     ⇒ ReadResultManifest
-    case _: Status         ⇒ StatusManifest
-    case _: Get[_]         ⇒ GetManifest
-    case _: GetSuccess[_]  ⇒ GetSuccessManifest
-    case _: Changed[_]     ⇒ ChangedManifest
-    case _: NotFound[_]    ⇒ NotFoundManifest
-    case _: GetFailure[_]  ⇒ GetFailureManifest
-    case _: Subscribe[_]   ⇒ SubscribeManifest
-    case _: Unsubscribe[_] ⇒ UnsubscribeManifest
-    case _: Gossip         ⇒ GossipManifest
+    case _: DataEnvelope        ⇒ DataEnvelopeManifest
+    case _: Write               ⇒ WriteManifest
+    case WriteAck               ⇒ WriteAckManifest
+    case _: Read                ⇒ ReadManifest
+    case _: ReadResult          ⇒ ReadResultManifest
+    case _: Status              ⇒ StatusManifest
+    case _: Get[_]              ⇒ GetManifest
+    case _: GetSuccess[_]       ⇒ GetSuccessManifest
+    case _: DurableDataEnvelope ⇒ DurableDataEnvelopeManifest
+    case _: Changed[_]          ⇒ ChangedManifest
+    case _: NotFound[_]         ⇒ NotFoundManifest
+    case _: GetFailure[_]       ⇒ GetFailureManifest
+    case _: Subscribe[_]        ⇒ SubscribeManifest
+    case _: Unsubscribe[_]      ⇒ UnsubscribeManifest
+    case _: Gossip              ⇒ GossipManifest
+    case WriteNack              ⇒ WriteNackManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: DataEnvelope   ⇒ dataEnvelopeToProto(m).toByteArray
-    case m: Write          ⇒ writeCache.getOrAdd(m)
-    case WriteAck          ⇒ writeAckBytes
-    case m: Read           ⇒ readCache.getOrAdd(m)
-    case m: ReadResult     ⇒ readResultToProto(m).toByteArray
-    case m: Status         ⇒ statusToProto(m).toByteArray
-    case m: Get[_]         ⇒ getToProto(m).toByteArray
-    case m: GetSuccess[_]  ⇒ getSuccessToProto(m).toByteArray
-    case m: Changed[_]     ⇒ changedToProto(m).toByteArray
-    case m: NotFound[_]    ⇒ notFoundToProto(m).toByteArray
-    case m: GetFailure[_]  ⇒ getFailureToProto(m).toByteArray
-    case m: Subscribe[_]   ⇒ subscribeToProto(m).toByteArray
-    case m: Unsubscribe[_] ⇒ unsubscribeToProto(m).toByteArray
-    case m: Gossip         ⇒ compress(gossipToProto(m))
+    case m: DataEnvelope        ⇒ dataEnvelopeToProto(m).toByteArray
+    case m: Write               ⇒ writeCache.getOrAdd(m)
+    case WriteAck               ⇒ writeAckBytes
+    case m: Read                ⇒ readCache.getOrAdd(m)
+    case m: ReadResult          ⇒ readResultToProto(m).toByteArray
+    case m: Status              ⇒ statusToProto(m).toByteArray
+    case m: Get[_]              ⇒ getToProto(m).toByteArray
+    case m: GetSuccess[_]       ⇒ getSuccessToProto(m).toByteArray
+    case m: DurableDataEnvelope ⇒ durableDataEnvelopeToProto(m).toByteArray
+    case m: Changed[_]          ⇒ changedToProto(m).toByteArray
+    case m: NotFound[_]         ⇒ notFoundToProto(m).toByteArray
+    case m: GetFailure[_]       ⇒ getFailureToProto(m).toByteArray
+    case m: Subscribe[_]        ⇒ subscribeToProto(m).toByteArray
+    case m: Unsubscribe[_]      ⇒ unsubscribeToProto(m).toByteArray
+    case m: Gossip              ⇒ compress(gossipToProto(m))
+    case WriteNack              ⇒ dm.Empty.getDefaultInstance.toByteArray
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -448,6 +458,20 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       if (readResult.hasEnvelope) Some(dataEnvelopeFromProto(readResult.getEnvelope))
       else None
     ReadResult(envelope)
+  }
+
+  private def durableDataEnvelopeToProto(durableDataEnvelope: DurableDataEnvelope): dm.DurableDataEnvelope = {
+    dm.DurableDataEnvelope.newBuilder()
+      .setData(otherMessageToProto(durableDataEnvelope.data))
+      .build()
+  }
+
+  private def durableDataEnvelopeFromBinary(bytes: Array[Byte]): DurableDataEnvelope =
+    durableDataEnvelopeFromProto(dm.DurableDataEnvelope.parseFrom(bytes))
+
+  private def durableDataEnvelopeFromProto(durableDataEnvelope: dm.DurableDataEnvelope): DurableDataEnvelope = {
+    val data = otherMessageFromProto(durableDataEnvelope.getData).asInstanceOf[ReplicatedData]
+    new DurableDataEnvelope(data)
   }
 
 }

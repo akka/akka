@@ -117,4 +117,6 @@ message StringGSet {
   repeated string elements = 1;
 }
 
-
+message DurableDataEnvelope {
+  required OtherMessage data = 1;
+}
