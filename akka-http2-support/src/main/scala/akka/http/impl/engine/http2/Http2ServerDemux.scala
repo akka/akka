@@ -90,6 +90,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       override def preStart(): Unit = {
         pull(frameIn)
         pull(substreamIn)
+
+        bufferedFrameOut.push(SettingsFrame(Nil)) // server side connection preface
       }
 
       var incomingStreams = Map.empty[Int, SubStream]
@@ -133,10 +135,12 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case WindowUpdateFrame(0, increment) ⇒
               totalOutboundWindowLeft += increment
               println(f"outbound window is now $totalOutboundWindowLeft%10d after increment $increment%6d")
+              bufferedFrameOut.tryFlush()
 
             case WindowUpdateFrame(streamId, increment) ⇒
               incomingStreams(streamId).outboundWindowLeft += increment
               println(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
+              bufferedFrameOut.tryFlush()
 
             case PingFrame(true, _) ⇒ // ignore for now (we don't send any pings)
             case PingFrame(false, data) ⇒
@@ -181,19 +185,25 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         }
 
         override def doPush(elem: FrameEvent): Unit = {
-          super.doPush(elem)
           elem match {
-            case DataFrame(streamId, _, pl) ⇒
-              val size = pl.size
-              totalOutboundWindowLeft -= size
-              incomingStreams(streamId).outboundWindowLeft -= size
+            case d @ DataFrame(streamId, _, pl) ⇒
+              if (pl.size <= totalOutboundWindowLeft && pl.size <= incomingStreams(streamId).outboundWindowLeft) {
+                super.doPush(elem)
+
+                val size = pl.size
+                totalOutboundWindowLeft -= size
+                incomingStreams(streamId).outboundWindowLeft -= size
+              } else {
+                println(s"Couldn't send because no window left. Size: ${pl.size} total: $totalOutboundWindowLeft per stream: ${incomingStreams(streamId).outboundWindowLeft}")
+                buffer.add(d)
+              }
 
             //println(f"After sending $size%6d bytes to stream [$streamId%3d] totalWindow: $totalOutboundWindowLeft stream: ${incomingStreams(streamId).outboundWindowLeft}")
-            case _ ⇒ // ignore
+            case _ ⇒
+              super.doPush(elem)
           }
         }
       }
-      bufferedFrameOut.push(SettingsFrame(Nil)) // server side connection preface
     }
 }
 
