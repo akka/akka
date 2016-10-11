@@ -121,7 +121,7 @@ final class LWWRegister[A] private[akka] (
    * concurrency control.
    */
   def withValue(value: A)(implicit node: Cluster, clock: Clock[A] = defaultClock[A]): LWWRegister[A] =
-    withValue(node, value)
+    withValue(node, value, clock)
 
   /**
    * Change the value of the register.
