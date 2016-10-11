@@ -115,8 +115,8 @@ private[http] object HttpServerBluePrint {
           // application layer has cancelled or only partially consumed response entity:
           // connection will be closed
           entitySource.complete()
-          completeStage()
         }
+        completeStage()
       }
 
       override def onPush(): Unit = grab(in) match {
