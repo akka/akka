@@ -7,6 +7,7 @@ package directives
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.directives.BasicDirectives._
+import akka.http.scaladsl.server.RequestEntityExpectedRejection
 import headers._
 
 /**
@@ -111,7 +112,7 @@ object MiscDirectives extends MiscDirectives {
     extract(_.request.entity.isKnownEmpty).flatMap(if (_) pass else reject)
 
   private val _requestEntityPresent: Directive0 =
-    extract(_.request.entity.isKnownEmpty).flatMap(if (_) reject else pass)
+    extract(_.request.entity.isKnownEmpty).flatMap(if (_) reject(RequestEntityExpectedRejection) else pass)
 
   private val _rejectEmptyResponse: Directive0 =
     mapRouteResult {

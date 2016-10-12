@@ -4,7 +4,7 @@
 ## Description
 
 A simple filter that checks if the request entity is present and only then passes processing to the inner route.
-Otherwise, the request is rejected.
+Otherwise, the request is rejected with `RequestEntityExpectedRejection`.
 
 See also @ref[requestEntityEmpty-java](requestEntityEmpty.md#requestentityempty-java) for the opposite effect.
 
