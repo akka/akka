@@ -3,13 +3,13 @@
  */
 package akka.typed
 
-import akka.event.{ LoggingFilter, LoggingAdapter, EventStream }
 import scala.concurrent.ExecutionContext
-import akka.{ actor ⇒ a }
+import akka.{ actor ⇒ a, event ⇒ e }
 import java.util.concurrent.ThreadFactory
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.typed.adapter.{ PropsAdapter, ActorSystemAdapter }
+import akka.util.Timeout
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -29,15 +29,28 @@ trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
   /**
    * The core settings extracted from the supplied configuration.
    */
-  def settings: akka.actor.ActorSystem.Settings
+  def settings: Settings
 
   /**
    * Log the configuration.
    */
   def logConfiguration(): Unit
 
-  def logFilter: LoggingFilter
-  def log: LoggingAdapter
+  /**
+   * A reference to this system’s logFilter, which filters usage of the [[#log]]
+   * [[akka.event.LoggingAdapter]] such that only permissible messages are sent
+   * via the [[#eventStream]]. The default implementation will just test that
+   * the message is suitable for the current log level.
+   */
+  def logFilter: e.LoggingFilter
+
+  /**
+   * A [[akka.event.LoggingAdapter]] that can be used to emit log messages
+   * without specifying a more detailed source. Typically it is desirable to
+   * construct a dedicated LoggingAdapter within each Actor from that Actor’s
+   * [[ActorRef]] in order to identify the log messages.
+   */
+  def log: e.LoggingAdapter
 
   /**
    * Start-up time in milliseconds since the epoch.
@@ -110,6 +123,19 @@ trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
    * The format of the string is subject to change, i.e. no stable “API”.
    */
   def printTree: String
+
+  /**
+   * Ask the system guardian of this system to create an actor from the given
+   * behavior and deployment and with the given name. The name does not need to
+   * be unique since the guardian will prefix it with a running number when
+   * creating the child actor. The timeout sets the timeout used for the [[AskPattern$]]
+   * invocation when asking the guardian.
+   *
+   * The returned Future of [[ActorRef]] may be converted into an [[ActorRef]]
+   * to which messages can immediately be sent by using the [[ActorRef$apply]]
+   * method.
+   */
+  def systemActorOf[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig)(implicit timeout: Timeout): Future[ActorRef[U]]
 }
 
 object ActorSystem {
@@ -120,13 +146,15 @@ object ActorSystem {
    * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
    * [[akka.actor.Actor]] instances.
    */
-  def apply[T](name: String, guardianProps: Props[T],
-               config:           Option[Config]           = None,
-               classLoader:      Option[ClassLoader]      = None,
-               executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
+  def apply[T](name: String, guardianBehavior: Behavior[T],
+               guardianDeployment: DeploymentConfig         = EmptyDeploymentConfig,
+               config:             Option[Config]           = None,
+               classLoader:        Option[ClassLoader]      = None,
+               executionContext:   Option[ExecutionContext] = None): ActorSystem[T] = {
+    Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
-    new ActorSystemImpl(name, appConfig, cl, executionContext, guardianProps)
+    new ActorSystemImpl(name, appConfig, cl, executionContext, guardianBehavior, guardianDeployment)
   }
 
   /**
@@ -134,13 +162,15 @@ object ActorSystem {
    * which runs Akka Typed [[Behavior]] on an emulation layer. In this
    * system typed and untyped actors can coexist.
    */
-  def adapter[T](name: String, guardianProps: Props[T],
-                 config:           Option[Config]           = None,
-                 classLoader:      Option[ClassLoader]      = None,
-                 executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
+  def adapter[T](name: String, guardianBehavior: Behavior[T],
+                 guardianDeployment: DeploymentConfig         = EmptyDeploymentConfig,
+                 config:             Option[Config]           = None,
+                 classLoader:        Option[ClassLoader]      = None,
+                 executionContext:   Option[ExecutionContext] = None): ActorSystem[T] = {
+    Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
-    val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext, Some(PropsAdapter(guardianProps)))
+    val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext, Some(PropsAdapter(guardianBehavior, guardianDeployment)))
     untyped.start()
     new ActorSystemAdapter(untyped)
   }
@@ -150,4 +180,46 @@ object ActorSystem {
    * Akka Typed [[Behavior]].
    */
   def wrap(untyped: a.ActorSystem): ActorSystem[Nothing] = new ActorSystemAdapter(untyped.asInstanceOf[a.ActorSystemImpl])
+}
+
+/**
+ * The configuration settings that were parsed from the config by an [[ActorSystem]].
+ * This class is immutable.
+ */
+final class Settings(val config: Config, val untyped: a.ActorSystem.Settings, val name: String) {
+  import collection.JavaConverters._
+
+  def this(_cl: ClassLoader, _config: Config, name: String) = this({
+    val config = _config.withFallback(ConfigFactory.defaultReference(_cl))
+    config.checkValid(ConfigFactory.defaultReference(_cl), "akka")
+    config
+  }, new a.ActorSystem.Settings(_cl, _config, name), name)
+
+  def this(untyped: a.ActorSystem.Settings) = this(untyped.config, untyped, untyped.name)
+
+  private var foundSettings = List.empty[String]
+  private def found(name: String, value: String): Unit = foundSettings ::= s"$name = $value"
+  private def getS(name: String, path: String): String = {
+    val value = config.getString(path)
+    found(name, value)
+    value
+  }
+  private def getSL(name: String, path: String): List[String] = {
+    val value = config.getStringList(path)
+    found(name, value.toString)
+    value.asScala.toList
+  }
+  private def getI(name: String, path: String): Int = {
+    val value = config.getInt(path)
+    found(name, value.toString)
+    value
+  }
+
+  val Loggers = getSL("Loggers", "akka.typed.loggers")
+  val LoggingFilter = getS("LoggingFilter", "akka.typed.logging-filter")
+  val DefaultMailboxCapacity = getI("DefaultMailboxCapacity", "akka.typed.mailbox-capacity")
+
+  foundSettings = foundSettings.reverse
+
+  override def toString: String = s"Settings($name,\n  ${foundSettings.mkString("\n  ")})"
 }

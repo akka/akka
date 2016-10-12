@@ -20,6 +20,15 @@ object TestActors {
   }
 
   /**
+   * BlackholeActor does nothing for incoming messages, its like a blackhole.
+   */
+  class BlackholeActor extends Actor {
+    override def receive = {
+      case _ ⇒ // ignore... 
+    }
+  }
+
+  /**
    * ForwardActor forwards all messages as-is to specified ActorRef.
    *
    * @param ref target ActorRef to forward messages to
@@ -31,6 +40,7 @@ object TestActors {
   }
 
   val echoActorProps = Props[EchoActor]()
+  val blackholeProps = Props[BlackholeActor]()
   def forwardActorProps(ref: ActorRef) = Props(classOf[ForwardActor], ref)
 
 }

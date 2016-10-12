@@ -60,6 +60,22 @@ object ScalaDSL {
   }
 
   /**
+   * Wrap a behavior factory so that it runs upon PreStart, i.e. behavior creation
+   * is deferred to the child actor instead of running within the parent.
+   */
+  final case class Deferred[T](factory: () ⇒ Behavior[T]) extends Behavior[T] {
+    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
+      if (msg != PreStart) throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
+      Behavior.preStart(factory(), ctx)
+    }
+
+    override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
+      throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
+
+    override def toString: String = s"Deferred(${LineNumbers(factory)})"
+  }
+
+  /**
    * Return this behavior from message processing in order to advise the
    * system to reuse the previous behavior. This is provided in order to
    * avoid the allocation overhead of recreating the current behavior where
@@ -140,8 +156,7 @@ object ScalaDSL {
             context.stop(child)
           }
           behavior.applyOrElse(Sig(context, PostStop), fallback)
-        case Sig(context, PostRestart) ⇒ behavior.applyOrElse(Sig(context, PreStart), fallback)
-        case _                         ⇒ Unhandled
+        case _ ⇒ Unhandled
       }
       behavior.applyOrElse(Sig(ctx, msg), fallback)
     }
@@ -253,27 +268,40 @@ object ScalaDSL {
    * sides of [[And]] and [[Or]] combinators.
    */
   final case class SynchronousSelf[T](f: ActorRef[T] ⇒ Behavior[T]) extends Behavior[T] {
-    private val inbox = Inbox[T]("synchronousSelf")
-    private var _behavior = f(inbox.ref)
-    private def behavior = _behavior
-    private def setBehavior(ctx: ActorContext[T], b: Behavior[T]): Unit =
-      _behavior = canonicalize(b, _behavior)
 
-    // FIXME should we protect against infinite loops?
-    @tailrec private def run(ctx: ActorContext[T], next: Behavior[T]): Behavior[T] = {
-      setBehavior(ctx, next)
-      if (inbox.hasMessages) run(ctx, behavior.message(ctx, inbox.receiveMsg()))
-      else if (isUnhandled(next)) Unhandled
-      else if (isAlive(next)) this
-      else Stopped
+    private class B extends Behavior[T] {
+      private val inbox = Inbox[T]("synchronousSelf")
+      private var _behavior = Behavior.validateAsInitial(f(inbox.ref))
+      private def behavior = _behavior
+      private def setBehavior(ctx: ActorContext[T], b: Behavior[T]): Unit =
+        _behavior = canonicalize(b, _behavior)
+
+      // FIXME should we protect against infinite loops?
+      @tailrec private def run(ctx: ActorContext[T], next: Behavior[T]): Behavior[T] = {
+        setBehavior(ctx, next)
+        if (inbox.hasMessages) run(ctx, behavior.message(ctx, inbox.receiveMsg()))
+        else if (isUnhandled(next)) Unhandled
+        else if (isAlive(next)) this
+        else Stopped
+      }
+
+      override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] =
+        run(ctx, behavior.management(ctx, msg))
+      override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
+        run(ctx, behavior.message(ctx, msg))
+
+      override def toString: String = s"SynchronousSelf($behavior)"
     }
 
-    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] =
-      run(ctx, behavior.management(ctx, msg))
-    override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
-      run(ctx, behavior.message(ctx, msg))
+    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
+      if (msg != PreStart) throw new IllegalStateException(s"SynchronousSelf must receive PreStart as first message (got $msg)")
+      Behavior.preStart(new B(), ctx)
+    }
 
-    override def toString: String = s"SynchronousSelf($behavior)"
+    override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
+      throw new IllegalStateException(s"SynchronousSelf must receive PreStart as first message (got $msg)")
+
+    override def toString: String = s"SynchronousSelf(${LineNumbers(f)})"
   }
 
   /**
@@ -392,12 +420,8 @@ object ScalaDSL {
    */
   def SelfAware[T](behavior: ActorRef[T] ⇒ Behavior[T]): Behavior[T] =
     FullTotal {
-      case Sig(ctx, signal) ⇒
-        val behv = behavior(ctx.self)
-        canonicalize(behv.management(ctx, signal), behv)
-      case Msg(ctx, msg) ⇒
-        val behv = behavior(ctx.self)
-        canonicalize(behv.message(ctx, msg), behv)
+      case Sig(ctx, PreStart) ⇒ Behavior.preStart(behavior(ctx.self), ctx)
+      case msg                ⇒ throw new IllegalStateException(s"SelfAware must receive PreStart as first message (got $msg)")
     }
 
   /**
@@ -416,12 +440,8 @@ object ScalaDSL {
    */
   def ContextAware[T](behavior: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
     FullTotal {
-      case Sig(ctx, signal) ⇒
-        val behv = behavior(ctx)
-        canonicalize(behv.management(ctx, signal), behv)
-      case Msg(ctx, msg) ⇒
-        val behv = behavior(ctx)
-        canonicalize(behv.message(ctx, msg), behv)
+      case Sig(ctx, PreStart) ⇒ Behavior.preStart(behavior(ctx), ctx)
+      case msg                ⇒ throw new IllegalStateException(s"ContextAware must receive PreStart as first message (got $msg)")
     }
 
   /**

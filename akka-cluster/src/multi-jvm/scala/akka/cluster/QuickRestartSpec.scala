@@ -3,22 +3,17 @@
  */
 package akka.cluster
 
-import scala.collection.immutable
-import scala.language.postfixOps
-import scala.concurrent.duration._
-import akka.actor.Address
-import akka.cluster.MemberStatus._
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
+import java.util.concurrent.ThreadLocalRandom
+
+import akka.actor.{ ActorSystem, Address }
+import akka.remote.RARP
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
-import akka.actor.ActorSystem
-import akka.actor.ActorRef
-import akka.event.Logging.Info
-import akka.actor.Actor
-import akka.actor.Props
-import java.util.concurrent.ThreadLocalRandom
+
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 // This test was a reproducer for issue #20639
 object QuickRestartMultiJvmSpec extends MultiNodeConfig {
@@ -72,10 +67,19 @@ abstract class QuickRestartSpec
             else
               ActorSystem(
                 system.name,
-                ConfigFactory.parseString(s"""
-                  akka.cluster.roles = [round-$n]
-                  akka.remote.netty.tcp.port = ${Cluster(restartingSystem).selfAddress.port.get}""") // same port
-                  .withFallback(system.settings.config))
+                // use the same port
+                ConfigFactory.parseString(
+                  if (RARP(system).provider.remoteSettings.Artery.Enabled)
+                    s"""
+                       akka.cluster.roles = [round-$n]
+                       akka.remote.artery.canonical.port = ${Cluster(restartingSystem).selfAddress.port.get}
+                     """
+                  else
+                    s"""
+                      akka.cluster.roles = [round-$n]
+                      akka.remote.netty.tcp.port = ${Cluster(restartingSystem).selfAddress.port.get}
+                    """
+                ).withFallback(system.settings.config))
           log.info("Restarting node has address: {}", Cluster(restartingSystem).selfUniqueAddress)
           Cluster(restartingSystem).joinSeedNodes(seedNodes)
           within(20.seconds) {

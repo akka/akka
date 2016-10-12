@@ -34,4 +34,5 @@ private[akka] object ConstantFun {
   val none = (_: Any) ⇒ None
 
   val two2none = (_: Any, _: Any) ⇒ None
+
 }

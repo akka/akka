@@ -14,7 +14,7 @@ import akka.event.Logging.Warning
 class RemoteDeathWatchSpec extends AkkaSpec(ConfigFactory.parseString("""
 akka {
     actor {
-        provider = "akka.remote.RemoteActorRefProvider"
+        provider = remote
         deployment {
             /watchers.remote = "akka.tcp://other@localhost:2666"
         }
@@ -27,6 +27,10 @@ akka {
     }
 }
 """)) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
+
+  val protocol =
+    if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
+    else "akka.tcp"
 
   val other = ActorSystem("other", ConfigFactory.parseString("akka.remote.netty.tcp.port=2666")
     .withFallback(system.settings.config))
@@ -49,7 +53,7 @@ akka {
     // pick an unused port
     val port = SocketUtil.temporaryServerAddress().getPort
     // simulate de-serialized ActorRef
-    val ref = rarp.resolveActorRef(s"akka.tcp://OtherSystem@localhost:$port/user/foo/bar#1752527294")
+    val ref = rarp.resolveActorRef(s"$protocol://OtherSystem@localhost:$port/user/foo/bar#1752527294")
     system.actorOf(Props(new Actor {
       context.watch(ref)
       def receive = {
@@ -67,7 +71,7 @@ akka {
   }
 
   "receive Terminated when watched node is unknown host" in {
-    val path = RootActorPath(Address("akka.tcp", system.name, "unknownhost", 2552)) / "user" / "subject"
+    val path = RootActorPath(Address(protocol, system.name, "unknownhost", 2552)) / "user" / "subject"
     system.actorOf(Props(new Actor {
       context.watch(context.actorFor(path))
       def receive = {
@@ -79,7 +83,7 @@ akka {
   }
 
   "receive ActorIdentity(None) when identified node is unknown host" in {
-    val path = RootActorPath(Address("akka.tcp", system.name, "unknownhost2", 2552)) / "user" / "subject"
+    val path = RootActorPath(Address(protocol, system.name, "unknownhost2", 2552)) / "user" / "subject"
     system.actorSelection(path) ! Identify(path)
     expectMsg(60.seconds, ActorIdentity(path, None))
   }
@@ -87,7 +91,7 @@ akka {
   "quarantine systems after unsuccessful system message delivery if have not communicated before" in {
     // Synthesize an ActorRef to a remote system this one has never talked to before.
     // This forces ReliableDeliverySupervisor to start with unknown remote system UID.
-    val extinctPath = RootActorPath(Address("akka.tcp", "extinct-system", "localhost", SocketUtil.temporaryServerAddress().getPort)) / "user" / "noone"
+    val extinctPath = RootActorPath(Address(protocol, "extinct-system", "localhost", SocketUtil.temporaryServerAddress().getPort)) / "user" / "noone"
     val transport = RARP(system).provider.transport
     val extinctRef = new RemoteActorRef(transport, transport.localAddressForRemote(extinctPath.address),
       extinctPath, Nobody, props = None, deploy = None)

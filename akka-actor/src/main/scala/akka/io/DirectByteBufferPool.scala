@@ -71,6 +71,29 @@ private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries:
       tryCleanDirectByteBuffer(buf)
   }
 
+  private final def tryCleanDirectByteBuffer(toBeDestroyed: ByteBuffer): Unit = DirectByteBufferPool.tryCleanDirectByteBuffer(toBeDestroyed)
+}
+
+/** INTERNAL API */
+private[akka] object DirectByteBufferPool {
+  private val CleanDirectBuffer: ByteBuffer ⇒ Unit =
+    try {
+      val cleanerMethod = Class.forName("java.nio.DirectByteBuffer").getMethod("cleaner")
+      cleanerMethod.setAccessible(true)
+
+      val cleanMethod = Class.forName("sun.misc.Cleaner").getMethod("clean")
+      cleanMethod.setAccessible(true)
+
+      { (bb: ByteBuffer) ⇒
+        try
+          if (bb.isDirect) {
+            val cleaner = cleanerMethod.invoke(bb)
+            cleanMethod.invoke(cleaner)
+          }
+        catch { case NonFatal(e) ⇒ /* ok, best effort attempt to cleanup failed */ }
+      }
+    } catch { case NonFatal(e) ⇒ _ ⇒ () /* reflection failed, use no-op fallback */ }
+
   /**
    * DirectByteBuffers are garbage collected by using a phantom reference and a
    * reference queue. Every once a while, the JVM checks the reference queue and
@@ -81,16 +104,5 @@ private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries:
    *
    * Utilizes reflection to avoid dependency to `sun.misc.Cleaner`.
    */
-  private final def tryCleanDirectByteBuffer(toBeDestroyed: ByteBuffer): Unit = try {
-    if (toBeDestroyed.isDirect) {
-      val cleanerMethod = toBeDestroyed.getClass().getMethod("cleaner")
-      cleanerMethod.setAccessible(true)
-      val cleaner = cleanerMethod.invoke(toBeDestroyed)
-      val cleanMethod = cleaner.getClass().getMethod("clean")
-      cleanMethod.setAccessible(true)
-      cleanMethod.invoke(cleaner)
-    }
-  } catch {
-    case NonFatal(_) ⇒ // attempt failed, ok
-  }
+  def tryCleanDirectByteBuffer(byteBuffer: ByteBuffer): Unit = CleanDirectBuffer(byteBuffer)
 }

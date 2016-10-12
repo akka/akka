@@ -14,12 +14,14 @@ import scala.concurrent.ExecutionContextExecutor
 private[typed] class ActorContextAdapter[T](ctx: a.ActorContext) extends ActorContext[T] {
 
   override def self = ActorRefAdapter(ctx.self)
-  override def props = PropsAdapter(ctx.props)
   override val system = ActorSystemAdapter(ctx.system)
+  override def mailboxCapacity = 1 << 29 // FIXME
   override def children = ctx.children.map(ActorRefAdapter(_))
   override def child(name: String) = ctx.child(name).map(ActorRefAdapter(_))
-  override def spawnAnonymous[U](props: Props[U]) = ctx.spawnAnonymous(props)
-  override def spawn[U](props: Props[U], name: String) = ctx.spawn(props, name)
+  override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig) =
+    ctx.spawnAnonymous(behavior, deployment)
+  override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig) =
+    ctx.spawn(behavior, name, deployment)
   override def stop(child: ActorRef[Nothing]) =
     toUntyped(child) match {
       case f: akka.actor.FunctionRef ⇒

@@ -511,7 +511,7 @@ Recovery
 
 Initial recovery of persistent views works the very same way as for persistent actors (i.e. by sending a ``Recover`` message
 to self). The maximum number of replayed messages during initial recovery is determined by ``autoUpdateReplayMax``.
-Further possibilities to customize initial recovery are explained in section :ref:`recovery-java`.
+Further possibilities to customize initial recovery are explained in section :ref:`recovery-java-lambda`.
 
 .. _persistence-identifiers-java-lambda:
 

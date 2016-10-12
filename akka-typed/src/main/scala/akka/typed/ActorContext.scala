@@ -38,9 +38,9 @@ trait ActorContext[T] {
   def self: ActorRef[T]
 
   /**
-   * The [[Props]] from which this Actor was created.
+   * Return the mailbox capacity that was configured by the parent for this actor.
    */
-  def props: Props[T]
+  def mailboxCapacity: Int
 
   /**
    * The [[ActorSystem]] to which this Actor belongs.
@@ -62,12 +62,12 @@ trait ActorContext[T] {
    * Create a child Actor from the given [[Props]] under a randomly chosen name.
    * It is good practice to name Actors wherever practical.
    */
-  def spawnAnonymous[U](props: Props[U]): ActorRef[U]
+  def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U]
 
   /**
    * Create a child Actor from the given [[Props]] and with the given name.
    */
-  def spawn[U](props: Props[U], name: String): ActorRef[U]
+  def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U]
 
   /**
    * Force the child Actor under the given name to terminate after it finishes
@@ -135,9 +135,9 @@ trait ActorContext[T] {
  * See [[EffectfulActorContext]] for more advanced uses.
  */
 class StubbedActorContext[T](
-  val name:            String,
-  override val props:  Props[T],
-  override val system: ActorSystem[Nothing]) extends ActorContext[T] {
+  val name:                     String,
+  override val mailboxCapacity: Int,
+  override val system:          ActorSystem[Nothing]) extends ActorContext[T] {
 
   val inbox = Inbox[T](name)
   override val self = inbox.ref
@@ -147,12 +147,12 @@ class StubbedActorContext[T](
 
   override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ref)
   override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ref)
-  override def spawnAnonymous[U](props: Props[U]): ActorRef[U] = {
+  override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] = {
     val i = Inbox[U](childName.next())
     _children += i.ref.path.name → i
     i.ref
   }
-  override def spawn[U](props: Props[U], name: String): ActorRef[U] =
+  override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] =
     _children get name match {
       case Some(_) ⇒ throw new untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
@@ -186,7 +186,7 @@ class StubbedActorContext[T](
 
   def executionContext: ExecutionContextExecutor = system.executionContext
 
-  def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = spawnAnonymous(Props.empty)
+  def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = spawnAnonymous[Any](Behavior.emptyBehavior)
 
   /**
    * Retrieve the named inbox. The passed ActorRef must be one that was returned

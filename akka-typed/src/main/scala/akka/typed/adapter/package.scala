@@ -9,17 +9,17 @@ package object adapter {
   import akka.dispatch.sysmsg
 
   implicit class ActorSystemOps(val sys: akka.actor.ActorSystem) extends AnyVal {
-    def spawnAnonymous[T](props: Props[T]): ActorRef[T] =
-      ActorRefAdapter(sys.actorOf(PropsAdapter(props)))
-    def spawn[T](props: Props[T], name: String): ActorRef[T] =
-      ActorRefAdapter(sys.actorOf(PropsAdapter(props), name))
+    def spawnAnonymous[T](behavior: Behavior[T], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[T] =
+      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), deployment)))
+    def spawn[T](behavior: Behavior[T], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[T] =
+      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), deployment), name))
   }
 
   implicit class ActorContextOps(val ctx: akka.actor.ActorContext) extends AnyVal {
-    def spawnAnonymous[T](props: Props[T]): ActorRef[T] =
-      ActorRefAdapter(ctx.actorOf(PropsAdapter(props)))
-    def spawn[T](props: Props[T], name: String): ActorRef[T] =
-      ActorRefAdapter(ctx.actorOf(PropsAdapter(props), name))
+    def spawnAnonymous[T](behavior: Behavior[T], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[T] =
+      ActorRefAdapter(ctx.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), deployment)))
+    def spawn[T](behavior: Behavior[T], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[T] =
+      ActorRefAdapter(ctx.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), deployment), name))
   }
 
   implicit def actorRefAdapter(ref: akka.actor.ActorRef): ActorRef[Any] = ActorRefAdapter(ref)

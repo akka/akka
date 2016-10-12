@@ -54,7 +54,7 @@ object ActorContextSpec {
   case object Unwatched extends Event
 
   final case class GetInfo(replyTo: ActorRef[Info]) extends Command
-  final case class Info(self: ActorRef[Command], props: Props[Command], system: ActorSystem[Nothing]) extends Event
+  final case class Info(self: ActorRef[Command], system: ActorSystem[Nothing]) extends Event
 
   final case class GetChild(name: String, replyTo: ActorRef[Child]) extends Command
   final case class Child(c: Option[ActorRef[Nothing]]) extends Event
@@ -95,8 +95,8 @@ object ActorContextSpec {
           throw ex
         case MkChild(name, mon, replyTo) ⇒
           val child = name match {
-            case None    ⇒ ctx.spawnAnonymous(Restarter[Throwable]().wrap(Props(subject(mon))))
-            case Some(n) ⇒ ctx.spawn(Restarter[Throwable]().wrap(Props(subject(mon))), n)
+            case None    ⇒ ctx.spawnAnonymous(Restarter[Throwable]().wrap(subject(mon)))
+            case Some(n) ⇒ ctx.spawn(Restarter[Throwable]().wrap(subject(mon)), n)
           }
           replyTo ! Created(child)
           Same
@@ -125,7 +125,7 @@ object ActorContextSpec {
           replyTo ! Unwatched
           Same
         case GetInfo(replyTo) ⇒
-          replyTo ! Info(ctx.self, ctx.props, ctx.system)
+          replyTo ! Info(ctx.self, ctx.system)
           Same
         case GetChild(name, replyTo) ⇒
           replyTo ! Child(ctx.child(name))
@@ -190,7 +190,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     def setup(name: String, wrapper: Option[Restarter.Apply[_]] = None)(
       proc: (ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
       runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
-        val props = wrapper.map(_.wrap(Props(behavior(ctx)))).getOrElse(Props(behavior(ctx)))
+        val props = wrapper.map(_.wrap(behavior(ctx))).getOrElse(behavior(ctx))
         val steps =
           startWith.withKeepTraces(true)(ctx.spawn(props, "subject"))
             .expectMessage(expectTimeout) { (msg, ref) ⇒
@@ -273,7 +273,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           log.assertDone(expectTimeout)
           subj
       }.expectMessage(expectTimeout) { (msg, subj) ⇒
-        msg should ===(GotSignal(PostRestart))
+        msg should ===(GotSignal(PreStart))
         ctx.stop(subj)
       }.expectMessage(expectTimeout) { (msg, _) ⇒
         msg should ===(GotSignal(PostStop))
@@ -301,7 +301,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         case (msgs, (subj, child, log)) ⇒
           msgs should ===(
             ChildEvent(GotSignal(PreRestart)) ::
-              ChildEvent(GotSignal(PostRestart)) :: Nil)
+              ChildEvent(GotSignal(PreStart)) :: Nil)
           log.assertDone(expectTimeout)
           child ! BecomeInert(self) // necessary to avoid PostStop/Terminated interference
           (subj, child)
@@ -346,7 +346,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           (subj, log)
         }.expectMessage(expectTimeout) {
           case (msg, (subj, log)) ⇒
-            msg should ===(GotSignal(PostRestart))
+            msg should ===(GotSignal(PreStart))
             log.assertDone(expectTimeout)
             subj
         }
@@ -380,7 +380,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     def `08 must not stop non-child actor`(): Unit = sync(setup("ctx08") { (ctx, startWith) ⇒
       val self = ctx.self
       startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self) { pair ⇒
-        (pair._1, pair._2, ctx.spawn(Props(behavior(ctx)), "A"))
+        (pair._1, pair._2, ctx.spawn(behavior(ctx), "A"))
       }.expectMessage(expectTimeout) {
         case (msg, (subj, child, other)) ⇒
           msg should ===(GotSignal(PreStart))

@@ -45,6 +45,7 @@ import akka.actor.ActorIdentity
 import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import java.lang.management.ManagementFactory
+import akka.remote.RARP
 
 /**
  * This test is intended to be used as long running stress test
@@ -124,15 +125,21 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
     akka.actor.serialize-messages = off
     akka.actor.serialize-creators = off
-    akka.actor.provider = akka.cluster.ClusterActorRefProvider
+    akka.actor.provider = cluster
     akka.cluster {
-      failure-detector.acceptable-heartbeat-pause =  5s
+      failure-detector.acceptable-heartbeat-pause =  10s
       auto-down-unreachable-after = 1s
       publish-stats-interval = 1s
     }
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
+
+    akka.remote.artery.advanced {
+      idle-cpu-level = 1
+      embedded-media-driver = off
+      aeron-dir = "target/aeron-StressSpec"
+    }
 
     akka.actor.default-dispatcher.fork-join-executor {
       parallelism-min = 8
@@ -699,8 +706,11 @@ class StressMultiJvmNode12 extends StressSpec
 class StressMultiJvmNode13 extends StressSpec
 
 abstract class StressSpec
-  extends MultiNodeSpec(StressMultiJvmSpec)
-  with MultiNodeClusterSpec with BeforeAndAfterEach with ImplicitSender {
+  extends MultiNodeSpec({
+    // Aeron media driver must be started before ActorSystem
+    SharedMediaDriverSupport.startMediaDriver(StressMultiJvmSpec)
+    StressMultiJvmSpec
+  }) with MultiNodeClusterSpec with BeforeAndAfterEach with ImplicitSender {
 
   import StressMultiJvmSpec._
   import ClusterEvent._
@@ -725,6 +735,20 @@ abstract class StressSpec
     muteDeadLetters(classOf[SimpleJob], classOf[AggregatedClusterResult], SendBatch.getClass,
       classOf[StatsResult], classOf[PhiResult], RetryTick.getClass)(sys)
   }
+
+  override protected def afterTermination(): Unit = {
+    SharedMediaDriverSupport.stopMediaDriver(StressMultiJvmSpec)
+    super.afterTermination()
+  }
+
+  Runtime.getRuntime.addShutdownHook(new Thread {
+    override def run(): Unit = {
+      if (SharedMediaDriverSupport.isMediaDriverRunningByThisNode)
+        println("Abrupt exit of JVM without closing media driver. This should not happen and may cause test failure.")
+    }
+  })
+
+  def isArteryEnabled: Boolean = RARP(system).provider.remoteSettings.Artery.Enabled
 
   def jvmInfo(): String = {
     val runtime = ManagementFactory.getRuntimeMXBean

@@ -24,6 +24,7 @@ import akka.remote.transport.AkkaPduCodec.Message
 import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ByteString.UTF_8
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -35,13 +36,13 @@ private[remote] object AddressUrlEncoder {
 /**
  * INTERNAL API
  */
-private[remote] final case class RARP(provider: RemoteActorRefProvider) extends Extension {
+private[akka] final case class RARP(provider: RemoteActorRefProvider) extends Extension {
   def configureDispatcher(props: Props): Props = provider.remoteSettings.configureDispatcher(props)
 }
 /**
  * INTERNAL API
  */
-private[remote] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
+private[akka] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
 
   override def lookup() = RARP
 
@@ -53,8 +54,15 @@ private[remote] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
  * Messages marked with this trait will be sent before other messages when buffering is active.
  * This means that these messages don't obey normal message ordering.
  * It is used for failure detector heartbeat messages.
+ *
+ * In Artery this is not used, and instead a preconfigured set of destinations select the priority lane.
  */
 private[akka] trait PriorityMessage
+
+/**
+ * Failure detector heartbeat messages are marked with this trait.
+ */
+private[akka] trait HeartbeatMessage extends PriorityMessage
 
 /**
  * INTERNAL API
@@ -209,7 +217,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     }
   }
 
-  override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = endpointManager match {
+  override def send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = endpointManager match {
     case Some(manager) ⇒ manager.tell(Send(message, senderOption, recipient), sender = senderOption getOrElse Actor.noSender)
     case None          ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send remote message but Remoting is not running.", null)
   }
@@ -222,14 +230,12 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     case None ⇒ throw new RemoteTransportExceptionNoStackTrace("Attempted to send management command but Remoting is not running.", null)
   }
 
-  override def quarantine(remoteAddress: Address, uid: Option[Int]): Unit = endpointManager match {
-    case Some(manager) ⇒ manager ! Quarantine(remoteAddress, uid)
+  override def quarantine(remoteAddress: Address, uid: Option[Long], reason: String): Unit = endpointManager match {
+    case Some(manager) ⇒
+      manager ! Quarantine(remoteAddress, uid.map(_.toInt))
     case _ ⇒ throw new RemoteTransportExceptionNoStackTrace(
-      s"Attempted to quarantine address [$remoteAddress] with uid [$uid] but Remoting is not running", null)
+      s"Attempted to quarantine address [$remoteAddress] with UID [$uid] but Remoting is not running", null)
   }
-
-  // Not used anywhere only to keep compatibility with RemoteTransport interface
-  protected def useUntrustedMode: Boolean = provider.remoteSettings.UntrustedMode
 
   private[akka] def boundAddresses: Map[String, Set[Address]] = {
     transportMapping.map {
@@ -252,7 +258,7 @@ private[remote] object EndpointManager {
   final case class Listen(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]]) extends RemotingCommand
   case object StartupFinished extends RemotingCommand
   case object ShutdownAndFlush extends RemotingCommand
-  final case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef, seqOpt: Option[SeqNo] = None)
+  final case class Send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef, seqOpt: Option[SeqNo] = None)
     extends RemotingCommand with HasSequenceNumber {
     override def toString = s"Remote message $senderOption -> $recipient"
 

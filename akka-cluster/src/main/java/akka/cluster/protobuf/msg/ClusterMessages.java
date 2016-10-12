@@ -16041,6 +16041,24 @@ public final class ClusterMessages {
      * <code>required uint32 uid = 2;</code>
      */
     int getUid();
+
+    // optional uint32 uid2 = 3;
+    /**
+     * <code>optional uint32 uid2 = 3;</code>
+     *
+     * <pre>
+     * 64 bit uids but with backward wire compatibility
+     * </pre>
+     */
+    boolean hasUid2();
+    /**
+     * <code>optional uint32 uid2 = 3;</code>
+     *
+     * <pre>
+     * 64 bit uids but with backward wire compatibility
+     * </pre>
+     */
+    int getUid2();
   }
   /**
    * Protobuf type {@code UniqueAddress}
@@ -16114,6 +16132,11 @@ public final class ClusterMessages {
             case 16: {
               bitField0_ |= 0x00000002;
               uid_ = input.readUInt32();
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
+              uid2_ = input.readUInt32();
               break;
             }
           }
@@ -16194,9 +16217,34 @@ public final class ClusterMessages {
       return uid_;
     }
 
+    // optional uint32 uid2 = 3;
+    public static final int UID2_FIELD_NUMBER = 3;
+    private int uid2_;
+    /**
+     * <code>optional uint32 uid2 = 3;</code>
+     *
+     * <pre>
+     * 64 bit uids but with backward wire compatibility
+     * </pre>
+     */
+    public boolean hasUid2() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional uint32 uid2 = 3;</code>
+     *
+     * <pre>
+     * 64 bit uids but with backward wire compatibility
+     * </pre>
+     */
+    public int getUid2() {
+      return uid2_;
+    }
+
     private void initFields() {
       address_ = akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance();
       uid_ = 0;
+      uid2_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -16228,6 +16276,9 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeUInt32(2, uid_);
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeUInt32(3, uid2_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -16244,6 +16295,10 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += akka.protobuf.CodedOutputStream
           .computeUInt32Size(2, uid_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeUInt32Size(3, uid2_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -16375,6 +16430,8 @@ public final class ClusterMessages {
         bitField0_ = (bitField0_ & ~0x00000001);
         uid_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
+        uid2_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -16415,6 +16472,10 @@ public final class ClusterMessages {
           to_bitField0_ |= 0x00000002;
         }
         result.uid_ = uid_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.uid2_ = uid2_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -16436,6 +16497,9 @@ public final class ClusterMessages {
         }
         if (other.hasUid()) {
           setUid(other.getUid());
+        }
+        if (other.hasUid2()) {
+          setUid2(other.getUid2());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -16626,6 +16690,55 @@ public final class ClusterMessages {
         return this;
       }
 
+      // optional uint32 uid2 = 3;
+      private int uid2_ ;
+      /**
+       * <code>optional uint32 uid2 = 3;</code>
+       *
+       * <pre>
+       * 64 bit uids but with backward wire compatibility
+       * </pre>
+       */
+      public boolean hasUid2() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional uint32 uid2 = 3;</code>
+       *
+       * <pre>
+       * 64 bit uids but with backward wire compatibility
+       * </pre>
+       */
+      public int getUid2() {
+        return uid2_;
+      }
+      /**
+       * <code>optional uint32 uid2 = 3;</code>
+       *
+       * <pre>
+       * 64 bit uids but with backward wire compatibility
+       * </pre>
+       */
+      public Builder setUid2(int value) {
+        bitField0_ |= 0x00000004;
+        uid2_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional uint32 uid2 = 3;</code>
+       *
+       * <pre>
+       * 64 bit uids but with backward wire compatibility
+       * </pre>
+       */
+      public Builder clearUid2() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        uid2_ = 0;
+        onChanged();
+        return this;
+      }
+
       // @@protoc_insertion_point(builder_scope:UniqueAddress)
     }
 
@@ -16789,14 +16902,14 @@ public final class ClusterMessages {
       "\016\n\nSerialized\020\000\022\n\n\006Double\020\001\022\t\n\005Float\020\002\022\013" +
       "\n\007Integer\020\003\022\010\n\004Long\020\004\"\007\n\005Empty\"K\n\007Addres" +
       "s\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004p" +
-      "ort\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"7\n\rUniqueAdd" +
+      "ort\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"E\n\rUniqueAdd" +
       "ress\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002" +
-      " \002(\r*D\n\022ReachabilityStatus\022\r\n\tReachable\020" +
-      "\000\022\017\n\013Unreachable\020\001\022\016\n\nTerminated\020\002*b\n\014Me" +
-      "mberStatus\022\013\n\007Joining\020\000\022\006\n\002Up\020\001\022\013\n\007Leavi" +
-      "ng\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005" +
-      "\022\014\n\010WeaklyUp\020\006B\035\n\031akka.cluster.protobuf.",
-      "msgH\001"
+      " \002(\r\022\014\n\004uid2\030\003 \001(\r*D\n\022ReachabilityStatus" +
+      "\022\r\n\tReachable\020\000\022\017\n\013Unreachable\020\001\022\016\n\nTerm" +
+      "inated\020\002*b\n\014MemberStatus\022\013\n\007Joining\020\000\022\006\n" +
+      "\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020" +
+      "\004\022\013\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035\n\031akka.clu",
+      "ster.protobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -16922,7 +17035,7 @@ public final class ClusterMessages {
           internal_static_UniqueAddress_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_UniqueAddress_descriptor,
-              new java.lang.String[] { "Address", "Uid", });
+              new java.lang.String[] { "Address", "Uid", "Uid2", });
           return null;
         }
       };

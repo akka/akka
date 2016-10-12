@@ -89,6 +89,8 @@ abstract class NodeChurnSpec
   }
 
   "Cluster with short lived members" must {
+    "TODO work with artery" in (pending)
+    /*
     "setup stable nodes" taggedAs LongRunningTest in within(15.seconds) {
       val logListener = system.actorOf(Props(classOf[LogListener], testActor), "logListener")
       system.eventStream.subscribe(logListener, classOf[Info])
@@ -125,6 +127,8 @@ abstract class NodeChurnSpec
       }
       expectNoMsg(5.seconds)
     }
+    */
 
   }
+
 }

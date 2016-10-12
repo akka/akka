@@ -74,6 +74,9 @@ object Dependencies {
 
     // For Java 8 Conversions
     val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
+    
+    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.1"       // ApacheV2
+    val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.1"       // ApacheV2
 
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
@@ -103,7 +106,7 @@ object Dependencies {
       val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
       val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
       val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
-      val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.8"            % "test" // CC0
+      val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
       val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // sigar logging
@@ -136,7 +139,7 @@ object Dependencies {
 
   val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck.value, Test.junitIntf)
 
-  val remote = l ++= Seq(netty, uncommonsMath, Test.junit, Test.scalatest.value)
+  val remote = l ++= Seq(netty, uncommonsMath, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
 
   val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
 

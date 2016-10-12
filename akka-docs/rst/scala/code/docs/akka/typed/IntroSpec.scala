@@ -81,7 +81,7 @@ class IntroSpec extends TypedSpec {
     // using global pool since we want to run tasks after system.terminate
     import scala.concurrent.ExecutionContext.Implicits.global
 
-    val system: ActorSystem[Greet] = ActorSystem("hello", Props(greeter))
+    val system: ActorSystem[Greet] = ActorSystem("hello", greeter)
 
     val future: Future[Greeted] = system ? (Greet("world", _))
 
@@ -111,11 +111,11 @@ class IntroSpec extends TypedSpec {
     //#chatroom-gabbler
 
     //#chatroom-main
-    val main: Behavior[Unit] =
+    val main: Behavior[akka.NotUsed] =
       Full {
         case Sig(ctx, PreStart) =>
-          val chatRoom = ctx.spawn(Props(ChatRoom.behavior), "chatroom")
-          val gabblerRef = ctx.spawn(Props(gabbler), "gabbler")
+          val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
+          val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)
           chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
           Same
@@ -123,7 +123,7 @@ class IntroSpec extends TypedSpec {
           Stopped
       }
 
-    val system = ActorSystem("ChatRoomDemo", Props(main))
+    val system = ActorSystem("ChatRoomDemo", main)
     Await.result(system.whenTerminated, 1.second)
     //#chatroom-main
   }

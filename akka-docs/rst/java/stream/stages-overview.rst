@@ -1231,7 +1231,7 @@ returned value downstream.
 **completes** when any upstream completes
 
 zipWithIndex
-^^^^^^^
+^^^^^^^^^^^^
 Zips elements of current flow with its indices.
 
 **emits** upstream emits an element and is paired with their index

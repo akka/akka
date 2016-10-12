@@ -32,7 +32,7 @@ class DaemonicSpec extends AkkaSpec {
       // create a separate actor system that we can check the threads for
       val daemonicSystem = ActorSystem("daemonic", ConfigFactory.parseString("""
         akka.daemonic = on
-        akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+        akka.actor.provider = remote
         akka.remote.netty.tcp.transport-class = "akka.remote.transport.netty.NettyTransport"
         akka.remote.netty.tcp.port = 0
         akka.log-dead-letters-during-shutdown = off

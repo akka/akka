@@ -32,7 +32,7 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
     """
       akka {
         actor.default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
-        actor.provider = "akka.remote.RemoteActorRefProvider"
+        actor.provider = remote
         stream.materializer.debug.fuzzing-mode = off
 
         testconductor.barrier-timeout = 30m

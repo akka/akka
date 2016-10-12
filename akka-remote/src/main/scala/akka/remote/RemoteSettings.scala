@@ -13,10 +13,13 @@ import akka.actor.Props
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.ConfigurationException
+import akka.remote.artery.ArterySettings
 
 final class RemoteSettings(val config: Config) {
   import config._
   import scala.collection.JavaConverters._
+
+  val Artery = ArterySettings(getConfig("akka.remote.artery"))
 
   val LogReceive: Boolean = getBoolean("akka.remote.log-received-messages")
 

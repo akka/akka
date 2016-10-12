@@ -13,17 +13,38 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 import testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
 import akka.actor.PoisonPill
+import com.typesafe.config.ConfigFactory
 
-object AttemptSysMsgRedeliveryMultiJvmSpec extends MultiNodeConfig {
+class AttemptSysMsgRedeliveryMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false))
+  commonConfig(debugConfig(on = false).withFallback(
+    ConfigFactory.parseString(s"""
+      akka.remote.artery.enabled = $artery
+      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
 
   testTransport(on = true)
 
+}
+
+class AttemptSysMsgRedeliveryMultiJvmNode1 extends AttemptSysMsgRedeliverySpec(
+  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = false))
+class AttemptSysMsgRedeliveryMultiJvmNode2 extends AttemptSysMsgRedeliverySpec(
+  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = false))
+class AttemptSysMsgRedeliveryMultiJvmNode3 extends AttemptSysMsgRedeliverySpec(
+  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = false))
+
+class ArteryAttemptSysMsgRedeliveryMultiJvmNode1 extends AttemptSysMsgRedeliverySpec(
+  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = true))
+class ArteryAttemptSysMsgRedeliveryMultiJvmNode2 extends AttemptSysMsgRedeliverySpec(
+  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = true))
+class ArteryAttemptSysMsgRedeliveryMultiJvmNode3 extends AttemptSysMsgRedeliverySpec(
+  new AttemptSysMsgRedeliveryMultiJvmSpec(artery = true))
+
+object AttemptSysMsgRedeliverySpec {
   class Echo extends Actor {
     def receive = {
       case m ⇒ sender ! m
@@ -31,13 +52,10 @@ object AttemptSysMsgRedeliveryMultiJvmSpec extends MultiNodeConfig {
   }
 }
 
-class AttemptSysMsgRedeliveryMultiJvmNode1 extends AttemptSysMsgRedeliverySpec
-class AttemptSysMsgRedeliveryMultiJvmNode2 extends AttemptSysMsgRedeliverySpec
-class AttemptSysMsgRedeliveryMultiJvmNode3 extends AttemptSysMsgRedeliverySpec
-
-class AttemptSysMsgRedeliverySpec extends MultiNodeSpec(AttemptSysMsgRedeliveryMultiJvmSpec)
-  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
-  import AttemptSysMsgRedeliveryMultiJvmSpec._
+abstract class AttemptSysMsgRedeliverySpec(multiNodeConfig: AttemptSysMsgRedeliveryMultiJvmSpec)
+  extends RemotingMultiNodeSpec(multiNodeConfig) {
+  import multiNodeConfig._
+  import AttemptSysMsgRedeliverySpec._
 
   def initialParticipants = roles.size
 

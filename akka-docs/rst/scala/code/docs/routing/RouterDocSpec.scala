@@ -53,7 +53,7 @@ akka.actor.deployment {
   }
 }
 #//#config-random-pool
-    
+
 #//#config-random-group
 akka.actor.deployment {
   /parent/router7 {
@@ -71,7 +71,7 @@ akka.actor.deployment {
   }
 }
 #//#config-balancing-pool
-    
+
 #//#config-balancing-pool2
 akka.actor.deployment {
   /parent/router9b {
@@ -113,7 +113,7 @@ akka.actor.deployment {
   }
 }
 #//#config-balancing-pool4
-    
+
 #//#config-smallest-mailbox-pool
 akka.actor.deployment {
   /parent/router11 {
@@ -122,7 +122,7 @@ akka.actor.deployment {
   }
 }
 #//#config-smallest-mailbox-pool
-    
+
 #//#config-broadcast-pool
 akka.actor.deployment {
   /parent/router13 {
@@ -131,7 +131,7 @@ akka.actor.deployment {
   }
 }
 #//#config-broadcast-pool
-    
+
 #//#config-broadcast-group
 akka.actor.deployment {
   /parent/router15 {
@@ -150,7 +150,7 @@ akka.actor.deployment {
   }
 }
 #//#config-scatter-gather-pool
-    
+
 #//#config-scatter-gather-group
 akka.actor.deployment {
   /parent/router19 {
@@ -171,7 +171,7 @@ akka.actor.deployment {
   }
 }
 #//#config-tail-chopping-pool
-    
+
 #//#config-tail-chopping-group
 akka.actor.deployment {
   /parent/router23 {
@@ -182,7 +182,7 @@ akka.actor.deployment {
   }
 }
 #//#config-tail-chopping-group
-    
+
 #//#config-consistent-hashing-pool
 akka.actor.deployment {
   /parent/router25 {
@@ -192,7 +192,7 @@ akka.actor.deployment {
   }
 }
 #//#config-consistent-hashing-pool
-    
+
 #//#config-consistent-hashing-group
 akka.actor.deployment {
   /parent/router27 {
@@ -208,23 +208,45 @@ akka.actor.deployment {
   /parent/remotePool {
     router = round-robin-pool
     nr-of-instances = 10
-    target.nodes = ["akka.tcp://app@10.0.0.2:2552", "akka://app@10.0.0.3:2552"]
+    target.nodes = ["akka.tcp://app@10.0.0.2:2552", "akka.tcp://app@10.0.0.3:2552"]
   }
 }
 #//#config-remote-round-robin-pool
-    
+
+#//#config-remote-round-robin-pool-artery
+akka.actor.deployment {
+  /parent/remotePool {
+    router = round-robin-pool
+    nr-of-instances = 10
+    target.nodes = ["tcp://app@10.0.0.2:2552", "akka://app@10.0.0.3:2552"]
+  }
+}
+#//#config-remote-round-robin-pool-artery
+
 #//#config-remote-round-robin-group
 akka.actor.deployment {
   /parent/remoteGroup {
     router = round-robin-group
     routees.paths = [
-      "akka.tcp://app@10.0.0.1:2552/user/workers/w1", 
+      "akka.tcp://app@10.0.0.1:2552/user/workers/w1",
       "akka.tcp://app@10.0.0.2:2552/user/workers/w1",
       "akka.tcp://app@10.0.0.3:2552/user/workers/w1"]
   }
 }
 #//#config-remote-round-robin-group
-    
+
+#//#config-remote-round-robin-group-artery
+akka.actor.deployment {
+  /parent/remoteGroup2 {
+    router = round-robin-group
+    routees.paths = [
+      "akka://app@10.0.0.1:2552/user/workers/w1",
+      "akka://app@10.0.0.2:2552/user/workers/w1",
+      "akka://app@10.0.0.3:2552/user/workers/w1"]
+  }
+}
+#//#config-remote-round-robin-group-artery
+
 #//#config-resize-pool
 akka.actor.deployment {
   /parent/router29 {
@@ -263,7 +285,7 @@ akka.actor.deployment {
   }
 }
 #//#config-pool-dispatcher
-    
+
 router-dispatcher {}
 """
 
@@ -337,7 +359,7 @@ router-dispatcher {}
     //#round-robin-group-2
     val router4: ActorRef =
       context.actorOf(RoundRobinGroup(paths).props(), "router4")
-    //#round-robin-group-2  
+    //#round-robin-group-2
 
     //#random-pool-1
     val router5: ActorRef =
@@ -475,7 +497,7 @@ router-dispatcher {}
     //#consistent-hashing-group-2
     val router28: ActorRef =
       context.actorOf(ConsistentHashingGroup(paths).props(), "router28")
-    //#consistent-hashing-group-2  
+    //#consistent-hashing-group-2
 
     //#resize-pool-1
     val router29: ActorRef =
@@ -488,7 +510,7 @@ router-dispatcher {}
       context.actorOf(
         RoundRobinPool(5, Some(resizer)).props(Props[Worker]),
         "router30")
-    //#resize-pool-2  
+    //#resize-pool-2
 
     //#optimal-size-exploring-resize-pool
     val router31: ActorRef =
@@ -524,7 +546,7 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
     //#dispatchers
     val router: ActorRef = system.actorOf(
       // “head” router actor will run on "router-dispatcher" dispatcher
-      // Worker routees will run on "pool-dispatcher" dispatcher  
+      // Worker routees will run on "pool-dispatcher" dispatcher
       RandomPool(5, routerDispatcher = "router-dispatcher").props(Props[Worker]),
       name = "poolWithDispatcher")
     //#dispatchers
@@ -587,5 +609,18 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
     val routerRemote = system.actorOf(
       RemoteRouterConfig(RoundRobinPool(5), addresses).props(Props[Echo]))
     //#remoteRoutees
+  }
+
+  // only compile test
+  def demonstrateRemoteDeployWithArtery(): Unit = {
+    //#remoteRoutees-artery
+    import akka.actor.{ Address, AddressFromURIString }
+    import akka.remote.routing.RemoteRouterConfig
+    val addresses = Seq(
+      Address("akka", "remotesys", "otherhost", 1234),
+      AddressFromURIString("akka://othersys@anotherhost:1234"))
+    val routerRemote = system.actorOf(
+      RemoteRouterConfig(RoundRobinPool(5), addresses).props(Props[Echo]))
+    //#remoteRoutees-artery
   }
 }

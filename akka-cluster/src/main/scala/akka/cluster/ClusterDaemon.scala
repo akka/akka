@@ -250,7 +250,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   val NumberOfGossipsBeforeShutdownWhenLeaderExits = 3
   val MaxGossipsBeforeShuttingDownMyself = 5
 
-  def vclockName(node: UniqueAddress): String = node.address + "-" + node.uid
+  def vclockName(node: UniqueAddress): String = s"${node.address}-${node.longUid}"
   val vclockNode = VectorClock.Node(vclockName(selfUniqueAddress))
 
   // note that self is not initially member,

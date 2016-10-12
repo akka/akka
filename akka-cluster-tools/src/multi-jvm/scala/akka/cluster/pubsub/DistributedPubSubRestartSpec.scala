@@ -21,10 +21,12 @@ import akka.actor.ActorLogging
 import akka.cluster.pubsub.DistributedPubSubMediator.Internal.Status
 import akka.cluster.pubsub.DistributedPubSubMediator.Internal.Delta
 import akka.actor.ActorSystem
+
 import scala.concurrent.Await
 import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.actor.ActorIdentity
+import akka.remote.RARP
 
 object DistributedPubSubRestartSpec extends MultiNodeConfig {
   val first = role("first")
@@ -34,7 +36,7 @@ object DistributedPubSubRestartSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.cluster.pub-sub.gossip-interval = 500ms
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = cluster
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = off
     """))
@@ -136,10 +138,16 @@ class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestar
 
       runOn(third) {
         Await.result(system.whenTerminated, 10.seconds)
-        val newSystem = ActorSystem(
-          system.name,
-          ConfigFactory.parseString(s"akka.remote.netty.tcp.port=${Cluster(system).selfAddress.port.get}").withFallback(
-            system.settings.config))
+        val newSystem = {
+          val port = Cluster(system).selfAddress.port.get
+          val config = ConfigFactory.parseString(
+            if (RARP(system).provider.remoteSettings.Artery.Enabled) s"akka.remote.artery.canonical.port=$port"
+            else s"akka.remote.netty.tcp.port=$port"
+          ).withFallback(system.settings.config)
+
+          ActorSystem(system.name, config)
+        }
+
         try {
           // don't join the old cluster
           Cluster(newSystem).join(Cluster(newSystem).selfAddress)

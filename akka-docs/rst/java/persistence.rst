@@ -148,14 +148,13 @@ The identifier must be defined with the ``persistenceId`` method.
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#persistence-id-override
 
 
-.. _recovery-java:
-
 .. note::
   ``persistenceId`` must be unique to a given entity in the journal (database table/keyspace).
   When replaying messages persisted to the journal, you query messages with a ``persistenceId``.
   So, if two different entities share the same ``persistenceId``, message-replaying
   behavior is corrupted.
 
+.. _recovery-java:
 
 Recovery
 --------
@@ -384,6 +383,12 @@ Deleting messages in event sourcing based applications is typically either not u
 :ref:`snapshotting <snapshots>`, i.e. after a snapshot has been successfully stored, a ``deleteMessages(toSequenceNr)``
 up until the sequence number of the data held by that snapshot can be issued to safely delete the previous events
 while still having access to the accumulated state during replays - by loading the snapshot.
+
+.. warning::
+  If you are using :ref:`persistence-query-java`, query results may be missing deleted messages in a journal,
+  depending on how deletions are implemented in the journal plugin.
+  Unless you use a plugin which still shows deleted messages in persistence query results,
+  you have to design your application so that it is not affected by missing messages.
 
 The result of the ``deleteMessages`` request is signaled to the persistent actor with a ``DeleteMessagesSuccess``
 message if the delete was successful or a ``DeleteMessagesFailure`` message if it failed.

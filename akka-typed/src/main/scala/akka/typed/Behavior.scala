@@ -131,6 +131,18 @@ object Behavior {
       case other               ⇒ other
     }
 
+  def validateAsInitial[T](behavior: Behavior[T]): Behavior[T] =
+    behavior match {
+      case `sameBehavior` | `unhandledBehavior` ⇒
+        throw new IllegalArgumentException(s"cannot use $behavior as initial behavior")
+      case x ⇒ x
+    }
+
+  def preStart[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
+    val b = validateAsInitial(behavior)
+    if (isAlive(b)) canonicalize(b.management(ctx, PreStart), b) else b
+  }
+
   def isAlive[T](behavior: Behavior[T]): Boolean = behavior ne stoppedBehavior
 
   def isUnhandled[T](behavior: Behavior[T]): Boolean = behavior eq unhandledBehavior

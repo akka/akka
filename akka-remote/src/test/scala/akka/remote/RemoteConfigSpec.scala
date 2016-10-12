@@ -13,7 +13,7 @@ import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
 
 class RemoteConfigSpec extends AkkaSpec(
   """
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
     akka.remote.netty.tcp.port = 0
   """) {
 

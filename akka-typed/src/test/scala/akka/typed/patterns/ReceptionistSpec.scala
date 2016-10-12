@@ -13,17 +13,17 @@ class ReceptionistSpec extends TypedSpec {
 
   trait ServiceA
   case object ServiceKeyA extends ServiceKey[ServiceA]
-  val propsA = Props(Static[ServiceA](msg ⇒ ()))
+  val behaviorA = Static[ServiceA](msg ⇒ ())
 
   trait ServiceB
   case object ServiceKeyB extends ServiceKey[ServiceB]
-  val propsB = Props(Static[ServiceB](msg ⇒ ()))
+  val behaviorB = Static[ServiceB](msg ⇒ ())
 
   trait CommonTests {
     implicit def system: ActorSystem[TypedSpec.Command]
 
     def `must register a service`(): Unit = {
-      val ctx = new EffectfulActorContext("register", Props(behavior), system)
+      val ctx = new EffectfulActorContext("register", behavior, 1000, system)
       val a = Inbox[ServiceA]("a")
       val r = Inbox[Registered[_]]("r")
       ctx.run(Register(ServiceKeyA, a.ref)(r.ref))
@@ -37,7 +37,7 @@ class ReceptionistSpec extends TypedSpec {
     }
 
     def `must register two services`(): Unit = {
-      val ctx = new EffectfulActorContext("registertwo", Props(behavior), system)
+      val ctx = new EffectfulActorContext("registertwo", behavior, 1000, system)
       val a = Inbox[ServiceA]("a")
       val r = Inbox[Registered[_]]("r")
       ctx.run(Register(ServiceKeyA, a.ref)(r.ref))
@@ -54,7 +54,7 @@ class ReceptionistSpec extends TypedSpec {
     }
 
     def `must register two services with the same key`(): Unit = {
-      val ctx = new EffectfulActorContext("registertwosame", Props(behavior), system)
+      val ctx = new EffectfulActorContext("registertwosame", behavior, 1000, system)
       val a1 = Inbox[ServiceA]("a1")
       val r = Inbox[Registered[_]]("r")
       ctx.run(Register(ServiceKeyA, a1.ref)(r.ref))
@@ -71,7 +71,7 @@ class ReceptionistSpec extends TypedSpec {
     }
 
     def `must unregister services when they terminate`(): Unit = {
-      val ctx = new EffectfulActorContext("registertwosame", Props(behavior), system)
+      val ctx = new EffectfulActorContext("registertwosame", behavior, 1000, system)
       val r = Inbox[Registered[_]]("r")
       val a = Inbox[ServiceA]("a")
       ctx.run(Register(ServiceKeyA, a.ref)(r.ref))
@@ -108,8 +108,8 @@ class ReceptionistSpec extends TypedSpec {
       StepWise[Registered[ServiceA]] { (ctx, startWith) ⇒
         val self = ctx.self
         startWith.withKeepTraces(true) {
-          val r = ctx.spawnAnonymous(Props(behavior))
-          val s = ctx.spawnAnonymous(propsA)
+          val r = ctx.spawnAnonymous(behavior)
+          val s = ctx.spawnAnonymous(behaviorA)
           val f = r ? Register(ServiceKeyA, s)
           r ! Register(ServiceKeyA, s)(self)
           (f, s)

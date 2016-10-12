@@ -15,7 +15,7 @@ import akka.cluster.TestMember
 import akka.cluster.metrics.MetricsGossipEnvelope
 
 class MessageSerializerSpec extends AkkaSpec(
-  "akka.actor.provider = akka.cluster.ClusterActorRefProvider") {
+  "akka.actor.provider = cluster") {
 
   val serializer = new MessageSerializer(system.asInstanceOf[ExtendedActorSystem])
 

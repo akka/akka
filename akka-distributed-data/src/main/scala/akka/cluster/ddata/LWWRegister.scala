@@ -85,6 +85,13 @@ object LWWRegister {
  * use a timestamp value based on something else, for example an increasing version number
  * from a database record that is used for optimistic concurrency control.
  *
+ * The `defaultClock` is using max value of `System.currentTimeMillis()` and `currentTimestamp + 1`.
+ * This means that the timestamp is increased for changes on the same node that occurs within
+ * the same millisecond. It also means that it is safe to use the `LWWRegister` without
+ * synchronized clocks when there is only one active writer, e.g. a Cluster Singleton. Such a
+ * single writer should then first read current value with `ReadMajority` (or more) before
+ * changing and writing the value with `WriteMajority` (or more).
+ *
  * For first-write-wins semantics you can use the [[LWWRegister#reverseClock]] instead of the
  * [[LWWRegister#defaultClock]]
  *
@@ -114,7 +121,7 @@ final class LWWRegister[A] private[akka] (
    * concurrency control.
    */
   def withValue(value: A)(implicit node: Cluster, clock: Clock[A] = defaultClock[A]): LWWRegister[A] =
-    withValue(node, value)
+    withValue(node, value, clock)
 
   /**
    * Change the value of the register.
