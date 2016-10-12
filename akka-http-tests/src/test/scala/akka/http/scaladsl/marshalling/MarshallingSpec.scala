@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.marshalling
 
+import scala.collection.immutable
 import scala.collection.immutable.ListMap
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.util.ByteString
@@ -41,18 +42,43 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   }
 
   "The PredefinedToResponseMarshallers" - {
-    "fromStatusCode should properly marshal entities that are not supposed to have a body" in {
+    "fromStatusCode should properly marshal a status code that doesn't allow an entity" in {
       marshalToResponse(StatusCodes.NoContent) shouldEqual HttpResponse(StatusCodes.NoContent, entity = HttpEntity.Empty)
+
+      // no content-type negotiation for status code marshalling
+      marshalToResponseForRequestAccepting(StatusCodes.NoContent, MediaTypes.`application/json`) shouldEqual
+        HttpResponse(StatusCodes.NoContent, entity = HttpEntity.Empty)
     }
-    "fromStatusCode should properly marshal entities that contain pre-defined content" in {
+    "fromStatusCode should properly marshal a status code with a default message" in {
       marshalToResponse(StatusCodes.EnhanceYourCalm) shouldEqual
         HttpResponse(StatusCodes.EnhanceYourCalm, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
+
+      // no content-type negotiation for status code marshalling
+      marshalToResponseForRequestAccepting(StatusCodes.EnhanceYourCalm, MediaTypes.`application/json`) shouldEqual
+        HttpResponse(StatusCodes.EnhanceYourCalm, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
     }
-    "fromStatusCodeAndHeadersAndValue should properly marshal entities that are not supposed to have a body" in {
+    val headers: immutable.Seq[HttpHeader] = RawHeader("X-Test", "test") :: Nil
+    "fromStatusCodeAndHeaders should properly marshal for a status code that doesn't allow an entity" in {
+      marshalToResponse(StatusCodes.NoContent → headers) shouldEqual
+        HttpResponse(StatusCodes.NoContent, headers = headers, entity = HttpEntity.Empty)
+
+      // no content-type negotiation for status code marshalling
+      marshalToResponseForRequestAccepting(StatusCodes.NoContent → headers, MediaTypes.`application/json`) shouldEqual
+        HttpResponse(StatusCodes.NoContent, headers = headers, entity = HttpEntity.Empty)
+    }
+    "fromStatusCodeAndHeaders should properly marshal for a status code with a default message" in {
+      marshalToResponse(StatusCodes.EnhanceYourCalm → headers) shouldEqual
+        HttpResponse(StatusCodes.EnhanceYourCalm, headers = headers, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
+
+      // no content-type negotiation for status code marshalling
+      marshalToResponseForRequestAccepting(StatusCodes.EnhanceYourCalm → headers, MediaTypes.`application/json`) shouldEqual
+        HttpResponse(StatusCodes.EnhanceYourCalm, headers = headers, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
+    }
+    "fromStatusCodeAndHeadersAndValue should properly marshal for a status code that doesn't allow an entity" in {
       marshalToResponse((StatusCodes.NoContent, "This Content was intentionally left blank.")) shouldEqual
         HttpResponse(StatusCodes.NoContent, entity = HttpEntity.Empty)
     }
-    "fromStatusCodeAndHeadersAndValue should properly marshal entities that contain pre-defined content" in {
+    "fromStatusCodeAndHeadersAndValue should properly marshal a status code with a default message" in {
       marshalToResponse((StatusCodes.EnhanceYourCalm, "Patience, young padawan!")) shouldEqual
         HttpResponse(StatusCodes.EnhanceYourCalm, entity = HttpEntity("Patience, young padawan!"))
     }

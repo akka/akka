@@ -5,7 +5,6 @@
 package akka.http.scaladsl.marshalling
 
 import akka.http.scaladsl.common.EntityStreamingSupport
-import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
@@ -17,6 +16,7 @@ import scala.collection.immutable
 import scala.language.higherKinds
 
 trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImplicits {
+  import PredefinedToResponseMarshallers.statusCodeResponse
 
   private type TRM[T] = ToResponseMarshaller[T] // brevity alias
 
@@ -29,23 +29,21 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
 
   implicit val fromResponse: TRM[HttpResponse] = Marshaller.opaque(ConstantFun.scalaIdentityFunction)
 
+  /**
+   * Creates a response for a status code. Does not support content-type negotiation but will return
+   * a response either with a `text-plain` entity containing the `status.defaultMessage` or an empty entity
+   * for status codes that don't allow a response.
+   */
   implicit val fromStatusCode: TRM[StatusCode] =
-    Marshaller.withOpenCharset(`text/plain`) { (status, charset) ⇒
-      val responseEntity =
-        if (status.allowsEntity) HttpEntity(status.defaultMessage)
-        else HttpEntity.Empty
-      HttpResponse(status, entity = responseEntity)
-    }
+    Marshaller.opaque { status ⇒ statusCodeResponse(status) }
 
+  /**
+   * Creates a response from status code and headers. Does not support content-type negotiation but will return
+   * a response either with a `text-plain` entity containing the `status.defaultMessage` or an empty entity
+   * for status codes that don't allow a response.
+   */
   implicit val fromStatusCodeAndHeaders: TRM[(StatusCode, immutable.Seq[HttpHeader])] =
-    Marshaller.withOpenCharset(`text/plain`) { (statusAndHeaders, charset) ⇒
-      val status = statusAndHeaders._1
-      val headers = statusAndHeaders._2
-      val responseEntity =
-        if (status.allowsEntity) HttpEntity(status.defaultMessage)
-        else HttpEntity.Empty
-      HttpResponse(status, headers, entity = responseEntity)
-    }
+    Marshaller.opaque { case (status, headers) ⇒ statusCodeResponse(status, headers) }
 
   implicit def fromStatusCodeAndValue[S, T](implicit sConv: S ⇒ StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, T)] =
     fromStatusCodeAndHeadersAndValue[T] compose { case (status, value) ⇒ (sConv(status), Nil, value) }
@@ -57,8 +55,8 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
 
   implicit def fromStatusCodeAndHeadersAndValue[T](implicit mt: ToEntityMarshaller[T]): TRM[(StatusCode, immutable.Seq[HttpHeader], T)] =
     Marshaller(implicit ec ⇒ {
-      case (status, headers, value) if (status.allowsEntity) ⇒ mt(value).fast map (_ map (_ map (HttpResponse(status, headers, _))))
-      case (status, headers, _)                              ⇒ fromStatusCodeAndHeaders((status, headers))
+      case (status, headers, value) if status.allowsEntity ⇒ mt(value).fast map (_ map (_ map (HttpResponse(status, headers, _))))
+      case (status, headers, _)                            ⇒ fromStatusCodeAndHeaders((status, headers))
     })
 
   implicit def fromEntityStreamingSupportAndByteStringMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] = {
@@ -134,4 +132,13 @@ trait LowPriorityToResponseMarshallerImplicits {
 
 }
 
-object PredefinedToResponseMarshallers extends PredefinedToResponseMarshallers
+object PredefinedToResponseMarshallers extends PredefinedToResponseMarshallers {
+  /** INTERNAL API */
+  private def statusCodeResponse(statusCode: StatusCode, headers: immutable.Seq[HttpHeader] = Nil): HttpResponse = {
+    val entity =
+      if (statusCode.allowsEntity) HttpEntity(statusCode.defaultMessage)
+      else HttpEntity.Empty
+
+    HttpResponse(status = statusCode, headers = headers, entity = entity)
+  }
+}
