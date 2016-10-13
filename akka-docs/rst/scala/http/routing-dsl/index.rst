@@ -64,7 +64,7 @@ Bind failures
 ^^^^^^^^^^^^^
 For example the server might be unable to bind to the given port. For example when the port
 is already taken by another application, or if the port is privileged (i.e. only usable by ``root``).
-In this case the "binding future" will fail immediately, and we can react to if by listening on the Future's completion:
+In this case the "binding future" will fail immediately, and we can react to it by listening on the Future's completion:
 
 .. includecode2:: ../../code/docs/http/scaladsl/HttpServerExampleSpec.scala
   :snippet: binding-failure-high-level-example
@@ -78,8 +78,8 @@ Failures and exceptions inside the Routing DSL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Exception handling within the Routing DSL is done by providing :class:`ExceptionHandler` s which are documented in-depth
-in the :ref:`exception-handling-scala` section of the documtnation. You can use them to transform exceptions into
-:class:`HttpResponse` s with apropriate error codes and human-readable failure descriptions.
+in the :ref:`exception-handling-scala` section of the documentation. You can use them to transform exceptions into
+:class:`HttpResponse` s with appropriate error codes and human-readable failure descriptions.
 
 File uploads
 ^^^^^^^^^^^^
