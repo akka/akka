@@ -3,18 +3,19 @@
  */
 package akka.stream.scaladsl
 
-import scala.util.control.NoStackTrace
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
 import akka.NotUsed
-import akka.stream.ActorMaterializer
 import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Supervision.{ restartingDecider, resumingDecider }
+import akka.stream.ActorMaterializer
+import akka.stream.Supervision.{restartingDecider, resumingDecider}
 import akka.stream.impl.ReactiveStreamsCompliance
-import akka.testkit.{ AkkaSpec, TestLatch }
+import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import Utils._
+import akka.testkit.TestLatch
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.util.control.NoStackTrace
 
 class FlowFoldAsyncSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
@@ -264,7 +265,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
         Source.fromIterator[Int](() ⇒ Iterator.empty)
           .runFoldAsync(0)((acc, elem) ⇒ Future.successful(acc + elem))
 
-      Await.result(futureValue, 3.seconds) should be(0)
+      Await.result(futureValue, remainingOrDefault) should be(0)
     }
   }
 
