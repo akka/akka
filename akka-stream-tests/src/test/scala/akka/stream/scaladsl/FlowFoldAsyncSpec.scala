@@ -267,6 +267,14 @@ class FlowFoldAsyncSpec extends StreamSpec {
 
       Await.result(futureValue, remainingOrDefault) should be(0)
     }
+
+    "complete future and return zero + item given a stream of one item" in assertAllStagesStopped {
+      val futureValue =
+        Source.single(100)
+          .runFoldAsync(5)((acc, elem) ⇒ Future.successful(acc + elem))
+
+      Await.result(futureValue, remainingOrDefault) should be(105)
+    }
   }
 
   // Keep
