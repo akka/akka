@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [FormFieldDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala) { #formField }
+@@signature [FormFieldDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala) { #formField }
 
 ## Description
 

@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [TimeoutDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withRequestTimeout }
+@@signature [TimeoutDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withRequestTimeout }
 
 ## Description
 
