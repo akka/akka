@@ -78,12 +78,8 @@ object DispatcherDocSpec {
       executor = "thread-pool-executor"
       # Configuration for the thread pool
       thread-pool-executor {
-        # minimum number of threads to cap factor-based core number to
-        core-pool-size-min = 2
-        # No of core threads ... ceil(available processors * factor)
-        core-pool-size-factor = 2.0
-        # maximum number of threads to cap factor-based number to
-        core-pool-size-max = 10
+        // or in Akka 2.4.2+
+        fixed-pool-size = 16
       }
       # Throughput defines the maximum number of messages to be
       # processed per actor before the thread jumps to the next actor.
