@@ -40,9 +40,9 @@ is to configure the dispatcher:
   threads the pool keep running in order to reduce the latency of handling a new incoming task.
   You can read more about parallelism in the JDK's `ForkJoinPool documentation`_.
 
-And here's another example that uses the "thread-pool-executor":
-
-.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-thread-pool-dispatcher-config
+Another example that uses the "thread-pool-executor":
+ 
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#fixed-pool-size-dispatcher-config
 
 .. note::
   The thread pool executor dispatcher is implemented using by a ``java.util.concurrent.ThreadPoolExecutor``.
@@ -78,7 +78,8 @@ There are 3 different types of message dispatchers:
 
 * Dispatcher
 
-  - This is an event-based dispatcher that binds a set of Actors to a thread pool. It is the default dispatcher used if one is not specified.
+  - This is an event-based dispatcher that binds a set of Actors to a thread pool. It is the default dispatcher
+    used if one is not specified.
 
   - Sharability: Unlimited
 
@@ -129,6 +130,9 @@ And then using it:
 
 .. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#defining-fixed-pool-size-dispatcher
 
+Another example that uses the thread pool based on the number of cores (e.g. for CPU bound tasks)
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-thread-pool-dispatcher-config
 
 Configuring a ``PinnedDispatcher``:
 
