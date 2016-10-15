@@ -40,9 +40,9 @@ is to configure the dispatcher:
   threads the pool keep running in order to reduce the latency of handling a new incoming task.
   You can read more about parallelism in the JDK's `ForkJoinPool documentation`_.
 
-And here's another example that uses the "thread-pool-executor":
-
-.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-thread-pool-dispatcher-config
+Another example that uses the "thread-pool-executor":
+ 
+ .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#fixed-pool-size-dispatcher-config
 
 .. note::
   The thread pool executor dispatcher is implemented using by a ``java.util.concurrent.ThreadPoolExecutor``.
@@ -105,27 +105,6 @@ There are 3 different types of message dispatchers:
   - Driven by: Any ``akka.dispatch.ThreadPoolExecutorConfigurator``
                by default a "thread-pool-executor"
 
-* BalancingDispatcher
-
-  - This is an executor based event driven dispatcher that will try to redistribute work from busy actors to idle actors.
-
-  - All the actors share a single Mailbox that they get their messages from.
-
-  - It is assumed that all actors using the same instance of this dispatcher can process all messages that have been sent to one of the actors; i.e. the actors belong to a pool of actors, and to the client there is no guarantee about which actor instance actually processes a given message.
-
-  - Sharability: Actors of the same type only
-
-  - Mailboxes: Any, creates one for all Actors
-
-  - Use cases: Work-sharing
-
-  - Driven by: ``java.util.concurrent.ExecutorService``
-               specify using "executor" using "fork-join-executor",
-               "thread-pool-executor" or the FQCN of
-               an ``akka.dispatcher.ExecutorServiceConfigurator``
-
-  - Note that you can **not** use a ``BalancingDispatcher`` as a **Router Dispatcher**. (You can however use it for the **Routees**)
-
 * CallingThreadDispatcher
 
   - This dispatcher runs invocations on the current thread only. This dispatcher does not create any new threads,
@@ -140,10 +119,8 @@ There are 3 different types of message dispatchers:
 
   - Driven by: The calling thread (duh)
 
-
 More dispatcher configuration examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 
 Configuring a dispatcher with fixed thread pool size, e.g. for actors that perform blocking IO:
 
@@ -152,6 +129,10 @@ Configuring a dispatcher with fixed thread pool size, e.g. for actors that perfo
 And then using it:
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#defining-fixed-pool-size-dispatcher
+
+Another example that uses the thread pool based on the number of cores (e.g. for CPU bound tasks)
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-thread-pool-dispatcher-config
 
 Configuring a ``PinnedDispatcher``:
 
