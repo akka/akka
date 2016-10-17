@@ -390,6 +390,114 @@ final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends GraphSta
 /**
  * INTERNAL API
  */
+final case class ScanAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) extends GraphStage[FlowShape[In, Out]] {
+
+  import akka.dispatch.ExecutionContexts
+
+  val in = Inlet[In]("ScanAsync.in")
+  val out = Outlet[Out]("ScanAsync.out")
+  override val shape: FlowShape[In, Out] = FlowShape[In, Out](in, out)
+
+  override val initialAttributes: Attributes = Attributes.name("scanAsync")
+
+  override val toString: String = "ScanAsync"
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      self ⇒
+
+      private var current: Out = zero
+      private var eventualCurrent: Future[Out] = Future.successful(current)
+
+      private def ec = ExecutionContexts.sameThreadExecutionContext
+
+      private lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+
+      private val ZeroHandler: OutHandler with InHandler = new OutHandler with InHandler {
+        override def onPush(): Unit = ()
+
+        override def onPull(): Unit = {
+          push(out, current)
+          setHandlers(in, out, self)
+        }
+
+        override def onUpstreamFinish(): Unit = setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            push(out, current)
+            completeStage()
+          }
+        })
+      }
+
+      private def onRestart(t: Throwable): Unit = {
+        current = zero
+      }
+
+      private def safePull(): Unit = {
+        if (!hasBeenPulled(in)) {
+          tryPull(in)
+        }
+      }
+
+      private def pushAndPullOrFinish(update: Out): Unit = {
+        push(out, update)
+        if (isClosed(in)) {
+          completeStage()
+        } else if (isAvailable(out)) {
+          safePull()
+        }
+      }
+
+      private def doSupervision(t: Throwable): Unit = {
+        decider(t) match {
+          case Supervision.Stop   ⇒ failStage(t)
+          case Supervision.Resume ⇒ safePull()
+          case Supervision.Restart ⇒
+            onRestart(t)
+            safePull()
+        }
+      }
+
+      private val futureCB = getAsyncCallback[Try[Out]] {
+        case Success(next) if next != null ⇒
+          current = next
+          pushAndPullOrFinish(next)
+        case Success(null) ⇒ doSupervision(ReactiveStreamsCompliance.elementMustNotBeNullException)
+        case Failure(t)    ⇒ doSupervision(t)
+      }.invoke _
+
+      setHandlers(in, out, ZeroHandler)
+
+      def onPull(): Unit = safePull()
+
+      def onPush(): Unit = {
+        try {
+          eventualCurrent = f(current, grab(in))
+
+          eventualCurrent.value match {
+            case Some(result) ⇒ futureCB(result)
+            case _            ⇒ eventualCurrent.onComplete(futureCB)(ec)
+          }
+        } catch {
+          case NonFatal(ex) ⇒
+            decider(ex) match {
+              case Supervision.Stop    ⇒ failStage(ex)
+              case Supervision.Restart ⇒ onRestart(ex)
+              case Supervision.Resume  ⇒ ()
+            }
+            tryPull(in)
+        }
+      }
+
+      override def onUpstreamFinish(): Unit = {}
+
+      override val toString: String = s"ScanAsync.Logic(completed=${eventualCurrent.isCompleted})"
+    }
+}
+
+/**
+ * INTERNAL API
+ */
 final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends GraphStage[FlowShape[In, Out]] {
 
   val in = Inlet[In]("Fold.in")
