@@ -40,6 +40,6 @@ akka-http-jackson
 * [implications-of-streaming-http-entity](implications-of-streaming-http-entity.md)
 * [configuration](configuration.md)
 * [server-side-https-support](server-side-https-support.md)
-* [../../scala/http/migration-guide-2.4.x-experimental](../../scala/http/migration-guide-2.4.x-experimental.md)
+* [migration-guides-java](migration-guide/index.md)
 
 @@@

@@ -17,7 +17,7 @@ The most major changes include:
 how the various elements of the API fit together.
 
 Instead developers should start applications "manually", by converting a `Route` to a `Flow<HttpRequest, HttpResponse, ?>`
-using the `Route.flow` method. For examples of full apps refer to @ref[Route Testkit](../../java/http/routing-dsl/testkit.md#http-testkit-java).
+using the `Route.flow` method. For examples of full apps refer to @ref[Route Testkit](../../../java/http/routing-dsl/testkit.md#http-testkit-java).
 
 ## `RequestVal` is gone
 
@@ -52,7 +52,7 @@ Both `Route`, `RouteResult` and other important core concepts such as `Rejection
 making is much simpler to understand one API based on the other one – tremendously useful when learning about some nice
 pattern from blogs which used Scala, yet need to apply it in Java and the other way around.
 
-It is now possible to implement marshallers using Java. Refer to @ref[Marshalling & Unmarshalling](../../java/http/routing-dsl/marshalling.md#marshalling-java) for details.
+It is now possible to implement marshallers using Java. Refer to @ref[Marshalling & Unmarshalling](../../../java/http/routing-dsl/marshalling.md#marshalling-java) for details.
 
 ## Some complete* overloads changed to completeOK*
 
