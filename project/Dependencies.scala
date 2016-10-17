@@ -63,12 +63,6 @@ object Dependencies {
     // ssl-config
     val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.1"       // ApacheV2
 
-    // For akka-http spray-json support
-    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.2"       // ApacheV2
-
-    // For akka-http-jackson support
-    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.7.6"       // ApacheV2
-
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
@@ -112,8 +106,6 @@ object Dependencies {
       // sigar logging
       val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"    % "test"    // MIT
       val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"    % "test"    // MIT
-
-      lazy val sprayJson = Compile.sprayJson % "test"
 
       // reactive streams tck
       val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.0" % "test" // CC0
@@ -177,34 +169,7 @@ object Dependencies {
 
   val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
-  // akka stream & http
-
-  lazy val httpCore = l ++= Seq(
-    Test.sprayJson, // for WS Autobahn test metadata
-    Test.junitIntf, Test.junit, Test.scalatest.value)
-
-  lazy val http = l ++= Nil
-
-  // special, since it also includes a compiler plugin
-  lazy val parsing = Seq(
-    DependencyHelpers.versionDependentDeps(
-      Dependencies.Compile.scalaReflect % "provided"
-    ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
-  )
-
-  lazy val httpTestkit = l ++= Seq(
-    Test.junit, Test.junitIntf, Compile.junit % "provided", Test.scalatest.value.copy(configurations = Some("provided; test")))
-
-  // TODO collapse those
-  lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
-  lazy val httpTestsJava8 = l ++= Seq(Test.junit, Test.junitIntf)
-
-  lazy val httpXml = versionDependentDeps(scalaXml)
-
-  lazy val httpSprayJson = versionDependentDeps(sprayJson)
-
-  lazy val httpJackson = l ++= Seq(jackson)
+  // akka stream
 
   lazy val stream = l ++= Seq[sbt.ModuleID](
     sslConfigAkka,
