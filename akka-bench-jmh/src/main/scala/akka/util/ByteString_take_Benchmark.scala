@@ -49,32 +49,27 @@ class ByteString_take_Benchmark {
    */
 
   @Benchmark
-  def bss_negative(): Unit = {
-    @volatile var bs: ByteString = null
-    bs = bss.take(n_neg)
+  def bss_negative(): ByteString = {
+    bss.take(n_neg)
   }
 
   @Benchmark
-  def bss_greater_or_eq_to_len(): Unit = {
-    @volatile var bs: ByteString = null
-    bs = bss.take(n_greater_or_eq_to_len)
+  def bss_greater_or_eq_to_len(): ByteString = {
+    bss.take(n_greater_or_eq_to_len)
   }
 
   @Benchmark
-  def bss_avg(): Unit = {
-    @volatile var bs: ByteString = null
-    bs = bss.take(n_avg)
+  def bss_avg(): ByteString = {
+    bss.take(n_avg)
   }
 
   @Benchmark
-  def bss_best(): Unit = {
-    @volatile var bs: ByteString = null
-    bs = bss.take(n_best)
+  def bss_best(): ByteString = {
+    bss.take(n_best)
   }
 
   @Benchmark
-  def bss_worst(): Unit = {
-    @volatile var bs: ByteString = null
-    bs = bss.take(n_worst)
+  def bss_worst(): ByteString = {
+    bss.take(n_worst)
   }
 }
