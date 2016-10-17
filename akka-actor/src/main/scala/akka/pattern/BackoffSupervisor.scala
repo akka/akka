@@ -3,10 +3,13 @@
  */
 package akka.pattern
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration.Duration
+
+import java.time.Instant
+
+import scala.concurrent.duration.{Deadline, Duration, FiniteDuration}
 import java.util.concurrent.ThreadLocalRandom
 import java.util.Optional
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.DeadLetterSuppression
@@ -80,7 +83,8 @@ object BackoffSupervisor {
 
   /**
    * Props for creating a [[BackoffSupervisor]] actor from [[BackoffOptions]].
-   * @param options the [[BackoffOptions]] that specify how to construct a backoff-supervisor.
+    *
+    * @param options the [[BackoffOptions]] that specify how to construct a backoff-supervisor.
    */
   def props(options: BackoffOptions): Props = options.props
 
@@ -233,10 +237,11 @@ private[akka] trait HandleBackoff { this: Actor ⇒
 
   override def preStart(): Unit = startChild()
 
-  def startChild(): Unit =
+  def startChild(): Unit = {
     if (child.isEmpty) {
       child = Some(context.watch(context.actorOf(childProps, childName)))
     }
+  }
 
   def handleBackoff: Receive = {
     case StartChild ⇒
@@ -254,8 +259,9 @@ private[akka] trait HandleBackoff { this: Actor ⇒
       }
 
     case ResetRestartCount(current) ⇒
-      if (current == restartCount)
+      if (current == restartCount) {
         restartCount = 0
+      }
 
     case GetRestartCount ⇒
       sender() ! RestartCount(restartCount)
