@@ -3,12 +3,14 @@
  */
 package akka.stream
 
+import akka.NotUsed
 import akka.stream.scaladsl._
 import akka.stream.testkit.StreamSpec
 import akka.stream.Attributes._
 import akka.stream.Fusing.FusedGraph
+
 import scala.annotation.tailrec
-import akka.stream.impl.StreamLayout.{ CopiedModule, Module }
+import akka.stream.impl.StreamLayout._
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.event.BusLogging
 
@@ -23,7 +25,7 @@ class FusingSpec extends StreamSpec {
       .via(Flow[Int].fold(1)(_ + _).named("mainSink"))
 
   def singlePath[S <: Shape, M](fg: FusedGraph[S, M], from: Attribute, to: Attribute): Unit = {
-    val starts = fg.module.info.allModules.filter(_.attributes.contains(from))
+    val starts = fg.module.info.subModules.filter(_.attributes.contains(from))
     starts.size should ===(1)
     val start = starts.head
     val ups = fg.module.info.upstreams
@@ -42,6 +44,48 @@ class FusingSpec extends StreamSpec {
     }
 
     rec(start)
+  }
+
+  case object NoSubModulesModule extends AtomicModule {
+    override def shape = ClosedShape
+    override def replaceShape(s: Shape) =
+      if (s != shape) throw new UnsupportedOperationException("cannot replace shape")
+      else this
+
+    override def compose(that: Module): Module = compose(that, scaladsl.Keep.left)
+
+    override def compose[A, B, C](that: Module, f: (A, B) ⇒ C): Module = {
+      if (f eq scaladsl.Keep.right) {
+        that
+      } else if (f eq scaladsl.Keep.left) {
+        val mat =
+          if (IgnorableMatValComp(that)) {
+            Ignore
+          } else {
+            Transform(_ ⇒ NotUsed, that.materializedValueComputation)
+          }
+        CompositeModule(
+          if (that.isSealed) Set(that) else that.subModules,
+          that.shape,
+          that.downstreams,
+          that.upstreams,
+          mat,
+          if (this.isSealed) Attributes.none else attributes)
+      } else {
+        throw new UnsupportedOperationException(
+          "It is invalid to combine materialized value with BogusModule " +
+            "except with Keep.left or Keep.right")
+      }
+    }
+
+    override def withAttributes(attributes: Attributes): Module =
+      throw new UnsupportedOperationException("BogusModule cannot carry attributes")
+
+    override def attributes = Attributes.none
+    override def carbonCopy: Module = this
+    override def isRunnable: Boolean = true
+    override def isAtomic: Boolean = true
+    override def materializedValueComputation: MaterializedValueNode = Ignore
   }
 
   "Fusing" must {
@@ -83,6 +127,19 @@ class FusingSpec extends StreamSpec {
       val src = Fusing.aggressive(graph(true))
       val fused = Fusing.aggressive(Source.fromGraph(src).to(Sink.head))
       verify(fused, modules = 2, downstreams = 6)
+    }
+
+    "fuse a Module with no subModules" in {
+      val structuralInfoModule = Fusing.structuralInfo(RunnableGraph(NoSubModulesModule), Attributes.none)
+      structuralInfoModule.matValues.size > 0
+    }
+
+    "fuse a Module with empty graph" in {
+      val g = GraphDSL.create() { implicit b ⇒
+        ClosedShape
+      }
+      val structuralInfoModule = Fusing.structuralInfo(g, Attributes.none)
+      structuralInfoModule.matValues.size > 0
     }
 
   }
