@@ -4,13 +4,11 @@
 package akka.persistence.query.journal.leveldb
 
 import scala.concurrent.duration._
-
 import akka.persistence.journal.Tagged
 import akka.persistence.journal.WriteEventAdapter
-import akka.persistence.query.EventEnvelope
-import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.query.scaladsl.EventsByTagQuery2
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
@@ -57,7 +55,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
 
   "Leveldb query EventsByTag" must {
     "implement standard EventsByTagQuery" in {
-      queries.isInstanceOf[EventsByTagQuery] should ===(true)
+      queries.isInstanceOf[EventsByTagQuery2] should ===(true)
     }
 
     "find existing events" in {
@@ -74,7 +72,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
       b ! "a green leaf"
       expectMsg(s"a green leaf-done")
 
-      val greenSrc = queries.currentEventsByTag(tag = "green", offset = 0L)
+      val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(0L))
       greenSrc.runWith(TestSink.probe[Any])
         .request(2)
         .expectNext(EventEnvelope(1L, "a", 2L, "a green apple"))
@@ -84,7 +82,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
         .expectNext(EventEnvelope(3L, "b", 2L, "a green leaf"))
         .expectComplete()
 
-      val blackSrc = queries.currentEventsByTag(tag = "black", offset = 0L)
+      val blackSrc = queries.currentEventsByTag(tag = "black", offset = Sequence(0L))
       blackSrc.runWith(TestSink.probe[Any])
         .request(5)
         .expectNext(EventEnvelope(1L, "b", 1L, "a black car"))
@@ -94,7 +92,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
     "not see new events after demand request" in {
       val c = system.actorOf(TestActor.props("c"))
 
-      val greenSrc = queries.currentEventsByTag(tag = "green", offset = 0L)
+      val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(0L))
       val probe = greenSrc.runWith(TestSink.probe[Any])
         .request(2)
         .expectNext(EventEnvelope(1L, "a", 2L, "a green apple"))
@@ -112,7 +110,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
     }
 
     "find events from offset" in {
-      val greenSrc = queries.currentEventsByTag(tag = "green", offset = 2L)
+      val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(2L))
       val probe = greenSrc.runWith(TestSink.probe[Any])
         .request(10)
         .expectNext(EventEnvelope(2L, "a", 3L, "a green banana"))
@@ -126,7 +124,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
     "find new events" in {
       val d = system.actorOf(TestActor.props("d"))
 
-      val blackSrc = queries.eventsByTag(tag = "black", offset = 0L)
+      val blackSrc = queries.eventsByTag(tag = "black", offset = Sequence(0L))
       val probe = blackSrc.runWith(TestSink.probe[Any])
         .request(2)
         .expectNext(EventEnvelope(1L, "b", 1L, "a black car"))
@@ -145,7 +143,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
     }
 
     "find events from offset" in {
-      val greenSrc = queries.eventsByTag(tag = "green", offset = 2L)
+      val greenSrc = queries.eventsByTag(tag = "green", offset = Sequence(2L))
       val probe = greenSrc.runWith(TestSink.probe[Any])
         .request(10)
         .expectNext(EventEnvelope(2L, "a", 3L, "a green banana"))
