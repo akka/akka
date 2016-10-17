@@ -56,6 +56,14 @@ class FlowFoldSpec extends StreamSpec {
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
+    "complete future and return zero given an empty stream" in assertAllStagesStopped {
+      val futureValue =
+        Source.fromIterator[Int](() ⇒ Iterator.empty)
+          .runFold(0)(_ + _)
+
+      Await.result(futureValue, 3.seconds) should be(0)
+    }
+
   }
 
 }
