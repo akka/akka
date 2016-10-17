@@ -16,6 +16,7 @@ import akka.stream.actor.MaxInFlightRequestStrategy
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.testkit.AkkaSpec
+import scala.concurrent.duration._
 
 object ActorSubscriberDocSpec {
   //#worker-pool
@@ -54,6 +55,13 @@ object ActorSubscriberDocSpec {
       case Reply(id) =>
         queue(id) ! Done(id)
         queue -= id
+        if (canceled && queue.isEmpty) {
+          context.stop(self)
+        }
+      case OnComplete =>
+        if (queue.isEmpty) {
+          context.stop(self)
+        }
     }
   }
 
@@ -79,11 +87,13 @@ class ActorSubscriberDocSpec extends AkkaSpec {
 
     //#actor-subscriber-usage
     val N = 117
-    Source(1 to N).map(WorkerPool.Msg(_, replyTo))
+    val worker = Source(1 to N).map(WorkerPool.Msg(_, replyTo))
       .runWith(Sink.actorSubscriber(WorkerPool.props))
     //#actor-subscriber-usage
 
+    watch(worker)
     receiveN(N).toSet should be((1 to N).map(WorkerPool.Done).toSet)
+    expectTerminated(worker, 10.seconds)
   }
 
 }
