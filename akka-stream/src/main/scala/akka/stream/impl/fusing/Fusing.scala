@@ -3,19 +3,21 @@
  */
 package akka.stream.impl.fusing
 
-import java.{ util ⇒ ju }
 import java.util.Arrays
-import scala.collection.immutable
-import scala.collection.JavaConverters._
-import scala.util.control.NonFatal
-import scala.annotation.tailrec
-import akka.stream._
+import java.{ util ⇒ ju }
+
 import akka.stream.Attributes.AsyncBoundary
-import akka.stream.Fusing.{ FusedGraph, StructuralInfo }
-import akka.stream.stage.GraphStageWithMaterializedValue
+import akka.stream.Fusing.FusedGraph
+import akka.stream._
 import akka.stream.impl.StreamLayout
 import akka.stream.impl.StreamLayout._
 import akka.stream.impl.fusing.GraphStages.MaterializedValueSource
+import akka.stream.stage.GraphStageWithMaterializedValue
+
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
+import scala.collection.immutable
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -33,6 +35,31 @@ private[stream] object Fusing {
       case FusedGraph(module, shape) ⇒ FusedGraph(module, shape)
       case _                         ⇒ doAggressive(g)
     }
+
+  def structuralInfo[S <: Shape, M](g: Graph[S, M], attributes: Attributes): StructuralInfoModule = {
+    val struct = new BuildStructuralInfo
+    /*
+     * First perform normalization by descending the module tree and recording
+     * information in the BuildStructuralInfo instance.
+     */
+    val matValue =
+      try descend(g.module, Attributes.none, struct, struct.newGroup(0), 0)
+      catch {
+        case NonFatal(ex) ⇒
+          if (Debug) struct.dump()
+          throw ex
+      }
+    /*
+     * Then create a copy of the original Shape with the new copied ports.
+     */
+    val shape = g.shape.copyFromPorts(
+      struct.newInlets(g.shape.inlets),
+      struct.newOutlets(g.shape.outlets)).asInstanceOf[S]
+    /*
+     * Extract the full topological information from the builder
+     */
+    struct.toInfo(shape, matValue, attributes)
+  }
 
   private def doAggressive[S <: Shape, M](g: Graph[S, M]): FusedGraph[S, M] = {
     val struct = new BuildStructuralInfo
@@ -57,7 +84,7 @@ private[stream] object Fusing {
      * Extract the full topological information from the builder before
      * removing assembly-internal (fused) wirings in the next step.
      */
-    val info = struct.toInfo
+    val info = struct.toInfo(shape, matValue)
     /*
      * Perform the fusing of `struct.groups` into GraphModules (leaving them
      * as they are for non-fusable modules).
@@ -443,13 +470,18 @@ private[stream] object Fusing {
    * it and performing normalization.
    */
   final class BuildStructuralInfo {
-    def toInfo: StructuralInfo =
-      StructuralInfo(
-        immutable.Map.empty ++ upstreams.asScala,
+    def toInfo[S <: Shape](shape: S, matValues: List[(Module, MaterializedValueNode)],
+                           attributes: Attributes = Attributes.none): StructuralInfoModule =
+      StructuralInfoModule(
+        Set.empty ++ modules.asScala,
+        shape,
         immutable.Map.empty ++ downstreams.asScala,
+        immutable.Map.empty ++ upstreams.asScala,
         immutable.Map.empty ++ inOwners.asScala,
         immutable.Map.empty ++ outOwners.asScala,
-        Set.empty ++ modules.asScala)
+        matValues,
+        matValues.head._2,
+        attributes)
 
     /**
      * the set of all contained modules
