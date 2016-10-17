@@ -1,4 +1,4 @@
-# Contributing to Akka
+# Contributing to Akka HTTP
 
 In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
 
@@ -48,7 +48,7 @@ Pull Request validation states:
 # Akka contributing guidelines
 
 These guidelines apply to all Akka projects, by which we mean both the `akka/akka` repository,
-as well as any plugins or additional repos located under the Akka GitHub organisation.
+as well as any plugins or additional repos located under the Akka GitHub organisation, e.g. `akka/akka-http` and others.
 
 These guidelines are meant to be a living document that should be changed and adapted as needed.
 We encourage changes that make it easier to achieve our goals in an efficient way.
@@ -175,11 +175,17 @@ All documentation must abide by the following maxims:
 - Generation should be **completely automated** and available for scripting.
 - Artifacts that must be included in the Lightbend stack should be published to a maven “documentation” repository as documentation artifacts.
 
-All documentation is preferred to be in Lightbend's standard documentation format [reStructuredText](http://doc.akka.io/docs/akka/snapshot/dev/documentation.html) compiled using Lightbend's customized [Sphinx](http://sphinx.pocoo.org/) based documentation generation system, which among other things allows all code in the documentation to be externalized into compiled files and imported into the documentation.
+All documentation is preferred to be in Lightbend's standard documentation format [Paradox](hhttps://github.com/lightbend/paradox).
+The language used by Paradox is a super-set or Markdown, and is simple to grasp and get contributingRefer to its documentation to learn about the more advanced features it provides (including code etc).
 
-For more info, or for a starting point for new projects, look at the [Lightbend Documentation Template project](https://github.com/typesafehub/doc-template).
+To generate documentation you can:
 
-For larger projects that have invested a lot of time and resources into their current documentation and samples scheme (like for example Play), it is understandable that it will take some time to migrate to this new model. In these cases someone from the project needs to take the responsibility of manual QA and verifier for the documentation and samples.
+```
+> project docs
+> paradox
+```
+
+The rendered documentation will be available under `docs/target/paradox/site/index.html`. 
 
 ### JavaDoc
 
