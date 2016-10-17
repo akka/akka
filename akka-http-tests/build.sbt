@@ -1,4 +1,5 @@
 import akka._
+import com.typesafe.sbt.pgp.PgpKeys._
 //import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 
 Dependencies.httpTests
@@ -14,4 +15,8 @@ enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 disablePlugins(MimaPlugin)
 
+// -- don't publish -- 
 disablePlugins(NoPublish)
+publishSigned := ()
+publish := ()
+publishArtifact in Compile := false
