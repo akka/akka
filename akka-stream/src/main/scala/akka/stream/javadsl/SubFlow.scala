@@ -581,9 +581,9 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
-   * returns false for the first time. Due to input buffering some elements may have been
-   * requested from upstream publishers that will then not be processed downstream
-   * of this step.
+   * returns false for the first time,
+   * Due to input buffering some elements may have been requested from upstream publishers
+   * that will then not be processed downstream of this step.
    *
    * The stream will be completed without producing any elements if predicate is false for
    * the first stream element.
@@ -592,12 +592,32 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Backpressures when''' downstream backpressures
    *
-   * '''Completes when''' predicate returned false or upstream completes
+   * '''Completes when''' predicate returned false (or 1 after predicate returns false if `inclusive` or upstream completes
    *
    * '''Cancels when''' predicate returned false or downstream cancels
    */
-  def takeWhile(p: function.Predicate[Out]): SubFlow[In, Out, Mat] =
-    new SubFlow(delegate.takeWhile(p.test))
+  def takeWhile(p: function.Predicate[Out]): SubFlow[In, Out, Mat] = takeWhile(p, false)
+
+  /**
+   * Terminate processing (and cancel the upstream publisher) after predicate
+   * returns false for the first time, including the first failed element iff inclusive is true
+   * Due to input buffering some elements may have been requested from upstream publishers
+   * that will then not be processed downstream of this step.
+   *
+   * The stream will be completed without producing any elements if predicate is false for
+   * the first stream element.
+   *
+   * '''Emits when''' the predicate is true
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' predicate returned false (or 1 after predicate returns false if `inclusive` or upstream completes
+   *
+   * '''Cancels when''' predicate returned false or downstream cancels
+   */
+  // TODO: Merge these methods when it's ok to break binary compatibility
+  def takeWhile(p: function.Predicate[Out], inclusive: Boolean): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.takeWhile(p.test, inclusive))
 
   /**
    * Discard elements at the beginning of the stream while predicate is true.

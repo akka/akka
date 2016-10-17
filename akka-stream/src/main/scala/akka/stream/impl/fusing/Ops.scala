@@ -92,7 +92,7 @@ final case class Filter[T](p: T ⇒ Boolean) extends SimpleLinearGraphStage[T] {
 /**
  * INTERNAL API
  */
-final case class TakeWhile[T](p: T ⇒ Boolean) extends SimpleLinearGraphStage[T] {
+final case class TakeWhile[T](p: T ⇒ Boolean, inclusive: Boolean = false) extends SimpleLinearGraphStage[T] {
   override def initialAttributes: Attributes = DefaultAttributes.takeWhile
 
   override def toString: String = "TakeWhile"
@@ -109,6 +109,7 @@ final case class TakeWhile[T](p: T ⇒ Boolean) extends SimpleLinearGraphStage[T
           if (p(elem)) {
             push(out, elem)
           } else {
+            if (inclusive) push(out, elem)
             completeStage()
           }
         } catch {
