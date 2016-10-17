@@ -37,7 +37,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   override def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n)
   override def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n)
   override def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
-  override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
+  override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue, connectionSettings = connectionSettings.withPipeliningLimit(newValue))
   override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
 
   // overloads for idiomatic Scala use

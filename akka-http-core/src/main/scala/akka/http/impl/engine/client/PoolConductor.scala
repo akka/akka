@@ -75,17 +75,17 @@ private object PoolConductor {
       val slotSelector = b.add(new SlotSelector(slotSettings, pipeliningLimit, log))
       val route = b.add(new Route(slotSettings.maxSlots))
       val retrySplit = b.add(Broadcast[RawSlotEvent](2))
-      val flatten = Flow[RawSlotEvent].mapAsyncUnordered(slotSettings.maxSlots) {
-        case x: SlotEvent.Disconnected                ⇒ FastFuture.successful(x)
-        case SlotEvent.RequestCompletedFuture(future) ⇒ future
+      val flatten = Flow[RawSlotEvent].mapAsyncUnordered(slotSettings.maxSlots * pipeliningLimit) {
+        case x: SlotEvent.Disconnected                ⇒ log.debug("flatten: slotevent.disconnected {}", x); FastFuture.successful(x)
+        case SlotEvent.RequestCompletedFuture(future) ⇒ log.debug("flatten: requestcompleted: {}", future); future
         case x: SlotEvent.ConnectedEagerly            ⇒ FastFuture.successful(x)
-        case x                                        ⇒ throw new IllegalStateException("Unexpected " + x)
+        case x                                        ⇒ log.error("flatten: WTF {}", x); throw new IllegalStateException("Unexpected " + x)
       }
 
-      retryMerge.out ~> slotSelector.in0
+      retryMerge.out ~> /*buffer ~> */slotSelector.in0
       slotSelector.out ~> route.in
-      retrySplit.out(0).filter(!_.isInstanceOf[SlotEvent.RetryRequest]) ~> flatten ~> slotSelector.in1
-      retrySplit.out(1).collect { case SlotEvent.RetryRequest(r) ⇒ r } ~> retryMerge.preferred
+      retrySplit.out(0).filter(!_.isInstanceOf[SlotEvent.RetryRequest]) ~> Flow[RawSlotEvent].buffer(10, OverflowStrategy.backpressure) ~> flatten ~> slotSelector.in1
+      retrySplit.out(1).collect { case SlotEvent.RetryRequest(r) ⇒ r } ~> Flow[RequestContext].buffer(10, OverflowStrategy.backpressure) ~> retryMerge.preferred
 
       Ports(retryMerge.in(0), retrySplit.in, route.outArray.toList)
     }
@@ -111,8 +111,10 @@ private object PoolConductor {
 
   // the connection of the respective slot has a number of requests in flight and the
   // last one of these is not idempotent which blocks the connection for more pipelined requests
-  private case class Busy(openRequests: Int) extends SlotState { require(openRequests > 0) }
-  private object Busy extends Busy(1)
+//  private case class Busy(openRequests: Int) extends SlotState { require(openRequests > 0) }
+  private object Busy extends SlotState
+
+  private case class Closing(openRequests: Int) extends SlotState
 
   private class SlotSelector(slotSettings: PoolSlotsSetting, pipeliningLimit: Int, log: LoggingAdapter)
     extends GraphStage[FanInShape2[RequestContext, SlotEvent, SwitchSlotCommand]] {
@@ -128,33 +130,70 @@ private object PoolConductor {
     override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       val slotStates = Array.fill[SlotState](slotSettings.maxSlots)(Unconnected)
       var nextSlot = 0
+      var stashed: RequestContext = _
 
       setHandler(ctxIn, new InHandler {
         override def onPush(): Unit = {
-          val ctx = grab(ctxIn)
-          val slot = nextSlot
-          slotStates(slot) = slotStateAfterDispatch(slotStates(slot), ctx.request.method)
-          nextSlot = bestSlot()
-          emit(out, SwitchSlotCommand(DispatchCommand(ctx), slot), tryPullCtx)
+          val ctx: RequestContext = grab(ctxIn)
+          log.debug("SlotSelector new request {} nextSlot {}", ctx, nextSlot)
+          // if we have a non-idempotent request, pipelining is enabled and the slot is currently
+          // processing requests then try get a new slot suitable for idempotent requests
+          val slot =
+            if (!ctx.request.method.isIdempotent && pipeliningLimit > 1 /*&& (nextSlot == -1 || slotStates(nextSlot).isInstanceOf[Loaded])*/) bestSlotNonIdempotent()
+            else nextSlot
+
+          if (slot == -1) {
+            nextSlot = -1
+            if (stashed != null) log.error("stashed is not null!? {}" + slotStates)
+            log.debug("SlotSelector stashing {}", ctx)
+            stashed = ctx
+          } else {
+            log.debug("{} before dispatch {}", slot, slotStates(slot))
+            slotStates(slot) = slotStateAfterDispatch(slotStates(slot), ctx.request.method)
+            log.debug("{} after dispatch {}", slot, slotStates(slot))
+            nextSlot = bestSlot()
+            emit(out, SwitchSlotCommand(DispatchCommand(ctx), slot), tryPullCtx)
+          }
         }
       })
 
       setHandler(slotIn, new InHandler {
         override def onPush(): Unit = {
           grab(slotIn) match {
-            case SlotEvent.RequestCompleted(slotIx) ⇒
-              slotStates(slotIx) = slotStateAfterRequestCompleted(slotStates(slotIx))
+            case SlotEvent.RequestCompleted(slotIx, willClose) ⇒
+              log.debug("SlotSelector-{} request completed willClose {}", slotIx, willClose)
+              log.debug("SlotSelector-{} before completed {}", slotIx, slotStates(slotIx))
+              slotStates(slotIx) = slotStateAfterRequestCompleted(slotStates(slotIx), willClose)
+              log.debug("SlotSelector-{} after completed {}", slotIx, slotStates(slotIx))
             case SlotEvent.Disconnected(slotIx, failed) ⇒
+              log.debug("SlotSelector-{} slot disconnected {} failures", slotIx, failed)
+              log.debug("SlotSelector-{} before disconnect {}", slotIx, slotStates(slotIx))
               slotStates(slotIx) = slotStateAfterDisconnect(slotStates(slotIx), failed)
+              log.debug("SlotSelector-{} after disconnect {}", slotIx, slotStates(slotIx))
               reconnectIfNeeded()
             case SlotEvent.ConnectedEagerly(slotIx) ⇒
+              log.debug("SlotSelector-{} connected eagerly", slotIx)
             // do nothing ...
           }
+          log.debug("SlotSelector {}", hasBeenPulled(slotIn))
           pull(slotIn)
+          log.debug("SlotSelector pulled {} available {}", hasBeenPulled(slotIn), isAvailable(slotIn))
           val wasBlocked = nextSlot == -1
-          nextSlot = bestSlot()
+          nextSlot = if (stashed == null) bestSlot() else bestSlotNonIdempotent()
           val nowUnblocked = nextSlot != -1
-          if (wasBlocked && nowUnblocked) pull(ctxIn) // get next request context
+          log.debug("wasBlocked {} nowUnblocked {} stashed {}", wasBlocked, nowUnblocked, stashed)
+          if (wasBlocked && nowUnblocked) {
+            if (stashed != null) {
+              val slot = nextSlot
+              log.debug("{} Unstashing {}", slot, stashed)
+              slotStates(slot) = slotStateAfterDispatch(slotStates(slot), stashed.request.method)
+              log.debug("{} after unstashing {}", slot, slotStates(slot))
+              nextSlot = bestSlot()
+              val sendme = stashed
+              stashed = null
+              emit(out, SwitchSlotCommand(DispatchCommand(sendme), slot), tryPullCtx)
+            } else tryPullCtx()
+          }
         }
       })
 
@@ -182,28 +221,33 @@ private object PoolConductor {
 
       def slotStateAfterDispatch(slotState: SlotState, method: HttpMethod): SlotState =
         slotState match {
-          case Unconnected | Idle ⇒ if (method.isIdempotent) Loaded(1) else Busy(1)
-          case Loaded(n)          ⇒ if (method.isIdempotent) Loaded(n + 1) else Busy(n + 1)
-          case Busy(_)            ⇒ throw new IllegalStateException("Request scheduled onto busy connection?")
+          case Unconnected | Idle               ⇒ if (method.isIdempotent) Loaded(1) else Busy
+          case Loaded(n) if method.isIdempotent ⇒ Loaded(n + 1)
+          case Loaded(_)          ⇒ throw new IllegalStateException("non-idempotent Request scheduled onto Loaded connection?")
+          case Busy               ⇒ throw new IllegalStateException("Request scheduled onto busy connection?")
+          case Closing(_)         ⇒ throw new IllegalStateException("Request scheduled onto closing connection?")
         }
 
-      def slotStateAfterRequestCompleted(slotState: SlotState): SlotState =
+      def slotStateAfterRequestCompleted(slotState: SlotState, willClose: Boolean): SlotState =
         slotState match {
-          case Loaded(1) ⇒ Idle
-          case Loaded(n) ⇒ Loaded(n - 1)
-          case Busy(1)   ⇒ Idle
-          case Busy(n)   ⇒ Busy(n - 1)
-          case _         ⇒ throw new IllegalStateException(s"RequestCompleted on $slotState connection?")
+          case Loaded(1)  ⇒ if (willClose) Closing(0) else Idle
+          case Loaded(n)  ⇒ if (willClose) Closing(n - 1) else Loaded(n - 1)
+          case Busy       ⇒ if (willClose) Closing(0) else Idle
+          case Closing(1) ⇒ Unconnected
+          case Closing(n) ⇒ Closing(n - 1)
+          case _          ⇒ throw new IllegalStateException(s"RequestCompleted on $slotState connection?")
         }
 
       def slotStateAfterDisconnect(slotState: SlotState, failed: Int): SlotState =
         slotState match {
-          case Idle if failed == 0      ⇒ Unconnected
-          case Loaded(n) if n > failed  ⇒ Loaded(n - failed)
-          case Loaded(n) if n == failed ⇒ Unconnected
-          case Busy(n) if n > failed    ⇒ Busy(n - failed)
-          case Busy(n) if n == failed   ⇒ Unconnected
-          case _                        ⇒ throw new IllegalStateException(s"Disconnect(_, $failed) on $slotState connection?")
+          case Idle if failed == 0       ⇒ Unconnected
+          case Loaded(n) if n > failed   ⇒ Closing(n - failed)
+          case Loaded(n) if n == failed  ⇒ Unconnected
+          case Busy if failed == 1       ⇒ Unconnected
+          case Busy                      ⇒ Closing(1)
+          case Closing(n) if n > failed  ⇒ Closing(n - failed)
+          case Closing(_)                ⇒ Unconnected
+          case _                         ⇒ throw new IllegalStateException(s"Disconnect(_, $failed) on $slotState connection?")
         }
 
       /**
@@ -227,6 +271,16 @@ private object PoolConductor {
             case _                                   ⇒ bestSlot(ix + 1, bestIx, bestState)
           }
         } else bestIx
+
+      @tailrec def bestSlotNonIdempotent(ix: Int = 0, bestIx: Int = -1, bestState: SlotState = Busy): Int =
+        if (ix < slotStates.length) {
+          val pl = pipeliningLimit
+          slotStates(ix) → bestState match {
+            case (Idle, _)                           ⇒ ix
+            case (Unconnected, Loaded(_) | Busy)     ⇒ bestSlotNonIdempotent(ix + 1, ix, Unconnected)
+            case _                                   ⇒ bestSlotNonIdempotent(ix + 1, bestIx, bestState)
+          }
+        } else bestIx
     }
   }
 
@@ -243,7 +297,11 @@ private object PoolConductor {
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           val switchCommand = grab(in)
-          emit(shape.outArray(switchCommand.slotIx), switchCommand.cmd, pullIn)
+          //emit(shape.outArray(switchCommand.slotIx), switchCommand.cmd, pullIn)
+          emit(shape.outArray(switchCommand.slotIx), switchCommand.cmd, () => {
+            materializer.asInstanceOf[ActorMaterializer].logger.debug("Route pull(in)")
+            pull(in)
+          })
         }
       })
       val pullIn = () ⇒ pull(in)

@@ -27,6 +27,7 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   def getWebsocketRandomFactory: java.util.function.Supplier[Random]
   def getSocketOptions: java.lang.Iterable[SocketOption]
   def getParserSettings: ParserSettings
+  def getPipeliningLimit: Int
 
   // ---
 
@@ -37,6 +38,7 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ClientConnectionSettings = self.copy(websocketRandomFactory = () ⇒ newValue.get())
   def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue.asScala.toList)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue.asScala)
+  def withPipeliningLimit(newValue: Int): ClientConnectionSettings = self.copy(pipeliningLimit = newValue)
 
 }
 

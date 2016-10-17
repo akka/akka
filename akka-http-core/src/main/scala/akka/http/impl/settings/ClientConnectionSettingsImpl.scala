@@ -24,7 +24,8 @@ private[akka] final case class ClientConnectionSettingsImpl(
   requestHeaderSizeHint:  Int,
   websocketRandomFactory: () ⇒ Random,
   socketOptions:          immutable.Seq[SocketOption],
-  parserSettings:         ParserSettings)
+  parserSettings:         ParserSettings,
+  pipeliningLimit:        Int)
   extends akka.http.scaladsl.settings.ClientConnectionSettings {
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
@@ -43,7 +44,9 @@ object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSe
       requestHeaderSizeHint = c getIntBytes "request-header-size-hint",
       websocketRandomFactory = Randoms.SecureRandomInstances, // can currently only be overridden from code
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
-      parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")))
+      parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
+      pipeliningLimit = root.getConfig("akka.http.host-connection-pool") getInt "pipelining-limit"
+      )
   }
 
 }

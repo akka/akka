@@ -87,7 +87,7 @@ private[http] object OutgoingConnectionBlueprint {
           if (parserSettings.illegalHeaderWarnings)
             logParsingError(info withSummaryPrepended "Illegal response header", log, parserSettings.errorLoggingVerbosity)
         })
-        new ResponseParsingMerge(rootParser)
+        new ResponseParsingMerge(rootParser, pipeliningLimit)
       }
 
       val responsePrep = Flow[List[ParserOutput.ResponseOutput]]
@@ -271,11 +271,10 @@ private[http] object OutgoingConnectionBlueprint {
 
   /**
    * A merge that follows this logic:
-   * 1. Wait on the methodBypass for the method of the request corresponding to the next response to be received
-   * 2. Read from the dataInput until exactly one response has been fully received
-   * 3. Go back to 1.
+   * 1. Read requests from methodBypass and push them through to the parser as it completes a response
+   * 2. Read from the dataInput and dequeue response contexts once a response has been fully read
    */
-  private class ResponseParsingMerge(rootParser: HttpResponseParser)
+  private class ResponseParsingMerge(rootParser: HttpResponseParser, pipeliningLimit: Int)
     extends GraphStage[FanInShape2[SessionBytes, BypassData, List[ResponseOutput]]] {
     private val dataInput = Inlet[SessionBytes]("data")
     private val bypassInput = Inlet[BypassData]("request")
@@ -290,13 +289,18 @@ private[http] object OutgoingConnectionBlueprint {
       // which builds a cache of all header instances seen on that connection
       val parser = rootParser.createShallowCopy()
       var waitingForMethod = true
+      val responseContexts = new java.util.ArrayDeque[BypassData]()
 
       setHandler(bypassInput, new InHandler {
         override def onPush(): Unit = {
           val responseContext = grab(bypassInput)
-          parser.setContextForNextResponse(responseContext)
-          val output = parser.parseBytes(ByteString.empty)
-          drainParser(output)
+          responseContexts.add(responseContext)
+          if (responseContexts.size() == 1) {
+            parser.setContextForNextResponse(responseContext)
+            val output = parser.parseBytes(ByteString.empty)
+            drainParser(output)
+          }
+          if (responseContexts.size() < pipeliningLimit) pull(bypassInput)
         }
         override def onUpstreamFinish(): Unit =
           if (waitingForMethod) completeStage()
@@ -324,7 +328,16 @@ private[http] object OutgoingConnectionBlueprint {
       val getNextMethod = () ⇒ {
         waitingForMethod = true
         if (isClosed(bypassInput)) completeStage()
-        else pull(bypassInput)
+        else {
+          responseContexts.pop()
+          if (responseContexts.size() > 0) {
+            val responseContext = responseContexts.getFirst
+            parser.setContextForNextResponse(responseContext)
+            val output = parser.parseBytes(ByteString.empty)
+            drainParser(output)
+          }
+          if (responseContexts.size() == pipeliningLimit - 1) pull(bypassInput)
+        }
       }
 
       val getNextData = () ⇒ {
@@ -345,7 +358,7 @@ private[http] object OutgoingConnectionBlueprint {
         }
       }
 
-      override def preStart(): Unit = getNextMethod()
+      override def preStart(): Unit = pull(bypassInput)
     }
   }
 }

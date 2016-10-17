@@ -27,6 +27,40 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
   implicit val materializer = ActorMaterializer()
 
   "The connection-level client implementation" should {
+    "supports two pipelined requests" in new TestSetup {
+      requestsSub.sendNext(HttpRequest(uri = "/a"))
+      expectWireData(
+        """GET /a HTTP/1.1
+          |Host: example.com
+          |User-Agent: akka-http/test
+          |
+          |""")
+
+      responsesSub.request(10)
+      requestsSub.sendNext(HttpRequest(uri = "/b"))
+      expectWireData(
+        """GET /b HTTP/1.1
+          |Host: example.com
+          |User-Agent: akka-http/test
+          |
+          |""")
+
+      sendWireData(
+        """HTTP/1.1 201 Created
+          |Content-Length: 0
+          |
+          |""")
+
+      responses.expectNext() shouldEqual HttpResponse(StatusCodes.Created)
+
+      sendWireData(
+        """HTTP/1.1 200 OK
+          |Content-Length: 0
+          |
+          |""")
+
+      responses.expectNext() shouldEqual HttpResponse()
+    }
 
     "handle a request/response round-trip" which {
 

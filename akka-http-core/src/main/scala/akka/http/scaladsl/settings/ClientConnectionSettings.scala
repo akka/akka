@@ -30,6 +30,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def websocketRandomFactory: () ⇒ Random
   def socketOptions: immutable.Seq[SocketOption]
   def parserSettings: ParserSettings
+  def pipeliningLimit: Int
 
   /* JAVA APIs */
 
@@ -42,6 +43,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   final override def getWebsocketRandomFactory: Supplier[Random] = new Supplier[Random] {
     override def get(): Random = websocketRandomFactory()
   }
+  final override def getPipeliningLimit: Int = pipeliningLimit
 
   // ---
 
@@ -49,6 +51,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   override def withConnectingTimeout(newValue: FiniteDuration): ClientConnectionSettings = self.copy(connectingTimeout = newValue)
   override def withIdleTimeout(newValue: Duration): ClientConnectionSettings = self.copy(idleTimeout = newValue)
   override def withRequestHeaderSizeHint(newValue: Int): ClientConnectionSettings = self.copy(requestHeaderSizeHint = newValue)
+  override def withPipeliningLimit(newValue: Int): ClientConnectionSettings = self.copy(pipeliningLimit = newValue)
 
   // overloads for idiomatic Scala use
   def withWebsocketRandomFactory(newValue: () ⇒ Random): ClientConnectionSettings = self.copy(websocketRandomFactory = newValue)
