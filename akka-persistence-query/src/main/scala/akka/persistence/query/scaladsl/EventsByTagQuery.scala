@@ -10,6 +10,7 @@ import akka.persistence.query.EventEnvelope
 /**
  * A plugin may optionally support this query by implementing this trait.
  */
+@deprecated("To be replaced by EventsByTagQuery2 from Akka 2.5", "2.4.11")
 trait EventsByTagQuery extends ReadJournal {
 
   /**
