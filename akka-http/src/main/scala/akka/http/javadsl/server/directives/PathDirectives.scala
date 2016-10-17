@@ -86,7 +86,7 @@ abstract class PathDirectives extends ParameterDirectives {
   def path(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
     D.path(segment) { inner.get.delegate }
   }
-  def path(inner: java.util.function.Function[String, Route]): Route = RouteAdapter {
+  def path(inner: JFunction[String, Route]): Route = RouteAdapter {
     D.path(PathMatchers.Segment) { element ⇒ inner.apply(element).delegate }
   }
 
@@ -113,7 +113,7 @@ abstract class PathDirectives extends ParameterDirectives {
   def pathPrefix(segment: String, inner: Supplier[Route]): Route = RouteAdapter {
     D.pathPrefix(segment) { inner.get.delegate }
   }
-  def pathPrefix(inner: java.util.function.Function[String, Route]): Route = RouteAdapter {
+  def pathPrefix(inner: JFunction[String, Route]): Route = RouteAdapter {
     D.pathPrefix(PathMatchers.Segment) { element ⇒ inner.apply(element).delegate }
   }
 
@@ -144,7 +144,7 @@ abstract class PathDirectives extends ParameterDirectives {
   def rawPathPrefix(pm: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
     D.rawPathPrefix(pm.toScala) { inner.get().delegate }
   }
-  def rawPathPrefix[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = RouteAdapter {
+  def rawPathPrefix[T1](pm: PathMatcher1[T1], inner: JFunction[T1, Route]): Route = RouteAdapter {
     D.rawPathPrefix(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
   def rawPathPrefix[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
@@ -161,7 +161,7 @@ abstract class PathDirectives extends ParameterDirectives {
   def pathPrefixTest(pm: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
     D.pathPrefixTest(pm.toScala) { inner.get().delegate }
   }
-  def pathPrefixTest[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = RouteAdapter {
+  def pathPrefixTest[T1](pm: PathMatcher1[T1], inner: JFunction[T1, Route]): Route = RouteAdapter {
     D.pathPrefixTest(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
   def pathPrefixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
@@ -179,7 +179,7 @@ abstract class PathDirectives extends ParameterDirectives {
   def rawPathPrefixTest(pm: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
     D.rawPathPrefixTest(pm.toScala) { inner.get().delegate }
   }
-  def rawPathPrefixTest[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = RouteAdapter {
+  def rawPathPrefixTest[T1](pm: PathMatcher1[T1], inner: JFunction[T1, Route]): Route = RouteAdapter {
     D.rawPathPrefixTest(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
   def rawPathPrefixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
@@ -198,7 +198,7 @@ abstract class PathDirectives extends ParameterDirectives {
   def pathSuffix(pm: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
     D.pathSuffix(pm.toScala) { inner.get().delegate }
   }
-  def pathSuffix[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = RouteAdapter {
+  def pathSuffix[T1](pm: PathMatcher1[T1], inner: JFunction[T1, Route]): Route = RouteAdapter {
     D.pathSuffix(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
   def pathSuffix[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
@@ -218,7 +218,7 @@ abstract class PathDirectives extends ParameterDirectives {
   def pathSuffixTest(pm: PathMatcher0, inner: Supplier[Route]): Route = RouteAdapter {
     D.pathSuffixTest(pm.toScala) { inner.get().delegate }
   }
-  def pathSuffixTest[T1](pm: PathMatcher1[T1], inner: Function[T1, Route]): Route = RouteAdapter {
+  def pathSuffixTest[T1](pm: PathMatcher1[T1], inner: JFunction[T1, Route]): Route = RouteAdapter {
     D.pathSuffixTest(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
   }
   def pathSuffixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
@@ -259,7 +259,7 @@ abstract class PathDirectives extends ParameterDirectives {
   /**
    * Consumes a leading slash and extracts the next path segment, unmarshalling it and passing the result to the inner function.
    */
-  def pathPrefix[T](t: Unmarshaller[String, T], inner: java.util.function.Function[T, Route]): Route = RouteAdapter {
+  def pathPrefix[T](t: Unmarshaller[String, T], inner: JFunction[T, Route]): Route = RouteAdapter {
     D.pathPrefix(PathMatchers.Segment)(unmarshal(t, inner))
   }
 
@@ -267,11 +267,11 @@ abstract class PathDirectives extends ParameterDirectives {
    * Consumes a leading slash and extracts the next path segment, unmarshalling it and passing the result to the inner function,
    * expecting the full path to have been consumed then.
    */
-  def path[T](t: Unmarshaller[String, T], inner: java.util.function.Function[T, Route]): Route = RouteAdapter {
+  def path[T](t: Unmarshaller[String, T], inner: JFunction[T, Route]): Route = RouteAdapter {
     D.path(PathMatchers.Segment)(unmarshal(t, inner))
   }
 
-  private def unmarshal[T](t: Unmarshaller[String, T], inner: java.util.function.Function[T, Route]) = { element: String ⇒
+  private def unmarshal[T](t: Unmarshaller[String, T], inner: JFunction[T, Route]) = { element: String ⇒
     D.extractRequestContext { ctx ⇒
       import ctx.executionContext
       import ctx.materializer
