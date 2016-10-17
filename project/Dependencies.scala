@@ -75,8 +75,8 @@ object Dependencies {
     // For Java 8 Conversions
     val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
     
-    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.1"       // ApacheV2
-    val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.1"       // ApacheV2
+    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.2"       // ApacheV2
+    val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.2"       // ApacheV2
 
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
