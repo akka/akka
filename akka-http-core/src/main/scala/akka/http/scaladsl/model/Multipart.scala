@@ -6,13 +6,15 @@ package akka.http.scaladsl.model
 import java.io.File
 import java.nio.file.Path
 import java.util.Optional
-import akka.http.impl.util.Util
+
+import akka.http.impl.util.{ DefaultNoLogging, Util }
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success, Try }
-import akka.event.{ NoLogging, LoggingAdapter }
+import akka.event.LoggingAdapter
 import akka.stream.impl.ConstantFun
 import akka.stream.Materializer
 import akka.stream.javadsl.{ Source ⇒ JSource }
@@ -23,8 +25,11 @@ import akka.http.impl.engine.rendering.BodyPartRenderer
 import akka.http.javadsl.{ model ⇒ jm }
 import FastFuture._
 import akka.http.impl.util.JavaMapping.Implicits._
+
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
+
+import akka.http.javadsl.model.RequestEntity
 
 /**
  * The model of multipart content for media-types `multipart/\*` (general multipart content),
@@ -55,15 +60,39 @@ sealed trait Multipart extends jm.Multipart {
 
   /**
    * Creates a [[akka.http.scaladsl.model.MessageEntity]] from this multipart object.
+   *
+   * @deprecated This variant of `toEntity` is not supported any more. The charset parameter will be ignored. Please use
+   *             one of the other overloads instead.
    */
-  def toEntityWithLog(
-    boundary: String = BodyPartRenderer.randomBoundary())(implicit log: LoggingAdapter = NoLogging): MessageEntity = {
+  @deprecated(
+    message = "This variant of `toEntity` is not supported any more. The charset parameter will be ignored. " +
+    "Please use the variant without specifying the charset.",
+    since = "3.0.0")
+  def toEntity(
+    charset:  HttpCharset = HttpCharsets.`UTF-8`,
+    boundary: String      = BodyPartRenderer.randomBoundary())(implicit log: LoggingAdapter = DefaultNoLogging): MessageEntity =
+    toEntity(boundary, log)
+
+  /**
+   * Creates an entity from this multipart object using the specified boundary and logger.
+   */
+  def toEntity(boundary: String, log: LoggingAdapter): MessageEntity = {
     val chunks =
       parts
         .via(BodyPartRenderer.streamed(boundary, partHeadersSizeHint = 128, log))
         .flatMapConcat(ConstantFun.scalaIdentityFunction)
     HttpEntity.Chunked(mediaType withBoundary boundary, chunks)
   }
+
+  /**
+   * Creates an entity from this multipart object using the specified boundary.
+   */
+  def toEntity(boundary: String): MessageEntity = toEntity(boundary, DefaultNoLogging)
+
+  /**
+   * Creates an entity from this multipart object using a random boundary.
+   */
+  def toEntity: MessageEntity = toEntity(BodyPartRenderer.randomBoundary(), DefaultNoLogging)
 
   /** Java API */
   def getMediaType: jm.MediaType.Multipart = mediaType
@@ -77,8 +106,8 @@ sealed trait Multipart extends jm.Multipart {
     toStrict(FiniteDuration(timeoutMillis, concurrent.duration.MILLISECONDS))(materializer).toJava
 
   /** Java API */
-  def toEntity(boundary: String): jm.RequestEntity =
-    toEntityWithLog(boundary)
+  @deprecated def toEntity(charset: jm.HttpCharset, boundary: String): jm.RequestEntity =
+    toEntity(boundary)
 }
 
 object Multipart {
@@ -96,10 +125,26 @@ object Multipart {
      */
     def strictParts: immutable.Seq[Multipart.BodyPart.Strict]
 
-    override def toEntityWithLog(boundary: String)(implicit log: LoggingAdapter = NoLogging): HttpEntity.Strict = {
+    override def toEntity(charset: HttpCharset, boundary: String)(implicit log: LoggingAdapter = DefaultNoLogging): HttpEntity.Strict =
+      toEntity(boundary, log)
+
+    /**
+     * Creates an entity from this multipart object using the specified boundary and logger.
+     */
+    override def toEntity(boundary: String, log: LoggingAdapter): HttpEntity.Strict = {
       val data = BodyPartRenderer.strict(strictParts, boundary, partHeadersSizeHint = 128, log)
       HttpEntity(mediaType withBoundary boundary, data)
     }
+
+    /**
+     * Creates an entity from this multipart object using the specified boundary.
+     */
+    override def toEntity(boundary: String): HttpEntity.Strict = toEntity(boundary, DefaultNoLogging)
+
+    /**
+     * Creates an entity from this multipart object using a random boundary.
+     */
+    override def toEntity: HttpEntity.Strict = toEntity(BodyPartRenderer.randomBoundary(), DefaultNoLogging)
 
     /** Java API */
     override def getParts: JSource[_ <: jm.Multipart.BodyPart.Strict, AnyRef] =

@@ -28,7 +28,7 @@ private[http] object BodyPartRenderer {
   def streamed(
     boundary:            String,
     partHeadersSizeHint: Int,
-    log:                 LoggingAdapter): GraphStage[FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]]] =
+    _log:                LoggingAdapter): GraphStage[FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]]] =
     new GraphStage[FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]]] {
       var firstBoundaryRendered = false
 
@@ -37,7 +37,9 @@ private[http] object BodyPartRenderer {
       override val shape: FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]] = FlowShape(in, out)
 
       override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-        new GraphStageLogic(shape) with InHandler with OutHandler {
+        new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+          override def logOverride: LoggingAdapter = _log
+
           override def onPush(): Unit = {
             val r = new ByteStringRendering(partHeadersSizeHint)
 
