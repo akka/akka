@@ -136,5 +136,4 @@ lazy val docs = project("docs")
     Formatting.docFormatSettings
   )
 
-
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }

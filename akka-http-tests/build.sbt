@@ -13,3 +13,5 @@ enablePlugins(ScaladocNoVerificationOfDiagrams)
 //enablePlugins(MultiNodeScalaTest)
 
 disablePlugins(MimaPlugin)
+
+disablePlugins(NoPublish)
