@@ -16,22 +16,23 @@ class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
   implicit val ec = system.dispatcher
 
   //#stage-with-logging
-  final class RandomLetters extends GraphStage[SourceShape[String]] {
-    val out = Outlet[String]("MyStage.out")
+  final class RandomLettersSource extends GraphStage[SourceShape[String]] {
+    val out = Outlet[String]("RandomLettersSource.out")
     override val shape: SourceShape[String] = SourceShape(out)
 
-    override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with StageLogging {
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-          val c = nextChar() // ASCII lower case letters
+    override def createLogic(inheritedAttributes: Attributes) =
+      new GraphStageLogic(shape) with StageLogging {
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            val c = nextChar() // ASCII lower case letters
 
-          // `log` is obtained from materializer automatically (via StageLogging)
-          log.debug("Randomly generated: [{}]", c)
+            // `log` is obtained from materializer automatically (via StageLogging)
+            log.debug("Randomly generated: [{}]", c)
 
-          push(out, c.toString)
-        }
-      })
-    }
+            push(out, c.toString)
+          }
+        })
+      }
 
     def nextChar(): Char =
       ThreadLocalRandom.current().nextInt('a', 'z'.toInt + 1).toChar
@@ -41,7 +42,7 @@ class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
   "demonstrate logging in custom graphstage" in {
     val n = 10
     EventFilter.debug(start = "Randomly generated", occurrences = n).intercept {
-      Source.fromGraph(new RandomLetters)
+      Source.fromGraph(new RandomLettersSource)
         .take(n)
         .runWith(Sink.ignore)
         .futureValue
