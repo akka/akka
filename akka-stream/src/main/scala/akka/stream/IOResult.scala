@@ -44,9 +44,11 @@ final case class IOResult (count: Long, status: Try[Done]) {
 
 object IOResult {
 
+  /** JAVA API: Creates successful IOResult */
   def createSuccessful(count: Long): IOResult =
     new IOResult(count, Success(Done))
 
+  /** JAVA API: Creates failed IOResult, `count` should be the number of bytes (or other unit, please document in your APIs) processed before failing */
   def createFailed(count: Long, ex: Throwable): IOResult =
     new IOResult(count, Failure(ex))
 }
