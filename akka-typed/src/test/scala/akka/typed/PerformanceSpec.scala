@@ -28,15 +28,15 @@ class PerformanceSpec extends TypedSpec(
       StepWise[Pong] { (ctx, startWith) ⇒
         startWith {
 
-          val pinger = Props(SelfAware[Ping](self ⇒ Static { msg ⇒
+          val pinger = SelfAware[Ping](self ⇒ Static { msg ⇒
             if (msg.x == 0) {
               msg.report ! Pong(0, self, msg.report)
             } else msg.pong ! Pong(msg.x - 1, self, msg.report)
-          })).withDispatcher(executor)
+          }) // FIXME .withDispatcher(executor)
 
-          val ponger = Props(SelfAware[Pong](self ⇒ Static { msg ⇒
+          val ponger = SelfAware[Pong](self ⇒ Static { msg ⇒
             msg.ping ! Ping(msg.x, self, msg.report)
-          })).withDispatcher(executor)
+          }) // FIXME .withDispatcher(executor)
 
           val actors =
             for (i ← 1 to pairs)

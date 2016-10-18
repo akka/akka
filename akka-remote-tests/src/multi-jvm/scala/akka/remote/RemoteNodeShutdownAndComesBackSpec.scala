@@ -30,7 +30,7 @@ object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
       akka.remote.transport-failure-detector.heartbeat-interval = 1 s
       akka.remote.transport-failure-detector.acceptable-heartbeat-pause = 3 s
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 60 s
-                              """)))
+    """)))
 
   testTransport(on = true)
 
@@ -47,8 +47,7 @@ class RemoteNodeShutdownAndComesBackMultiJvmNode1 extends RemoteNodeShutdownAndC
 class RemoteNodeShutdownAndComesBackMultiJvmNode2 extends RemoteNodeShutdownAndComesBackSpec
 
 abstract class RemoteNodeShutdownAndComesBackSpec
-  extends MultiNodeSpec(RemoteNodeShutdownAndComesBackSpec)
-  with STMultiNodeSpec with ImplicitSender {
+  extends RemotingMultiNodeSpec(RemoteNodeShutdownAndComesBackSpec) {
 
   import RemoteNodeShutdownAndComesBackSpec._
 
@@ -135,11 +134,9 @@ abstract class RemoteNodeShutdownAndComesBackSpec
         Await.ready(system.whenTerminated, 30.seconds)
 
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
-                    akka.remote.netty.tcp {
-                      hostname = ${addr.host.get}
-                      port = ${addr.port.get}
-                    }
-                    """).withFallback(system.settings.config))
+          akka.remote.netty.tcp.port = ${addr.port.get}
+          akka.remote.artery.canonical.port = ${addr.port.get}
+          """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject")
 
         Await.ready(freshSystem.whenTerminated, 30.seconds)

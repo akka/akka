@@ -11,7 +11,7 @@ import akka.remote.RemoteActorRefProvider
 import akka.remote.transport.TestTransport.{ DisassociateAttempt, WriteAttempt, ListenAttempt, AssociateAttempt }
 
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
-  extends AkkaSpec("""akka.actor.provider = "akka.remote.RemoteActorRefProvider" """)
+  extends AkkaSpec("""akka.actor.provider = remote """)
   with DefaultTimeout with ImplicitSender {
 
   def transportName: String

@@ -316,7 +316,7 @@ object GraphInterpreter {
  *
  * From an external viewpoint, the GraphInterpreter takes an assembly of graph processing stages encoded as a
  * [[GraphInterpreter#GraphAssembly]] object and provides facilities to execute and interact with this assembly.
- * The lifecylce of the Interpreter is roughly the following:
+ * The lifecycle of the Interpreter is roughly the following:
  *  - Boundary logics are attached via [[attachDownstreamBoundary()]] and [[attachUpstreamBoundary()]]
  *  - [[init()]] is called
  *  - [[execute()]] is called whenever there is need for execution, providing an upper limit on the processed events

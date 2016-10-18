@@ -22,7 +22,7 @@ object ReplicatorChaosSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
     akka.cluster.roles = ["backend"]
     akka.log-dead-letters-during-shutdown = off
     """))

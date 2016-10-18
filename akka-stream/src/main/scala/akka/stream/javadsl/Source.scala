@@ -156,9 +156,7 @@ object Source {
   def range(start: Int, end: Int, step: Int): javadsl.Source[Integer, NotUsed] =
     fromIterator[Integer](new function.Creator[util.Iterator[Integer]]() {
       def create(): util.Iterator[Integer] =
-        new Inclusive(start, end, step) {
-          override def toString: String = s"Range($start to $end, step = $step)"
-        }.iterator.asJava.asInstanceOf[util.Iterator[Integer]]
+        Range.inclusive(start, end, step).iterator.asJava.asInstanceOf[util.Iterator[Integer]]
     })
 
   /**
@@ -874,6 +872,21 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.zipWithMat[Out2, Out3, M, M2](that)(combinerToScala(combine))(combinerToScala(matF)))
 
   /**
+   * Combine the elements of current [[Source]] into a stream of tuples consisting
+   * of all elements paired with their index. Indices start at 0.
+   *
+   * '''Emits when''' upstream emits an element and is paired with their index
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipWithIndex: javadsl.Source[Pair[Out @uncheckedVariance, Long], Mat] =
+    new Source(delegate.zipWithIndex.map { case (elem, index) ⇒ Pair(elem, index) })
+
+  /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
    * for each received element.
    * The returned [[java.util.concurrent.CompletionStage]] will be completed normally when reaching the
@@ -1017,8 +1030,9 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step. The function returns a `CompletionStage` and the
-   * value of that future will be emitted downstream. As many CompletionStages as requested elements by
-   * downstream may run in parallel and may complete in any order, but the elements that
+   * value of that future will be emitted downstream. The number of CompletionStages
+   * that shall run in parallel is given as the first argument to ``mapAsync``.
+   * These CompletionStages may complete in any order, but the elements that
    * are emitted downstream are in the same order as received from upstream.
    *
    * If the function `f` throws an exception or if the `CompletionStage` is completed
@@ -1048,10 +1062,10 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step. The function returns a `CompletionStage` and the
-   * value of that future will be emitted downstream. As many CompletionStages as requested elements by
-   * downstream may run in parallel and each processed element will be emitted downstream
-   * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
-   * in the same order as received from upstream.
+   * value of that future will be emitted downstream. The number of CompletionStages
+   * that shall run in parallel is given as the first argument to ``mapAsyncUnordered``.
+   * Each processed element will be emitted downstream as soon as it is ready, i.e. it is possible
+   * that the elements are not emitted downstream in the same order as received from upstream.
    *
    * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
@@ -1229,6 +1243,32 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
   def scan[T](zero: T)(f: function.Function2[T, Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.scan(zero)(f.apply))
 
+  /**
+   * Similar to `scan` but with a asynchronous function,
+   * emits its current value which starts at `zero` and then
+   * applies the current and next value to the given function `f`,
+   * emitting a `Future` that resolves to the next current value.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
+   * the stream will continue.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Resume]] current value starts at the previous
+   * current value, or zero when it doesn't have one, and the stream will continue.
+   *
+   * '''Emits when''' the future returned by f` completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and the last future returned by `f` completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.scan]]
+   */
+  def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
+    new Source(delegate.scanAsync(zero) { (out, in) ⇒ f(out, in).toScala })
   /**
    * Similar to `scan` but only emits its result when the upstream completes,
    * after which it also completes. Applies the given function `f` towards its current and next value,

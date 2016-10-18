@@ -178,9 +178,13 @@ object ByteString {
       val copyLength = Math.min(buffer.remaining, offset + length)
       if (copyLength > 0) {
         buffer.put(bytes, offset, copyLength)
-        drop(copyLength)
       }
       copyLength
+    }
+
+    /** INTERNAL API: Specialized for internal use, appending ByteString1C to a ByteStringBuilder. */
+    private[akka] def appendToBuilder(buffer: ByteStringBuilder) = {
+      buffer.putByteArrayUnsafe(bytes)
     }
 
   }
@@ -249,8 +253,11 @@ object ByteString {
     }
 
     override def take(n: Int): ByteString =
-      if (n <= 0) ByteString.empty
-      else ByteString1(bytes, startIndex, Math.min(n, length))
+      if (n <= 0) ByteString.empty else take1(n)
+
+    private[akka] def take1(n: Int): ByteString1 =
+      if (n >= length) this
+      else ByteString1(bytes, startIndex, n)
 
     override def slice(from: Int, until: Int): ByteString =
       drop(from).take(until - Math.max(0, from))
@@ -432,18 +439,23 @@ object ByteString {
       bytestrings.foreach(_.writeToOutputStream(os))
     }
 
-    override def take(n: Int): ByteString = {
-      @tailrec def take0(n: Int, b: ByteStringBuilder, bs: Vector[ByteString1]): ByteString =
-        if (bs.isEmpty || n <= 0) b.result
-        else {
-          val head = bs.head
-          if (n <= head.length) b.append(head.take(n)).result
-          else take0(n - head.length, b.append(head), bs.tail)
-        }
-
+    override def take(n: Int): ByteString =
       if (n <= 0) ByteString.empty
       else if (n >= length) this
-      else take0(n, ByteString.newBuilder, bytestrings)
+      else take0(n)
+
+    private[akka] def take0(n: Int): ByteString = {
+      @tailrec def go(last: Int, restToTake: Int): (Int, Int) = {
+        val bs = bytestrings(last)
+        if (bs.length > restToTake) (last, restToTake)
+        else go(last + 1, restToTake - bs.length)
+      }
+
+      val (last, restToTake) = go(0, n)
+
+      if (last == 0) bytestrings(last).take(restToTake)
+      else if (restToTake == 0) new ByteStrings(bytestrings.take(last), n)
+      else new ByteStrings(bytestrings.take(last) :+ bytestrings(last).take1(restToTake), n)
     }
 
     override def dropRight(n: Int): ByteString =
@@ -469,36 +481,28 @@ object ByteString {
 
     override def drop(n: Int): ByteString =
       if (n <= 0) this
-      else if (n > length) ByteString.empty
+      else if (n >= length) ByteString.empty
       else drop0(n)
 
     private def drop0(n: Int): ByteString = {
-      var continue = true
-      var fullDrops = 0
-      var remainingToDrop = n
-      do {
-        // impl note: could be optimised a bit by using VectorIterator instead, 
-        //            however then we're forced to call .toVector which halfs performance
-        //            We can work around that, as there's a Scala private method "remainingVector" which is fast, 
-        //            but let's not go into calling private APIs here just yet.
-        val currentLength = bytestrings(fullDrops).length
-        if (remainingToDrop >= currentLength) {
-          fullDrops += 1
-          remainingToDrop -= currentLength
-        } else continue = false
-      } while (remainingToDrop > 0 && continue)
+      // impl note: could be optimised a bit by using VectorIterator instead,
+      //            however then we're forced to call .toVector which halfs performance
+      //            We can work around that, as there's a Scala private method "remainingVector" which is fast,
+      //            but let's not go into calling private APIs here just yet.
+      @tailrec def findSplit(fullDrops: Int, remainingToDrop: Int): (Int, Int) = {
+        val bs = bytestrings(fullDrops)
+        if (bs.length > remainingToDrop) (fullDrops, remainingToDrop)
+        else findSplit(fullDrops + 1, remainingToDrop - bs.length)
+      }
 
-      val remainingByteStrings = bytestrings.drop(fullDrops)
-      if (remainingByteStrings.isEmpty) ByteString.empty
-      else if (remainingToDrop > 0) {
-        val h: ByteString1 = remainingByteStrings.head.drop1(remainingToDrop)
-        val bs = remainingByteStrings.tail
+      val (fullDrops, remainingToDrop) = findSplit(0, n)
 
-        if (h.isEmpty)
-          if (bs.isEmpty) ByteString.empty
-          else new ByteStrings(bs, length - n)
-        else new ByteStrings(h +: bs, length - n)
-      } else ByteStrings(remainingByteStrings, length - n)
+      if (remainingToDrop == 0)
+        new ByteStrings(bytestrings.drop(fullDrops), length - n)
+      else if (fullDrops == bytestrings.length - 1)
+        bytestrings(fullDrops).drop(remainingToDrop)
+      else
+        new ByteStrings(bytestrings(fullDrops).drop1(remainingToDrop) +: bytestrings.drop(fullDrops + 1), length - n)
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)

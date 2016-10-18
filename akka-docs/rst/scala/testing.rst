@@ -579,7 +579,7 @@ The ``TestProbe`` class can in fact create actors that will run with the test pr
 This will cause any messages the the child actor sends to `context.parent` to
 end up in the test probe.
 
-.. includecode:: code/docs/testkit/ParentChildSpec.scala##test-TestProbe-parent
+.. includecode:: code/docs/testkit/ParentChildSpec.scala#test-TestProbe-parent
 
 Using a fabricated parent
 ^^^^^^^^^^^^^^^^^^^^^^^^^

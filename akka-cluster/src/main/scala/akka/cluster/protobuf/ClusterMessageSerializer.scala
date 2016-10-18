@@ -126,8 +126,12 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
   private def addressToProtoByteArray(address: Address): Array[Byte] = addressToProto(address).build.toByteArray
 
-  private def uniqueAddressToProto(uniqueAddress: UniqueAddress): cm.UniqueAddress.Builder =
-    cm.UniqueAddress.newBuilder().setAddress(addressToProto(uniqueAddress.address)).setUid(uniqueAddress.uid)
+  private def uniqueAddressToProto(uniqueAddress: UniqueAddress): cm.UniqueAddress.Builder = {
+    cm.UniqueAddress.newBuilder()
+      .setAddress(addressToProto(uniqueAddress.address))
+      .setUid(uniqueAddress.longUid.toInt)
+      .setUid2((uniqueAddress.longUid >> 32).toInt)
+  }
 
   private def uniqueAddressToProtoByteArray(uniqueAddress: UniqueAddress): Array[Byte] =
     uniqueAddressToProto(uniqueAddress).build.toByteArray
@@ -161,8 +165,19 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
   private def addressFromProto(address: cm.Address): Address =
     Address(getProtocol(address), getSystem(address), address.getHostname, address.getPort)
 
-  private def uniqueAddressFromProto(uniqueAddress: cm.UniqueAddress): UniqueAddress =
-    UniqueAddress(addressFromProto(uniqueAddress.getAddress), uniqueAddress.getUid)
+  private def uniqueAddressFromProto(uniqueAddress: cm.UniqueAddress): UniqueAddress = {
+
+    UniqueAddress(
+      addressFromProto(uniqueAddress.getAddress),
+      if (uniqueAddress.hasUid2) {
+        // new remote node join the two parts of the long uid back
+        (uniqueAddress.getUid2.toLong << 32) | (uniqueAddress.getUid & 0xFFFFFFFFL)
+      } else {
+        // old remote node
+        uniqueAddress.getUid.toLong
+      }
+    )
+  }
 
   private val memberStatusToInt = scala.collection.immutable.HashMap[MemberStatus, Int](
     MemberStatus.Joining → cm.MemberStatus.Joining_VALUE,

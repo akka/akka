@@ -66,7 +66,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
       ("Flow" → List[Class[_]](sFlowClass, jFlowClass)) ::
       ("SubFlow" → List[Class[_]](sSubFlowClass, jSubFlowClass)) ::
       ("Sink" → List[Class[_]](sSinkClass, jSinkClass)) ::
-      ("RunanbleFlow" → List[Class[_]](sRunnableGraphClass, jRunnableGraphClass)) ::
+      ("RunnableFlow" → List[Class[_]](sRunnableGraphClass, jRunnableGraphClass)) ::
       Nil foreach {
         case (element, classes) ⇒
 

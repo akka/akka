@@ -227,7 +227,7 @@ Callbacks
 ---------
 
 Sometimes you just want to listen to a ``Future`` being completed, and react to that not by creating a new ``Future``, but by side-effecting.
-For this Scala supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which the latter two are specializations of the first.
+For this Scala supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which the last two are specializations of the first.
 
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: onSuccess

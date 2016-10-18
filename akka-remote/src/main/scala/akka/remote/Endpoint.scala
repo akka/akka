@@ -27,6 +27,8 @@ import scala.concurrent.duration.{ Deadline }
 import scala.util.control.NonFatal
 import java.util.concurrent.locks.LockSupport
 import scala.concurrent.Future
+import akka.util.OptionVal
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -36,7 +38,7 @@ private[remote] trait InboundMessageDispatcher {
     recipient:         InternalActorRef,
     recipientAddress:  Address,
     serializedMessage: SerializedMessage,
-    senderOption:      Option[ActorRef]): Unit
+    senderOption:      OptionVal[ActorRef]): Unit
 }
 
 /**
@@ -53,7 +55,7 @@ private[remote] class DefaultMessageDispatcher(
     recipient:         InternalActorRef,
     recipientAddress:  Address,
     serializedMessage: SerializedMessage,
-    senderOption:      Option[ActorRef]): Unit = {
+    senderOption:      OptionVal[ActorRef]): Unit = {
 
     import provider.remoteSettings._
 

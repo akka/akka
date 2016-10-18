@@ -17,11 +17,12 @@ import akka.cluster.ClusterEvent._
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.actor.ActorRef
+import akka.remote.RARP
 import akka.testkit.TestProbe
 
 object ClusterDomainEventPublisherSpec {
   val config = """
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     """
 }
@@ -29,18 +30,22 @@ object ClusterDomainEventPublisherSpec {
 class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublisherSpec.config)
   with BeforeAndAfterEach with ImplicitSender {
 
+  val protocol =
+    if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
+    else "akka.tcp"
+
   var publisher: ActorRef = _
-  val aUp = TestMember(Address("akka.tcp", "sys", "a", 2552), Up)
+  val aUp = TestMember(Address(protocol, "sys", "a", 2552), Up)
   val aLeaving = aUp.copy(status = Leaving)
   val aExiting = aLeaving.copy(status = Exiting)
   val aRemoved = aExiting.copy(status = Removed)
-  val bExiting = TestMember(Address("akka.tcp", "sys", "b", 2552), Exiting)
+  val bExiting = TestMember(Address(protocol, "sys", "b", 2552), Exiting)
   val bRemoved = bExiting.copy(status = Removed)
-  val cJoining = TestMember(Address("akka.tcp", "sys", "c", 2552), Joining, Set("GRP"))
+  val cJoining = TestMember(Address(protocol, "sys", "c", 2552), Joining, Set("GRP"))
   val cUp = cJoining.copy(status = Up)
   val cRemoved = cUp.copy(status = Removed)
-  val a51Up = TestMember(Address("akka.tcp", "sys", "a", 2551), Up)
-  val dUp = TestMember(Address("akka.tcp", "sys", "d", 2552), Up, Set("GRP"))
+  val a51Up = TestMember(Address(protocol, "sys", "a", 2551), Up)
+  val dUp = TestMember(Address(protocol, "sys", "d", 2552), Up, Set("GRP"))
 
   val g0 = Gossip(members = SortedSet(aUp)).seen(aUp.uniqueAddress)
   val g1 = Gossip(members = SortedSet(aUp, cJoining)).seen(aUp.uniqueAddress).seen(cJoining.uniqueAddress)

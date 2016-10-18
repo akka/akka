@@ -118,6 +118,38 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
       }
     }
 
+    "log with MDC" in {
+      new TestKit(appLogging) {
+        system.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        val myMDC = Map("hello" → "mdc")
+        val a = system.actorOf(Props(new Actor with DiagnosticActorLogging {
+          override def mdc(currentMessage: Any) = myMDC
+          def receive = LoggingReceive {
+            case "hello" ⇒
+          }
+        }))
+        a ! "hello"
+        expectMsgPF(hint = "Logging.Debug2") {
+          case m: Logging.Debug2 if m.mdc == myMDC ⇒ ()
+        }
+      }
+    }
+
+    "support various log level" in {
+      new TestKit(appLogging) with ImplicitSender {
+        system.eventStream.subscribe(testActor, classOf[Logging.Info])
+        val actor = TestActorRef(new Actor {
+          def receive = LoggingReceive(Logging.InfoLevel) {
+            case _ ⇒ sender() ! "x"
+          }
+        })
+        actor ! "buh"
+        expectMsg(Logging.Info(actor.path.toString, actor.underlyingActor.getClass,
+          "received handled message buh from " + self))
+        expectMsg("x")
+      }
+    }
+
   }
 
   "An Actor" must {

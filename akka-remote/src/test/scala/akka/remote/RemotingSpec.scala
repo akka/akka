@@ -79,7 +79,7 @@ object RemotingSpec {
     }
 
     akka {
-      actor.provider = "akka.remote.RemoteActorRefProvider"
+      actor.provider = remote
 
       remote {
         retry-gate-closed-for = 1 s
@@ -557,7 +557,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         val otherGuyRemoteTest = otherGuy.path.toSerializationFormatWithAddress(addr(otherSystem, "test"))
         val remoteEchoHereSsl = system.actorFor(s"akka.ssl.tcp://remote-sys@localhost:${port(remoteSystem, "ssl.tcp")}/user/echo")
         val proxySsl = system.actorOf(Props(classOf[Proxy], remoteEchoHereSsl, testActor), "proxy-ssl")
-        EventFilter.warning(start = "Error while resolving address", occurrences = 1).intercept {
+        EventFilter.warning(start = "Error while resolving ActorRef", occurrences = 1).intercept {
           proxySsl ! otherGuy
           expectMsg(3.seconds, ("pong", otherGuyRemoteTest))
         }(otherSystem)
@@ -769,11 +769,11 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         inboundHandleProbe.expectNoMsg(1.second)
 
         // Quarantine unrelated connection
-        RARP(thisSystem).provider.quarantine(remoteAddress, Some(-1))
+        RARP(thisSystem).provider.quarantine(remoteAddress, Some(-1), "test")
         inboundHandleProbe.expectNoMsg(1.second)
 
         // Quarantine the connection
-        RARP(thisSystem).provider.quarantine(remoteAddress, Some(remoteUID))
+        RARP(thisSystem).provider.quarantine(remoteAddress, Some(remoteUID.toLong), "test")
 
         // Even though the connection is stashed it will be disassociated
         inboundHandleProbe.expectMsgType[AssociationHandle.Disassociated]

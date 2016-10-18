@@ -7,40 +7,26 @@ package docs.persistence;
 import static akka.pattern.PatternsCS.ask;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Iterator;
 
 import akka.NotUsed;
+import akka.persistence.query.Sequence;
+import akka.persistence.query.Offset;
 import com.typesafe.config.Config;
 
 import akka.actor.*;
-import akka.dispatch.Mapper;
-import akka.event.EventStreamSpec;
-import akka.japi.Function;
-import akka.japi.Procedure;
 import akka.japi.pf.ReceiveBuilder;
-import akka.pattern.BackoffSupervisor;
-import akka.persistence.*;
 import akka.persistence.query.*;
-import akka.persistence.query.javadsl.ReadJournal;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.Timeout;
 
 import docs.persistence.query.MyEventsByTagPublisher;
-import docs.persistence.query.PersistenceQueryDocSpec;
 import org.reactivestreams.Subscriber;
-import scala.collection.Seq;
-import scala.collection.immutable.Vector;
-import scala.concurrent.Await;
 import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import scala.runtime.Boxed;
-import scala.runtime.BoxedUnit;
-import java.io.Serializable;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -102,11 +88,11 @@ public class PersistenceQueryDocTest {
   //#my-read-journal
   public class MyJavadslReadJournal implements 
   akka.persistence.query.javadsl.ReadJournal,
-  akka.persistence.query.javadsl.EventsByTagQuery,
+  akka.persistence.query.javadsl.EventsByTagQuery2,
   akka.persistence.query.javadsl.EventsByPersistenceIdQuery,
   akka.persistence.query.javadsl.AllPersistenceIdsQuery,
   akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
-    
+
     private final FiniteDuration refreshInterval;
 
     public MyJavadslReadJournal(ExtendedActorSystem system, Config config) {
@@ -116,10 +102,15 @@ public class PersistenceQueryDocTest {
     }
 
     @Override
-    public Source<EventEnvelope, NotUsed> eventsByTag(String tag, long offset) {
-      final Props props = MyEventsByTagPublisher.props(tag, offset, refreshInterval);
-      return Source.<EventEnvelope>actorPublisher(props).
+    public Source<EventEnvelope, NotUsed> eventsByTag(String tag, Offset offset) {
+      if(offset instanceof Sequence){
+        Sequence sequenceOffset = (Sequence) offset;
+        final Props props = MyEventsByTagPublisher.props(tag, sequenceOffset.value(), refreshInterval);
+        return Source.<EventEnvelope>actorPublisher(props).
           mapMaterializedValue(m -> NotUsed.getInstance());
+      }
+      else
+        throw new IllegalArgumentException("MyJavadslReadJournal does not support " + offset.getClass().getName() + " offsets");
     }
 
     @Override
@@ -157,7 +148,7 @@ public class PersistenceQueryDocTest {
   //#my-read-journal
   public class MyScaladslReadJournal implements 
   akka.persistence.query.scaladsl.ReadJournal,
-  akka.persistence.query.scaladsl.EventsByTagQuery,
+  akka.persistence.query.scaladsl.EventsByTagQuery2,
   akka.persistence.query.scaladsl.EventsByPersistenceIdQuery,
   akka.persistence.query.scaladsl.AllPersistenceIdsQuery,
   akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery {
@@ -170,7 +161,7 @@ public class PersistenceQueryDocTest {
 
     @Override
     public akka.stream.scaladsl.Source<EventEnvelope, NotUsed> eventsByTag(
-        String tag, long offset) {
+        String tag, akka.persistence.query.Offset offset) {
       return javadslReadJournal.eventsByTag(tag, offset).asScala();
     }
 
@@ -266,7 +257,7 @@ public class PersistenceQueryDocTest {
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:
     final Source<EventEnvelope, NotUsed> blueThings =
-      readJournal.eventsByTag("blue", 0L);
+      readJournal.eventsByTag("blue", new Sequence(0L));
 
     // find top 10 blue things:
     final Future<List<Object>> top10BlueThings =
@@ -279,7 +270,7 @@ public class PersistenceQueryDocTest {
         }, mat);
 
     // start another query, from the known offset
-    Source<EventEnvelope, NotUsed> blue = readJournal.eventsByTag("blue", 10);
+    Source<EventEnvelope, NotUsed> blue = readJournal.eventsByTag("blue", new Sequence(10));
     //#events-by-tag
   }
 
@@ -366,7 +357,7 @@ public class PersistenceQueryDocTest {
     final ExampleStore store = new ExampleStore();
 
     readJournal
-      .eventsByTag("bid", 0L)
+      .eventsByTag("bid", new Sequence(0L))
       .mapAsync(1, store::save)
       .runWith(Sink.ignore(), mat);
     //#projection-into-different-store-simple
@@ -416,7 +407,7 @@ public class PersistenceQueryDocTest {
     long startFromOffset = bidProjection.latestOffset().toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     readJournal
-      .eventsByTag("bid", startFromOffset)
+      .eventsByTag("bid", new Sequence(startFromOffset))
       .mapAsync(8, envelope -> {
         final CompletionStage<Object> f = ask(writer, envelope.event(), timeout);
         return f.thenApplyAsync(in -> envelope.offset(), system.dispatcher());

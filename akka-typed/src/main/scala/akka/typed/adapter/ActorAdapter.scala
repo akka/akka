@@ -6,16 +6,12 @@ package adapter
 
 import akka.{ actor ⇒ a }
 
-private[typed] class ActorAdapter[T](_initialBehavior: () ⇒ Behavior[T]) extends a.Actor {
+private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor {
   import Behavior._
 
-  var behavior: Behavior[T] = _
+  var behavior: Behavior[T] = _initialBehavior
 
-  {
-    behavior = canonicalize(_initialBehavior(), behavior)
-    if (behavior == null) throw new IllegalStateException("initial behavior cannot be `same` or `unhandled`")
-    if (!isAlive(behavior)) context.stop(self)
-  }
+  if (!isAlive(behavior)) context.stop(self)
 
   val ctx = new ActorContextAdapter[T](context)
 
@@ -59,7 +55,7 @@ private[typed] class ActorAdapter[T](_initialBehavior: () ⇒ Behavior[T]) exten
   override def preRestart(reason: Throwable, message: Option[Any]): Unit =
     next(behavior.management(ctx, PreRestart), PreRestart)
   override def postRestart(reason: Throwable): Unit =
-    next(behavior.management(ctx, PostRestart), PostRestart)
+    next(behavior.management(ctx, PreStart), PreStart)
   override def postStop(): Unit =
     next(behavior.management(ctx, PostStop), PostStop)
 }

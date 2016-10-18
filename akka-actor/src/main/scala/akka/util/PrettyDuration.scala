@@ -7,7 +7,8 @@ import java.util.Locale
 
 import scala.concurrent.duration._
 
-object PrettyDuration {
+/** INTERNAL API */
+private[akka] object PrettyDuration {
 
   /**
    * JAVA API

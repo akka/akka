@@ -504,7 +504,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
       case RecoveryTick(true) ⇒
         try onRecoveryFailure(
-          new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout s"),
+          new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within $timeout"),
           event = None)
         finally context.stop(self)
 
@@ -562,7 +562,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         case RecoveryTick(false) if !eventSeenInInterval ⇒
           timeoutCancellable.cancel()
           try onRecoveryFailure(
-            new RecoveryTimedOut(s"Recovery timed out, didn't get event within $timeout s, highest sequence number seen $sequenceNr"),
+            new RecoveryTimedOut(s"Recovery timed out, didn't get event within $timeout, highest sequence number seen $sequenceNr"),
             event = None)
           finally context.stop(self)
         case RecoveryTick(false) ⇒

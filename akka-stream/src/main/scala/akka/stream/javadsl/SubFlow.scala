@@ -173,8 +173,9 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step. The function returns a `CompletionStage` and the
-   * value of that future will be emitted downstream. As many CompletionStages as requested elements by
-   * downstream may run in parallel and may complete in any order, but the elements that
+   * value of that future will be emitted downstream. The number of CompletionStages
+   * that shall run in parallel is given as the first argument to ``mapAsync``.
+   * These CompletionStages may complete in any order, but the elements that
    * are emitted downstream are in the same order as received from upstream.
    *
    * If the function `f` throws an exception or if the `CompletionStage` is completed
@@ -204,10 +205,10 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step. The function returns a `CompletionStage` and the
-   * value of that future will be emitted downstream. As many CompletionStages as requested elements by
-   * downstream may run in parallel and each processed element will be emitted downstream
-   * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
-   * in the same order as received from upstream.
+   * value of that future will be emitted downstream. The number of CompletionStages
+   * that shall run in parallel is given as the first argument to ``mapAsyncUnordered``.
+   * Each processed element will be emitted downstream as soon as it is ready, i.e. it is possible
+   * that the elements are not emitted downstream in the same order as received from upstream.
    *
    * If the function `f` throws an exception or if the `CompletionStage` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
@@ -385,6 +386,33 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    */
   def scan[T](zero: T)(f: function.Function2[T, Out, T]): SubFlow[In, T, Mat] =
     new SubFlow(delegate.scan(zero)(f.apply))
+
+  /**
+   * Similar to `scan` but with a asynchronous function,
+   * emits its current value which starts at `zero` and then
+   * applies the current and next value to the given function `f`,
+   * emitting a `Future` that resolves to the next current value.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
+   * the stream will continue.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Resume]] current value starts at the previous
+   * current value, or zero when it doesn't have one, and the stream will continue.
+   *
+   * '''Emits when''' the future returned by f` completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and the last future returned by `f` completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.scan]]
+   */
+  def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): SubFlow[In, T, Mat] =
+    new SubFlow(delegate.scanAsync(zero) { (out, in) ⇒ f(out, in).toScala })
 
   /**
    * Similar to `scan` but only emits its result when the upstream completes,
@@ -1111,6 +1139,21 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
     that:    Graph[SourceShape[Out2], _],
     combine: function.Function2[Out, Out2, Out3]): SubFlow[In, Out3, Mat] =
     new SubFlow(delegate.zipWith[Out2, Out3](that)(combinerToScala(combine)))
+
+  /**
+   * Combine the elements of current [[Flow]] into a stream of tuples consisting
+   * of all elements paired with their index. Indices start at 0.
+   *
+   * '''Emits when''' upstream emits an element and is paired with their index
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipWithIndex: SubFlow[In, akka.japi.Pair[Out @uncheckedVariance, Long], Mat] =
+    new SubFlow(delegate.zipWithIndex.map { case (elem, index) ⇒ akka.japi.Pair(elem, index) })
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed

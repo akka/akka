@@ -65,9 +65,11 @@ object ActorCell {
  * INTERNAL API
  */
 private[typed] class ActorCell[T](
-  override val system: ActorSystem[Nothing],
-  override val props:  Props[T],
-  val parent:          ActorRefImpl[Nothing])
+  override val system:           ActorSystem[Nothing],
+  protected val initialBehavior: Behavior[T],
+  override val executionContext: ExecutionContextExecutor,
+  override val mailboxCapacity:  Int,
+  val parent:                    ActorRefImpl[Nothing])
   extends ActorContext[T] with Runnable with SupervisionMechanics[T] with DeathWatch[T] {
   import ActorCell._
 
@@ -98,10 +100,12 @@ private[typed] class ActorCell[T](
 
   protected def ctx: ActorContext[T] = this
 
-  override def spawn[U](props: Props[U], name: String): ActorRef[U] = {
+  override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig): ActorRef[U] = {
     if (childrenMap contains name) throw new InvalidActorNameException(s"actor name [$name] is not unique")
     if (terminatingMap contains name) throw new InvalidActorNameException(s"actor name [$name] is not yet free")
-    val cell = new ActorCell[U](system, props, self)
+    val dispatcher = deployment.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
+    val capacity = deployment.firstOrElse(MailboxCapacity(system.settings.DefaultMailboxCapacity))
+    val cell = new ActorCell[U](system, Behavior.validateAsInitial(behavior), system.dispatchers.lookup(dispatcher), capacity.capacity, self)
     val ref = new LocalActorRef[U](self.path / name, cell)
     cell.setSelf(ref)
     childrenMap = childrenMap.updated(name, ref)
@@ -110,10 +114,10 @@ private[typed] class ActorCell[T](
   }
 
   private var nextName = 0L
-  override def spawnAnonymous[U](props: Props[U]): ActorRef[U] = {
+  override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig): ActorRef[U] = {
     val name = Helpers.base64(nextName)
     nextName += 1
-    spawn(props, name)
+    spawn(behavior, name, deployment)
   }
 
   override def stop(child: ActorRef[Nothing]): Boolean = {
@@ -139,8 +143,6 @@ private[typed] class ActorCell[T](
 
   override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Cancellable =
     system.scheduler.scheduleOnce(delay)(target ! msg)(ExecutionContexts.sameThreadExecutionContext)
-
-  override val executionContext: ExecutionContextExecutor = system.dispatchers.lookup(props.dispatcher)
 
   override def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = {
     val name = Helpers.base64(nextName, new java.lang.StringBuilder("$!"))
@@ -172,7 +174,7 @@ private[typed] class ActorCell[T](
   protected[typed] def getStatus: Int = _status
   private[this] val queue: Queue[T] = new ConcurrentLinkedQueue[T]
   private[typed] def peekMessage: T = queue.peek()
-  private[this] val maxQueue: Int = Math.min(props.mailboxCapacity, maxActivations)
+  private[this] val maxQueue: Int = Math.min(mailboxCapacity, maxActivations)
   @volatile private[this] var _systemQueue: LatestFirstSystemMessageList = SystemMessageList.LNil
 
   protected def maySend: Boolean = !isTerminating

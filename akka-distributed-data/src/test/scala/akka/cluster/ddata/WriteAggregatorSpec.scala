@@ -13,6 +13,7 @@ import akka.actor.ActorRef
 import akka.cluster.ddata.Replicator.Internal._
 import akka.cluster.ddata.Replicator._
 import akka.actor.ActorSelection
+import akka.remote.RARP
 
 object WriteAggregatorSpec {
 
@@ -50,12 +51,16 @@ object WriteAggregatorSpec {
 }
 
 class WriteAggregatorSpec extends AkkaSpec("""
-      akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+      akka.actor.provider = "cluster"
       akka.remote.netty.tcp.port=0
       """)
   with ImplicitSender {
 
-  val nodeA = Address("akka.tcp", "Sys", "a", 2552)
+  val protocol =
+    if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
+    else "akka.tcp"
+
+  val nodeA = Address(protocol, "Sys", "a", 2552)
   val nodeB = nodeA.copy(host = Some("b"))
   val nodeC = nodeA.copy(host = Some("c"))
   val nodeD = nodeA.copy(host = Some("d"))

@@ -8,7 +8,7 @@ import scala.collection.immutable
 import akka.actor.{ ActorLogging, ActorSelection, Address, Actor, RootActorPath }
 import akka.cluster.ClusterEvent._
 import akka.remote.FailureDetectorRegistry
-import akka.remote.PriorityMessage
+import akka.remote.HeartbeatMessage
 import akka.actor.DeadLetterSuppression
 
 /**
@@ -36,12 +36,12 @@ private[cluster] object ClusterHeartbeatSender {
   /**
    * Sent at regular intervals for failure detection.
    */
-  final case class Heartbeat(from: Address) extends ClusterMessage with PriorityMessage with DeadLetterSuppression
+  final case class Heartbeat(from: Address) extends ClusterMessage with HeartbeatMessage with DeadLetterSuppression
 
   /**
    * Sent as reply to [[Heartbeat]] messages.
    */
-  final case class HeartbeatRsp(from: UniqueAddress) extends ClusterMessage with PriorityMessage with DeadLetterSuppression
+  final case class HeartbeatRsp(from: UniqueAddress) extends ClusterMessage with HeartbeatMessage with DeadLetterSuppression
 
   // sent to self only
   case object HeartbeatTick

@@ -1,0 +1,20 @@
+/**
+ * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ */
+
+option java_package = "akka.remote.artery.protobuf";
+
+message TestMessage {
+  required uint64 id = 1;
+  required string name = 2;
+  required bool status = 3;
+  optional string description = 4;
+  optional bytes payload = 5;
+  repeated Item items = 6;
+}
+
+message Item {
+  required uint64 id = 1;
+  required string name = 2;
+}  
+

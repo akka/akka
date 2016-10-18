@@ -5,7 +5,6 @@
 package akka.serialization
 
 import language.postfixOps
-
 import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor._
 import akka.dispatch.sysmsg._
@@ -17,6 +16,8 @@ import scala.beans.BeanInfo
 import com.typesafe.config._
 import akka.pattern.ask
 import org.apache.commons.codec.binary.Hex.encodeHex
+import java.nio.ByteOrder
+import java.nio.ByteBuffer
 import akka.actor.NoSerializationVerificationNeeded
 import test.akka.serialization.NoVerification
 
@@ -249,7 +250,25 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 
       intercept[IllegalArgumentException] {
         byteSerializer.toBinary("pigdog")
-      }.getMessage should ===("ByteArraySerializer only serializes byte arrays, not [pigdog]")
+      }.getMessage should ===(s"${classOf[ByteArraySerializer].getName} only serializes byte arrays, not [java.lang.String]")
+    }
+
+    "support ByteBuffer serialization for byte arrays" in {
+      val byteSerializer = ser.serializerFor(classOf[Array[Byte]]).asInstanceOf[ByteBufferSerializer]
+
+      val byteBuffer = ByteBuffer.allocate(128).order(ByteOrder.LITTLE_ENDIAN)
+      val str = "abcdef"
+      val payload = str.getBytes("UTF-8")
+      byteSerializer.toBinary(payload, byteBuffer)
+      byteBuffer.position() should ===(payload.length)
+      byteBuffer.flip()
+      val deserialized = byteSerializer.fromBinary(byteBuffer, "").asInstanceOf[Array[Byte]]
+      byteBuffer.remaining() should ===(0)
+      new String(deserialized, "UTF-8") should ===(str)
+
+      intercept[IllegalArgumentException] {
+        byteSerializer.toBinary("pigdog", byteBuffer)
+      }.getMessage should ===(s"${classOf[ByteArraySerializer].getName} only serializes byte arrays, not [java.lang.String]")
     }
   }
 }

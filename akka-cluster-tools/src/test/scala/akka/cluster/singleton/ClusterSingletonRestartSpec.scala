@@ -4,11 +4,11 @@
 package akka.cluster.singleton
 
 import scala.concurrent.duration._
-
 import akka.actor.ActorSystem
 import akka.actor.PoisonPill
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
+import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
@@ -19,6 +19,10 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
   akka.remote {
     netty.tcp {
+      hostname = "127.0.0.1"
+      port = 0
+    }
+    artery.canonical {
       hostname = "127.0.0.1"
       port = 0
     }
@@ -64,10 +68,17 @@ class ClusterSingletonRestartSpec extends AkkaSpec("""
       shutdown(sys1)
       // it will be downed by the join attempts of the new incarnation
 
-      sys3 = ActorSystem(
-        system.name,
-        ConfigFactory.parseString(s"akka.remote.netty.tcp.port=${Cluster(sys1).selfAddress.port.get}").withFallback(
-          system.settings.config))
+      sys3 = {
+        val sys1port = Cluster(sys1).selfAddress.port.get
+
+        val sys3Config =
+          ConfigFactory.parseString(
+            if (RARP(sys1).provider.remoteSettings.Artery.Enabled) s"akka.remote.artery.canonical.port=$sys1port"
+            else s"akka.remote.netty.tcp.port=$sys1port"
+          ).withFallback(system.settings.config)
+
+        ActorSystem(system.name, sys3Config)
+      }
       join(sys3, sys2)
 
       within(5.seconds) {

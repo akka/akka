@@ -10,7 +10,7 @@ import akka.routing.ConsistentRoutee
 import akka.routing.ConsistentHash
 
 class RemoteConsistentHashingRouterSpec extends AkkaSpec("""
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider" """) {
+    akka.actor.provider = remote """) {
 
   "ConsistentHashingGroup" must {
 

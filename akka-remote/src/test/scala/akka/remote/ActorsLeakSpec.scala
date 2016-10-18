@@ -20,7 +20,7 @@ object ActorsLeakSpec {
 
   val config = ConfigFactory.parseString(
     """
-      | akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+      | akka.actor.provider = remote
       | #akka.loglevel = DEBUG
       | akka.remote.netty.tcp.applied-adapters = ["trttl"]
       | #akka.remote.log-lifecycle-events = on
@@ -119,7 +119,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
           val beforeQuarantineActors = targets.flatMap(collectLiveActors).toSet
 
           // it must not quarantine the current connection
-          RARP(system).provider.transport.quarantine(remoteAddress, Some(AddressUidExtension(remoteSystem).addressUid + 1))
+          RARP(system).provider.transport.quarantine(remoteAddress, Some(AddressUidExtension(remoteSystem).addressUid + 1), "test")
 
           // the message from local to remote should reuse passive inbound connection
           system.actorSelection(RootActorPath(remoteAddress) / "user" / "stoppable") ! Identify(1)

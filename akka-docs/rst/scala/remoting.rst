@@ -1,8 +1,7 @@
 .. _remoting-scala:
 
-##########
- Remoting
-##########
+Remoting
+########
 
 For an introduction of remoting capabilities of Akka please see :ref:`remoting`.
 
@@ -27,7 +26,7 @@ to your ``application.conf`` file::
 
   akka {
     actor {
-      provider = "akka.remote.RemoteActorRefProvider"
+      provider = remote
     }
     remote {
       enabled-transports = ["akka.remote.netty.tcp"]
@@ -40,7 +39,7 @@ to your ``application.conf`` file::
 
 As you can see in the example above there are four things you need to add to get started:
 
-* Change provider from ``akka.actor.LocalActorRefProvider`` to ``akka.remote.RemoteActorRefProvider``
+* Change provider from ``local`` to ``remote``
 * Add host name - the machine you want to run the actor system on; this host
   name is exactly what is passed to remote systems in order to identify this
   system and consequently used for connecting back to this system if need be,
@@ -265,6 +264,72 @@ those actors are serializable. Failing to do so will cause the system to behave 
 
 For more information please see :ref:`serialization-scala`.
 
+Disabling the Java Serializer
+-----------------------------
+
+Since the ``2.4.11`` release of Akka it is possible to entirely disable the default Java Serialization mechanism.
+Please note that :ref:`new remoting implementation (codename Artery) <remoting-artery-scala>` does not use Java 
+serialization for internal messages by default. For compatibility reasons, the current remoting still uses Java 
+serialization for some classes, however you can disable it in this remoting implementation as well by following 
+the steps below.
+
+Java serialization is known to be slow and prone to attacks of various kinds - it never was designed for high 
+throughput messaging after all. However it is very convenient to use, thus it remained the default serialization 
+mechanism that Akka used to serialize user messages as well as some of its internal messages in previous versions.
+Since the release of Artery, Akka internals do not rely on Java serialization anymore (one exception being ``java.lang.Throwable``).
+
+.. note:: 
+  When using the new remoting implementation (codename Artery), Akka does not use Java Serialization for any of it's internal messages.  
+  It is highly encouraged to disable java serialization, so please plan to do so at the earliest possibility you have in your project.
+
+  One may think that network bandwidth and latency limit the performance of remote messaging, but serialization is a more typical bottleneck.
+
+For user messages, the default serializer, implemented using Java serialization, remains available and enabled in Artery.
+We do however recommend to disable it entirely and utilise a proper serialization library instead in order effectively utilise 
+the improved performance and ability for rolling deployments using Artery. Libraries that we recommend to use include, 
+but are not limited to, `Kryo`_ by using the `akka-kryo-serialization`_ library or `Google Protocol Buffers`_ if you want
+more control over the schema evolution of your messages. 
+
+In order to completely disable Java Serialization in your Actor system you need to add the following configuration to 
+your ``application.conf``:
+
+.. code-block:: ruby
+
+  akka {
+    actor {
+      serialization-bindings {
+        "java.io.Serializable" = none
+      }
+    }
+  } 
+
+Please note that this means that you will have to configure different serializers which will able to handle all of your
+remote messages. Please refer to the :ref:`serialization-scala` documentation as well as :ref:`ByteBuffer based serialization <remote-bytebuffer-serialization-scala>` to learn how to do this.
+
+.. warning:: 
+  Please note that when enabling the additional-serialization-bindings when using the old remoting, 
+  you must do so on all nodes participating in a cluster, otherwise the mis-aligned serialization
+  configurations will cause deserialization errors on the receiving nodes.
+
+You can also easily enable additional serialization bindings that are provided by Akka that are not using Java serialization:
+
+.. code-block: ruby
+  akka.actor {
+    # Set this to on to enable serialization-bindings define in
+    # additional-serialization-bindings. Those are by default not included
+    # for backwards compatibility reasons. They are enabled by default if
+    # akka.remote.artery.enabled=on. 
+    enable-additional-serialization-bindings = on
+  }
+
+The reason these are not enabled by default is wire-level compatibility between any 2.4.x Actor Systems.
+If you roll out a new cluster, all on the same Akka version that can enable these serializers it is recommended to 
+enable this setting. When using :ref:`remoting-artery-scala` these serializers are enabled by default.
+
+.. _Kryo: https://github.com/EsotericSoftware/kryo
+.. _akka-kryo-serialization: https://github.com/romix/akka-kryo-serialization
+.. _Google Protocol Buffers: https://developers.google.com/protocol-buffers/
+
 Routers with Remote Destinations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -293,58 +358,6 @@ Remoting Sample
 There is a more extensive remote example that comes with `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_.
 The tutorial named `Akka Remote Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-remote-scala>`_
 demonstrates both remote deployment and look-up of remote actors.
-
-Pluggable transport support
----------------------------
-
-Akka can be configured to use various transports to communicate with remote systems. The core
-component of this feature is the :meth:`akka.remote.transport.Transport` SPI. Transport implementations must extend this trait.
-Transports can be loaded by setting the ``akka.remote.enabled-transports`` configuration key to point to one or
-more configuration sections containing driver descriptions.
-
-An example of setting up the default Netty based SSL driver as default::
-
-  akka {
-    remote {
-      enabled-transports = [akka.remote.netty.ssl]
-
-      netty.ssl.security {
-        key-store = "mykeystore"
-        trust-store = "mytruststore"
-        key-store-password = "changeme"
-        key-password = "changeme"
-        trust-store-password = "changeme"
-        protocol = "TLSv1.2"
-        random-number-generator = "AES128CounterSecureRNG"
-        enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
-      }
-    }
-  }
-
-An example of setting up a custom transport implementation::
-
-  akka {
-    remote {
-      applied-transports = ["akka.remote.mytransport"]
-
-      mytransport {
-        # The transport-class configuration entry is required, and
-        # it must contain the fully qualified name of the transport
-        # implementation
-        transport-class = "my.package.MyTransport"
-
-        # It is possible to decorate Transports with additional services.
-        # Adapters should be registered in the "adapters" sections to
-        # be able to apply them to transports
-        applied-adapters = []
-
-        # Driver specific configuration options has to be in the same
-        # section:
-        some-config = foo
-        another-config = bar
-      }
-
-
 
 Remote Events
 -------------
@@ -461,6 +474,25 @@ SSL
 SSL can be used as the remote transport by adding ``akka.remote.netty.ssl``
 to the ``enabled-transport`` configuration section. See a description of the settings
 in the :ref:`remote-configuration-scala` section.
+
+An example of setting up the default Netty based SSL driver as default::
+
+  akka {
+    remote {
+      enabled-transports = [akka.remote.netty.ssl]
+
+      netty.ssl.security {
+        key-store = "mykeystore"
+        trust-store = "mytruststore"
+        key-store-password = "changeme"
+        key-password = "changeme"
+        trust-store-password = "changeme"
+        protocol = "TLSv1.2"
+        random-number-generator = "AES128CounterSecureRNG"
+        enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
+      }
+    }
+  }
 
 The SSL support is implemented with Java Secure Socket Extension, please consult the official
 `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_

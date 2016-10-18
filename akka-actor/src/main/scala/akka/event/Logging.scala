@@ -3,7 +3,6 @@
  */
 package akka.event
 
-import java.util.Locale
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -397,6 +396,17 @@ object Logging {
   }
 
   /**
+   * Class name representation of a message.
+   * `ActorSelectionMessage` representation includes class name of
+   * wrapped message.
+   */
+  def messageClassName(message: Any): String = message match {
+    case null                           ⇒ "null"
+    case ActorSelectionMessage(m, _, _) ⇒ s"ActorSelectionMessage(${m.getClass.getName})"
+    case m                              ⇒ m.getClass.getName
+  }
+
+  /**
    * INTERNAL API
    */
   private[akka] object Extension extends ExtensionKey[LogExt]
@@ -647,6 +657,22 @@ object Logging {
     def getMDC: java.util.Map[String, Any] = {
       import scala.collection.JavaConverters._
       mdc.asJava
+    }
+  }
+
+  object LogEvent {
+    def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any): LogEvent = level match {
+      case ErrorLevel   ⇒ Error(logSource, logClass, message)
+      case WarningLevel ⇒ Warning(logSource, logClass, message)
+      case InfoLevel    ⇒ Info(logSource, logClass, message)
+      case DebugLevel   ⇒ Debug(logSource, logClass, message)
+    }
+
+    def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC): LogEvent = level match {
+      case ErrorLevel   ⇒ Error(logSource, logClass, message, mdc)
+      case WarningLevel ⇒ Warning(logSource, logClass, message, mdc)
+      case InfoLevel    ⇒ Info(logSource, logClass, message, mdc)
+      case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc)
     }
   }
 

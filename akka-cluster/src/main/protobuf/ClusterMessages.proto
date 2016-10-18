@@ -252,4 +252,6 @@ message Address {
 message UniqueAddress {
   required Address address = 1;
   required uint32 uid = 2;
+  // 64 bit uids but with backward wire compatibility
+  optional uint32 uid2 = 3;
 }

@@ -19,7 +19,7 @@ object RemoteDeploymentDocSpec {
 }
 
 class RemoteDeploymentDocSpec extends AkkaSpec("""
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = remote
     akka.remote.netty.tcp {
       port = 0
     }
@@ -40,6 +40,13 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
     ref.path.address should be(address)
     ref ! "test"
     expectMsgType[ActorRef].path.address should be(address)
+  }
+
+  def makeAddress(): Unit = {
+    //#make-address-artery
+    val one = AddressFromURIString("akka://sys@host:1234")
+    val two = Address("akka", "sys", "host", 1234) // this gives the same
+    //#make-address-artery
   }
 
   "demonstrate address extractor" in {

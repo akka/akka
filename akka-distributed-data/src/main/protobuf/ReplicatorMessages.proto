@@ -98,6 +98,8 @@ message Gossip {
 message UniqueAddress {
   required Address address = 1;
   required sfixed32 uid = 2;
+  // 64 bit uids but with backward wire compatibility
+  optional sfixed32 uid2 = 3;
 }
 
 message Address {

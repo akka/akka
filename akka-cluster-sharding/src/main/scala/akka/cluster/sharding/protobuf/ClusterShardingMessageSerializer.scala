@@ -31,8 +31,6 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   import Shard.{ GetShardStats, ShardStats }
   import Shard.{ State ⇒ EntityState, EntityStarted, EntityStopped }
 
-  private lazy val serialization = SerializationExtension(system)
-
   private final val BufferSize = 1024 * 4
 
   private val CoordinatorStateManifest = "AA"

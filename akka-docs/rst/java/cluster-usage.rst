@@ -31,7 +31,7 @@ The ``application.conf`` configuration looks like this:
 .. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/application.conf#snippet
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-java`
-settings, but with ``akka.cluster.ClusterActorRefProvider``.
+settings, but with ``cluster``.
 The ``akka.cluster.seed-nodes`` should normally also be added to your ``application.conf`` file.
 
 .. note::

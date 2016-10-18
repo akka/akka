@@ -20,6 +20,7 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.cluster.MultiNodeClusterSpec.EndActor
+import akka.remote.RARP
 
 object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
   val first = role("first")
@@ -160,18 +161,30 @@ abstract class UnreachableNodeJoinsAgainSpec
 
       runOn(victim) {
         val victimAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+        val freshConfig =
+          ConfigFactory.parseString(
+            if (RARP(system).provider.remoteSettings.Artery.Enabled)
+              s"""
+                akka.remote.artery.canonical {
+                  hostname = ${victimAddress.host.get}
+                  port = ${victimAddress.port.get}
+                }
+               """
+            else s"""
+              akka.remote.netty.tcp {
+                hostname = ${victimAddress.host.get}
+                port = ${victimAddress.port.get}
+              }"""
+          ).withFallback(system.settings.config)
+
         Await.ready(system.whenTerminated, 10 seconds)
+
         // create new ActorSystem with same host:port
-        val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
-            akka.remote.netty.tcp {
-              hostname = ${victimAddress.host.get}
-              port = ${victimAddress.port.get}
-            }
-            """).withFallback(system.settings.config))
+        val freshSystem = ActorSystem(system.name, freshConfig)
 
         try {
           Cluster(freshSystem).join(masterAddress)
-          within(15 seconds) {
+          within(30 seconds) {
             awaitAssert(Cluster(freshSystem).readView.members.map(_.address) should contain(victimAddress))
             awaitAssert(Cluster(freshSystem).readView.members.size should ===(expectedNumberOfMembers))
             awaitAssert(Cluster(freshSystem).readView.members.map(_.status) should ===(Set(MemberStatus.Up)))

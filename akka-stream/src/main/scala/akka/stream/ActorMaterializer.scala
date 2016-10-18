@@ -23,7 +23,7 @@ import scala.util.control.NoStackTrace
 object ActorMaterializer {
 
   /**
-   * Scala API: Creates a ActorMaterializer which will execute every step of a transformation
+   * Scala API: Creates an ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create one actor that in turn creates actors for the transformation steps.
@@ -43,7 +43,7 @@ object ActorMaterializer {
   }
 
   /**
-   * Scala API: Creates a ActorMaterializer which will execute every step of a transformation
+   * Scala API: Creates an ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
@@ -67,7 +67,7 @@ object ActorMaterializer {
   }
 
   /**
-   * Scala API: Creates a ActorMaterializer which will execute every step of a transformation
+   * Scala API: Creates an ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
@@ -81,7 +81,23 @@ object ActorMaterializer {
     apply(Some(materializerSettings), None)
 
   /**
-   * Java API: Creates a ActorMaterializer which will execute every step of a transformation
+   * INTERNAL API: Creates the `StreamSupervisor` as a system actor.
+   */
+  private[akka] def systemMaterializer(materializerSettings: ActorMaterializerSettings, namePrefix: String,
+                                       system: ExtendedActorSystem): ActorMaterializer = {
+    val haveShutDown = new AtomicBoolean(false)
+    new ActorMaterializerImpl(
+      system,
+      materializerSettings,
+      system.dispatchers,
+      system.systemActorOf(StreamSupervisor.props(materializerSettings, haveShutDown)
+        .withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName()),
+      haveShutDown,
+      FlowNames(system).name.copy(namePrefix))
+  }
+
+  /**
+   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
@@ -94,7 +110,7 @@ object ActorMaterializer {
     apply()(context)
 
   /**
-   * Java API: Creates a ActorMaterializer which will execute every step of a transformation
+   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create one actor that in turn creates actors for the transformation steps.
@@ -103,7 +119,7 @@ object ActorMaterializer {
     apply(Option(settings), None)(context)
 
   /**
-   * Java API: Creates a ActorMaterializer which will execute every step of a transformation
+   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
@@ -122,7 +138,7 @@ object ActorMaterializer {
       case c: ActorContext        ⇒ c.system
       case null                   ⇒ throw new IllegalArgumentException("ActorRefFactory context must be defined")
       case _ ⇒
-        throw new IllegalArgumentException(s"ActorRefFactory context must be a ActorSystem or ActorContext, got [${context.getClass.getName}]")
+        throw new IllegalArgumentException(s"ActorRefFactory context must be an ActorSystem or ActorContext, got [${context.getClass.getName}]")
     }
     system
   }
@@ -145,7 +161,7 @@ private[akka] object ActorMaterializerHelper {
 }
 
 /**
- * A ActorMaterializer takes the list of transformations comprising a
+ * An ActorMaterializer takes the list of transformations comprising a
  * [[akka.stream.scaladsl.Flow]] and materializes them in the form of
  * [[org.reactivestreams.Processor]] instances. How transformation
  * steps are split up into asynchronous regions is implementation

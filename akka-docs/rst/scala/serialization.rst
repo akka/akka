@@ -1,9 +1,8 @@
 
 .. _serialization-scala:
 
-######################
- Serialization
-######################
+Serialization
+#############
 
 Akka has a built-in Extension for serialization,
 and it is both possible to use the built-in serializers and to write your own.

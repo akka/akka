@@ -19,8 +19,8 @@ i.e. not necessarily the initial contact points.
   provided in a more efficient way by :ref:`distributed-pub-sub-scala` for actors that 
   belong to the same cluster. 
 
-Also, note it's necessary to change ``akka.actor.provider`` from ``akka.actor.LocalActorRefProvider`` 
-to ``akka.remote.RemoteActorRefProvider`` or ``akka.cluster.ClusterActorRefProvider`` when using
+Also, note it's necessary to change ``akka.actor.provider`` from ``local``
+to ``remote`` or ``cluster`` when using
 the cluster client. 
 
 The receptionist is supposed to be started on all nodes, or all nodes with specified role,

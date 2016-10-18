@@ -41,8 +41,12 @@ with a specific role. It communicates with other ``Replicator`` instances with t
 ``akka.cluster.ddata.DistributedData`` extension.
 
 Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, if that feature is enabled,
-will currently not participate in Distributed Data, but that is something that should be possible to
-add in a future release.
+will participate in Distributed Data. This means that the data will be replicated to the
+:ref:`WeaklyUp <weakly_up_java>` nodes with the background gossip protocol. Note that it
+will not participate in any actions where the consistency mode is to read/write from all
+nodes or the majority of nodes. The :ref:`WeaklyUp <weakly_up_java>` node is not counted
+as part of the cluster. So 3 nodes + 5 :ref:`WeaklyUp <weakly_up_java>` is essentially a
+3 node cluster as far as consistent actions are concerned.
 
 Below is an example of an actor that schedules tick messages to itself and for each tick 
 adds or removes elements from a ``ORSet`` (observed-remove set). It also subscribes to
@@ -333,13 +337,6 @@ values.
 
 .. includecode:: code/docs/ddata/DistributedDataDocTest.java#ormultimap
 
-Note that ``LWWRegister`` and therefore ``LWWMap`` relies on synchronized clocks and should only be used
-when the choice of value is not important for concurrent updates occurring within the clock skew.
-
-Instead of using timestamps based on ``System.currentTimeMillis()`` time it is possible to
-use a timestamp value based on something else, for example an increasing version number
-from a database record that is used for optimistic concurrency control.
- 
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e.
 when you update a map the whole map is replicated. Therefore, instead of using one ``ORMap``
 with 1000 elements it is more efficient to split that up in 10 top level ``ORMap`` entries 
@@ -347,6 +344,10 @@ with 100 elements each. Top level entries are replicated individually, which has
 trade-off that different entries may not be replicated at the same time and you may see
 inconsistencies between related entries. Separate top level entries cannot be updated atomically
 together.
+
+Note that ``LWWRegister`` and therefore ``LWWMap`` relies on synchronized clocks and should only be used
+when the choice of value is not important for concurrent updates occurring within the clock skew. Read more
+in the below section about ``LWWRegister``.
 
 Flags and Registers
 -------------------
@@ -375,6 +376,13 @@ from a database record that is used for optimistic concurrency control.
 
 For first-write-wins semantics you can use the ``LWWRegister#reverseClock`` instead of the
 ``LWWRegister#defaultClock``.
+
+The ``defaultClock`` is using max value of ``System.currentTimeMillis()`` and ``currentTimestamp + 1``.
+This means that the timestamp is increased for changes on the same node that occurs within
+the same millisecond. It also means that it is safe to use the ``LWWRegister`` without
+synchronized clocks when there is only one active writer, e.g. a Cluster Singleton. Such a
+single writer should then first read current value with ``ReadMajority`` (or more) before
+changing and writing the value with ``WriteMajority`` (or more).
 
 Custom Data Type
 ----------------

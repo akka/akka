@@ -559,10 +559,10 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step. The function returns a `Future` and the
-   * value of that future will be emitted downstream. As many futures as requested elements by
-   * downstream may run in parallel and each processed element will be emitted downstream
-   * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
-   * in the same order as received from upstream.
+   * value of that future will be emitted downstream. The number of Futures
+   * that shall run in parallel is given as the first argument to ``mapAsyncUnordered``.
+   * Each processed element will be emitted downstream as soon as it is ready, i.e. it is possible
+   * that the elements are not emitted downstream in the same order as received from upstream.
    *
    * If the function `f` throws an exception or if the `Future` is completed
    * with failure and the supervision decision is [[akka.stream.Supervision.Stop]]
@@ -761,8 +761,36 @@ trait FlowOps[+Out, +Mat] {
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.scanAsync]]
    */
   def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = via(Scan(zero, f))
+
+  /**
+   * Similar to `scan` but with a asynchronous function,
+   * emits its current value which starts at `zero` and then
+   * applies the current and next value to the given function `f`,
+   * emitting a `Future` that resolves to the next current value.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
+   * the stream will continue.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Resume]] current value starts at the previous
+   * current value, or zero when it doesn't have one, and the stream will continue.
+   *
+   * '''Emits when''' the future returned by f` completes
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and the last future returned by `f` completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * See also [[FlowOps.scan]]
+   */
+  def scanAsync[T](zero: T)(f: (T, Out) ⇒ Future[T]): Repr[T] = via(ScanAsync(zero, f))
 
   /**
    * Similar to `scan` but only emits its result when the upstream completes,
@@ -1654,6 +1682,29 @@ trait FlowOps[+Out, +Mat] {
       r ~> zip.in1
       FlowShape(zip.in0, zip.out)
     }
+
+  /**
+   * Combine the elements of current flow into a stream of tuples consisting
+   * of all elements paired with their index. Indices start at 0.
+   *
+   * '''Emits when''' upstream emits an element and is paired with their index
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipWithIndex: Repr[(Out, Long)] = {
+    statefulMapConcat[(Out, Long)] { () ⇒
+      var index: Long = 0L
+      elem ⇒ {
+        val zipped = (elem, index)
+        index += 1
+        immutable.Iterable[(Out, Long)](zipped)
+      }
+    }
+  }
 
   /**
    * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].

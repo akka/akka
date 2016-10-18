@@ -12421,6 +12421,24 @@ public final class ReplicatorMessages {
      * <code>required sfixed32 uid = 2;</code>
      */
     int getUid();
+
+    // optional sfixed32 uid2 = 3;
+    /**
+     * <code>optional sfixed32 uid2 = 3;</code>
+     *
+     * <pre>
+     * 64 bit uids but with backward wire compatibility
+     * </pre>
+     */
+    boolean hasUid2();
+    /**
+     * <code>optional sfixed32 uid2 = 3;</code>
+     *
+     * <pre>
+     * 64 bit uids but with backward wire compatibility
+     * </pre>
+     */
+    int getUid2();
   }
   /**
    * Protobuf type {@code akka.cluster.ddata.UniqueAddress}
@@ -12489,6 +12507,11 @@ public final class ReplicatorMessages {
             case 21: {
               bitField0_ |= 0x00000002;
               uid_ = input.readSFixed32();
+              break;
+            }
+            case 29: {
+              bitField0_ |= 0x00000004;
+              uid2_ = input.readSFixed32();
               break;
             }
           }
@@ -12569,9 +12592,34 @@ public final class ReplicatorMessages {
       return uid_;
     }
 
+    // optional sfixed32 uid2 = 3;
+    public static final int UID2_FIELD_NUMBER = 3;
+    private int uid2_;
+    /**
+     * <code>optional sfixed32 uid2 = 3;</code>
+     *
+     * <pre>
+     * 64 bit uids but with backward wire compatibility
+     * </pre>
+     */
+    public boolean hasUid2() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional sfixed32 uid2 = 3;</code>
+     *
+     * <pre>
+     * 64 bit uids but with backward wire compatibility
+     * </pre>
+     */
+    public int getUid2() {
+      return uid2_;
+    }
+
     private void initFields() {
       address_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.getDefaultInstance();
       uid_ = 0;
+      uid2_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -12603,6 +12651,9 @@ public final class ReplicatorMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeSFixed32(2, uid_);
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeSFixed32(3, uid2_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -12619,6 +12670,10 @@ public final class ReplicatorMessages {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += akka.protobuf.CodedOutputStream
           .computeSFixed32Size(2, uid_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeSFixed32Size(3, uid2_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -12745,6 +12800,8 @@ public final class ReplicatorMessages {
         bitField0_ = (bitField0_ & ~0x00000001);
         uid_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
+        uid2_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -12785,6 +12842,10 @@ public final class ReplicatorMessages {
           to_bitField0_ |= 0x00000002;
         }
         result.uid_ = uid_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.uid2_ = uid2_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -12806,6 +12867,9 @@ public final class ReplicatorMessages {
         }
         if (other.hasUid()) {
           setUid(other.getUid());
+        }
+        if (other.hasUid2()) {
+          setUid2(other.getUid2());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -12992,6 +13056,55 @@ public final class ReplicatorMessages {
       public Builder clearUid() {
         bitField0_ = (bitField0_ & ~0x00000002);
         uid_ = 0;
+        onChanged();
+        return this;
+      }
+
+      // optional sfixed32 uid2 = 3;
+      private int uid2_ ;
+      /**
+       * <code>optional sfixed32 uid2 = 3;</code>
+       *
+       * <pre>
+       * 64 bit uids but with backward wire compatibility
+       * </pre>
+       */
+      public boolean hasUid2() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional sfixed32 uid2 = 3;</code>
+       *
+       * <pre>
+       * 64 bit uids but with backward wire compatibility
+       * </pre>
+       */
+      public int getUid2() {
+        return uid2_;
+      }
+      /**
+       * <code>optional sfixed32 uid2 = 3;</code>
+       *
+       * <pre>
+       * 64 bit uids but with backward wire compatibility
+       * </pre>
+       */
+      public Builder setUid2(int value) {
+        bitField0_ |= 0x00000004;
+        uid2_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional sfixed32 uid2 = 3;</code>
+       *
+       * <pre>
+       * 64 bit uids but with backward wire compatibility
+       * </pre>
+       */
+      public Builder clearUid2() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        uid2_ = 0;
         onChanged();
         return this;
       }
@@ -14806,14 +14919,14 @@ public final class ReplicatorMessages {
       " \002(\010\0221\n\007entries\030\002 \003(\0132 .akka.cluster.dda" +
       "ta.Gossip.Entry\032H\n\005Entry\022\013\n\003key\030\001 \002(\t\0222\n" +
       "\010envelope\030\002 \002(\0132 .akka.cluster.ddata.Dat",
-      "aEnvelope\"J\n\rUniqueAddress\022,\n\007address\030\001 " +
+      "aEnvelope\"X\n\rUniqueAddress\022,\n\007address\030\001 " +
       "\002(\0132\033.akka.cluster.ddata.Address\022\013\n\003uid\030" +
-      "\002 \002(\017\")\n\007Address\022\020\n\010hostname\030\001 \002(\t\022\014\n\004po" +
-      "rt\030\002 \002(\r\"V\n\014OtherMessage\022\027\n\017enclosedMess" +
-      "age\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messa" +
-      "geManifest\030\004 \001(\014\"\036\n\nStringGSet\022\020\n\010elemen" +
-      "ts\030\001 \003(\tB#\n\037akka.cluster.ddata.protobuf." +
-      "msgH\001"
+      "\002 \002(\017\022\014\n\004uid2\030\003 \001(\017\")\n\007Address\022\020\n\010hostna" +
+      "me\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"V\n\014OtherMessage\022\027" +
+      "\n\017enclosedMessage\030\001 \002(\014\022\024\n\014serializerId\030" +
+      "\002 \002(\005\022\027\n\017messageManifest\030\004 \001(\014\"\036\n\nString" +
+      "GSet\022\020\n\010elements\030\001 \003(\tB#\n\037akka.cluster.d" +
+      "data.protobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -14927,7 +15040,7 @@ public final class ReplicatorMessages {
           internal_static_akka_cluster_ddata_UniqueAddress_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_UniqueAddress_descriptor,
-              new java.lang.String[] { "Address", "Uid", });
+              new java.lang.String[] { "Address", "Uid", "Uid2", });
           internal_static_akka_cluster_ddata_Address_descriptor =
             getDescriptor().getMessageTypes().get(15);
           internal_static_akka_cluster_ddata_Address_fieldAccessorTable = new

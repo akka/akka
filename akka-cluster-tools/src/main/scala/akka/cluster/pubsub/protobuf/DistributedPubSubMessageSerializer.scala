@@ -37,30 +37,34 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
   private val SendManifest = "C"
   private val SendToAllManifest = "D"
   private val PublishManifest = "E"
+  private val SendToOneSubscriberManifest = "F"
 
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
     StatusManifest → statusFromBinary,
     DeltaManifest → deltaFromBinary,
     SendManifest → sendFromBinary,
     SendToAllManifest → sendToAllFromBinary,
-    PublishManifest → publishFromBinary)
+    PublishManifest → publishFromBinary,
+    SendToOneSubscriberManifest → sendToOneSubscriberFromBinary)
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: Status    ⇒ StatusManifest
-    case _: Delta     ⇒ DeltaManifest
-    case _: Send      ⇒ SendManifest
-    case _: SendToAll ⇒ SendToAllManifest
-    case _: Publish   ⇒ PublishManifest
+    case _: Status              ⇒ StatusManifest
+    case _: Delta               ⇒ DeltaManifest
+    case _: Send                ⇒ SendManifest
+    case _: SendToAll           ⇒ SendToAllManifest
+    case _: Publish             ⇒ PublishManifest
+    case _: SendToOneSubscriber ⇒ SendToOneSubscriberManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: Status    ⇒ compress(statusToProto(m))
-    case m: Delta     ⇒ compress(deltaToProto(m))
-    case m: Send      ⇒ sendToProto(m).toByteArray
-    case m: SendToAll ⇒ sendToAllToProto(m).toByteArray
-    case m: Publish   ⇒ publishToProto(m).toByteArray
+    case m: Status              ⇒ compress(statusToProto(m))
+    case m: Delta               ⇒ compress(deltaToProto(m))
+    case m: Send                ⇒ sendToProto(m).toByteArray
+    case m: SendToAll           ⇒ sendToAllToProto(m).toByteArray
+    case m: Publish             ⇒ publishToProto(m).toByteArray
+    case m: SendToOneSubscriber ⇒ sendToOneSubscriberToProto(m).toByteArray
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -202,6 +206,18 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
 
   private def publishFromProto(publish: dm.Publish): Publish =
     Publish(publish.getTopic, payloadFromProto(publish.getPayload))
+
+  private def sendToOneSubscriberToProto(sendToOneSubscriber: SendToOneSubscriber): dm.SendToOneSubscriber = {
+    dm.SendToOneSubscriber.newBuilder().
+      setPayload(payloadToProto(sendToOneSubscriber.msg)).
+      build()
+  }
+
+  private def sendToOneSubscriberFromBinary(bytes: Array[Byte]): SendToOneSubscriber =
+    sendToOneSubscriberFromProto(dm.SendToOneSubscriber.parseFrom(bytes))
+
+  private def sendToOneSubscriberFromProto(sendToOneSubscriber: dm.SendToOneSubscriber): SendToOneSubscriber =
+    SendToOneSubscriber(payloadFromProto(sendToOneSubscriber.getPayload))
 
   private def payloadToProto(msg: Any): dm.Payload = {
     val m = msg.asInstanceOf[AnyRef]

@@ -1,0 +1,62 @@
+/**
+ * Copyright (C) 2009-2015 Lightbend Inc. <http://www.lightbend.com>
+ */
+
+option java_package = "akka.remote";
+option optimize_for = SPEED;
+
+import "ContainerFormats.proto";
+
+/******************************************
+ * System message formats
+ ******************************************/
+
+message SystemMessage {
+    enum Type {
+        CREATE = 0;
+        RECREATE = 1;
+        SUSPEND = 2;
+        RESUME = 3;
+        TERMINATE = 4;
+        SUPERVISE = 5;
+        WATCH = 6;
+        UNWATCH = 7;
+        FAILED = 8;
+        DEATHWATCH_NOTIFICATION = 9;
+    }
+
+    required Type type = 1;
+
+    optional WatchData watchData = 2;
+    optional Payload causeData = 3;
+    optional SuperviseData superviseData = 5;
+    optional FailedData failedData = 6;
+    optional DeathWatchNotificationData dwNotificationData = 7;
+
+}
+
+message WatchData {
+    required ActorRef watchee = 1;
+    required ActorRef watcher = 2;
+}
+
+message SuperviseData {
+    required ActorRef child = 1;
+    required bool async = 2;
+}
+
+message FailedData {
+    required ActorRef child = 1;
+    required uint64 uid = 2;
+}
+
+message DeathWatchNotificationData {
+    required ActorRef actor = 1;
+    required bool existenceConfirmed = 2;
+    required bool addressTerminated = 3;
+}
+
+
+
+
+

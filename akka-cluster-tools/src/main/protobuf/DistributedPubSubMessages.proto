@@ -64,6 +64,13 @@ message Publish {
   required Payload payload = 3; 
 }
 
+/**
+ * Send a message to only one subscriber of a group.
+ */
+message SendToOneSubscriber {
+  required Payload payload = 1;
+}
+
 message Payload {
   required bytes enclosedMessage = 1;
   required int32 serializerId = 2;

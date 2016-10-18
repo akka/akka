@@ -8,9 +8,8 @@ import java.net.URLEncoder
 import akka.NotUsed
 
 import scala.concurrent.duration._
-
 import akka.actor.ExtendedActorSystem
-import akka.persistence.query.EventEnvelope
+import akka.persistence.query.{ EventEnvelope, Offset, Sequence }
 import akka.persistence.query.journal.leveldb.AllPersistenceIdsPublisher
 import akka.persistence.query.journal.leveldb.EventsByPersistenceIdPublisher
 import akka.persistence.query.journal.leveldb.EventsByTagPublisher
@@ -41,7 +40,9 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
   with EventsByPersistenceIdQuery
   with CurrentEventsByPersistenceIdQuery
   with EventsByTagQuery
-  with CurrentEventsByTagQuery {
+  with EventsByTagQuery2
+  with CurrentEventsByTagQuery
+  with CurrentEventsByTagQuery2 {
 
   private val serialization = SerializationExtension(system)
   private val refreshInterval = Some(config.getDuration("refresh-interval", MILLISECONDS).millis)
@@ -165,7 +166,17 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def eventsByTag(tag: String, offset: Long = 0L): Source[EventEnvelope, NotUsed] = {
+  override def eventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
+    offset match {
+      case Sequence(offsetValue) ⇒
+        Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offsetValue, Long.MaxValue,
+          refreshInterval, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
+          .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+      case _ ⇒
+        throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
+    }
+
+  override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] = {
     Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offset, Long.MaxValue,
       refreshInterval, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
       .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
@@ -176,7 +187,17 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * is completed immediately when it reaches the end of the "result set". Events that are
    * stored after the query is completed are not included in the event stream.
    */
-  override def currentEventsByTag(tag: String, offset: Long = 0L): Source[EventEnvelope, NotUsed] = {
+  override def currentEventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
+    offset match {
+      case Sequence(offsetValue) ⇒
+        Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offsetValue, Long.MaxValue,
+          None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
+          .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+      case _ ⇒
+        throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
+    }
+
+  override def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] = {
     Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offset, Long.MaxValue,
       None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
       .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))

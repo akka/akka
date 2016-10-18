@@ -57,10 +57,7 @@ Now we want to try out this Actor, so we must start an ActorSystem to host it:
 .. includecode:: code/docs/akka/typed/IntroSpec.scala#hello-world
 
 After importing the Actor’s protocol definition we start an Actor system from
-the defined behavior, wrapping it in :class:`Props` like an actor on stage. The
-props we are giving to this one are just the defaults, we could at this point
-also configure which thread pool will be used to run it or its mailbox capacity
-for incoming messages.
+the defined behavior.
 
 As Carl Hewitt said, one Actor is no Actor—it would be quite lonely with
 nobody to talk to. In this sense the example is a little cruel because we only
@@ -73,7 +70,7 @@ properly typed already, no type checks or casts needed. This is possible due to
 the type information that is part of the message protocol: the ``?`` operator
 takes as argument a function that accepts an :class:`ActorRef[U]` (which
 explains the ``_`` hole in the expression on line 7 above) and the ``replyTo``
-parameter which we fill in like that is of type ``ActorRef[Greeted]``, which
+parameter which we fill in is of type ``ActorRef[Greeted]``, which
 means that the value that fulfills the :class:`Promise` can only be of type
 :class:`Greeted`.
 
@@ -195,7 +192,7 @@ The behavior that we declare here can handle both subtypes of :class:`Command`.
 trigger the dissemination of the contained chat room message to all connected
 clients. But we do not want to give the ability to send
 :class:`PostSessionMessage` commands to arbitrary clients, we reserve that
-right to the wrappers we create—otherwise clients could pose as complete
+right to the wrappers we create—otherwise clients could pose as completely
 different screen names (imagine the :class:`GetSession` protocol to include
 authentication information to further secure this). Therefore we narrow the
 behavior down to only accepting :class:`GetSession` commands before exposing it
@@ -261,7 +258,7 @@ choice:
 In good tradition we call the ``main`` Actor what it is, it directly
 corresponds to the ``main`` method in a traditional Java application. This
 Actor will perform its job on its own accord, we do not need to send messages
-from the outside, so we declare it to be of type ``Unit``. Actors receive not
+from the outside, so we declare it to be of type ``NotUsed``. Actors receive not
 only external messages, they also are notified of certain system events,
 so-called Signals. In order to get access to those we choose to implement this
 particular one using the :class:`Full` behavior decorator. The name stems from

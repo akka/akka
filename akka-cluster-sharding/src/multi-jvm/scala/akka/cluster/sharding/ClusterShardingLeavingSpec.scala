@@ -63,7 +63,7 @@ abstract class ClusterShardingLeavingSpecConfig(val mode: String) extends MultiN
 
   commonConfig(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-down-unreachable-after = 0s
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"

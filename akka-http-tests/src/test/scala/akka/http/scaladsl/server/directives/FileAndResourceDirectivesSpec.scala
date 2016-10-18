@@ -20,11 +20,17 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.http.scaladsl.TestUtils.writeAllText
+import akka.http.scaladsl.model.Uri.Path
 
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
   // operations touch files, can be randomly hit by slowness
   implicit val routeTestTimeout = RouteTestTimeout(3.seconds)
+
+  // need to serve from the src directory, when sbt copies the resource directory over to the
+  // target directory it will resolve symlinks in the process
+  val testRoot = new File("akka-http-tests/src/test/resources")
+  require(testRoot.exists(), s"testRoot was not found at ${testRoot.getAbsolutePath}")
 
   override def testConfigSource = "akka.http.routing.range-coalescing-threshold = 1"
 
@@ -121,6 +127,69 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
           responseAs[String] shouldEqual "456"
         }
       } finally file.delete
+    }
+  }
+
+  "getFromDirectory" should {
+    def _getFromDirectory(directory: String) = getFromDirectory(new File(testRoot, directory).getCanonicalPath)
+
+    "reject non-GET requests" in {
+      Put() ~> _getFromDirectory("someDir") ~> check { handled shouldEqual false }
+    }
+    "reject requests to non-existing files" in {
+      Get("nonExistentFile") ~> _getFromDirectory("subDirectory") ~> check { handled shouldEqual false }
+    }
+    "reject requests to directories" in {
+      Get("sub") ~> _getFromDirectory("someDir") ~> check { handled shouldEqual false }
+    }
+    "reject path traversal attempts" in {
+      def route(uri: String) =
+        mapRequestContext(_.withUnmatchedPath(Path("/" + uri))) { _getFromDirectory("someDir/sub") }
+
+      Get() ~> route("file.html") ~> check { handled shouldEqual true }
+
+      def shouldReject(prefix: String) =
+        Get() ~> route(prefix + "fileA.txt") ~> check { handled shouldEqual false }
+      shouldReject("../") // resolved
+      shouldReject("%5c../")
+      shouldReject("%2e%2e%2f")
+      shouldReject("%2e%2e/") // resolved
+      shouldReject("..%2f")
+      shouldReject("%2e%2e%5c")
+      shouldReject("%2e%2e\\")
+      shouldReject("..\\")
+      shouldReject("\\")
+      shouldReject("%5c")
+      shouldReject("..%5c")
+      shouldReject("..%255c")
+      shouldReject("..%c0%af")
+      shouldReject("..%c1%9c")
+    }
+    "return the file content with the MediaType matching the file extension" in {
+      Get("fileA.txt") ~> _getFromDirectory("someDir") ~> check {
+        mediaType shouldEqual `text/plain`
+        charsetOption shouldEqual Some(HttpCharsets.`UTF-8`)
+        responseAs[String] shouldEqual "123"
+        val lastModified = new File(testRoot, "someDir/fileA.txt").lastModified()
+        headers should contain(`Last-Modified`(DateTime(lastModified)))
+      }
+    }
+    "return the file content with the MediaType matching the file extension (unicode chars in filename)" in {
+      Get("sample%20sp%c3%a4ce.PDF") ~> _getFromDirectory("sübdir") ~> check {
+        mediaType shouldEqual `application/pdf`
+        charsetOption shouldEqual None
+        responseAs[String] shouldEqual "This is PDF"
+        val lastModified = new File(testRoot, "sübdir/sample späce.PDF").lastModified()
+        headers should contain(`Last-Modified`(DateTime(lastModified)))
+      }
+    }
+    "not follow symbolic links to find a file" in {
+      Get("linked-dir/empty.pdf") ~> _getFromDirectory("dirWithLink") ~> check {
+        handled shouldBe false
+        /* TODO: resurrect following links under an option
+        responseAs[String] shouldEqual "123"
+        mediaType shouldEqual `application/pdf`*/
+      }
     }
   }
 
@@ -398,6 +467,36 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     }
     "reject requests to file resources" in {
       Get() ~> listDirectoryContents(base + "subDirectory/empty.pdf") ~> check { handled shouldEqual false }
+    }
+    "reject path traversal attempts" in {
+      def _listDirectoryContents(directory: String) = listDirectoryContents(new File(testRoot, directory).getCanonicalPath)
+      def route(uri: String) =
+        mapRequestContext(_.withUnmatchedPath(Path("/" + uri)).mapRequest(_.copy(uri = "/" + uri))) {
+          _listDirectoryContents("someDir/sub")
+        }
+
+      Get() ~> route("") ~> check {
+        handled shouldEqual true
+      }
+
+      def shouldReject(prefix: String) =
+        Get() ~> route(prefix) ~> check {
+          handled shouldEqual false
+        }
+      shouldReject("../") // resolved
+      shouldReject("%5c../")
+      shouldReject("%2e%2e%2f")
+      shouldReject("%2e%2e/") // resolved
+      shouldReject("..%2f")
+      shouldReject("%2e%2e%5c")
+      shouldReject("%2e%2e\\")
+      shouldReject("..\\")
+      shouldReject("\\")
+      shouldReject("%5c")
+      shouldReject("..%5c")
+      shouldReject("..%255c")
+      shouldReject("..%c0%af")
+      shouldReject("..%c1%9c")
     }
   }
 
