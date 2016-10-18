@@ -6,10 +6,11 @@ package akka.testkit
 import org.scalactic.Constraint
 
 import language.postfixOps
-import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
+import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 import org.scalatest.Matchers
 import akka.actor.ActorSystem
 import akka.event.{ Logging, LoggingAdapter }
+
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -17,6 +18,7 @@ import akka.dispatch.Dispatchers
 import akka.testkit.TestEvent._
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.Span
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
@@ -58,7 +60,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
   with ConversionCheckedTripleEquals with ScalaFutures {
 
-  implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration)
+  implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, org.scalatest.time.Millis))
 
   def this(config: Config) = this(ActorSystem(
     AkkaSpec.getCallerName(getClass),
