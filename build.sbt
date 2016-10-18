@@ -64,7 +64,7 @@ lazy val http = project("akka-http")
 
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(Dependencies.httpTestkit)
-  .dependsOn(http)
+  .dependsOn(httpCore % "compile->compile,test", http)
 
 lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
