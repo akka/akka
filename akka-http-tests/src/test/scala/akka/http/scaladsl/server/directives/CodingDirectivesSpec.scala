@@ -16,6 +16,8 @@ import headers._
 import HttpEntity.{ ChunkStreamPart, Chunk }
 import HttpCharsets._
 import HttpEncodings._
+import HttpMethods._
+import HttpProtocols._
 import MediaTypes._
 import StatusCodes._
 import ContentTypes.`application/octet-stream`
@@ -30,6 +32,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
   lazy val yeahGzipped = compress("Yeah!", Gzip)
   lazy val yeahDeflated = compress("Yeah!", Deflate)
 
+  val helloIdentity = "Hello"
   lazy val helloGzipped = compress("Hello", Gzip)
   lazy val helloDeflated = compress("Hello", Deflate)
 
@@ -37,19 +40,40 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
   lazy val nopeGzipped = compress("Nope!", Gzip)
   lazy val nopeDeflated = compress("Nope!", Deflate)
 
+  def identityRequest = Post("/", helloIdentity)
+  def identityRequest10 = HttpRequest(POST, Uri("/"), entity = HttpEntity(helloIdentity), protocol = `HTTP/1.0`)
+  def gzippedRequest = Post("/", helloGzipped)
+  def gzippedRequest10 = HttpRequest(POST, Uri("/"), entity = HttpEntity(helloGzipped), protocol = `HTTP/1.0`)
+  def deflatedRequest = Post("/", helloDeflated)
+  def deflatedRequest10 = HttpRequest(POST, Uri("/"), entity = HttpEntity(helloDeflated), protocol = `HTTP/1.0`)
+
   "the NoEncoding decoder" should {
     "decode the request content if it has encoding 'identity'" in {
-      Post("/", "yes") ~> `Content-Encoding`(identity) ~> {
+      identityRequest ~> `Content-Encoding`(identity) ~> {
         decodeRequestWith(NoCoding) { echoRequestContent }
-      } ~> check { responseAs[String] shouldEqual "yes" }
+      } ~> check { responseAs[String] shouldEqual helloIdentity }
+    }
+    "decode HTTP/1.0 request with 'identity' encoding without upgrading to HTTP/1.1" in {
+      identityRequest10 ~> `Content-Encoding`(identity) ~> {
+        decodeRequestWith(NoCoding) { ctx ⇒
+          ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.0`
+          echoRequestContent(ctx)
+        }
+      } ~> check { responseAs[String] shouldEqual helloIdentity }
     }
     "reject requests with content encoded with 'deflate'" in {
-      Post("/", "yes") ~> `Content-Encoding`(deflate) ~> {
+      identityRequest ~> `Content-Encoding`(deflate) ~> {
         decodeRequestWith(NoCoding) { echoRequestContent }
       } ~> check { rejection shouldEqual UnsupportedRequestEncodingRejection(identity) }
     }
     "decode the request content if no Content-Encoding header is present" in {
-      Post("/", "yes") ~> decodeRequestWith(NoCoding) { echoRequestContent } ~> check { responseAs[String] shouldEqual "yes" }
+      identityRequest ~> decodeRequestWith(NoCoding) { echoRequestContent } ~> check { responseAs[String] shouldEqual helloIdentity }
+    }
+    "decode HTTP/1.0 request content if no Content-Encoding header is present without upgrading to HTTP/1.1" in {
+      identityRequest10 ~> decodeRequestWith(NoCoding) { ctx ⇒
+        ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.0`
+        echoRequestContent(ctx)
+      } ~> check { responseAs[String] shouldEqual helloIdentity }
     }
     "leave request without content unchanged" in {
       Post() ~> decodeRequestWith(NoCoding) { completeOk } ~> check { response shouldEqual Ok }
@@ -102,8 +126,16 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
 
   "the Gzip decoder" should {
     "decode the request content if it has encoding 'gzip'" in {
-      Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> {
+      gzippedRequest ~> `Content-Encoding`(gzip) ~> {
         decodeRequestWith(Gzip) { echoRequestContent }
+      } ~> check { responseAs[String] shouldEqual "Hello" }
+    }
+    "decode HTTP/1.0 request with 'gzip' encoding, upgrade it to HTTP/1.1" in {
+      gzippedRequest10 ~> `Content-Encoding`(gzip) ~> {
+        decodeRequestWith(Gzip) { ctx ⇒
+          ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.1`
+          echoRequestContent(ctx)
+        }
       } ~> check { responseAs[String] shouldEqual "Hello" }
     }
     "reject the request content if it has encoding 'gzip' but is corrupt" in {
@@ -123,12 +155,12 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       }
     }
     "reject requests with content encoded with 'deflate'" in {
-      Post("/", "Hello") ~> `Content-Encoding`(deflate) ~> {
+      identityRequest ~> `Content-Encoding`(deflate) ~> {
         decodeRequestWith(Gzip) { completeOk }
       } ~> check { rejection shouldEqual UnsupportedRequestEncodingRejection(gzip) }
     }
     "reject requests without Content-Encoding header" in {
-      Post("/", "Hello") ~> {
+      identityRequest ~> {
         decodeRequestWith(Gzip) { completeOk }
       } ~> check { rejection shouldEqual UnsupportedRequestEncodingRejection(gzip) }
     }
@@ -142,20 +174,42 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
   "a (decodeRequestWith(Gzip) | decodeRequestWith(NoEncoding)) compound directive" should {
     lazy val decodeWithGzipOrNoEncoding = decodeRequestWith(Gzip) | decodeRequestWith(NoCoding)
     "decode the request content if it has encoding 'gzip'" in {
-      Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> {
+      gzippedRequest ~> `Content-Encoding`(gzip) ~> {
         decodeWithGzipOrNoEncoding { echoRequestContent }
       } ~> check { responseAs[String] shouldEqual "Hello" }
     }
+    "decode HTTP/1.0 request content if it has encoding 'gzip', upgrade it to HTTP/1.1" in {
+      gzippedRequest10 ~> `Content-Encoding`(gzip) ~> {
+        decodeWithGzipOrNoEncoding { ctx ⇒
+          ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.1`
+          echoRequestContent(ctx)
+        }
+      } ~> check { responseAs[String] shouldEqual "Hello" }
+    }
     "decode the request content if it has encoding 'identity'" in {
-      Post("/", "yes") ~> `Content-Encoding`(identity) ~> {
+      identityRequest ~> `Content-Encoding`(identity) ~> {
         decodeWithGzipOrNoEncoding { echoRequestContent }
-      } ~> check { responseAs[String] shouldEqual "yes" }
+      } ~> check { responseAs[String] shouldEqual helloIdentity }
+    }
+    "decode HTTP/1.0 request content if it has encoding 'identity' without upgrading it to HTTP/1.1" in {
+      identityRequest10 ~> `Content-Encoding`(identity) ~> {
+        decodeWithGzipOrNoEncoding { ctx ⇒
+          ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.0`
+          echoRequestContent(ctx)
+        }
+      } ~> check { responseAs[String] shouldEqual helloIdentity }
     }
     "decode the request content if no Content-Encoding header is present" in {
-      Post("/", "yes") ~> decodeWithGzipOrNoEncoding { echoRequestContent } ~> check { responseAs[String] shouldEqual "yes" }
+      identityRequest ~> decodeWithGzipOrNoEncoding { echoRequestContent } ~> check { responseAs[String] shouldEqual helloIdentity }
+    }
+    "decode HTTP/1.0 request content if no Content-Encoding header is present without upgrading it to HTTP/1.1" in {
+      identityRequest10 ~> decodeWithGzipOrNoEncoding { ctx ⇒
+        ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.0`
+        echoRequestContent(ctx)
+      } ~> check { responseAs[String] shouldEqual helloIdentity }
     }
     "reject requests with content encoded with 'deflate'" in {
-      Post("/", "yes") ~> `Content-Encoding`(deflate) ~> {
+      identityRequest ~> `Content-Encoding`(deflate) ~> {
         decodeWithGzipOrNoEncoding { echoRequestContent }
       } ~> check {
         rejections shouldEqual Seq(
@@ -426,26 +480,57 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
   }
 
   "the decodeRequest directive" should {
-    "decode the request content if it has a `Content-Encoding: gzip` header and the content is gzip encoded" in {
-      Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> {
+    "decode the request content if the content is gzip encoded and has matching header" in {
+      gzippedRequest ~> `Content-Encoding`(gzip) ~> {
         decodeRequest { echoRequestContent }
       } ~> check { responseAs[String] shouldEqual "Hello" }
     }
-    "decode the request content if it has a `Content-Encoding: deflate` header and the content is deflate encoded" in {
-      Post("/", helloDeflated) ~> `Content-Encoding`(deflate) ~> {
+    "decode HTTP/1.0 request if the content is gzip encoded and has matching header, upgrade it to HTTP/1.1" in {
+      gzippedRequest10 ~> `Content-Encoding`(gzip) ~> {
+        decodeRequest { ctx ⇒
+          ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.1`
+          echoRequestContent(ctx)
+        }
+      } ~> check { responseAs[String] shouldEqual "Hello" }
+    }
+    "decode the request content if the content is deflate encoded and has matching header" in {
+      deflatedRequest ~> `Content-Encoding`(deflate) ~> {
         decodeRequest { echoRequestContent }
       } ~> check { responseAs[String] shouldEqual "Hello" }
     }
-    "decode the request content if it has a `Content-Encoding: identity` header and the content is not encoded" in {
-      Post("/", "yes") ~> `Content-Encoding`(identity) ~> {
+    "decode HTTP/1.0 request if the content is deflate encoded and has matching header, upgrade it to HTTP/1.1" in {
+      deflatedRequest10 ~> `Content-Encoding`(deflate) ~> {
+        decodeRequest { ctx ⇒
+          ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.1`
+          echoRequestContent(ctx)
+        }
+      } ~> check { responseAs[String] shouldEqual "Hello" }
+    }
+    "decode the request content if the content is not encoded and has matching header" in {
+      identityRequest ~> `Content-Encoding`(identity) ~> {
         decodeRequest { echoRequestContent }
-      } ~> check { responseAs[String] shouldEqual "yes" }
+      } ~> check { responseAs[String] shouldEqual helloIdentity }
+    }
+    "decode HTTP/1.0 request if the content is not encoded and has matching header without upgrading it to HTTP/1.1" in {
+      identityRequest10 ~> `Content-Encoding`(identity) ~> {
+        decodeRequest { ctx ⇒
+          ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.0`
+          echoRequestContent(ctx)
+        }
+      } ~> check { responseAs[String] shouldEqual helloIdentity }
     }
     "decode the request content using NoEncoding if no Content-Encoding header is present" in {
-      Post("/", "yes") ~> decodeRequest { echoRequestContent } ~> check { responseAs[String] shouldEqual "yes" }
+      identityRequest ~> decodeRequest { echoRequestContent } ~> check { responseAs[String] shouldEqual helloIdentity }
+    }
+    "decode HTTP/1.0 request content using NoEncoding if no Content-Encoding header is present without upgrading it to HTTP/1.1" in {
+      identityRequest10 ~>
+        decodeRequest { ctx ⇒
+          ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.0`
+          echoRequestContent(ctx)
+        } ~> check { responseAs[String] shouldEqual helloIdentity }
     }
     "reject the request if it has a `Content-Encoding: deflate` header but the request is encoded with Gzip" in {
-      Post("/", helloGzipped) ~> `Content-Encoding`(deflate) ~>
+      gzippedRequest ~> `Content-Encoding`(deflate) ~>
         decodeRequest { echoRequestContent } ~> check {
           status shouldEqual BadRequest
           responseAs[String] shouldEqual "The request's encoding is corrupt"
@@ -455,19 +540,27 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
 
   "the decodeRequestWith directive" should {
     "decode the request content if its `Content-Encoding` header matches the specified encoder" in {
-      Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> {
+      gzippedRequest ~> `Content-Encoding`(gzip) ~> {
         decodeRequestWith(Gzip) { echoRequestContent }
       } ~> check { responseAs[String] shouldEqual "Hello" }
     }
+    "decode HTTP/1.0 request content if its `Content-Encoding` header matches the specified encoder, upgrade it to HTTP/1.1" in {
+      gzippedRequest10 ~> `Content-Encoding`(gzip) ~> {
+        decodeRequestWith(Gzip) { ctx ⇒
+          ctx.request.protocol shouldEqual HttpProtocols.`HTTP/1.1`
+          echoRequestContent(ctx)
+        }
+      } ~> check { responseAs[String] shouldEqual "Hello" }
+    }
     "reject the request if its `Content-Encoding` header doesn't match the specified encoder" in {
-      Post("/", helloGzipped) ~> `Content-Encoding`(deflate) ~> {
+      gzippedRequest ~> `Content-Encoding`(deflate) ~> {
         decodeRequestWith(Gzip) { echoRequestContent }
       } ~> check {
         rejection shouldEqual UnsupportedRequestEncodingRejection(gzip)
       }
     }
     "reject the request when decodeing with GZIP and no Content-Encoding header is present" in {
-      Post("/", "yes") ~> decodeRequestWith(Gzip) { echoRequestContent } ~> check {
+      identityRequest ~> decodeRequestWith(Gzip) { echoRequestContent } ~> check {
         rejection shouldEqual UnsupportedRequestEncodingRejection(gzip)
       }
     }
@@ -476,7 +569,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
   "the (decodeRequest & encodeResponse) compound directive" should {
     lazy val decodeEncode = decodeRequest & encodeResponse
     "decode a GZIP encoded request and produce a none encoded response if the request has no Accept-Encoding header" in {
-      Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> {
+      gzippedRequest ~> `Content-Encoding`(gzip) ~> {
         decodeEncode { echoRequestContent }
       } ~> check {
         response should haveNoContentEncoding
@@ -484,7 +577,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       }
     }
     "decode a GZIP encoded request and produce a Deflate encoded response if the request has an `Accept-Encoding: deflate` header" in {
-      Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> `Accept-Encoding`(deflate) ~> {
+      gzippedRequest ~> `Content-Encoding`(gzip) ~> `Accept-Encoding`(deflate) ~> {
         decodeEncode { echoRequestContent }
       } ~> check {
         response should haveContentEncoding(deflate)
@@ -492,7 +585,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       }
     }
     "decode an unencoded request and produce a GZIP encoded response if the request has an `Accept-Encoding: gzip` header" in {
-      Post("/", "Hello") ~> `Accept-Encoding`(gzip) ~> {
+      identityRequest ~> `Accept-Encoding`(gzip) ~> {
         decodeEncode { echoRequestContent }
       } ~> check {
         response should haveContentEncoding(gzip)
