@@ -315,28 +315,28 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     "reject tasks scheduled too far into the future" in {
       val maxDelay = tickDuration * Int.MaxValue
       import system.dispatcher
-      system.scheduler.scheduleOnce(maxDelay - tickDuration, testActor, "OK")
+      system.scheduler.scheduleOnce(maxDelay, testActor, "OK")
       intercept[IllegalArgumentException] {
-        system.scheduler.scheduleOnce(maxDelay, testActor, "Too far")
+        system.scheduler.scheduleOnce(maxDelay + tickDuration, testActor, "Too far")
       }
     }
 
     "reject periodic tasks scheduled too far into the future" in {
       val maxDelay = tickDuration * Int.MaxValue
       import system.dispatcher
-      system.scheduler.schedule(maxDelay - tickDuration, 1.second, testActor, "OK")
+      system.scheduler.schedule(maxDelay, 1.second, testActor, "OK")
       intercept[IllegalArgumentException] {
-        system.scheduler.schedule(maxDelay, 1.second, testActor, "Too far")
+        system.scheduler.schedule(maxDelay + tickDuration, 1.second, testActor, "Too far")
       }
     }
 
     "reject periodic tasks scheduled with too long interval" in {
       val maxDelay = tickDuration * Int.MaxValue
       import system.dispatcher
-      system.scheduler.schedule(100.millis, maxDelay - tickDuration, testActor, "OK")
+      system.scheduler.schedule(100.millis, maxDelay, testActor, "OK")
       expectMsg("OK")
       intercept[IllegalArgumentException] {
-        system.scheduler.schedule(100.millis, maxDelay, testActor, "Too long")
+        system.scheduler.schedule(100.millis, maxDelay + tickDuration, testActor, "Too long")
       }
       expectNoMsg(1.second)
     }
