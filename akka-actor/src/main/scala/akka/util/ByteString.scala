@@ -162,6 +162,7 @@ object ByteString {
       if (n <= 0) this
       else toByteString1.drop(n)
 
+    override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
     override def indexOf[B >: Byte](elem: B, from: Int): Int = {
       if (from >= length) -1
       else {
@@ -318,13 +319,14 @@ object ByteString {
       }
     }
 
+    override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
     override def indexOf[B >: Byte](elem: B, from: Int): Int = {
       if (from >= length) -1
       else {
         var found = -1
         var i = math.max(from, 0)
         while (i < length && found == -1) {
-          if (bytes(i) == elem) found = i
+          if (bytes(startIndex + i) == elem) found = i
           i += 1
         }
         found
@@ -531,6 +533,7 @@ object ByteString {
         new ByteStrings(bytestrings(fullDrops).drop1(remainingToDrop) +: bytestrings.drop(fullDrops + 1), length - n)
     }
 
+    override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
     override def indexOf[B >: Byte](elem: B, from: Int): Int = {
       if (from >= length) -1
       else {

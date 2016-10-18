@@ -481,6 +481,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       compact.indexOf('e') should ===(3)
       compact.indexOf('f') should ===(4)
       compact.indexOf('g') should ===(5)
+
     }
     "indexOf from offset" in {
       ByteString.empty.indexOf(5, -1) should ===(-1)
@@ -625,11 +626,10 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "calling takeWhile" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a)({ _.takeWhile(_ != b) }) } }
       "calling dropWhile" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.dropWhile(_ != b) } } }
       "calling indexWhere" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.indexWhere(_ == b) } } }
-      /* these actually behave weird for Vector and negative indexes - SI9936
       "calling indexOf" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.indexOf(b) } } }
-       covered by regular tests up above though
-      "calling indexOf(elem, idx)" in { check { (a: ByteString, b: Byte, idx: Int) ⇒ likeVector(a) { _.indexOf(b, idx) } } }
-      */
+      // this actually behave weird for Vector and negative indexes - SI9936, fixed in Scala 2.12
+      // so let's just skip negative indexes (doesn't make much sence anyway)
+      "calling indexOf(elem, idx)" in { check { (a: ByteString, b: Byte, idx: Int) ⇒ likeVector(a) { _.indexOf(b, math.max(0, idx)) } } }
 
       "calling foreach" in { check { a: ByteString ⇒ likeVector(a) { it ⇒ var acc = 0; it foreach { acc += _ }; acc } } }
       "calling foldLeft" in { check { a: ByteString ⇒ likeVector(a) { _.foldLeft(0) { _ + _ } } } }
