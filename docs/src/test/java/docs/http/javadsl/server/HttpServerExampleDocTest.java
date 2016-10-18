@@ -205,7 +205,7 @@ public class HttpServerExampleDocTest {
         })).run(materializer);
       //#full-server-example
 
-      serverBindingFuture.toCompletableFuture().get(1, TimeUnit.SECONDS); // will throw if binding fails
+      serverBindingFuture.toCompletableFuture().get(3, TimeUnit.SECONDS); // will throw if binding fails
       System.out.println("Press ENTER to stop.");
       new BufferedReader(new InputStreamReader(System.in)).readLine();
     } finally {
