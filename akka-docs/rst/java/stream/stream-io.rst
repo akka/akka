@@ -9,11 +9,6 @@ While the general approach is very similar to the :ref:`Actor based TCP handling
 by using Akka Streams you are freed of having to manually react to back-pressure signals,
 as the library does it transparently for you.
 
-.. note::
-  If you are not familiar with Akka Streams basic concepts, like ``Source``, ``Sink`` and ``Flow``,
-  please refer to the :ref:`Streams section <streams-java>` of the document. Also higher level APIs like ``bind`` are
-  used in Akka HTTP too. So you may get some hints from the :ref:`Akka HTTP introduction <http-java>`.
-
 Streaming TCP
 =============
 
