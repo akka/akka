@@ -143,7 +143,7 @@ described there.
 Auto-downing (DO NOT USE)
 -------------------------
 
-There is an atomatic downing feature that you should not use in production. For testing purpose you can enable it with configuration::
+There is an automatic downing feature that you should not use in production. For testing purpose you can enable it with configuration::
 
       akka.cluster.auto-down-unreachable-after = 120s
 
