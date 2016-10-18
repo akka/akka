@@ -628,7 +628,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "calling indexWhere" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.indexWhere(_ == b) } } }
       "calling indexOf" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.indexOf(b) } } }
       // this actually behave weird for Vector and negative indexes - SI9936, fixed in Scala 2.12
-      // so let's just skip negative indexes (doesn't make much sence anyway)
+      // so let's just skip negative indexes (doesn't make much sense anyway)
       "calling indexOf(elem, idx)" in { check { (a: ByteString, b: Byte, idx: Int) ⇒ likeVector(a) { _.indexOf(b, math.max(0, idx)) } } }
 
       "calling foreach" in { check { a: ByteString ⇒ likeVector(a) { it ⇒ var acc = 0; it foreach { acc += _ }; acc } } }
