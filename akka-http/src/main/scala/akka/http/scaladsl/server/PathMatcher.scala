@@ -358,6 +358,20 @@ trait PathMatchers {
 
   /**
    * A PathMatcher that matches and extracts the complete remaining,
+   * unmatched part of the request's URI path as an URL decoded String.
+   * @group pathmatcher
+   */
+  object RemainingDecoded extends PathMatcher1[String] {
+    def apply(path: Path) = {
+      Segments(RemainingPath(path).extractions._1) match {
+        case Matched(_, extractions) ⇒ Matched(Path.Empty, Tuple1(extractions._1.mkString))
+        case _                       ⇒ Unmatched
+      }
+    }
+  }
+
+  /**
+   * A PathMatcher that matches and extracts the complete remaining,
    * unmatched part of the request's URI path.
    *
    * @group pathmatcher

@@ -30,6 +30,7 @@ object PathMatchers {
   private[this] val Slash = new PathMatcher0(SPathMatchers.Slash)
   private[this] val PathEnd = new PathMatcher0(SPathMatchers.PathEnd)
   private[this] val Remaining = new PathMatcher1[String](SPathMatchers.Remaining)
+  private[this] val RemainingDecoded = new PathMatcher1[String](SPathMatchers.RemainingDecoded)
   private[this] val RemainingPath = new PathMatcher1[Path](SPathMatchers.RemainingPath)
   private[this] val Segment = new PathMatcher1[String](SPathMatchers.Segment)
   private[this] val Segments = new PathMatcher1[java.util.List[String]](SPathMatchers.Segments.map(_.asJava))
@@ -129,6 +130,12 @@ object PathMatchers {
    * unmatched part of the request's URI path as an (encoded!) String.
    */
   def remaining: PathMatcher1[String] = Remaining
+
+  /**
+   * A PathMatcher that matches and extracts the complete remaining,
+   * unmatched part of the request's URI path as an URL decoded String.
+   */
+  def remainingDecoded: PathMatcher1[String] = RemainingDecoded
 
   /**
    * A PathMatcher that matches and extracts the complete remaining,

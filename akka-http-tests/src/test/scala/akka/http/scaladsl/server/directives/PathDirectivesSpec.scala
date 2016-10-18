@@ -305,6 +305,14 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       "support the flatMap modifier in accept [/yes]" inThe test("yes")
       "support the flatMap modifier reject [/blub]" inThe test()
     }
+    {
+      val test = testFor(path(RemainingDecoded.map(_.split(' ').toList)) { echoComplete })
+      "support the map modifier in accept [/yes%20no]" in test("List(yes, no)")
+    }
+    {
+      val test = testFor(path(RemainingDecoded.map(_.split('-').toList)) { echoComplete })
+      "support the map modifier in accept [/%21-%23-%26]" in test("List(!, #, &)")
+    }
   }
 
   implicit class WithIn(str: String) {

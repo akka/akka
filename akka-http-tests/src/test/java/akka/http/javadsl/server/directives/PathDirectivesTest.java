@@ -323,6 +323,18 @@ public class PathDirectivesTest extends JUnitRouteTest {
   }
 
   @Test
+  public void testRemainingDecodedMatcher() {
+    TestRoute route =
+      testRoute(
+        pathPrefix("pets", () ->
+          path(remainingDecoded(), remainingPath -> complete(remainingPath)))
+      );
+
+    route.run(HttpRequest.GET("/pets/hello%20world"))
+         .assertEntity("hello world");
+  }
+
+  @Test
   public void testUUIDMatcher() {
     TestRoute route =
       testRoute(
