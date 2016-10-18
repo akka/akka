@@ -70,7 +70,9 @@ lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test")
-  //.configs(MultiJvm) //.disablePlugins(MimaPlugin)
+  .enablePlugins(NoPublish)
+  .disablePlugins(MimaPlugin) // this is only tests
+  //.configs(MultiJvm)
 
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")

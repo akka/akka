@@ -12,11 +12,3 @@ mainClass in run in Test := Some("akka.http.javadsl.SimpleServerApp")
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)
 //enablePlugins(MultiNodeScalaTest)
-
-disablePlugins(MimaPlugin)
-
-// -- don't publish -- 
-disablePlugins(NoPublish)
-publishSigned := ()
-publish := ()
-publishArtifact in Compile := false
