@@ -3,11 +3,7 @@
  */
 package akka.stream
 
-import java.util.Objects
-
 import akka.Done
-
-import scala.runtime.AbstractFunction2
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -16,7 +12,7 @@ import scala.util.{ Failure, Success, Try }
  * @param count Numeric value depending on context, for example IO operations performed or bytes processed.
  * @param status Status of the result. Can be either [[akka.Done]] or an exception.
  */
-final case class IOResult (count: Long, status: Try[Done]) {
+final case class IOResult(count: Long, status: Try[Done]) {
 
   def withCount(value: Long): IOResult = copy(count = value)
   def withStatus(value: Try[Done]): IOResult = copy(status = value)
