@@ -21,6 +21,9 @@ import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
 import scala.language.implicitConversions
+import akka.stream.Materializer
+import akka.stream.javadsl.Source
+import akka.NotUsed
 
 object Unmarshaller {
   implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]): Unmarshaller[A, B] =
@@ -48,6 +51,11 @@ object Unmarshaller {
   def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller
   def entityToMultipartByteRanges: Unmarshaller[HttpEntity, Multipart.ByteRanges] = unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller
   // format: ON
+
+  def entityToSource(): Unmarshaller[HttpEntity, Source[ByteString, NotUsed]] =
+    Unmarshaller.sync(new java.util.function.Function[HttpEntity, Source[ByteString, NotUsed]] {
+      override def apply(entity: HttpEntity) = entity.getDataBytes().asScala.mapMaterializedValue(obj ⇒ NotUsed).asJava
+    })
 
   val requestToEntity: Unmarshaller[HttpRequest, RequestEntity] =
     unmarshalling.Unmarshaller.strict[HttpRequest, RequestEntity](_.entity)
@@ -86,6 +94,9 @@ object Unmarshaller {
   def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B], u5: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala, u5.asScala)
   }
+
+  def withMaterializer[A, B](f: Function3[ExecutionContext, Materializer, A, CompletionStage[B]]): Unmarshaller[A, B] =
+    unmarshalling.Unmarshaller.withMaterializer(ctx ⇒ mat ⇒ a ⇒ f.apply(ctx, mat, a).toScala)
 
   private implicit def adaptInputToJava[JI, SI, O](um: unmarshalling.Unmarshaller[SI, O])(implicit mi: JavaMapping[JI, SI]): unmarshalling.Unmarshaller[JI, O] =
     um.asInstanceOf[unmarshalling.Unmarshaller[JI, O]] // since guarantee provided by existence of `mi`

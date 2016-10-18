@@ -41,6 +41,8 @@ public class MarshallerTest extends JUnitRouteTest {
         }
       }, Marshaller.stringToEntity(), MediaTypes.TEXT_X_SPEECH);
 
+    // Test that oneOf compiles:
+    Marshaller<Integer, RequestEntity> dummy = Marshaller.oneOf(numberAsNameMarshaller, numberAsNameMarshaller);
 
     final Function<Integer, Route> nummerHandler = integer -> completeOK(integer, numberAsNameMarshaller);
 
