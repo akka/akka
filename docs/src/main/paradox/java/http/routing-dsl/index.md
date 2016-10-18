@@ -6,7 +6,7 @@ defining RESTful web services. It picks up where the low-level API leaves off an
 functionality of typical web servers or frameworks, like deconstruction of URIs, content negotiation or
 static content serving.
 
-To use the high-level API you need to add a dependency to the `akka-http-experimental` module.
+To use the high-level API you need to add a dependency to the `akka-http` module.
 
 @@toc { depth=1 }
 
