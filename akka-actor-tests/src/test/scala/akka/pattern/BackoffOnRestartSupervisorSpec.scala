@@ -1,13 +1,13 @@
 /**
-  * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
-  */
+ * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 
 package akka.pattern
 
-import java.util.concurrent.{TimeUnit, CountDownLatch}
+import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
 import akka.pattern.TestActor.NormalException
-import akka.testkit.{ImplicitSender, AkkaSpec, TestProbe, filterException}
+import akka.testkit.{ ImplicitSender, AkkaSpec, TestProbe, filterException }
 import scala.concurrent.duration._
 import akka.actor._
 import scala.language.postfixOps
@@ -28,11 +28,11 @@ class TestActor(probe: ActorRef) extends Actor {
   probe ! "STARTED"
 
   def receive = {
-    case "DIE" ⇒ context.stop(self)
-    case "THROW" ⇒ throw new TestActor.NormalException
+    case "DIE"                      ⇒ context.stop(self)
+    case "THROW"                    ⇒ throw new TestActor.NormalException
     case "THROW_STOPPING_EXCEPTION" ⇒ throw new TestActor.StoppingException
-    case ("TO_PARENT", msg) ⇒ context.parent ! msg
-    case other ⇒ probe ! other
+    case ("TO_PARENT", msg)         ⇒ context.parent ! msg
+    case other                      ⇒ probe ! other
   }
 }
 
