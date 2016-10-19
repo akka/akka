@@ -23,7 +23,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
   trait Fixture {
     //#authors
     val authors = Flow[Tweet]
-      .filter(_.hashtags.contains(akka))
+      .filter(_.hashtags.contains(akkaTag))
       .map(_.author)
 
     //#authors

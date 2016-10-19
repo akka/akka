@@ -398,7 +398,7 @@ object Source {
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
    *
-   * See also [[akka.stream.javadsl.Source.queue]].
+   * See also [[akka.stream.scaladsl.Source.queue]].
    *
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
