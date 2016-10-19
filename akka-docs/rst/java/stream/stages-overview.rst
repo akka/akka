@@ -649,13 +649,13 @@ the second element is required from downstream.
 
 scanAsync
 ^^^^^^^^^
-Just like ``scan`` but receiving a function that results in a ``Future`` to the next value.
+Just like ``scan`` but receiving a function that results in a ``CompletionStage`` to the next value.
 
-**emits** when the ``Future`` resulting from the function scanning the element resolves to the next value
+**emits** when the ``CompletionStage`` resulting from the function scanning the element resolves to the next value
 
 **backpressures** when downstream backpressures
 
-**completes** when upstream completes and the last ``Future`` is resolved
+**completes** when upstream completes and the last ``CompletionStage`` is resolved
 
 fold
 ^^^^
@@ -670,13 +670,13 @@ complete the current value is emitted downstream.
 
 foldAsync
 ^^^^^^^^^
-Just like ``fold`` but receiving a function that results in a ``Future`` to the next value.
+Just like ``fold`` but receiving a function that results in a ``CompletionStage`` to the next value.
 
-**emits** when upstream completes and the last ``Future`` is resolved
+**emits** when upstream completes and the last ``CompletionStage`` is resolved
 
 **backpressures** when downstream backpressures
 
-**completes** when upstream completes and the last ``Future`` is resolved
+**completes** when upstream completes and the last ``CompletionStage`` is resolved
 
 reduce
 ^^^^^^
