@@ -56,9 +56,6 @@ object RemoteDeploymentWhitelistSpec {
       actor.provider = remote
 
       remote {
-        retry-gate-closed-for = 1 s
-        log-remote-lifecycle-events = on
-
         enabled-transports = [
           "akka.remote.test",
           "akka.remote.netty.tcp"
@@ -105,14 +102,16 @@ class RemoteDeploymentWhitelistSpec extends AkkaSpec(RemoteDeploymentWhitelistSp
         maximum-payload-bytes = 48000 bytes
       }
 
+      //#whitelist-config
       akka.remote.deployment {
         enable-whitelist = on
         
         whitelist = [
           "NOT_ON_CLASSPATH", # verify we don't throw if a class not on classpath is listed here
-          "akka.remote.RemoteDeploymentWhitelistSpec.EchoWhitelisted" ## TODO isn't this inconsistent with the usual $.EchoWhitelisted?
+          "akka.remote.RemoteDeploymentWhitelistSpec.EchoWhitelisted"
         ]
       }
+      //#whitelist-config
     """).withFallback(system.settings.config).resolve()
   val remoteSystem = ActorSystem("remote-sys", conf)
 
@@ -123,10 +122,6 @@ class RemoteDeploymentWhitelistSpec extends AkkaSpec(RemoteDeploymentWhitelistSp
       EventFilter.error(start = "AssociationError"),
       EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
   }
-
-  private def byteStringOfSize(size: Int) = ByteString.fromArray(Array.fill(size)(42: Byte))
-
-  val maxPayloadBytes = system.settings.config.getBytes("akka.remote.test.maximum-payload-bytes").toInt
 
   override def afterTermination() {
     shutdown(remoteSystem)
