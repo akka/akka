@@ -204,10 +204,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
 
       EventFilter[TimeoutException](occurrences = 1).intercept {}
 
-      val finalActors = targets.flatMap(collectLiveActors).toSet
-
-      assertResult(initialActors)(finalActors)
-
+      awaitAssert(assertResult(initialActors)(targets.flatMap(collectLiveActors).toSet), 5.seconds)
     }
 
   }
