@@ -327,10 +327,11 @@ While it is possible to nest mixed ``persist`` and ``persistAsync`` with keeping
 it is not a recommended practice, as it may lead to overly complex nesting.
 
 .. warning::
-  While it is possible to next ``persist`` calls within one another, 
-  it is *not* legal to nest ``persist`` calls in Futures! Doing so will break the 
-  guarantees that the persist methods aim to provide. Always call ``persist`` and ``persistAsync``
-  from within the Actor's receive block (or methods synchronously invoked from there).
+  While it is possible to nest ``persist`` calls within one another, 
+  it is *not* legal call ``persist`` from any other Thread than the Actors message processing Thread.
+  For example, it is not legal to call ``persist`` from Futures! Doing so will break the guarantees 
+  that the persist methods aim to provide. Always call ``persist`` and ``persistAsync`` from within 
+  the Actor's receive block (or methods synchronously invoked from there).
 
 .. _failures-java:
 
