@@ -637,7 +637,7 @@ the second element is required from downstream.
 **completes** when upstream completes
 
 scanAsync
-^^^^
+^^^^^^^^^
 Just like ``scan`` but receiving a function that results in a ``Future`` to the next value.
 
 **emits** when the ``Future`` resulting from the function scanning the element resolves to the next value
@@ -658,7 +658,7 @@ complete the current value is emitted downstream.
 **completes** when upstream completes
 
 foldAsync
-^^^^
+^^^^^^^^^
 Just like ``fold`` but receiving a function that results in a ``Future`` to the next value.
 
 **emits** when upstream completes and the last ``Future`` is resolved
