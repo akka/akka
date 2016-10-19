@@ -162,6 +162,20 @@ object ByteString {
       if (n <= 0) this
       else toByteString1.drop(n)
 
+    override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
+    override def indexOf[B >: Byte](elem: B, from: Int): Int = {
+      if (from >= length) -1
+      else {
+        var found = -1
+        var i = math.max(from, 0)
+        while (i < length && found == -1) {
+          if (bytes(i) == elem) found = i
+          i += 1
+        }
+        found
+      }
+    }
+
     override def slice(from: Int, until: Int): ByteString =
       if (from <= 0 && until >= length) this
       else if (from >= length || until <= 0 || from >= until) ByteString.empty
@@ -302,6 +316,20 @@ object ByteString {
             new ByteString1(bytes, startIndex, length + b.length)
           else ByteStrings(this, b)
         case bs: ByteStrings ⇒ ByteStrings(this, bs)
+      }
+    }
+
+    override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
+    override def indexOf[B >: Byte](elem: B, from: Int): Int = {
+      if (from >= length) -1
+      else {
+        var found = -1
+        var i = math.max(from, 0)
+        while (i < length && found == -1) {
+          if (bytes(startIndex + i) == elem) found = i
+          i += 1
+        }
+        found
       }
     }
 
@@ -505,6 +533,34 @@ object ByteString {
         new ByteStrings(bytestrings(fullDrops).drop1(remainingToDrop) +: bytestrings.drop(fullDrops + 1), length - n)
     }
 
+    override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
+    override def indexOf[B >: Byte](elem: B, from: Int): Int = {
+      if (from >= length) -1
+      else {
+        val byteStringsSize = bytestrings.size
+
+        @tailrec
+        def find(bsIdx: Int, relativeIndex: Int, bytesPassed: Int): Int = {
+          if (bsIdx >= byteStringsSize) -1
+          else {
+            val bs = bytestrings(bsIdx)
+
+            if (bs.length <= relativeIndex) {
+              find(bsIdx + 1, relativeIndex - bs.length, bytesPassed + bs.length)
+            } else {
+              val subIndexOf = bs.indexOf(elem, relativeIndex)
+              if (subIndexOf < 0) {
+                val nextString = bsIdx + 1
+                find(nextString, relativeIndex - bs.length, bytesPassed + bs.length)
+              } else subIndexOf + bytesPassed
+            }
+          }
+        }
+
+        find(0, math.max(from, 0), 0)
+      }
+    }
+
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
@@ -586,7 +642,9 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def splitAt(n: Int): (ByteString, ByteString) = (take(n), drop(n))
 
   override def indexWhere(p: Byte ⇒ Boolean): Int = iterator.indexWhere(p)
-  override def indexOf[B >: Byte](elem: B): Int = iterator.indexOf(elem)
+
+  // optimized in subclasses
+  override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
 
   override def toString(): String = {
     val maxSize = 100
