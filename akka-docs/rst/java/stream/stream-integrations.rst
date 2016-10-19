@@ -43,8 +43,9 @@ If the ``ask`` fails due to timeout the stream will be completed with
 ``TimeoutException`` failure. If that is not desired outcome you can use ``recover`` 
 on the ``ask`` :class:`CompletionStage`.
 
-If you don't care about the replies you can use ``Sink.ignore`` after the ``mapAsync``
-stage and then actor is effectively a sink of the stream.
+If you don't care about the reply values and only use them back-pressure signals you 
+can use ``Sink.ignore`` after the ``mapAsync`` stage and then actor is effectively a sink
+of the stream.
 
 The same pattern can be used with :ref:`Actor routers <routing-java>`. Then you
 can use ``mapAsyncUnordered`` for better efficiency if you don't care about the 

@@ -43,6 +43,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
   static Materializer mat;
+  static ActorRef ref;
 
   @BeforeClass
   public static void setup() {
@@ -58,6 +59,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
     system = ActorSystem.create("ActorPublisherDocTest", config);
     mat = ActorMaterializer.create(system);
+    ref = system.actorOf(Props.create(Translator.class));
   }
 
   @AfterClass
@@ -65,6 +67,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
+    ref = null;
   }
 
 
@@ -302,8 +305,6 @@ public class IntegrationDocTest extends AbstractJavaTest {
     }
   }
   //#ask-actor
-  
-  final ActorRef ref = system.actorOf(Props.create(Translator.class));
   
   @SuppressWarnings("unchecked")
   @Test
