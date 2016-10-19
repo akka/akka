@@ -14,7 +14,6 @@ object Publish extends AutoPlugin {
   override def requires = sbtrelease.ReleasePlugin
 
   override lazy val projectSettings = Seq(
-    crossPaths := false,
     publishTo := akkaPublishTo.value,
     credentials ++= akkaCredentials,
     publishMavenStyle := true,
