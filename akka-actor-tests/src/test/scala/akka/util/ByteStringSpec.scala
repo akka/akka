@@ -458,6 +458,82 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).take(100) should ===(ByteString("abc"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(100) should ===(ByteString("bc"))
     }
+    "indexOf" in {
+      ByteString.empty.indexOf(5) should ===(-1)
+      val byteString1 = ByteString1.fromString("abc")
+      byteString1.indexOf('a') should ===(0)
+      byteString1.indexOf('b') should ===(1)
+      byteString1.indexOf('c') should ===(2)
+      byteString1.indexOf('d') should ===(-1)
+
+      val byteStrings = ByteStrings(ByteString1.fromString("abc"), ByteString1.fromString("efg"))
+      byteStrings.indexOf('a') should ===(0)
+      byteStrings.indexOf('c') should ===(2)
+      byteStrings.indexOf('d') should ===(-1)
+      byteStrings.indexOf('e') should ===(3)
+      byteStrings.indexOf('f') should ===(4)
+      byteStrings.indexOf('g') should ===(5)
+
+      val compact = byteStrings.compact
+      compact.indexOf('a') should ===(0)
+      compact.indexOf('c') should ===(2)
+      compact.indexOf('d') should ===(-1)
+      compact.indexOf('e') should ===(3)
+      compact.indexOf('f') should ===(4)
+      compact.indexOf('g') should ===(5)
+
+    }
+    "indexOf from offset" in {
+      ByteString.empty.indexOf(5, -1) should ===(-1)
+      ByteString.empty.indexOf(5, 0) should ===(-1)
+      ByteString.empty.indexOf(5, 1) should ===(-1)
+      val byteString1 = ByteString1.fromString("abc")
+      byteString1.indexOf('d', -1) should ===(-1)
+      byteString1.indexOf('d', 0) should ===(-1)
+      byteString1.indexOf('d', 1) should ===(-1)
+      byteString1.indexOf('d', 4) should ===(-1)
+      byteString1.indexOf('a', -1) should ===(0)
+      byteString1.indexOf('a', 0) should ===(0)
+      byteString1.indexOf('a', 1) should ===(-1)
+
+      val byteStrings = ByteStrings(ByteString1.fromString("abc"), ByteString1.fromString("efg"))
+      byteStrings.indexOf('c', -1) should ===(2)
+      byteStrings.indexOf('c', 0) should ===(2)
+      byteStrings.indexOf('c', 2) should ===(2)
+      byteStrings.indexOf('c', 3) should ===(-1)
+
+      byteStrings.indexOf('e', -1) should ===(3)
+      byteStrings.indexOf('e', 0) should ===(3)
+      byteStrings.indexOf('e', 1) should ===(3)
+      byteStrings.indexOf('e', 4) should ===(-1)
+      byteStrings.indexOf('e', 6) should ===(-1)
+
+      byteStrings.indexOf('g', -1) should ===(5)
+      byteStrings.indexOf('g', 0) should ===(5)
+      byteStrings.indexOf('g', 1) should ===(5)
+      byteStrings.indexOf('g', 4) should ===(5)
+      byteStrings.indexOf('g', 5) should ===(5)
+      byteStrings.indexOf('g', 6) should ===(-1)
+
+      val compact = byteStrings.compact
+      compact.indexOf('c', -1) should ===(2)
+      compact.indexOf('c', 0) should ===(2)
+      compact.indexOf('c', 2) should ===(2)
+      compact.indexOf('c', 3) should ===(-1)
+
+      compact.indexOf('e', -1) should ===(3)
+      compact.indexOf('e', 0) should ===(3)
+      compact.indexOf('e', 1) should ===(3)
+      compact.indexOf('e', 4) should ===(-1)
+      compact.indexOf('e', 6) should ===(-1)
+
+      compact.indexOf('g', -1) should ===(5)
+      compact.indexOf('g', 0) should ===(5)
+      compact.indexOf('g', 1) should ===(5)
+      compact.indexOf('g', 4) should ===(5)
+      compact.indexOf('g', 5) should ===(5)
+      compact.indexOf('g', 6) should ===(-1)
+    }
   }
 
   "A ByteString" must {
@@ -551,6 +627,10 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "calling dropWhile" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.dropWhile(_ != b) } } }
       "calling indexWhere" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.indexWhere(_ == b) } } }
       "calling indexOf" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.indexOf(b) } } }
+      // this actually behave weird for Vector and negative indexes - SI9936, fixed in Scala 2.12
+      // so let's just skip negative indexes (doesn't make much sense anyway)
+      "calling indexOf(elem, idx)" in { check { (a: ByteString, b: Byte, idx: Int) ⇒ likeVector(a) { _.indexOf(b, math.max(0, idx)) } } }
+
       "calling foreach" in { check { a: ByteString ⇒ likeVector(a) { it ⇒ var acc = 0; it foreach { acc += _ }; acc } } }
       "calling foldLeft" in { check { a: ByteString ⇒ likeVector(a) { _.foldLeft(0) { _ + _ } } } }
       "calling toArray" in { check { a: ByteString ⇒ likeVector(a) { _.toArray.toSeq } } }
