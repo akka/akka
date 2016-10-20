@@ -388,7 +388,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
               case x ⇒ fail(x.toString)
             }.toMat(Sink.fold(0)(_ + _))(Keep.both).run()
 
-        Await.result(idSum, 30.seconds) shouldEqual N * (N + 1) / 2
+        Await.result(idSum, 35.seconds) shouldEqual N * (N + 1) / 2
       } catch {
         case thr: Throwable ⇒
           throw new RuntimeException(s"Failed at pipeliningLimit=$pipeliningLimit, poolFlow=$poolFlow", thr)
