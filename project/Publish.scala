@@ -49,8 +49,8 @@ object NoPublish extends AutoPlugin {
 
   override def projectSettings = Seq(
     publishArtifact := false,
-    publish := (),
-    publishLocal := ()
+    publish := {},
+    publishLocal := {}
   )
 
 }
