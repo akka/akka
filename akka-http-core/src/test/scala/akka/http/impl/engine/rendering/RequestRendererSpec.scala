@@ -327,7 +327,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
     serverAddress: InetSocketAddress    = new InetSocketAddress("test.com", 8080))
     extends HttpRequestRendererFactory(userAgent, requestHeaderSizeHint = 64, NoLogging) {
 
-    def awaitAtMost: FiniteDuration = 3.seconds
+    def awaitAtMost: FiniteDuration = 4.seconds
 
     def renderTo(expected: String): Matcher[HttpRequest] =
       equal(expected.stripMarginWithNewline("\r\n")).matcher[String] compose { request ⇒
