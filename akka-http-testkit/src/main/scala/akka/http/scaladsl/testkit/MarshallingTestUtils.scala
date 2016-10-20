@@ -16,7 +16,7 @@ import scala.util.Try
 
 trait MarshallingTestUtils {
   def marshal[T: ToEntityMarshaller](value: T)(implicit ec: ExecutionContext, mat: Materializer): HttpEntity.Strict =
-    Await.result(Marshal(value).to[HttpEntity].flatMap(_.toStrict(1.second)), 1.second)
+    Await.result(Marshal(value).to[HttpEntity].flatMap(_.toStrict(1.second)), 2.second)
 
   def marshalToResponseForRequestAccepting[T: ToResponseMarshaller](value: T, mediaRanges: MediaRange*)(implicit ec: ExecutionContext, mat: Materializer): HttpResponse =
     marshalToResponse(value, HttpRequest(headers = Accept(mediaRanges: _*) :: Nil))
