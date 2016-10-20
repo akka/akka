@@ -508,7 +508,7 @@ object Logging {
    *
    * You can add your own rules quite easily, see [[akka.event.LogSource]].
    */
-  def apply[T: LogSource](system: ActorSystem, logSource: T): LoggingAdapter with MarkerLoggingAdapter = {
+  def apply[T: LogSource](system: ActorSystem, logSource: T): MarkerLoggingAdapter = {
     val (str, clazz) = LogSource(logSource, system)
     new BusLogging(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter) with MarkerLoggingAdapter
   }
