@@ -175,8 +175,9 @@ All documentation must abide by the following maxims:
 - Generation should be **completely automated** and available for scripting.
 - Artifacts that must be included in the Lightbend stack should be published to a maven “documentation” repository as documentation artifacts.
 
-All documentation is preferred to be in Lightbend's standard documentation format [Paradox](hhttps://github.com/lightbend/paradox).
-The language used by Paradox is a super-set or Markdown, and is simple to grasp and get contributingRefer to its documentation to learn about the more advanced features it provides (including code etc).
+All documentation is preferred to be in Lightbend's standard documentation format [Paradox](https://github.com/lightbend/paradox).
+The language used by Paradox is a super-set or Markdown which supports most Github Flavored Markdown extensions as well as additional directives to facilitate writing documentation for software projects.
+Refer to its documentation to learn about the more advanced features it provides (including code etc).
 
 To generate documentation you can:
 
@@ -261,7 +262,7 @@ will validate all projects that depend on `akka-persistence` (including samples)
 Also, tests tagged as `PerformanceTest` and the likes of it are excluded from PR validation.
 
 In order to force the `validatePullRequest` task to build the entire project, regardless of dependency analysis of a PRs
-changes one can use the special `PLS BUILD ALL` command (typed in a comment on Github, on the Pull Request), which will cause
+changes one can use the special `PLS BUILD ALL` command (typed in a comment on GitHub, on the Pull Request), which will cause
 the validator to test all projects.
 
 ## Source style

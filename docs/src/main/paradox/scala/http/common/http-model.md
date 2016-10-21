@@ -111,7 +111,7 @@ HttpEntity.IndefiniteLength
 Entity types `Strict`, `Default`, and `Chunked` are a subtype of `HttpEntity.Regular` which allows to use them
 for requests and responses. In contrast, `HttpEntity.CloseDelimited` can only be used for responses.
 
-Streaming entity types (i.e. all but `Strict`) cannot be shared or serialized. To create a strict, sharable copy of an
+Streaming entity types (i.e. all but `Strict`) cannot be shared or serialized. To create a strict, shareable copy of an
 entity or message use `HttpEntity.toStrict` or `HttpMessage.toStrict` which returns a `Future` of the object with
 the body data collected into a `ByteString`.
 
@@ -261,7 +261,7 @@ potential `Connection` header. See @github[this test](/akka-http-core/src/test/s
 Strict-Transport-Security
 : HTTP Strict Transport Security (HSTS) is a web security policy mechanism which is communicated by the
 `Strict-Transport-Security` header. The most important security vulnerability that HSTS can fix is SSL-stripping
-man-in-the-middle attacks. The SSL-stripping attact works by transparently converting a secure HTTPS connection into a
+man-in-the-middle attacks. The SSL-stripping attack works by transparently converting a secure HTTPS connection into a
 plain HTTP connection. The user can see that the connection is insecure, but crucially there is no way of knowing
 whether the connection should be secure. HSTS addresses this problem by informing the browser that connections to the
 site should always use TLS/SSL. See also [RFC 6797](http://tools.ietf.org/html/rfc6797).
@@ -271,7 +271,7 @@ site should always use TLS/SSL. See also [RFC 6797](http://tools.ietf.org/html/r
 ## Custom Headers
 
 Sometimes you may need to model a custom header type which is not part of HTTP and still be able to use it
-as convienient as is possible with the built-in types.
+as convenient as is possible with the built-in types.
 
 Because of the number of ways one may interact with headers (i.e. try to match a `CustomHeader` against a `RawHeader`
 or the other way around etc), a helper trait for custom Header types and their companions classes are provided by Akka HTTP.
@@ -288,7 +288,7 @@ Including usage within the header directives like in the following @ref[headerVa
 @@snip [ModeledCustomHeaderSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/server/ModeledCustomHeaderSpec.scala) { #matching-in-routes }
 
 One can also directly extend `CustomHeader` which requires less boilerplate, however that has the downside of
-matching against `RawHeader` instances not working out-of-the-box, thus limiting its usefulnes in the routing layer
+matching against `RawHeader` instances not working out-of-the-box, thus limiting its usefulness in the routing layer
 of Akka HTTP. For only rendering such header however it would be enough.
 
 > **Note:**
@@ -307,7 +307,7 @@ Various parsing and rendering settings are available to tweak in the configurati
 `akka.http.server[.parsing]` and `akka.http.host-connection-pool[.client.parsing]`, with defaults for all of these
 being defined in the `akka.http.parsing` configuration section.
 For example, if you want to change a parsing setting for all components, you can set the `akka.http.parsing.illegal-header-warnings = off`
-value. However this setting can be stil overriden by the more specific sections, like for example `akka.http.server.parsing.illegal-header-warnings = on`.
+value. However this setting can be still overridden by the more specific sections, like for example `akka.http.server.parsing.illegal-header-warnings = on`.
 In this case both `client` and `host-connection-pool` APIs will see the setting `off`, however the server will see `on`.
 In the case of `akka.http.host-connection-pool.client` settings, they default to settings set in `akka.http.client`,
 and can override them if needed. This is useful, since both `client` and `host-connection-pool` APIs,

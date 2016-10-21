@@ -68,7 +68,7 @@ to instead attempt to solve these issues by properly configuring TLS–for examp
 If however certain checks really need to be disabled because of misconfigured (or legacy) servers that your
 application has to speak to, instead of disabling the checks globally (i.e. in `application.conf`) we suggest
 configuring the loose settings for *specific connections* that are known to need them disabled (and trusted for some other reason).
-The pattern of doing so is documented in the folowing sub-sections.
+The pattern of doing so is documented in the following sub-sections.
 
 ### Hostname verification
 
@@ -93,7 +93,7 @@ It is specified as part of [RFC 6066](https://tools.ietf.org/html/rfc6066#page-6
 ### Disabling TLS security features, at your own risk
 
 > **Warning:**
-It is highly discouraged to disable any of the security features of TLS, however do acknowlage that workarounds may sometimes be needed.
+It is highly discouraged to disable any of the security features of TLS, however do acknowledge that workarounds may sometimes be needed.
 Before disabling any of the features one should consider if they may be solvable *within* the TLS world,
 for example by [trusting a certificate](http://typesafehub.github.io/ssl-config/WSQuickStart.html), or [configuring the trusted cipher suites](http://typesafehub.github.io/ssl-config/CipherSuites.html) etc.
 If disabling features is indeed desired, we recommend doing so for *specific connections*,

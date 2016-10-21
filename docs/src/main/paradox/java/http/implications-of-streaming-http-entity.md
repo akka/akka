@@ -39,7 +39,7 @@ eagerly consume the entity and make it available in memory:
 ### Discarding the HTTP Response Entity (Client)
 
 Sometimes when calling HTTP services we do not care about their response payload (e.g. all we care about is the response code),
-yet as explained above entity still has to be consumed in some way, otherwise we'll be exherting back-pressure on the
+yet as explained above entity still has to be consumed in some way, otherwise we'll be exerting back-pressure on the
 underlying TCP connection.
 
 The `discardEntityBytes` convenience method serves the purpose of easily discarding the entity if it has no purpose for us.
@@ -55,7 +55,7 @@ Or the equivalent low-level code achieving the same result:
 
 ## Server-Side handling of streaming HTTP Entities
 
-Similarily as with the Client-side, HTTP Entities are directly linked to Streams which are fed by the underlying
+Similarly as with the Client-side, HTTP Entities are directly linked to Streams which are fed by the underlying
 TCP connection. Thus, if request entities remain not consumed, the server will back-pressure the connection, expecting
 that the user-code will eventually decide what to do with the incoming data.
 

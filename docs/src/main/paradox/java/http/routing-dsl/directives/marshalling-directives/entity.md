@@ -8,7 +8,7 @@ returns an `Either` with `Right(value)` if successful or `Left(exception)` for a
 The `entity` method will either pass the `value` to the inner route or map the `exception` to a
 :class:`akka.http.javadsl.server.Rejection`.
 
-The `entity` directive works in conjuction with `as` and `akka.http.scaladsl.unmarshalling` to
+The `entity` directive works in conjunction with `as` and `akka.http.scaladsl.unmarshalling` to
 convert some serialized "wire format" value into a higher-level object structure.  
 @ref[The unmarshalling documentation](../../../common/unmarshalling.md#http-unmarshalling-java) explains this process in detail.
 This directive simplifies extraction and error handling to the specified type from the request.

@@ -27,7 +27,7 @@ when using WebSockets for one-way communication may not be what you would expect
 Messages sent and received over a WebSocket can be either `TextMessage` s or `BinaryMessage` s and each
 of those has two subtypes `Strict` or `Streamed`. In typical applications messages will be `Strict` as
 WebSockets are usually deployed to communicate using small messages not stream data, the protocol does however
-allow this (by not marking the first fragment as final, as described in [rfc 6455 section 5.2](https://tools.ietf.org/html/rfc6455#section-5.2)).
+allow this (by not marking the first fragment as final, as described in [RFC 6455 section 5.2](https://tools.ietf.org/html/rfc6455#section-5.2)).
 
 For such streamed messages `BinaryMessage.Streamed` and `TextMessage.Streamed` will be used. In these cases
 the data is provided as a `Source[ByteString, NotUsed]` for binary and `Source[String, NotUsed]` for text messages.

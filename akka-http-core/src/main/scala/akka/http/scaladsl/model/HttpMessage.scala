@@ -82,7 +82,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Returns a copy of this message with the entity set to the given one. */
   def withEntity(entity: MessageEntity): Self
 
-  /** Returns a sharable and serializable copy of this message with a strict entity. */
+  /** Returns a shareable and serializable copy of this message with a strict entity. */
   def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: Materializer): Future[Self] =
     entity.toStrict(timeout).fast.map(this.withEntity)
 

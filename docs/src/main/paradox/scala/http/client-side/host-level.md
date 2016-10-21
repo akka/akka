@@ -45,7 +45,7 @@ back `3` different client flow instances for the same pool. If each of these cli
 (concurrently) the application will have 12 concurrently running client flow materializations.
 All of these share the resources of the single pool.
 
-This means that, if the pool's `pipelining-limit` is left at `1` (effecitvely disabeling pipelining), no more than 12 requests can be open at any time.
+This means that, if the pool's `pipelining-limit` is left at `1` (effectively disabling pipelining), no more than 12 requests can be open at any time.
 With a `pipelining-limit` of `8` and 12 concurrent client flow materializations the theoretical open requests
 maximum is `96`.
 
@@ -95,7 +95,7 @@ if there is one.
  4. Otherwise apply back-pressure to the request source, i.e. stop accepting new requests.
 
 For more information about scheduling more than one request at a time across a single connection see
-[this wikipedia entry on HTTP pipelining](http://en.wikipedia.org/wiki/HTTP_pipelining).
+[this Wikipedia entry on HTTP pipelining](http://en.wikipedia.org/wiki/HTTP_pipelining).
 
 ## Retrying a Request
 
@@ -135,7 +135,7 @@ time by calling `Http().shutdownAllConnectionPools()`. This call too produces a 
 all pools have terminated.
 
 > **Note:**
-When encoutering unexpected `akka.stream.AbruptTerminationException` exceptions during `ActorSystem` **shutdown**
+When encountering unexpected `akka.stream.AbruptTerminationException` exceptions during `ActorSystem` **shutdown**
 please make sure that active connections are shut down before shutting down the entire system, this can be done by
 calling the `Http().shutdownAllConnectionPools()` method, and only once its Future completes, shutting down the actor system.
 

@@ -10,7 +10,7 @@
 Asynchronous version of @ref[mapRouteResult](mapRouteResult.md#maprouteresult).
 
 It's similar to @ref[mapRouteResultWith](mapRouteResultWith.md#maprouteresultwith), however it's `Future[RouteResult] ⇒ Future[RouteResult]`
-instead of `RouteResult ⇒ Future[RouteResult]` which may be useful when combining multiple transformantions
+instead of `RouteResult ⇒ Future[RouteResult]` which may be useful when combining multiple transformations
 and / or wanting to `recover` from a failed route result.
 
 See @ref[Result Transformation Directives](index.md#result-transformation-directives) for similar directives.

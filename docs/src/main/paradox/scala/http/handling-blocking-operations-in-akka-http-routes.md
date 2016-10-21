@@ -37,7 +37,7 @@ has this feature (including the free and bundled with the Oracle JDK VisualVM, a
 
 @@snip [BlockingInHttpExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-default-dispatcher }
 
-Here the app is exposed to a load of continous GET requests and large numbers
+Here the app is exposed to a load of continuous GET requests and large numbers
 of akka.actor.default-dispatcher threads are handling requests. The orange
 portion of the thread shows that it is idle. Idle threads are fine -
 they're ready to accept new work. However, large amounts of Turquoise (sleeping) threads are very bad!
@@ -89,7 +89,7 @@ instead of the default one:
 @@snip [BlockingInHttpExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-dedicated-dispatcher }
 
 This forces the app to use the same load, initially normal requests and then
-the blocking requests. The thread pool behaviour is shown in the figrue.
+the blocking requests. The thread pool behaviour is shown in the figure.
 
 ![DispatcherBehaviourOnGoodCode.png](DispatcherBehaviourOnGoodCode.png)
 

@@ -71,9 +71,9 @@ A chat room is available for all questions related to *developing and contributi
 Maintenance
 -----------
 
-This project is maintained by Lightbend's core Akka Team as well as the extended Akka HTTP Team, consisting of excellent and experienced developers who have shown their dedication and knowladge about HTTP and the codebase. This team may grow dynamically, and it is possible to propose new members to it. 
+This project is maintained by Lightbend's core Akka Team as well as the extended Akka HTTP Team, consisting of excellent and experienced developers who have shown their dedication and knowledge about HTTP and the codebase. This team may grow dynamically, and it is possible to propose new members to it. 
 
-Joining the extended team in such form gives you, in addition to street-cred, of course comitter rights to this repository as well as higher impact onto the roadmap of the project. Come and join us!
+Joining the extended team in such form gives you, in addition to street-cred, of course committer rights to this repository as well as higher impact onto the roadmap of the project. Come and join us!
 
 License
 -------

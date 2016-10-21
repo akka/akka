@@ -2,7 +2,7 @@
 # Server-Side WebSocket Support
 
 WebSocket is a protocol that provides a bi-directional channel between browser and webserver usually run over an
-upgraded HTTP(S) connection. Data is exchanged in messages whereby a message can either be binary data or unicode text.
+upgraded HTTP(S) connection. Data is exchanged in messages whereby a message can either be binary data or Unicode text.
 
 Akka HTTP provides a stream-based implementation of the WebSocket protocol that hides the low-level details of the
 underlying binary framing wire-protocol and provides a simple API to implement services using WebSocket.
@@ -10,7 +10,7 @@ underlying binary framing wire-protocol and provides a simple API to implement s
 ## Model
 
 The basic unit of data exchange in the WebSocket protocol is a message. A message can either be binary message,
-i.e. a sequence of octets or a text message, i.e. a sequence of unicode code points.
+i.e. a sequence of octets or a text message, i.e. a sequence of Unicode code points.
 
 In the data model the two kinds of messages, binary and text messages, are represented by the two classes
 `BinaryMessage` and `TextMessage` deriving from a common superclass `Message`. The superclass `Message`

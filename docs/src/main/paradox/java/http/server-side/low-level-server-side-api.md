@@ -163,7 +163,7 @@ There are various situations when failure may occur while initialising or runnin
 Akka by default will log all these failures, however sometimes one may want to react to failures in addition to them
 just being logged, for example by shutting down the actor system, or notifying some external monitoring end-point explicitly.
 
-There are multiple things that can fail when creating and materializing an HTTP Server (similarily, the same applied to
+There are multiple things that can fail when creating and materializing an HTTP Server (similarly, the same applied to
 a plain streaming `Tcp` server). The types of failures that can happen on different layers of the stack, starting
 from being unable to start the server, and ending with failing to unmarshal an HttpRequest, examples of failures include
 (from outer-most, to inner-most):
@@ -178,14 +178,14 @@ This section describes how to handle each failure situation, and in which situat
 
 The first type of failure is when the server is unable to bind to the given port. For example when the port
 is already taken by another application, or if the port is privileged (i.e. only usable by `root`).
-In this case the "binding future" will fail immediatly, and we can react to if by listening on the CompletionStage’s completion:
+In this case the "binding future" will fail immediately, and we can react to if by listening on the CompletionStage’s completion:
 
 @@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-failure-handling }
 
-Once the server has successfully bound to a port, the `Source<IncomingConnection, ?>` starts running and emiting
+Once the server has successfully bound to a port, the `Source<IncomingConnection, ?>` starts running and emitting
 new incoming connections. This source technically can signal a failure as well, however this should only happen in very
-dramantic situations such as running out of file descriptors or memory available to the system, such that it's not able
-to accept a new incoming connection. Handling failures in Akka Streams is pretty stright forward, as failures are signaled
+dramatic situations such as running out of file descriptors or memory available to the system, such that it's not able
+to accept a new incoming connection. Handling failures in Akka Streams is pretty straight forward, as failures are signaled
 through the stream starting from the stage which failed, all the way downstream to the final stages.
 
 #### Connections Source failures

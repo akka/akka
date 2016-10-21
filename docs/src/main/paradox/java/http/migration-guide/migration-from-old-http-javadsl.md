@@ -24,7 +24,7 @@ using the `Route.flow` method. For examples of full apps refer to @ref[Route Tes
 The old API heavily relied on the concept of "request values" which could be used to extract a value from a request context.
 
 Based on community feedback and our own experience we found them too hard to work with in more complex settings.
-The concept of a request value has been completely removed, and replaced with proper "directives", exacly like in the ScalaDSL.
+The concept of a request value has been completely removed, and replaced with proper "directives", exactly like in the ScalaDSL.
 
 **Previously**:
 

@@ -51,7 +51,7 @@ In its basic form `HttpRequest.create` creates an empty default GET request with
 transformed using one of the `withX` methods, `addHeader`, or `addHeaders`. Each of those will create a
 new immutable instance, so instances can be shared freely. There exist some overloads for `HttpRequest.create` that
 simplify creating requests for common cases. Also, to aid readability, there are predefined alternatives for `create`
-named after HTTP methods to create a request with a given method and uri directly.
+named after HTTP methods to create a request with a given method and URI directly.
 
 ## HttpResponse
 
@@ -112,7 +112,7 @@ HttpEntityIndefiniteLength
 Entity types `HttpEntityStrict`, `HttpEntityDefault`, and `HttpEntityChunked` are a subtype of `RequestEntity`
 which allows to use them for requests and responses. In contrast, `HttpEntityCloseDelimited` can only be used for responses.
 
-Streaming entity types (i.e. all but `HttpEntityStrict`) cannot be shared or serialized. To create a strict, sharable copy of an
+Streaming entity types (i.e. all but `HttpEntityStrict`) cannot be shared or serialized. To create a strict, shareable copy of an
 entity or message use `HttpEntity.toStrict` or `HttpMessage.toStrict` which returns a `CompletionStage` of the object with
 the body data collected into a `ByteString`.
 
@@ -234,7 +234,7 @@ Various parsing and rendering settings are available to tweak in the configurati
 `akka.http.server[.parsing]` and `akka.http.host-connection-pool[.client.parsing]`, with defaults for all of these
 being defined in the `akka.http.parsing` configuration section.
 For example, if you want to change a parsing setting for all components, you can set the `akka.http.parsing.illegal-header-warnings = off`
-value. However this setting can be stil overriden by the more specific sections, like for example `akka.http.server.parsing.illegal-header-warnings = on`.
+value. However this setting can be still overridden by the more specific sections, like for example `akka.http.server.parsing.illegal-header-warnings = on`.
 In this case both `client` and `host-connection-pool` APIs will see the setting `off`, however the server will see `on`.
 In the case of `akka.http.host-connection-pool.client` settings, they default to settings set in `akka.http.client`,
 and can override them if needed. This is useful, since both `client` and `host-connection-pool` APIs,
