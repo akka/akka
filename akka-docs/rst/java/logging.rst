@@ -434,3 +434,20 @@ Now, the values will be available in the MDC, so you can use them in the layout 
     </encoder>
   </appender>
 
+
+Using Markers
+-------------
+
+Some logging libraries allow, in addition to MDC data, attaching so called "markers" to log statements.
+These are used to filter out rare and special events, for example you might want to mark logs that detect
+some malicious activity and mark them with a ``SECURITY`` tag, and in your appender configuration make these
+trigger emails and other notifications immediately.
+
+Since Akka 2.4.12, markers are available through the LoggingAdapters, when obtained via ``Logging.withMarker``.
+The first argument passed into all log calls then should be a ``akka.event.LogMarker``. 
+
+The slf4j bridge provided by akka in ``akka-slf4j`` will automatically pick up this marker value and make it available to SLF4J.
+For example you could use it like this::
+
+  <pattern>%date{ISO8601} [%marker][%level] [%msg]%n</pattern>
+  

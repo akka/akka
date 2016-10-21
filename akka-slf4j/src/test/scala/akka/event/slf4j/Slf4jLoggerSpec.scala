@@ -31,7 +31,7 @@ object Slf4jLoggerSpec {
 
   final class LogProducer extends Actor with DiagnosticActorLogging {
 
-    val markLog = Logging(this)
+    val markLog = Logging.withMarker(this)
 
     def receive = {
       case e: Exception ⇒

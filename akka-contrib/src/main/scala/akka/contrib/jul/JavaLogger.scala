@@ -82,7 +82,7 @@ trait JavaLoggingAdapter extends LoggingAdapter {
   protected def notifyInfo(message: String): Unit =
     log(logging.Level.INFO, null, message)
 
-  protected def notifyDebug(message: String): Unit = 
+  protected def notifyDebug(message: String): Unit =
     log(logging.Level.CONFIG, null, message)
 
   @inline

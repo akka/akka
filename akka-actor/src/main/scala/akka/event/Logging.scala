@@ -507,7 +507,31 @@ object Logging {
    *
    * You can add your own rules quite easily, see [[akka.event.LogSource]].
    */
-  def apply[T: LogSource](system: ActorSystem, logSource: T): MarkerBusLoggingAdapter = {
+  def apply[T: LogSource](system: ActorSystem, logSource: T): LoggingAdapter = {
+    val (str, clazz) = LogSource(logSource, system)
+    new BusLogging(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter)
+  }
+  /**
+   * Obtain LoggingAdapter with additional "marker" support (which some logging frameworks are able to utilise)
+   * for the given actor system and source object. This will use the system’s event stream and include the system’s
+   * address in the log source string.
+   *
+   * <b>Do not use this if you want to supply a log category string (like
+   * “com.example.app.whatever”) unaltered,</b> supply `system.eventStream` in this
+   * case or use
+   *
+   * {{{
+   * Logging(system, this.getClass)
+   * }}}
+   *
+   * The source is used to identify the source of this logging channel and
+   * must have a corresponding implicit LogSource[T] instance in scope; by
+   * default these are provided for Class[_], Actor, ActorRef and String types.
+   * See the companion object of [[akka.event.LogSource]] for details.
+   *
+   * You can add your own rules quite easily, see [[akka.event.LogSource]].
+   */
+  def withMarker[T: LogSource](system: ActorSystem, logSource: T): MarkerBusLoggingAdapter = {
     val (str, clazz) = LogSource(logSource, system)
     new MarkerBusLoggingAdapter(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter)
   }
@@ -526,7 +550,25 @@ object Logging {
    * and not the [[akka.event.LoggingFilter]] configured for the system
    * (if different from `DefaultLoggingFilter`).
    */
-  def apply[T: LogSource](bus: LoggingBus, logSource: T): MarkerBusLoggingAdapter = {
+  def apply[T: LogSource](bus: LoggingBus, logSource: T): LoggingAdapter = {
+    val (str, clazz) = LogSource(logSource)
+    new BusLogging(bus, str, clazz)
+  }
+  /**
+   * Obtain LoggingAdapter for the given logging bus and source object.
+   *
+   * The source is used to identify the source of this logging channel and
+   * must have a corresponding implicit LogSource[T] instance in scope; by
+   * default these are provided for Class[_], Actor, ActorRef and String types.
+   * See the companion object of [[akka.event.LogSource]] for details.
+   *
+   * You can add your own rules quite easily, see [[akka.event.LogSource]].
+   *
+   * Note that this `LoggingAdapter` will use the [[akka.event.DefaultLoggingFilter]],
+   * and not the [[akka.event.LoggingFilter]] configured for the system
+   * (if different from `DefaultLoggingFilter`).
+   */
+  def withMarker[T: LogSource](bus: LoggingBus, logSource: T): MarkerBusLoggingAdapter = {
     val (str, clazz) = LogSource(logSource)
     new MarkerBusLoggingAdapter(bus, str, clazz)
   }
@@ -535,10 +577,19 @@ object Logging {
    * Obtain LoggingAdapter with MDC support for the given actor.
    * Don't use it outside its specific Actor as it isn't thread safe
    */
-  def apply(logSource: Actor): MarkerBusLoggingAdapter with DiagnosticLoggingAdapter = {
+  def apply(logSource: Actor): DiagnosticLoggingAdapter = {
     val (str, clazz) = LogSource(logSource)
     val system = logSource.context.system.asInstanceOf[ExtendedActorSystem]
-    new MarkerBusLoggingAdapter(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
+    new BusLogging(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
+  }
+  /**
+   * Obtain LoggingAdapter with marker and MDC support for the given actor.
+   * Don't use it outside its specific Actor as it isn't thread safe
+   */
+  def withMarker(logSource: Actor): DiagnosticMarkerBusLoggingAdapter = {
+    val (str, clazz) = LogSource(logSource)
+    val system = logSource.context.system.asInstanceOf[ExtendedActorSystem]
+    new DiagnosticMarkerBusLoggingAdapter(system.eventStream, str, clazz, system.logFilter)
   }
 
   /**
@@ -559,9 +610,9 @@ object Logging {
    * default these are provided for Class[_], Actor, ActorRef and String types.
    * See the companion object of [[akka.event.LogSource]] for details.
    */
-  def getLogger(system: ActorSystem, logSource: AnyRef): MarkerBusLoggingAdapter = {
+  def getLogger(system: ActorSystem, logSource: AnyRef): LoggingAdapter = {
     val (str, clazz) = LogSource.fromAnyRef(logSource, system)
-    new MarkerBusLoggingAdapter(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter)
+    new BusLogging(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter)
   }
 
   /**
@@ -576,9 +627,9 @@ object Logging {
    * and not the [[akka.event.LoggingFilter]] configured for the system
    * (if different from `DefaultLoggingFilter`).
    */
-  def getLogger(bus: LoggingBus, logSource: AnyRef): MarkerBusLoggingAdapter = {
+  def getLogger(bus: LoggingBus, logSource: AnyRef): LoggingAdapter = {
     val (str, clazz) = LogSource.fromAnyRef(logSource)
-    new MarkerBusLoggingAdapter(bus, str, clazz)
+    new BusLogging(bus, str, clazz)
   }
 
   /**
@@ -594,7 +645,7 @@ object Logging {
   def getLogger(logSource: UntypedActor): DiagnosticLoggingAdapter = {
     val (str, clazz) = LogSource.fromAnyRef(logSource)
     val system = logSource.getContext().system.asInstanceOf[ExtendedActorSystem]
-    new MarkerBusLoggingAdapter(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
+    new BusLogging(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
   }
 
   /**
@@ -964,9 +1015,6 @@ trait LoggingAdapter {
   protected def notifyWarning(message: String): Unit
   protected def notifyInfo(message: String): Unit
   protected def notifyDebug(message: String): Unit
-
-  /** @since 2.4.12 */
-  protected def doLog(level: logging.Level, cause: Throwable, message: String, marker: LogMarker) = ()
 
   /*
    * The rest is just the widening of the API for the user's convenience.
@@ -1503,6 +1551,13 @@ class MarkerBusLoggingAdapter(
     if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
 }
+
+final class DiagnosticMarkerBusLoggingAdapter(
+  override val bus:       LoggingBus,
+  override val logSource: String,
+  override val logClass:  Class[_],
+  loggingFilter:          LoggingFilter)
+  extends MarkerBusLoggingAdapter(bus, logSource, logClass, loggingFilter) with DiagnosticLoggingAdapter
 
 /**
  * [[akka.event.LoggingAdapter]] that publishes [[akka.event.Logging.LogEvent]] to event stream.
