@@ -6,7 +6,7 @@ import sbt.Keys._
 object Dependencies {
   import DependencyHelpers._
 
-  val akkaVersion = "2.4.10"
+  val akkaVersion = "2.4.11"
   val junitVersion = "4.12"
 
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
