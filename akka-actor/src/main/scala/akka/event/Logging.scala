@@ -5,11 +5,12 @@ package akka.event
 
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.logging
 
 import akka.actor.ActorSystem.Settings
 import akka.actor._
 import akka.dispatch.RequiresMessageQueue
-import akka.event.Logging.MDC
+import akka.event.Logging.{ Extension ⇒ _, _ }
 import akka.util.{ OptionVal, ReentrantGuard }
 import akka.util.Helpers.toRootLowerCase
 import akka.{ AkkaException, ConfigurationException }
@@ -380,14 +381,12 @@ object Logging {
 
   /**
    * Returns a 'safe' getSimpleName for the provided object's Class
-   * @param obj
    * @return the simple name of the given object's Class
    */
   def simpleName(obj: AnyRef): String = simpleName(obj.getClass)
 
   /**
    * Returns a 'safe' getSimpleName for the provided Class
-   * @param clazz
    * @return the simple name of the given Class
    */
   def simpleName(clazz: Class[_]): String = {
@@ -508,9 +507,9 @@ object Logging {
    *
    * You can add your own rules quite easily, see [[akka.event.LogSource]].
    */
-  def apply[T: LogSource](system: ActorSystem, logSource: T): MarkerLoggingAdapter = {
+  def apply[T: LogSource](system: ActorSystem, logSource: T): MarkerBusLoggingAdapter = {
     val (str, clazz) = LogSource(logSource, system)
-    new BusLogging(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter) with MarkerLoggingAdapter
+    new MarkerBusLoggingAdapter(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter)
   }
 
   /**
@@ -527,19 +526,19 @@ object Logging {
    * and not the [[akka.event.LoggingFilter]] configured for the system
    * (if different from `DefaultLoggingFilter`).
    */
-  def apply[T: LogSource](bus: LoggingBus, logSource: T): MarkerLoggingAdapter = {
+  def apply[T: LogSource](bus: LoggingBus, logSource: T): MarkerBusLoggingAdapter = {
     val (str, clazz) = LogSource(logSource)
-    new BusLogging(bus, str, clazz) with MarkerLoggingAdapter
+    new MarkerBusLoggingAdapter(bus, str, clazz)
   }
 
   /**
    * Obtain LoggingAdapter with MDC support for the given actor.
    * Don't use it outside its specific Actor as it isn't thread safe
    */
-  def apply(logSource: Actor): MarkerLoggingAdapter = {
+  def apply(logSource: Actor): MarkerBusLoggingAdapter with DiagnosticLoggingAdapter = {
     val (str, clazz) = LogSource(logSource)
     val system = logSource.context.system.asInstanceOf[ExtendedActorSystem]
-    new BusLogging(system.eventStream, str, clazz, system.logFilter) with MarkerLoggingAdapter
+    new MarkerBusLoggingAdapter(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
   }
 
   /**
@@ -560,9 +559,9 @@ object Logging {
    * default these are provided for Class[_], Actor, ActorRef and String types.
    * See the companion object of [[akka.event.LogSource]] for details.
    */
-  def getLogger(system: ActorSystem, logSource: AnyRef): LoggingAdapter = {
+  def getLogger(system: ActorSystem, logSource: AnyRef): MarkerBusLoggingAdapter = {
     val (str, clazz) = LogSource.fromAnyRef(logSource, system)
-    new BusLogging(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter)
+    new MarkerBusLoggingAdapter(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter)
   }
 
   /**
@@ -577,9 +576,9 @@ object Logging {
    * and not the [[akka.event.LoggingFilter]] configured for the system
    * (if different from `DefaultLoggingFilter`).
    */
-  def getLogger(bus: LoggingBus, logSource: AnyRef): LoggingAdapter = {
+  def getLogger(bus: LoggingBus, logSource: AnyRef): MarkerBusLoggingAdapter = {
     val (str, clazz) = LogSource.fromAnyRef(logSource)
-    new BusLogging(bus, str, clazz)
+    new MarkerBusLoggingAdapter(bus, str, clazz)
   }
 
   /**
@@ -595,7 +594,7 @@ object Logging {
   def getLogger(logSource: UntypedActor): DiagnosticLoggingAdapter = {
     val (str, clazz) = LogSource.fromAnyRef(logSource)
     val system = logSource.getContext().system.asInstanceOf[ExtendedActorSystem]
-    new BusLogging(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
+    new MarkerBusLoggingAdapter(system.eventStream, str, clazz, system.logFilter) with DiagnosticLoggingAdapter
   }
 
   /**
@@ -670,25 +669,19 @@ object Logging {
     }
 
     def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC): LogEvent = level match {
-      case ErrorLevel   ⇒ Error(logSource, logClass, message, mdc, extractFromMDC(mdc))
-      case WarningLevel ⇒ Warning(logSource, logClass, message, mdc, extractFromMDC(mdc))
-      case InfoLevel    ⇒ Info(logSource, logClass, message, mdc, extractFromMDC(mdc))
-      case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc, extractFromMDC(mdc))
+      case ErrorLevel   ⇒ Error(logSource, logClass, message, mdc)
+      case WarningLevel ⇒ Warning(logSource, logClass, message, mdc)
+      case InfoLevel    ⇒ Info(logSource, logClass, message, mdc)
+      case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc)
     }
 
-    def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: String): LogEvent = level match {
-      case ErrorLevel   ⇒ Error(logSource, logClass, message, mdc, Option(marker))
-      case WarningLevel ⇒ Warning(logSource, logClass, message, mdc, Option(marker))
-      case InfoLevel    ⇒ Info(logSource, logClass, message, mdc, Option(marker))
-      case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc, Option(marker))
+    def apply(level: LogLevel, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker): LogEvent = level match {
+      case ErrorLevel   ⇒ Error(logSource, logClass, message, mdc, marker)
+      case WarningLevel ⇒ Warning(logSource, logClass, message, mdc, marker)
+      case InfoLevel    ⇒ Info(logSource, logClass, message, mdc, marker)
+      case DebugLevel   ⇒ Debug(logSource, logClass, message, mdc, marker)
     }
 
-    private def extractFromMDC(mdc: MDC): Option[String] = {
-      mdc.get(LogMarker.MDCKey) match {
-        case Some(v) ⇒ Option(v.toString)
-        case _       ⇒ None
-      }
-    }
   }
 
   /**
@@ -701,22 +694,26 @@ object Logging {
   class Error2(cause: Throwable, logSource: String, logClass: Class[_], message: Any = "", override val mdc: MDC) extends Error(cause, logSource, logClass, message) {
     def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = this(Error.NoCause, logSource, logClass, message, mdc)
   }
-  class Error3(cause: Throwable, logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: Option[String])
+  class Error3(cause: Throwable, logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
     extends Error2(cause, logSource, logClass, message, mdc) with LogEventWithMarker {
-    def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: Option[String]) = this(Error.NoCause, logSource, logClass, message, mdc, marker)
+    def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = this(Error.NoCause, logSource, logClass, message, mdc, marker)
   }
 
   object Error {
     def apply(logSource: String, logClass: Class[_], message: Any) =
       new Error(NoCause, logSource, logClass, message)
-    def apply(logSource: String, logClass: Class[_], message: Any, marker: Option[String]) =
+    def apply(logSource: String, logClass: Class[_], message: Any, marker: LogMarker) =
       new Error3(NoCause, logSource, logClass, message, Map.empty, marker)
 
-    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Error2(cause, logSource, logClass, message, mdc)
-    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: Option[String]) =
+    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC) =
+      new Error2(cause, logSource, logClass, message, mdc)
+    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) =
       new Error3(cause, logSource, logClass, message, mdc, marker)
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Error2(NoCause, logSource, logClass, message, mdc)
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: Option[String]) = new Error3(NoCause, logSource, logClass, message, mdc, marker)
+
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) =
+      new Error2(NoCause, logSource, logClass, message, mdc)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) =
+      new Error3(NoCause, logSource, logClass, message, mdc, marker)
 
     /** Null Object used for errors without cause Throwable */
     object NoCause extends NoStackTrace
@@ -730,11 +727,11 @@ object Logging {
     override def level = WarningLevel
   }
   class Warning2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Warning(logSource, logClass, message)
-  class Warning3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: Option[String])
+  class Warning3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
     extends Warning2(logSource, logClass, message, mdc) with LogEventWithMarker
   object Warning {
     def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Warning2(logSource, logClass, message, mdc)
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: Option[String]) = new Warning3(logSource, logClass, message, mdc, marker)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Warning3(logSource, logClass, message, mdc, marker)
   }
 
   /**
@@ -744,11 +741,11 @@ object Logging {
     override def level = InfoLevel
   }
   class Info2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Info(logSource, logClass, message)
-  class Info3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: Option[String])
+  class Info3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
     extends Info2(logSource, logClass, message, mdc) with LogEventWithMarker
   object Info {
     def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Info2(logSource, logClass, message, mdc)
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: Option[String]) = new Info3(logSource, logClass, message, mdc, marker)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Info3(logSource, logClass, message, mdc, marker)
   }
 
   /**
@@ -758,16 +755,16 @@ object Logging {
     override def level = DebugLevel
   }
   class Debug2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Debug(logSource, logClass, message)
-  class Debug3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: Option[String])
+  class Debug3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
     extends Debug2(logSource, logClass, message, mdc) with LogEventWithMarker
   object Debug {
     def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Debug2(logSource, logClass, message, mdc)
-    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: Option[String]) = new Debug3(logSource, logClass, message, mdc, marker)
+    def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Debug3(logSource, logClass, message, mdc, marker)
   }
 
   /** INTERNAL API, Marker interface for LogEvents containing Markers, which can be set for example on an slf4j logger */
   sealed trait LogEventWithMarker extends LogEvent {
-    def marker: Option[String]
+    def marker: LogMarker
   }
 
   /**
@@ -967,6 +964,9 @@ trait LoggingAdapter {
   protected def notifyWarning(message: String): Unit
   protected def notifyInfo(message: String): Unit
   protected def notifyDebug(message: String): Unit
+
+  /** @since 2.4.12 */
+  protected def doLog(level: logging.Level, cause: Throwable, message: String, marker: LogMarker) = ()
 
   /*
    * The rest is just the widening of the API for the user's convenience.
@@ -1289,362 +1289,219 @@ object LogMarker {
  * [[LoggingAdapter]] extension which adds Marker support.
  * Only recommended to be used within Actors as it isn't thread safe.
  */
-trait MarkerLoggingAdapter extends DiagnosticLoggingAdapter {
+// TODO when breaking binary compatibility, these marker methods should become baked into LoggingAdapter itself
+class MarkerBusLoggingAdapter(
+  override val bus:       LoggingBus,
+  override val logSource: String,
+  override val logClass:  Class[_],
+  loggingFilter:          LoggingFilter)
+  extends BusLogging(bus, logSource, logClass, loggingFilter) {
+
+  // For backwards compatibility, and when LoggingAdapter is created without direct
+  // association to an ActorSystem
+  def this(bus: LoggingBus, logSource: String, logClass: Class[_]) =
+    this(bus, logSource, logClass, new DefaultLoggingFilter(() ⇒ bus.logLevel))
 
   /**
    * Log message at error level, including the exception that caused the error.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, message: String): Unit =
-    if (isErrorEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyError(cause, message)
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit =
-    if (isErrorEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyError(cause, format(template, arg1))
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit =
-    if (isErrorEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyError(cause, format(template, arg1, arg2))
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isErrorEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyError(cause, format(template, arg1, arg2, arg3))
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isErrorEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyError(cause, format(template, arg1, arg2, arg3, arg4))
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at error level, without providing the exception that caused the error.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, message: String): Unit =
-    if (isErrorEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyError(message)
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isErrorEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyError(format(template, arg1))
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isErrorEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyError(format(template, arg1, arg2))
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isErrorEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyError(format(template, arg1, arg2, arg3))
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isErrorEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyError(format(template, arg1, arg2, arg3, arg4))
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at warning level.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, message: String): Unit =
-    if (isWarningEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyWarning(message)
-      mdc(pre)
-    }
+    if (isErrorEnabled) bus.publish(Error(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isWarningEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyWarning(format(template, arg1))
-      mdc(pre)
-    }
+    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isWarningEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyWarning(format(template, arg1, arg2))
-      mdc(pre)
-    }
+    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isWarningEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyWarning(format(template, arg1, arg2, arg3))
-      mdc(pre)
-    }
+    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isWarningEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyWarning(format(template, arg1, arg2, arg3, arg4))
-      mdc(pre)
-    }
+    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at info level.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, message: String): Unit =
-    if (isInfoEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      println("pre.updated(LogMarker.MDCKey, marker.name) = " + pre.updated(LogMarker.MDCKey, marker.name))
-      notifyInfo(message)
-      mdc(pre)
-    }
+    if (isInfoEnabled) bus.publish(Info(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isInfoEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyInfo(format(template, arg1))
-    }
+    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isInfoEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyInfo(format(template, arg1, arg2))
-      mdc(pre)
-    }
+    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isInfoEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyInfo(format(template, arg1, arg2, arg3))
-      mdc(pre)
-    }
+    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isInfoEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyInfo(format(template, arg1, arg2, arg3, arg4))
-      mdc(pre)
-    }
+    if (isInfoEnabled) bus.publish(Info(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
   /**
    * Log message at debug level.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, message: String): Unit =
-    if (isDebugEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyDebug(message)
-      mdc(pre)
-    }
+    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any): Unit =
-    if (isDebugEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyDebug(format(template, arg1))
-      mdc(pre)
-    }
+    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1), mdc, marker))
 
   /**
    * Message template with 2 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-    if (isDebugEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyDebug(format(template, arg1, arg2))
-      mdc(pre)
-    }
+    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2), mdc, marker))
 
   /**
    * Message template with 3 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isDebugEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyDebug(format(template, arg1, arg2, arg3))
-      mdc(pre)
-    }
+    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3), mdc, marker))
 
   /**
    * Message template with 4 replacement arguments.
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
    * @see [[LoggingAdapter]]
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isDebugEnabled) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyDebug(format(template, arg1, arg2, arg3, arg4))
-      mdc(pre)
-    }
+    if (isDebugEnabled) bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
 
-  /**
-   * Log message at the specified log level.
-   */
-  def log(marker: LogMarker, level: Logging.LogLevel, message: String): Unit =
-    if (isEnabled(level)) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyLog(level, message)
-      mdc(pre)
-    }
-
-  /**
-   * Message template with 1 replacement argument.
-   */
-  def log(marker: LogMarker, level: Logging.LogLevel, template: String, arg1: Any): Unit =
-    if (isEnabled(level)) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyLog(level, format(template, arg1))
-      mdc(pre)
-    }
-
-  /**
-   * Message template with 2 replacement arguments.
-   */
-  def log(marker: LogMarker, level: Logging.LogLevel, template: String, arg1: Any, arg2: Any): Unit =
-    if (isEnabled(level)) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyLog(level, format(template, arg1, arg2))
-      mdc(pre)
-    }
-
-  /**
-   * Message template with 3 replacement arguments.
-   */
-  def log(marker: LogMarker, level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-    if (isEnabled(level)) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyLog(level, format(template, arg1, arg2, arg3))
-      mdc(pre)
-    }
-
-  /**
-   * Message template with 4 replacement arguments.
-   */
-  def log(marker: LogMarker, level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
-    if (isEnabled(level)) {
-      val pre = mdc
-      mdc(pre.updated(LogMarker.MDCKey, marker.name))
-      notifyLog(level, format(template, arg1, arg2, arg3, arg4))
-      mdc(pre)
-    }
 }
 
 /**
@@ -1665,11 +1522,16 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
   def isInfoEnabled = loggingFilter.isInfoEnabled(logClass, logSource)
   def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource)
 
-  protected def notifyError(message: String): Unit = bus.publish(Error(logSource, logClass, message, mdc, LogMarker.extractFromMDC(mdc)))
-  protected def notifyError(cause: Throwable, message: String): Unit = bus.publish(Error(cause, logSource, logClass, message, mdc, LogMarker.extractFromMDC(mdc)))
-  protected def notifyWarning(message: String): Unit = bus.publish(Warning(logSource, logClass, message, mdc, LogMarker.extractFromMDC(mdc)))
-  protected def notifyInfo(message: String): Unit = bus.publish(Info(logSource, logClass, message, mdc, LogMarker.extractFromMDC(mdc)))
-  protected def notifyDebug(message: String): Unit = bus.publish(Debug(logSource, logClass, message, mdc, LogMarker.extractFromMDC(mdc)))
+  protected def notifyError(message: String): Unit =
+    bus.publish(Error(logSource, logClass, message, mdc))
+  protected def notifyError(cause: Throwable, message: String): Unit =
+    bus.publish(Error(cause, logSource, logClass, message, mdc))
+  protected def notifyWarning(message: String): Unit =
+    bus.publish(Warning(logSource, logClass, message, mdc))
+  protected def notifyInfo(message: String): Unit =
+    bus.publish(Info(logSource, logClass, message, mdc))
+  protected def notifyDebug(message: String): Unit =
+    bus.publish(Debug(logSource, logClass, message, mdc))
 }
 
 /**

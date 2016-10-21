@@ -111,8 +111,8 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
 
   private final def markerIfPresent(event: LogEvent): Marker =
     event match {
-      case m: LogEventWithMarker if m.marker.isDefined ⇒ MarkerFactory.getMarker(m.marker.get)
-      case _ ⇒ null
+      case m: LogEventWithMarker ⇒ MarkerFactory.getMarker(m.marker.name)
+      case _                     ⇒ null
     }
 
   /**
