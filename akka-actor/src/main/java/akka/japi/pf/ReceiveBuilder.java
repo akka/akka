@@ -37,6 +37,16 @@ public class ReceiveBuilder {
   }
 
   /**
+   * Return a new {@link UnitPFBuilder} with no case statements. They can be added later as the returned {@link
+   * UnitPFBuilder} is a mutable object.
+   *
+   * @return a builder with no case statements
+   */
+  public static UnitPFBuilder<Object> create() {
+    return new UnitPFBuilder<>();
+  }
+
+  /**
    * Return a new {@link UnitPFBuilder} with a case statement added.
    *
    * @param type  a type to match the argument against
