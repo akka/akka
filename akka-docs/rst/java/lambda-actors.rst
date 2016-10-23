@@ -54,6 +54,12 @@ Here is an example:
 .. includecode:: code/docs/actorlambda/MyActor.java
    :include: imports,my-actor
 
+In case you want to provide many :meth:`match` cases but want to avoid creating a long call
+trail, you can split the creation of the builder into multiple statements as in the example:
+
+.. includecode:: code/docs/actorlambda/GraduallyBuiltActor.java
+   :include: imports,actor
+
 Please note that the Akka Actor ``receive`` message loop is exhaustive, which
 is different compared to Erlang and the late Scala Actors. This means that you
 need to provide a pattern match for all messages that it can accept and if you
