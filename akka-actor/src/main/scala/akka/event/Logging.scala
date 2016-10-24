@@ -859,16 +859,22 @@ object Logging {
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 
   trait StdOutLogger {
+
+    import StdOutLogger._
     import java.text.SimpleDateFormat
     import java.util.Date
 
     private val date = new Date()
     private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
-    private val errorFormat = "[ERROR] [%s] [%s] [%s] %s%s"
-    private val errorFormatWithoutCause = "[ERROR] [%s] [%s] [%s] %s"
-    private val warningFormat = "[WARN] [%s] [%s] [%s] %s"
-    private val infoFormat = "[INFO] [%s] [%s] [%s] %s"
-    private val debugFormat = "[DEBUG] [%s] [%s] [%s] %s"
+
+    // format: OFF
+    // FIXME: remove those when we have the chance to break binary compatibility
+    private val errorFormat             = ErrorFormat
+    private val errorFormatWithoutCause = ErrorFormatWithoutCause
+    private val warningFormat           = WarningFormat
+    private val infoFormat              = InfoFormat
+    private val debugFormat             = DebugFormat
+    // format: ON
 
     def timestamp(event: LogEvent): String = synchronized {
       date.setTime(event.timestamp)
@@ -883,36 +889,92 @@ object Logging {
       case e          ⇒ warning(Warning(simpleName(this), this.getClass, "received unexpected event of class " + e.getClass + ": " + e))
     }
 
-    def error(event: Error): Unit = {
-      val f = if (event.cause == Error.NoCause) errorFormatWithoutCause else errorFormat
-      println(f.format(
-        timestamp(event),
-        event.thread.getName,
-        event.logSource,
-        event.message,
-        stackTraceFor(event.cause)))
+    def error(event: Error): Unit = event match {
+      case e: Error3 ⇒ // has marker
+        val f = if (event.cause == Error.NoCause) ErrorWithoutCauseWithMarkerFormat else ErrorFormatWithMarker
+        println(f.format(
+          e.marker.name,
+          timestamp(event),
+          event.thread.getName,
+          event.logSource,
+          event.message,
+          stackTraceFor(event.cause)))
+      case _ ⇒
+        val f = if (event.cause == Error.NoCause) ErrorFormatWithoutCause else ErrorFormat
+        println(f.format(
+          timestamp(event),
+          event.thread.getName,
+          event.logSource,
+          event.message,
+          stackTraceFor(event.cause)))
     }
 
-    def warning(event: Warning): Unit =
-      println(warningFormat.format(
-        timestamp(event),
-        event.thread.getName,
-        event.logSource,
-        event.message))
+    def warning(event: Warning): Unit = event match {
+      case e: Warning3 ⇒ // has marker
+        println(WarningWithMarkerFormat.format(
+          e.marker.name,
+          timestamp(event),
+          event.thread.getName,
+          event.logSource,
+          event.message))
+      case _ ⇒
+        println(WarningFormat.format(
+          timestamp(event),
+          event.thread.getName,
+          event.logSource,
+          event.message))
+    }
 
-    def info(event: Info): Unit =
-      println(infoFormat.format(
-        timestamp(event),
-        event.thread.getName,
-        event.logSource,
-        event.message))
+    def info(event: Info): Unit = event match {
+      case e: Info3 ⇒ // has marker
+        println(InfoWithMarkerFormat.format(
+          e.marker.name,
+          timestamp(event),
+          event.thread.getName,
+          event.logSource,
+          event.message))
+      case _ ⇒
+        println(InfoFormat.format(
+          timestamp(event),
+          event.thread.getName,
+          event.logSource,
+          event.message))
+    }
 
-    def debug(event: Debug): Unit =
-      println(debugFormat.format(
-        timestamp(event),
-        event.thread.getName,
-        event.logSource,
-        event.message))
+    def debug(event: Debug): Unit = event match {
+      case e: Debug3 ⇒ // has marker
+        println(DebugWithMarkerFormat.format(
+          e.marker.name,
+          timestamp(event),
+          event.thread.getName,
+          event.logSource,
+          event.message))
+      case _ ⇒
+        println(DebugFormat.format(
+          timestamp(event),
+          event.thread.getName,
+          event.logSource,
+          event.message))
+    }
+  }
+  object StdOutLogger {
+    // format: OFF
+    private final  val ErrorFormat          = "[ERROR] [%s] [%s] [%s] %s%s"
+    private final val ErrorFormatWithMarker = "[ERROR] [%s][%s] [%s] [%s] %s%s"
+
+    private final val ErrorFormatWithoutCause           = "[ERROR] [%s] [%s] [%s] %s"
+    private final val ErrorWithoutCauseWithMarkerFormat = "[ERROR] [%s][%s] [%s] [%s] %s"
+
+    private final val WarningFormat           = "[WARN] [%s] [%s] [%s] %s"
+    private final val WarningWithMarkerFormat = "[WARN] [%s][%s] [%s] [%s] %s"
+
+    private final val InfoFormat           = "[INFO] [%s] [%s] [%s] %s"
+    private final val InfoWithMarkerFormat = "[INFO] [%s][%s] [%s] [%s] %s"
+
+    private final val DebugFormat           = "[DEBUG] [%s] [%s] [%s] %s"
+    private final val DebugWithMarkerFormat = "[DEBUG] [%s][%s] [%s] [%s] %s"
+
+    // format: ON
   }
 
   /**
