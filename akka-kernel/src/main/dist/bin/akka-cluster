@@ -103,7 +103,6 @@ case "$1" in
 
         ensureNodeIsRunningAndAvailable
 
-        echo "Querying cluster status"
         get ClusterStatus
         ;;
 
