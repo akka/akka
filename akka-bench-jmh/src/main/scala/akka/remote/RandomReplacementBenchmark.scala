@@ -7,12 +7,12 @@ package akka.remote
 import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
 
-import akka.remote.security.provider.AESCounterBuiltinRNG
+import akka.remote.security.provider.{ AESCounterBuiltinCTRRNG, AESCounterBuiltinRNG }
 import org.openjdk.jmh.annotations._
 import org.uncommons.maths.random.AESCounterRNG
 
 /*
-akka-bench-jmh > jmh:run -wi 15 -i 15 -f 1 .*RandomReplacementBenchmark.*
+akka-bench-jmh > jmh:run -wi 15 -i 15 -f 1 -t 1 .*RandomReplacementBenchmark.*
 
 [...]
 
@@ -32,11 +32,25 @@ akka-bench-jmh > jmh:run -wi 15 -i 15 -f 1 .*RandomReplacementBenchmark.*
 [info] RandomReplacementBenchmark.runNew    ss   15  249.659 ± 20.295  ms/op
 [info] RandomReplacementBenchmark.runOld    ss   15  262.815 ± 49.112  ms/op
 
+[info] Benchmark                          Mode  Cnt    Score    Error  Units
+[info] RandomReplacementBenchmark.runCtr    ss   15  299.485 ± 23.466  ms/op
+[info] RandomReplacementBenchmark.runNew    ss   15  238.772 ± 12.127  ms/op
+[info] RandomReplacementBenchmark.runOld    ss   15  215.453 ± 24.637  ms/op
+
+[info] RandomReplacementBenchmark.runCtr    ss   15  283.690 ± 17.258  ms/op
+[info] RandomReplacementBenchmark.runNew    ss   15  251.412 ± 25.066  ms/op
+[info] RandomReplacementBenchmark.runOld    ss   15  231.133 ± 29.139  ms/op
+
+[info] RandomReplacementBenchmark.runCtr    ss   15  314.895 ± 45.711  ms/op
+[info] RandomReplacementBenchmark.runNew    ss   15  250.495 ± 15.762  ms/op
+[info] RandomReplacementBenchmark.runOld    ss   15  215.201 ± 23.651  ms/op
+
  */
 
 object SystemUnderTest {
   private final val SOURCE = new SecureRandom
   private final val seed = SOURCE.generateSeed(32)
+  final val rngCtr = new AESCounterBuiltinCTRRNG(seed)
   final val rngNew = new AESCounterBuiltinRNG(seed)
   final val rngOld = new AESCounterRNG(seed)
 }
@@ -48,6 +62,7 @@ object SystemUnderTest {
 @Warmup(iterations = 10)
 @Measurement(iterations = 10)
 class RandomReplacementBenchmark {
+  var inputCtr: Array[Byte] = null
   var inputNew: Array[Byte] = null
   var inputOld: Array[Byte] = null
 
@@ -61,12 +76,19 @@ class RandomReplacementBenchmark {
 
   @Setup(Level.Iteration)
   def setupIteration(): Unit = {
+    inputCtr = Array.fill[Byte](10000000)(1)
     inputNew = Array.fill[Byte](10000000)(1)
     inputOld = Array.fill[Byte](10000000)(1)
   }
 
   @TearDown(Level.Iteration)
   def shutdownIteration(): Unit = {
+  }
+
+  @Benchmark
+  @OutputTimeUnit(TimeUnit.MILLISECONDS)
+  def runCtr(): Unit = {
+    SystemUnderTest.rngCtr.nextBytes(inputCtr)
   }
 
   @Benchmark
