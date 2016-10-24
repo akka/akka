@@ -174,6 +174,24 @@ you can advise the system to create a child on that remote node like so:
 
 .. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
 
+Remote deployment whitelist
+---------------------------
+
+As remote deployment can potentially be abused by both users and even attackers a whitelist feature
+is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
+is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
+remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
+only a specific set of known actors by enabling the whitelist feature.
+
+To enable remote deployment whitelisting set the ``akka.remote.deployment.enable-whitelist`` value to ``on``.
+The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which 
+others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or 
+should not allow others to remote deploy onto it. The full settings section may for example look like this:
+
+.. includecode:: ../../../akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala#whitelist-config
+
+Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
+
 Lifecycle and Failure Recovery Model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
