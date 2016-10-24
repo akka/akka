@@ -366,6 +366,22 @@ public class ActorDocTest extends AbstractJavaTest {
   }
 
   @Test
+  public void creatingGraduallyBuiltActorWithSystemActorOf() {
+    final ActorSystem system = ActorSystem.create("MySystem", config);
+    final ActorRef actor = system.actorOf(Props.create(GraduallyBuiltActor.class), "graduallyBuiltActor");
+    try {
+      new JavaTestKit(system) {
+        {
+          actor.tell("hello", getRef());
+          expectMsgEquals("hello");
+        }
+      };
+    } finally {
+      JavaTestKit.shutdownActorSystem(system);
+    }
+  }
+
+  @Test
   public void creatingPropsConfig() {
     //#creating-props
     Props props1 = Props.create(MyActor.class);
