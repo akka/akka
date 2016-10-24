@@ -998,6 +998,10 @@ object MiMa extends AutoPlugin {
 
         // #21330 takeWhile inclusive flag
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.takeWhile")
+      ),
+      "2.4.11" -> Seq(
+        // #20795  IOResult construction exposed
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.IOResult$")
       )
     )
   }
