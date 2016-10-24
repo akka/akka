@@ -48,7 +48,7 @@ Actors are registered to a named topic. This enables many subscribers on each no
 The message will be delivered to all subscribers of the topic. 
 
 For efficiency the message is sent over the wire only once per node (that has a matching topic),
-and then delivered to all subscribers of the local topic representation.
+and then delivered to all subscribers of the local topic representation. (See more in )
 
 You register actors to the local mediator with ``DistributedPubSubMediator.Subscribe``. 
 Successful ``Subscribe`` and ``Unsubscribe`` is acknowledged with
@@ -182,6 +182,15 @@ and then it takes a while for it to be populated.
 
    akka.extensions = ["akka.cluster.pubsub.DistributedPubSub"]
 
+
+Delivery Guarantee
+------------------
+
+As in :ref:`message-general-rules` of Akka, message delivery guarantee in distributed pub sub modes is **at-most-once delivery**.
+In other words, messages can be lost over the wire.
+
+If you are looking for at-least-once delivery guarantee, we recommend `Kafka Akka Streams integration <https://github.com/akka/reactive-kafka>`_.
+
 Dependencies
 ------------
 
@@ -198,3 +207,4 @@ maven::
     <artifactId>akka-cluster-tools_@binVersion@</artifactId>
     <version>@version@</version>
   </dependency>
+
