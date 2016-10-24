@@ -171,7 +171,7 @@ you can advise the system to create a child on that remote node like so:
 Remote deployment whitelist
 ---------------------------
 
-As remote deployment can potentially be abused aby both users and even attackers a whitelist feature
+As remote deployment can potentially be abused by both users and even attackers a whitelist feature
 is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
 is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
 remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
