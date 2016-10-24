@@ -7,6 +7,7 @@ import java.security.Key
 import java.util.Random
 import java.util.concurrent.locks.ReentrantLock
 import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
 
 /**
  * INTERNAL API
@@ -25,7 +26,7 @@ import javax.crypto.Cipher
  * NOTE: THIS CLASS IS NOT SERIALIZABLE
  */
 
-class AESCounterBuiltinRNG(val seed: Array[Byte]) extends Random {
+class AESCounterBuiltinCTRRNG(val seed: Array[Byte]) extends Random {
   private val COUNTER_SIZE_BYTES = 16
   private val BITWISE_BYTE_TO_INT = 0x000000FF
 
@@ -35,23 +36,11 @@ class AESCounterBuiltinRNG(val seed: Array[Byte]) extends Random {
   private var index: Int = 0
   private var currentBlock: Array[Byte] = null
 
-  private val cipher = Cipher.getInstance("AES/ECB/NoPadding")
-  cipher.init(Cipher.ENCRYPT_MODE, new this.AESKey(seed))
-
-  /**
-   * Generates a single block of random data
-   * (by default 128-bit block - 16 bytes should be used).
-   */
-  private def nextBlock: Array[Byte] = {
-    var i: Int = 0
-    if (i < counter.length) {
-      do {
-        counter(i) = (counter(i) + 1.toByte).toByte
-        i += 1
-      } while ((i < counter.length) && (counter(i - 1) == 0))
-    }
-    cipher.doFinal(counter)
-  }
+  private val cipher = Cipher.getInstance("AES/CTR/NoPadding")
+  val ivArr = Array.fill[Byte](COUNTER_SIZE_BYTES)(0)
+  ivArr(0) = (ivArr(0) + 1.toByte).toByte
+  private val ivSpec = new IvParameterSpec(ivArr)
+  cipher.init(Cipher.ENCRYPT_MODE, new this.AESKey(seed), ivSpec)
 
   @Override
   override protected def next(bits: Int): Int = {
@@ -59,7 +48,7 @@ class AESCounterBuiltinRNG(val seed: Array[Byte]) extends Random {
       lock.lock()
       if (currentBlock == null || currentBlock.length - index < 4) {
         try {
-          currentBlock = nextBlock
+          currentBlock = cipher.doFinal(counter)
           index = 0
         } catch {
           case ex: Exception ⇒ {

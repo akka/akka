@@ -3,7 +3,7 @@
  */
 package akka.remote.serialization
 
-import akka.remote.security.provider.AESCounterBuiltinRNG
+import akka.remote.security.provider.{ AESCounterBuiltinCTRRNG, AESCounterBuiltinRNG }
 import akka.testkit.AkkaSpec
 import org.uncommons.maths.random.{ AESCounterRNG, SecureRandomSeedGenerator }
 
@@ -25,14 +25,14 @@ private class FakeAES128NewCounterSecureRNG {
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
-//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+    //    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+    //    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+    //    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+    //    1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte
   )
 
-  private val rng = new AESCounterBuiltinRNG(seed)
+  private val rng = new AESCounterBuiltinCTRRNG(seed)
 
   // helper method, for test purposes only
   def getBytes = {
@@ -51,10 +51,10 @@ private class FakeAES128CounterSecureRNG {
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
-//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+    //    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+    //    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+    //    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+    //    1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte
   )
 
