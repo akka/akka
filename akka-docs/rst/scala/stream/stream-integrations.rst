@@ -43,7 +43,7 @@ If the ``ask`` fails due to timeout the stream will be completed with
 ``TimeoutException`` failure. If that is not desired outcome you can use ``recover`` 
 on the ``ask`` :class:`Future`.
 
-If you don't care about the reply values and only use them back-pressure signals you 
+If you don't care about the reply values and only use them as back-pressure signals you 
 can use ``Sink.ignore`` after the ``mapAsync`` stage and then actor is effectively a sink
 of the stream.
 
@@ -82,10 +82,10 @@ be buffered until request for demand is received.
 Use overflow strategy ``akka.stream.OverflowStrategy.backpressure`` to avoid dropping of elements if the 
 buffer is full.
 
-``SourceQueue.offer`` returns ``Future[StreamCallbackStatus[Boolean]]`` which completes with ``Success(true)``
-if element was added to buffer or sent downstream. It completes with ``Success(false)`` if element was dropped. 
-It can also complete  with ``StreamCallbackStatus.Failure`` when stream failed or ``StreamCallbackStatus.StreamCompleted``
-when downstream is completed.
+``SourceQueue.offer`` returns ``Future[QueueOfferResult]`` which completes with ``QueueOfferResult.Enqueued``
+if element was added to buffer or sent downstream. It completes with ``QueueOfferResult.Dropped`` if element 
+was dropped. Can also complete  with ``QueueOfferResult.Failure`` - when stream failed or 
+``QueueOfferResult.QueueClosed`` when downstream is completed.
 
 When used from an actor you typically ``pipe`` the result of the ``Future`` back to the actor to
 continue processing.
