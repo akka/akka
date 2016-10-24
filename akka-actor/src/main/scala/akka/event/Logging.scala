@@ -531,9 +531,9 @@ object Logging {
    *
    * You can add your own rules quite easily, see [[akka.event.LogSource]].
    */
-  def withMarker[T: LogSource](system: ActorSystem, logSource: T): MarkerBusLoggingAdapter = {
+  def withMarker[T: LogSource](system: ActorSystem, logSource: T): MarkerLoggingAdapter = {
     val (str, clazz) = LogSource(logSource, system)
-    new MarkerBusLoggingAdapter(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter)
+    new MarkerLoggingAdapter(system.eventStream, str, clazz, system.asInstanceOf[ExtendedActorSystem].logFilter)
   }
 
   /**
@@ -568,9 +568,9 @@ object Logging {
    * and not the [[akka.event.LoggingFilter]] configured for the system
    * (if different from `DefaultLoggingFilter`).
    */
-  def withMarker[T: LogSource](bus: LoggingBus, logSource: T): MarkerBusLoggingAdapter = {
+  def withMarker[T: LogSource](bus: LoggingBus, logSource: T): MarkerLoggingAdapter = {
     val (str, clazz) = LogSource(logSource)
-    new MarkerBusLoggingAdapter(bus, str, clazz)
+    new MarkerLoggingAdapter(bus, str, clazz)
   }
 
   /**
@@ -816,6 +816,11 @@ object Logging {
   /** INTERNAL API, Marker interface for LogEvents containing Markers, which can be set for example on an slf4j logger */
   sealed trait LogEventWithMarker extends LogEvent {
     def marker: LogMarker
+    /** Appends the marker to the Debug/Info/Warning/Error toString representations */
+    override def toString = {
+      val s = super.toString
+      s.substring(0, s.length - 1) + "," + marker + ")"
+    }
   }
 
   /**
@@ -1337,13 +1342,13 @@ object LogMarker {
  * [[LoggingAdapter]] extension which adds Marker support.
  * Only recommended to be used within Actors as it isn't thread safe.
  */
-// TODO when breaking binary compatibility, these marker methods should become baked into LoggingAdapter itself
-class MarkerBusLoggingAdapter(
+class MarkerLoggingAdapter(
   override val bus:       LoggingBus,
   override val logSource: String,
   override val logClass:  Class[_],
   loggingFilter:          LoggingFilter)
   extends BusLogging(bus, logSource, logClass, loggingFilter) {
+  // TODO when breaking binary compatibility, these marker methods should become baked into LoggingAdapter itself
 
   // For backwards compatibility, and when LoggingAdapter is created without direct
   // association to an ActorSystem
@@ -1557,7 +1562,7 @@ final class DiagnosticMarkerBusLoggingAdapter(
   override val logSource: String,
   override val logClass:  Class[_],
   loggingFilter:          LoggingFilter)
-  extends MarkerBusLoggingAdapter(bus, logSource, logClass, loggingFilter) with DiagnosticLoggingAdapter
+  extends MarkerLoggingAdapter(bus, logSource, logClass, loggingFilter) with DiagnosticLoggingAdapter
 
 /**
  * [[akka.event.LoggingAdapter]] that publishes [[akka.event.Logging.LogEvent]] to event stream.

@@ -10,7 +10,7 @@ import org.scalatest.Matchers
 import org.scalatest.mock.MockitoSugar
 import org.apache.camel.ProducerTemplate
 import org.scalatest.WordSpec
-import akka.event.{ LoggingAdapter, MarkerBusLoggingAdapter }
+import akka.event.{ LoggingAdapter, MarkerLoggingAdapter }
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.ConfigFactory
 import org.apache.camel.impl.DefaultCamelContext
@@ -26,7 +26,7 @@ class DefaultCamelTest extends WordSpec with SharedCamelSystem with Matchers wit
   when(sys.name) thenReturn ("mocksystem")
 
   def camelWithMocks = new DefaultCamel(sys) {
-    override val log = mock[MarkerBusLoggingAdapter]
+    override val log = mock[MarkerLoggingAdapter]
     override lazy val template = mock[ProducerTemplate]
     override lazy val context = mock[DefaultCamelContext]
     override val settings = mock[CamelSettings]

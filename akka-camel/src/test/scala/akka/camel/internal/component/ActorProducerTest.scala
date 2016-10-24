@@ -25,7 +25,7 @@ import org.scalatest.Matchers
 import akka.actor.Status.Failure
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem.Settings
-import akka.event.{ LoggingAdapter, MarkerBusLoggingAdapter }
+import akka.event.{ LoggingAdapter, MarkerLoggingAdapter }
 import akka.testkit.{ TestKit, TestLatch, TestProbe, TimingTest }
 import org.apache.camel.impl.DefaultCamelContext
 
@@ -354,7 +354,7 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
     when(sys.name) thenReturn ("mocksystem")
 
     def camelWithMocks = new DefaultCamel(sys) {
-      override val log = mock[MarkerBusLoggingAdapter]
+      override val log = mock[MarkerLoggingAdapter]
       override lazy val template = mock[ProducerTemplate]
       override lazy val context = mock[DefaultCamelContext]
       override val settings = new CamelSettings(ConfigFactory.parseString(
