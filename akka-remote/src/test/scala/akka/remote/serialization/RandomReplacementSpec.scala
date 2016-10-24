@@ -10,8 +10,8 @@ import org.uncommons.maths.random.{ AESCounterRNG, SecureRandomSeedGenerator }
 class RandomReplacementSpec extends AkkaSpec {
   "Secure random replacement" must {
     "generate the same" in {
-      val rng = new FakeAES256CounterSecureRNG
-      val rng2 = new FakeAES256NewCounterSecureRNG
+      val rng = new FakeAES128CounterSecureRNG
+      val rng2 = new FakeAES128NewCounterSecureRNG
       val bytes = rng.getBytes().toList.map(_.toInt).toString
       val bytes2 = rng2.getBytes.toList.map(_.toInt).toString
       bytes should ===(bytes2)
@@ -19,16 +19,16 @@ class RandomReplacementSpec extends AkkaSpec {
   }
 }
 
-private class FakeAES256NewCounterSecureRNG {
+private class FakeAES128NewCounterSecureRNG {
   // stubbed for testing
   private val seed: Array[Byte] = Array(
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
-    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte
   )
 
@@ -42,7 +42,7 @@ private class FakeAES256NewCounterSecureRNG {
   }
 }
 
-private class FakeAES256CounterSecureRNG {
+private class FakeAES128CounterSecureRNG {
   /**Singleton instance. */
   private final val Instance: SecureRandomSeedGenerator = new SecureRandomSeedGenerator
 
@@ -51,10 +51,10 @@ private class FakeAES256CounterSecureRNG {
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte,
-    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-    1.toByte, 1.toByte, 1.toByte, 1.toByte,
-    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
+//    1.toByte, 1.toByte, 1.toByte, 1.toByte,
     1.toByte, 1.toByte, 1.toByte, 1.toByte
   )
 
