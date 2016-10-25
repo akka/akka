@@ -39,3 +39,5 @@ libraryDependencies += "org.kohsuke" % "github-api" % "1.68"
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.8")
+
+addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.2.5")

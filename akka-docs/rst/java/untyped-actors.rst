@@ -49,6 +49,7 @@ dispatcher to use, see more below). Here are some examples of how to create a
 :class:`Props` instance.
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-props
+
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#creating-props-config
 
 The second line shows how to pass constructor arguments to the :class:`Actor`
@@ -99,6 +100,7 @@ Actors are created by passing a :class:`Props` instance into the
 :class:`ActorContext`.
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-actorRef
+
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#system-actorOf
 
 Using the :class:`ActorSystem` will create top-level actors, supervised by the
@@ -141,6 +143,7 @@ constructor arguments are determined by a dependency injection framework.
 __ Props_
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-indirect
+
 .. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: creating-indirectly
    :exclude: obtain-fresh-Actor-instance-from-DI-framework
@@ -286,6 +289,7 @@ Registering a monitor is easy (see fourth line, the rest is for demonstrating
 the whole functionality):
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-terminated
+
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#watch
 
 It should be noted that the :class:`Terminated` message is generated
@@ -432,6 +436,7 @@ negative result is generated. Please note that this does not mean that delivery
 of that reply is guaranteed, it still is a normal message.
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-identify
+
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#identify
 
 You can also acquire an :class:`ActorRef` for an :class:`ActorSelection` with
@@ -509,6 +514,7 @@ The ``ask`` pattern involves actors as well as futures, hence it is offered as
 a use pattern rather than a method on :class:`ActorRef`:
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-ask
+
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#ask-pipe
 
 This example demonstrates ``ask`` together with the ``pipe`` pattern on
@@ -778,6 +784,7 @@ order as they have been received originally. An actor that extends
 Here is an example of the ``UntypedActorWithStash`` class in action:
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-stash
+
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#stash
 
 Invoking ``stash()`` adds the current message (the message that the

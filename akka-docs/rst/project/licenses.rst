@@ -3,8 +3,6 @@
 Licenses
 ========
 
-.. highlight:: text
-
 Akka License
 ------------
 

@@ -1,0 +1,24 @@
+/**
+ * Copyright (C) 2014-2015 Lightbend Inc. <http://www.lightbend.com>
+ */
+package docs.ddata;
+
+//#twophaseset
+option java_package = "docs.ddata.protobuf.msg";
+option optimize_for = SPEED;
+
+message TwoPhaseSet {
+  repeated string adds = 1;
+  repeated string removals = 2;
+}
+//#twophaseset
+
+//#twophaseset2
+message TwoPhaseSet2 {
+  optional bytes adds = 1;
+  optional bytes removals = 2;
+}
+//#twophaseset2
+
+
+

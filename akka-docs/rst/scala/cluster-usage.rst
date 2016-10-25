@@ -150,7 +150,7 @@ There is an automatic downing feature that you should not use in production. For
 This means that the cluster leader member will change the ``unreachable`` node
 status to ``down`` automatically after the configured time of unreachability.
 
-This is a naïve approach to remove unreachable nodes from the cluster membership. It
+This is a naive approach to remove unreachable nodes from the cluster membership. It
 works great for crashes and short transient network partitions, but not for long network
 partitions. Both sides of the network partition will see the other side as unreachable
 and after a while remove it from its cluster membership. Since this happens on both

@@ -27,10 +27,5 @@ prior deprecation.
 
 Another reason for marking a module as experimental is that it's too early
 to tell if the module has a maintainer that can take the responsibility
-of the module over time. These modules live in the ``akka-contrib`` subproject:
-
-.. toctree::
-   :maxdepth: 1
-
-   ../contrib/index
+of the module over time. These modules live in the ``akka-contrib`` subproject.
 
