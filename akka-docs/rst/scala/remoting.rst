@@ -174,6 +174,7 @@ you can advise the system to create a child on that remote node like so:
 
 .. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
 
+.. _remote-deployment-whitelist-scala:
 Remote deployment whitelist
 ---------------------------
 
@@ -430,11 +431,6 @@ To intercept generic remoting related errors, listen to ``RemotingErrorEvent`` w
 
 Remote Security
 ^^^^^^^^^^^^^^^
-
-Akka provides a couple of ways to enhance security between remote nodes (client/server):
-
-* Untrusted Mode
-* Security Cookie Handshake
 
 Untrusted Mode
 --------------
