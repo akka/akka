@@ -10,7 +10,8 @@ import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, InHandler }
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.{ javadsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -187,8 +188,7 @@ object Sink {
   /**
    * A `Sink` that will consume the stream and discard the elements.
    */
-  def ignore: Sink[Any, Future[Done]] =
-    new Sink(new SinkholeSink(DefaultAttributes.ignoreSink, shape("SinkholeSink")))
+  def ignore: Sink[Any, Future[Done]] = fromGraph(GraphStages.IgnoreSink)
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
