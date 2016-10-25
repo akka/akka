@@ -11,4 +11,4 @@ scalacOptions in Compile  += "-language:_"
 mainClass in run in Test := Some("akka.http.javadsl.SimpleServerApp")
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)
-//enablePlugins(MultiNodeScalaTest)
+enablePlugins(MultiNodeScalaTest)

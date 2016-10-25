@@ -28,6 +28,7 @@ object Dependencies {
         scalaVersion.value match {
           case "2.12.0-M4" => "0.8.0-RC1"
           case "2.12.0-M5" => "0.8.0-RC3"
+          case "2.12.0-RC2" => "0.8.0-RC3"
           case _           => "0.7.0"
         }
       }
@@ -69,8 +70,9 @@ object Dependencies {
     }
 
     object Test {
-      val akkaTestkit       = "com.typesafe.akka"      %% "akka-testkit"                % akkaVersion        % "test" // Apache v2
-      val akkaStreamTestkit = "com.typesafe.akka"      %% "akka-stream-testkit"         % akkaVersion        % "test" // Apache v2
+      val akkaTestkit          = "com.typesafe.akka"      %% "akka-testkit"                % akkaVersion        % "test" // Apache v2
+      val akkaMmltinodeTestKit = "com.typesafe.akka"      %% "akka-multi-node-testkit"     % akkaVersion        % "test" // Apache v2
+      val akkaStreamTestkit    = "com.typesafe.akka"      %% "akka-stream-testkit"         % akkaVersion        % "test" // Apache v2
 
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
@@ -146,7 +148,7 @@ object Dependencies {
     Test.scalatest.value.copy(configurations = Some("provided; test"))
   )
 
-  lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
+  lazy val httpTests = l ++= Seq(Test.akkaMmltinodeTestKit, Test.junit, Test.scalatest.value, Test.junitIntf)
 
   lazy val httpXml = versionDependentDeps(scalaXml)
 

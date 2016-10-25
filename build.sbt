@@ -1,3 +1,4 @@
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.sbt.pgp.PgpKeys._
 import akka._
 
@@ -13,7 +14,7 @@ inThisBuild(Def.settings(
       url("https://github.com/akka/akka-http/graphs/contributors"))
   ),
   startYear := Some(2014),
-  test in assembly := {},
+  //  test in assembly := {},
   licenses := Seq("Apache License 2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
   scalaVersion := "2.11.8",
   scalacOptions ++= Seq(
@@ -29,6 +30,7 @@ inThisBuild(Def.settings(
   Dependencies.Versions,
   Formatting.formatSettings
 ))
+
 
 lazy val root = Project(
     id = "akka-http-root",
@@ -69,9 +71,9 @@ lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test")
-  .enablePlugins(NoPublish)
+  .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
-  //.configs(MultiJvm)
+  .configs(MultiJvm)
 
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
