@@ -482,12 +482,10 @@ untrusted mode when incoming via the remoting layer:
   within the same JVM), you can restrict the messages on this interface by
   marking them :class:`PossiblyHarmful` so that a client cannot forge them.
 
-SSL
----
+Configuring SSL/TLS for Akka Remoting
+-------------------------------------
 
-SSL can be used as the remote transport by adding ``akka.remote.netty.ssl``
-to the ``enabled-transport`` configuration section. See a description of the settings
-in the :ref:`remote-configuration-scala` section.
+SSL can be used as the remote transport by adding ``akka.remote.netty.ssl`` to the ``enabled-transport`` configuration section::
 
 An example of setting up the default Netty based SSL driver as default::
 
@@ -508,9 +506,45 @@ An example of setting up the default Netty based SSL driver as default::
     }
   }
 
-The SSL support is implemented with Java Secure Socket Extension, please consult the official
-`Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
-and related resources for troubleshooting.
+  akka {
+    remote {
+      enabled-transports = [ "akka.remote.netty.ssl" ]
+    }
+  }
+
+
+Next the actual SSL/TLS parameters have to be configured::
+
+  akka {
+    remote {
+      netty.ssl.security {
+        key-store = "/example/path/to/mykeystore.jks"
+        trust-store = "/example/path/to/mytruststore.jks"
+        
+        key-store-password = "changeme"
+        key-password = "changeme"
+        trust-store-password = "changeme"
+        
+        protocol = "TLSv1.2"
+        
+        random-number-generator = "AES128CounterSecureRNG"
+        enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
+      }
+    }
+  }
+
+Creating and working with keystores and cerfiticates is well documented in the `Generating X.509 Certificates <http://typesafehub.github.io/ssl-config/CertificateGeneration.html#using-keytool>`_
+section of Lightbend's SSL-Config library. 
+
+Since an Akka remoting is inherently :ref:`peer-to-peer <symmetric-communication>` both the key-store as well as trust-store 
+need to be configured on each node participating in the cluster.
+
+The official `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
+as well as the :ref:`Oracle documentation on creating KeyStore and TrustStores <https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html>`
+are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
+and configuring SSL.
+
+See also a description of the settings in the :ref:`remote-configuration-scala` section.
 
 .. note::
 
