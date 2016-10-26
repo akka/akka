@@ -398,7 +398,7 @@ object Source {
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
    *
-   * See also [[akka.stream.javadsl.Source.queue]].
+   * See also [[akka.stream.scaladsl.Source.queue]].
    *
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
@@ -456,10 +456,10 @@ object Source {
    * there is no space available in the buffer.
    *
    * Acknowledgement mechanism is available.
-   * [[akka.stream.scaladsl.SourceQueue.offer]] returns ``Future[StreamCallbackStatus[Boolean]]`` which completes with `Success(true)`
-   * if element was added to buffer or sent downstream. It completes with `Success(false)` if element was dropped. Can also complete
-   * with [[akka.stream.StreamCallbackStatus.Failure]] - when stream failed or [[akka.stream.StreamCallbackStatus.StreamCompleted]]
-   * when downstream is completed.
+   * [[akka.stream.scaladsl.SourceQueue.offer]] returns `Future[QueueOfferResult]` which completes with
+   * `QueueOfferResult.Enqueued` if element was added to buffer or sent downstream. It completes with
+   * `QueueOfferResult.Dropped` if element was dropped. Can also complete  with `QueueOfferResult.Failure` -
+   * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
    *
    * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete last `offer():Future`
    * call when buffer is full.

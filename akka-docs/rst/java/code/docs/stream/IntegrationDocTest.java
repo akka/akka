@@ -11,6 +11,7 @@ import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
+import akka.util.Timeout;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -20,6 +21,8 @@ import docs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.Option;
+import scala.PartialFunction;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
@@ -27,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import static akka.pattern.PatternsCS.ask;
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
@@ -39,6 +43,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
   static Materializer mat;
+  static ActorRef ref;
 
   @BeforeClass
   public static void setup() {
@@ -54,6 +59,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
     system = ActorSystem.create("ActorPublisherDocTest", config);
     mat = ActorMaterializer.create(system);
+    ref = system.actorOf(Props.create(Translator.class));
   }
 
   @AfterClass
@@ -61,6 +67,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
     JavaTestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
+    ref = null;
   }
 
 
@@ -281,6 +288,40 @@ public class IntegrationDocTest extends AbstractJavaTest {
     }
   }
   //#sometimes-slow-service
+  
+  //#ask-actor
+  static class Translator extends UntypedActor {
+    @Override
+    public void onReceive(Object message) {
+      if (message instanceof String) {
+        String word = (String) message;
+        // ... process message
+        String reply = word.toUpperCase();
+        // reply to the ask
+        getSender().tell(reply, getSelf());
+      } else {
+        unhandled(message);
+      }
+    }
+  }
+  //#ask-actor
+  
+  @SuppressWarnings("unchecked")
+  @Test
+  public void mapAsyncPlusAsk() throws Exception {
+    //#mapAsync-ask
+    Source<String, NotUsed> words =
+      Source.from(Arrays.asList("hello", "hi"));
+    Timeout askTimeout = Timeout.apply(5, TimeUnit.SECONDS);
+    
+    words
+      .mapAsync(5, elem -> ask(ref, elem, askTimeout))
+      .map(elem -> (String) elem)
+      // continue processing of the replies from the actor
+      .map(elem -> elem.toLowerCase())
+      .runWith(Sink.ignore(), mat);
+    //#mapAsync-ask
+  }
 
 
   @Test
