@@ -28,7 +28,7 @@ object TwitterStreamQuickstartDocSpec {
       body.split(" ").collect { case t if t.startsWith("#") => Hashtag(t) }.toSet
   }
 
-  val akka = Hashtag("#akka")
+  val akkaTag = Hashtag("#akka")
   //#model
 
   abstract class TweetSourceDecl {
@@ -76,7 +76,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#authors-filter-map
     val authors: Source[Author, NotUsed] =
       tweets
-        .filter(_.hashtags.contains(akka))
+        .filter(_.hashtags.contains(akkaTag))
         .map(_.author)
     //#first-sample
     //#authors-filter-map
@@ -84,7 +84,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     trait Example3 {
       //#authors-collect
       val authors: Source[Author, NotUsed] =
-        tweets.collect { case t if t.hashtags.contains(akka) => t.author }
+        tweets.collect { case t if t.hashtags.contains(akkaTag) => t.author }
       //#authors-collect
     }
 
@@ -124,7 +124,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
       val bcast = b.add(Broadcast[Tweet](2))
       tweets ~> bcast.in
-      bcast.out(0) ~> Flow[Tweet].map(_.author) ~> writeAuthors 
+      bcast.out(0) ~> Flow[Tweet].map(_.author) ~> writeAuthors
       bcast.out(1) ~> Flow[Tweet].mapConcat(_.hashtags.toList) ~> writeHashtags
       ClosedShape
     })
@@ -192,7 +192,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     val sumSink = Sink.fold[Int, Int](0)(_ + _)
     val counterRunnableGraph: RunnableGraph[Future[Int]] =
       tweetsInMinuteFromNow
-        .filter(_.hashtags contains akka)
+        .filter(_.hashtags contains akkaTag)
         .map(t => 1)
         .toMat(sumSink)(Keep.right)
 

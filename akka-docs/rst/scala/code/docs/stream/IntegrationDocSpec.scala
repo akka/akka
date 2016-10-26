@@ -15,7 +15,6 @@ import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.Props
-import akka.pattern.ask
 import akka.util.Timeout
 import akka.stream.Attributes
 import akka.stream.ActorAttributes
@@ -24,6 +23,7 @@ import akka.stream.ActorMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger
 import akka.stream.Supervision
 import akka.stream.scaladsl.Flow
+import akka.Done
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -120,6 +120,17 @@ object IntegrationDocSpec {
   }
   //#sometimes-slow-service
 
+  //#ask-actor
+  class Translator extends Actor {
+    def receive = {
+      case word: String =>
+        // ... process message
+        val reply = word.toUpperCase
+        sender() ! reply // reply to the ask
+    }
+  }
+  //#ask-actor
+
 }
 
 class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
@@ -127,6 +138,22 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import IntegrationDocSpec._
 
   implicit val materializer = ActorMaterializer()
+  val ref: ActorRef = system.actorOf(Props[Translator])
+
+  "mapAsync + ask" in {
+    //#mapAsync-ask
+    import akka.pattern.ask
+    implicit val askTimeout = Timeout(5.seconds)
+    val words: Source[String, NotUsed] =
+      Source(List("hello", "hi"))
+
+    words
+      .mapAsync(parallelism = 5)(elem => (ref ? elem).mapTo[String])
+      // continue processing of the replies from the actor
+      .map(_.toLowerCase)
+      .runWith(Sink.ignore)
+    //#mapAsync-ask
+  }
 
   "calling external service with mapAsync" in {
     val probe = TestProbe()
@@ -136,7 +163,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#tweet-authors
     val authors: Source[Author, NotUsed] =
       tweets
-        .filter(_.hashtags.contains(akka))
+        .filter(_.hashtags.contains(akkaTag))
         .map(_.author)
     //#tweet-authors
 
@@ -171,7 +198,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   "lookup email with mapAsync and supervision" in {
     val addressSystem = new AddressSystem2
     val authors: Source[Author, NotUsed] =
-      tweets.filter(_.hashtags.contains(akka)).map(_.author)
+      tweets.filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     //#email-addresses-mapAsync-supervision
     import ActorAttributes.supervisionStrategy
@@ -191,7 +218,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     //#external-service-mapAsyncUnordered
     val authors: Source[Author, NotUsed] =
-      tweets.filter(_.hashtags.contains(akka)).map(_.author)
+      tweets.filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     val emailAddresses: Source[String, NotUsed] =
       authors
@@ -224,7 +251,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val addressSystem = new AddressSystem
     val smsServer = new SmsServer(probe.ref)
 
-    val authors = tweets.filter(_.hashtags.contains(akka)).map(_.author)
+    val authors = tweets.filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     val phoneNumbers =
       authors.mapAsync(4)(author => addressSystem.lookupPhoneNumber(author.handle))
@@ -261,7 +288,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val addressSystem = new AddressSystem
     val smsServer = new SmsServer(probe.ref)
 
-    val authors = tweets.filter(_.hashtags.contains(akka)).map(_.author)
+    val authors = tweets.filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     val phoneNumbers =
       authors.mapAsync(4)(author => addressSystem.lookupPhoneNumber(author.handle))
@@ -293,7 +320,9 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val database = system.actorOf(Props(classOf[DatabaseService], probe.ref), "db")
 
     //#save-tweets
-    val akkaTweets: Source[Tweet, NotUsed] = tweets.filter(_.hashtags.contains(akka))
+    import akka.pattern.ask
+
+    val akkaTweets: Source[Tweet, NotUsed] = tweets.filter(_.hashtags.contains(akkaTag))
 
     implicit val timeout = Timeout(3.seconds)
     val saveTweets: RunnableGraph[NotUsed] =
