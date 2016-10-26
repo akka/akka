@@ -1,7 +1,7 @@
 <a id="host-level-api-java"></a>
 # Host-Level Client-Side API
 
-As opposed to the @ref[Connection-Level Client-Side API](../../../scala/http/client-side/connection-level.md#connection-level-api) the host-level API relieves you from manually managing individual HTTP
+As opposed to the @ref[Connection-Level Client-Side API](../client-side/connection-level.md#connection-level-api-java) the host-level API relieves you from manually managing individual HTTP
 connections. It autonomously manages a configurable pool of connections to *one particular target endpoint* (i.e.
 host/port combination).
 

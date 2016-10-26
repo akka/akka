@@ -88,8 +88,8 @@ The method signatures should make their semantics relatively clear.
 
 ## Using Unmarshallers
 
-In many places throughput Akka HTTP unmarshallers are used implicitly, e.g. when you want to access the @ref[entity](../../../scala/http/routing-dsl/directives/marshalling-directives/entity.md#entity)
-of a request using the @ref[Routing DSL](../../../scala/http/routing-dsl/index.md#http-high-level-server-side-api).
+In many places throughput Akka HTTP unmarshallers are used implicitly, e.g. when you want to access the @ref[entity](../routing-dsl/directives/marshalling-directives/entity.md#entity-java)
+of a request using the @ref[Routing DSL](../routing-dsl/index.md#http-high-level-server-side-api-java).
 
 However, you can also use the unmarshalling infrastructure directly if you wish, which can be useful for example in tests.
 The best entry point for this is the `akka.http.scaladsl.unmarshalling.Unmarshal` object, which you can use like this:

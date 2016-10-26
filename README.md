@@ -19,9 +19,10 @@ Learn more at [akka.io](http://akka.io/).
 Documentation
 -------------
 
-The documentation is available at [doc.akka.io](http://doc.akka.io),
-for [Scala](http://doc.akka.io/docs/akka/current/scala/http/) and
-[Java](http://doc.akka.io/docs/akka/current/java/http/).
+The documentation is available at
+[doc.akka.io](http://doc.akka.io/docs/akka-http/current/), for
+[Scala](http://doc.akka.io/docs/akka-http/current/scala/http/) and
+[Java](http://doc.akka.io/docs/akka-http/current/java/http/).
 
 
 Community

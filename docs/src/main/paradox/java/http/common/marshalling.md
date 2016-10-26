@@ -127,8 +127,8 @@ depend on one being available implicitly at the usage site.
 
 ## Using Marshallers
 
-In many places throughput Akka HTTP marshallers are used implicitly, e.g. when you define how to @ref[complete](../../../scala/http/routing-dsl/directives/route-directives/complete.md#complete) a
-request using the @ref[Routing DSL](../../../scala/http/routing-dsl/index.md#http-high-level-server-side-api).
+In many places throughput Akka HTTP marshallers are used implicitly, e.g. when you define how to @ref[complete](../routing-dsl/directives/route-directives/complete.md#complete) a
+request using the @ref[Routing DSL](../routing-dsl/index.md#http-high-level-server-side-api-java).
 
 However, you can also use the marshalling infrastructure directly if you wish, which can be useful for example in tests.
 The best entry point for this is the `akka.http.scaladsl.marshalling.Marshal` object, which you can use like this:
