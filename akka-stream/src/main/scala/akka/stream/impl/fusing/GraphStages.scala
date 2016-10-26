@@ -329,6 +329,42 @@ object GraphStages {
   }
 
   /**
+   * INTERNAL API
+   * Discards all received elements.
+   */
+  object IgnoreSink extends GraphStageWithMaterializedValue[SinkShape[Any], Future[Done]] {
+
+    val in = Inlet[Any]("Ignore.in")
+    val shape = SinkShape(in)
+
+    override def initialAttributes = DefaultAttributes.ignoreSink
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+      val promise = Promise[Done]()
+      val logic = new GraphStageLogic(shape) with InHandler {
+
+        override def preStart(): Unit = pull(in)
+        override def onPush(): Unit = pull(in)
+
+        override def onUpstreamFinish(): Unit = {
+          super.onUpstreamFinish()
+          promise.trySuccess(Done)
+        }
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          super.onUpstreamFailure(ex)
+          promise.tryFailure(ex)
+        }
+
+        setHandler(in, this)
+      }
+
+      (logic, promise.future)
+    }
+
+  }
+
+  /**
    * INTERNAL API.
    *
    * Fusing graphs that have cycles involving FanIn stages might lead to deadlocks if
