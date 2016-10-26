@@ -332,7 +332,7 @@ object GraphStages {
    * INTERNAL API
    * Discards all received elements.
    */
-  lazy val IgnoreSink = new GraphStageWithMaterializedValue[SinkShape[Any], Future[Done]] {
+  object IgnoreSink extends GraphStageWithMaterializedValue[SinkShape[Any], Future[Done]] {
 
     val in = Inlet[Any]("Ignore.in")
     val shape = SinkShape(in)
