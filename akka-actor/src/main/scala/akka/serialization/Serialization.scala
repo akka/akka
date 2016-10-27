@@ -6,16 +6,19 @@ package akka.serialization
 
 import com.typesafe.config.Config
 import akka.actor._
-import akka.event.Logging
+import akka.event.{ LogMarker, Logging }
 import java.util.concurrent.ConcurrentHashMap
+
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
-import scala.util.{ Try, DynamicVariable, Failure }
+
+import scala.util.{ DynamicVariable, Failure, Try }
 import scala.collection.immutable
 import scala.util.control.NonFatal
 import scala.util.Success
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
 import java.util.NoSuchElementException
 
@@ -94,7 +97,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   import Serialization._
 
   val settings = new Settings(system.settings.config)
-  val log = Logging(system, getClass.getName)
+  val log = Logging.withMarker(system, getClass.getName)
   private val manifestCache = new AtomicReference[Map[String, Option[Class[_]]]](Map.empty[String, Option[Class[_]]])
 
   /**
@@ -223,13 +226,13 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
             throw new NotSerializableException("No configured serialization-bindings for class [%s]" format clazz.getName)
           case possibilities ⇒
             if (!unique(possibilities))
-              log.warning("Multiple serializers found for " + clazz + ", choosing first: " + possibilities)
+              log.warning(LogMarker.Security, "Multiple serializers found for " + clazz + ", choosing first: " + possibilities)
             possibilities(0)._2
         }
         serializerMap.putIfAbsent(clazz, ser) match {
           case null ⇒
             if (shouldWarnAboutJavaSerializer(clazz, ser)) {
-              log.warning("Using the default Java serializer for class [{}] which is not recommended because of " +
+              log.warning(LogMarker.Security, "Using the default Java serializer for class [{}] which is not recommended because of " +
                 "performance implications. Use another serializer or disable this warning using the setting " +
                 "'akka.actor.warn-about-java-serializer-usage'", clazz.getName)
             }

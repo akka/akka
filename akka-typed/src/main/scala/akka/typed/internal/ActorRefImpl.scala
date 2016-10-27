@@ -196,7 +196,7 @@ private[typed] object FutureRef {
     // On Scala 2.12, the field's name is exactly "_target" (and it's private), earlier Scala versions compile the val to a public field that's name mangled to "akka$typed$internal$FutureRef$$_target"
     val targetField = fields.find(_.getName.endsWith("_target"))
     assert(targetField.nonEmpty, s"Could not find _target field in FutureRef class among fields $fields.")
-    
+
     unsafe.objectFieldOffset(targetField.get)
   }
 }

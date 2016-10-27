@@ -13,11 +13,10 @@ import akka.actor.LocalRef
 import akka.actor.PossiblyHarmful
 import akka.actor.RepointableRef
 import akka.dispatch.sysmsg.SystemMessage
-import akka.event.Logging
+import akka.event.{ LogMarker, Logging, LoggingReceive }
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteRef
 import akka.util.OptionVal
-import akka.event.LoggingReceive
 
 /**
  * INTERNAL API
@@ -27,7 +26,7 @@ private[remote] class MessageDispatcher(
   provider: RemoteActorRefProvider) {
 
   private val remoteDaemon = provider.remoteDaemon
-  private val log = Logging(system, getClass.getName)
+  private val log = Logging.withMarker(system, getClass.getName)
   private val debugLogEnabled = log.isDebugEnabled
 
   def dispatch(
@@ -47,6 +46,7 @@ private[remote] class MessageDispatcher(
       case `remoteDaemon` ⇒
         if (UntrustedMode) {
           if (debugLogEnabled) log.debug(
+            LogMarker.Security,
             "dropping daemon message [{}] in untrusted mode",
             messageClassName(message))
         } else {
@@ -65,6 +65,7 @@ private[remote] class MessageDispatcher(
             if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
               sel.msg.isInstanceOf[PossiblyHarmful] || l != provider.rootGuardian)) {
               if (debugLogEnabled) log.debug(
+                LogMarker.Security,
                 "operating in UntrustedMode, dropping inbound actor selection to [{}], " +
                   "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
                 sel.elements.mkString("/", "/", ""))
@@ -73,6 +74,7 @@ private[remote] class MessageDispatcher(
               ActorSelection.deliverSelection(l, sender, sel)
           case msg: PossiblyHarmful if UntrustedMode ⇒
             if (debugLogEnabled) log.debug(
+              LogMarker.Security,
               "operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}] to [{}] from [{}]",
               messageClassName(msg), recipient, senderOption.getOrElse(originAddress.getOrElse("")))
           case msg: SystemMessage ⇒ l.sendSystemMessage(msg)

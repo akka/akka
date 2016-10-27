@@ -4,6 +4,7 @@
 package akka.remote.transport
 
 import java.util.concurrent.TimeoutException
+
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.pattern.pipe
@@ -16,13 +17,15 @@ import akka.remote.transport.ProtocolStateActor._
 import akka.remote.transport.Transport._
 import akka.util.ByteString
 import akka.util.Helpers.Requiring
-import akka.{ OnlyCauseStackTrace, AkkaException }
+import akka.{ AkkaException, OnlyCauseStackTrace }
 import com.typesafe.config.Config
+
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.event.{ LogMarker, Logging }
 
 @SerialVersionUID(1L)
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
@@ -290,6 +293,8 @@ private[transport] class ProtocolStateActor(
   extends Actor with FSM[AssociationState, ProtocolStateData]
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
+  private val markerLog = Logging.withMarker(this)
+
   import ProtocolStateActor._
   import context.dispatcher
 
@@ -421,7 +426,7 @@ private[transport] class ProtocolStateActor(
                 s"Association attempt with mismatching cookie from [{}]. Expected [{}] but received [{}].",
                 info.origin, localHandshakeInfo.cookie.getOrElse(""), info.cookie.getOrElse(""))
             else
-              log.warning(s"Association attempt with mismatching cookie from [{}].", info.origin)
+              markerLog.warning(LogMarker.Security, s"Association attempt with mismatching cookie from [{}].", info.origin)
             stop()
           }
 

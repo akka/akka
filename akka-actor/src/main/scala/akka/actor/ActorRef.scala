@@ -7,13 +7,15 @@ package akka.actor
 import scala.collection.immutable
 import akka.dispatch._
 import akka.dispatch.sysmsg._
-import java.lang.{ UnsupportedOperationException, IllegalStateException }
-import akka.serialization.{ Serialization, JavaSerializer }
-import akka.event.EventStream
+import java.lang.{ IllegalStateException, UnsupportedOperationException }
+
+import akka.serialization.{ JavaSerializer, Serialization }
+import akka.event.{ EventStream, Logging, LoggingAdapter, MarkerLoggingAdapter }
+
 import scala.annotation.tailrec
 import java.util.concurrent.ConcurrentHashMap
-import akka.event.{ Logging, LoggingAdapter }
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.util.control.NonFatal
 
 object ActorRef {
@@ -606,7 +608,7 @@ private[akka] class VirtualPathContainer(
   override val provider:  ActorRefProvider,
   override val path:      ActorPath,
   override val getParent: InternalActorRef,
-  val log:                LoggingAdapter) extends MinimalActorRef {
+  val log:                MarkerLoggingAdapter) extends MinimalActorRef {
 
   private val children = new ConcurrentHashMap[String, InternalActorRef]
 

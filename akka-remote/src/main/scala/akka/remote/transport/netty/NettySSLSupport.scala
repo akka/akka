@@ -5,15 +5,17 @@
 package akka.remote.transport.netty
 
 import akka.ConfigurationException
-import akka.event.LoggingAdapter
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.Util._
 import akka.remote.RemoteTransportException
 import akka.remote.security.provider.AkkaProvider
 import com.typesafe.config.Config
-import java.io.{ IOException, FileNotFoundException, FileInputStream }
+import java.io.{ FileInputStream, FileNotFoundException, IOException }
 import java.security._
-import javax.net.ssl.{ KeyManagerFactory, TrustManager, TrustManagerFactory, SSLContext }
+import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManager, TrustManagerFactory }
+
 import org.jboss.netty.handler.ssl.SslHandler
+
 import scala.util.Try
 
 /**
@@ -48,20 +50,20 @@ private[akka] object NettySSLSupport {
   /**
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
    */
-  def apply(settings: SSLSettings, log: LoggingAdapter, isClient: Boolean): SslHandler =
+  def apply(settings: SSLSettings, log: MarkerLoggingAdapter, isClient: Boolean): SslHandler =
     if (isClient) initializeClientSSL(settings, log) else initializeServerSSL(settings, log)
 
-  def initializeCustomSecureRandom(rngName: String, log: LoggingAdapter): SecureRandom = {
+  def initializeCustomSecureRandom(rngName: String, log: MarkerLoggingAdapter): SecureRandom = {
     val rng = rngName match {
       case r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG") ⇒
         log.debug("SSL random number generator set to: {}", r)
         SecureRandom.getInstance(r, AkkaProvider)
       case r @ ("AES128CounterInetRNG" | "AES256CounterInetRNG") ⇒
-        log.warning("SSL random number generator {} is deprecated, " +
+        log.warning(LogMarker.Security, "SSL random number generator {} is deprecated, " +
           "use AES128CounterSecureRNG or AES256CounterSecureRNG instead", r)
         SecureRandom.getInstance(r, AkkaProvider)
       case s @ ("SHA1PRNG" | "NativePRNG") ⇒
-        log.debug("SSL random number generator set to: " + s)
+        log.debug("SSL random number generator set to: {}", s)
         // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
         // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
         SecureRandom.getInstance(s)
@@ -71,17 +73,17 @@ private[akka] object NettySSLSupport {
         new SecureRandom
 
       case unknown ⇒
-        log.warning("Unknown SSLRandomNumberGenerator [{}] falling back to SecureRandom", unknown)
+        log.warning(LogMarker.Security, "Unknown SSLRandomNumberGenerator [{}] falling back to SecureRandom", unknown)
         new SecureRandom
     }
     rng.nextInt() // prevent stall on first access
     rng
   }
 
-  def initializeClientSSL(settings: SSLSettings, log: LoggingAdapter): SslHandler = {
+  def initializeClientSSL(settings: SSLSettings, log: MarkerLoggingAdapter): SslHandler = {
     log.debug("Client SSL is enabled, initialising ...")
 
-    def constructClientContext(settings: SSLSettings, log: LoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] =
+    def constructClientContext(settings: SSLSettings, log: MarkerLoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] =
       try {
         val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, log)
         val trustManagers: Array[TrustManager] = {
@@ -114,17 +116,16 @@ private[akka] object NettySSLSupport {
       case None ⇒
         throw new GeneralSecurityException(
           """Failed to initialize client SSL because SSL context could not be found." +
-              "Make sure your settings are correct: [trust-store: %s] [trust-store-password: %s] [protocol: %s]""".format(
+                "Make sure your settings are correct: [trust-store: %s] [protocol: %s]""".format(
             settings.SSLTrustStore,
-            settings.SSLTrustStorePassword,
             settings.SSLProtocol))
     }
   }
 
-  def initializeServerSSL(settings: SSLSettings, log: LoggingAdapter): SslHandler = {
+  def initializeServerSSL(settings: SSLSettings, log: MarkerLoggingAdapter): SslHandler = {
     log.debug("Server SSL is enabled, initialising ...")
 
-    def constructServerContext(settings: SSLSettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, keyPassword: String, protocol: String): Option[SSLContext] =
+    def constructServerContext(settings: SSLSettings, log: MarkerLoggingAdapter, keyStorePath: String, keyStorePassword: String, keyPassword: String, protocol: String): Option[SSLContext] =
       try {
         val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, log)
         val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
@@ -162,7 +163,7 @@ private[akka] object NettySSLSupport {
         new SslHandler(sslEngine)
       case None ⇒ throw new GeneralSecurityException(
         """Failed to initialize server SSL because SSL context could not be found.
-           Make sure your settings are correct: [key-store: %s] [key-store-password: %s] [protocol: %s]""".format(
+             Make sure your settings are correct: [key-store: %s] [key-store-password: %s] [protocol: %s]""".format(
           settings.SSLKeyStore,
           settings.SSLKeyStorePassword,
           settings.SSLProtocol))

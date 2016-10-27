@@ -537,7 +537,7 @@ private[akka] class ActorSystemImpl(
           case _ ⇒
             if (settings.JvmExitOnFatalError) {
               try {
-                log.error(cause, "Uncaught error from thread [{}] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled", thread.getName)
+                markerLogging.error(LogMarker.Security, cause, "Uncaught error from thread [{}] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled", thread.getName)
                 import System.err
                 err.print("Uncaught error from thread [")
                 err.print(thread.getName)
@@ -550,7 +550,7 @@ private[akka] class ActorSystemImpl(
                 System.exit(-1)
               }
             } else {
-              log.error(cause, "Uncaught fatal error from thread [{}] shutting down ActorSystem [{}]", thread.getName, name)
+              markerLogging.error(LogMarker.Security, cause, "Uncaught fatal error from thread [{}] shutting down ActorSystem [{}]", thread.getName, name)
               terminate()
             }
         }
@@ -605,7 +605,8 @@ private[akka] class ActorSystemImpl(
     dynamicAccess.createInstanceFor[LoggingFilter](LoggingFilter, arguments).get
   }
 
-  val log: LoggingAdapter = new BusLogging(eventStream, getClass.getName + "(" + name + ")", this.getClass, logFilter)
+  private[this] val markerLogging = new MarkerLoggingAdapter(eventStream, getClass.getName + "(" + name + ")", this.getClass, logFilter)
+  val log: LoggingAdapter = markerLogging
 
   val scheduler: Scheduler = createScheduler()
 

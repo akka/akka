@@ -5,7 +5,6 @@ import java.security.SecureRandom
 import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import scala.collection.immutable
 import scala.concurrent.Await
