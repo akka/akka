@@ -55,11 +55,15 @@ object PersistenceQueryDocSpec {
       config.getDuration("refresh-interval", MILLISECONDS).millis
 
     override def eventsByTag(
-      tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] = offset match {
+      tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope2, NotUsed] = offset match {
       case Sequence(offsetValue) ⇒
         val props = MyEventsByTagPublisher.props(tag, offsetValue, refreshInterval)
         Source.actorPublisher[EventEnvelope](props)
           .mapMaterializedValue(_ => NotUsed)
+          .map {
+            case EventEnvelope(offset, id, seqNr, event) =>
+              EventEnvelope2(Sequence(offset), id, seqNr, event)
+          }
       case _ ⇒
         throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
     }
@@ -100,7 +104,7 @@ object PersistenceQueryDocSpec {
     with akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
 
     override def eventsByTag(
-      tag: String, offset: Offset = Sequence(0L)): javadsl.Source[EventEnvelope, NotUsed] =
+      tag: String, offset: Offset = Sequence(0L)): javadsl.Source[EventEnvelope2, NotUsed] =
       scaladslReadJournal.eventsByTag(tag, offset).asJava
 
     override def eventsByPersistenceId(
@@ -225,7 +229,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:
 
-    val blueThings: Source[EventEnvelope, NotUsed] =
+    val blueThings: Source[EventEnvelope2, NotUsed] =
       readJournal.eventsByTag("blue")
 
     // find top 10 blue things:
@@ -262,7 +266,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
 
   //#projection-into-different-store
   class MyResumableProjection(name: String) {
-    def saveProgress(offset: Long): Future[Long] = ???
+    def saveProgress(offset: Offset): Future[Long] = ???
     def latestOffset: Future[Long] = ???
   }
   //#projection-into-different-store

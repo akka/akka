@@ -102,11 +102,11 @@ public class PersistenceQueryDocTest {
     }
 
     @Override
-    public Source<EventEnvelope, NotUsed> eventsByTag(String tag, Offset offset) {
+    public Source<EventEnvelope2, NotUsed> eventsByTag(String tag, Offset offset) {
       if(offset instanceof Sequence){
         Sequence sequenceOffset = (Sequence) offset;
         final Props props = MyEventsByTagPublisher.props(tag, sequenceOffset.value(), refreshInterval);
-        return Source.<EventEnvelope>actorPublisher(props).
+        return Source.<EventEnvelope2>actorPublisher(props).
           mapMaterializedValue(m -> NotUsed.getInstance());
       }
       else
@@ -160,7 +160,7 @@ public class PersistenceQueryDocTest {
     }
 
     @Override
-    public akka.stream.scaladsl.Source<EventEnvelope, NotUsed> eventsByTag(
+    public akka.stream.scaladsl.Source<EventEnvelope2, NotUsed> eventsByTag(
         String tag, akka.persistence.query.Offset offset) {
       return javadslReadJournal.eventsByTag(tag, offset).asScala();
     }
@@ -256,7 +256,7 @@ public class PersistenceQueryDocTest {
 
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:
-    final Source<EventEnvelope, NotUsed> blueThings =
+    final Source<EventEnvelope2, NotUsed> blueThings =
       readJournal.eventsByTag("blue", new Sequence(0L));
 
     // find top 10 blue things:
@@ -270,7 +270,7 @@ public class PersistenceQueryDocTest {
         }, mat);
 
     // start another query, from the known offset
-    Source<EventEnvelope, NotUsed> blue = readJournal.eventsByTag("blue", new Sequence(10));
+    Source<EventEnvelope2, NotUsed> blue = readJournal.eventsByTag("blue", new Sequence(10));
     //#events-by-tag
   }
 
@@ -371,7 +371,7 @@ public class PersistenceQueryDocTest {
       this.name = name;
     }
 
-    public CompletionStage<Long> saveProgress(long offset) {
+    public CompletionStage<Long> saveProgress(Offset offset) {
       // ...
       //#projection-into-different-store
       return null;
