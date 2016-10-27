@@ -36,7 +36,11 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(NoPublish)
+  .enablePlugins(UnidocRoot, NoPublish)
+  .settings(
+    // Unidoc doesn't like macros
+    unidocProjectExcludes := Seq(parsing)
+  )
   .aggregate(
     parsing,
     httpCore,

@@ -31,7 +31,30 @@ object Scaladoc extends AutoPlugin {
       scalacOptions in Compile <++= (version, baseDirectory in ThisBuild) map scaladocOptions,
       autoAPIMappings := CliOptions.scaladocAutoAPI.get
     )) ++
-    Seq(validateDiagrams in Compile := true) ++
+    Seq(
+      validateDiagrams in Compile := true,
+      apiMappings ++= {
+        // Based on https://github.com/ThoughtWorksInc/sbt-api-mappings
+        val IvyRegex = """^.*[/\\]([\.\-_\w]+)[/\\]([\.\-_\w]+)[/\\](?:jars|bundles)[/\\]([\.\-_\w]+)\.jar$""".r
+
+        for {
+          jar <- (dependencyClasspath in Compile in doc).value.toSet ++ (dependencyClasspath in Test in doc).value
+          fullyFile = jar.data
+          url <- fullyFile.getCanonicalPath match {
+            case IvyRegex(organization, name, jarBaseFile) if jarBaseFile.startsWith(s"$name-") => {
+              val version = jarBaseFile.substring(name.length + 1, jarBaseFile.length)
+              organization match {
+                case "com.typesafe.akka" =>
+                  Some(url(s"http://doc.akka.io/api/akka/$version/"))
+                case _ =>
+                  None
+              }
+            }
+            case _ => None
+          }
+        } yield fullyFile -> url
+      }.toMap
+    ) ++
     CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {
       val docs = (doc in Compile).value
       if ((validateDiagrams in Compile).value)
@@ -90,4 +113,57 @@ object ScaladocNoVerificationOfDiagrams extends AutoPlugin {
   override lazy val projectSettings = Seq(
     Scaladoc.validateDiagrams in Compile := false
   )
+}
+
+/**
+ * Unidoc settings for root project. Adds unidoc command.
+ */
+object UnidocRoot extends AutoPlugin {
+
+  object autoImport {
+    val unidocProjectExcludes = settingKey[Seq[ProjectReference]]("Excluded unidoc projects")
+  }
+  import autoImport._
+
+  object CliOptions {
+    val genjavadocEnabled = CliOption("akka.genjavadoc.enabled", false)
+  }
+
+  override def trigger = noTrigger
+
+  val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
+    javacOptions in (JavaUnidoc, unidoc) ++= Seq("-Xdoclint:none"),
+    // genjavadoc needs to generate synthetic methods since the java code uses them
+    scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
+    // FIXME: see #18056
+    sources in(JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
+  )).getOrElse(Nil)
+
+  val settings = inTask(unidoc)(Seq(
+    unidocProjectFilter in ScalaUnidoc := inAnyProject -- inProjects(unidocProjectExcludes.value: _*),
+    unidocProjectFilter in JavaUnidoc := inAnyProject -- inProjects(unidocProjectExcludes.value: _*)
+  ))
+
+  override lazy val projectSettings =
+    CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++
+    settings ++
+    akkaSettings
+}
+
+/**
+ * Unidoc settings for every multi-project. Adds genjavadoc specific settings.
+ */
+object Unidoc extends AutoPlugin {
+
+  override def trigger = allRequirements
+  override def requires = plugins.JvmPlugin
+
+  override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
+    genjavadocExtraSettings ++ Seq(
+      scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
+      unidocGenjavadocVersion in Global := "0.10",
+      // FIXME: see #18056
+      sources in(Genjavadoc, doc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
+    )
+  ).getOrElse(Seq.empty)
 }

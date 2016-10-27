@@ -13,13 +13,13 @@ import scala.compat.java8.FutureConverters._
  */
 class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBinding) {
   /**
-   * The local address of the endpoint bound by the materialization of the `connections` [[Source]].
+   * The local address of the endpoint bound by the materialization of the `connections` [[akka.stream.javadsl.Source]].
    */
   def localAddress: InetSocketAddress = delegate.localAddress
 
   /**
    * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
-   * [[Source]]
+   * [[akka.stream.javadsl.Source]]
    *
    * The produced [[java.util.concurrent.CompletionStage]] is fulfilled when the unbinding has been completed.
    */

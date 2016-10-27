@@ -19,7 +19,11 @@ object Publish extends AutoPlugin {
     publishMavenStyle := true,
     pomIncludeRepository := { x => false },
     defaultPublishTo := crossTarget.value / "repository",
-    releasePublishArtifactsAction := PgpKeys.publishSigned.value
+    releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+    apiURL := {
+      val apiVersion = if (isSnapshot.value) "current" else version.value
+      Some(url(s"http://doc.akka.io/api/akka-http/$apiVersion/"))
+    }
   )
 
   private def akkaPublishTo = Def.setting {

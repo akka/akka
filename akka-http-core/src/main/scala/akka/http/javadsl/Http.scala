@@ -45,14 +45,14 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   private lazy val delegate = akka.http.scaladsl.Http(system)
 
   /**
-   * Constructs a server layer stage using the configured default [[akka.http.javadsl.settings.ServerSettings]]. The returned [[BidiFlow]] isn't
+   * Constructs a server layer stage using the configured default [[akka.http.javadsl.settings.ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't
    * reusable and can only be materialized once.
    */
   def serverLayer(materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
     adaptServerLayer(delegate.serverLayer()(materializer))
 
   /**
-   * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
+   * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't reusable and
    * can only be materialized once.
    */
   def serverLayer(
@@ -61,7 +61,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptServerLayer(delegate.serverLayer(settings.asScala)(materializer))
 
   /**
-   * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
+   * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't reusable and
    * can only be materialized once. The `remoteAddress`, if provided, will be added as a header to each [[HttpRequest]]
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
@@ -72,7 +72,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala)(materializer))
 
   /**
-   * Constructs a server layer stage using the given [[ServerSettings]]. The returned [[BidiFlow]] isn't reusable and
+   * Constructs a server layer stage using the given [[ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't reusable and
    * can only be materialized once. The remoteAddress, if provided, will be added as a header to each [[HttpRequest]]
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
@@ -84,7 +84,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala, log)(materializer))
 
   /**
-   * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
+   * Creates a [[akka.stream.javadsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
    *
    * If the given port is 0 the resulting source can be materialized several times. Each materialization will
@@ -106,7 +106,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   }
 
   /**
-   * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
+   * Creates a [[akka.stream.javadsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
    *
    * If the given port is 0 the resulting source can be materialized several times. Each materialization will
@@ -131,7 +131,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   }
 
   /**
-   * Creates a [[Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
+   * Creates a [[akka.stream.javadsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
    *
    * If the given port is 0 the resulting source can be materialized several times. Each materialization will
@@ -158,7 +158,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[Flow]] for processing all incoming connections.
+   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
@@ -179,7 +179,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[Flow]] for processing all incoming connections.
+   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
@@ -202,7 +202,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[Flow]] for processing all incoming connections.
+   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
@@ -221,7 +221,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[Flow]] for processing all incoming connections.
+   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
@@ -244,7 +244,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[Flow]] for processing all incoming connections.
+   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
@@ -263,7 +263,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[Flow]] for processing all incoming connections.
+   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting.
@@ -308,7 +308,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptClientLayer(delegate.clientLayer(JavaMapping.toScala(hostHeader), settings.asScala, log))
 
   /**
-   * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
+   * Creates a [[akka.stream.javadsl.Flow]] representing a prospective HTTP client connection to the given endpoint.
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
    *
    * If the hostname is given with an `https://` prefix, the default [[HttpsConnectionContext]] will be used.
@@ -317,7 +317,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     outgoingConnection(ConnectHttp.toHost(host))
 
   /**
-   * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
+   * Creates a [[akka.stream.javadsl.Flow]] representing a prospective HTTP client connection to the given endpoint.
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
    *
    * Use the [[ConnectHttp]] DSL to configure target host and whether HTTPS should be used.
@@ -329,7 +329,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     }
 
   /**
-   * Creates a [[Flow]] representing a prospective HTTP client connection to the given endpoint.
+   * Creates a [[akka.stream.javadsl.Flow]] representing a prospective HTTP client connection to the given endpoint.
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
    */
   def outgoingConnection(
@@ -345,7 +345,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     }
 
   /**
-   * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
+   * Starts a new connection pool to the given host and configuration and returns a [[akka.stream.javadsl.Flow]] which dispatches
    * the requests from all its materializations across this pool.
    * While the started host connection pool internally shuts itself down automatically after the configured idle
    * timeout it will spin itself up again if more requests arrive from an existing or a new client flow
@@ -362,7 +362,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     newHostConnectionPool[T](ConnectHttp.toHost(host), materializer)
 
   /**
-   * Starts a new connection pool to the given host and configuration and returns a [[Flow]] which dispatches
+   * Starts a new connection pool to the given host and configuration and returns a [[akka.stream.javadsl.Flow]] which dispatches
    * the requests from all its materializations across this pool.
    * While the started host connection pool internally shuts itself down automatically after the configured idle
    * timeout it will spin itself up again if more requests arrive from an existing or a new client flow
@@ -399,11 +399,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     }
 
   /**
-   * Returns a [[Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
+   * Returns a [[akka.stream.javadsl.Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
    * HTTP connections to the given target host endpoint. For every ActorSystem, target host and pool
    * configuration a separate connection pool is maintained.
    * The HTTP layer transparently manages idle shutdown and restarting of connections pools as configured.
-   * The returned [[Flow]] instances therefore remain valid throughout the lifetime of the application.
+   * The returned [[akka.stream.javadsl.Flow]] instances therefore remain valid throughout the lifetime of the application.
    *
    * The internal caching logic guarantees that there will never be more than a single pool running for the
    * given target host endpoint and configuration (in this ActorSystem).
@@ -419,11 +419,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     cachedHostConnectionPool(ConnectHttp.toHost(host), materializer)
 
   /**
-   * Returns a [[Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
+   * Returns a [[akka.stream.javadsl.Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
    * HTTP connections to the given target host endpoint. For every ActorSystem, target host and pool
    * configuration a separate connection pool is maintained.
    * The HTTP layer transparently manages idle shutdown and restarting of connections pools as configured.
-   * The returned [[Flow]] instances therefore remain valid throughout the lifetime of the application.
+   * The returned [[akka.stream.javadsl.Flow]] instances therefore remain valid throughout the lifetime of the application.
    *
    * The internal caching logic guarantees that there will never be more than a single pool running for the
    * given target host endpoint and configuration (in this ActorSystem).
@@ -547,7 +547,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     delegate.singleRequest(request.asScala, connectionContext.asScala, settings.asScala, log)(materializer).toJava
 
   /**
-   * Constructs a WebSocket [[BidiFlow]].
+   * Constructs a WebSocket [[akka.stream.javadsl.BidiFlow]].
    *
    * The layer is not reusable and must only be materialized once.
    */
@@ -555,7 +555,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptWsBidiFlow(delegate.webSocketClientLayer(request.asScala))
 
   /**
-   * Constructs a WebSocket [[BidiFlow]] using the configured default [[ClientConnectionSettings]],
+   * Constructs a WebSocket [[akka.stream.javadsl.BidiFlow]] using the configured default [[ClientConnectionSettings]],
    * configured using the `akka.http.client` config section.
    *
    * The layer is not reusable and must only be materialized once.
@@ -566,7 +566,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptWsBidiFlow(delegate.webSocketClientLayer(request.asScala, settings.asScala))
 
   /**
-   * Constructs a WebSocket [[BidiFlow]] using the configured default [[ClientConnectionSettings]],
+   * Constructs a WebSocket [[akka.stream.javadsl.BidiFlow]] using the configured default [[ClientConnectionSettings]],
    * configured using the `akka.http.client` config section.
    *
    * The layer is not reusable and must only be materialized once.
@@ -659,7 +659,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     }
 
   /**
-   * Triggers an orderly shutdown of all host connections pools currently maintained by the [[ActorSystem]].
+   * Triggers an orderly shutdown of all host connections pools currently maintained by the [[akka.actor.ActorSystem]].
    * The returned future is completed when all pools that were live at the time of this method call
    * have completed their shutdown process.
    *

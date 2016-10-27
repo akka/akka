@@ -105,8 +105,17 @@ sealed trait Multipart extends jm.Multipart {
   def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[_ <: jm.Multipart.Strict] =
     toStrict(FiniteDuration(timeoutMillis, concurrent.duration.MILLISECONDS))(materializer).toJava
 
-  /** Java API */
-  @deprecated def toEntity(charset: jm.HttpCharset, boundary: String): jm.RequestEntity =
+  /**
+   * Java API
+   *
+   * @deprecated This variant of `toEntity` is not supported any more. The charset parameter will be ignored. Please use
+   *             one of the other overloads instead.
+   */
+  @deprecated(
+    message = "This variant of `toEntity` is not supported any more. The charset parameter will be ignored. " +
+    "Please use the variant without specifying the charset.",
+    since = "3.0.0")
+  def toEntity(charset: jm.HttpCharset, boundary: String): jm.RequestEntity =
     toEntity(boundary)
 }
 
