@@ -441,6 +441,8 @@ object AkkaBuild extends Build {
     licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
     homepage := Some(url("http://akka.io/")),
 
+    apiURL := Some(url(s"http://doc.akka.io/api/akka/${version.value}")),
+
     initialCommands :=
       """|import language.postfixOps
          |import akka.actor._
