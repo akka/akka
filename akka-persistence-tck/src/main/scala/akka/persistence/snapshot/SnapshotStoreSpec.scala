@@ -52,6 +52,13 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
     }
   }
 
+  /**
+   * The limit defines a number of bytes persistence plugin can support to store the snapshot.
+   * If plugin does not support persistence of the snapshots of 10000 bytes or may support more than default size,
+   * the value can be overriden by the SnapshotStoreSpec implementation with a note in a plugin documentation.
+   */
+  def snapshotByteSizeLimit = 10000
+
   "A snapshot store" must {
     "not load a snapshot given an invalid persistenceId" in {
       snapshotStore.tell(LoadSnapshot("invalid", SnapshotSelectionCriteria.Latest, Long.MaxValue), senderProbe.ref)
@@ -136,6 +143,12 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
       result.snapshot.get.snapshot should be("s-5-modified")
       result.snapshot.get.metadata.sequenceNr should be(md.sequenceNr)
       // metadata timestamp may have been changed
+    }
+    s"save bigger size snapshot ($snapshotByteSizeLimit bytes)" in {
+      val metadata = SnapshotMetadata(pid, 100)
+      val bigSnapshot = "0" * snapshotByteSizeLimit
+      snapshotStore.tell(SaveSnapshot(metadata, bigSnapshot), senderProbe.ref)
+      senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) ⇒ md }
     }
   }
 }
