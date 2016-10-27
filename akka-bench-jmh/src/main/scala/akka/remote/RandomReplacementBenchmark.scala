@@ -45,6 +45,19 @@ akka-bench-jmh > jmh:run -wi 15 -i 15 -f 1 -t 1 .*RandomReplacementBenchmark.*
 [info] RandomReplacementBenchmark.runNew    ss   15  250.495 ± 15.762  ms/op
 [info] RandomReplacementBenchmark.runOld    ss   15  215.201 ± 23.651  ms/op
 
+[info] Benchmark                             Mode  Cnt     Score     Error  Units
+[info] RandomReplacementBenchmark.runCtr       ss   15   297.946 ±  39.956  ms/op
+[info] RandomReplacementBenchmark.runNew       ss   15   264.695 ±  35.462  ms/op
+[info] RandomReplacementBenchmark.runOld       ss   15   275.792 ±  63.000  ms/op
+[info] RandomReplacementBenchmark.runSecRnd    ss   15  3143.013 ± 378.316  ms/op
+
+[info] Benchmark                             Mode  Cnt     Score     Error  Units
+[info] RandomReplacementBenchmark.runCtr       ss   15   335.211 ±  77.456  ms/op
+[info] RandomReplacementBenchmark.runNew       ss   15   261.172 ±  48.231  ms/op
+[info] RandomReplacementBenchmark.runOld       ss   15   246.999 ±  36.847  ms/op
+[info] RandomReplacementBenchmark.runSecRnd    ss   15  3172.568 ± 449.505  ms/op
+
+
  */
 
 object SystemUnderTest {
@@ -53,6 +66,7 @@ object SystemUnderTest {
   final val rngCtr = new AESCounterBuiltinCTRRNG(seed)
   final val rngNew = new AESCounterBuiltinRNG(seed)
   final val rngOld = new AESCounterRNG(seed)
+  final val rngSecRnd = new SecureRandom
 }
 
 @State(Scope.Benchmark)
@@ -65,6 +79,7 @@ class RandomReplacementBenchmark {
   var inputCtr: Array[Byte] = null
   var inputNew: Array[Byte] = null
   var inputOld: Array[Byte] = null
+  var inputSecRnd: Array[Byte] = null
 
   @Setup(Level.Trial)
   def setup(): Unit = {
@@ -79,6 +94,7 @@ class RandomReplacementBenchmark {
     inputCtr = Array.fill[Byte](10000000)(1)
     inputNew = Array.fill[Byte](10000000)(1)
     inputOld = Array.fill[Byte](10000000)(1)
+    inputSecRnd = Array.fill[Byte](10000000)(1)
   }
 
   @TearDown(Level.Iteration)
@@ -101,5 +117,11 @@ class RandomReplacementBenchmark {
   @OutputTimeUnit(TimeUnit.MILLISECONDS)
   def runOld(): Unit = {
     SystemUnderTest.rngOld.nextBytes(inputOld)
+  }
+
+  @Benchmark
+  @OutputTimeUnit(TimeUnit.MILLISECONDS)
+  def runSecRnd(): Unit = {
+    SystemUnderTest.rngSecRnd.nextBytes(inputSecRnd)
   }
 }
