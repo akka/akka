@@ -23,7 +23,7 @@ import scala.util.Try
  * INTERNAL API
  */
 private[akka] class SSLSettings(config: Config) {
-  import config.{ getString, getStringList }
+  import config.{ getBoolean, getString, getStringList }
 
   val SSLKeyStore = getString("key-store")
   val SSLTrustStore = getString("trust-store")
@@ -37,6 +37,8 @@ private[akka] class SSLSettings(config: Config) {
   val SSLProtocol = getString("protocol")
 
   val SSLRandomNumberGenerator = getString("random-number-generator")
+
+  val SSLRequireMutualAuthentication = getBoolean("require-mutual-authentication")
 
   private val sslContext = new AtomicReference[SSLContext]()
   @tailrec final def getOrCreateContext(log: MarkerLoggingAdapter): SSLContext =
@@ -123,6 +125,8 @@ private[akka] object NettySSLSupport {
     sslEngine.setUseClientMode(isClient)
     sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
     sslEngine.setEnabledProtocols(Array(settings.SSLProtocol))
+
+    if (!isClient && settings.SSLRequireMutualAuthentication) sslEngine.setNeedClientAuth(true)
     new SslHandler(sslEngine)
   }
 }
