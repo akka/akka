@@ -167,7 +167,7 @@ private[akka] object ActorMaterializerHelper {
  * steps are split up into asynchronous regions is implementation
  * dependent.
  */
-abstract class ActorMaterializer extends Materializer {
+abstract class ActorMaterializer extends Materializer with MaterializerLoggingProvider {
 
   def settings: ActorMaterializerSettings
 

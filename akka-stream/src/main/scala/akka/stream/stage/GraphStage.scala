@@ -1231,6 +1231,12 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
 
 }
 
+/** Java API: [[GraphStageLogic]] with [[StageLogging]]. */
+abstract class GraphStageLogicWithLogging(_shape: Shape) extends GraphStageLogic(_shape) with StageLogging
+
+/** Java API: [[TimerGraphStageLogic]] with [[StageLogging]]. */
+abstract class TimerGraphStageLogicWithLogging(_shape: Shape) extends TimerGraphStageLogic(_shape) with StageLogging
+
 /**
  * Collection of callbacks for an input port of a [[GraphStage]]
  */
