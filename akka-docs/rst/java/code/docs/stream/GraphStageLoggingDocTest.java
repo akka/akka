@@ -11,6 +11,7 @@ import akka.stream.Outlet;
 import akka.stream.SourceShape;
 import akka.stream.stage.*;
 import docs.AbstractJavaTest;
+import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collector;
@@ -19,6 +20,9 @@ public class GraphStageLoggingDocTest extends AbstractJavaTest {
   static ActorSystem system;
   static Materializer mat;
 
+  @Test
+  public void compileOnlyTestClass() throws Exception { }
+  
   //#stage-with-logging
   public class RandomLettersSource extends GraphStage<SourceShape<String>> {
     public final Outlet<String> out = Outlet.create("RandomLettersSource.in");
