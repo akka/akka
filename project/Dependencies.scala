@@ -14,6 +14,7 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
+  val sslConfigVersion = "0.2.1"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.8"), // "2.12.0-RC2"
@@ -61,7 +62,7 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0
 
     // ssl-config
-    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.1"       // ApacheV2
+    val sslConfigCore = "com.typesafe"                %% "ssl-config-core"             % sslConfigVersion // ApacheV2
 
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
@@ -172,8 +173,8 @@ object Dependencies {
   // akka stream
 
   lazy val stream = l ++= Seq[sbt.ModuleID](
-    sslConfigAkka,
     reactiveStreams,
+    sslConfigCore,
     Test.junitIntf,
     Test.scalatest.value)
 

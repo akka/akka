@@ -64,7 +64,7 @@ object TLS {
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
   def apply(
-    sslContext:   SSLContext,
+    sslContext:   SSLContext, // TODO: in 2.5.x replace sslContext and sslConfig by generic SSLEngine constructor function, see https://github.com/akka/akka/issues/21753
     sslConfig:    Option[AkkaSSLConfig],
     firstSession: NegotiateNewSession, role: TLSRole,
     closing: TLSClosing = IgnoreComplete, hostInfo: Option[(String, Int)] = None): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
