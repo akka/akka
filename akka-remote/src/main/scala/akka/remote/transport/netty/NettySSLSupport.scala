@@ -4,25 +4,26 @@
 
 package akka.remote.transport.netty
 
-import akka.ConfigurationException
-import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import java.io.{ FileInputStream, FileNotFoundException, IOException }
+import java.security._
+import java.util.concurrent.atomic.AtomicReference
+import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
+
+import akka.event.{ LogMarker, MarkerLoggingAdapter }
 import akka.japi.Util._
 import akka.remote.RemoteTransportException
 import akka.remote.security.provider.AkkaProvider
 import com.typesafe.config.Config
-import java.io.{ FileInputStream, FileNotFoundException, IOException }
-import java.security._
-import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManager, TrustManagerFactory }
-
 import org.jboss.netty.handler.ssl.SslHandler
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 /**
  * INTERNAL API
  */
 private[akka] class SSLSettings(config: Config) {
-  import config.{ getString, getStringList }
+  import config.{ getBoolean, getString, getStringList }
 
   val SSLKeyStore = getString("key-store")
   val SSLTrustStore = getString("trust-store")
@@ -36,25 +37,51 @@ private[akka] class SSLSettings(config: Config) {
   val SSLProtocol = getString("protocol")
 
   val SSLRandomNumberGenerator = getString("random-number-generator")
-}
 
-/**
- * INTERNAL API
- *
- * Used for adding SSL support to Netty pipeline
- */
-private[akka] object NettySSLSupport {
+  val SSLRequireMutualAuthentication = getBoolean("require-mutual-authentication")
 
-  Security addProvider AkkaProvider
+  private val sslContext = new AtomicReference[SSLContext]()
+  @tailrec final def getOrCreateContext(log: MarkerLoggingAdapter): SSLContext =
+    sslContext.get() match {
+      case null ⇒
+        val newCtx = constructContext(log)
+        if (sslContext.compareAndSet(null, newCtx)) newCtx
+        else getOrCreateContext(log)
+      case ctx ⇒ ctx
+    }
 
-  /**
-   * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
-   */
-  def apply(settings: SSLSettings, log: MarkerLoggingAdapter, isClient: Boolean): SslHandler =
-    if (isClient) initializeClientSSL(settings, log) else initializeServerSSL(settings, log)
+  private def constructContext(log: MarkerLoggingAdapter): SSLContext =
+    try {
+      def loadKeystore(filename: String, password: String): KeyStore = {
+        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
+        val fin = new FileInputStream(filename)
+        try keyStore.load(fin, password.toCharArray) finally Try(fin.close())
+        keyStore
+      }
 
-  def initializeCustomSecureRandom(rngName: String, log: MarkerLoggingAdapter): SecureRandom = {
-    val rng = rngName match {
+      val keyManagers = {
+        val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+        factory.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray)
+        factory.getKeyManagers
+      }
+      val trustManagers = {
+        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+        trustManagerFactory.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword))
+        trustManagerFactory.getTrustManagers
+      }
+      val rng = createSecureRandom(log)
+
+      val ctx = SSLContext.getInstance(SSLProtocol)
+      ctx.init(keyManagers, trustManagers, rng)
+      ctx
+    } catch {
+      case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
+      case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
+      case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
+    }
+
+  def createSecureRandom(log: MarkerLoggingAdapter): SecureRandom = {
+    val rng = SSLRandomNumberGenerator match {
       case r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG") ⇒
         log.debug("SSL random number generator set to: {}", r)
         SecureRandom.getInstance(r, AkkaProvider)
@@ -79,94 +106,27 @@ private[akka] object NettySSLSupport {
     rng.nextInt() // prevent stall on first access
     rng
   }
+}
 
-  def initializeClientSSL(settings: SSLSettings, log: MarkerLoggingAdapter): SslHandler = {
-    log.debug("Client SSL is enabled, initialising ...")
+/**
+ * INTERNAL API
+ *
+ * Used for adding SSL support to Netty pipeline
+ */
+private[akka] object NettySSLSupport {
 
-    def constructClientContext(settings: SSLSettings, log: MarkerLoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] =
-      try {
-        val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, log)
-        val trustManagers: Array[TrustManager] = {
-          val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-          trustManagerFactory.init({
-            val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
-            val fin = new FileInputStream(trustStorePath)
-            try trustStore.load(fin, trustStorePassword.toCharArray) finally Try(fin.close())
-            trustStore
-          })
-          trustManagerFactory.getTrustManagers
-        }
-        Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(null, trustManagers, rng); ctx }
-      } catch {
-        case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Client SSL connection could not be established because trust store could not be loaded", e)
-        case e: IOException              ⇒ throw new RemoteTransportException("Client SSL connection could not be established because: " + e.getMessage, e)
-        case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Client SSL connection could not be established because SSL context could not be constructed", e)
-      }
+  Security addProvider AkkaProvider
 
-    constructClientContext(settings, log, settings.SSLTrustStore, settings.SSLTrustStorePassword, settings.SSLProtocol) match {
-      case Some(context) ⇒
-        log.debug("Using client SSL context to create SSLEngine ...")
-        new SslHandler({
-          val sslEngine = context.createSSLEngine
-          sslEngine.setUseClientMode(true)
-          sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
-          sslEngine.setEnabledProtocols(Array(settings.SSLProtocol))
-          sslEngine
-        })
-      case None ⇒
-        throw new GeneralSecurityException(
-          """Failed to initialize client SSL because SSL context could not be found." +
-                "Make sure your settings are correct: [trust-store: %s] [protocol: %s]""".format(
-            settings.SSLTrustStore,
-            settings.SSLProtocol))
-    }
-  }
+  /**
+   * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
+   */
+  def apply(settings: SSLSettings, log: MarkerLoggingAdapter, isClient: Boolean): SslHandler = {
+    val sslEngine = settings.getOrCreateContext(log).createSSLEngine // TODO: pass host information to enable host verification
+    sslEngine.setUseClientMode(isClient)
+    sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
+    sslEngine.setEnabledProtocols(Array(settings.SSLProtocol))
 
-  def initializeServerSSL(settings: SSLSettings, log: MarkerLoggingAdapter): SslHandler = {
-    log.debug("Server SSL is enabled, initialising ...")
-
-    def constructServerContext(settings: SSLSettings, log: MarkerLoggingAdapter, keyStorePath: String, keyStorePassword: String, keyPassword: String, protocol: String): Option[SSLContext] =
-      try {
-        val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, log)
-        val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-        factory.init({
-          val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
-          val fin = new FileInputStream(keyStorePath)
-          try keyStore.load(fin, keyStorePassword.toCharArray) finally Try(fin.close())
-          keyStore
-        }, keyPassword.toCharArray)
-
-        val trustManagers: Array[TrustManager] = {
-          val pwd = settings.SSLTrustStorePassword.toCharArray
-          val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-          trustManagerFactory.init({
-            val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
-            val fin = new FileInputStream(settings.SSLTrustStore)
-            try trustStore.load(fin, pwd) finally Try(fin.close())
-            trustStore
-          })
-          trustManagerFactory.getTrustManagers
-        }
-        Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, trustManagers, rng); ctx }
-      } catch {
-        case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
-        case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
-        case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
-      }
-
-    constructServerContext(settings, log, settings.SSLKeyStore, settings.SSLKeyStorePassword, settings.SSLKeyPassword, settings.SSLProtocol) match {
-      case Some(context) ⇒
-        log.debug("Using server SSL context to create SSLEngine ...")
-        val sslEngine = context.createSSLEngine
-        sslEngine.setUseClientMode(false)
-        sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
-        new SslHandler(sslEngine)
-      case None ⇒ throw new GeneralSecurityException(
-        """Failed to initialize server SSL because SSL context could not be found.
-             Make sure your settings are correct: [key-store: %s] [key-store-password: %s] [protocol: %s]""".format(
-          settings.SSLKeyStore,
-          settings.SSLKeyStorePassword,
-          settings.SSLProtocol))
-    }
+    if (!isClient && settings.SSLRequireMutualAuthentication) sslEngine.setNeedClientAuth(true)
+    new SslHandler(sslEngine)
   }
 }
