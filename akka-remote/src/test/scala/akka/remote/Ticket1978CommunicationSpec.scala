@@ -3,24 +3,21 @@
  */
 package akka.remote
 
-import akka.testkit._
-import akka.actor._
-import com.typesafe.config._
-
-import scala.concurrent.Future
-import scala.reflect.classTag
-import akka.pattern.ask
 import java.security.NoSuchAlgorithmException
 
-import akka.util.Timeout
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.event.{ NoLogging, NoMarkerLogging }
+import akka.actor._
+import akka.event.NoMarkerLogging
+import akka.pattern.ask
+import akka.remote.Configuration.{ CipherConfig, getCipherConfig }
 import akka.remote.transport.netty.{ NettySSLSupport, SSLSettings }
-import Configuration.{ CipherConfig, getCipherConfig }
+import akka.testkit._
+import akka.util.Timeout
+import com.typesafe.config._
 import org.uncommons.maths.random.RandomDotOrgSeedGenerator
 
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.reflect.classTag
 import scala.util.control.NonFatal
 
 object Configuration {
@@ -67,13 +64,13 @@ object Configuration {
       val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty.ssl.security")
       val settings = new SSLSettings(fullConfig)
 
-      val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, NoMarkerLogging)
+      val rng = settings.createSecureRandom(NoMarkerLogging)
 
       rng.nextInt() // Has to work
       val sRng = settings.SSLRandomNumberGenerator
       rng.getAlgorithm == sRng || (throw new NoSuchAlgorithmException(sRng))
 
-      val engine = NettySSLSupport.initializeClientSSL(settings, NoMarkerLogging).getEngine
+      val engine = NettySSLSupport(settings, NoMarkerLogging, isClient = true).getEngine
       val gotAllSupported = enabled.toSet diff engine.getSupportedCipherSuites.toSet
       val gotAllEnabled = enabled.toSet diff engine.getEnabledCipherSuites.toSet
       gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
