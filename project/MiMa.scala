@@ -1001,7 +1001,11 @@ object MiMa extends AutoPlugin {
       ),
       "2.4.11" -> Seq(
         // #20795  IOResult construction exposed
-        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.IOResult$")
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.IOResult$"),
+
+        // #21727 moved all of Unfold.scala in package akka.stream.impl
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.UnfoldAsync"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.Unfold")
       )
     )
   }
