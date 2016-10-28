@@ -182,6 +182,7 @@ object ClusterSingletonManager {
     case object WasOldest extends State
     case object HandingOver extends State
     case object TakeOver extends State
+    case object Stopping extends State
     case object End extends State
 
     case object Uninitialized extends Data
@@ -191,6 +192,7 @@ object ClusterSingletonManager {
     final case class WasOldestData(singleton: ActorRef, singletonTerminated: Boolean,
                                    newOldestOption: Option[UniqueAddress]) extends Data
     final case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef]) extends Data
+    final case class StoppingData(singleton: ActorRef) extends Data
     case object EndData extends Data
     final case class DelayedMemberRemoved(member: Member)
 
@@ -631,15 +633,16 @@ class ClusterSingletonManager(
   }
 
   when(WasOldest) {
-    case Event(TakeOverRetry(count), WasOldestData(_, _, newOldestOption)) ⇒
-      if (count <= maxTakeOverRetries) {
+    case Event(TakeOverRetry(count), WasOldestData(singleton, singletonTerminated, newOldestOption)) ⇒
+      if (cluster.isTerminated && (newOldestOption.isEmpty || count > maxTakeOverRetries)) {
+        if (singletonTerminated) stop()
+        else gotoStopping(singleton)
+      } else if (count <= maxTakeOverRetries) {
         logInfo("Retry [{}], sending TakeOverFromMe to [{}]", count, newOldestOption.map(_.address))
         newOldestOption.foreach(node ⇒ peer(node.address) ! TakeOverFromMe)
         setTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), handOverRetryInterval, repeat = false)
         stay
-      } else if (cluster.isTerminated)
-        stop()
-      else
+      } else
         throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newOldestOption}] never occured")
 
     case Event(HandOverToMe, WasOldestData(singleton, singletonTerminated, _)) ⇒
@@ -690,6 +693,16 @@ class ClusterSingletonManager(
       goto(Younger) using YoungerData(None)
     else
       goto(End) using EndData
+  }
+
+  def gotoStopping(singleton: ActorRef): State = {
+    singleton ! terminationMessage
+    goto(Stopping) using StoppingData(singleton)
+  }
+
+  when(Stopping) {
+    case (Event(Terminated(ref), StoppingData(singleton))) if ref == singleton ⇒
+      stop()
   }
 
   when(End) {
