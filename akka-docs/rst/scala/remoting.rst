@@ -492,26 +492,8 @@ An example of setting up the default Netty based SSL driver as default::
   akka {
     remote {
       enabled-transports = [akka.remote.netty.ssl]
-
-      netty.ssl.security {
-        key-store = "mykeystore"
-        trust-store = "mytruststore"
-        key-store-password = "changeme"
-        key-password = "changeme"
-        trust-store-password = "changeme"
-        protocol = "TLSv1.2"
-        random-number-generator = "AES128CounterSecureRNG"
-        enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
-      }
     }
   }
-
-  akka {
-    remote {
-      enabled-transports = [ "akka.remote.netty.ssl" ]
-    }
-  }
-
 
 Next the actual SSL/TLS parameters have to be configured::
 
@@ -527,17 +509,28 @@ Next the actual SSL/TLS parameters have to be configured::
         
         protocol = "TLSv1.2"
         
+        enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
+        
         random-number-generator = "AES128CounterSecureRNG"
-        enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
       }
     }
   }
 
-Creating and working with keystores and cerfiticates is well documented in the `Generating X.509 Certificates <http://typesafehub.github.io/ssl-config/CertificateGeneration.html#using-keytool>`_
+According to `RFC 7525 <https://tools.ietf.org/html/rfc7525>`_ the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
+
+- TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
+- TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+- TLS_DHE_RSA_WITH_AES_256_GCM_SHA384
+- TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+
+You should always check the latest information about security and algorithm recommendations though before you configure your system.
+
+Creating and working with keystores and certificates is well documented in the 
+`Generating X.509 Certificates <http://typesafehub.github.io/ssl-config/CertificateGeneration.html#using-keytool>`_
 section of Lightbend's SSL-Config library. 
 
 Since an Akka remoting is inherently :ref:`peer-to-peer <symmetric-communication>` both the key-store as well as trust-store 
-need to be configured on each node participating in the cluster.
+need to be configured on each remoting node participating in the cluster.
 
 The official `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
 as well as the :ref:`Oracle documentation on creating KeyStore and TrustStores <https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html>`
@@ -548,10 +541,8 @@ See also a description of the settings in the :ref:`remote-configuration-scala` 
 
 .. note::
 
-  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/./urandom`` as argument
+  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/urandom`` as argument
   to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
-  Use '/dev/./urandom', not '/dev/urandom' as that doesn't work according to
-  `Bug ID: 6202721 <http://bugs.sun.com/view_bug.do?bug_id=6202721>`_.
 
 .. _remote-configuration-scala:
 
