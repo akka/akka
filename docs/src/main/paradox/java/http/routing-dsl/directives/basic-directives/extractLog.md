@@ -8,7 +8,7 @@ Extracts a `LoggingAdapter` from the request context which can be used for loggi
 The `extractLog` directive is used for providing logging to routes, such that they don't have to depend on
 closing over a logger provided in the class body.
 
-See @ref[extract-java](extract.md#extract-java) and @ref[Providing Values to Inner Routes](index.md#providedirectives-java) for an overview of similar directives.
+See @ref[extract](extract.md#extract-java) and @ref[Providing Values to Inner Routes](index.md#providedirectives-java) for an overview of similar directives.
 
 ## Example
 

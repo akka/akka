@@ -17,7 +17,7 @@ Given a function returning `Some<T>` upon successful authentication and `None` o
 respectively applies the inner route or rejects the request with a `AuthenticationFailedRejection` rejection,
 which by default is mapped to an `401 Unauthorized` response.
 
-Longer-running authentication tasks (like looking up credentials in a database) should use the @ref[authenticateOAuth2Async-java](authenticateOAuth2Async.md#authenticateoauth2async-java)
+Longer-running authentication tasks (like looking up credentials in a database) should use the @ref[authenticateOAuth2Async](authenticateOAuth2Async.md#authenticateoauth2async-java)
 variant of this directive which allows it to run without blocking routing layer of Akka HTTP, freeing it for other requests.
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-java) for details about verifying the secret.
@@ -26,5 +26,5 @@ For more information on how OAuth2 works see [RFC 6750](https://tools.ietf.org/h
 
 ## Example
 
-Usage in code is exactly the same as @ref[authenticateBasic-java](authenticateBasic.md#authenticatebasic-java),
+Usage in code is exactly the same as @ref[authenticateBasic](authenticateBasic.md#authenticatebasic-java),
 with the difference that one must validate the token as OAuth2 dictates (which is currently not part of Akka HTTP itself).

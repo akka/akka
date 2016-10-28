@@ -10,7 +10,7 @@ This directive filters incoming requests based on the part of their URI that has
 potentially existing path matching directives on higher levels of the routing structure.
 Its one parameter is usually an expression evaluating to a `PathMatcher` instance (see also: @ref[The PathMatcher DSL](../../../../../scala/http/routing-dsl/path-matchers.md#pathmatcher-dsl)).
 
-As opposed to @ref[pathPrefix-java](pathPrefix.md#pathprefix-java) this directive matches and consumes the unmatched path from the right, i.e. the end.
+As opposed to @ref[pathPrefix](pathPrefix.md#pathprefix-java) this directive matches and consumes the unmatched path from the right, i.e. the end.
 
 @@@ warning { title="Caution" }
 For efficiency reasons, the given `PathMatcher` must match the desired suffix in reversed-segment

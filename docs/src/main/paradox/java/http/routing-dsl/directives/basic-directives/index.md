@@ -12,34 +12,34 @@ on two axes: a) provide a constant value or extract a value from the `RequestCon
 a single value or a tuple of values.
 
 >
- * @ref[extract-java](extract.md#extract-java)
- * @ref[extractActorSystem-java](extractActorSystem.md#extractactorsystem-java)
- * @ref[extractDataBytes-java](extractDataBytes.md#extractdatabytes-java)
- * @ref[extractExecutionContext-java](extractExecutionContext.md#extractexecutioncontext-java)
- * @ref[extractMaterializer-java](extractMaterializer.md#extractmaterializer-java)
- * @ref[extractStrictEntity-java](extractStrictEntity.md#extractstrictentity-java)
- * @ref[extractLog-java](extractLog.md#extractlog-java)
- * @ref[extractRequest-java](extractRequest.md#extractrequest-java)
- * @ref[extractRequestContext-java](extractRequestContext.md#extractrequestcontext-java)
- * @ref[extractRequestEntity-java](extractRequestEntity.md#extractrequestentity-java)
- * @ref[extractSettings-java](extractSettings.md#extractsettings-java)
- * @ref[extractUnmatchedPath-java](extractUnmatchedPath.md#extractunmatchedpath-java)
- * @ref[extractUri-java](extractUri.md#extracturi-java)
- * @ref[provide-java](provide.md#provide-java)
+ * @ref[extract](extract.md#extract-java)
+ * @ref[extractActorSystem](extractActorSystem.md#extractactorsystem-java)
+ * @ref[extractDataBytes](extractDataBytes.md#extractdatabytes-java)
+ * @ref[extractExecutionContext](extractExecutionContext.md#extractexecutioncontext-java)
+ * @ref[extractMaterializer](extractMaterializer.md#extractmaterializer-java)
+ * @ref[extractStrictEntity](extractStrictEntity.md#extractstrictentity-java)
+ * @ref[extractLog](extractLog.md#extractlog-java)
+ * @ref[extractRequest](extractRequest.md#extractrequest-java)
+ * @ref[extractRequestContext](extractRequestContext.md#extractrequestcontext-java)
+ * @ref[extractRequestEntity](extractRequestEntity.md#extractrequestentity-java)
+ * @ref[extractSettings](extractSettings.md#extractsettings-java)
+ * @ref[extractUnmatchedPath](extractUnmatchedPath.md#extractunmatchedpath-java)
+ * @ref[extractUri](extractUri.md#extracturi-java)
+ * @ref[provide](provide.md#provide-java)
 
 <a id="request-transforming-directives-java"></a>
 ## Transforming the Request(Context)
 
 >
- * @ref[mapRequest-java](mapRequest.md#maprequest-java)
- * @ref[mapRequestContext-java](mapRequestContext.md#maprequestcontext-java)
- * @ref[mapSettings-java](mapSettings.md#mapsettings-java)
- * @ref[mapUnmatchedPath-java](mapUnmatchedPath.md#mapunmatchedpath-java)
- * @ref[withExecutionContext-java](withExecutionContext.md#withexecutioncontext-java)
- * @ref[withMaterializer-java](withMaterializer.md#withmaterializer-java)
- * @ref[withLog-java](withLog.md#withlog-java)
- * @ref[withSettings-java](withSettings.md#withsettings-java)
- * @ref[toStrictEntity-java](toStrictEntity.md#tostrictentity-java)
+ * @ref[mapRequest](mapRequest.md#maprequest-java)
+ * @ref[mapRequestContext](mapRequestContext.md#maprequestcontext-java)
+ * @ref[mapSettings](mapSettings.md#mapsettings-java)
+ * @ref[mapUnmatchedPath](mapUnmatchedPath.md#mapunmatchedpath-java)
+ * @ref[withExecutionContext](withExecutionContext.md#withexecutioncontext-java)
+ * @ref[withMaterializer](withMaterializer.md#withmaterializer-java)
+ * @ref[withLog](withLog.md#withlog-java)
+ * @ref[withSettings](withSettings.md#withsettings-java)
+ * @ref[toStrictEntity](toStrictEntity.md#tostrictentity-java)
 
 <a id="response-transforming-directives-java"></a>
 ## Transforming the Response
@@ -48,9 +48,9 @@ These directives allow to hook into the response path and transform the complete
 the parts of a response or the list of rejections:
 
 >
- * @ref[mapResponse-java](mapResponse.md#mapresponse-java)
- * @ref[mapResponseEntity-java](mapResponseEntity.md#mapresponseentity-java)
- * @ref[mapResponseHeaders-java](mapResponseHeaders.md#mapresponseheaders-java)
+ * @ref[mapResponse](mapResponse.md#mapresponse-java)
+ * @ref[mapResponseEntity](mapResponseEntity.md#mapresponseentity-java)
+ * @ref[mapResponseHeaders](mapResponseHeaders.md#mapresponseheaders-java)
 
 <a id="result-transformation-directives-java"></a>
 ## Transforming the RouteResult
@@ -58,22 +58,22 @@ the parts of a response or the list of rejections:
 These directives allow to transform the RouteResult of the inner route.
 
 >
- * @ref[cancelRejection-java](cancelRejection.md#cancelrejection-java)
- * @ref[cancelRejections-java](cancelRejections.md#cancelrejections-java)
- * @ref[mapRejections-java](mapRejections.md#maprejections-java)
- * @ref[mapRouteResult-java](mapRouteResult.md#maprouteresult-java)
- * @ref[mapRouteResultFuture-java](mapRouteResultFuture.md#maprouteresultfuture-java)
- * @ref[mapRouteResultPF-java](mapRouteResultPF.md#maprouteresultpf-java)
- * @ref[mapRouteResultWith-java](mapRouteResultWith.md#maprouteresultwith-java)
- * @ref[mapRouteResultWithPF-java](mapRouteResultWithPF.md#maprouteresultwithpf-java)
- * @ref[recoverRejections-java](recoverRejections.md#recoverrejections-java)
- * @ref[recoverRejectionsWith-java](recoverRejectionsWith.md#recoverrejectionswith-java)
+ * @ref[cancelRejection](cancelRejection.md#cancelrejection-java)
+ * @ref[cancelRejections](cancelRejections.md#cancelrejections-java)
+ * @ref[mapRejections](mapRejections.md#maprejections-java)
+ * @ref[mapRouteResult](mapRouteResult.md#maprouteresult-java)
+ * @ref[mapRouteResultFuture](mapRouteResultFuture.md#maprouteresultfuture-java)
+ * @ref[mapRouteResultPF](mapRouteResultPF.md#maprouteresultpf-java)
+ * @ref[mapRouteResultWith](mapRouteResultWith.md#maprouteresultwith-java)
+ * @ref[mapRouteResultWithPF](mapRouteResultWithPF.md#maprouteresultwithpf-java)
+ * @ref[recoverRejections](recoverRejections.md#recoverrejections-java)
+ * @ref[recoverRejectionsWith](recoverRejectionsWith.md#recoverrejectionswith-java)
 
 ## Other
 
 >
- * @ref[mapInnerRoute-java](mapInnerRoute.md#mapinnerroute-java)
- * @ref[pass-java](pass.md#pass-java)
+ * @ref[mapInnerRoute](mapInnerRoute.md#mapinnerroute-java)
+ * @ref[pass](pass.md#pass-java)
 
 ## Alphabetically
 

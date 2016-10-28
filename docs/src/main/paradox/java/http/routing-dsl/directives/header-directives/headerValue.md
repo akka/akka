@@ -13,7 +13,7 @@ function returns `Optional.empty` for every header the request is rejected as "N
 
 This directive is the basis for building other request header related directives.
 
-See also @ref[headerValuePF-java](headerValuePF.md#headervaluepf-java) for a nicer syntactic alternative.
+See also @ref[headerValuePF](headerValuePF.md#headervaluepf-java) for a nicer syntactic alternative.
 
 ## Example
 

@@ -6,7 +6,7 @@
 Extracts the `RequestEntity` from the `RequestContext`.
 
 The directive returns a `RequestEntity` without unmarshalling the request. To extract domain entity,
-@ref[entity-java](../marshalling-directives/entity.md#entity-java) should be used.
+@ref[entity](../marshalling-directives/entity.md#entity-java) should be used.
 
 ## Example
 

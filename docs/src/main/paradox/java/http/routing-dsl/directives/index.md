@@ -19,7 +19,7 @@ Akka HTTP already pre-defines a large number of directives and you can easily co
 @ref[Routes](../routes.md#routes-java) effectively are simply highly specialised functions that take a `RequestContext` and eventually `complete` it, 
 which could (and often should) happen asynchronously.
 
-With the @ref[complete-java](route-directives/complete.md#complete-java) directive this becomes even shorter:
+With the @ref[complete](route-directives/complete.md#complete-java) directive this becomes even shorter:
 
 ```java
 Route route = complete("yeah");

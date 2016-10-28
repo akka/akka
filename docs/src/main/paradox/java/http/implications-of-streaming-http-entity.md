@@ -67,7 +67,7 @@ Note that some directives force an implicit `toStrict` operation, such as `entit
 ### Consuming the HTTP Request Entity (Server)
 
 The simplest way of consuming the incoming request entity is to simply transform it into an actual domain object,
-for example by using the @ref[entity-java](routing-dsl/directives/marshalling-directives/entity.md#entity-java) directive:
+for example by using the @ref[entity](routing-dsl/directives/marshalling-directives/entity.md#entity-java) directive:
 
 @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #consume-entity-directive }
 

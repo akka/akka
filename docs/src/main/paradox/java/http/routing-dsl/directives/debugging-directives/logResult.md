@@ -5,7 +5,7 @@
 
 Logs the response.
 
-See @ref[logRequest-java](logRequest.md#logrequest-java) for the general description how these directives work.
+See @ref[logRequest](logRequest.md#logrequest-java) for the general description how these directives work.
 
 Use `logRequest` for logging the request, or `logRequestResult` for logging both.
 

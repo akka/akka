@@ -11,7 +11,7 @@ potentially adding the given `HttpHeader` instances to the headers list.
 A header is only added if there is no header instance with the same name (case insensitively) already present in the
 response.
 
-See also @ref[respondWithDefaultHeader-java](respondWithDefaultHeader.md#respondwithdefaultheader-java) if you'd like to add only a single header.
+See also @ref[respondWithDefaultHeader](respondWithDefaultHeader.md#respondwithdefaultheader-java) if you'd like to add only a single header.
 
 ## Example
 
@@ -28,4 +28,4 @@ The semantics remain the same however, as explained by the following example:
 
 @@snip [RespondWithDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/RespondWithDirectivesExamplesTest.java) { #respondWithDefaultHeaders }
 
-See the @ref[respondWithDefaultHeader-java](respondWithDefaultHeader.md#respondwithdefaultheader-java) directive for an example with only one header.
+See the @ref[respondWithDefaultHeader](respondWithDefaultHeader.md#respondwithdefaultheader-java) directive for an example with only one header.

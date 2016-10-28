@@ -5,12 +5,12 @@
 
 Allows exposing a file to be streamed to the client issuing the request.
 
-The `unmatchedPath` (see @ref[extractUnmatchedPath-java](../basic-directives/extractUnmatchedPath.md#extractunmatchedpath-java)) of the `RequestContext` is first transformed by
+The `unmatchedPath` (see @ref[extractUnmatchedPath](../basic-directives/extractUnmatchedPath.md#extractunmatchedpath-java)) of the `RequestContext` is first transformed by
 the given `pathRewriter` function, before being appended to the given directory name to build the final file name.
 
-To files from a given directory use @ref[getFromDirectory-java](getFromDirectory.md#getfromdirectory-java).
-To serve browsable directory listings use @ref[getFromBrowseableDirectories-java](getFromBrowseableDirectories.md#getfrombrowseabledirectories-java).
-To serve files from a classpath directory use @ref[getFromResourceDirectory-java](getFromResourceDirectory.md#getfromresourcedirectory-java) instead.
+To files from a given directory use @ref[getFromDirectory](getFromDirectory.md#getfromdirectory-java).
+To serve browsable directory listings use @ref[getFromBrowseableDirectories](getFromBrowseableDirectories.md#getfrombrowseabledirectories-java).
+To serve files from a classpath directory use @ref[getFromResourceDirectory](getFromResourceDirectory.md#getfromresourcedirectory-java) instead.
 
 Note that it's not required to wrap this directive with `get` as this directive will only respond to `GET` requests.
 

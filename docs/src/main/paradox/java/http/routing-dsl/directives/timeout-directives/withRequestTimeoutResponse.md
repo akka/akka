@@ -5,7 +5,7 @@
 
 Allows customising the `HttpResponse` that will be sent to clients in case of a @ref[Request timeout](../../../common/timeouts.md#request-timeout-java).
 
-See also @ref[withRequestTimeout-java](withRequestTimeout.md#withrequesttimeout-java) or @ref[withoutRequestTimeout-java](withoutRequestTimeout.md#withoutrequesttimeout-java) if interested in dynamically changing the timeout
+See also @ref[withRequestTimeout](withRequestTimeout.md#withrequesttimeout-java) or @ref[withoutRequestTimeout-java](withoutRequestTimeout.md#withoutrequesttimeout-java) if interested in dynamically changing the timeout
 for a given route instead.
 
 @@@ warning
