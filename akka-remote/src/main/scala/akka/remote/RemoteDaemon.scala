@@ -4,14 +4,11 @@
 
 package akka.remote
 
-import java.util
-import java.util.Collections
-
 import scala.concurrent.duration._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ Actor, ActorPath, ActorPathExtractor, ActorRef, ActorSystemImpl, AddressTerminated, Deploy, InternalActorRef, Nobody, Props, VirtualPathContainer }
-import akka.event.LoggingAdapter
+import akka.event.{ AddressTerminatedTopic, LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
 import akka.actor.ActorRefWithCell
 import akka.actor.ActorRefScope
@@ -23,13 +20,11 @@ import akka.actor.SelectChildPattern
 import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.EmptyLocalActorRef
-import akka.event.AddressTerminatedTopic
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.immutable
 
+import scala.collection.immutable
 import akka.dispatch.sysmsg.Unwatch
 import akka.NotUsed
-import com.typesafe.config.Config
 
 /**
  * INTERNAL API
@@ -54,7 +49,7 @@ private[akka] class RemoteSystemDaemon(
   _path:             ActorPath,
   _parent:           InternalActorRef,
   terminator:        ActorRef,
-  _log:              LoggingAdapter,
+  _log:              MarkerLoggingAdapter,
   val untrustedMode: Boolean)
   extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
@@ -163,8 +158,9 @@ private[akka] class RemoteSystemDaemon(
             doCreateActor(message, props, deploy, path, supervisor)
           else {
             val ex = new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass, remoteDeploymentWhitelist)
-            log.error(ex, "Received command to create remote Actor, but class [{}] is not white-listed! " +
-              "Target path: [{}]", props.actorClass, path) // TODO add security marker?
+            log.error(LogMarker.Security, ex,
+              "Received command to create remote Actor, but class [{}] is not white-listed! " +
+                "Target path: [{}]", props.actorClass, path)
           }
         case DaemonMsgCreate(props, deploy, path, supervisor) ⇒
           doCreateActor(message, props, deploy, path, supervisor)
@@ -211,7 +207,7 @@ private[akka] class RemoteSystemDaemon(
         case _ ⇒ // skip, this child doesn't belong to the terminated address
       }
 
-    case unknown ⇒ log.warning("Unknown message [{}] received by [{}]", unknown, this)
+    case unknown ⇒ log.warning(LogMarker.Security, "Unknown message [{}] received by [{}]", unknown, this)
 
   } catch {
     case NonFatal(e) ⇒ log.error(e, "exception while processing remote command [{}] from [{}]", msg, sender)

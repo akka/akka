@@ -195,7 +195,7 @@ private[akka] class RemoteActorRefProvider(
         local.rootPath / "remote",
         rootGuardian,
         remotingTerminator,
-        log,
+        _log,
         untrustedMode = remoteSettings.UntrustedMode)
       local.registerExtraNames(Map(("remote", d)))
       d
@@ -206,7 +206,7 @@ private[akka] class RemoteActorRefProvider(
     _internals = internals
     remotingTerminator ! internals
 
-    _log = Logging(eventStream, getClass.getName)
+    _log = Logging.withMarker(eventStream, getClass.getName)
 
     // this enables reception of remote requests
     transport.start()

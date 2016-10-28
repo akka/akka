@@ -1398,6 +1398,8 @@ object LogMarker {
       case None    ⇒ None
     }
 
+  private[akka] final val Security = apply("SECURITY")
+
 }
 
 /**
@@ -1677,4 +1679,50 @@ object NoLogging extends LoggingAdapter {
   final protected override def notifyWarning(message: String): Unit = ()
   final protected override def notifyInfo(message: String): Unit = ()
   final protected override def notifyDebug(message: String): Unit = ()
+}
+/**
+ * NoLogging is a MarkerLoggingAdapter that does absolutely nothing – no logging at all.
+ */
+object NoMarkerLogging extends MarkerLoggingAdapter(null, "source", classOf[String], null) {
+
+  /**
+   * Java API to return the reference to NoLogging
+   * @return The NoLogging instance
+   */
+  def getInstance = this
+
+  final override def isErrorEnabled = false
+  final override def isWarningEnabled = false
+  final override def isInfoEnabled = false
+  final override def isDebugEnabled = false
+
+  final protected override def notifyError(message: String): Unit = ()
+  final protected override def notifyError(cause: Throwable, message: String): Unit = ()
+  final protected override def notifyWarning(message: String): Unit = ()
+  final protected override def notifyInfo(message: String): Unit = ()
+  final protected override def notifyDebug(message: String): Unit = ()
+  final override def error(marker: LogMarker, cause: Throwable, message: String): Unit = ()
+  final override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any): Unit = ()
+  final override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = ()
+  final override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = ()
+  final override def error(marker: LogMarker, cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = ()
+  final override def error(marker: LogMarker, message: String): Unit = ()
+  final override def error(marker: LogMarker, template: String, arg1: Any): Unit = ()
+  final override def error(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit = ()
+  final override def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = ()
+  final override def error(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = ()
+  final override def warning(marker: LogMarker, message: String): Unit = ()
+  final override def warning(marker: LogMarker, template: String, arg1: Any): Unit = ()
+  final override def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit = ()
+  final override def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = ()
+  final override def warning(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = ()
+  final override def info(marker: LogMarker, message: String): Unit = ()
+  final override def info(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit = ()
+  final override def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = ()
+  final override def info(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = ()
+  final override def debug(marker: LogMarker, message: String): Unit = ()
+  final override def debug(marker: LogMarker, template: String, arg1: Any): Unit = ()
+  final override def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit = ()
+  final override def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = ()
+  final override def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = ()
 }
