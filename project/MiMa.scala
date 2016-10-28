@@ -1008,7 +1008,13 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.Unfold"),
         
         // #21194 renamed internal actor method 
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.allocateShardHomes")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.allocateShardHomes"),
+        
+        // MarkerLoggingAdapter introduced (all internal classes)
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.LocalActorRefProvider.log"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.VirtualPathContainer.log"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.VirtualPathContainer.this"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteSystemDaemon.this")
 
       )
     )
