@@ -16,7 +16,7 @@ object Dependencies {
   val junitVersion = "4.12"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.8"), // "2.12.0-RC1"
+    crossScalaVersions := Seq("2.11.8"), // "2.12.0-RC2"
     scalaVersion := crossScalaVersions.value.head,
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.2"),
@@ -28,7 +28,6 @@ object Dependencies {
     },
     java8CompatVersion := {
       scalaVersion.value match {
-        case x if x.startsWith("2.12.0-RC1") => "0.8.0-RC7"
         case x if x.startsWith("2.12.0") => "0.8.0-RC8"
         case _ => "0.7.0"
       }
