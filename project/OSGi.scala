@@ -5,6 +5,7 @@ package akka
 
 import com.typesafe.sbt.osgi.OsgiKeys
 import com.typesafe.sbt.osgi.SbtOsgi._
+import com.typesafe.sbt.osgi.SbtOsgi.autoImport._
 import sbt._
 import sbt.Keys._
 
@@ -81,7 +82,12 @@ object OSGi {
 
   val httpJackson = exports(Seq("akka.http.javadsl.marshallers.jackson"))
 
-  val stream = exports(Seq("akka.stream.*"), imports = Seq(scalaJava8CompatImport()))
+  val stream =
+    exports(
+      packages = Seq("akka.stream.*",
+                     "com.typesafe.sslconfig.akka.*"),
+      imports = Seq(scalaJava8CompatImport())) ++
+      Seq(OsgiKeys.requireBundle := Seq(s"""com.typesafe.sslconfig;bundle-version="${Dependencies.sslConfigVersion}""""))
 
   val streamTestkit = exports(Seq("akka.stream.testkit.*"))
 
