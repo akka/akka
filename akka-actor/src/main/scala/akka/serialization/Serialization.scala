@@ -6,7 +6,7 @@ package akka.serialization
 
 import com.typesafe.config.Config
 import akka.actor._
-import akka.event.{ LogMarker, Logging }
+import akka.event.{ LogMarker, Logging, LoggingAdapter }
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.ArrayBuffer
@@ -97,7 +97,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   import Serialization._
 
   val settings = new Settings(system.settings.config)
-  val log = Logging.withMarker(system, getClass.getName)
+  private[this] val _log = Logging.withMarker(system, getClass.getName)
+  val log: LoggingAdapter = _log
   private val manifestCache = new AtomicReference[Map[String, Option[Class[_]]]](Map.empty[String, Option[Class[_]]])
 
   /**
@@ -226,13 +227,13 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
             throw new NotSerializableException("No configured serialization-bindings for class [%s]" format clazz.getName)
           case possibilities ⇒
             if (!unique(possibilities))
-              log.warning(LogMarker.Security, "Multiple serializers found for " + clazz + ", choosing first: " + possibilities)
+              _log.warning(LogMarker.Security, "Multiple serializers found for " + clazz + ", choosing first: " + possibilities)
             possibilities(0)._2
         }
         serializerMap.putIfAbsent(clazz, ser) match {
           case null ⇒
             if (shouldWarnAboutJavaSerializer(clazz, ser)) {
-              log.warning(LogMarker.Security, "Using the default Java serializer for class [{}] which is not recommended because of " +
+              _log.warning(LogMarker.Security, "Using the default Java serializer for class [{}] which is not recommended because of " +
                 "performance implications. Use another serializer or disable this warning using the setting " +
                 "'akka.actor.warn-about-java-serializer-usage'", clazz.getName)
             }
