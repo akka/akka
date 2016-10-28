@@ -168,6 +168,7 @@ you can advise the system to create a child on that remote node like so:
 
 .. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#deploy
 
+.. _remote-deployment-whitelist-java:
 Remote deployment whitelist
 ---------------------------
 
@@ -425,11 +426,6 @@ To intercept generic remoting related errors, listen to ``RemotingErrorEvent`` w
 Remote Security
 ^^^^^^^^^^^^^^^
 
-Akka provides a couple of ways to enhance security between remote nodes (client/server):
-
-* Untrusted Mode
-* Security Cookie Handshake
-
 Untrusted Mode
 --------------
 
@@ -480,42 +476,65 @@ untrusted mode when incoming via the remoting layer:
   within the same JVM), you can restrict the messages on this interface by
   marking them :class:`PossiblyHarmful` so that a client cannot forge them.
 
-SSL
----
+Configuring SSL/TLS for Akka Remoting
+-------------------------------------
 
-SSL can be used as the remote transport by adding ``akka.remote.netty.ssl``
-to the ``enabled-transport`` configuration section. See a description of the settings
-in the :ref:`remote-configuration-java` section.
+SSL can be used as the remote transport by adding ``akka.remote.netty.ssl`` to the ``enabled-transport`` configuration section::
 
 An example of setting up the default Netty based SSL driver as default::
 
   akka {
     remote {
       enabled-transports = [akka.remote.netty.ssl]
+    }
+  }
 
+Next the actual SSL/TLS parameters have to be configured::
+
+  akka {
+    remote {
       netty.ssl.security {
-        key-store = "mykeystore"
-        trust-store = "mytruststore"
+        key-store = "/example/path/to/mykeystore.jks"
+        trust-store = "/example/path/to/mytruststore.jks"
+        
         key-store-password = "changeme"
         key-password = "changeme"
         trust-store-password = "changeme"
+        
         protocol = "TLSv1.2"
+        
+        enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
+        
         random-number-generator = "AES128CounterSecureRNG"
-        enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
       }
     }
   }
 
-The SSL support is implemented with Java Secure Socket Extension, please consult the official
-`Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
-and related resources for troubleshooting.
+According to `RFC 7525 <https://tools.ietf.org/html/rfc7525>`_ the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
+
+- TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
+- TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+- TLS_DHE_RSA_WITH_AES_256_GCM_SHA384
+- TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+
+Creating and working with keystores and certificates is well documented in the 
+`Generating X.509 Certificates <http://typesafehub.github.io/ssl-config/CertificateGeneration.html#using-keytool>`_
+section of Lightbend's SSL-Config library. 
+
+Since an Akka remoting is inherently :ref:`peer-to-peer <symmetric-communication>` both the key-store as well as trust-store 
+need to be configured on each remoting node participating in the cluster.
+
+The official `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
+as well as the :ref:`Oracle documentation on creating KeyStore and TrustStores <https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html>`
+are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
+and configuring SSL.
+
+See also a description of the settings in the :ref:`remote-configuration-scala` section.
 
 .. note::
 
-  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/./urandom`` as argument
+  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/urandom`` as argument
   to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
-  Use '/dev/./urandom', not '/dev/urandom' as that doesn't work according to
-  `Bug ID: 6202721 <http://bugs.sun.com/view_bug.do?bug_id=6202721>`_.
 
 .. _remote-configuration-java:
 
