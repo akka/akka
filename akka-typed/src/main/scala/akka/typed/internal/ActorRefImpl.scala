@@ -190,5 +190,11 @@ private[typed] class FutureRef[-T](_p: a.ActorPath, bufferSize: Int, f: Future[A
 }
 
 private[typed] object FutureRef {
-  val targetOffset = unsafe.objectFieldOffset(classOf[FutureRef[_]].getDeclaredField("akka$typed$internal$FutureRef$$_target"))
+  val targetOffset = {
+    val fieldName = if (scala.util.Properties.versionNumberString.startsWith("2.12."))
+      "_target"
+    else
+      "akka$typed$internal$FutureRef$$_target"
+    unsafe.objectFieldOffset(classOf[FutureRef[_]].getDeclaredField(fieldName))
+  }
 }
