@@ -219,6 +219,17 @@ no matter how ``State Store Mode`` is set.
   The ``ddata`` mode is considered as **“experimental”** as of its introduction in Akka 2.4.0, since
   it depends on the experimental Distributed Data module.
 
+Startup after minimum number of members
+---------------------------------------
+
+It's good to use Cluster Sharding with the Cluster setting ``akka.cluster.min-nr-of-members`` or
+``akka.cluster.role.<role-name>.min-nr-of-members``. That will defer the allocation of the shards
+until at least that number of regions have been started and registered to the coordinator. This
+avoids that many shards are allocated to the first region that registers and only later are 
+rebalanced to other nodes.
+
+See :ref:`min-members_scala` for more information about ``min-nr-of-members``.
+
 Proxy Only Mode
 ---------------
 

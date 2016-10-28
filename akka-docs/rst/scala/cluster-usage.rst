@@ -321,6 +321,8 @@ and it is typically defined in the start script as a system property or environm
 
 The roles of the nodes is part of the membership information in ``MemberEvent`` that you can subscribe to.
 
+.. _min-members_scala:
+
 How To Startup when Cluster Size Reached
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
