@@ -24,8 +24,9 @@ akka.http.host-connection-pool.idle-timeout
 akka.http.host-connection-pool.client.idle-timeout
 ```
 
-> **Note:**
+@@@ note
 For the connection pooled client side the idle period is counted only when the pool has no pending requests waiting.
+@@@
 
 ## Server timeouts
 
@@ -44,10 +45,11 @@ The default `HttpResponse` that is written when a request timeout is exceeded lo
 A default request timeout is applied globally to all routes and can be configured using the
 `akka.http.server.request-timeout` setting (which defaults to 20 seconds).
 
-> **Note:**
+@@@ note
 Please note that if multiple requests (`R1,R2,R3,...`) were sent by a client (see "HTTP pipelining")
 using the same connection and the `n-th` request triggers a request timeout the server will reply with an Http Response
 and close the connection, leaving the `(n+1)-th` (and subsequent requests on the same connection) unhandled.
+@@@
 
 The request timeout can be configured at run-time for a given route using the any of the @ref[TimeoutDirectives](../routing-dsl/directives/timeout-directives/index.md#timeoutdirectives).
 

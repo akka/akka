@@ -74,10 +74,11 @@ response with its respective request. The way that this is done is by allowing t
 This context object of type `T` is completely opaque to Akka HTTP, i.e. you can pick whatever works best for your
 particular application scenario.
 
-> **Note:**
+@@@ note
 A consequence of using a pool is that long-running requests block a connection while running and may starve other
 requests. Make sure not to use a connection pool for long-running requests like long-polling GET requests.
 Use the @ref[Connection-Level Client-Side API](connection-level.md#connection-level-api-java) instead.
+@@@
 
 ## Connection Allocation Logic
 
@@ -130,11 +131,12 @@ It's also possible to trigger the immediate termination of *all* connection pool
 time by calling `Http.get(system).shutdownAllConnectionPools()`. This call too produces a `CompletionStage<Done>` which is fulfilled when
 all pools have terminated.
 
-> **Note:**
+@@@ note
 When encountering unexpected `akka.stream.AbruptTerminationException` exceptions during `ActorSystem` **shutdown**
 please make sure that active connections are shut down before shutting down the entire system, this can be done by
 calling the `Http.get(system).shutdownAllConnectionPools()` method, and only once its CompletionStage completes,
 shutting down the actor system.
+@@@
 
 ## Example
 

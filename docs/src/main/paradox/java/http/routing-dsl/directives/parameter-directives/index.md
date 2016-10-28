@@ -39,5 +39,6 @@ multi
 : multiple values per parameter name are possible
 
 
-> **Note:**
+@@@ note
 If you need to extract multiple parameters, apply the `parameter` directive multiple times.
+@@@

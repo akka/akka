@@ -22,10 +22,11 @@ a `path` directive will always be empty).
 Depending on the type of its `PathMatcher` argument the `path` directive extracts zero or more values from the URI.
 If the match fails the request is rejected with an @ref[empty rejection set](../../rejections.md#empty-rejections).
 
-> **Note:**
+@@@ note
 The empty string (also called empty word or identity) is a **neutral element** of string concatenation operation,
 so it will match everything, but remember that `path` requires whole remaining path being matched, so (`/`) will succeed
 and (`/whatever`) will fail. The @ref[pathPrefix-java](pathPrefix.md#pathprefix-java) provides more liberal behaviour.
+@@@
 
 ## Example
 

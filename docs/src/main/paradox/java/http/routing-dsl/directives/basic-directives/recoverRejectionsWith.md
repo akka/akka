@@ -12,8 +12,9 @@ Asynchronous version of @ref[recoverRejections-java](recoverRejections.md#recove
 
 See @ref[recoverRejections-java](recoverRejections.md#recoverrejections-java) (the synchronous equivalent of this directive) for a detailed description.
 
-> **Note:**
+@@@ note
 To learn more about how and why rejections work read the @ref[Rejections](../../rejections.md#rejections-java) section of the documentation.
+@@@
 
 ## Example
 

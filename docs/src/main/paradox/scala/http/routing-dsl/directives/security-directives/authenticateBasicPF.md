@@ -23,8 +23,9 @@ or @ref[authenticateBasicPFAsync](authenticateBasicPFAsync.md#authenticatebasicp
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-scala) for details about verifying the secret.
 
-> **Warning:**
+@@@ warning
 Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.
+@@@
 
 ## Example
 

@@ -8,9 +8,10 @@ Wraps the inner route with OAuth Bearer Token authentication support using a giv
 Provides support for extracting the so-called "*Bearer Token*" from the `Authorization` HTTP Header,
 which is used to initiate an OAuth2 authorization.
 
-> **Warning:**
+@@@ warning
 This directive does not implement the complete OAuth2 protocol, but instead enables implementing it,
 by extracting the needed token from the HTTP headers.
+@@@
 
 Refer to @ref[authenticateOAuth2-java](authenticateOAuth2.md#authenticateoauth2-java) for a detailed description of this directive.
 

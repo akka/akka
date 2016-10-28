@@ -6,10 +6,11 @@ defining RESTful web services. It picks up where the low-level API leaves off an
 functionality of typical web servers or frameworks, like deconstruction of URIs, content negotiation or
 static content serving.
 
-> **Note:**
+@@@ note
 It is recommended to read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md#implications-of-streaming-http-entities) section,
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Servers.
+@@@
 
 @@toc { depth=1 }
 
@@ -61,9 +62,10 @@ In this case the "binding future" will fail immediately, and we can react to it 
 
 @@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-failure-high-level-example }
 
-> **Note:**
+@@@ note
 For a more low-level overview of the kinds of failures that can happen and also more fine-grained control over them
 refer to the @ref[Handling HTTP Server failures in the Low-Level API](../low-level-server-side-api.md#handling-http-server-failures-low-level-scala) documentation.
+@@@
 
 ### Failures and exceptions inside the Routing DSL
 

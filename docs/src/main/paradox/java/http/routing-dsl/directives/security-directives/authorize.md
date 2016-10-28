@@ -18,8 +18,9 @@ e.g. @ref[authenticateBasic-java](authenticateBasic.md#authenticatebasic-java)) 
 
 See also [authorize-java](#authorize-java) for the asynchronous version of this directive.
 
-> **Note:**
+@@@ note
 See also @ref[Authentication vs. Authorization](index.md#authentication-vs-authorization-java) to understand the differences between those.
+@@@
 
 ## Example
 

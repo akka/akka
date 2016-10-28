@@ -10,8 +10,9 @@ Transforms rejections from the inner route with a `Function<Iterable<Rejection>,
 A `RouteResult` is either a `Complete` containing the `HttpResponse` or a `Rejected` containing the
 rejections.
 
-> **Note:**
+@@@ note
 To learn more about how and why rejections work read the @ref[Rejections](../../rejections.md#rejections-java) section of the documentation.
+@@@
 
 ## Example
 
