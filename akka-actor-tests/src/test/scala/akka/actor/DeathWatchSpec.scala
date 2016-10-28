@@ -11,7 +11,9 @@ import akka.testkit._
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-class LocalDeathWatchSpec extends AkkaSpec with ImplicitSender with DefaultTimeout with DeathWatchSpec
+class LocalDeathWatchSpec extends AkkaSpec("""
+  akka.actor.serialize-messages = off
+  """) with ImplicitSender with DefaultTimeout with DeathWatchSpec
 
 object DeathWatchSpec {
   def props(target: ActorRef, testActor: ActorRef) = Props(new Actor {
@@ -112,7 +114,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
       filterException[ActorKilledException] {
         val supervisor = system.actorOf(Props(new Supervisor(
           OneForOneStrategy(maxNrOfRetries = 2)(List(classOf[Exception])))))
-        val terminalProps = Props(new Actor { def receive = { case x â‡’ sender() ! x } })
+        val terminalProps = TestActors.echoActorProps
         val terminal = Await.result((supervisor ? terminalProps).mapTo[ActorRef], timeout.duration)
 
         val monitor = startWatching(terminal)
