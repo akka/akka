@@ -12,9 +12,8 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
-
 import akka.actor.ActorSystem
-import akka.pattern.{ after ⇒ later }
+import akka.pattern.{after => later}
 import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
@@ -121,20 +120,36 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
 
     trait CommunicationSetup extends Named {
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]): Flow[SslTlsOutbound, SslTlsInbound, NotUsed]
+                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch): Flow[SslTlsOutbound, SslTlsInbound, NotUsed]
       def cleanup(): Unit = ()
     }
 
     object ClientInitiates extends CommunicationSetup {
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) =
-        clientTls(leftClosing) atop serverTls(rightClosing).reversed join rhs
+                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) =
+        clientTls(leftClosing) atop serverTls(rightClosing).reversed join rhs.via(ks.flow)
+    }
+
+    object ClientInitiatesServerTruncates extends CommunicationSetup {
+      def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
+                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) = {
+        val terminator = BidiFlow.fromFlows(Flow[ByteString], ks.flow[ByteString])
+        clientTls(leftClosing) atop terminator atop serverTls(rightClosing).reversed join rhs
+      }
     }
 
     object ServerInitiates extends CommunicationSetup {
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) =
-        serverTls(leftClosing) atop clientTls(rightClosing).reversed join rhs
+                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) =
+        serverTls(leftClosing) atop clientTls(rightClosing).reversed join rhs.via(ks.flow)
+    }
+
+    object ServerInitiatesClientTruncates extends CommunicationSetup {
+      def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
+                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) = {
+        val terminator = BidiFlow.fromFlows(Flow[ByteString], ks.flow[ByteString])
+        serverTls(leftClosing) atop terminator atop clientTls(rightClosing).reversed join rhs
+      }
     }
 
     def server(flow: Flow[ByteString, ByteString, Any]) = {
@@ -148,21 +163,27 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
     object ClientInitiatesViaTcp extends CommunicationSetup {
       var binding: Tcp.ServerBinding = null
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
-        binding = server(serverTls(rightClosing).reversed join rhs)
+                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) = {
+        binding = server(serverTls(rightClosing).reversed join rhs.via(ks.flow))
         clientTls(leftClosing) join Tcp().outgoingConnection(binding.localAddress)
       }
-      override def cleanup(): Unit = binding.unbind()
+      override def cleanup(): Unit = {
+        super.cleanup()
+        binding.unbind()
+      }
     }
 
     object ServerInitiatesViaTcp extends CommunicationSetup {
       var binding: Tcp.ServerBinding = null
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
-                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any]) = {
-        binding = server(clientTls(rightClosing).reversed join rhs)
+                       rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) = {
+        binding = server(clientTls(rightClosing).reversed join rhs.via(ks.flow))
         serverTls(leftClosing) join Tcp().outgoingConnection(binding.localAddress)
       }
-      override def cleanup(): Unit = binding.unbind()
+      override def cleanup(): Unit = {
+        super.cleanup()
+        binding.unbind()
+      }
     }
 
     val communicationPatterns =
@@ -170,7 +191,10 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
         ClientInitiates,
         ServerInitiates,
         ClientInitiatesViaTcp,
-        ServerInitiatesViaTcp)
+        ServerInitiatesViaTcp,
+        ClientInitiatesServerTruncates,
+        ServerInitiatesClientTruncates
+      )
 
     trait PayloadScenario extends Named {
       def flow: Flow[SslTlsInbound, SslTlsOutbound, Any] =
@@ -348,9 +372,10 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
     } {
       s"work in mode ${commPattern.name} while sending ${scenario.name}" in assertAllStagesStopped {
         val onRHS = debug.via(scenario.flow)
+        val ks = KillSwitches.shared("ks")
         val f =
           Source(scenario.inputs)
-            .via(commPattern.decorateFlow(scenario.leftClosing, scenario.rightClosing, onRHS))
+            .via(commPattern.decorateFlow(scenario.leftClosing, scenario.rightClosing, onRHS, ks))
             .transform(() ⇒ new PushStage[SslTlsInbound, SslTlsInbound] {
               override def onPush(elem: SslTlsInbound, ctx: Context[SslTlsInbound]) =
                 ctx.push(elem)
@@ -364,7 +389,8 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
             .scan(ByteString.empty)(_ ++ _)
             .via(new Timeout(6.seconds))
             .dropWhile(_.size < scenario.output.size)
-            .runWith(Sink.head)
+            .map(bs => {ks.shutdown(); bs})
+            .runWith(Sink.last)
 
         Await.result(f, 8.seconds).utf8String should be(scenario.output.utf8String)
 

@@ -292,6 +292,7 @@ class TLSActor(
       if (tracing) log.debug("closing inbound")
       try engine.closeInbound()
       catch { case ex: SSLException ⇒ outputBunch.enqueue(UserOut, SessionTruncated) }
+      lastHandshakeStatus = engine.getHandshakeStatus
       completeOrFlush()
       false
     } else if (inboundState != inboundHalfClosed && outputBunch.isCancelled(UserOut)) {
