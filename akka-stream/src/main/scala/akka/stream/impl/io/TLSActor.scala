@@ -292,6 +292,7 @@ class TLSActor(
       if (tracing) log.debug("closing inbound")
       try engine.closeInbound()
       catch { case ex: SSLException ⇒ outputBunch.enqueue(UserOut, SessionTruncated) }
+      lastHandshakeStatus = engine.getHandshakeStatus
       completeOrFlush()
       false
     } else if (inboundState != inboundHalfClosed && outputBunch.isCancelled(UserOut)) {
@@ -314,8 +315,8 @@ class TLSActor(
         case ex: SSLException ⇒
           if (tracing) log.debug(s"SSLException during doUnwrap: $ex")
           fail(ex, closeTransport = false)
-          engine.closeInbound()
-          completeOrFlush()
+          engine.closeInbound() // we don't need to add lastHandshakeStatus check here because
+          completeOrFlush()     // it doesn't make any sense to write anything to the network anymore
           false
       }
     } else true

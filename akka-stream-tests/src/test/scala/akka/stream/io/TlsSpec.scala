@@ -436,6 +436,36 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
       pub.expectSubscription().expectCancellation()
     }
 
+    "complete if TLS connection is truncated" in assertAllStagesStopped {
+
+      val ks = KillSwitches.shared("ks")
+
+      val scenario = SingleBytes
+
+      val outFlow = {
+        val terminator = BidiFlow.fromFlows(Flow[ByteString], ks.flow[ByteString])
+        clientTls(scenario.leftClosing) atop terminator atop serverTls(scenario.rightClosing).reversed join debug.via(scenario.flow) via debug
+      }
+
+      val inFlow = Flow[SslTlsInbound]
+        .collect { case SessionBytes(_, b) ⇒ b }
+        .scan(ByteString.empty)(_ ++ _)
+        .via(new Timeout(6.seconds))
+        .dropWhile(_.size < scenario.output.size)
+
+
+      val f =
+        Source(scenario.inputs)
+          .via(outFlow)
+          .via(inFlow)
+          .map(result ⇒ {
+            ks.shutdown(); result
+          })
+          .runWith(Sink.last)
+
+      Await.result(f, 8.second).utf8String should be(scenario.output.utf8String)
+    }
+
   }
 
   "A SslTlsPlacebo" must {
