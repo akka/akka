@@ -170,7 +170,7 @@ class HubSpec extends StreamSpec {
     "keep working even if one of the producers fail" in assertAllStagesStopped {
       val (sink, result) = MergeHub.source[Int](16).take(10).toMat(Sink.seq)(Keep.both).run()
       EventFilter.error("Upstream producer failed with exception").intercept {
-        Source.failed(TE("faling")).runWith(sink)
+        Source.failed(TE("failing")).runWith(sink)
         Source(1 to 10).runWith(sink)
       }
 
