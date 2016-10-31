@@ -795,26 +795,6 @@ class HttpServerSpec extends AkkaSpec(
       netOut.expectComplete()
     })
 
-    "support remote-address-header" in assertAllStagesStopped(new TestSetup {
-      lazy val theAddress = InetAddress.getByName("127.5.2.1")
-
-      override def remoteAddress: Option[InetSocketAddress] =
-        Some(new InetSocketAddress(theAddress, 8080))
-
-      override def settings: ServerSettings =
-        super.settings.withRemoteAddressHeader(true)
-
-      send("""GET / HTTP/1.1
-             |Host: example.com
-             |
-             |""".stripMarginWithNewline("\r\n"))
-
-      val request = expectRequest()
-      request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080))))
-
-      shutdownBlueprint()
-    })
-
     "support remote-address-header when blueprint not constructed with it" in assertAllStagesStopped(new TestSetup {
       // coverage for #21130
       lazy val theAddress = InetAddress.getByName("127.5.2.1")

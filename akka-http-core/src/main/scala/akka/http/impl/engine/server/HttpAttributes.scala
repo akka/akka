@@ -21,4 +21,6 @@ private[akka] object HttpAttributes {
   private[akka] def remoteAddress(address: Option[InetSocketAddress]) =
     Attributes(RemoteAddress(address))
 
+  private[akka] val empty =
+    Attributes()
 }
