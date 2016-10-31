@@ -804,11 +804,25 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
   }: Receive).orElse[Any, Unit](receiveTerminated).orElse[Any, Unit](receiveSnapshotResult)
 
   def receiveSnapshotResult: Receive = {
-    case SaveSnapshotSuccess(_) ⇒
+    case SaveSnapshotSuccess(m) ⇒
       log.debug("Persistent snapshot saved successfully")
+      deleteMessages(m.sequenceNr)
 
     case SaveSnapshotFailure(_, reason) ⇒
       log.warning("Persistent snapshot failure: {}", reason.getMessage)
+
+    case DeleteMessagesSuccess(toSequenceNr) ⇒
+      log.debug("Persistent messages to {} deleted successfully", toSequenceNr)
+      deleteSnapshots(SnapshotSelectionCriteria(maxSequenceNr = toSequenceNr - 1))
+
+    case DeleteMessagesFailure(reason, toSequenceNr) ⇒
+      log.warning("Persistent messages to {} deletion failure: {}", toSequenceNr, reason.getMessage)
+
+    case DeleteSnapshotSuccess(m) ⇒
+      log.debug("Persistent snapshots matching {} deleted successfully", m)
+
+    case DeleteSnapshotFailure(m, reason) ⇒
+      log.warning("Persistent snapshots matching {} deletion falure: {}", m, reason.getMessage)
   }
 
   def update[E <: DomainEvent](evt: E)(f: E ⇒ Unit): Unit = {
