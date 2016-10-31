@@ -605,6 +605,9 @@ object ByteString {
 sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
   def apply(idx: Int): Byte
   private[akka] def byteStringCompanion: ByteString.Companion
+  // override so that toString will also be `ByteString(...)` for the concrete subclasses
+  // of ByteString which changed for Scala 2.12, see https://github.com/akka/akka/issues/21774
+  override final def stringPrefix: String = "ByteString"
 
   override protected[this] def newBuilder: ByteStringBuilder = ByteString.newBuilder
 
