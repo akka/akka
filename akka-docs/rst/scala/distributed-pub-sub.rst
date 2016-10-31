@@ -186,7 +186,7 @@ and then it takes a while for it to be populated.
 Delivery Guarantee
 ------------------
 
-As in :ref:`message-general-rules` of Akka, message delivery guarantee in distributed pub sub modes is **at-most-once delivery**.
+As in :ref:`message-delivery-reliability` of Akka, message delivery guarantee in distributed pub sub modes is **at-most-once delivery**.
 In other words, messages can be lost over the wire.
 
 If you are looking for at-least-once delivery guarantee, we recommend `Kafka Akka Streams integration <https://github.com/akka/reactive-kafka>`_.
