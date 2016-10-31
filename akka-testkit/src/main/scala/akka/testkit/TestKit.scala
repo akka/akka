@@ -77,11 +77,11 @@ object TestActor {
     }
 
     override def processFailure(context: ActorContext, restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit = {
-      delegates(child).processFailure(context, restart, child, cause, stats, children)
+      delegate(child).processFailure(context, restart, child, cause, stats, children)
     }
 
     override def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
-      delegates(child).handleFailure(context, child, cause, stats, children)
+      delegate(child).handleFailure(context, child, cause, stats, children)
     }
   }
 
