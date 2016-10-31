@@ -99,22 +99,16 @@ class FlowFoldAsyncSpec extends StreamSpec {
     }
 
     "signal error from foldAsync" in assertAllStagesStopped {
-      val latch = TestLatch(1)
-      val c = TestSubscriber.manualProbe[Int]()
+      val probe = TestSubscriber.probe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 5).mapAsync(4)(n ⇒
+      Source(1 to 5).foldAsync(0) { (_, n) ⇒
         if (n == 3) throw new RuntimeException("err2") with NoStackTrace
-        else {
-          Future {
-            Await.ready(latch, 10.seconds)
-            n
-          }
-        }).
-        to(Sink.fromSubscriber(c)).run()
-      val sub = c.expectSubscription()
+        Future(n + 1)
+      }.to(Sink.fromSubscriber(probe)).run()
+
+      val sub = probe.expectSubscription()
       sub.request(10)
-      c.expectError().getMessage should be("err2")
-      latch.countDown()
+      probe.expectError().getMessage should be("err2")
     }
 
     "resume after future failure" in assertAllStagesStopped {
@@ -162,7 +156,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
         Future.failed(Utils.TE("failure5")),
         Future.successful("happy!"))
 
-      Source(futures).mapAsync(2)(identity).
+      Source(futures).foldAsync("") { (_, s) ⇒ s }.
         withAttributes(supervisionStrategy(resumingDecider)).runWith(Sink.head).
         futureValue(timeout) should ===("happy!")
     }
