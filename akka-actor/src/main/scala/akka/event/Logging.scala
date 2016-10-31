@@ -1505,7 +1505,7 @@ class MarkerLoggingAdapter(
    * @see [[LoggingAdapter]]
    */
   def warning(marker: LogMarker, message: String): Unit =
-    if (isErrorEnabled) bus.publish(Error(logSource, logClass, message, mdc, marker))
+    if (isWarningEnabled) bus.publish(Warning(logSource, logClass, message, mdc, marker))
 
   /**
    * Message template with 1 replacement argument.
