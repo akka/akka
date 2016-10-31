@@ -22,11 +22,7 @@ To enable automatic support for (un)marshalling from and to JSON with [spray-jso
 
 Next, provide a `RootJsonFormat[T]` for your type and bring it into scope. Check out the [spray-json] documentation for more info on how to do this.
 
-Finally, mix in the `akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport` trait as shown in the example below or import the `FromEntityUnmarshaller[T]` and `ToEntityMarshaller[T]` implicits directly from `SprayJsonSupport`
-
-```scala
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-```
+Finally, import the `FromEntityUnmarshaller[T]` and `ToEntityMarshaller[T]` implicits directly from `SprayJsonSupport` as shown in the example below or mix the `akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport` trait into your JSON support module.
 
 Once you have done this (un)marshalling between JSON and your type `T` should work nicely and transparently.
 
