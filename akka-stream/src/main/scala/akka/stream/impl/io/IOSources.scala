@@ -5,7 +5,7 @@ package akka.stream.impl.io
 
 import java.io.InputStream
 import java.nio.ByteBuffer
-import java.nio.channels.{ AsynchronousFileChannel, CompletionHandler }
+import java.nio.channels.{ NonReadableChannelException, AsynchronousFileChannel, CompletionHandler }
 import java.nio.file.{ Files, Path, StandardOpenOption }
 
 import akka.Done
@@ -21,6 +21,7 @@ import akka.util.ByteString
 import org.reactivestreams._
 
 import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -71,12 +72,13 @@ private[akka] final class FileSource(path: Path, chunkSize: Int)
           require(Files.exists(path), s"Path '$path' does not exist")
           require(Files.isRegularFile(path), s"Path '$path' is not a regular file")
           require(Files.isReadable(path), s"Missing read permission for '$path'")
+
+          channel = AsynchronousFileChannel.open(path, StandardOpenOption.READ)
         } catch {
-          case ex: IllegalArgumentException ⇒
-            ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
+          case ex: Exception ⇒
+            ioResultPromise.failure(ex)
             throw ex
         }
-        channel = AsynchronousFileChannel.open(path, StandardOpenOption.READ)
 
         chunkCallback = getAsyncCallback[Try[Int]] {
           case Success(readBytes) ⇒
@@ -96,13 +98,17 @@ private[akka] final class FileSource(path: Path, chunkSize: Int)
             failStage(ex)
             ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
 
-        }.invoke _
+        }.invoke
 
       }
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
+        override def onPull(): Unit = try {
           channel.read(buffer, position, chunkCallback, FileSource.completionHandler)
+        } catch {
+          case NonFatal(ex) ⇒
+            ioResultPromise.success(IOResult(position, Failure(ex)))
+            throw ex
         }
       })
 

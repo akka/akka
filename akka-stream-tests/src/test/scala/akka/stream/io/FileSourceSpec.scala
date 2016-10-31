@@ -3,7 +3,9 @@
  */
 package akka.stream.io
 
-import java.nio.file.{ FileSystems, Files }
+import java.nio.ByteBuffer
+import java.nio.channels.AsynchronousFileChannel
+import java.nio.file.{ StandardOpenOption, FileSystems, Files }
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Random
 
@@ -150,7 +152,9 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       c.expectSubscription()
       c.expectError()
-      val ioResult = Await.result(r, 3.seconds.dilated).status.isFailure shouldBe true
+      intercept[IllegalArgumentException] {
+        Await.result(r, 3.seconds.dilated)
+      }
     }
 
     List(
