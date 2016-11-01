@@ -59,9 +59,10 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   private type ServerLayerBidiFlow = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]
   private type ServerLayerFlow = Flow[ByteString, ByteString, Future[Done]]
 
-  private def fuseServerBidiFlow(settings: ServerSettings,
-                                 connectionContext: ConnectionContext,
-                                 log: LoggingAdapter)(implicit mat: Materializer): ServerLayerBidiFlow = {
+  private def fuseServerBidiFlow(
+    settings:          ServerSettings,
+    connectionContext: ConnectionContext,
+    log:               LoggingAdapter)(implicit mat: Materializer): ServerLayerBidiFlow = {
     val httpLayer = serverLayer(settings, None, log)
     val tlsStage = sslTlsStage(connectionContext, Server)
     BidiFlow.fromGraph(Fusing.aggressive(GraphDSL.create() { implicit b ⇒
@@ -82,8 +83,9 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     }))
   }
 
-  private def fuseServerFlow(baseFlow: ServerLayerBidiFlow,
-                             handler: Flow[HttpRequest, HttpResponse, Any])(implicit mat: Materializer): ServerLayerFlow =
+  private def fuseServerFlow(
+    baseFlow: ServerLayerBidiFlow,
+    handler:  Flow[HttpRequest, HttpResponse, Any])(implicit mat: Materializer): ServerLayerFlow =
     Flow.fromGraph(
       Fusing.aggressive(
         Flow[HttpRequest]

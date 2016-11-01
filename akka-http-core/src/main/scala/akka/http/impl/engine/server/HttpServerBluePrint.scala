@@ -56,13 +56,13 @@ import akka.http.scaladsl.model.ws.Message
  */
 private[http] object HttpServerBluePrint {
   def apply(settings: ServerSettings, log: LoggingAdapter): Http.ServerLayer =
-      userHandlerGuard(settings.pipeliningLimit) atop
-        requestTimeoutSupport(settings.timeouts.requestTimeout) atop
-        requestPreparation(settings) atop
-        controller(settings, log) atop
-        parsingRendering(settings, log) atop
-        websocketSupport(settings, log) atop
-        tlsSupport
+    userHandlerGuard(settings.pipeliningLimit) atop
+      requestTimeoutSupport(settings.timeouts.requestTimeout) atop
+      requestPreparation(settings) atop
+      controller(settings, log) atop
+      parsingRendering(settings, log) atop
+      websocketSupport(settings, log) atop
+      tlsSupport
 
   val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, NotUsed] =
     BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x })
