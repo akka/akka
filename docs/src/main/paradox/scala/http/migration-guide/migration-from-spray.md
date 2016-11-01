@@ -1,32 +1,74 @@
 # Migration Guide from Spray
 
-## General notes
+Akka HTTP is the successor for spray. With the first non-experimental release of Akka HTTP, spray has reached its
+end-of-life. Akka HTTP is a reimplementation of HTTP based on akka-stream (former spray-can) which adds streaming
+support on all levels. The popular high-level routing DSL (former spray-routing) has mostly been kept but was made
+more consistent and simplified where possible. While underlyings have changed a lot, many of the high-level
+features and syntax of the routing DSL have only changed superficially so that code can hopefully be converted with
+little effort.
 
-Features which are not ported to the akka-http:
+## Major changes
 
- * `respondWithStatus` also known as `overrideStatusCode` has not been forward ported to Akka HTTP,
-as it has been seen mostly as an anti-pattern. More information here: <https://github.com/akka/akka/issues/18626>
- * `respondWithMediaType` was considered an anti-pattern in spray and is not ported to Akka HTTP.
-Instead users should rely on content type negotiation as Akka HTTP implements it.
-More information here: [#190](https://github.com/akka/akka-http/issues/190)
- * @ref[Registering Custom Media Types](../common/http-model.md#registeringcustommediatypes) changed from Spray in order not to rely on global state.
+### Streams everywhere
 
-## Removed HttpService
+Akka HTTP is not implemented on Actors any more but is now completely based on akka-stream. This has some important
+consequences.
 
-Spray’s `HttpService` was removed. This means that scala code like this:
+Streaming support is needed to handle request and response entities (or bodies) in a streaming fashion, i.e. being
+able to access the incoming bytes while they come in from the network without having to buffer a potentially big request
+or response in memory. The same is valid for sending out request or response data entities. In the model, the streaming
+underlyings can be seen in the `HttpEntity` type which now has subclasses that allow to specify a `Source[ByteString, Any]`
+to provide or consume entity data.
 
-```scala
-val service = system.actorOf(Props(new HttpServiceActor(routes)))
-IO(Http)(system) ! Http.Bind(service, "0.0.0.0", port = 8080)
-```
+In spray, you could configure spray-can to send out `HttpRequestPart` and `HttpResponsePart` messages to receive a request
+or a response in a streaming fashion. The default case was for spray to collect the full entity in memory and send it out
+as a `ByteString` as part of the request or response entity object.
 
-needs to be changed into:
+In Akka HTTP, handling streaming data is mandatory. When you receive a `HttpRequest` on the server-side or an `HttpResponse`,
+in the default case it will contain a streamed entity as the `entity` field *which you are required to consume*.
+Otherwise, a connection might be stuck (at least until timeouts kick in).
+See @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md).
 
-```scala
-Http().bindAndHandle(routes, "0.0.0.0", port = 8080)
-```
+### New module structure
 
-## Changes in Marshalling
+The number of modules has been reduced. Here's an approximate mapping from spray modules to new modules:
+
+ * spray-util, spray-http, spray-can ⇒ akka-http-core
+ * spray-routing ⇒ akka-http
+ * spray-client ⇒ parts of high-level client support is now provided via `Http().singleRequest`, other is not yet
+   implemented (see also [#113](https://github.com/akka/akka-http/issues/113))
+ * spray-caching ⇒ not supported so far
+
+### Package name changes
+
+Classes can now be found in new packages:
+
+ * the model can be found in `akka.http.scaladsl.model`
+ * headers can be found in `akka.http.scaladsl.model.headers._`
+ * the routing DSL can be found in `akka.http.scaladsl.server._`
+
+### Routing DSL not based on shapeless any more
+
+To simplify using Akka HTTP together with other libraries that require shapeless, the routing DSL in Akka HTTP does
+not depend on shapeless any more. Instead, we support a light-weight replacement that models heterogeneous lists with
+tuples. This will not affect you as long as you haven't written any generic directives. The implicit magic in the
+background that powers directives will - in user code - work as before.
+
+Internally, the type aliases for `DirectiveX` have changed:
+
+|                      | spray                         | Akka HTTP                   |
+|----------------------|-------------------------------|-----------------------------|
+| `Directive0`         | `Directive[HNil]`             | `Directive[Tuple0]`         |
+| `Directive1[T]`      | `Directive[T :: HNil]`        | `Directive[Tuple1[T]]`      |
+| `Directive2[T1, T2]` | `Directive[T1 :: T2 :: HNil]` | `Directive[Tuple2[T1, T2]]` |
+
+### Support for Java
+
+All APIs are also available for Java. See everything under the `akka.http.javadsl` package.
+
+## Other changes
+
+### Changes in Marshalling
 
 Marshaller.of can be replaced with `Marshaller.withFixedContentType`.
 
@@ -70,7 +112,7 @@ Marshaller.oneOf(
 )
 ```
 
-## Changes in Unmarshalling
+### Changes in Unmarshalling
 
 Akka Http contains a set of predefined unmarshallers. This means that scala code like this:
 
@@ -90,7 +132,7 @@ Unmarshaller
   .map(_.parseJson.convertTo[Entity])
 ```
 
-## Changes in MediaTypes
+### Changes in MediaTypes
 
 `MediaType.custom` can be replaced with specific methods in `MediaType` object.
 
@@ -106,7 +148,7 @@ Replace with:
 MediaType.applicationWithFixedCharset("vnd.acme+json", HttpCharsets.`UTF-8`)
 ```
 
-## Changes in Rejection Handling
+### Changes in Rejection Handling
 
 `RejectionHandler` now uses a builder pattern – see the example:
 
@@ -143,7 +185,7 @@ RejectionHandler
 .withFallback(RejectionHandler.default)
 ```
 
-## Changes in HTTP Client
+### Changes in HTTP Client
 
 The Spray-client pipeline was removed. Http’s `singleRequest` should be used instead of `sendReceive`:
 
@@ -173,11 +215,7 @@ http.singleRequest(request).map {
 }
 ```
 
-## Changes in Headers
-
-All HTTP headers have been moved to the `akka.http.scaladsl.model.headers._` package.
-
-## Changes in form fields and file upload directives
+### Changes in form fields and file upload directives
 
 With the streaming nature of http entity, it’s important to have a strict http entity before accessing
 multiple form fields or use file upload directives.
@@ -202,3 +240,30 @@ toStrict {
   }
 }
 ```
+
+
+## Removed features
+
+### Removed HttpService
+
+Spray’s `HttpService` was removed. This means that scala code like this:
+
+```scala
+val service = system.actorOf(Props(new HttpServiceActor(routes)))
+IO(Http)(system) ! Http.Bind(service, "0.0.0.0", port = 8080)
+```
+
+needs to be changed into:
+
+```scala
+Http().bindAndHandle(routes, "0.0.0.0", port = 8080)
+```
+
+### Other removed features
+
+ * `respondWithStatus` also known as `overrideStatusCode` has not been forward ported to Akka HTTP,
+as it has been seen mostly as an anti-pattern. More information here: <https://github.com/akka/akka/issues/18626>
+ * `respondWithMediaType` was considered an anti-pattern in spray and is not ported to Akka HTTP.
+Instead users should rely on content type negotiation as Akka HTTP implements it.
+More information here: [#190](https://github.com/akka/akka-http/issues/190)
+ * @ref[Registering Custom Media Types](../common/http-model.md#registeringcustommediatypes) changed from Spray in order not to rely on global state.
