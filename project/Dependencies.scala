@@ -15,7 +15,7 @@ object Dependencies {
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
   val Versions = Seq(
-      crossScalaVersions := Seq("2.11.8"), // "2.12.0-RC1"
+      crossScalaVersions := Seq("2.11.8", "2.12.0-RC2"),
       scalaVersion := crossScalaVersions.value.head,
       scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.2"),
       scalaTestVersion := {
