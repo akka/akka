@@ -57,7 +57,7 @@ abstract class EntityStreamingSupport extends common.EntityStreamingSupport {
    * Write-side, defines what Content-Type the Marshaller should offer and the final Content-Type of the response.
    *
    * EntityStreamingSupport traits MUST support re-configuring the offered [[ContentType]].
-   * This is due to the need integrating with existing systems which sometimes excpect custom Content-Types,
+   * This is due to the need integrating with existing systems which sometimes expect custom Content-Types,
    * however really are just plain JSON or something else internally (perhaps with slight extensions).
    *
    * NOTE: Implementations should specialize the return type to their own Type!
@@ -74,7 +74,7 @@ abstract class EntityStreamingSupport extends common.EntityStreamingSupport {
   def parallelism: Int
 
   /**
-   * Write-side / read-side, defines if (un)marshalling of incoming stream elements should be perserved or not.
+   * Write-side / read-side, defines if (un)marshalling should preserve ordering of incoming stream elements.
    *
    * Allowing for parallel and unordered (un)marshalling often yields higher throughput and also allows avoiding
    * head-of-line blocking if some elements are much larger than others.
