@@ -9,7 +9,7 @@ If the completion stage succeeds the request is completed using the values marsh
 (This directive therefore requires a marshaller for the completion stage value type to be
 provided.)
 
-To handle the successful case manually as well, use the @ref[onComplete-java](onComplete.md#oncomplete-java) directive, instead.
+To handle the successful case manually as well, use the @ref[onComplete](onComplete.md#oncomplete-java) directive, instead.
 
 ## Example
 

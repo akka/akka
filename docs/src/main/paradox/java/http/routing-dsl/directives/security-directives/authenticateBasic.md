@@ -11,7 +11,7 @@ Given a function returning an `Optional<T>` with a value upon successful authent
 respectively applies the inner route or rejects the request with a `AuthenticationFailedRejection` rejection,
 which by default is mapped to an `401 Unauthorized` response.
 
-Longer-running authentication tasks (like looking up credentials in a database) should use the @ref[authenticateBasicAsync-java](authenticateBasicAsync.md#authenticatebasicasync-java)
+Longer-running authentication tasks (like looking up credentials in a database) should use the @ref[authenticateBasicAsync](authenticateBasicAsync.md#authenticatebasicasync-java)
 variant of this directive which allows it to run without blocking routing layer of Akka HTTP, freeing it for other requests.
 
 Standard HTTP-based authentication which uses the `WWW-Authenticate` header containing challenge data and
@@ -19,8 +19,9 @@ Standard HTTP-based authentication which uses the `WWW-Authenticate` header cont
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-java) for details about verifying the secret.
 
-> **Warning:**
+@@@ warning
 Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.
+@@@
 
 ## Example
 

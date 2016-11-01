@@ -12,7 +12,7 @@ Use `getFromBrowseableDirectory` to serve only one directory.
 
 Use `getFromDirectory` if directory browsing isn't required.
 
-For more details refer to @ref[getFromBrowseableDirectory-java](getFromBrowseableDirectory.md#getfrombrowseabledirectory-java).
+For more details refer to @ref[getFromBrowseableDirectory](getFromBrowseableDirectory.md#getfrombrowseabledirectory-java).
 
 ## Example
 

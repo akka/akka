@@ -5,7 +5,7 @@ Wraps the inner route with Http Basic authentication support using a given `Asyn
 
 ## Description
 
-This variant of the @ref[authenticateBasic-java](authenticateBasic.md#authenticatebasic-java) directive returns a `Future<Optional<T>>` which allows freeing up the routing
+This variant of the @ref[authenticateBasic](authenticateBasic.md#authenticatebasic-java) directive returns a `Future<Optional<T>>` which allows freeing up the routing
 layer of Akka HTTP, freeing it for other requests. It should be used whenever an authentication is expected to take
 a longer amount of time (e.g. looking up the user in a database).
 
@@ -17,8 +17,9 @@ Standard HTTP-based authentication which uses the `WWW-Authenticate` header cont
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-java) for details about verifying the secret.
 
-> **Warning:**
+@@@ warning
 Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.
+@@@
 
 ## Example
 

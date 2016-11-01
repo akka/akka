@@ -14,12 +14,13 @@ If the check returns `true` the request is passed on to the inner route unchange
 (the same as in the case of an `AuthenticationFailedRejection`).
 
 In a common use-case you would check if a user (e.g. supplied by any of the `authenticate*` family of directives,
-e.g. @ref[authenticateBasic-java](authenticateBasic.md#authenticatebasic-java)) is allowed to access the inner routes, e.g. by checking if the user has the needed permissions.
+e.g. @ref[authenticateBasic](authenticateBasic.md#authenticatebasic-java)) is allowed to access the inner routes, e.g. by checking if the user has the needed permissions.
 
 See also [authorize-java](#authorize-java) for the asynchronous version of this directive.
 
-> **Note:**
+@@@ note
 See also @ref[Authentication vs. Authorization](index.md#authentication-vs-authorization-java) to understand the differences between those.
+@@@
 
 ## Example
 

@@ -15,14 +15,19 @@ If all of the available threads are blocked, the routing infrastructure will end
 Therefore, routing infrastructure should not be blocked. Instead, a dedicated dispatcher
 for blocking operations should be used.
 
-> **Note:**
+@@@ note
+
 Blocking APIs should also be avoided if possible. Try to find or build Reactive APIs,
 such that blocking is minimised, or moved over to dedicated dispatchers.
+
 Often when integrating with existing libraries or systems it is not possible to
 avoid blocking APIs. The following solution explains how to handle blocking
 operations properly.
+
 Note that the same hints apply to managing blocking operations anywhere in Akka,
 including in Actors etc.
+
+@@@
 
 In the thread state diagrams below the colours have the following meaning:
 

@@ -33,10 +33,11 @@ Depending on your needs you can either use the low-level API directly or rely on
 @ref[Routing DSL](routing-dsl/index.md#http-high-level-server-side-api) which can make the definition of more complex service logic much
 easier.
 
-> **Note:**
+@@@ note
 It is recommended to read the @ref[Implications of the streaming nature of Request/Response Entities](implications-of-streaming-http-entity.md#implications-of-streaming-http-entities) section,
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Servers.
+@@@
 
 ## Streams and HTTP
 

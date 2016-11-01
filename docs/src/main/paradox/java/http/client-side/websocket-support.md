@@ -18,9 +18,10 @@ The methods of the WebSocket client API handle the upgrade to WebSocket on conne
 the connected WebSocket stream. If the connection fails, for example with a `404 NotFound` error, this regular
 HTTP result can be found in `WebSocketUpgradeResponse.response`
 
-> **Note:**
+@@@ note
 Make sure to read and understand the section about [Half-Closed WebSockets](#half-closed-client-websockets-java) as the behavior
 when using WebSockets for one-way communication may not be what you would expect.
+@@@
 
 ## Message
 
@@ -60,9 +61,10 @@ The websocket request may also include additional headers, like in this example,
 The future that is materialized from the flow will succeed when the WebSocket connection has been established or
 the server returned a regular HTTP response, or fail if the connection fails with an exception.
 
-> **Note:**
+@@@ note
 The `Flow` that is returned by this method can only be materialized once. For each request a new
 flow must be acquired by calling the method again.
+@@@
 
 Simple example sending a message and printing any incoming message:
 

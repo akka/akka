@@ -10,11 +10,14 @@ Specifically it means that: "*lack of consumption of the HTTP Entity, is signale
 side of the connection*". This is a feature, as it allows one only to consume the entity, and back-pressure servers/clients
 from overwhelming our application, possibly causing un-necessary buffering of the entity in memory.
 
-> **Warning:**
+@@@ warning
+
 Consuming (or discarding) the Entity of a request is mandatory!
 If *accidentally* left neither consumed or discarded Akka HTTP will
 assume the incoming data should remain back-pressured, and will stall the incoming data via TCP back-pressure mechanisms.
 A client should consume the Entity regardless of the status of the `HttpResponse`.
+
+@@@
 
 ## Client-Side handling of streaming HTTP Entities
 
@@ -64,7 +67,7 @@ Note that some directives force an implicit `toStrict` operation, such as `entit
 ### Consuming the HTTP Request Entity (Server)
 
 The simplest way of consuming the incoming request entity is to simply transform it into an actual domain object,
-for example by using the @ref[entity-java](routing-dsl/directives/marshalling-directives/entity.md#entity-java) directive:
+for example by using the @ref[entity](routing-dsl/directives/marshalling-directives/entity.md#entity-java) directive:
 
 @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #consume-entity-directive }
 
@@ -104,8 +107,10 @@ Under certain conditions it is possible to detect an entity is very unlikely to 
 and issue warnings or discard the entity automatically. This advanced feature has not been implemented yet, see the below
 note and issues for further discussion and ideas.
 
-> **Note:**
+@@@ note
 An advanced feature code named "auto draining" has been discussed and proposed for Akka HTTP, and we're hoping
 to implement or help the community implement it.
+
 You can read more about it in [issue #183](https://github.com/akka/akka-http/issues/183)
 as well as [issue #117](https://github.com/akka/akka-http/issues/117) ; as always, contributions are very welcome!
+@@@

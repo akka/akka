@@ -5,15 +5,17 @@ The request-level API is the most convenient way of using Akka HTTP's client-sid
 @ref[Host-Level Client-Side API](host-level.md#host-level-api) to provide you with a simple and easy-to-use way of retrieving HTTP responses from remote servers.
 Depending on your preference you can pick the flow-based or the future-based variant.
 
-> **Note:**
+@@@ note
 It is recommended to first read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md#implications-of-streaming-http-entities) section,
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Clients.
+@@@
 
-> **Note:**
+@@@ note
 The request-level API is implemented on top of a connection pool that is shared inside the ActorSystem. A consequence of
 using a pool is that long-running requests block a connection while running and starve other requests. Make sure not to use
 the request-level API for long-running requests like long-polling GET requests. Use the @ref[Connection-Level Client-Side API](connection-level.md#connection-level-api) instead.
+@@@
 
 ## Flow-Based Variant
 
@@ -57,13 +59,18 @@ to the Actor as a message.
 
 @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-example }
 
-> **Warning:**
+@@@ warning
+
 Be sure to consume the response entities `dataBytes:Source[ByteString,Unit]` by for example connecting it
 to a `Sink` (for example `response.discardEntityBytes()` if you don't care about the
 response entity), since otherwise Akka HTTP (and the underlying Streams infrastructure) will understand the
 lack of entity consumption as a back-pressure signal and stop reading from the underlying TCP connection!
+
 This is a feature of Akka HTTP that allows consuming entities (and pulling them through the network) in
 a streaming fashion, and only *on demand* when the client is ready to consume the bytes -
 it may be a bit surprising at first though.
+
 There are tickets open about automatically dropping entities if not consumed ([#183](https://github.com/akka/akka-http/issues/183) and [#117](https://github.com/akka/akka-http/issues/117)),
 so these may be implemented in the near future.
+
+@@@

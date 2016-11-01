@@ -3,9 +3,10 @@
 
 Akka HTTP supports TLS encryption on the client-side as well as on the @ref[server-side](../server-side-https-support.md#serversidehttps-scala).
 
-> **Warning:**
+@@@ warning
 Akka HTTP 1.0 does not completely validate certificates when using HTTPS. Please do not treat HTTPS connections
 made with this version as secure. Requests are vulnerable to a Man-In-The-Middle attack via certificate substitution.
+@@@
 
 The central vehicle for configuring encryption is the `HttpsConnectionContext`, which can be created using
 the static method `ConnectionContext.https` which is defined like this:
@@ -57,18 +58,21 @@ documentation to learn more about it.
 
 All configuration options available to this library may be set under the `akka.ssl-context` configuration for Akka HTTP applications.
 
-> **Note:**
+@@@ note
 When encountering problems connecting to HTTPS hosts we highly encourage to reading up on the excellent ssl-config
 configuration. Especially the quick start sections about [adding certificates to the trust store](http://typesafehub.github.io/ssl-config/WSQuickStart.html#connecting-to-a-remote-server-over-https) should prove
 very useful, for example to easily trust a self-signed certificate that applications might use in development mode.
+@@@
 
-> **Warning:**
+@@@ warning
 While it is possible to disable certain checks using the so called "loose" settings in SSL Config, we **strongly recommend**
 to instead attempt to solve these issues by properly configuring TLS–for example by adding trusted keys to the keystore.
+
 If however certain checks really need to be disabled because of misconfigured (or legacy) servers that your
 application has to speak to, instead of disabling the checks globally (i.e. in `application.conf`) we suggest
 configuring the loose settings for *specific connections* that are known to need them disabled (and trusted for some other reason).
 The pattern of doing so is documented in the following sub-sections.
+@@@
 
 ### Hostname verification
 
@@ -92,12 +96,17 @@ It is specified as part of [RFC 6066](https://tools.ietf.org/html/rfc6066#page-6
 
 ### Disabling TLS security features, at your own risk
 
-> **Warning:**
+@@@ warning
+
 It is highly discouraged to disable any of the security features of TLS, however do acknowledge that workarounds may sometimes be needed.
+
 Before disabling any of the features one should consider if they may be solvable *within* the TLS world,
 for example by [trusting a certificate](http://typesafehub.github.io/ssl-config/WSQuickStart.html), or [configuring the trusted cipher suites](http://typesafehub.github.io/ssl-config/CipherSuites.html) etc.
+
 If disabling features is indeed desired, we recommend doing so for *specific connections*,
 instead of globally configuring it via `application.conf`.
+
+@@@
 
 The following shows an example of disabling SNI for a given connection:
 
