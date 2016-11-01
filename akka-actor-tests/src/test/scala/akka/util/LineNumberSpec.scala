@@ -13,11 +13,11 @@ class LineNumberSpec extends AkkaSpec {
     "writing Scala" must {
       import LineNumberSpecCodeForScala._
 
-      "work for small functions" in {
+      "work for small functions" taggedAs IgnoreForScala212 in {
         LineNumbers(oneline) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 12, 12))
       }
 
-      "work for larger functions" in {
+      "work for larger functions" taggedAs IgnoreForScala212 in {
         LineNumbers(twoline) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 14, 16))
       }
 
