@@ -14,8 +14,8 @@ the static method `ConnectionContext.https` which is defined like this:
 @@snip [ConnectionContext.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
 
 In addition to the `outgoingConnection`, `newHostConnectionPool` and `cachedHostConnectionPool` methods the
-@github[akka.http.javadsl.Http](/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala) extension also defines `outgoingConnectionTls`, `newHostConnectionPoolTls` and
-`cachedHostConnectionPoolTls`. These methods work identically to their counterparts without the `-Tls` suffix,
+@github[akka.http.javadsl.Http](/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala) extension also defines `outgoingConnectionHttps`, `newHostConnectionPoolHttps` and
+`cachedHostConnectionPoolHttps`. These methods work identically to their counterparts without the `-Https` suffix,
 with the exception that all connections will always be encrypted.
 
 The `singleRequest` and `superPool` methods determine the encryption state via the scheme of the incoming request,
@@ -33,7 +33,7 @@ extension the default system configuration is used.
 
 Usually the process is, if the default system TLS configuration is not good enough for your application's needs,
 that you configure a custom `HttpsContext` instance and set it via `Http.get(system).setDefaultClientHttpsContext`.
-Afterwards you simply use `outgoingConnectionTls`, `newHostConnectionPoolTls`, `cachedHostConnectionPoolTls`,
+Afterwards you simply use `outgoingConnectionHttps`, `newHostConnectionPoolHttps`, `cachedHostConnectionPoolHttps`,
 `superPool` or `singleRequest` without a specific `httpsContext` argument, which causes encrypted connections
 to rely on the configured default client-side `HttpsContext`.
 
