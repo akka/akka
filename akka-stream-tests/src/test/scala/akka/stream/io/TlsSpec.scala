@@ -13,7 +13,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 import akka.actor.ActorSystem
-import akka.pattern.{after => later}
+import akka.pattern.{ after ⇒ later }
 import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
@@ -119,6 +119,7 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
     }
 
     trait CommunicationSetup extends Named {
+      val ignoresShutdown: Boolean = true
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch): Flow[SslTlsOutbound, SslTlsInbound, NotUsed]
       def cleanup(): Unit = ()
@@ -127,10 +128,11 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
     object ClientInitiates extends CommunicationSetup {
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) =
-        clientTls(leftClosing) atop serverTls(rightClosing).reversed join rhs.via(ks.flow)
+        clientTls(leftClosing) atop serverTls(rightClosing).reversed join rhs
     }
 
     object ClientInitiatesServerTruncates extends CommunicationSetup {
+      override val ignoresShutdown = false
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) = {
         val terminator = BidiFlow.fromFlows(Flow[ByteString], ks.flow[ByteString])
@@ -141,10 +143,12 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
     object ServerInitiates extends CommunicationSetup {
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) =
-        serverTls(leftClosing) atop clientTls(rightClosing).reversed join rhs.via(ks.flow)
+        serverTls(leftClosing) atop clientTls(rightClosing).reversed join rhs
     }
 
     object ServerInitiatesClientTruncates extends CommunicationSetup {
+      override val ignoresShutdown = false
+
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) = {
         val terminator = BidiFlow.fromFlows(Flow[ByteString], ks.flow[ByteString])
@@ -164,26 +168,20 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
       var binding: Tcp.ServerBinding = null
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) = {
-        binding = server(serverTls(rightClosing).reversed join rhs.via(ks.flow))
+        binding = server(serverTls(rightClosing).reversed join rhs)
         clientTls(leftClosing) join Tcp().outgoingConnection(binding.localAddress)
       }
-      override def cleanup(): Unit = {
-        super.cleanup()
-        binding.unbind()
-      }
+      override def cleanup(): Unit = binding.unbind()
     }
 
     object ServerInitiatesViaTcp extends CommunicationSetup {
       var binding: Tcp.ServerBinding = null
       def decorateFlow(leftClosing: TLSClosing, rightClosing: TLSClosing,
                        rhs: Flow[SslTlsInbound, SslTlsOutbound, Any], ks: SharedKillSwitch) = {
-        binding = server(clientTls(rightClosing).reversed join rhs.via(ks.flow))
+        binding = server(clientTls(rightClosing).reversed join rhs)
         serverTls(leftClosing) join Tcp().outgoingConnection(binding.localAddress)
       }
-      override def cleanup(): Unit = {
-        super.cleanup()
-        binding.unbind()
-      }
+      override def cleanup(): Unit = binding.unbind()
     }
 
     val communicationPatterns =
@@ -389,8 +387,8 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
             .scan(ByteString.empty)(_ ++ _)
             .via(new Timeout(6.seconds))
             .dropWhile(_.size < scenario.output.size)
-            .map(bs => {ks.shutdown(); bs})
-            .runWith(Sink.last)
+            .map(bs ⇒ {  ks.shutdown(); bs })
+            .runWith(if (commPattern.ignoresShutdown) Sink.head else Sink.last)
 
         Await.result(f, 8.seconds).utf8String should be(scenario.output.utf8String)
 
