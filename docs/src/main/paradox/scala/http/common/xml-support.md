@@ -15,7 +15,7 @@ you can use directly or build upon.
 
 This is how you enable support for (un)marshalling from and to JSON with [Scala XML](https://github.com/scala/scala-xml) `NodeSeq`:
 
- 1. Add a library dependency onto `"com.typesafe.akka" %% "akka-http-xml-experimental" % "1.x"`.
+ 1. Add a library dependency onto `"com.typesafe.akka" %% "akka-http-xml" % "1.x"`.
  2. `import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._` or mix in the
 `akka.http.scaladsl.marshallers.xml.ScalaXmlSupport` trait.
 

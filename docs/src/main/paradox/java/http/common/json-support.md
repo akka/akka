@@ -10,7 +10,7 @@ See [the list of current community extensions for Akka HTTP](http://akka.io/comm
 <a id="json-jackson-support-java"></a>
 ## Json Support via Jackson
 
-To make use of the support module, you need to add a dependency on *akka-http-jackson-experimental*.
+To make use of the support module, you need to add a dependency on *akka-http-jackson*.
 
 Use `akka.http.javadsl.marshallers.jackson.Jackson.unmarshaller(T.class)` to create an `Unmarshaller<HttpEntity,T>` which expects the request
 body (HttpEntity) to be of type `application/json` and converts it to `T` using Jackson.
