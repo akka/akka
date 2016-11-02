@@ -41,7 +41,7 @@ class BlockingInHttpExamplesSpec extends WordSpec with CompileOnlySpec
     val routes: Route = post {
       complete {
         Future { // uses the good "blocking dispatcher" that we configured,
-          // instead of the default dispatcher- the blocking is isolated.
+          // instead of the default dispatcher to isolate the blocking.
           Thread.sleep(5000)
           System.currentTimeMillis().toString
         }
