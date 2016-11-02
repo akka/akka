@@ -39,6 +39,7 @@ object Dependencies {
   object Compile {
     // Compile
     val akkaStream        = "com.typesafe.akka"      %% "akka-stream"                  % akkaVersion // Apache v2
+    val akkaStreamTestkit = "com.typesafe.akka"      %% "akka-stream-testkit"          % akkaVersion // Apache v2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val netty         = "io.netty"                    % "netty"                        % "3.10.6.Final" // ApacheV2
@@ -64,6 +65,10 @@ object Dependencies {
     val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.1"       // ApacheV2
     val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.1"       // ApacheV2
 
+    val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
+
+    val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
+
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
       val gson        = "com.google.code.gson"        % "gson"                         % "2.3.1"             % "test"
@@ -72,7 +77,7 @@ object Dependencies {
     object Test {
       val akkaTestkit          = "com.typesafe.akka"      %% "akka-testkit"                % akkaVersion        % "test" // Apache v2
       val akkaMmltinodeTestKit = "com.typesafe.akka"      %% "akka-multi-node-testkit"     % akkaVersion        % "test" // Apache v2
-      val akkaStreamTestkit    = "com.typesafe.akka"      %% "akka-stream-testkit"         % akkaVersion        % "test" // Apache v2
+      val akkaStreamTestkit = Compile.akkaStreamTestkit % "test"
 
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
@@ -143,7 +148,10 @@ object Dependencies {
 
   lazy val http = l ++= Seq()
 
+  lazy val http2 = l ++= Seq(hpack, alpnApi, Test.akkaStreamTestkit)
+
   lazy val httpTestkit = l ++= Seq(
+    akkaStreamTestkit,
     Test.junit, Test.junitIntf, Compile.junit % "provided",
     Test.scalatest.value.copy(configurations = Some("provided; test"))
   )

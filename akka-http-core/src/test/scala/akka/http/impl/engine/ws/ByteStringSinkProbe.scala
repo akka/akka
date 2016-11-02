@@ -29,7 +29,9 @@ trait ByteStringSinkProbe {
   def expectError(): Throwable
   def expectError(cause: Throwable): Unit
 
+  def ensureSubscription(): Unit
   def request(n: Long): Unit
+  def cancel(): Unit
 }
 
 object ByteStringSinkProbe {
@@ -38,12 +40,16 @@ object ByteStringSinkProbe {
       val probe = TestSubscriber.probe[ByteString]()
       val sink: Sink[ByteString, NotUsed] = Sink.fromSubscriber(probe)
 
-      def expectNoBytes(): Unit = {
+      def ensureRequested(): Unit = {
         probe.ensureSubscription()
+        probe.request(1)
+      }
+      def expectNoBytes(): Unit = {
+        ensureRequested()
         probe.expectNoMsg()
       }
       def expectNoBytes(timeout: FiniteDuration): Unit = {
-        probe.ensureSubscription()
+        ensureRequested()
         probe.expectNoMsg(timeout)
       }
 
@@ -69,6 +75,8 @@ object ByteStringSinkProbe {
       def expectError(): Throwable = probe.expectError()
       def expectError(cause: Throwable): Unit = probe.expectError(cause)
 
+      def ensureSubscription(): Unit = probe.ensureSubscription()
       def request(n: Long): Unit = probe.request(n)
+      def cancel(): Unit = probe.cancel()
     }
 }

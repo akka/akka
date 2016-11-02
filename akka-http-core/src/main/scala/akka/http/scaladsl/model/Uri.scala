@@ -325,6 +325,10 @@ object Uri {
   }
   object Authority {
     val Empty = Authority(Host.Empty)
+
+    // FIXME: add test for this method
+    def parse(authorityString: ParserInput, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Authority =
+      new UriParser(authorityString, charset, mode).parseAuthority()
   }
 
   sealed abstract class Host extends jm.Host {

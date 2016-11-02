@@ -43,6 +43,7 @@ lazy val root = Project(
   .aggregate(
     parsing,
     httpCore,
+    http2Support,
     http,
     httpTestkit,
     httpTests,
@@ -63,12 +64,14 @@ lazy val httpCore = project("akka-http-core")
   //.disablePlugins(MimaPlugin)
 
 lazy val http = project("akka-http")
-  .settings(Dependencies.http)
   .dependsOn(httpCore)
+
+lazy val http2Support = project("akka-http2-support")
+  .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
 
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(Dependencies.httpTestkit)
-  .dependsOn(httpCore % "compile->compile,test", http)
+  .dependsOn(http)
 
 lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
