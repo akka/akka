@@ -73,16 +73,19 @@ The following inspectors are defined:
 which always produces absolute URIs for incoming request based on the request URI and the `Host`-header of
 the request. You can customize this behavior by bringing a custom instance of `DefaultHostInfo` into scope.
 
-## Sealing Routes
+## Testing sealed Routes
 
 The section above describes how to test a "regular" branch of your route structure, which reacts to incoming requests
 with HTTP response parts or rejections. Sometimes, however, you will want to verify that your service also translates
 @ref[Rejections](rejections.md#rejections-scala) to HTTP responses in the way you expect.
 
-You do this by wrapping your route with the `akka.http.scaladsl.server.Route.seal`.
-The `seal` wrapper applies the logic of the in-scope @ref[ExceptionHandler](exception-handling.md#exception-handling-scala) and
+You do this by wrapping your route with the `akka.http.scaladsl.server.Route.seal`. The `seal` wrapper applies the logic of the in-scope @ref[ExceptionHandler](exception-handling.md#exception-handling-scala) and
 @ref[RejectionHandler](rejections.md#the-rejectionhandler) to all exceptions and rejections coming back from the route,
 and translates them to the respective `HttpResponse`.
+
+Note that explicit call on the `akka.http.scaladsl.server.Route.seal` method is needed in test code, but in your application code it is not necessary.
+As described in @ref[Sealing a Route](routes.md#sealing-a-route), your application code only needs to bring 
+implicit rejection and exception handlers in scope.
 
 ## Examples
 

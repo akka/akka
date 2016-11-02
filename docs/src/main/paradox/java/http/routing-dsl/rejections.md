@@ -113,8 +113,8 @@ This way the priority between rejections is properly defined via the order of yo
 
 Once you have defined your custom `RejectionHandler` you have two options for "activating" it:
 
- 1. Bring it into implicit scope at the top-level.
- 2. Supply it as argument to the @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections-java) directive.
+ 1. Pass it to the `seal()` method of the `Route` class
+ 2. Supply it as an argument to the @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections-java) directive 
 
 In the first case your handler will be "sealed" (which means that it will receive the default handler as a fallback for
 all cases your handler doesn't handle itself) and used for all rejections that are not handled within the route structure

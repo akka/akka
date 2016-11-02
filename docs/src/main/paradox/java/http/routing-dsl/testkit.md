@@ -61,3 +61,13 @@ Adding support for a custom test framework is achieved by creating new superclas
 `JUnitRouteTest` for writing tests with the custom test framework deriving from `akka.http.javadsl.testkit.RouteTest`
 and implementing its abstract methods. This will allow users of the test framework to use `testRoute` and
 to write assertions using the assertion methods defined on `TestResponse`.
+
+## Testing sealed Routes
+
+The section above describes how to test a "regular" branch of your route structure, which reacts to incoming requests
+with HTTP response parts or rejections. Sometimes, however, you will want to verify that your service also translates
+@ref[Rejections](rejections.md#rejections-java) to HTTP responses in the way you expect.
+
+You do this by calling the `seal()` method of the `Route` class. The `seal()` method applies the logic of @ref[ExceptionHandler](exception-handling.md#exception-handling-java) and
+@ref[RejectionHandler](rejections.md#the-rejectionhandler) passed as method arguments to all exceptions and rejections coming back from the route,
+and translates them to the respective `HttpResponse`.

@@ -23,6 +23,8 @@ in the section about route composition what this is good for.
 
 A `Route` can be "sealed" using `Route.seal`, which relies on the in-scope `RejectionHandler` and `ExceptionHandler`
 instances to convert rejections and exceptions into appropriate HTTP responses for the client.
+@ref[Sealing a Route](#sealing-a-route) is described more in detail later. 
+
 
 Using `Route.handlerFlow` or `Route.asyncHandler` a `Route` can be lifted into a handler `Flow` or async handler
 function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../low-level-server-side-api.md#http-low-level-server-side-api).
@@ -111,3 +113,25 @@ Here five directives form a routing tree.
 Route 3 can therefore be seen as a "catch-all" route that only kicks in, if routes chained into preceding positions
 reject. This mechanism can make complex filtering logic quite easy to implement: simply put the most
 specific cases up front and the most general cases in the back.
+
+## Sealing a Route
+
+As described in @ref[Rejections](rejections.md#rejections-scala) and @ref[Exception Handling](exception-handling.md#exception-handling-scala),
+there are generally two ways to handle rejections and exceptions.
+
+ * Bring rejection/exception handlers into implicit scope at the top-level
+ * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directives 
+
+In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 
+and used for all rejections/exceptions that are not handled within the route structure itself.
+
+### Route.seal() method to modify HttpResponse
+
+In application code, unlike @ref[test code](testkit.md#testing-sealed-routes), you don't need to use the `Route.seal()` method to seal a route.
+As long as you bring implicit rejection and/or exception handlers to the top-level scope, your route is sealed. 
+
+However, you can use `Route.seal()` to perform modification on HttpResponse from the route.
+For example, if you want to add a special header, but still use the default rejection handler, then you can do the following.
+In the below case, the special header is added to rejected responses which did not match the route, as well as successful responses which matched the route.
+
+@@snip [RouteSealExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/RouteSealExampleSpec.scala) { #route-seal-example }

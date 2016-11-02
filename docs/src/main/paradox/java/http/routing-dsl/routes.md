@@ -106,3 +106,23 @@ Here five directives form a routing tree.
 Route 3 can therefore be seen as a "catch-all" route that only kicks in, if routes chained into preceding positions
 reject. This mechanism can make complex filtering logic quite easy to implement: simply put the most
 specific cases up front and the most general cases in the back.
+
+## Sealing a Route
+
+As described in @ref[Rejections](rejections.md#rejections-java) and @ref[Exception Handling](exception-handling.md#exception-handling-java),
+there are generally two ways to handle rejections and exceptions.
+
+ * Pass rejection/exception handlers to the `seal()` method of the `Route`
+ * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directives 
+
+In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 
+and used for all rejections/exceptions that are not handled within the route structure itself.
+
+### Modify HttpResponse from a sealed Route
+
+You can use `Route` class's `seal()` method to perform modification on HttpResponse from the route.
+For example, if you want to add a special header, but still use the default rejection handler, then you can do the following.
+In the below case, the special header is added to rejected responses which did not match the route, as well as successful responses which matched the route.
+
+@@snip [RouteSealExample.java](../../../../../test/java/docs/http/javadsl/RouteSealExample.java) { #route-seal-example }
+                               
