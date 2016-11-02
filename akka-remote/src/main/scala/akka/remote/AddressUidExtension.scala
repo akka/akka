@@ -40,7 +40,7 @@ class AddressUidExtension(val system: ExtendedActorSystem) extends Extension {
   }
 
   // used by old remoting and part of public api
-  @deprecated("Use longAddressUid instead", "2.4.x")
+  // @deprecated("Use longAddressUid instead", "2.4.x")
   lazy val addressUid: Int = {
     if (arteryEnabled) {
       throw new IllegalStateException("Int UID must never be used with Artery")
