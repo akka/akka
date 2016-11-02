@@ -63,7 +63,7 @@ infra has no thread available to handle the other requests.
 
 In essence, the `Thread.sleep` operation has dominated all threads and caused anything 
 executing on the default dispatcher to starve for resources (including any Actors
-that you have not configured an explicit dispatcher for (sic!)).
+that you have not configured an explicit dispatcher for).
 
 ## Solution: Dedicated dispatcher for blocking operations
 
