@@ -98,7 +98,7 @@
   {%- endblock %}
   <div class="main">
     <div class="container">
-      <div class="page-title">{{ title }}</div>
+      <div class="page-title">{{ title }} - Version {{ release|e }}</div>
       <div class="pdf-link"><a href="{{ pathto('AkkaScala.pdf', 1) }}" title="Akka Scala Documentation"><img src="{{ pathto('_static/pdf-scala-icon.png', 1) }}" style="height: 40px;" /></a></div>
       <div class="pdf-link"><a href="{{ pathto('AkkaJava.pdf', 1) }}" title="Akka Java Documentation"><img src="{{ pathto('_static/pdf-java-icon.png', 1) }}" style="height: 40px;" /></a></div>
     </div>
@@ -106,27 +106,26 @@
       <div class="container">
         <div class="row">
           <div class="span12">
-            <ul class="breadcrumb">
-              <li>
-                {%- if next %}
-                 <span class="divider">|</span> <a href="{{ next.link|e }}">{{ next.title }}</a> <span class="divider">»</span>
-                {%- endif %}
-              </li>
-              <li>
-                <a href="{{ pathto('java.html', 1) }}">Java Contents</a> <span class="divider">|</span> <a href="{{ pathto('scala.html', 1) }}">Scala Contents</a>
-              </li>
-              <li>
-                {%- if prev %}
-                <span class="divider">«</span> <a href="{{ prev.link|e }}">{{ prev.title }}</a> <span class="divider">|</span>
-                {%- endif %}
-              </li>
-              <li style="float: left">
-                Version {{ release|e }}
-              </li>
-              <li style="float: left">
-                <input type="search" id="search" class="form-control" />
-              </li>
-            </ul>
+            <div class="breadcrumb">
+              <div style="position: relative">
+                <input type="search" id="search" class="form-control" style="position: relative" placeholder="Search in the doc" />
+              </div>
+              <div>
+                <div>
+                  {%- if prev %}
+                  <span class="divider">«</span> <a href="{{ prev.link|e }}">{{ prev.title }}</a> <span class="divider">|</span>
+                  {%- endif %}
+                </div>
+                <div>
+                  <a href="{{ pathto('java.html', 1) }}">Java Contents</a> <span class="divider">|</span> <a href="{{ pathto('scala.html', 1) }}">Scala Contents</a>
+                </div>
+                <div>
+                  {%- if next %}
+                  <span class="divider">|</span> <a href="{{ next.link|e }}">{{ next.title }}</a> <span class="divider">»</span>
+                  {%- endif %}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="row">

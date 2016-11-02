@@ -7,11 +7,11 @@ a:hover { color: #15A9CE; text-decoration: underline; }
 .page-title { position: relative; top: 24px; font-family: 'Source Sans Pro', sans-serif; font-size: 24px; font-weight: 400; color: rgba(255, 255, 255, 1); width: 840px;}
 .main-container { background: #ffffff;  min-height: 600px; padding-top: 20px; margin-top: 28px; }
 .pdf-link { float: right; height: 40px; margin-bottom: -15px; margin-top: -5px; }
-.breadcrumb { height: 18px; }
-.breadcrumb li { float: right; }
-.breadcrumb li a { color: #447281; }
-.breadcrumb li a:hover { color: #15A9CE; text-decoration: none; }
-.breadcrumb li:last-child { float: left; font-weight: bold; }
+.breadcrumb { height: 18px; display: flex; justify-content: space-between; }
+.breadcrumb div { display: flex; }
+.breadcrumb div a { color: #447281; }
+.breadcrumb div a:hover { color: #15A9CE; text-decoration: none; }
+.breadcrumb input { top: -5px; }
 .contents-title { font-weight: bold; font-size: 18px; line-height: 27px; margin-bottom: 6px; color: #0d2428; text-shadow:0 1px 0 #f0fafc; }
 div#toc { margin-left: -16px; }
 div#toc ul { list-style: none; margin: 0 0 5px 16px; }
@@ -226,13 +226,6 @@ p.caption { width: 80%; text-align: justify; font-size: 0.95em; font-style: ital
   text-decoration: none;
 }
 
-.algolia-autocomplete {
-  display: block;
-  width: 100%;
-  height: 100%;
-  top: -5px;
-  left: 10px;
-}
 .algolia-docsearch-footer {
   width: 100px;
   height: 20px;
