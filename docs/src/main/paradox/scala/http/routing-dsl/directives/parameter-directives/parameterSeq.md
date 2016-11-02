@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [ParameterDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala) { #parameterSeq }
+@@signature [ParameterDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala) { #parameterSeq }
 
 ## Description
 

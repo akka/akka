@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [FileUploadDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala) { #uploadedFile }
+@@signature [FileUploadDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala) { #uploadedFile }
 
 ## Description
 
@@ -14,10 +14,11 @@ If there is an error writing to disk the request will be failed with the thrown 
 with the given name the request will be rejected, if there are multiple file parts with the same name, the first
 one will be used and the subsequent ones ignored.
 
-> **Note:**
+@@@ note
 This directive will stream contents of the request into a file, however one can not start processing these
 until the file has been written completely. For streaming APIs it is preferred to use the @ref[fileUpload](fileUpload.md#fileupload)
 directive, as it allows for streaming handling of the incoming data bytes.
+@@@
 
 ## Example
 

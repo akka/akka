@@ -2,7 +2,7 @@
 # Low-Level Server-Side API
 
 Apart from the @ref[HTTP Client](client-side/index.md#http-client-side) Akka HTTP also provides an embedded,
-[Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of <!-- FIXME: unresolved link reference: streams-scala --> streams-scala.
+[Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of @extref[Streams](akka-docs:scala/stream/index.html).
 
 It sports the following features:
 
@@ -33,17 +33,18 @@ Depending on your needs you can either use the low-level API directly or rely on
 @ref[Routing DSL](routing-dsl/index.md#http-high-level-server-side-api) which can make the definition of more complex service logic much
 easier.
 
-> **Note:**
+@@@ note
 It is recommended to read the @ref[Implications of the streaming nature of Request/Response Entities](implications-of-streaming-http-entity.md#implications-of-streaming-http-entities) section,
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Servers.
+@@@
 
 ## Streams and HTTP
 
-The Akka HTTP server is implemented on top of <!-- FIXME: unresolved link reference: streams-scala --> streams-scala and makes heavy use of it - in its
+The Akka HTTP server is implemented on top of @extref[Streams](akka-docs:scala/stream/index.html) and makes heavy use of it - in its
 implementation as well as on all levels of its API.
 
-On the connection level Akka HTTP offers basically the same kind of interface as <!-- FIXME: unresolved link reference: stream-io-scala --> stream-io-scala:
+On the connection level Akka HTTP offers basically the same kind of interface as @extref[Working with streaming IO](akka-docs:scala/stream/stream-io.html):
 A socket binding is represented as a stream of incoming connections. The application pulls connections from this stream
 source and, for each of them, provides a `Flow[HttpRequest, HttpResponse, _]` to "translate" requests into responses.
 
@@ -54,7 +55,7 @@ the @ref[HTTP Model](common/http-model.md#http-model-scala) for more information
 
 ## Starting and Stopping
 
-On the most basic level an Akka HTTP server is bound by invoking the `bind` method of the [akka.http.scaladsl.Http](@github@/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala)
+On the most basic level an Akka HTTP server is bound by invoking the `bind` method of the @github[akka.http.scaladsl.Http](/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala)
 extension:
 
 @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-example }
@@ -173,7 +174,7 @@ There are various situations when failure may occur while initialising or runnin
 Akka by default will log all these failures, however sometimes one may want to react to failures in addition to them
 just being logged, for example by shutting down the actor system, or notifying some external monitoring end-point explicitly.
 
-There are multiple things that can fail when creating and materializing an HTTP Server (similarily, the same applied to
+There are multiple things that can fail when creating and materializing an HTTP Server (similarly, the same applied to
 a plain streaming `Tcp()` server). The types of failures that can happen on different layers of the stack, starting
 from being unable to start the server, and ending with failing to unmarshal an HttpRequest, examples of failures include
 (from outer-most, to inner-most):
@@ -188,19 +189,19 @@ This section describes how to handle each failure situation, and in which situat
 
 The first type of failure is when the server is unable to bind to the given port. For example when the port
 is already taken by another application, or if the port is privileged (i.e. only usable by `root`).
-In this case the "binding future" will fail immediatly, and we can react to if by listening on the Future's completion:
+In this case the "binding future" will fail immediately, and we can react to if by listening on the Future's completion:
 
 @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-failure-handling }
 
-Once the server has successfully bound to a port, the `Source[IncomingConnection, _]` starts running and emiting
+Once the server has successfully bound to a port, the `Source[IncomingConnection, _]` starts running and emitting
 new incoming connections. This source technically can signal a failure as well, however this should only happen in very
-dramantic situations such as running out of file descriptors or memory available to the system, such that it's not able
-to accept a new incoming connection. Handling failures in Akka Streams is pretty stright forward, as failures are signaled
+dramatic situations such as running out of file descriptors or memory available to the system, such that it's not able
+to accept a new incoming connection. Handling failures in Akka Streams is pretty straight forward, as failures are signaled
 through the stream starting from the stage which failed, all the way downstream to the final stages.
 
 #### Connections Source failures
 
-In the example below we add a custom `GraphStage` (see <!-- FIXME: unresolved link reference: stream-customize-scala --> stream-customize-scala) in order to react to the
+In the example below we add a custom `GraphStage` (see @extref[Custom stream processing](akka-docs:scala/stream/stream-customize.html)) in order to react to the
 stream's failure. We signal a `failureMonitor` actor with the cause why the stream is going down, and let the Actor
 handle the rest – maybe it'll decide to restart the server or shutdown the ActorSystem, that however is not our concern anymore.
 
@@ -220,4 +221,4 @@ anyway, which is a reasonable default for such problems.
 
 In order to learn more about handling exceptions in the actual routing layer, which is where your application code
 comes into the picture, refer to @ref[Exception Handling](routing-dsl/exception-handling.md#exception-handling-scala) which focuses explicitly on explaining how exceptions
-thrown in routes can be handled and transformed into `HttpResponse` s with apropriate error codes and human-readable failure descriptions.
+thrown in routes can be handled and transformed into `HttpResponse` s with appropriate error codes and human-readable failure descriptions.

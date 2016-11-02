@@ -3,14 +3,14 @@
 
 ## Signature
 
-FIXME@@snip [MarshallingDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #completeWith[T] }
+@@signature [MarshallingDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #completeWith }
 
 ## Description
 
 Uses the marshaller for a given type to produce a completion function that is passed to its
 inner route.  You can use it to decouple marshaller resolution from request completion.
 
-The `completeWith` directive works in conjuction with `instanceOf` and `spray.httpx.marshalling`
+The `completeWith` directive works in conjunction with `instanceOf` and `spray.httpx.marshalling`
 to convert higher-level (object) structure into some lower-level serialized "wire format".
 @ref[The marshalling documentation](../../../common/marshalling.md#http-marshalling-scala) explains this process in detail.
 This directive simplifies exposing types to clients via a route while providing some

@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [ExecutionDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala) { #handleRejections }
+@@signature [ExecutionDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala) { #handleRejections }
 
 ## Description
 

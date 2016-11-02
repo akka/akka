@@ -156,6 +156,53 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       Await.result(b1.unbind(), 1.second)
     }
 
+    "Remote-Address header" should {
+      def handler(req: HttpRequest): HttpResponse = {
+        val entity = req.header[headers.`Remote-Address`].flatMap(_.address.toIP).flatMap(_.port).toString
+        HttpResponse(entity = entity)
+      }
+
+      "be added when using bind API" in new RemoteAddressTestScenario {
+        def createBinding(): Future[ServerBinding] =
+          Http().bind(hostname, port, settings = settings)
+            .map(_.flow.join(Flow[HttpRequest].map(handler)).run())
+            .to(Sink.ignore)
+            .run()
+      }
+
+      "be added when using bindAndHandle API" in new RemoteAddressTestScenario {
+        def createBinding(): Future[ServerBinding] =
+          Http().bindAndHandle(Flow[HttpRequest].map(handler), hostname, port, settings = settings)
+      }
+
+      "be added when using bindAndHandleSync API" in new RemoteAddressTestScenario {
+        def createBinding(): Future[ServerBinding] =
+          Http().bindAndHandleSync(handler, hostname, port, settings = settings)
+      }
+
+      abstract class RemoteAddressTestScenario {
+        val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+
+        val settings = ServerSettings(system).withRemoteAddressHeader(true)
+        def createBinding(): Future[ServerBinding]
+
+        val binding = createBinding()
+        val b1 = Await.result(binding, 3.seconds)
+
+        val (conn, response) =
+          Source.single(HttpRequest(uri = "/abc"))
+            .viaMat(Http().outgoingConnection(hostname, port))(Keep.right)
+            .toMat(Sink.head)(Keep.both)
+            .run()
+
+        val r = Await.result(response, 1.second)
+        val c = Await.result(conn, 1.second)
+        Await.result(b1.unbind(), 1.second)
+
+        toStrict(r.entity).data.utf8String shouldBe s"Some(${c.localAddress.getPort})"
+      }
+    }
+
     "timeouts" should {
       def bindServer(hostname: String, port: Int, serverTimeout: FiniteDuration): (Promise[Long], ServerBinding) = {
         val s = ServerSettings(system)

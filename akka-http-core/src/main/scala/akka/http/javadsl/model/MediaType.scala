@@ -27,7 +27,7 @@ object MediaType {
     def toContentType(charset: HttpCharset): ContentType.WithCharset
   }
 
-  trait Multipart extends WithOpenCharset {
+  trait Multipart extends Binary {
   }
 
   trait Compressibility {

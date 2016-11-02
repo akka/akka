@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [BasicDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #recoverRejections }
+@@signature [BasicDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #recoverRejections }
 
 ## Description
 
@@ -13,8 +13,9 @@ want to try the @ref[handleRejections](../execution-directives/handleRejections.
 Transforms rejections from the inner route with an `immutable.Seq[Rejection] ⇒ RouteResult` function.
 A `RouteResult` is either a `Complete(HttpResponse(...))` or rejections `Rejected(rejections)`.
 
-> **Note:**
+@@@ note
 To learn more about how and why rejections work read the @ref[Rejections](../../rejections.md#rejections-scala) section of the documentation.
+@@@
 
 ## Example
 

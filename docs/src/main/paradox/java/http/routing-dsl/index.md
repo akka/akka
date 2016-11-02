@@ -6,7 +6,7 @@ defining RESTful web services. It picks up where the low-level API leaves off an
 functionality of typical web servers or frameworks, like deconstruction of URIs, content negotiation or
 static content serving.
 
-To use the high-level API you need to add a dependency to the `akka-http-experimental` module.
+To use the high-level API you need to add a dependency to the `akka-http` module.
 
 @@toc { depth=1 }
 
@@ -34,19 +34,20 @@ end-point explicitly.
 
 For example the server might be unable to bind to the given port. For example when the port
 is already taken by another application, or if the port is privileged (i.e. only usable by `root`).
-In this case the "binding future" will fail immediately, and we can react to if by listening on the CompletionStage's completion:
+In this case the "binding future" will fail immediately, and we can react to it by listening on the CompletionStage's completion:
 
 @@snip [HighLevelServerBindFailureExample.java](../../../../../test/java/docs/http/javadsl/server/HighLevelServerBindFailureExample.java) { #binding-failure-high-level-example }
 
-> **Note:**
+@@@ note
 For a more low-level overview of the kinds of failures that can happen and also more fine-grained control over them
 refer to the @ref[Handling HTTP Server failures in the Low-Level API](../server-side/low-level-server-side-api.md#handling-http-server-failures-low-level-java) documentation.
+@@@
 
 ### Failures and exceptions inside the Routing DSL
 
 Exception handling within the Routing DSL is done by providing `ExceptionHandler` s which are documented in-depth
-in the @ref[Exception Handling](exception-handling.md#exception-handling-java) section of the documtnation. You can use them to transform exceptions into
-`HttpResponse` s with apropriate error codes and human-readable failure descriptions.
+in the @ref[Exception Handling](exception-handling.md#exception-handling-java) section of the documentation. You can use them to transform exceptions into
+`HttpResponse` s with appropriate error codes and human-readable failure descriptions.
 
 ### File uploads
 

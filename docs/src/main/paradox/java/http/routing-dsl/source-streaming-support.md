@@ -14,12 +14,12 @@ however the general hints apply to any kind of element-by-element streaming you 
 
 # JSON Streaming
 
-[JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming) is a term refering to streaming a (possibly infinite) stream of element as independent JSON
+[JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming) is a term referring to streaming a (possibly infinite) stream of element as independent JSON
 objects as a continuous HTTP request or response. The elements are most often separated using newlines,
 however do not have to be. Concatenating elements side-by-side or emitting "very long" JSON array is also another
 use case.
 
-In the below examples, we'll be refering to the `Tweet` and `Measurement` case classes as our model, which are defined as:
+In the below examples, we'll be referring to the `Tweet` and `Measurement` case classes as our model, which are defined as:
 
 @@snip [JsonStreamingExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #models }
 
@@ -36,9 +36,9 @@ First we enable JSON Streaming by making an implicit `EntityStreamingSupport` in
 The default mode of rendering a `Source` is to represent it as an JSON Array. If you want to change this representation
 for example to use Twitter style new-line separated JSON objects, you can do so by configuring the support trait accordingly.
 
-In Step 1.1. we demonstrate to configure configude the rendering to be new-line separated, and also how parallel marshalling 
+In Step 1.1. we demonstrate how to configure the rendering to be new-line separated, and also how parallel marshalling 
 can be applied. We configure the Support object to render the JSON as series of new-line separated JSON objects,
-simply by providing the `start`, `sep` and `end` ByteStrings, which will be emitted at the apropriate
+simply by providing the `start`, `sep` and `end` ByteStrings, which will be emitted at the appropriate
 places in the rendered stream. Although this format is *not* valid JSON, it is pretty popular since parsing it is relatively
 simple - clients need only to find the new-lines and apply JSON unmarshalling for an entire line of JSON.
 
@@ -62,7 +62,7 @@ will be applied automatically thanks to using Akka HTTP/Streams).
 ## Simple CSV streaming example
 
 Akka HTTP provides another `EntityStreamingSupport` out of the box, namely `csv` (comma-separated values).
-For completeness, we demonstrate its usage in the below snippet. As you'll notice, switching betweeen streaming
+For completeness, we demonstrate its usage in the below snippet. As you'll notice, switching between streaming
 modes is fairly simple, one only has to make sure that an implicit `Marshaller` of the requested type is available,
 and that the streaming support operates on the same `Content-Type` as the rendered values. Otherwise you'll see
 an error during runtime that the marshaller did not expose the expected content type and thus we can not render

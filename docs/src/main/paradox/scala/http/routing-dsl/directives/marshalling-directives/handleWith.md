@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [MarshallingDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #handleWith }
+@@signature [MarshallingDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MarshallingDirectives.scala) { #handleWith }
 
 ## Description
 

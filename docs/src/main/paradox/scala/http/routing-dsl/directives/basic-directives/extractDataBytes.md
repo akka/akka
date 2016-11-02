@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [BasicDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #extractDataBytes }
+@@signature [BasicDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #extractDataBytes }
 
 ## Description
 

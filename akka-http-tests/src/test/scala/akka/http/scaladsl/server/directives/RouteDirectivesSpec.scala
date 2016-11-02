@@ -43,8 +43,11 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       "for successful futures and marshalling" in {
         Get() ~> complete(Promise.successful("yes").future) ~> check { responseAs[String] shouldEqual "yes" }
       }
-      "for failed futures and marshalling" in EventFilter[RuntimeException](occurrences = 1).intercept {
-        object TestException extends RuntimeException
+      "for failed futures and marshalling" in EventFilter.error(
+        occurrences = 1,
+        message = "Error during processing of request: 'Boom'. Completing with 500 Internal Server Error response."
+      ).intercept {
+        object TestException extends RuntimeException("Boom")
         Get() ~> complete(Promise.failed[String](TestException).future) ~>
           check {
             status shouldEqual StatusCodes.InternalServerError

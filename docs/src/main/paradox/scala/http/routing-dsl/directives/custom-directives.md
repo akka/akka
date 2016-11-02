@@ -28,7 +28,7 @@ together in the @ref[BasicDirectives](basic-directives/index.md#basicdirectives)
 ## Transforming Directives
 
 The second option for creating new directives is to transform an existing one using one of the
-“transformation methods”, which are defined on the [Directive](@github@/akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) class, the base class of all “regular” directives.
+“transformation methods”, which are defined on the @github[Directive](/akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) class, the base class of all “regular” directives.
 
 Apart from the combinator operators (`|` and `&`) and the case-class extractor (`as[T]`)
 there following transformations is also defined on all `Directive` instances:
@@ -47,7 +47,7 @@ for simple transformations:
 
 @@snip [CustomDirectivesExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #map-0 }
 
-One example of a predefined directive relying on `map` is the [optionalHeaderValue](@github@/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala#L67) directive.
+One example of a predefined directive relying on `map` is the @github[optionalHeaderValue](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala#L67) directive.
 
 The tmap modifier has this signature (somewhat simplified):
 
@@ -91,7 +91,7 @@ from the RequestContext with the extract directive and then flatMap with
 some kind of filtering logic. For example, this is the implementation
 of the method directive:
 
-FIXME@@snip [MethodDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #method }
+@@signature [MethodDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #method }
 
 The explicit type parameter `[Unit]` on the flatMap i`s needed in this case
 because the result of the flatMap is directly concatenated with the
@@ -113,7 +113,7 @@ def require(predicate: T ⇒ Boolean, rejections: Rejection*): Directive0
 
 One example of a predefined directive relying on require is the first overload of the host directive:
 
-FIXME@@snip [HostDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala) { #require-host }
+@@snip[HostDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala) { #require-host }
 
 You can only call require on single-extraction directives. The trequire modifier is the
 more general variant, which takes a predicate of type `Tuple => Boolean`.
@@ -139,9 +139,9 @@ def recoverPF[R >: L: Tuple](
   recovery: PartialFunction[Seq[Rejection], Directive[R]]): Directive[R]
 ```
 
-One example of a predefined directive relying `recoverPF` is the optionalHeaderValue directive:
+One example of a predefined directive relying `recoverPF` is the `optionalHeaderValue` directive:
 
-FIXME@@snip [HeaderDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optional-header }
+@@signature [HeaderDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue }
 
 ## Directives from Scratch
 

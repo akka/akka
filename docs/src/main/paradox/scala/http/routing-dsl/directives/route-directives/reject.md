@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [RouteDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala) { #reject }
+@@signature [RouteDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala) { #reject }
 
 ## Description
 

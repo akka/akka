@@ -4,7 +4,6 @@
 
 package akka.http.impl.engine.rendering
 
-import java.nio.charset.Charset
 import akka.parboiled2.util.Base64
 
 import scala.collection.immutable
@@ -28,9 +27,8 @@ private[http] object BodyPartRenderer {
 
   def streamed(
     boundary:            String,
-    nioCharset:          Charset,
     partHeadersSizeHint: Int,
-    log:                 LoggingAdapter): GraphStage[FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]]] =
+    _log:                LoggingAdapter): GraphStage[FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]]] =
     new GraphStage[FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]]] {
       var firstBoundaryRendered = false
 
@@ -39,9 +37,11 @@ private[http] object BodyPartRenderer {
       override val shape: FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]] = FlowShape(in, out)
 
       override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-        new GraphStageLogic(shape) with InHandler with OutHandler {
+        new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+          override def logOverride: LoggingAdapter = _log
+
           override def onPush(): Unit = {
-            val r = new CustomCharsetByteStringRendering(nioCharset, partHeadersSizeHint)
+            val r = new ByteStringRendering(partHeadersSizeHint)
 
             def bodyPartChunks(data: Source[ByteString, Any]): Source[ChunkStreamPart, Any] = {
               val entityChunks = data.map[ChunkStreamPart](Chunk(_))
@@ -90,9 +90,9 @@ private[http] object BodyPartRenderer {
 
     }
 
-  def strict(parts: immutable.Seq[Multipart.BodyPart.Strict], boundary: String, nioCharset: Charset,
+  def strict(parts: immutable.Seq[Multipart.BodyPart.Strict], boundary: String,
              partHeadersSizeHint: Int, log: LoggingAdapter): ByteString = {
-    val r = new CustomCharsetByteStringRendering(nioCharset, partHeadersSizeHint)
+    val r = new ByteStringRendering(partHeadersSizeHint)
     if (parts.nonEmpty) {
       for (part ← parts) {
         renderBoundary(r, boundary, suppressInitialCrLf = part eq parts.head)

@@ -3,9 +3,9 @@
 
 ## Signature
 
-FIXME@@snip [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #async-authenticator }
+@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #AsyncAuthenticator }
 
-FIXME@@snip [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateBasicAsync }
+@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateBasicAsync }
 
 ## Description
 
@@ -23,8 +23,9 @@ Standard HTTP-based authentication which uses the `WWW-Authenticate` header cont
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-scala) for details about verifying the secret.
 
-> **Warning:**
+@@@ warning
 Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.
+@@@
 
 ## Example
 

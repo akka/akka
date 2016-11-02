@@ -180,9 +180,12 @@ class BasicRouteSpecs extends RoutingSpec {
     }
   }
 
-  case object MyException extends RuntimeException
+  case object MyException extends RuntimeException("Boom")
   "Route sealing" should {
-    "catch route execution exceptions" in EventFilter[MyException.type](occurrences = 1).intercept {
+    "catch route execution exceptions" in EventFilter.error(
+      occurrences = 1,
+      message = "Error during processing of request: 'Boom'. Completing with 500 Internal Server Error response."
+    ).intercept {
       Get("/abc") ~> Route.seal {
         get { ctx ⇒
           throw MyException
@@ -191,7 +194,10 @@ class BasicRouteSpecs extends RoutingSpec {
         status shouldEqual StatusCodes.InternalServerError
       }
     }
-    "catch route building exceptions" in EventFilter[MyException.type](occurrences = 1).intercept {
+    "catch route building exceptions" in EventFilter.error(
+      occurrences = 1,
+      message = "Error during processing of request: 'Boom'. Completing with 500 Internal Server Error response."
+    ).intercept {
       Get("/abc") ~> Route.seal {
         get {
           throw MyException
@@ -200,7 +206,10 @@ class BasicRouteSpecs extends RoutingSpec {
         status shouldEqual StatusCodes.InternalServerError
       }
     }
-    "convert all rejections to responses" in EventFilter[RuntimeException](occurrences = 1).intercept {
+    "convert all rejections to responses" in EventFilter.error(
+      occurrences = 1,
+      start = "Error during processing of request"
+    ).intercept {
       object MyRejection extends Rejection
       Get("/abc") ~> Route.seal {
         get {

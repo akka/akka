@@ -6,12 +6,12 @@
 Completes GET requests with a unified listing of the contents of all given directories. The actual rendering of the
 directory contents is performed by the in-scope `Marshaller[DirectoryListing]`.
 
-To just serve files use @ref[getFromDirectory-java](getFromDirectory.md#getfromdirectory-java).
+To just serve files use @ref[getFromDirectory](getFromDirectory.md#getfromdirectory-java).
 
-To serve files and provide a browseable directory listing use @ref[getFromBrowseableDirectories-java](getFromBrowseableDirectories.md#getfrombrowseabledirectories-java) instead.
+To serve files and provide a browseable directory listing use @ref[getFromBrowseableDirectories](getFromBrowseableDirectories.md#getfrombrowseabledirectories-java) instead.
 
 The rendering can be overridden by providing a custom `Marshaller[DirectoryListing]`, you can read more about it in
-@ref[getFromDirectory-java](getFromDirectory.md#getfromdirectory-java) 's documentation.
+@ref[getFromDirectory](getFromDirectory.md#getfromdirectory-java) 's documentation.
 
 Note that it's not required to wrap this directive with `get` as this directive will only respond to `GET` requests.
 

@@ -2,7 +2,7 @@
 # Low-Level Server-Side API
 
 Apart from the @ref[HTTP Client](../client-side/index.md#http-client-side-java) Akka HTTP also provides an embedded,
-[Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of <!-- FIXME: unresolved link reference: streams-java --> streams-java.
+[Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of @extref[Streams](akka-docs:java/stream/index.html).
 
 It sports the following features:
 
@@ -35,10 +35,10 @@ easier.
 
 ## Streams and HTTP
 
-The Akka HTTP server is implemented on top of <!-- FIXME: unresolved link reference: streams-java --> streams-java and makes heavy use of it - in its
+The Akka HTTP server is implemented on top of @extref[Streams](akka-docs:java/stream/index.html) and makes heavy use of it - in its
 implementation as well as on all levels of its API.
 
-On the connection level Akka HTTP offers basically the same kind of interface as <!-- FIXME: unresolved link reference: stream-io-java --> stream-io-java:
+On the connection level Akka HTTP offers basically the same kind of interface as @extref[Working with streaming IO](akka-docs:java/stream/stream-io.html):
 A socket binding is represented as a stream of incoming connections. The application pulls connections from this stream
 source and, for each of them, provides a `Flow<HttpRequest, HttpResponse, ?>` to "translate" requests into responses.
 
@@ -49,7 +49,7 @@ the @ref[HTTP Model](../http-model.md#http-model-java) for more information on h
 
 ## Starting and Stopping
 
-On the most basic level an Akka HTTP server is bound by invoking the `bind` method of the [akka.http.javadsl.Http](@github@/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala)
+On the most basic level an Akka HTTP server is bound by invoking the `bind` method of the @github[akka.http.javadsl.Http](/akka-http-core/src/main/scala/akka/http/javadsl/Http.scala)
 extension:
 
 @@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-example }
@@ -163,7 +163,7 @@ There are various situations when failure may occur while initialising or runnin
 Akka by default will log all these failures, however sometimes one may want to react to failures in addition to them
 just being logged, for example by shutting down the actor system, or notifying some external monitoring end-point explicitly.
 
-There are multiple things that can fail when creating and materializing an HTTP Server (similarily, the same applied to
+There are multiple things that can fail when creating and materializing an HTTP Server (similarly, the same applied to
 a plain streaming `Tcp` server). The types of failures that can happen on different layers of the stack, starting
 from being unable to start the server, and ending with failing to unmarshal an HttpRequest, examples of failures include
 (from outer-most, to inner-most):
@@ -178,19 +178,19 @@ This section describes how to handle each failure situation, and in which situat
 
 The first type of failure is when the server is unable to bind to the given port. For example when the port
 is already taken by another application, or if the port is privileged (i.e. only usable by `root`).
-In this case the "binding future" will fail immediatly, and we can react to if by listening on the CompletionStage’s completion:
+In this case the "binding future" will fail immediately, and we can react to if by listening on the CompletionStage’s completion:
 
 @@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-failure-handling }
 
-Once the server has successfully bound to a port, the `Source<IncomingConnection, ?>` starts running and emiting
+Once the server has successfully bound to a port, the `Source<IncomingConnection, ?>` starts running and emitting
 new incoming connections. This source technically can signal a failure as well, however this should only happen in very
-dramantic situations such as running out of file descriptors or memory available to the system, such that it's not able
-to accept a new incoming connection. Handling failures in Akka Streams is pretty stright forward, as failures are signaled
+dramatic situations such as running out of file descriptors or memory available to the system, such that it's not able
+to accept a new incoming connection. Handling failures in Akka Streams is pretty straight forward, as failures are signaled
 through the stream starting from the stage which failed, all the way downstream to the final stages.
 
 #### Connections Source failures
 
-In the example below we add a custom `GraphStage` (see <!-- FIXME: unresolved link reference: stream-customize-java --> stream-customize-java) in order to react to the
+In the example below we add a custom `GraphStage` (see @extref[Custom stream processing](akka-docs:java/stream/stream-customize.html)) in order to react to the
 stream's failure. We signal a `failureMonitor` actor with the cause why the stream is going down, and let the Actor
 handle the rest – maybe it'll decide to restart the server or shutdown the ActorSystem, that however is not our concern anymore.
 

@@ -3,12 +3,12 @@
 
 ## Signature
 
-FIXME@@snip [FutureDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala) { #onCompleteWithBreaker }
+@@signature [FutureDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala) { #onCompleteWithBreaker }
 
 ## Description
 
 Evaluates its parameter of type `Future[T]` protecting it with the specified `CircuitBreaker`.
-Refer to <!-- FIXME: unresolved link reference: circuit-breaker --> circuit-breaker for a detailed description of this pattern.
+Refer to @extref[Circuit Breaker](akka-docs:common/circuitbreaker.html) for a detailed description of this pattern.
 
 If the `CircuitBreaker` is open, the request is rejected with a `CircuitBreakerOpenRejection`.
 Note that in this case the request's entity databytes stream is cancelled, and the connection is closed

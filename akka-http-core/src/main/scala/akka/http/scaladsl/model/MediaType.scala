@@ -240,13 +240,12 @@ object MediaType {
       customWithOpenCharset(mainType, subType, fileExtensions, params)
   }
 
-  final class Multipart(val subType: String, val params: Map[String, String])
-    extends WithOpenCharset with jm.MediaType.Multipart {
-    val value = renderValue(mainType, subType, params)
-    override def mainType = "multipart"
+  final class Multipart(subType: String, _params: Map[String, String])
+    extends Binary(renderValue("multipart", subType, _params), "multipart", subType, Compressible, Nil)
+    with jm.MediaType.Multipart {
+    override def params = _params
     override def isMultipart = true
-    override def fileExtensions = Nil
-    def withParams(params: Map[String, String]): MediaType.Multipart = new MediaType.Multipart(subType, params)
+    override def withParams(params: Map[String, String]): MediaType.Multipart = new MediaType.Multipart(subType, params)
     def withBoundary(boundary: String): MediaType.Multipart =
       withParams(if (boundary.isEmpty) params - "boundary" else params.updated("boundary", boundary))
   }

@@ -1,4 +1,4 @@
-# Migration Guide between experimental builds of Akka HTTP (2.4.x)
+# Migration Guide between Akka HTTP 2.4.x and 3.0.x
 
 ## General notes
 
@@ -9,10 +9,12 @@ and *akka-http* which contains the routing DSLs which is **experimental** still.
 The following migration guide explains migration steps to be made between breaking
 versions of the **experimental** part of Akka HTTP. 
 
-> **Note:**
+@@@ note
 Please note that experimental modules are allowed (and are expected to) break compatibility
 in search of the best API we can offer, before the API is frozen in a stable release.
-Please read <!-- FIXME: unresolved link reference: bincompatrules --> BinCompatRules to understand in depth what bin-compat rules are, and where they are applied.
+
+Please read @extref[Binary Compatibility Rules](akka-docs:common/binary-compatibility-rules.html) to understand in depth what bin-compat rules are, and where they are applied.
+@@@
 
 ## Akka HTTP 2.4.7 -> 2.4.8
 
@@ -36,3 +38,14 @@ but are now available from the packages `akka.http.javadsl.unmarshalling` and `a
 `akka.http.javadsl.server.Coder` is now `akka.http.javadsl.coding.Coder`.
 
 `akka.http.javadsl.server.RegexConverters` is now `akka.http.javadsl.common.RegexConverters`.
+
+## Akka HTTP 2.4.11 -> 3.0.0
+
+### Java DSL `PathDirectives` used Scala Function type
+
+The Java DSL for the following directives `pathPrefixText`, `rawPathPrefixTest`, `rawPathPrefix`, `pathSuffix`
+accidentally used the Scala function type instead of the `java.util.function.Function` functional interface,
+making them not usable in Java (unless compiled with Scala 2.12, which we're not yet shipping).
+
+These directives now accept the proper Java types. If you worked around this issue before, please remove your workaround and upgrade.
+Simply passing in a lambda expression will properly be expanded into the functional interface in these directives.

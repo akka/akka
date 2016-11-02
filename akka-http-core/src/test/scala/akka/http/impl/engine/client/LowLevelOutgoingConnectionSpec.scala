@@ -547,6 +547,8 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         }
 
         implicit class XResponse(response: HttpResponse) {
+          val timeout = 500.millis
+
           def expectStrictEntityWithLength(bytes: Int) =
             response shouldEqual HttpResponse(
               entity = Strict(ContentTypes.`application/octet-stream`, ByteString(entityBase take bytes)))
@@ -554,14 +556,14 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
           def expectEntity[T <: HttpEntity: ClassTag](bytes: Int) =
             inside(response) {
               case HttpResponse(_, _, entity: T, _) ⇒
-                entity.toStrict(100.millis).awaitResult(100.millis).data.utf8String shouldEqual entityBase.take(bytes)
+                entity.toStrict(100.millis).awaitResult(timeout).data.utf8String shouldEqual entityBase.take(bytes)
             }
 
           def expectSizeErrorInEntityOfType[T <: HttpEntity: ClassTag](limit: Int, actualSize: Option[Long] = None) =
             inside(response) {
               case HttpResponse(_, _, entity: T, _) ⇒
-                def gatherBytes = entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis)
-                (the[Exception] thrownBy gatherBytes).getCause shouldEqual EntityStreamSizeException(limit, actualSize)
+                def gatherBytes = entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(timeout)
+                (the[RuntimeException] thrownBy gatherBytes).getCause shouldEqual EntityStreamSizeException(limit, actualSize)
             }
         }
       }

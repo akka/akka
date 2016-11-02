@@ -17,7 +17,6 @@ import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
-import akka.http.impl.util.{ MapError, StreamUtils }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
@@ -57,7 +56,13 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   private[this] final val DefaultPortForProtocol = -1 // any negative value
 
-  private def fuseServerLayer(settings: ServerSettings, connectionContext: ConnectionContext, log: LoggingAdapter)(implicit mat: Materializer): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+  private type ServerLayerBidiFlow = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]
+  private type ServerLayerFlow = Flow[ByteString, ByteString, Future[Done]]
+
+  private def fuseServerBidiFlow(
+    settings:          ServerSettings,
+    connectionContext: ConnectionContext,
+    log:               LoggingAdapter)(implicit mat: Materializer): ServerLayerBidiFlow = {
     val httpLayer = serverLayer(settings, None, log)
     val tlsStage = sslTlsStage(connectionContext, Server)
     BidiFlow.fromGraph(Fusing.aggressive(GraphDSL.create() { implicit b ⇒
@@ -77,6 +82,37 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       BidiShape(http.in1, timeouts.out, tls.in2, http.out2)
     }))
   }
+
+  private def fuseServerFlow(
+    baseFlow: ServerLayerBidiFlow,
+    handler:  Flow[HttpRequest, HttpResponse, Any])(implicit mat: Materializer): ServerLayerFlow =
+    Flow.fromGraph(
+      Fusing.aggressive(
+        Flow[HttpRequest]
+          .watchTermination()(Keep.right)
+          .viaMat(handler)(Keep.left)
+          .joinMat(baseFlow)(Keep.left)
+      )
+    )
+
+  private def tcpBind(interface: String, port: Int, settings: ServerSettings) = Tcp()
+    .bind(
+      interface,
+      port,
+      settings.backlog,
+      settings.socketOptions,
+      halfClose = false,
+      settings.timeouts.idleTimeout
+    )
+
+  private def choosePort(port: Int, connectionContext: ConnectionContext) = if (port >= 0) port else connectionContext.defaultPort
+
+  private def materializeTcpBind(binding: Future[Tcp.ServerBinding])(implicit mat: Materializer) = binding
+    .map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(mat.executionContext)
+
+  private def prepareAttributes(settings: ServerSettings, remoteAddress: InetSocketAddress) =
+    if (settings.remoteAddressHeader) HttpAttributes.remoteAddress(Some(remoteAddress))
+    else HttpAttributes.empty
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] of [[akka.http.scaladsl.Http.IncomingConnection]] instances which represents a prospective HTTP server binding
@@ -103,18 +139,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),
            log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Source[IncomingConnection, Future[ServerBinding]] = {
-    val effectivePort = if (port >= 0) port else connectionContext.defaultPort
+    val fullLayer = fuseServerBidiFlow(settings, connectionContext, log)
 
-    val fullLayer = fuseServerLayer(settings, connectionContext, log)
-
-    val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
-      Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
-    connections.map {
-      case Tcp.IncomingConnection(localAddress, remoteAddress, flow) ⇒
-        IncomingConnection(localAddress, remoteAddress, fullLayer join flow)
-    }.mapMaterializedValue {
-      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
-    }
+    tcpBind(interface, choosePort(port, connectionContext), settings)
+      .map(incoming ⇒ IncomingConnection(incoming.localAddress, incoming.remoteAddress, fullLayer.addAttributes(prepareAttributes(settings, incoming.remoteAddress)) join incoming.flow))
+      .mapMaterializedValue(materializeTcpBind)
   }
 
   /**
@@ -133,26 +162,16 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    val effectivePort = if (port >= 0) port else connectionContext.defaultPort
+    val fullLayer: Flow[ByteString, ByteString, Future[Done]] = fuseServerFlow(fuseServerBidiFlow(settings, connectionContext, log), handler)
 
-    val fullLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(Fusing.aggressive(
-      Flow[HttpRequest]
-        .watchTermination()(Keep.right)
-        .viaMat(handler)(Keep.left)
-        .joinMat(fuseServerLayer(settings, connectionContext, log))(Keep.left)))
-
-    val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
-      Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
-
-    connections.mapAsyncUnordered(settings.maxConnections) {
-      case incoming: Tcp.IncomingConnection ⇒
+    tcpBind(interface, choosePort(port, connectionContext), settings)
+      .mapAsyncUnordered(settings.maxConnections) { incoming ⇒
         try {
-          val layer =
-            if (settings.remoteAddressHeader) fullLayer.addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
-            else fullLayer
-
-          layer.joinMat(incoming.flow)(Keep.left)
-            .run().recover {
+          fullLayer
+            .addAttributes(prepareAttributes(settings, incoming.remoteAddress))
+            .joinMat(incoming.flow)(Keep.left)
+            .run()
+            .recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
               // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
@@ -165,10 +184,10 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
             log.error(e, "Could not materialize handling flow for {}", incoming)
             throw e
         }
-    }.mapMaterializedValue {
-      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
-    }.to(Sink.ignore).run()
-
+      }
+      .mapMaterializedValue(materializeTcpBind)
+      .to(Sink.ignore)
+      .run()
   }
 
   /**
@@ -227,7 +246,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     settings:      ServerSettings,
     remoteAddress: Option[InetSocketAddress] = None,
     log:           LoggingAdapter            = system.log)(implicit mat: Materializer): ServerLayer =
-    HttpServerBluePrint(settings, remoteAddress, log)
+    HttpServerBluePrint(settings, log)
 
   // ** CLIENT ** //
 

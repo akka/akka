@@ -3,9 +3,9 @@
 
 ## Signature
 
-FIXME@@snip [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticator }
+@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #AuthenticatorPF }
 
-FIXME@@snip [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateOAuth2PF }
+@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateOAuth2PF }
 
 ## Description
 
@@ -14,9 +14,10 @@ Wraps the inner route with OAuth Bearer Token authentication support using a giv
 Provides support for extracting the so-called "*Bearer Token*" from the `Authorization` HTTP Header,
 which is used to initiate an OAuth2 authorization.
 
-> **Warning:**
+@@@ warning
 This directive does not implement the complete OAuth2 protocol, but instead enables implementing it,
 by extracting the needed token from the HTTP headers.
+@@@
 
 Refer to @ref[authenticateOAuth2](authenticateOAuth2.md#authenticateoauth2) for a detailed description of this directive.
 

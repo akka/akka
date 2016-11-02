@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [FormFieldDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala) { #formFieldSeq }
+@@signature [FormFieldDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala) { #formFieldSeq }
 
 ## Description
 
@@ -15,7 +15,7 @@ See @ref[formFields](formFields.md#formfields) for an in-depth description.
 
 ## Warning
 
-The directive reads all incoming HTT form fields without any configured upper bound.
+The directive reads all incoming HTTP form fields without any configured upper bound.
 It means, that requests with form fields holding significant amount of data (ie. during a file upload)
 can cause performance issues or even an `OutOfMemoryError` s.
 

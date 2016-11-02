@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [TimeoutDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withRequestTimeout }
+@@signature [TimeoutDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withRequestTimeout }
 
 ## Description
 
@@ -22,12 +22,16 @@ Optionally, a timeout handler may be provided in which is called when a time-out
 `HttpResponse` that will be sent back to the client instead of the "too late" response (in case it'd ever arrive).
 See also @ref[withRequestTimeoutResponse](withRequestTimeoutResponse.md#withrequesttimeoutresponse) if only looking to customise the timeout response without changing the timeout itself.
 
-> **Warning:**
+@@@ warning
+
 Please note that setting the timeout from within a directive is inherently racy (as the "point in time from which
 we're measuring the timeout" is already in the past (the moment we started handling the request), so if the existing
 timeout already was triggered before your directive had the chance to change it, an timeout may still be logged.
+
 It is recommended to use a larger statically configured timeout (think of it as a "safety net" against programming errors
 or malicious attackers) and if needed tighten it using the directives – not the other way around.
+
+@@@
 
 For more information about various timeouts in Akka HTTP see @ref[Akka HTTP Timeouts](../../../common/timeouts.md#http-timeouts-scala).
 

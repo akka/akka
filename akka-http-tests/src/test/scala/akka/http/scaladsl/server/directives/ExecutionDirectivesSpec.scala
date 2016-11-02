@@ -14,7 +14,7 @@ import akka.testkit.EventFilter
 import org.scalatest.matchers.Matcher
 
 class ExecutionDirectivesSpec extends RoutingSpec {
-  object MyException extends RuntimeException
+  object MyException extends RuntimeException("Boom")
   val handler =
     ExceptionHandler {
       case MyException ⇒ complete((500, "Pling! Plong! Something went wrong!!!"))
@@ -54,7 +54,10 @@ class ExecutionDirectivesSpec extends RoutingSpec {
         }
       }
     }
-    "not interfere with alternative routes" in EventFilter[MyException.type](occurrences = 1).intercept {
+    "not interfere with alternative routes" in EventFilter.error(
+      occurrences = 1,
+      message = "Error during processing of request: 'Boom'. Completing with 500 Internal Server Error response."
+    ).intercept {
       Get("/abc") ~>
         get {
           handleExceptions(handler)(reject) ~ { ctx ⇒
@@ -65,7 +68,10 @@ class ExecutionDirectivesSpec extends RoutingSpec {
           responseAs[String] shouldEqual "There was an internal server error."
         }
     }
-    "not handle other exceptions" in EventFilter[RuntimeException](occurrences = 1, message = "buh").intercept {
+    "not handle other exceptions" in EventFilter.error(
+      occurrences = 1,
+      message = "Error during processing of request: 'buh'. Completing with 500 Internal Server Error response."
+    ).intercept {
       Get("/abc") ~>
         get {
           handleExceptions(handler) {
@@ -76,7 +82,10 @@ class ExecutionDirectivesSpec extends RoutingSpec {
           responseAs[String] shouldEqual "There was an internal server error."
         }
     }
-    "always fall back to a default content type" in EventFilter[RuntimeException](occurrences = 2, message = "buh2").intercept {
+    "always fall back to a default content type" in EventFilter.error(
+      occurrences = 2,
+      message = "Error during processing of request: 'buh2'. Completing with 500 Internal Server Error response."
+    ).intercept {
       Get("/abc") ~> Accept(MediaTypes.`application/json`) ~>
         get {
           handleExceptions(handler) {
@@ -123,6 +132,32 @@ class ExecutionDirectivesSpec extends RoutingSpec {
           response should haveContentEncoding(gzip)
           status shouldEqual StatusCodes.NotFound
         }
+    }
+  }
+
+  "Default handler" should {
+    "handle `IllegalRequestException` with appropriate block of `ErrorHandler`" in EventFilter.warning(
+      occurrences = 1,
+      message = "Illegal request: 'Some summary.'. Completing with 409 Conflict response."
+    ).intercept {
+      Get("/abc") ~>
+        get {
+          throw new IllegalRequestException(ErrorInfo(summary = "Some summary."), StatusCodes.Conflict)
+        } ~> check {
+          status shouldEqual StatusCodes.Conflict
+        }
+    }
+
+    "handle exceptions other than `IllegalRequestException` with appropriate block of `ErrorHandler`" in EventFilter.error(
+      occurrences = 1,
+      message = "Error during processing of request: 're'. Completing with 500 Internal Server Error response."
+    ).intercept {
+      Get("/abc") ~>
+        get {
+          throw new RuntimeException("re")
+        }
+    } ~> check {
+      status shouldEqual StatusCodes.InternalServerError
     }
   }
 

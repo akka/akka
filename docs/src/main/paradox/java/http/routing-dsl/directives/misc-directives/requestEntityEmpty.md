@@ -6,7 +6,7 @@
 A filter that checks if the request entity is empty and only then passes processing to the inner route.
 Otherwise, the request is rejected.
 
-See also @ref[requestEntityPresent-java](requestEntityPresent.md#requestentitypresent-java) for the opposite effect.
+See also @ref[requestEntityPresent](requestEntityPresent.md#requestentitypresent-java) for the opposite effect.
 
 ## Example
 

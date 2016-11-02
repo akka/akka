@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.marshalling
 
+import scala.collection.immutable
 import scala.collection.immutable.ListMap
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.util.ByteString
@@ -41,18 +42,43 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   }
 
   "The PredefinedToResponseMarshallers" - {
-    "fromStatusCode should properly marshal entities that are not supposed to have a body" in {
+    "fromStatusCode should properly marshal a status code that doesn't allow an entity" in {
       marshalToResponse(StatusCodes.NoContent) shouldEqual HttpResponse(StatusCodes.NoContent, entity = HttpEntity.Empty)
+
+      // no content-type negotiation for status code marshalling
+      marshalToResponseForRequestAccepting(StatusCodes.NoContent, MediaTypes.`application/json`) shouldEqual
+        HttpResponse(StatusCodes.NoContent, entity = HttpEntity.Empty)
     }
-    "fromStatusCode should properly marshal entities that contain pre-defined content" in {
+    "fromStatusCode should properly marshal a status code with a default message" in {
       marshalToResponse(StatusCodes.EnhanceYourCalm) shouldEqual
         HttpResponse(StatusCodes.EnhanceYourCalm, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
+
+      // no content-type negotiation for status code marshalling
+      marshalToResponseForRequestAccepting(StatusCodes.EnhanceYourCalm, MediaTypes.`application/json`) shouldEqual
+        HttpResponse(StatusCodes.EnhanceYourCalm, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
     }
-    "fromStatusCodeAndHeadersAndValue should properly marshal entities that are not supposed to have a body" in {
+    val headers: immutable.Seq[HttpHeader] = RawHeader("X-Test", "test") :: Nil
+    "fromStatusCodeAndHeaders should properly marshal for a status code that doesn't allow an entity" in {
+      marshalToResponse(StatusCodes.NoContent → headers) shouldEqual
+        HttpResponse(StatusCodes.NoContent, headers = headers, entity = HttpEntity.Empty)
+
+      // no content-type negotiation for status code marshalling
+      marshalToResponseForRequestAccepting(StatusCodes.NoContent → headers, MediaTypes.`application/json`) shouldEqual
+        HttpResponse(StatusCodes.NoContent, headers = headers, entity = HttpEntity.Empty)
+    }
+    "fromStatusCodeAndHeaders should properly marshal for a status code with a default message" in {
+      marshalToResponse(StatusCodes.EnhanceYourCalm → headers) shouldEqual
+        HttpResponse(StatusCodes.EnhanceYourCalm, headers = headers, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
+
+      // no content-type negotiation for status code marshalling
+      marshalToResponseForRequestAccepting(StatusCodes.EnhanceYourCalm → headers, MediaTypes.`application/json`) shouldEqual
+        HttpResponse(StatusCodes.EnhanceYourCalm, headers = headers, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
+    }
+    "fromStatusCodeAndHeadersAndValue should properly marshal for a status code that doesn't allow an entity" in {
       marshalToResponse((StatusCodes.NoContent, "This Content was intentionally left blank.")) shouldEqual
         HttpResponse(StatusCodes.NoContent, entity = HttpEntity.Empty)
     }
-    "fromStatusCodeAndHeadersAndValue should properly marshal entities that contain pre-defined content" in {
+    "fromStatusCodeAndHeadersAndValue should properly marshal a status code with a default message" in {
       marshalToResponse((StatusCodes.EnhanceYourCalm, "Patience, young padawan!")) shouldEqual
         HttpResponse(StatusCodes.EnhanceYourCalm, entity = HttpEntity("Patience, young padawan!"))
     }
@@ -74,25 +100,25 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     "multipartMarshaller should correctly marshal multipart content with" - {
       "one empty part" in {
         marshal(Multipart.General(`multipart/mixed`, Multipart.General.BodyPart.Strict(""))) shouldEqual HttpEntity(
-          contentType = `multipart/mixed` withBoundary randomBoundary withCharset `UTF-8`,
-          string = s"""--$randomBoundary
+          contentType = (`multipart/mixed` withBoundary randomBoundary).toContentType,
+          data = ByteString(s"""--$randomBoundary
                       |Content-Type: text/plain; charset=UTF-8
                       |
                       |
-                      |--$randomBoundary--""".stripMarginWithNewline("\r\n"))
+                      |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
       }
       "one non-empty part" in {
         marshal(Multipart.General(`multipart/alternative`, Multipart.General.BodyPart.Strict(
           entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com"),
           headers = `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" → "email")) :: Nil))) shouldEqual
           HttpEntity(
-            contentType = `multipart/alternative` withBoundary randomBoundary withCharset `UTF-8`,
-            string = s"""--$randomBoundary
+            contentType = (`multipart/alternative` withBoundary randomBoundary).toContentType,
+            data = ByteString(s"""--$randomBoundary
                         |Content-Type: text/plain; charset=UTF-8
                         |Content-Disposition: form-data; name=email
                         |
                         |test@there.com
-                        |--$randomBoundary--""".stripMarginWithNewline("\r\n"))
+                        |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
       }
       "two different parts" in {
         marshal(Multipart.General(
@@ -102,8 +128,8 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
             HttpEntity(`application/octet-stream`, ByteString("filecontent")),
             RawHeader("Content-Transfer-Encoding", "binary") :: Nil))) shouldEqual
           HttpEntity(
-            contentType = `multipart/related` withBoundary randomBoundary withCharset `UTF-8`,
-            string = s"""--$randomBoundary
+            contentType = (`multipart/related` withBoundary randomBoundary).toContentType,
+            data = ByteString(s"""--$randomBoundary
                       |Content-Type: text/plain; charset=US-ASCII
                       |
                       |first part, with a trailing linebreak
@@ -113,7 +139,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
                       |Content-Transfer-Encoding: binary
                       |
                       |filecontent
-                      |--$randomBoundary--""".stripMarginWithNewline("\r\n"))
+                      |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
       }
     }
 
@@ -123,8 +149,8 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
           "surname" → HttpEntity("Mike"),
           "age" → marshal(<int>42</int>)))) shouldEqual
           HttpEntity(
-            contentType = `multipart/form-data` withBoundary randomBoundary withCharset `UTF-8`,
-            string = s"""--$randomBoundary
+            contentType = (`multipart/form-data` withBoundary randomBoundary).toContentType,
+            data = ByteString(s"""--$randomBoundary
                       |Content-Type: text/plain; charset=UTF-8
                       |Content-Disposition: form-data; name=surname
                       |
@@ -134,7 +160,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
                       |Content-Disposition: form-data; name=age
                       |
                       |<int>42</int>
-                      |--$randomBoundary--""".stripMarginWithNewline("\r\n"))
+                      |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
       }
 
       "two fields having a custom `Content-Disposition`" in {
@@ -144,8 +170,8 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
           Multipart.FormData.BodyPart("attachment[1]", HttpEntity("naice!".getBytes),
             Map("filename" → "attachment2.csv"), List(RawHeader("Content-Transfer-Encoding", "binary"))))))) shouldEqual
           HttpEntity(
-            contentType = `multipart/form-data` withBoundary randomBoundary withCharset `UTF-8`,
-            string = s"""--$randomBoundary
+            contentType = (`multipart/form-data` withBoundary randomBoundary).toContentType,
+            data = ByteString(s"""--$randomBoundary
                         |Content-Type: text/csv; charset=UTF-8
                         |Content-Disposition: form-data; filename=attachment.csv; name="attachment[0]"
                         |
@@ -158,7 +184,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
                         |Content-Transfer-Encoding: binary
                         |
                         |naice!
-                        |--$randomBoundary--""".stripMarginWithNewline("\r\n"))
+                        |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
       }
     }
   }

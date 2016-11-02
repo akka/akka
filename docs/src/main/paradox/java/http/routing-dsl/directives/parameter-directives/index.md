@@ -16,16 +16,16 @@
 <a id="which-parameter-directive-java"></a>
 ## When to use which parameter directive?
 
-Usually, you want to use the high-level @ref[parameter-java](parameter.md#parameter-java) directive. When you need
+Usually, you want to use the high-level @ref[parameter](parameter.md#parameter-java) directive. When you need
 more low-level access you can use the table below to decide which directive
 to use which shows properties of different parameter directives.
 
 |directive                                                                 | level | ordering | multi|
 |--------------------------------------------------------------------------|-------|----------|------|
-|@ref[parameter-java](parameter.md#parameter-java)                         | high | no  | no |
-|@ref[parameterMap-java](parameterMap.md#parametermap-java)                | low  | no  | no |
-|@ref[parameterMultiMap-java](parameterMultiMap.md#parametermultimap-java) | low  | no  | yes|
-|@ref[parameterList-java](parameterSeq.md#parameterlist-java)              | low  | yes | yes|
+|@ref[parameter](parameter.md#parameter-java)                         | high | no  | no |
+|@ref[parameterMap](parameterMap.md#parametermap-java)                | low  | no  | no |
+|@ref[parameterMultiMap](parameterMultiMap.md#parametermultimap-java) | low  | no  | yes|
+|@ref[parameterList](parameterSeq.md#parameterlist-java)              | low  | yes | yes|
 
 level
 : high-level parameter directives extract subset of all parameters by name and allow conversions
@@ -39,5 +39,6 @@ multi
 : multiple values per parameter name are possible
 
 
-> **Note:**
+@@@ note
 If you need to extract multiple parameters, apply the `parameter` directive multiple times.
+@@@

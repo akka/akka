@@ -9,13 +9,13 @@ docker run -ti --rm=true -p 8080:8080 -p 9001:9001 jrudolph/autobahn-testsuite
 Then in sbt, to run all tests, use
 
 ```
-akka-http-core-experimental/test:run-main akka.http.impl.engine.ws.WSClientAutobahnTest
+akka-http-core/test:run-main akka.http.impl.engine.ws.WSClientAutobahnTest
 ```
 
 or, to run a single test, use
 
 ```
-akka-http-core-experimental/test:run-main akka.http.impl.engine.ws.WSClientAutobahnTest 1.1.1
+akka-http-core/test:run-main akka.http.impl.engine.ws.WSClientAutobahnTest 1.1.1
 ```
 
 After a run, you can access the results of the run at http://localhost:8080/cwd/reports/clients/index.html.
@@ -32,7 +32,7 @@ of the container, e.g. using this docker option:
 Start up the test server in sbt:
 
 ```
-akka-http-core-experimental/test:run-main akka.http.impl.engine.ws.WSServerAutobahnTest
+akka-http-core/test:run-main akka.http.impl.engine.ws.WSServerAutobahnTest
 ```
 
 Then, run the test suite with docker:

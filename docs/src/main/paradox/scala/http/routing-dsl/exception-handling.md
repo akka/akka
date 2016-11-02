@@ -5,7 +5,7 @@ Exceptions thrown during route execution bubble up through the route structure t
 @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directive or the top of your route structure.
 
 Similarly to the way that @ref[Rejections](rejections.md#rejections-scala) are handled the @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directive delegates the actual job
-of converting an exception to its argument, an [ExceptionHandler](@github@/akka-http/src/main/scala/akka/http/scaladsl/server/ExceptionHandler.scala), which is defined like this:
+of converting an exception to its argument, an @github[ExceptionHandler](/akka-http/src/main/scala/akka/http/scaladsl/server/ExceptionHandler.scala), which is defined like this:
 
 ```scala
 trait ExceptionHandler extends PartialFunction[Throwable, Route]

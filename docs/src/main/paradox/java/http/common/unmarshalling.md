@@ -26,7 +26,7 @@ content negotiation which saves two additional layers of indirection that are re
 Akka HTTP already predefines a number of marshallers for the most common types.
 Specifically these are:
 
- * [PredefinedFromStringUnmarshallers](@github@/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/PredefinedFromStringUnmarshallers.scala)
+ * @github[PredefinedFromStringUnmarshallers](/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/PredefinedFromStringUnmarshallers.scala)
     * `Byte`
     * `Short`
     * `Int`
@@ -34,13 +34,13 @@ Specifically these are:
     * `Float`
     * `Double`
     * `Boolean`
- * [PredefinedFromEntityUnmarshallers](@github@/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/PredefinedFromEntityUnmarshallers.scala)
+ * @github[PredefinedFromEntityUnmarshallers](/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/PredefinedFromEntityUnmarshallers.scala)
     * `Array[Byte]`
     * `ByteString`
     * `Array[Char]`
     * `String`
     * `akka.http.scaladsl.model.FormData`
- * [GenericUnmarshallers](@github@/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/GenericUnmarshallers.scala)
+ * @github[GenericUnmarshallers](/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/GenericUnmarshallers.scala)
     * `Unmarshaller[T, T]` (identity unmarshaller)
     * `Unmarshaller[Option[A], B]`, if an `Unmarshaller[A, B]` is available
     * `Unmarshaller[A, Option[B]]`, if an `Unmarshaller[A, B]` is available
@@ -88,8 +88,8 @@ The method signatures should make their semantics relatively clear.
 
 ## Using Unmarshallers
 
-In many places throughput Akka HTTP unmarshallers are used implicitly, e.g. when you want to access the @ref[entity](../../../scala/http/routing-dsl/directives/marshalling-directives/entity.md#entity)
-of a request using the @ref[Routing DSL](../../../scala/http/routing-dsl/index.md#http-high-level-server-side-api).
+In many places throughput Akka HTTP unmarshallers are used implicitly, e.g. when you want to access the @ref[entity](../routing-dsl/directives/marshalling-directives/entity.md#entity-java)
+of a request using the @ref[Routing DSL](../routing-dsl/index.md#http-high-level-server-side-api-java).
 
 However, you can also use the unmarshalling infrastructure directly if you wish, which can be useful for example in tests.
 The best entry point for this is the `akka.http.scaladsl.unmarshalling.Unmarshal` object, which you can use like this:

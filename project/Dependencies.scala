@@ -6,16 +6,16 @@ import sbt.Keys._
 object Dependencies {
   import DependencyHelpers._
 
-  val akkaVersion = "2.4.10"
+  val akkaVersion = "2.4.11"
   val junitVersion = "4.12"
-  
+
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
   val Versions = Seq(
-      crossScalaVersions := Seq("2.11.8"), // "2.12.0-RC1"
+      crossScalaVersions := Seq("2.11.8", "2.12.0-RC2"),
       scalaVersion := crossScalaVersions.value.head,
       scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.2"),
       scalaTestVersion := {
@@ -28,13 +28,14 @@ object Dependencies {
         scalaVersion.value match {
           case "2.12.0-M4" => "0.8.0-RC1"
           case "2.12.0-M5" => "0.8.0-RC3"
+          case "2.12.0-RC2" => "0.8.0-RC3"
           case _           => "0.7.0"
         }
       }
     )
   import Versions._
-  
-  
+
+
   object Compile {
     // Compile
     val akkaStream        = "com.typesafe.akka"      %% "akka-stream"                  % akkaVersion // Apache v2
@@ -60,7 +61,7 @@ object Dependencies {
 
     // For Java 8 Conversions
     val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
-    
+
     val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.1"       // ApacheV2
     val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.1"       // ApacheV2
 
@@ -74,7 +75,8 @@ object Dependencies {
     }
 
     object Test {
-      val akkaTestkit  = "com.typesafe.akka"          %% "akka-testkit"                 % akkaVersion        % "test" // Apache v2
+      val akkaTestkit          = "com.typesafe.akka"      %% "akka-testkit"                % akkaVersion        % "test" // Apache v2
+      val akkaMmltinodeTestKit = "com.typesafe.akka"      %% "akka-multi-node-testkit"     % akkaVersion        % "test" // Apache v2
       val akkaStreamTestkit = Compile.akkaStreamTestkit % "test"
 
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
@@ -117,16 +119,16 @@ object Dependencies {
     }
 
   }
-  
+
   import Compile._
-  
+
   lazy val l = libraryDependencies
-  
+
   lazy val common = l ++= Seq(
     akkaStream,
     Test.scalatest.value
   )
-  
+
   lazy val core = l ++=  Seq(
     Test.sprayJson, // for WS Autobahn test metadata
     Test.junitIntf, Test.junit, Test.scalatest.value
@@ -138,12 +140,12 @@ object Dependencies {
     ),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
   )
-  
+
   lazy val httpCore = l ++= Seq(akkaStream,
     Test.akkaStreamTestkit,
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest.value, Test.scalacheck.value, Test.junit)
-  
+
   lazy val http = l ++= Seq()
 
   lazy val http2 = l ++= Seq(hpack, alpnApi, Test.akkaStreamTestkit)
@@ -154,14 +156,14 @@ object Dependencies {
     Test.scalatest.value.copy(configurations = Some("provided; test"))
   )
 
-  lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
+  lazy val httpTests = l ++= Seq(Test.akkaMmltinodeTestKit, Test.junit, Test.scalatest.value, Test.junitIntf)
 
   lazy val httpXml = versionDependentDeps(scalaXml)
 
   lazy val httpSprayJson = versionDependentDeps(sprayJson)
 
   lazy val httpJackson = l ++= Seq(jackson)
-  
+
   lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson)
 
 }

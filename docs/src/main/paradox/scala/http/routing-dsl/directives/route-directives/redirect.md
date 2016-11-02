@@ -3,11 +3,11 @@
 
 ## Signature
 
-FIXME@@snip [RouteDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala) { #redirect }
+@@signature [RouteDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala) { #redirect }
 
 ## Description
 
-Completes the request with a redirection response to a given targer URI and of a given redirection type (status code).
+Completes the request with a redirection response to a given target URI and of a given redirection type (status code).
 
 `redirect` is a convenience helper for completing the request with a redirection response.
 It is equivalent to this snippet relying on the `complete` method on `RequestContext` (a directive is also available):

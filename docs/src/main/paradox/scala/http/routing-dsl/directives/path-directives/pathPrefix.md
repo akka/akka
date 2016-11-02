@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [PathDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathPrefix }
+@@signature [PathDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathPrefix }
 
 ## Description
 
@@ -20,9 +20,10 @@ As opposed to its @ref[rawPathPrefix](rawPathPrefix.md#rawpathprefix) counterpar
 Depending on the type of its `PathMatcher` argument the `pathPrefix` directive extracts zero or more values from
 the URI. If the match fails the request is rejected with an @ref[empty rejection set](../../rejections.md#empty-rejections).
 
-> **Note:**
+@@@ note
 The empty string (also called empty word or identity) is a **neutral element** of string concatenation operation,
 so it will match everything and consume nothing. The @ref[path](path.md#path) provides more strict behaviour.
+@@@
 
 ## Example
 

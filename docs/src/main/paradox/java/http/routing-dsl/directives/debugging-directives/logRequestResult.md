@@ -5,9 +5,9 @@
 
 Logs both, the request and the response.
 
-This directive is a combination of @ref[logRequest-java](logRequest.md#logrequest-java) and @ref[logResult-java](logResult.md#logresult-java).
+This directive is a combination of @ref[logRequest](logRequest.md#logrequest-java) and @ref[logResult-java](logResult.md#logresult-java).
 
-See @ref[logRequest-java](logRequest.md#logrequest-java) for the general description how these directives work.
+See @ref[logRequest](logRequest.md#logrequest-java) for the general description how these directives work.
 
 ## Example
 

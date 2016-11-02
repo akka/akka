@@ -31,15 +31,15 @@ akka-http-jackson
 
 @@@ index
 
-* [http-model](http-model.md)
-* [server-side/low-level-server-side-api](server-side/low-level-server-side-api.md)
-* [server-side/websocket-support](server-side/websocket-support.md)
-* [routing-dsl/index](routing-dsl/index.md)
-* [client-side/index](client-side/index.md)
-* [common/index](common/index.md)
-* [implications-of-streaming-http-entity](implications-of-streaming-http-entity.md)
 * [configuration](configuration.md)
+* [common/index](common/index.md)
+* [http-model](http-model.md)
+* [implications-of-streaming-http-entity](implications-of-streaming-http-entity.md)
+* [server-side/low-level-server-side-api](server-side/low-level-server-side-api.md)
+* [routing-dsl/index](routing-dsl/index.md)
+* [server-side/websocket-support](server-side/websocket-support.md)
+* [client-side/index](client-side/index.md)
 * [server-side-https-support](server-side-https-support.md)
-* [../../scala/http/migration-guide-2.4.x-experimental](../../scala/http/migration-guide-2.4.x-experimental.md)
+* [migration-guides-java](migration-guide/index.md)
 
 @@@

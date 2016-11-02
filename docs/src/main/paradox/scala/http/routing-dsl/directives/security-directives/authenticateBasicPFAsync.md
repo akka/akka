@@ -3,9 +3,9 @@
 
 ## Signature
 
-FIXME@@snip [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #async-authenticator-pf }
+@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #AsyncAuthenticatorPF }
 
-FIXME@@snip [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateBasicPFAsync }
+@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateBasicPFAsync }
 
 ## Description
 
@@ -20,8 +20,9 @@ leaves the request to be rejected with a `AuthenticationFailedRejection` rejecti
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-scala) for details about verifying the secret.
 
-> **Warning:**
+@@@ warning
 Make sure to use basic authentication only over SSL/TLS because credentials are transferred in plaintext.
+@@@
 
 ## Example
 

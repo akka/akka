@@ -233,7 +233,7 @@ object ValidatePullRequest extends AutoPlugin {
       // Create a task for every validation task key and
       // then zip all of the tasks together discarding outputs.
       // Task failures are propagated as normal.
-      val zero: Def.Initialize[Seq[Task[Any]]] = Def.setting { Seq(task())}
+      val zero: Def.Initialize[Seq[Task[Any]]] = Def.setting { Seq(task(()))}
       validationTasks.map(taskKey => Def.task { taskKey.value } ).foldLeft(zero) { (acc, current) =>
         acc.zipWith(current) { case (taskSeq, task) =>
           taskSeq :+ task.asInstanceOf[Task[Any]]

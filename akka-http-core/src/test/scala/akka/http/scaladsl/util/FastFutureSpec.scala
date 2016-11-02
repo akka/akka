@@ -169,7 +169,7 @@ class FastFutureSpec extends FreeSpec with Matchers {
       val p = Promise[Int]
       val opped = op(p.future.fast)
       p.complete(result)
-      Await.ready(opped, 100.millis)
+      Await.ready(opped, 500.millis)
       check(opped.value.get)
     }
     testStrictly()

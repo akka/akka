@@ -120,13 +120,13 @@ public final class MediaTypes {
     public static final MediaType.Binary MESSAGE_DELIVERY_STATUS = akka.http.scaladsl.model.MediaTypes.message$divdelivery$minusstatus();
     public static final MediaType.Binary MESSAGE_RFC822 = akka.http.scaladsl.model.MediaTypes.message$divrfc822();
 
-    public static final MediaType.WithOpenCharset MULTIPART_MIXED = akka.http.scaladsl.model.MediaTypes.multipart$divmixed();
-    public static final MediaType.WithOpenCharset MULTIPART_ALTERNATIVE = akka.http.scaladsl.model.MediaTypes.multipart$divalternative();
-    public static final MediaType.WithOpenCharset MULTIPART_RELATED = akka.http.scaladsl.model.MediaTypes.multipart$divrelated();
-    public static final MediaType.WithOpenCharset MULTIPART_FORM_DATA = akka.http.scaladsl.model.MediaTypes.multipart$divform$minusdata();
-    public static final MediaType.WithOpenCharset MULTIPART_SIGNED = akka.http.scaladsl.model.MediaTypes.multipart$divsigned();
-    public static final MediaType.WithOpenCharset MULTIPART_ENCRYPTED = akka.http.scaladsl.model.MediaTypes.multipart$divencrypted();
-    public static final MediaType.WithOpenCharset MULTIPART_BYTERANGES = akka.http.scaladsl.model.MediaTypes.multipart$divbyteranges();
+    public static final MediaType.Binary MULTIPART_MIXED = akka.http.scaladsl.model.MediaTypes.multipart$divmixed();
+    public static final MediaType.Binary MULTIPART_ALTERNATIVE = akka.http.scaladsl.model.MediaTypes.multipart$divalternative();
+    public static final MediaType.Binary MULTIPART_RELATED = akka.http.scaladsl.model.MediaTypes.multipart$divrelated();
+    public static final MediaType.Binary MULTIPART_FORM_DATA = akka.http.scaladsl.model.MediaTypes.multipart$divform$minusdata();
+    public static final MediaType.Binary MULTIPART_SIGNED = akka.http.scaladsl.model.MediaTypes.multipart$divsigned();
+    public static final MediaType.Binary MULTIPART_ENCRYPTED = akka.http.scaladsl.model.MediaTypes.multipart$divencrypted();
+    public static final MediaType.Binary MULTIPART_BYTERANGES = akka.http.scaladsl.model.MediaTypes.multipart$divbyteranges();
 
     public static final MediaType.WithOpenCharset TEXT_ASP = akka.http.scaladsl.model.MediaTypes.text$divasp();
     public static final MediaType.WithOpenCharset TEXT_CACHE_MANIFEST = akka.http.scaladsl.model.MediaTypes.text$divcache$minusmanifest();

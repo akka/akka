@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authorize }
+@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authorize }
 
 ## Description
 
@@ -22,8 +22,9 @@ e.g. @ref[authenticateBasic](authenticateBasic.md#authenticatebasic)) is allowed
 
 See also @ref[authorizeAsync](authorizeAsync.md#authorizeasync) for the asynchronous version of this directive.
 
-> **Note:**
+@@@ note
 See also @ref[Authentication vs. Authorization](index.md#authentication-vs-authorization-scala) to understand the differences between those.
+@@@
 
 ## Example
 

@@ -3,7 +3,6 @@
  */
 package docs.http.scaladsl
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.server.Directives
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -11,18 +10,21 @@ class SprayJsonPrettyMarshalSpec extends server.RoutingSpec {
 
   "spray-json example" in {
     //#example
+    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
     import spray.json._
 
     // domain model
     final case class PrettyPrintedItem(name: String, id: Long)
 
-    trait PrettyJsonFormatSupport extends DefaultJsonProtocol with SprayJsonSupport {
+    object PrettyJsonFormatSupport {
+      import DefaultJsonProtocol._
       implicit val printer = PrettyPrinter
       implicit val prettyPrintedItemFormat = jsonFormat2(PrettyPrintedItem)
     }
 
     // use it wherever json (un)marshalling is needed
-    class MyJsonService extends Directives with PrettyJsonFormatSupport {
+    class MyJsonService extends Directives {
+      import PrettyJsonFormatSupport._
 
       // format: OFF
       val route =

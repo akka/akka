@@ -12,7 +12,7 @@ A typical use case for the `scheme` directive would be to reject requests coming
 http instead of https, or to redirect such requests to the matching https URI with a
 `MovedPermanently`.
 
-For simply extracting the scheme name, see the @ref[extractScheme-java](extractScheme.md#extractscheme-java) directive.
+For simply extracting the scheme name, see the @ref[extractScheme](extractScheme.md#extractscheme-java) directive.
 
 ## Example
 

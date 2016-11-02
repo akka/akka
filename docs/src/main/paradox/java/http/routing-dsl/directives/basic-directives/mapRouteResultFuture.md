@@ -3,14 +3,14 @@
 
 ## Description
 
-Asynchronous version of @ref[mapRouteResult-java](mapRouteResult.md#maprouteresult-java).
+Asynchronous version of @ref[mapRouteResult](mapRouteResult.md#maprouteresult-java).
 
-It's similar to @ref[mapRouteResultWith-java](mapRouteResultWith.md#maprouteresultwith-java), however it's
+It's similar to @ref[mapRouteResultWith](mapRouteResultWith.md#maprouteresultwith-java), however it's
 `Function<CompletionStage<RouteResult>, CompletionStage<RouteResult>>`
 instead of `Function<RouteResult, CompletionStage<RouteResult>>` which may be useful when
 combining multiple transformations and / or wanting to `recover` from a failed route result.
 
-See @ref[Result Transformation Directives-java](index.md#result-transformation-directives-java) for similar directives.
+See @ref[Result Transformation Directives](index.md#result-transformation-directives-java) for similar directives.
 
 ## Example
 

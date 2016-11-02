@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [PathDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSuffix }
+@@signature [PathDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSuffix }
 
 ## Description
 
@@ -16,10 +16,11 @@ Its one parameter is usually an expression evaluating to a `PathMatcher` instanc
 
 As opposed to @ref[pathPrefix](pathPrefix.md#pathprefix) this directive matches and consumes the unmatched path from the right, i.e. the end.
 
-> **Caution!:**
+@@@ warning { title="Caution" }
 For efficiency reasons, the given `PathMatcher` must match the desired suffix in reversed-segment
 order, i.e. `pathSuffix("baz" / "bar")` would match `/foo/bar/baz`! The order within a segment match is
 not reversed.
+@@@
 
 Depending on the type of its `PathMatcher` argument the `pathPrefix` directive extracts zero or more values from
 the URI. If the match fails the request is rejected with an @ref[empty rejection set](../../rejections.md#empty-rejections).

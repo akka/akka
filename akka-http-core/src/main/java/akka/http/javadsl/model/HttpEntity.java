@@ -145,7 +145,7 @@ public interface HttpEntity {
     /**
      * Discards the entities data bytes by running the {@code dataBytes} Source contained in this entity.
      *
-     * Note: It is crucial that entities are either discarded, or consumed by running the underlying [[Source]]
+     * Note: It is crucial that entities are either discarded, or consumed by running the underlying [[akka.stream.javadsl.Source]]
      * as otherwise the lack of consuming of the data will trigger back-pressure to the underlying TCP connection
      * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of
      * just having ignored the data.

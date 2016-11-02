@@ -2,7 +2,7 @@
 # Server-Side WebSocket Support
 
 WebSocket is a protocol that provides a bi-directional channel between browser and webserver usually run over an
-upgraded HTTP(S) connection. Data is exchanged in messages whereby a message can either be binary data or unicode text.
+upgraded HTTP(S) connection. Data is exchanged in messages whereby a message can either be binary data or Unicode text.
 
 Akka HTTP provides a stream-based implementation of the WebSocket protocol that hides the low-level details of the
 underlying binary framing wire-protocol and provides a simple API to implement services using WebSocket.
@@ -10,7 +10,7 @@ underlying binary framing wire-protocol and provides a simple API to implement s
 ## Model
 
 The basic unit of data exchange in the WebSocket protocol is a message. A message can either be binary message,
-i.e. a sequence of octets or a text message, i.e. a sequence of unicode code points.
+i.e. a sequence of octets or a text message, i.e. a sequence of Unicode code points.
 
 Akka HTTP provides a straight-forward model for this abstraction:
 
@@ -69,7 +69,7 @@ subsequent messages may be stuck and message traffic in this direction will stal
 
 ### Example
 
-Let's look at an [example](@github@/docs/src/test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala).
+Let's look at an @github[example](/docs/src/test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala).
 
 WebSocket requests come in like any other requests. In the example, requests to `/greeter` are expected to be
 WebSocket requests:
@@ -85,10 +85,11 @@ and then responds with another text message that contains a greeting:
 
 @@snip [WebSocketExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-handler }
 
-> **Note:**
+@@@ note
 Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](../common/timeouts.md#idle-timeouts-scala).
 In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
 'keep-alive' messages regularly.
+@@@
 
 ## Routing support
 

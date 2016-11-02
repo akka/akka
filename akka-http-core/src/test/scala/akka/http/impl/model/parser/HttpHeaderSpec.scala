@@ -212,11 +212,11 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Content-Type: text/plain; charset=fancy-pants" =!=
         `Content-Type`(`text/plain` withCharset HttpCharset.custom("fancy-pants"))
       "Content-Type: multipart/mixed; boundary=ABC123" =!=
-        `Content-Type`(`multipart/mixed` withBoundary "ABC123" withCharset `UTF-8`)
-        .renderedTo("multipart/mixed; boundary=ABC123; charset=UTF-8")
+        `Content-Type`(`multipart/mixed` withBoundary "ABC123")
+        .renderedTo("multipart/mixed; boundary=ABC123")
       "Content-Type: multipart/mixed; boundary=\"ABC/123\"" =!=
-        `Content-Type`(`multipart/mixed` withBoundary "ABC/123" withCharset `UTF-8`)
-        .renderedTo("""multipart/mixed; boundary="ABC/123"; charset=UTF-8""")
+        `Content-Type`(`multipart/mixed` withBoundary "ABC/123")
+        .renderedTo("""multipart/mixed; boundary="ABC/123"""")
       "Content-Type: application/*" =!=
         `Content-Type`(MediaType.customBinary("application", "*", MediaType.Compressible, allowArbitrarySubtypes = true))
     }

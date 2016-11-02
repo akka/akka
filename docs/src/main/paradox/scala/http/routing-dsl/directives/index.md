@@ -147,9 +147,10 @@ transformations, both (or either) on the request and on the response side.
 
 ## Composing Directives
 
-> **Note:**
+@@@ note
 Gotcha: forgetting the `~` (tilde) character in between directives can result in perfectly valid
 Scala code that compiles but does not work as expected. What would be intended as a single expression would actually be multiple expressions, and only the final one would be used as the result of the parent directive. Alternatively, you might choose to use the `concat` combinator. `concat(a, b, c)` is the same as `a ~ b ~ c`.
+@@@
 
 As you have seen from the examples presented so far the "normal" way of composing directives is nesting.
 Let's take a look at this concrete example:
@@ -232,3 +233,46 @@ val route =
 Directives offer a great way of constructing your web service logic from small building blocks in a plug and play
 fashion while maintaining DRYness and full type-safety. If the large range of @ref[Predefined Directives](alphabetically.md#predefined-directives) does not
 fully satisfy your needs you can also easily create @ref[Custom Directives](custom-directives.md#custom-directives).
+
+## Automatic Tuple extraction (flattening)
+
+Convenient Scala DSL syntax described in @ref[Basics](#basics), and @ref[Composing Directives](#composing-directives) 
+are made possible by Tuple extraction internally. Let's see how this works with examples.
+ 
+```scala
+val futureOfInt: Future[Int] = Future.successful(1)
+val route =
+  path("success") {
+    onSuccess(futureOfInt) { //: Directive[Tuple1[Int]]
+      i => complete("Future was completed.")
+    }
+  }
+```
+Looking at the above code, `onSuccess(futureOfInt)` returns a `Directive1[Int] = Directive[Tuple1[Int]]`.
+
+```scala
+val futureOfTuple2: Future[Tuple2[Int,Int]] = Future.successful( (1,2) )
+val route =
+  path("success") {
+    onSuccess(futureOfTuple2) { //: Directive[Tuple2[Int,Int]]
+      (i, j) => complete("Future was completed.")
+    }
+  }
+```
+
+Similarly, `onSuccess(futureOfTuple2)` returns a `Directive1[Tuple2[Int,Int]] = Directive[Tuple1[Tuple2[Int,Int]]]`,
+but this will be automatically converted to `Directive[Tuple2[Int,Int]]` to avoid nested Tuples.
+
+```scala
+val futureOfUnit: Future[Unit] = Future.successful( () )
+val route =
+  path("success") {
+    onSuccess(futureOfUnit) { //: Directive0
+        complete("Future was completed.")
+    }
+  }
+```
+If the future returns `Future[Unit]`, it is a bit special case as it results in `Directive0`.
+Looking at the above code, `onSuccess(futureOfUnit)` returns a `Directive1[Unit] = Directive[Tuple1[Unit]]`.
+However, the DSL interprets `Unit` as `Tuple0`, and automatically converts the result to `Directive[Unit] = Directive0`,
+

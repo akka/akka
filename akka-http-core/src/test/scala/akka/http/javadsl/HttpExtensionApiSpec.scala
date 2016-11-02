@@ -471,7 +471,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
   }
 
   private def waitFor[T](completionStage: CompletionStage[T]): T =
-    completionStage.toCompletableFuture.get(1, TimeUnit.SECONDS)
+    completionStage.toCompletableFuture.get(3, TimeUnit.SECONDS)
 
   override protected def afterAll() = TestKit.shutdownActorSystem(system)
 }

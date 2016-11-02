@@ -25,7 +25,7 @@ A `Route` can be "sealed" using `Route.seal`, which relies on the in-scope `Reje
 instances to convert rejections and exceptions into appropriate HTTP responses for the client.
 
 Using `Route.handlerFlow` or `Route.asyncHandler` a `Route` can be lifted into a handler `Flow` or async handler
-function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../../../scala/http/low-level-server-side-api.md#http-low-level-server-side-api).
+function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md#http-low-level-server-side-api-java).
 
 <a id="request-context-java"></a>
 ## RequestContext
@@ -33,7 +33,7 @@ function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Serve
 The request context wraps an `HttpRequest` instance to enrich it with additional information that are typically
 required by the routing logic, like an `ExecutionContext`, `Materializer`, `LoggingAdapter` and the configured
 `RoutingSettings`. It also contains the `unmatchedPath`, a value that describes how much of the request URI has not
-yet been matched by a <!-- FIXME: More than one link target with name pathdirectives in path Some(/java/http/routing-dsl/routes.rst) --> PathDirectives.
+yet been matched by a @ref[Path Directive](directives/path-directives/index.md).
 
 The `RequestContext` itself is immutable but contains several helper methods which allow for convenient creation of
 modified copies.

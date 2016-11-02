@@ -25,6 +25,6 @@ Multiple directives can be nested to produce a single directive out of multiple 
 
 @@snip [CustomDirectivesExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java) { #composition-1 #composition-2 }
 
-Another example is the @ref[MethodDirectives](method-directives/index.md#methoddirectives-java) which are simply instances of a preconfigured @ref[method-java](method-directives/method.md#method-java) directive.
+Another example is the @ref[MethodDirectives](method-directives/index.md#methoddirectives-java) which are simply instances of a preconfigured @ref[method](method-directives/method.md#method-java) directive.
 The low-level directives that most often form the basis of higher-level “named configuration” directives are grouped
 together in the @ref[BasicDirectives](basic-directives/index.md#basicdirectives-java) trait.

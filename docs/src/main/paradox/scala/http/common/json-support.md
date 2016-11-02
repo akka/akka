@@ -9,24 +9,20 @@ Other JSON libraries are supported by the community. See [the list of current co
 
 ## spray-json Support
 
-The [SprayJsonSupport](@github@/akka-http-marshallers-scala/akka-http-spray-json/src/main/scala/akka/http/scaladsl/marshallers/sprayjson/SprayJsonSupport.scala) trait provides a `FromEntityUnmarshaller[T]` and `ToEntityMarshaller[T]` for every type `T`
+The @github[SprayJsonSupport](/akka-http-marshallers-scala/akka-http-spray-json/src/main/scala/akka/http/scaladsl/marshallers/sprayjson/SprayJsonSupport.scala) trait provides a `FromEntityUnmarshaller[T]` and `ToEntityMarshaller[T]` for every type `T`
 that an implicit `spray.json.RootJsonReader` and/or `spray.json.RootJsonWriter` (respectively) is available for.
 
 To enable automatic support for (un)marshalling from and to JSON with [spray-json], add a library dependency onto:
 
 @@@vars
 ```sbt
-"com.typesafe.akka" %% "akka-http-spray-json-experimental" % "$project.version$"`
+"com.typesafe.akka" %% "akka-http-spray-json" % "$project.version$"`
 ```
 @@@
 
 Next, provide a `RootJsonFormat[T]` for your type and bring it into scope. Check out the [spray-json] documentation for more info on how to do this.
 
-Finally, mix in the `akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport` trait as shown in the example below or import the `FromEntityUnmarshaller[T]` and `ToEntityMarshaller[T]` implicits directly from `SprayJsonSupport`
-
-```scala
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-```
+Finally, import the `FromEntityUnmarshaller[T]` and `ToEntityMarshaller[T]` implicits directly from `SprayJsonSupport` as shown in the example below or mix the `akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport` trait into your JSON support module.
 
 Once you have done this (un)marshalling between JSON and your type `T` should work nicely and transparently.
 

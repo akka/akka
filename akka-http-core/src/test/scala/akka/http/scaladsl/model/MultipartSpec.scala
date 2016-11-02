@@ -41,8 +41,8 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
       val streamed = Multipart.General(
         MediaTypes.`multipart/mixed`,
         Source(Multipart.General.BodyPart(defaultEntity("data"), List(ETag("xzy"))) :: Nil))
-      val result = streamed.toEntity(boundary = "boundary")
-      result.contentType shouldBe MediaTypes.`multipart/mixed`.withBoundary("boundary").withCharset(HttpCharsets.`UTF-8`)
+      val result = streamed.toEntity("boundary")
+      result.contentType shouldBe MediaTypes.`multipart/mixed`.withBoundary("boundary").toContentType
       val encoding = Await.result(result.dataBytes.runWith(Sink.seq), 1.second)
       encoding.map(_.utf8String).mkString shouldBe "--boundary\r\nContent-Type: text/plain; charset=UTF-8\r\nETag: \"xzy\"\r\n\r\ndata\r\n--boundary--"
     }

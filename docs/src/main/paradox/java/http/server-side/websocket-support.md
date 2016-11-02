@@ -2,7 +2,7 @@
 # Server-Side WebSocket Support
 
 WebSocket is a protocol that provides a bi-directional channel between browser and webserver usually run over an
-upgraded HTTP(S) connection. Data is exchanged in messages whereby a message can either be binary data or unicode text.
+upgraded HTTP(S) connection. Data is exchanged in messages whereby a message can either be binary data or Unicode text.
 
 Akka HTTP provides a stream-based implementation of the WebSocket protocol that hides the low-level details of the
 underlying binary framing wire-protocol and provides a simple API to implement services using WebSocket.
@@ -10,7 +10,7 @@ underlying binary framing wire-protocol and provides a simple API to implement s
 ## Model
 
 The basic unit of data exchange in the WebSocket protocol is a message. A message can either be binary message,
-i.e. a sequence of octets or a text message, i.e. a sequence of unicode code points.
+i.e. a sequence of octets or a text message, i.e. a sequence of Unicode code points.
 
 In the data model the two kinds of messages, binary and text messages, are represented by the two classes
 `BinaryMessage` and `TextMessage` deriving from a common superclass `Message`. The superclass `Message`
@@ -76,7 +76,7 @@ subsequent messages may be stuck and message traffic in this direction will stal
 
 ### Example
 
-Let's look at an [example](@github@/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java).
+Let's look at an @github[example](/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java).
 
 WebSocket requests come in like any other requests. In the example, requests to `/greeter` are expected to be
 WebSocket requests:
@@ -93,10 +93,11 @@ and then responds with another text message that contains a greeting:
 
 @@snip [WebSocketCoreExample.java](../../../../../test/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-handler }
 
-> **Note:**
+@@@ note
 Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](../common/timeouts.md#idle-timeouts-java).
 In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
 'keep-alive' messages regularly.
+@@@
 
 ## Routing support
 
@@ -112,4 +113,4 @@ uses the `handleWebSocketRequests` directive in place of the `WebSocket.handleWe
 
 The handling code itself will be the same as with using the low-level API.
 
-See the [full routing example](@github@/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java).
+See the @github[full routing example](/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java).

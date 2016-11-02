@@ -21,7 +21,7 @@ For more details refer to [getFromBrowseableDirectory-java](#getfrombrowseabledi
 ### Default file listing page example
 
 Directives which list directories (e.g. `getFromBrowsableDirectory`) use an implicit `DirectoryRenderer`
-instance to perfm the actual rendering of the file listing. This rendered can be easily overriden by simply
+instance to perform the actual rendering of the file listing. This rendered can be easily overridden by simply
 providing one in-scope for the directives to use, so you can build your custom directory listings.
 
 The default renderer is `akka.http.scaladsl.server.directives.FileAndResourceDirectives.defaultDirectoryRenderer`,

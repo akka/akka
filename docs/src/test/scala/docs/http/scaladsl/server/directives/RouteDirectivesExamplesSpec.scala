@@ -126,7 +126,7 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
     //#redirect-examples
   }
 
-  "failwith-examples" in EventFilter[RuntimeException](start = "Error during processing of request", occurrences = 1).intercept {
+  "failwith-examples" in EventFilter.error(start = "Error during processing of request: 'Oops.'. Completing with 500 Internal Server Error response.", occurrences = 1).intercept {
     //#failwith-examples
     val route =
       path("foo") {

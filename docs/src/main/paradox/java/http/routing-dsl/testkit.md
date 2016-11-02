@@ -58,6 +58,6 @@ entity data.
 ## Supporting Custom Test Frameworks
 
 Adding support for a custom test framework is achieved by creating new superclass analogous to
-`JUnitRouteTest` for writing tests with the custom test framwork deriving from `akka.http.javadsl.testkit.RouteTest`
+`JUnitRouteTest` for writing tests with the custom test framework deriving from `akka.http.javadsl.testkit.RouteTest`
 and implementing its abstract methods. This will allow users of the test framework to use `testRoute` and
 to write assertions using the assertion methods defined on `TestResponse`.

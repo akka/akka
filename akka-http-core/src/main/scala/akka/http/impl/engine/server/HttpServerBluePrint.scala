@@ -55,19 +55,14 @@ import akka.http.scaladsl.model.ws.Message
  *                 +----------+                                   +-------------+  Context    +-----------+
  */
 private[http] object HttpServerBluePrint {
-  def apply(settings: ServerSettings, remoteAddress: Option[InetSocketAddress], log: LoggingAdapter): Http.ServerLayer = {
-    val theStack =
-      userHandlerGuard(settings.pipeliningLimit) atop
-        requestTimeoutSupport(settings.timeouts.requestTimeout) atop
-        requestPreparation(settings) atop
-        controller(settings, log) atop
-        parsingRendering(settings, log) atop
-        websocketSupport(settings, log) atop
-        tlsSupport
-
-    if (settings.remoteAddressHeader && remoteAddress.isDefined) theStack.withAttributes(HttpAttributes.remoteAddress(remoteAddress))
-    else theStack
-  }
+  def apply(settings: ServerSettings, log: LoggingAdapter): Http.ServerLayer =
+    userHandlerGuard(settings.pipeliningLimit) atop
+      requestTimeoutSupport(settings.timeouts.requestTimeout) atop
+      requestPreparation(settings) atop
+      controller(settings, log) atop
+      parsingRendering(settings, log) atop
+      websocketSupport(settings, log) atop
+      tlsSupport
 
   val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, NotUsed] =
     BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x })
@@ -115,8 +110,8 @@ private[http] object HttpServerBluePrint {
           // application layer has cancelled or only partially consumed response entity:
           // connection will be closed
           entitySource.complete()
-          completeStage()
         }
+        completeStage()
       }
 
       override def onPush(): Unit = grab(in) match {

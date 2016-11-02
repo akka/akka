@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [MiscDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala) { #validate }
+@@signature [MiscDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala) { #validate }
 
 ## Description
 

@@ -16,7 +16,7 @@ import akka.util.ByteString
 import scala.language.implicitConversions
 
 /**
- * Allows the [[MarshallingDirectives.entity]] directive to extract a [[Source]] of elements.
+ * Allows the [[MarshallingDirectives.entity]] directive to extract a [[akka.stream.scaladsl.Source]] of elements.
  *
  * See [[common.EntityStreamingSupport]] for useful default framing `Flow` instances and
  * support traits such as `SprayJsonSupport` (or your other favourite JSON library) to provide the needed [[Marshaller]] s.
@@ -26,7 +26,7 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
   type RequestToSourceUnmarshaller[T] = FromRequestUnmarshaller[Source[T, NotUsed]]
 
   /**
-   * Extracts entity as [[Source]] of elements of type `T`.
+   * Extracts entity as [[akka.stream.scaladsl.Source]] of elements of type `T`.
    * This is achieved by applying the implicitly provided (in the following order):
    *
    * - 1st: chunk-up the incoming [[ByteString]]s by applying the `Content-Type`-aware framing
@@ -35,7 +35,7 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
    * The request will be rejected with an [[akka.http.scaladsl.server.UnsupportedRequestContentTypeRejection]] if
    * its [[ContentType]] is not supported by the used `framing` or `unmarshaller`.
    *
-   * Cancelling extracted [[Source]] closes the connection abruptly (same as cancelling the `entity.dataBytes`).
+   * Cancelling extracted [[akka.stream.scaladsl.Source]] closes the connection abruptly (same as cancelling the `entity.dataBytes`).
    *
    * See also [[MiscDirectives.withoutSizeLimit]] as you may want to allow streaming infinite streams of data in this route.
    * By default the uploaded data is limited by the `akka.http.parsing.max-content-length`.
@@ -44,7 +44,7 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
     asSourceOfInternal(um, support)
 
   /**
-   * Extracts entity as [[Source]] of elements of type `T`.
+   * Extracts entity as [[akka.stream.scaladsl.Source]] of elements of type `T`.
    * This is achieved by applying the implicitly provided (in the following order):
    *
    * - 1st: chunk-up the incoming [[ByteString]]s by applying the `Content-Type`-aware framing
@@ -53,7 +53,7 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
    * The request will be rejected with an [[akka.http.scaladsl.server.UnsupportedRequestContentTypeRejection]] if
    * its [[ContentType]] is not supported by the used `framing` or `unmarshaller`.
    *
-   * Cancelling extracted [[Source]] closes the connection abruptly (same as cancelling the `entity.dataBytes`).
+   * Cancelling extracted [[akka.stream.scaladsl.Source]] closes the connection abruptly (same as cancelling the `entity.dataBytes`).
    *
    * See also [[MiscDirectives.withoutSizeLimit]] as you may want to allow streaming infinite streams of data in this route.
    * By default the uploaded data is limited by the `akka.http.parsing.max-content-length`.

@@ -14,10 +14,10 @@ or refuses to for security reasons, automatically follow redirects.
 Please note that the inner paths **MUST** end with an explicit trailing slash (e.g. `"things"./`) for the
 re-directed-to route to match.
 
-See also @ref[redirectToNoTrailingSlashIfPresent-java](redirectToNoTrailingSlashIfPresent.md#redirecttonotrailingslashifpresent-java) for the opposite behaviour.
+See also @ref[redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPresent.md#redirecttonotrailingslashifpresent-java) for the opposite behaviour.
 
 ## Example
 
 @@snip [PathDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #redirect-notrailing-slash-missing }
 
-See also @ref[redirectToNoTrailingSlashIfPresent-java](redirectToNoTrailingSlashIfPresent.md#redirecttonotrailingslashifpresent-java) which achieves the opposite - redirecting paths in case they do have a trailing slash.
+See also @ref[redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPresent.md#redirecttonotrailingslashifpresent-java) which achieves the opposite - redirecting paths in case they do have a trailing slash.

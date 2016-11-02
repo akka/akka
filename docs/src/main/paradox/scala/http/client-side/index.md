@@ -10,16 +10,13 @@ from a background with non-"streaming first" HTTP Clients.
 
 Depending on your application's specific needs you can choose from three different API levels:
 
-:ref:
-*connection-level-api*
+@ref[Connection-Level Client-Side API](connection-level.md#connection-level-api)
 : for full-control over when HTTP connections are opened/closed and how requests are scheduled across them
 
-:ref:
-*host-level-api*
+@ref[Host-Level Client-Side API](host-level.md#host-level-api)
 : for letting Akka HTTP manage a connection-pool to *one specific* host/port endpoint
 
-:ref:
-*request-level-api*
+@ref[Request-Level Client-Side API](request-level.md#request-level-api)
 : for letting Akka HTTP perform all connection management
 
 

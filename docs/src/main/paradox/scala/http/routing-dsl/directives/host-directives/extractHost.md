@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [HostDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala) { #extractHost }
+@@signature [HostDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala) { #extractHost }
 
 ## Description
 

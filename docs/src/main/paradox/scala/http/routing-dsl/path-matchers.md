@@ -31,10 +31,11 @@ Here is an example of a more complex `PathMatcher` expression:
 
 This will match paths like `foo/bar/X42/edit` or `foo/bar/X/create`.
 
-> **Note:**
+@@@ note
 The path matching DSL describes what paths to accept **after** URL decoding. This is why the path-separating
 slashes have special status and cannot simply be specified as part of a string! The string "foo/bar" would match
 the raw URI path "foo%2Fbar", which is most likely not what you want!
+@@@
 
 ## Basic PathMatchers
 

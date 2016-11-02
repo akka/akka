@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [PathDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSuffixTest }
+@@signature [PathDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSuffixTest }
 
 ## Description
 
@@ -17,10 +17,11 @@ is even in the case that the directive successfully matched and the request is p
 
 As opposed to @ref[pathPrefixTest](pathPrefixTest.md#pathprefixtest) this directive matches and consumes the unmatched path from the right, i.e. the end.
 
-> **Caution!:**
+@@@ warning { title="Caution" }
 For efficiency reasons, the given `PathMatcher` must match the desired suffix in reversed-segment
 order, i.e. `pathSuffixTest("baz" / "bar")` would match `/foo/bar/baz`! The order within a segment match is
 not reversed.
+@@@
 
 Depending on the type of its `PathMatcher` argument the `pathSuffixTest` directive extracts zero or more values from
 the URI. If the match fails the request is rejected with an @ref[empty rejection set](../../rejections.md#empty-rejections).

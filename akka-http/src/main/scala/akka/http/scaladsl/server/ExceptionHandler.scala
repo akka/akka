@@ -1,7 +1,6 @@
 /*
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
-
 package akka.http.scaladsl.server
 
 import scala.util.control.NonFatal
@@ -40,13 +39,11 @@ object ExceptionHandler {
   def default(settings: RoutingSettings): ExceptionHandler =
     apply(knownToBeSealed = true) {
       case IllegalRequestException(info, status) ⇒ ctx ⇒ {
-        ctx.log.warning(
-          "Illegal request {}\n\t{}\n\tCompleting with '{}' response",
-          ctx.request, info.formatPretty, status)
+        ctx.log.warning("Illegal request: '{}'. Completing with {} response.", info.summary, status)
         ctx.complete((status, info.format(settings.verboseErrorMessages)))
       }
       case NonFatal(e) ⇒ ctx ⇒ {
-        ctx.log.error(e, "Error during processing of request {}", ctx.request)
+        ctx.log.error("Error during processing of request: '{}'. Completing with {} response.", e.getMessage, InternalServerError)
         ctx.complete(InternalServerError)
       }
     }

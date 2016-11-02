@@ -46,7 +46,7 @@ This is how `Marshalling` is defined:
 Akka HTTP already predefines a number of marshallers for the most common types.
 Specifically these are:
 
- * [PredefinedToEntityMarshallers](@github@/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToEntityMarshallers.scala)
+ * @github[PredefinedToEntityMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToEntityMarshallers.scala)
     * `Array[Byte]`
     * `ByteString`
     * `Array[Char]`
@@ -54,7 +54,7 @@ Specifically these are:
     * `akka.http.scaladsl.model.FormData`
     * `akka.http.scaladsl.model.MessageEntity`
     * `T <: akka.http.scaladsl.model.Multipart`
- * [PredefinedToResponseMarshallers](@github@/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToResponseMarshallers.scala)
+ * @github[PredefinedToResponseMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToResponseMarshallers.scala)
     * `T`, if a `ToEntityMarshaller[T]` is available
     * `HttpResponse`
     * `StatusCode`
@@ -62,12 +62,12 @@ Specifically these are:
     * `(Int, T)`, if a `ToEntityMarshaller[T]` is available
     * `(StatusCode, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
     * `(Int, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
- * [PredefinedToRequestMarshallers](@github@/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToRequestMarshallers.scala)
+ * @github[PredefinedToRequestMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToRequestMarshallers.scala)
     * `HttpRequest`
     * `Uri`
     * `(HttpMethod, Uri, T)`, if a `ToEntityMarshaller[T]` is available
     * `(HttpMethod, Uri, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
- * [GenericMarshallers](@github@/akka-http/src/main/scala/akka/http/scaladsl/marshalling/GenericMarshallers.scala)
+ * @github[GenericMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/GenericMarshallers.scala)
     * `Marshaller[Throwable, T]`
     * `Marshaller[Option[A], B]`, if a `Marshaller[A, B]` and an `EmptyValue[B]` is available
     * `Marshaller[Either[A1, A2], B]`, if a `Marshaller[A1, B]` and a `Marshaller[A2, B]` is available
@@ -127,8 +127,8 @@ depend on one being available implicitly at the usage site.
 
 ## Using Marshallers
 
-In many places throughput Akka HTTP marshallers are used implicitly, e.g. when you define how to @ref[complete](../../../scala/http/routing-dsl/directives/route-directives/complete.md#complete) a
-request using the @ref[Routing DSL](../../../scala/http/routing-dsl/index.md#http-high-level-server-side-api).
+In many places throughput Akka HTTP marshallers are used implicitly, e.g. when you define how to @ref[complete](../routing-dsl/directives/route-directives/complete.md#complete) a
+request using the @ref[Routing DSL](../routing-dsl/index.md#http-high-level-server-side-api-java).
 
 However, you can also use the marshalling infrastructure directly if you wish, which can be useful for example in tests.
 The best entry point for this is the `akka.http.scaladsl.marshalling.Marshal` object, which you can use like this:

@@ -3,7 +3,7 @@
 
 ## Signature
 
-FIXME@@snip [BasicDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #recoverRejectionsWith }
+@@signature [BasicDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #recoverRejectionsWith }
 
 ## Description
 
@@ -16,8 +16,9 @@ Asynchronous version of @ref[recoverRejections](recoverRejections.md#recoverreje
 
 See @ref[recoverRejections](recoverRejections.md#recoverrejections) (the synchronous equivalent of this directive) for a detailed description.
 
-> **Note:**
+@@@ note
 To learn more about how and why rejections work read the @ref[Rejections](../../rejections.md#rejections-scala) section of the documentation.
+@@@
 
 ## Example
 

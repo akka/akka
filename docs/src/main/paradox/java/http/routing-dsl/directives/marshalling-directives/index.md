@@ -23,6 +23,6 @@ Marshalling directives usually rely on an in-scope implicit marshaller to handle
 
 |directive                                                  | behavior                                                                                                                                         |
 |-----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-|@ref[completeWith-java](completeWith.md#completewith-java) | Uses a marshaller for a given type to produce a completion function for an inner route. Used in conjuction with *instanceOf* to format responses.|
-|@ref[entity-java](entity.md#entity-java)                   | Unmarshalls the request entity to the given type and passes it to its inner route.  Used in conjection with *as* to convert requests to objects. |
-|@ref[handleWith-java](handleWith.md#handlewith-java)       | Completes a request with a given function, using an in-scope unmarshaller for an input and in-scope marshaller for the output.                   |
+|@ref[completeWith](completeWith.md#completewith-java) | Uses a marshaller for a given type to produce a completion function for an inner route. Used in conjunction with *instanceOf* to format responses.|
+|@ref[entity](entity.md#entity-java)                   | Unmarshalls the request entity to the given type and passes it to its inner route.  Used in conjunction with *as* to convert requests to objects. |
+|@ref[handleWith](handleWith.md#handlewith-java)       | Completes a request with a given function, using an in-scope unmarshaller for an input and in-scope marshaller for the output.                   |
