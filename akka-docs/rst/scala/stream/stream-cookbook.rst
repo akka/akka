@@ -103,7 +103,7 @@ The :class:`Framing` helper object contains a convenience method to parse messag
 Dealing with compressed data streams
 ------------------------------------
 
-**Situation:** A gzipped stream of bytes is given as a stream of ``ByteStrings``, for example from a ``FileIO`` source.
+**Situation:** A gzipped stream of bytes is given as a stream of ``ByteString`` s, for example from a ``FileIO`` source.
 
 The :class:`Compression` helper object contains convenience methods for decompressing data streams compressed with
 Gzip or Deflate.
