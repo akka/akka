@@ -11,11 +11,13 @@ import akka.event.LoggingAdapter
 import akka.stream.ActorMaterializer
 import akka.event.NoLogging
 
-// TODO this can be removed when https://github.com/akka/akka/issues/18793 has been implemented
+// TODO Try to reconcile with what Akka provides in StageLogging.
+// We thought this could be removed when https://github.com/akka/akka/issues/18793 had been implemented
+// but we need a few more changes to be able to override the default logger. So for now we keep it here.
 /**
  * INTERNAL API
  */
-private[akka] trait StageLogging { self: GraphStageLogic ⇒
+private[akka] trait StageLoggingWithOverride { self: GraphStageLogic ⇒
   def logOverride: LoggingAdapter = DefaultNoLogging
 
   private var _log: LoggingAdapter = null

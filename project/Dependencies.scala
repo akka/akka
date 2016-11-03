@@ -6,7 +6,7 @@ import sbt.Keys._
 object Dependencies {
   import DependencyHelpers._
 
-  val akkaVersion = "2.4.11"
+  val akkaVersion = "2.4.12"
   val junitVersion = "4.12"
 
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
@@ -15,23 +15,11 @@ object Dependencies {
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
   val Versions = Seq(
-      crossScalaVersions := Seq("2.11.8", "2.12.0-RC2"),
+      crossScalaVersions := Seq("2.11.8", "2.12.0"),
       scalaVersion := crossScalaVersions.value.head,
-      scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.2"),
-      scalaTestVersion := {
-        scalaVersion.value match {
-          case "2.12.0-M5" => "3.0.0"
-          case _           => "3.0.0"
-        }
-      },
-      java8CompatVersion := {
-        scalaVersion.value match {
-          case "2.12.0-M4" => "0.8.0-RC1"
-          case "2.12.0-M5" => "0.8.0-RC3"
-          case "2.12.0-RC2" => "0.8.0-RC3"
-          case _           => "0.7.0"
-        }
-      }
+      scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.4"),
+      scalaTestVersion := "3.0.0",
+      java8CompatVersion := "0.8.0"
     )
   import Versions._
 

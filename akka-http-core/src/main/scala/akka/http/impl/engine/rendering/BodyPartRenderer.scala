@@ -37,7 +37,7 @@ private[http] object BodyPartRenderer {
       override val shape: FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]] = FlowShape(in, out)
 
       override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-        new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+        new GraphStageLogic(shape) with InHandler with OutHandler with StageLoggingWithOverride {
           override def logOverride: LoggingAdapter = _log
 
           override def onPush(): Unit = {
