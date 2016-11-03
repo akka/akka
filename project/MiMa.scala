@@ -485,7 +485,7 @@ object MiMa extends AutoPlugin {
         // #20553 Tree flattening should be separate from Fusing
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$")
-      ), 
+      ),
       "2.4.14" -> Seq(
         // #21423 removal of deprecated stages (in 2.5.x)
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.transform"),
@@ -532,11 +532,14 @@ object MiMa extends AutoPlugin {
 
         // # 21944
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ClusterEvent#ReachabilityEvent.member"),
-        
+
         // #21645 durable distributed data
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.WriteAggregator.props"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.WriteAggregator.this"),
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.write")
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.write"),
+
+        // #20737 aligned test sink and test source stage factory methods types
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.TestSinkStage.apply")
       )
     )
   }
