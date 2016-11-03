@@ -1,7 +1,7 @@
 <a id="http-scala"></a>
 # Akka HTTP
 
-@@toc { depth=2 }
+@@toc { depth=3 }
 
 @@@ index
 

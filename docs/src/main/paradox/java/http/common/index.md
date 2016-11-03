@@ -7,7 +7,7 @@ The documentation for their counterparts in Akka HTTP lives in this section rath
 @ref[Client-Side API](../client-side/index.md#http-client-side-java), @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md#http-low-level-server-side-api-java) or @ref[High-level Server-Side API](../routing-dsl/index.md#http-high-level-server-side-api-java),
 which are specific to one side only.
 
-@@toc { depth=2 }
+@@toc { depth=3 }
 
 @@@ index
 

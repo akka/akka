@@ -1,7 +1,7 @@
 <a id="migration-guides-java"></a>
 # Migration Guides (Java)
 
-@@toc { depth=2 }
+@@toc { depth=3 }
 
 @@@ index
 

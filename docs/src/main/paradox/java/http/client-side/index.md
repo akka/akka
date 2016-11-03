@@ -18,7 +18,7 @@ Depending on your application's specific needs you can choose from three differe
 You can interact with different API levels at the same time and, independently of which API level you choose,
 Akka HTTP will happily handle many thousand concurrent connections to a single or many different hosts.
 
-@@toc { depth=2 }
+@@toc { depth=3 }
 
 @@@ index
 

@@ -27,7 +27,7 @@ akka-http-jackson
 : Predefined glue-code for (de)serializing custom types from/to JSON with [jackson](https://github.com/FasterXML/jackson)
 
 
-@@toc { depth=2 }
+@@toc { depth=3 }
 
 @@@ index
 

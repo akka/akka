@@ -1,7 +1,7 @@
 <a id="migration-guides-scala"></a>
 # Migration Guides
 
-@@toc { depth=2 }
+@@toc { depth=3 }
 
 @@@ index
 
