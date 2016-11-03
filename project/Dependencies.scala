@@ -17,19 +17,17 @@ object Dependencies {
   val sslConfigVersion = "0.2.1"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.8"), // "2.12.0-RC2"
+    crossScalaVersions := Seq("2.11.8"), // "2.12.0"
     scalaVersion := crossScalaVersions.value.head,
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7"),
-    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.2"),
-    scalaTestVersion := {
-      scalaVersion.value match {
-        case "2.12.0-M5" => "3.0.0"
-        case _ => "3.0.0"
-      }
-    },
+    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
+      if (scalaVersion.value.startsWith("2.12")) "1.13.4" // does not work for 2.11
+      else "1.13.2"
+    ),
+    scalaTestVersion := "3.0.0",
     java8CompatVersion := {
       scalaVersion.value match {
-        case x if x.startsWith("2.12.0") => "0.8.0-RC8"
+        case x if x.startsWith("2.12") => "0.8.0"
         case _ => "0.7.0"
       }
     }
