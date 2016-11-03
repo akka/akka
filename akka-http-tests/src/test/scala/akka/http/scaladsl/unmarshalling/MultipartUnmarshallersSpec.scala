@@ -275,6 +275,17 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |--XYZABC--""".stripMarginWithNewline("\r\n")))).to[Multipart.FormData] should haveParts(
           Multipart.FormData.BodyPart.Strict("email", HttpEntity(`application/octet-stream`, ByteString("test@there.com"))))
       }
+      "with one element and name value in quotes" in {
+        Unmarshal(HttpEntity(
+          `multipart/form-data` withBoundary "XYZABC",
+          ByteString("""--XYZABC
+            |content-disposition: form-data; name="email"
+            |Content-Type: application/octet-stream
+            |
+            |test@there.com
+            |--XYZABC--""".stripMarginWithNewline("\r\n")))).to[Multipart.FormData] should haveParts(
+          Multipart.FormData.BodyPart.Strict("email", HttpEntity(`application/octet-stream`, ByteString("test@there.com"))))
+      }
       "with a file" in {
         Unmarshal {
           HttpEntity.Default(

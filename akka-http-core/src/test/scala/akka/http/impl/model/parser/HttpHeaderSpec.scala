@@ -182,9 +182,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "Content-Disposition" in {
       "Content-Disposition: form-data" =!= `Content-Disposition`(ContentDispositionTypes.`form-data`)
-      "Content-Disposition: attachment; name=field1; filename=\"file/txt\"" =!=
+      "Content-Disposition: attachment; name=\"field1\"; filename=\"file/txt\"" =!=
         `Content-Disposition`(ContentDispositionTypes.attachment, Map("name" → "field1", "filename" → "file/txt"))
-      "Content-Disposition: attachment; name=field1; other=\"\"" =!=
+      "Content-Disposition: attachment; name=\"field1\"; other=\"\"" =!=
         `Content-Disposition`(ContentDispositionTypes.attachment, Map("name" → "field1", "other" → ""))
     }
 

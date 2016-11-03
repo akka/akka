@@ -383,13 +383,18 @@ final case class `Content-Length` private[http] (length: Long) extends jm.header
   protected def companion = `Content-Length`
 }
 
-// http://tools.ietf.org/html/rfc6266
+/**
+ * Document http://tools.ietf.org/html/rfc6266 updates document https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html. Between these
+ * two there is slight but important difference regarding how parameter values are formatted. In RFC6266 parameters values are without quotes and
+ * in RFC2616 they are quoted. Since common practice among http servers is to understand quoted values, we use older document
+ * as reference here.
+ */
 object `Content-Disposition` extends ModeledCompanion[`Content-Disposition`]
 final case class `Content-Disposition`(dispositionType: ContentDispositionType, params: Map[String, String] = Map.empty)
   extends jm.headers.ContentDisposition with RequestResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = {
     r ~~ dispositionType
-    params foreach { case (k, v) ⇒ r ~~ "; " ~~ k ~~ '=' ~~# v }
+    params foreach { case (k, v) ⇒ r ~~ "; " ~~ k ~~ '=' ~~#! v }
     r
   }
   protected def companion = `Content-Disposition`
