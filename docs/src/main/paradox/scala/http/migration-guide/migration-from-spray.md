@@ -267,3 +267,4 @@ as it has been seen mostly as an anti-pattern. More information here: <https://g
 Instead users should rely on content type negotiation as Akka HTTP implements it.
 More information here: [#190](https://github.com/akka/akka-http/issues/190)
  * @ref[Registering Custom Media Types](../common/http-model.md#registeringcustommediatypes) changed from Spray in order not to rely on global state.
+ * HTTP Client proxy support, see [#115 Client proxy support for HTTP](https://github.com/akka/akka-http/issues/115) and [#192 Client proxy support for HTTPS](https://github.com/akka/akka-http/issues/192) tickets for details.
