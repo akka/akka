@@ -49,12 +49,14 @@ they're ready to accept new work. However, large amounts of Turquoise (sleeping)
 
 ![DispatcherBehaviourOnBadCode.png](DispatcherBehaviourOnBadCode.png)
 
-After some time, the app is exposed to the load of POST requests,
-which will block these threads. For example "`default-akka.default-dispatcher2,3,4`"
-are going into the blocking state, after having been idle. It can be observed
-that the number of new threads increases, "`default-akka.actor.default-dispatcher 18,19,20,...`" 
-however they go to sleep state immediately, thus wasting the
-resources.
+Since we're using the Java `CompletableFuture` in this example, the blocking will happen on its
+default pool which is the _global_ `ForkJoinPool.commonPool()`. With Scala Futures the in-scope 
+provided dispatcher would be used. Both these dispatchers are ForkJoin pools by default, and are 
+not best suited for blocking operations. For example, the above screenshot shows an Akka FJP dispatchers threads,
+named "`default-akka.default-dispatcher2,3,4`" going into the blocking state, after having been idle. 
+It can be observed that the number of new threads increases, "`default-akka.actor.default-dispatcher 18,19,20,...`" 
+however they go to sleep state immediately, thus wasting the resources. The same happens to the global `ForkJoinPool` 
+when using Java Futures.
 
 The number of such new threads depends on the default dispatcher configuration,
 but it will likely not exceed 50. Since many POST requests are being processed, the entire
