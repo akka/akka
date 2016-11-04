@@ -195,6 +195,10 @@ and before any other received messages.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#recovery-completed
 
+The actor will always receive a :class:`RecoveryCompleted` message, even if there are no events
+in the journal and the snapshot store is empty, or if it's a new persistent actor with a previously
+unused ``persistenceId``.
+
 If there is a problem with recovering the state of the actor from the journal, ``onRecoveryFailure``
 is called (logging the error by default) and the actor will be stopped.
 
