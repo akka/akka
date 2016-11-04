@@ -122,22 +122,16 @@ If the given prefix is empty the returned matcher matches always and consumes no
 
 Path matchers can be combined with these combinators to form higher-level constructs:
 
-Tilde Operator (
-`~`
-)
+Tilde Operator (`~`)
 : The tilde is the most basic combinator. It simply concatenates two matchers into one, i.e if the first one matched
 (and consumed) the second one is tried. The extractions of both matchers are combined type-safely.
 For example: `"foo" ~ "bar"` yields a matcher that is identical to `"foobar"`.
 
-Slash Operator (
-`/`
-)
+Slash Operator (`/`)
 : This operator concatenates two matchers and inserts a `Slash` matcher in between them.
 For example: `"foo" / "bar"` is identical to `"foo" ~ Slash ~ "bar"`.
 
-Pipe Operator (
-`|`
-)
+Pipe Operator (`|`)
 : This operator combines two matcher alternatives in that the second one is only tried if the first one did *not* match.
 The two sub-matchers must have compatible types.
 For example: `"foo" | "bar"` will match either "foo" *or* "bar".
