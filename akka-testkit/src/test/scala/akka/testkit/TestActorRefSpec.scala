@@ -267,6 +267,33 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       expectMsg("workDone")
     }
 
+    "not throw an exception when parent is passed in the apply" in {
+      EventFilter[RuntimeException](occurrences = 1, message = "expected") intercept {
+        val parent = TestProbe()
+        val child = TestActorRef(Props(new Actor {
+          def receive: Receive = {
+            case 1 ⇒ throw new RuntimeException("expected")
+            case x ⇒ sender() ! x
+          }
+        }), parent.ref, "Child")
+
+        child ! 1
+      }
+    }
+    "not throw an exception when child is created through childActorOf" in {
+      EventFilter[RuntimeException](occurrences = 1, message = "expected") intercept {
+        val parent = TestProbe()
+        val child = parent.childActorOf(Props(new Actor {
+          def receive: Receive = {
+            case 1 ⇒ throw new RuntimeException("expected")
+            case x ⇒ sender() ! x
+          }
+        }), "Child")
+
+        child ! 1
+      }
+    }
+
   }
 
   "A TestActorRef Companion Object" must {
