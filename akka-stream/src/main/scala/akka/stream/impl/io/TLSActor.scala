@@ -316,7 +316,7 @@ class TLSActor(
           if (tracing) log.debug(s"SSLException during doUnwrap: $ex")
           fail(ex, closeTransport = false)
           engine.closeInbound() // we don't need to add lastHandshakeStatus check here because
-          completeOrFlush()     // it doesn't make any sense to write anything to the network anymore
+          completeOrFlush() // it doesn't make any sense to write anything to the network anymore
           false
       }
     } else true

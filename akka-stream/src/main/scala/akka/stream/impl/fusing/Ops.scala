@@ -522,8 +522,9 @@ final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends GraphSta
           pull(in)
         } catch {
           case NonFatal(ex) ⇒ decider(ex) match {
-            case Supervision.Stop ⇒ failStage(ex)
-            case _ ⇒
+            case Supervision.Stop   ⇒ failStage(ex)
+            case Supervision.Resume ⇒ pull(in)
+            case Supervision.Restart ⇒
               aggregator = zero
               pull(in)
           }
@@ -1623,21 +1624,37 @@ final class Reduce[T](val f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
 
     var aggregator: T = _
 
-    // Initial input handler
-    setHandler(in, new InHandler {
-      override def onPush(): Unit = {
-        aggregator = grab(in)
-        pull(in)
-        setHandler(in, self)
-      }
+    private def decider =
+      inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
-      override def onUpstreamFinish(): Unit =
-        failStage(new NoSuchElementException("reduce over empty stream"))
-    })
+    def setInitialInHandler(): Unit = {
+      // Initial input handler
+      setHandler(in, new InHandler {
+        override def onPush(): Unit = {
+          aggregator = grab(in)
+          pull(in)
+          setHandler(in, self)
+        }
+
+        override def onUpstreamFinish(): Unit =
+          failStage(new NoSuchElementException("reduce over empty stream"))
+      })
+    }
 
     override def onPush(): Unit = {
-      aggregator = f(aggregator, grab(in))
-      pull(in)
+      try {
+        aggregator = f(aggregator, grab(in))
+        pull(in)
+      } catch {
+        case NonFatal(ex) ⇒ decider(ex) match {
+          case Supervision.Stop   ⇒ failStage(ex)
+          case Supervision.Resume ⇒ pull(in)
+          case Supervision.Restart ⇒
+            aggregator = _: T
+            setInitialInHandler()
+            pull(in)
+        }
+      }
     }
 
     override def onPull(): Unit = pull(in)
@@ -1647,6 +1664,7 @@ final class Reduce[T](val f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
       completeStage()
     }
 
+    setInitialInHandler()
     setHandler(out, self)
   }
 
