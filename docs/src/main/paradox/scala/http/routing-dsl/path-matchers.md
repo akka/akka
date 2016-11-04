@@ -150,6 +150,7 @@ a postfix call. `matcher /` is identical to `matcher ~ Slash` but shorter and ea
 By postfixing a matcher with `?` you can turn any `PathMatcher` into one that always matches, optionally consumes
 and potentially extracts an `Option` of the underlying matchers extraction. The result type depends on the type
 of the underlying matcher:
+
 |If a `matcher` is of type | then `matcher.?` is of type|
 |--------------------------|----------------------------|
 |`PathMatcher0`          | `PathMatcher0`          |
@@ -161,13 +162,14 @@ repeat(separator: PathMatcher0 = PathMatchers.Neutral)
 By postfixing a matcher with `repeat(separator)` you can turn any `PathMatcher` into one that always matches,
 consumes zero or more times (with the given separator) and potentially extracts a `List` of the underlying matcher's
 extractions. The result type depends on the type of the underlying matcher:
+
 |If a `matcher` is of type | then `matcher.repeat(...)` is of type|
 |--------------------------|--------------------------------------|
 |`PathMatcher0`          | `PathMatcher0`        |
 |`PathMatcher1[T]`       | `PathMatcher1[List[T]`|
 |`PathMatcher[L: Tuple]` | `PathMatcher[List[L]]`|
 
-`unary_!`
+unary_!
 : By prefixing a matcher with `!` it can be turned into a `PathMatcher0` that only matches if the underlying matcher
 does *not* match and vice versa.
 
