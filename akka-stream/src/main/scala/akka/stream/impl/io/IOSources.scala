@@ -5,21 +5,20 @@ package akka.stream.impl.io
 
 import java.io.InputStream
 import java.nio.ByteBuffer
-import java.nio.channels.{ NonReadableChannelException, AsynchronousFileChannel, CompletionHandler }
+import java.nio.channels.{ CompletionHandler, FileChannel }
 import java.nio.file.{ Files, Path, StandardOpenOption }
 
 import akka.Done
-import akka.stream._
-import akka.stream.ActorAttributes.Dispatcher
-import akka.stream.IOResult
-import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.impl.{ ErrorPublisher, SourceModule }
+import akka.stream.{ IOResult, _ }
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
 import akka.util.ByteString
-import org.reactivestreams._
+import org.reactivestreams.Publisher
 
+import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
@@ -58,13 +57,17 @@ private[akka] final class FileSource(path: Path, chunkSize: Int)
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[IOResult]) = {
     val ioResultPromise = Promise[IOResult]()
 
-    val logic = new TimerGraphStageLogic(shape) {
-
+    val logic = new GraphStageLogic(shape) with OutHandler {
+      handler ⇒
       val buffer = ByteBuffer.allocate(chunkSize)
-
-      var channel: AsynchronousFileChannel = _
+      val maxReadAhead = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+      var channel: FileChannel = _
       var position = 0L
       var chunkCallback: Try[Int] ⇒ Unit = _
+      var eofEncountered = false
+      var availableChunks: List[ByteString] = List.empty[ByteString]
+
+      setHandler(out, this)
 
       override def preStart(): Unit = {
         try {
@@ -73,49 +76,58 @@ private[akka] final class FileSource(path: Path, chunkSize: Int)
           require(Files.isRegularFile(path), s"Path '$path' is not a regular file")
           require(Files.isReadable(path), s"Missing read permission for '$path'")
 
-          channel = AsynchronousFileChannel.open(path, StandardOpenOption.READ)
+          channel = FileChannel.open(path, StandardOpenOption.READ)
         } catch {
           case ex: Exception ⇒
-            ioResultPromise.failure(ex)
-            throw ex
-        }
-
-        chunkCallback = getAsyncCallback[Try[Int]] {
-          case Success(readBytes) ⇒
-            if (readBytes > 0) {
-              buffer.flip()
-              push(out, ByteString.fromByteBuffer(buffer))
-              position += readBytes
-              buffer.clear()
-            }
-            if (readBytes == 0 || readBytes < chunkSize) {
-              // hit end, our work here is done
-              complete(out)
-              ioResultPromise.trySuccess(IOResult(position, Success(Done)))
-            }
-
-          case Failure(ex) ⇒
-            failStage(ex)
             ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
-
-        }.invoke
-
-      }
-
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = try {
-          channel.read(buffer, position, chunkCallback, FileSource.completionHandler)
-        } catch {
-          case NonFatal(ex) ⇒
-            ioResultPromise.success(IOResult(position, Failure(ex)))
             throw ex
         }
-      })
-
-      override def postStop(): Unit = {
-        if ((channel ne null) && channel.isOpen) channel.close()
       }
 
+      override def onPull(): Unit = {
+        if (availableChunks.size < maxReadAhead && !eofEncountered)
+          availableChunks = readAhead(maxReadAhead, availableChunks)
+
+        if (availableChunks.nonEmpty) {
+          emitMultiple(out, availableChunks.toIterator,
+            () ⇒ if (eofEncountered) success() else setHandler(out, handler)
+          )
+          availableChunks = List.empty[ByteString]
+        } else if (eofEncountered) success()
+      }
+
+      private def success(): Unit = {
+        completeStage()
+        ioResultPromise.trySuccess(IOResult(position, Success(Done)))
+      }
+
+      /** BLOCKING I/O READ */
+      @tailrec def readAhead(maxChunks: Int, chunks: List[ByteString]): List[ByteString] =
+        if (chunks.size < maxChunks && !eofEncountered) {
+          val readBytes = try channel.read(buffer, position) catch {
+            case NonFatal(ex) ⇒
+              failStage(ex)
+              ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
+              throw ex
+          }
+
+          if (readBytes > 0) {
+            buffer.flip()
+            position += readBytes
+            val newChunks = chunks :+ ByteString.fromByteBuffer(buffer)
+            buffer.clear()
+
+            if (readBytes < chunkSize) {
+              eofEncountered = true
+              newChunks
+            } else readAhead(maxChunks, newChunks)
+          } else {
+            eofEncountered = true
+            chunks
+          }
+        } else chunks
+
+      override def postStop(): Unit = if ((channel ne null) && channel.isOpen) channel.close()
     }
 
     (logic, ioResultPromise.future)
