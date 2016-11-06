@@ -5,22 +5,23 @@ package akka.stream.impl.io
 
 import java.io.InputStream
 import java.nio.ByteBuffer
-import java.nio.channels.{ CompletionHandler, FileChannel }
+import java.nio.channels.{ AsynchronousFileChannel, CompletionHandler }
 import java.nio.file.{ Files, Path, StandardOpenOption }
 
 import akka.Done
 import akka.stream.Attributes.InputBuffer
-import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.{ ErrorPublisher, SourceModule }
-import akka.stream.{ IOResult, _ }
+import akka.stream._
+import akka.stream.ActorAttributes.Dispatcher
+import akka.stream.IOResult
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
+import akka.stream.impl.{ ErrorPublisher, SourceModule }
 import akka.stream.stage._
 import akka.util.ByteString
-import org.reactivestreams.Publisher
+import org.reactivestreams._
 
-import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
-import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -57,17 +58,20 @@ private[akka] final class FileSource(path: Path, chunkSize: Int)
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[IOResult]) = {
     val ioResultPromise = Promise[IOResult]()
 
-    val logic = new GraphStageLogic(shape) with OutHandler {
-      handler ⇒
-      val buffer = ByteBuffer.allocate(chunkSize)
+    val logic = new TimerGraphStageLogic(shape) with OutHandler {
       val maxReadAhead = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
-      var channel: FileChannel = _
+
+      val bufferSize = if (maxReadAhead > 2) (chunkSize * maxReadAhead) / 2 else chunkSize
+      val buffer = ByteBuffer.allocate(bufferSize)
+
+      var channel: AsynchronousFileChannel = _
       var position = 0L
       var chunkCallback: Try[Int] ⇒ Unit = _
-      var eofEncountered = false
-      var availableChunks: List[ByteString] = List.empty[ByteString]
+      var readBytes = -1
+      var waitingForData = false
 
-      setHandler(out, this)
+      private def dataIsReady = readBytes != -1
+      private def setDataReady(bytes: Int) = readBytes = bytes
 
       override def preStart(): Unit = {
         try {
@@ -75,59 +79,70 @@ private[akka] final class FileSource(path: Path, chunkSize: Int)
           require(Files.exists(path), s"Path '$path' does not exist")
           require(Files.isRegularFile(path), s"Path '$path' is not a regular file")
           require(Files.isReadable(path), s"Missing read permission for '$path'")
-
-          channel = FileChannel.open(path, StandardOpenOption.READ)
         } catch {
-          case ex: Exception ⇒
+          case ex: IllegalArgumentException ⇒
             ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
             throw ex
         }
+        channel = AsynchronousFileChannel.open(path, StandardOpenOption.READ)
+
+        chunkCallback = getAsyncCallback[Try[Int]] {
+          case Success(readBytes) ⇒
+            waitingForData = false
+            setDataReady(readBytes)
+            if (isAvailable(out)) pushBuffer()
+
+          case Failure(ex) ⇒
+            failStage(ex)
+            ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
+
+        }.invoke
       }
 
-      override def onPull(): Unit = {
-        if (availableChunks.size < maxReadAhead && !eofEncountered)
-          availableChunks = readAhead(maxReadAhead, availableChunks)
+      private def pushBuffer(): Unit = {
+        if (readBytes > 0) {
+          buffer.flip()
+          val up = math.ceil(readBytes.toDouble / chunkSize).toInt
+          val list = for (_ ← 1 to up) yield {
+            val arr = new Array[Byte](if (buffer.remaining > chunkSize) chunkSize else buffer.remaining)
+            buffer.get(arr)
+            ByteString(arr)
+          }
 
-        if (availableChunks.nonEmpty) {
-          emitMultiple(out, availableChunks.toIterator,
-            () ⇒ if (eofEncountered) success() else setHandler(out, handler)
-          )
-          availableChunks = List.empty[ByteString]
-        } else if (eofEncountered) success()
+          if (readBytes == bufferSize)
+            emitMultiple(out, list)
+          else
+            emitMultiple(out, list.iterator, () ⇒ complete())
+
+          position += readBytes
+          buffer.clear()
+        } else {
+          // hit end, our work here is done
+          complete()
+        }
+        if (readBytes == bufferSize) {
+          setDataReady(-1)
+          read() //pre fetch
+        }
       }
 
-      private def success(): Unit = {
+      private def complete(): Unit = {
         completeStage()
         ioResultPromise.trySuccess(IOResult(position, Success(Done)))
       }
 
-      /** BLOCKING I/O READ */
-      @tailrec def readAhead(maxChunks: Int, chunks: List[ByteString]): List[ByteString] =
-        if (chunks.size < maxChunks && !eofEncountered) {
-          val readBytes = try channel.read(buffer, position) catch {
-            case NonFatal(ex) ⇒
-              failStage(ex)
-              ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
-              throw ex
-          }
+      private def read(): Unit = if (!waitingForData) {
+        channel.read(buffer, position, chunkCallback, FileSource.completionHandler)
+        waitingForData = true
+      }
 
-          if (readBytes > 0) {
-            buffer.flip()
-            position += readBytes
-            val newChunks = chunks :+ ByteString.fromByteBuffer(buffer)
-            buffer.clear()
+      setHandler(out, this)
 
-            if (readBytes < chunkSize) {
-              eofEncountered = true
-              newChunks
-            } else readAhead(maxChunks, newChunks)
-          } else {
-            eofEncountered = true
-            chunks
-          }
-        } else chunks
+      override def onPull(): Unit = if (dataIsReady) pushBuffer() else read()
 
-      override def postStop(): Unit = if ((channel ne null) && channel.isOpen) channel.close()
+      override def postStop(): Unit = {
+        if ((channel ne null) && channel.isOpen) channel.close()
+      }
     }
 
     (logic, ioResultPromise.future)
