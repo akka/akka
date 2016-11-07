@@ -91,6 +91,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
         Flow[HttpRequest]
           .watchTermination()(Keep.right)
           .viaMat(handler)(Keep.left)
+          .watchTermination() { (termWatchBefore, termWatchAfter) ⇒
+            // flag termination when the user handler has gotten (or has emitted) termination
+            // signals in both directions
+            termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
+          }
           .joinMat(baseFlow)(Keep.left)
       )
     )
@@ -151,7 +156,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
@@ -176,8 +182,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
               // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
               // See https://github.com/akka/akka/issues/17992
-              case NonFatal(ex) ⇒
-                Done
+              case NonFatal(ex) ⇒ Done
             }(ExecutionContexts.sameThreadExecutionContext)
         } catch {
           case NonFatal(e) ⇒
@@ -195,7 +200,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
@@ -213,7 +219,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.

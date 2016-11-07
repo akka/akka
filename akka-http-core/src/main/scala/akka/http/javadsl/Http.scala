@@ -161,7 +161,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
@@ -182,7 +183,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
@@ -205,7 +207,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
@@ -224,7 +227,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
@@ -247,7 +251,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
@@ -266,7 +271,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
