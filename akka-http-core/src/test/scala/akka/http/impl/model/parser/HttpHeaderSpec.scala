@@ -6,8 +6,8 @@ package akka.http.impl.model.parser
 
 import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
 import akka.http.impl.model.parser.HeaderParser.Settings
-import org.scalatest.{ Matchers, FreeSpec }
-import org.scalatest.matchers.{ Matcher, MatchResult }
+import org.scalatest.{ FreeSpec, Matchers }
+import org.scalatest.matchers.{ MatchResult, Matcher }
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import headers._
@@ -18,6 +18,8 @@ import HttpCharsets._
 import HttpEncodings._
 import HttpMethods._
 import java.net.InetAddress
+
+import org.scalatest.exceptions.TestFailedException
 
 class HttpHeaderSpec extends FreeSpec with Matchers {
   val `application/vnd.spray` = MediaType.applicationBinary("vnd.spray", MediaType.Compressible)
@@ -688,7 +690,15 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
   implicit class TestHeader(val header: HttpHeader) extends TestExample { outer ⇒
     def apply(line: String) = {
       val Array(name, value) = line.split(": ", 2)
-      HttpHeader.parse(name, value, settings) should (equal(HttpHeader.ParsingResult.Ok(header, Nil)) and renderFromHeaderTo(this, line))
+      val parseResult = HttpHeader.parse(name, value, settings)
+      parseResult should renderFromHeaderTo(this, line)
+      val HttpHeader.ParsingResult.Ok(parsedHeader, Nil) = parseResult
+      try parsedHeader should equal(header)
+      catch {
+        case e: TestFailedException if parsedHeader.toString == header.toString ⇒
+          throw new AssertionError(s"Test equals failed with equal toString. parsedHeader class was ${parsedHeader.getClass}," +
+            s"header class was ${header.getClass}", e)
+      }
     }
     def rendering(line: String): String = line
     def settings: HeaderParser.Settings = HeaderParser.DefaultSettings
