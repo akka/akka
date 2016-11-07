@@ -343,8 +343,8 @@ object AkkaBuild extends Build {
     // force publication of artifacts to local maven repo, so latest versions can be used when running maven tests
     compile in Compile <<=
       (publishM2 in actor, publishM2 in testkit, publishM2 in remote, publishM2 in cluster, publishM2 in osgi,
-        publishM2 in slf4j, publishM2 in persistence, compile in Compile) map
-        ((_, _, _, _, _, _, _, c) => c),
+        publishM2 in slf4j, publishM2 in persistence, publishM2 in stream, publishM2 in protobuf, compile in Compile) map
+        ((_, _, _, _, _, _, _, _, _, c) => c),
     test in Test ~= { x => {
       def executeMvnCommands(failureMessage: String, commands: String*) = {
         if ({List("sh", "-c", commands.mkString("cd akka-samples/akka-sample-osgi-dining-hakkers; mvn ", " ", "")) !} != 0)
