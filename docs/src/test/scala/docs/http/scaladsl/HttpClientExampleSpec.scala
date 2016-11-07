@@ -145,6 +145,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
   "host-level-example" in compileOnlySpec {
     //#host-level-example
+    import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
     import akka.stream.ActorMaterializer
@@ -166,12 +167,12 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
   "single-request-example" in compileOnlySpec {
     //#single-request-example
+    import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
     import akka.stream.ActorMaterializer
 
     import scala.concurrent.Future
-    import scala.util.{ Failure, Success }
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
