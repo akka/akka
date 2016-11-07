@@ -4,17 +4,20 @@
 package akka.http.impl.util
 
 import java.util.concurrent.atomic.AtomicInteger
+
 import akka.NotUsed
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import org.scalactic.ConversionCheckedTripleEquals
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
+import org.scalatest.concurrent.Eventually
 
-class One2OneBidiFlowSpec extends AkkaSpec {
+class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
   implicit val materializer = ActorMaterializer()
 
   "A One2OneBidiFlow" must {
@@ -96,20 +99,32 @@ class One2OneBidiFlowSpec extends AkkaSpec {
 
     "backpressure the input side if the maximum number of pending output elements has been reached" in assertAllStagesStopped {
       val MAX_PENDING = 24
+      val EMIT_ELEMENTS = 8
 
       val out = TestPublisher.probe[Int]()
       val seen = new AtomicInteger
 
       Source(1 to 1000)
-        .log("", seen.set)
+        .log("", seen.set) // strange syntax to execute side-effects for every element that flows through
         .via(One2OneBidiFlow[Int, Int](MAX_PENDING) join Flow.fromSinkAndSourceMat(Sink.ignore, Source.fromPublisher(out))(Keep.left))
         .runWith(Sink.ignore)
 
-      Thread.sleep(200)
-      val x = seen.get()
-      (1 to 8) foreach out.sendNext
-      Thread.sleep(200)
-      seen.get should ===(x + 8)
+      // wait for pending elements to be filled
+      // This test (and the one below) depends on the absence of input buffers
+      // between the counting stage (`log(...)`) and the One2OneBidiFlow.
+      eventually(timeout(1.second)) {
+        seen.get should be(MAX_PENDING)
+      }
+
+      // now respond to a few input elements
+      (1 to EMIT_ELEMENTS) foreach out.sendNext
+
+      // then make sure that again only as many elements are pulled in
+      // as were resolved before so that again only MAX_PENDING elements
+      // are pending (= MAX_PENDING + EMIT_ELEMENTS should have been pulled in)
+      eventually(timeout(1.second)) {
+        seen.get should be(MAX_PENDING + EMIT_ELEMENTS)
+      }
 
       out.sendComplete() // To please assertAllStagesStopped
     }
