@@ -27,6 +27,13 @@ abstract class Materializer {
   def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat
 
   /**
+   * This method interprets the given Flow description and creates the running
+   * stream using an explicitly provided [[Attributes]] as top level attributes. The result can be highly
+   * implementation specific, ranging from local actor chains to remote-deployed processing networks.
+   */
+  def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat
+
+  /**
    * Running a flow graph will require execution resources, as will computations
    * within Sources, Sinks, etc. This [[scala.concurrent.ExecutionContextExecutor]]
    * can be used by parts of the flow to submit processing jobs for execution,
@@ -62,6 +69,9 @@ private[akka] object NoMaterializer extends Materializer {
     throw new UnsupportedOperationException("NoMaterializer cannot be named")
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
     throw new UnsupportedOperationException("NoMaterializer cannot materialize")
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat =
+    throw new UnsupportedOperationException("NoMaterializer cannot materialize")
+
   override def executionContext: ExecutionContextExecutor =
     throw new UnsupportedOperationException("NoMaterializer does not provide an ExecutionContext")
 

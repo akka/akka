@@ -1016,6 +1016,9 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.VirtualPathContainer.this"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteSystemDaemon.this")
 
+      ),
+      "2.4.12" -> Seq(
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.materialize")
       )
     )
   }
