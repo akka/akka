@@ -517,16 +517,17 @@ final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends GraphSta
         inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
       override def onPush(): Unit = {
+        val elem = grab(in)
         try {
-          aggregator = f(aggregator, grab(in))
-          pull(in)
+          aggregator = f(aggregator, elem)
         } catch {
           case NonFatal(ex) ⇒ decider(ex) match {
-            case Supervision.Stop ⇒ failStage(ex)
-            case _ ⇒
-              aggregator = zero
-              pull(in)
+            case Supervision.Stop    ⇒ failStage(ex)
+            case Supervision.Restart ⇒ aggregator = zero
+            case _                   ⇒ ()
           }
+        } finally {
+          if (!isClosed(in)) pull(in)
         }
       }
 
@@ -1623,21 +1624,39 @@ final class Reduce[T](val f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
 
     var aggregator: T = _
 
-    // Initial input handler
-    setHandler(in, new InHandler {
-      override def onPush(): Unit = {
-        aggregator = grab(in)
-        pull(in)
-        setHandler(in, self)
-      }
+    private def decider =
+      inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
 
-      override def onUpstreamFinish(): Unit =
-        failStage(new NoSuchElementException("reduce over empty stream"))
-    })
+    def setInitialInHandler(): Unit = {
+      // Initial input handler
+      setHandler(in, new InHandler {
+        override def onPush(): Unit = {
+          aggregator = grab(in)
+          pull(in)
+          setHandler(in, self)
+        }
+
+        override def onUpstreamFinish(): Unit =
+          failStage(new NoSuchElementException("reduce over empty stream"))
+      })
+    }
 
     override def onPush(): Unit = {
-      aggregator = f(aggregator, grab(in))
-      pull(in)
+      val elem = grab(in)
+      try {
+        aggregator = f(aggregator, elem)
+      } catch {
+        case NonFatal(ex) ⇒ decider(ex) match {
+          case Supervision.Stop ⇒ failStage(ex)
+          case Supervision.Restart ⇒
+            aggregator = _: T
+            setInitialInHandler()
+          case _ ⇒ ()
+
+        }
+      } finally {
+        if (!isClosed(in)) pull(in)
+      }
     }
 
     override def onPull(): Unit = pull(in)
@@ -1647,6 +1666,7 @@ final class Reduce[T](val f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
       completeStage()
     }
 
+    setInitialInHandler()
     setHandler(out, self)
   }
 
