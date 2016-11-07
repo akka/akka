@@ -122,22 +122,16 @@ If the given prefix is empty the returned matcher matches always and consumes no
 
 Path matchers can be combined with these combinators to form higher-level constructs:
 
-Tilde Operator (
-`~`
-)
+Tilde Operator (`~`)
 : The tilde is the most basic combinator. It simply concatenates two matchers into one, i.e if the first one matched
 (and consumed) the second one is tried. The extractions of both matchers are combined type-safely.
 For example: `"foo" ~ "bar"` yields a matcher that is identical to `"foobar"`.
 
-Slash Operator (
-`/`
-)
+Slash Operator (`/`)
 : This operator concatenates two matchers and inserts a `Slash` matcher in between them.
 For example: `"foo" / "bar"` is identical to `"foo" ~ Slash ~ "bar"`.
 
-Pipe Operator (
-`|`
-)
+Pipe Operator (`|`)
 : This operator combines two matcher alternatives in that the second one is only tried if the first one did *not* match.
 The two sub-matchers must have compatible types.
 For example: `"foo" | "bar"` will match either "foo" *or* "bar".
@@ -156,6 +150,7 @@ a postfix call. `matcher /` is identical to `matcher ~ Slash` but shorter and ea
 By postfixing a matcher with `?` you can turn any `PathMatcher` into one that always matches, optionally consumes
 and potentially extracts an `Option` of the underlying matchers extraction. The result type depends on the type
 of the underlying matcher:
+
 |If a `matcher` is of type | then `matcher.?` is of type|
 |--------------------------|----------------------------|
 |`PathMatcher0`          | `PathMatcher0`          |
@@ -167,13 +162,14 @@ repeat(separator: PathMatcher0 = PathMatchers.Neutral)
 By postfixing a matcher with `repeat(separator)` you can turn any `PathMatcher` into one that always matches,
 consumes zero or more times (with the given separator) and potentially extracts a `List` of the underlying matcher's
 extractions. The result type depends on the type of the underlying matcher:
+
 |If a `matcher` is of type | then `matcher.repeat(...)` is of type|
 |--------------------------|--------------------------------------|
 |`PathMatcher0`          | `PathMatcher0`        |
 |`PathMatcher1[T]`       | `PathMatcher1[List[T]`|
 |`PathMatcher[L: Tuple]` | `PathMatcher[List[L]]`|
 
-`unary_!`
+unary_!
 : By prefixing a matcher with `!` it can be turned into a `PathMatcher0` that only matches if the underlying matcher
 does *not* match and vice versa.
 
