@@ -31,30 +31,7 @@ object Scaladoc extends AutoPlugin {
       scalacOptions in Compile <++= (version, baseDirectory in ThisBuild) map scaladocOptions,
       autoAPIMappings := CliOptions.scaladocAutoAPI.get
     )) ++
-    Seq(
-      validateDiagrams in Compile := true,
-      apiMappings ++= {
-        // Based on https://github.com/ThoughtWorksInc/sbt-api-mappings
-        val IvyRegex = """^.*[/\\]([\.\-_\w]+)[/\\]([\.\-_\w]+)[/\\](?:jars|bundles)[/\\]([\.\-_\w]+)\.jar$""".r
-
-        for {
-          jar <- (dependencyClasspath in Compile in doc).value.toSet ++ (dependencyClasspath in Test in doc).value
-          fullyFile = jar.data
-          url <- fullyFile.getCanonicalPath match {
-            case IvyRegex(organization, name, jarBaseFile) if jarBaseFile.startsWith(s"$name-") => {
-              val version = jarBaseFile.substring(name.length + 1, jarBaseFile.length)
-              organization match {
-                case "com.typesafe.akka" =>
-                  Some(url(s"http://doc.akka.io/api/akka/$version/"))
-                case _ =>
-                  None
-              }
-            }
-            case _ => None
-          }
-        } yield fullyFile -> url
-      }.toMap
-    ) ++
+    Seq(validateDiagrams in Compile := true) ++
     CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {
       val docs = (doc in Compile).value
       if ((validateDiagrams in Compile).value)
