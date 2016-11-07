@@ -64,8 +64,10 @@ object ByteStringSinkProbe {
           expectBytes(length)
         }
 
-      def expectBytes(expected: ByteString): Unit =
-        assert(expectBytes(expected.length) == expected, "expected ")
+      def expectBytes(expected: ByteString): Unit = {
+        val got = expectBytes(expected.length)
+        assert(got == expected, s"expected ${expected.length} bytes '$expected' but got ${got.length} bytes '$got'")
+      }
 
       def expectUtf8EncodedString(string: String): Unit =
         expectBytes(ByteString(string, "utf8"))

@@ -8,6 +8,7 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.client.PoolConductor.{ ConnectEagerlyCommand, DispatchCommand, SlotCommand }
 import akka.http.impl.engine.client.PoolSlot.SlotEvent.ConnectedEagerly
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
+import akka.http.scaladsl.util.FastFuture
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage.GraphStageLogic.EagerTerminateOutput
@@ -112,7 +113,25 @@ private object PoolSlot {
           val (entity, whenCompleted) = HttpEntity.captureTermination(response.entity)
           import fm.executionContext
           push(responsesOut, ResponseContext(requestContext, Success(response withEntity entity)))
-          push(eventsOut, SlotEvent.RequestCompletedFuture(whenCompleted.map(_ ⇒ SlotEvent.RequestCompleted(slotIx))))
+
+          // Recover to avoid pool shutdown in case of slot failing due to failure of request completion
+          // and this failure being propagated with the future to the pool.
+          // This will emit both Disconnect (with zero failures as we have just popped the inflightRequest)
+          // Due to PoolSlot.onUpstreamFailure being called as well as RequestCompleted
+          // following two scenarios are possible as there is an inherent race (option 1. is what usually happens):
+          // 1. Fail after the response headers (onUpstreamFailure and then Future failed)
+          //    SlotEvent.Disconnected(slot, 0); transitions from Loaded(1) => Loaded(1)
+          //    SlotEvent.RequestCompleted(slot); transitions from Loaded(1) => Idle
+          // 2. Fail after the response headers (Future failed and then onUpstreamFailure);
+          //    SlotEvent.RequestCompleted(slot); transitions from Loaded(1) => Idle
+          //    SlotEvent.Disconnected(slot, 0); transitions from Idle => Unconnected
+          // the result is that the final state of the slot is usually Idle which results in this slot interpreted as hot
+          // and being preferred by the scheduler instead of more correct Unconnected
+          // FIXME: enhance the event & processing in the connection pool state machine to allow proper transition, see
+          // https://github.com/akka/akka-http/issues/490
+          val completed = whenCompleted.map(_ ⇒ SlotEvent.RequestCompleted(slotIx))
+            .recoverWith { case _ ⇒ FastFuture.successful(SlotEvent.RequestCompleted(slotIx)) }
+          push(eventsOut, SlotEvent.RequestCompletedFuture(completed))
         }
 
         override def onUpstreamFinish(): Unit = disconnect()
