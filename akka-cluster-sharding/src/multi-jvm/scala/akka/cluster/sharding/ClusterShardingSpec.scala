@@ -189,12 +189,10 @@ object PersistentClusterShardingSpecConfig extends ClusterShardingSpecConfig("pe
 object DDataClusterShardingSpecConfig extends ClusterShardingSpecConfig("ddata")
 object PersistentClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig(
   "persistence",
-  "all"
-)
+  "all")
 object DDataClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig(
   "ddata",
-  "constant"
-)
+  "constant")
 
 class PersistentClusterShardingSpec extends ClusterShardingSpec(PersistentClusterShardingSpecConfig)
 class DDataClusterShardingSpec extends ClusterShardingSpec(DDataClusterShardingSpecConfig)
@@ -710,8 +708,13 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         //Check that counter 1 is now alive again, even though we have
         // not sent a message to it via the ShardRegion
         val counter1 = system.actorSelection(lastSender.path.parent / "1")
-        counter1 ! Identify(2)
-        expectMsgType[ActorIdentity](3 seconds).ref should not be (None)
+        within(5.seconds) {
+          awaitAssert {
+            val p = TestProbe()
+            counter1.tell(Identify(2), p.ref)
+            p.expectMsgType[ActorIdentity](2.seconds).ref should not be (None)
+          }
+        }
 
         counter1 ! Get(1)
         expectMsg(1)
