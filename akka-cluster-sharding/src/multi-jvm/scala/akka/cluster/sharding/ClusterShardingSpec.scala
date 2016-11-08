@@ -158,6 +158,7 @@ abstract class ClusterShardingSpecConfig(
         max-simultaneous-rebalance = 1
       }
     }
+    akka.testconductor.barrier-timeout = 70s
     """))
   nodeConfig(sixth) {
     ConfigFactory.parseString("""akka.cluster.roles = ["frontend"]""")
