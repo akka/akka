@@ -19,21 +19,83 @@ import scala.reflect.ClassTag
  * See also Section 5.2 of http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
  * for a discussion about the assumptions made and guarantees about the Heavy Hitters made in this model.
  * We assume the Cash Register model in which there are only additions, which simplifies HH detecion significantly.
+ *
+ * This class is a hybrid data structure containing a hashmap and a heap pointing to slots in the hashmap. The capacity
+ * of the hashmap is twice that of the heap to reduce clumping of entries on collisions.
  */
 private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit classTag: ClassTag[T]) {
 
   require((max & (max - 1)) == 0, "Maximum numbers of heavy hitters should be in form of 2^k for any natural k")
 
+  // Size of Has
   val capacity = max * 2
   val mask = capacity - 1
 
   import TopHeavyHitters._
 
+  // Contains the hash value for each entry in the hashmap. Used for quicker lookups (equality check can be avoided
+  // if hashes don't match)
   private[this] val hashes: Array[Int] = Array.ofDim(capacity)
+  // Actual stored elements in the hashmap
   private[this] val items: Array[T] = Array.ofDim[T](capacity)
-  private[this] val weights: Array[Long] = Array.ofDim(capacity)
+  // Index of stored element in the associated heap
   private[this] val heapIndex: Array[Int] = Array.fill(capacity)(-1)
+  // Weights associated with an entry in the hashmap. Used to maintain the heap property and give easy access to low
+  // weight entries
+  private[this] val weights: Array[Long] = Array.ofDim(capacity)
+
+  // Heap structure containing indices to slots in the hashmap
   private[this] val heap: Array[Int] = Array.fill(max)(-1)
+
+  /*
+   * Invariants (apart from heap and hashmap invariants):
+   * - Heap is ordered by weights in an increasing order, so lowest weight is at the top of the heap (heap(0))
+   * - Each heap slot contains the index of the hashmap slot where the actual element is, or contains -1
+   * - Empty heap slots contain a negative index
+   * - Each hashmap slot should contain the index of the heap slot where the element currently is
+   * - Initially the heap is filled with "pseudo" elements (-1 entries with weight 0). This ensures that when the
+   *   heap is not full a "lowestHitterWeight" of zero is reported. This also ensures that we can always safely
+   *   remove the "lowest hitter" without checking the capacity, as when the heap is not full it will contain a
+   *   "pseudo" element as lowest hitter which can be safely removed without affecting real entries.
+   */
+
+  /*
+   * Insertion of a new element works like this:
+   *  1. Check if its weight is larger than the lowest hitter we know. If the heap is not full, then due to the
+   *    presence of "pseudo" elements (-1 entries in heap with weight 0) this will always succeed.
+   *  2. Do a quick scan for a matching hashcode with findHashIdx. This only searches for the first candidate (one
+   *    with equal hash).
+   *    a. If this returns -1, we know this is a new entry (there is no other entry with matching hashcode).
+   *    b. Else, this returns a nonnegative number. Now we do a more thorough scan from here, actually checking for
+   *       object equality by calling findItemIdx (discarding false positives due to hash collisions). Since this
+   *       is a new entry, the result will be -1 (the candidate was a colliding false positive).
+   *  3. Call insertKnownHeavy
+   *  4. This removes the lowest hitter first from the hashmap.
+   *    a. If the heap is not full, this will be just a "pseudo" element (-1 entry with weight 0) so no "real" entries
+   *       are evicted.
+   *    b. If the heap is full, then a real entry is evicted. This is correct as the new entry has higher weight than
+   *       the evicted one due to the check in step 1.
+   *  5. The new entry is inserted into the hashmap and its entry index is recorded
+   *  6. Overwrite the top of the heap with inserted element's index (again, correct, this was the evicted real or
+   *     "pseudo" element).
+   *  7. Restore heap property by pushing down the new element from the top if necessary.
+   */
+
+  /*
+   * Update of an existing element works like this:
+   * 1. Check if its weight is larger than the lowest hitter we know. This will succeed as weights can only be
+   *    incremented.
+   * 2. Do a quick scan for a matching hashcode with findHashIdx. This only searches for the first candidate (one
+   *    with equal hash). This does not check for actual entry equality yet, but it can quickly skip surely non-matching
+   *    entries. Since this is an existing element, we will find an index that is a candidate for actual equality.
+   * 3. Now do a more thorough scan from this candidate index checking for hash *and* object equality (to skip
+   *    potentially colliding entries). We will now have the real index of the existing entry if the previous scan
+   *    found a false positive.
+   * 4. Call updateExistingHeavyHitter
+   * 5. Update the recorded weight for this entry in the hashmap (at the index we previously found)
+   * 6. Fix the Heap property (since now weight can be larger than one of its heap children nodes). Please note that
+   *    we just swap heap entries around here, so no entry will be evicted.
+   */
 
   // TODO: Workaround for races. This location gets a snapshot automatically after certain amount of changes
   // in this table. This is a workaround until we make this threadsafe by moving InboundCompression to the Codec
@@ -41,7 +103,10 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
   private[this] val lastSnapshot: AtomicReference[Array[T]] = new AtomicReference[Array[T]](Array.empty)
 
   // TODO think if we could get away without copy
-  /** Returns the current heavy hitters, order is not of significance */
+  /**
+   * Returns the current heavy hitters, order is not of significance.
+   * May contain gaps (null entries).
+   */
   // TODO: Workaround for races until we make this threadsafe by moving InboundCompression to the Codec
   // to fully own it.
   def snapshot: Array[T] = lastSnapshot.get()
@@ -76,48 +141,77 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
    * Attempt adding item to heavy hitters set, if it does not fit in the top yet,
    * it will be dropped and the method will return `false`.
    *
+   * WARNING: It is only allowed to *increase* the weight of existing elements, decreasing is disallowed.
+   *
    * @return `true` if the added item has become a heavy hitter.
    */
   // TODO possibly can be optimised further? (there is a benchmark)
-  def update(item: T, count: Long): Boolean = {
-    val result = isHeavy(count) && {
-      // O(1) terminate execution ASAP if known to not be a heavy hitter anyway
+  def update(item: T, count: Long): Boolean =
+    isHeavy(count) && { // O(1) terminate execution ASAP if known to not be a heavy hitter anyway
       val hashCode = new HashCodeVal(item.hashCode()) // avoid re-calculating hashCode
       val startIndex = hashCode.get & mask
-      (findHashIdx(startIndex, hashCode): @switch) match {
-        // worst case O(n), common O(1 + alpha), can't really bin search here since indexes are kept in synch with other arrays hmm...
-        case -1 ⇒
-          // not previously heavy hitter
-          insertKnownNewHeavy(hashCode, item, count) // O(log n + alpha)
+
+      // We first try to find the slot where an element with an equal hash value is. This is a possible candidate
+      // for an actual matching entry (unless it is an entry with a colliding hash value).
+      // worst case O(n), common O(1 + alpha), can't really bin search here since indexes are kept in synch with other arrays hmm...
+      val candidateIndex = findHashIdx(startIndex, hashCode)
+
+      if (candidateIndex == -1) {
+        // No matching hash value entry is found, so we are sure we don't have this entry yet.
+        insertKnownNewHeavy(hashCode, item, count) // O(log n + alpha)
+        true
+      } else {
+        // We now found, relatively cheaply, the first index where our searched entry *might* be (hashes are equal).
+        // This is not guaranteed to be the one we are searching for, yet (hash values may collide).
+        // From this position we can invoke the more costly search which checks actual object equalities.
+        // With this two step search we avoid equality checks completely for many non-colliding entries.
+        val actualIdx = findItemIdx(candidateIndex, hashCode, item)
+
+        // usually O(1), worst case O(n) if we need to scan due to hash conflicts
+        if (actualIdx == -1) {
+          // So we don't have this entry so far (only a colliding one, it was a false positive from findHashIdx).
+          insertKnownNewHeavy(hashCode, item, count) // O(1 + log n), we simply replace the current lowest heavy hitter
           true
-        case potentialIndexGuess ⇒
-          // the found index could be one of many which hash to the same value (we're using open-addressing),
-          // so it is only used as hint for the replace call. If the value matches, we're good, if not we need to search from here onwards.
-          val actualIdx = findItemIdx(potentialIndexGuess, hashCode, item)
-
-          if (actualIdx == -1) {
-            insertKnownNewHeavy(hashCode, item, count) // O(1 + log n), we simply replace the current lowest heavy hitter
-            true
-          } else replaceExistingHeavyHitter(actualIdx, hashCode, item, count) // usually O(1), worst case O(n) if we need to scan due to hash conflicts
+        } else {
+          // The entry exists, let's update it.
+          updateExistingHeavyHitter(actualIdx, hashCode, item, count)
+          // not a "new" heavy hitter, since we only replaced it (so it was signaled as new once before)
+          false
+        }
       }
-    }
-    result
-  }
 
+    }
+
+  /**
+   * Checks the lowest weight entry in this structure and returns true if the given count is larger than that. In
+   * other words this checks if a new entry can be added as it is larger than the known least weight.
+   */
   def isHeavy(count: Long): Boolean =
     count > lowestHitterWeight
 
+  /**
+   * Finds the index of an element in the hashtable (or returns -1 if it is not found). It is usually a good idea
+   * to find the first eligible index with findHashIdx before invoking this method since that finds the first
+   * eligible candidate (one with an equal hash value) faster than this method (since this checks actual object
+   * equality).
+   */
   private def findItemIdx(searchFromIndex: Int, hashCode: HashCodeVal, o: T): Int = {
     @tailrec def loop(index: Int, start: Int, hashCodeVal: HashCodeVal, o: T): Int = {
+      // Scanned the whole table, returned to the start => element not in table
       if (index == start) -1
-      else if (hashCodeVal.get == hashes(index)) {
+      else if (hashCodeVal.get == hashes(index)) { // First check on hashcode to avoid costly equality
         val item: T = items(index)
-        if (item == o) {
+        if (Objects.equals(item, o)) {
+          // Found the item, return its index
           index
         } else {
+          // Item did not match, continue probing.
+          // TODO: This will probe the *whole* table all the time for non-entries, there is no option for early exit.
+          // TODO: Maybe record probe lengths so we can bail out early.
           loop((index + 1) & mask, start, hashCodeVal, o)
         }
       } else {
+        // hashcode did not match the one in slot, move to next index (linear probing)
         loop((index + 1) & mask, start, hashCodeVal, o)
       }
     }
@@ -128,32 +222,46 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
   }
 
   /**
-   * Replace existing heavy hitter – give it a new `count` value.
-   * If it was the lowest heavy hitter we update the `_lowestHitterIdx` as well, otherwise there is no need to.
-   *
-   * @return `false` to indicate "no, this insertion did not make this item a new heavy hitter" if update was successful,
-   *         otherwise might throw [[NoSuchElementException]] if the `item` actually was not found
+   * Replace existing heavy hitter – give it a new `count` value. This will also restore the heap property, so this
+   * might make a previously lowest hitter no longer be one.
    */
-  @tailrec private def replaceExistingHeavyHitter(foundHashIndex: Int, hashCode: HashCodeVal, item: T, count: Long): Boolean =
-    if (foundHashIndex == -1) throw new NoSuchElementException(s"Item $item is not present in HeavyHitters, can not replace it!")
-    else if (Objects.equals(items(foundHashIndex), item)) {
-      updateCount(foundHashIndex, count) // we don't need to change `hashCode` or `item`, those remain the same
-      fixHeap(heapIndex(foundHashIndex))
-      false // not a "new" heavy hitter, since we only replaced it (so it was signaled as new once before)
-    } else replaceExistingHeavyHitter(findHashIdx(foundHashIndex + 1, hashCode), hashCode, item, count) // recurse
-
-  private def findHashIdx(searchFromIndex: Int, hashCode: HashCodeVal): Int =
-    findEqIndex(hashes, searchFromIndex, hashCode.get)
+  private def updateExistingHeavyHitter(foundHashIndex: Int, hashCode: HashCodeVal, item: T, count: Long): Unit = {
+    if (weights(foundHashIndex) > count)
+      throw new IllegalArgumentException(s"Weights can be only incremented or kept the same, not decremented. " +
+        s"Previous weight was [${weights(foundHashIndex)}], attempted to modify it to [$count].")
+    weights(foundHashIndex) = count // we don't need to change `hashCode`, `heapIndex` or `item`, those remain the same
+    // Position in the heap might have changed as count was incremented
+    fixHeap(heapIndex(foundHashIndex))
+  }
 
   /**
-   * Fix heap property on `heap` array
-   * @param index place to check and fix
+   * Search in the hashmap the first slot that contains an equal hashcode to the one we search for. This is an
+   * optimization: before we start to compare elements, we find the first eligible candidate (whose hashmap matches
+   * the one we search for). From this index usually findItemIndex is called which does further probing, but checking
+   * actual element equality.
+   */
+  private def findHashIdx(searchFromIndex: Int, hashCode: HashCodeVal): Int = {
+    var i: Int = 0
+    while (i < hashes.length) {
+      val index = (i + searchFromIndex) & mask
+      if (hashes(index) == hashCode.get) {
+        return index
+      }
+      i += 1
+    }
+    -1
+  }
+
+  /**
+   * Call this if the weight of an entry at heap node `index` was incremented. The heap property says that
+   * "The key stored in each node is less than or equal to the keys in the node's children". Since we incremented
+   * (or kept the same) weight for this index, we only need to restore the heap "downwards", parents are not affected.
    */
   @tailrec
   private def fixHeap(index: Int): Unit = {
     val leftIndex = index * 2 + 1
     val rightIndex = index * 2 + 2
-    val currentWeights: Long = weights(heap(index))
+    val currentWeight: Long = weights(heap(index))
     if (rightIndex < max) {
       val leftValueIndex: Int = heap(leftIndex)
       val rightValueIndex: Int = heap(rightIndex)
@@ -164,15 +272,15 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
         swapHeapNode(index, rightIndex)
         fixHeap(rightIndex)
       } else {
-        val rightWeights: Long = weights(rightValueIndex)
-        val leftWeights: Long = weights(leftValueIndex)
-        if (leftWeights < rightWeights) {
-          if (currentWeights > leftWeights) {
+        val rightWeight: Long = weights(rightValueIndex)
+        val leftWeight: Long = weights(leftValueIndex)
+        if (leftWeight < rightWeight) {
+          if (currentWeight > leftWeight) {
             swapHeapNode(index, leftIndex)
             fixHeap(leftIndex)
           }
         } else {
-          if (currentWeights > rightWeights) {
+          if (currentWeight > rightWeight) {
             swapHeapNode(index, rightIndex)
             fixHeap(rightIndex)
           }
@@ -185,7 +293,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
         fixHeap(leftIndex)
       } else {
         val leftWeights: Long = weights(leftValueIndex)
-        if (currentWeights > leftWeights) {
+        if (currentWeight > leftWeights) {
           swapHeapNode(index, leftIndex)
           fixHeap(leftIndex)
         }
@@ -212,34 +320,33 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
   }
 
   /**
-   * Puts the item and additional information into the index of the current lowest hitter.
-   *
-   * @return index at which the insertion was performed
+   * Removes the current lowest hitter (can be a "pseudo" entry) from the hashmap and inserts the new entry. Then
+   * it replaces the top of the heap (the removed entry) with the new entry and restores heap property.
    */
   private def insertKnownNewHeavy(hashCode: HashCodeVal, item: T, count: Long): Unit = {
+    // Before we insert into the hashmap, remove the lowest hitter. It is guaranteed that we have a `count`
+    // larger than `lowestHitterWeight` here, so we can safely remove the lowest hitter. Note, that this might be a
+    // "pseudo" element (-1 entry) in the heap if we are not at full capacity.
     removeHash(lowestHitterIndex)
-    lowestHitterIndex = insert(hashCode, item, count)
+    val hashTableIndex = insert(hashCode, item, count)
+    // Insert to the top of the heap.
+    heap(0) = hashTableIndex
+    heapIndex(hashTableIndex) = 0
+    fixHeap(0)
     takeSnapshot()
   }
 
   /**
    * Remove value from hash-table based on position.
-   *
-   * @param index position to remove
    */
   private def removeHash(index: Int): Unit = {
-    if (index > 0) {
+    if (index >= 0) {
       items(index) = null
+      heapIndex(index) = -1
       hashes(index) = 0
       weights(index) = 0
     }
   }
-
-  /**
-   * Only update the count for a given index, e.g. if value and hashCode remained the same.
-   */
-  private def updateCount(idx: Int, count: Long): Unit =
-    weights(idx) = count
 
   /**
    * Insert value in hash-table.
@@ -263,10 +370,15 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
     index
   }
 
-  /** Weight of lowest heavy hitter, if a new inserted item has a weight greater than this it is a heavy hitter. */
+  /**
+   * Weight of lowest heavy hitter, if a new inserted item has a weight greater than this, it is a heavy hitter.
+   * This gets the index of the lowest heavy hitter from the top of the heap (lowestHitterIndex) if there is any
+   * and looks up its weight.
+   * If there is no entry in the table (lowestHitterIndex returns a negative index) this returns a zero weight.
+   */
   def lowestHitterWeight: Long = {
     val index: Int = lowestHitterIndex
-    if (index > 0) {
+    if (index >= 0) {
       weights(index)
     } else {
       0
@@ -274,26 +386,13 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
 
   }
 
+  /**
+   * Returns the index to the hashmap slot that contains the element with the lowest recorded hit count. If the table
+   * is empty, this returns a negative index.
+   * Implemented by looking at the top of the heap and extracting the index which is O(1).
+   */
   private def lowestHitterIndex: Int = {
     heap(0)
-  }
-
-  private def lowestHitterIndex_=(index: Int): Unit = {
-    heap(0) = index
-    heapIndex(index) = 0
-    fixHeap(0)
-  }
-
-  private def findEqIndex(hashes: Array[Int], searchFromIndex: Int, hashCode: Int): Int = {
-    var i: Int = 0
-    while (i < hashes.length) {
-      val index = (i + searchFromIndex) & mask
-      if (hashes(index) == hashCode) {
-        return index
-      }
-      i += 1
-    }
-    -1
   }
 
   override def toString =
@@ -306,8 +405,6 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
 private[remote] object TopHeavyHitters {
 
   /** Value class to avoid mixing up count and hashCode in APIs. */
-  private[compress] final class HashCodeVal(val get: Int) extends AnyVal {
-    def isEmpty = false
-  }
+  private[compress] final class HashCodeVal(val get: Int) extends AnyVal
 
 }
