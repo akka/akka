@@ -89,12 +89,75 @@ class HeavyHittersSpec extends WordSpecLike with Matchers {
       hitters.lowestHitterWeight should ===(10)
     }
 
+    "replace the right item even when hashCodes collide (and equal to zero)" in {
+      case class MockHashCode(override val toString: String, override val hashCode: Int)
+      val hitters = new TopHeavyHitters[MockHashCode](2)
+
+      val a1 = MockHashCode("A", 0)
+      val b1 = MockHashCode("B", 0)
+
+      hitters.update(a1, 1)
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set(a1))
+      hitters.lowestHitterWeight should ===(0)
+
+      hitters.update(b1, 2)
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set(a1, b1))
+      hitters.lowestHitterWeight should ===(1)
+
+      hitters.update(a1, 10)
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set(a1, b1))
+      hitters.lowestHitterWeight should ===(2)
+
+      hitters.update(b1, 100)
+      hitters.snapshot.filter(_ ne null).toSet should ===(Set(a1, b1))
+      hitters.lowestHitterWeight should ===(10)
+    }
+
     "behave when something drops from being a hitter and comes back" in {
       val hitters = new TopHeavyHitters[String](2)
       hitters.update("A", 1) should ===(true)
       hitters.update("B", 2) should ===(true)
       hitters.update("C", 3) should ===(true) // A was dropped now  
       hitters.update("A", 10) should ===(true) // TODO this is technically unexpected, we have already compressed A...  
+    }
+
+    "allow updating entries that have lower weight than the least known weight if there is capacity anyway" in {
+      val hitters = new TopHeavyHitters[String](2)
+      hitters.update("A", 100) should ===(true)
+      hitters.update("B", 1) should ===(true)
+    }
+
+    "discard zero weight entries" in {
+      val hitters = new TopHeavyHitters[String](2)
+      hitters.update("A", 0) should ===(false)
+      hitters.update("B", 1) should ===(true)
+      hitters.update("A", 0) should ===(false)
+    }
+
+    "maintain lowest hitter weight" in {
+      val hitters = new TopHeavyHitters[String](2)
+      hitters.update("A", 1)
+      hitters.lowestHitterWeight should ===(0)
+      hitters.update("B", 2)
+      hitters.lowestHitterWeight should ===(1)
+      hitters.update("A", 2)
+      hitters.lowestHitterWeight should ===(2)
+      hitters.update("A", 3)
+      hitters.lowestHitterWeight should ===(2)
+      hitters.update("B", 4)
+      hitters.lowestHitterWeight should ===(3)
+    }
+
+    "kick out smallest hitter if full" in {
+      val hitters = new TopHeavyHitters[String](2)
+      hitters.update("A", 1)
+      hitters.lowestHitterWeight should ===(0)
+      hitters.update("B", 2)
+      hitters.lowestHitterWeight should ===(1)
+      hitters.update("C", 3)
+      hitters.lowestHitterWeight should ===(2)
+      hitters.update("B", 4)
+      hitters.lowestHitterWeight should ===(3)
     }
 
   }
