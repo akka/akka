@@ -24,6 +24,7 @@ import akka.cluster.MemberStatus
 import akka.AkkaException
 import akka.actor.NoSerializationVerificationNeeded
 import akka.cluster.UniqueAddress
+import akka.cluster.ClusterEvent
 
 object ClusterSingletonManagerSettings {
 
@@ -432,7 +433,7 @@ class ClusterSingletonManager(
     require(!cluster.isTerminated, "Cluster node must not be terminated")
 
     // subscribe to cluster changes, re-subscribe when restart
-    cluster.subscribe(self, classOf[MemberExited], classOf[MemberRemoved])
+    cluster.subscribe(self, ClusterEvent.InitialStateAsEvents, classOf[MemberExited], classOf[MemberRemoved])
 
     setTimer(CleanupTimer, Cleanup, 1.minute, repeat = true)
 
@@ -712,7 +713,6 @@ class ClusterSingletonManager(
   }
 
   whenUnhandled {
-    case Event(_: CurrentClusterState, _) ⇒ stay
     case Event(MemberExited(m), _) ⇒
       if (m.uniqueAddress == cluster.selfUniqueAddress) {
         selfExited = true
