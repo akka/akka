@@ -9,6 +9,8 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.io.Udp;
 import akka.testkit.JavaTestKit;
+import akka.testkit.SocketUtil;
+
 import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -62,7 +64,7 @@ public class JavaUdpMulticastTest extends AbstractJavaTest {
                         groupBuilder.append(randomAddress.subSequence(i * 4, i * 4 + 4));
                     }
                     final String group = groupBuilder.toString();
-                    final Integer port = TestUtils.temporaryUdpIpv6Port(ipv6Iface);
+                    final Integer port = SocketUtil.temporaryUdpIpv6Port(ipv6Iface);
                     final String msg = "ohi";
                     final ActorRef sink = getRef();
                     final String iface = ipv6Iface.getName();
