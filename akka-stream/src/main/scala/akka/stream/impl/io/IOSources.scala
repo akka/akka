@@ -22,6 +22,7 @@ import akka.util.ByteString
 import org.reactivestreams._
 
 import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -79,12 +80,13 @@ private[akka] final class FileSource(path: Path, chunkSize: Int)
           require(Files.exists(path), s"Path '$path' does not exist")
           require(Files.isRegularFile(path), s"Path '$path' is not a regular file")
           require(Files.isReadable(path), s"Missing read permission for '$path'")
+
+          channel = AsynchronousFileChannel.open(path, StandardOpenOption.READ)
         } catch {
-          case ex: IllegalArgumentException ⇒
+          case NonFatal(ex) ⇒
             ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
             throw ex
         }
-        channel = AsynchronousFileChannel.open(path, StandardOpenOption.READ)
 
         chunkCallback = getAsyncCallback[Try[Int]] {
           case Success(readBytes) ⇒
@@ -103,17 +105,20 @@ private[akka] final class FileSource(path: Path, chunkSize: Int)
         if (readBytes > 0) {
           buffer.flip()
           val up = math.ceil(readBytes.toDouble / chunkSize).toInt
-          val list = for (_ ← 1 to up) yield {
-            val arr = new Array[Byte](if (buffer.remaining > chunkSize) chunkSize else buffer.remaining)
-            buffer.get(arr)
-            ByteString(arr)
+          if (up == 1) {
+            push(out, ByteString(buffer))
+            if (readBytes < bufferSize) complete()
+          } else {
+            val list = for (i ← 1 to up) yield {
+              val length = if (buffer.remaining > chunkSize) chunkSize else buffer.remaining
+              val offset = (i - 1) * chunkSize
+              buffer.position(offset + length)
+              ByteString.fromArray(buffer.array(), offset, length)
+            }
+
+            if (readBytes == bufferSize) emitMultiple(out, list)
+            else emitMultiple(out, list, () ⇒ complete())
           }
-
-          if (readBytes == bufferSize)
-            emitMultiple(out, list)
-          else
-            emitMultiple(out, list.iterator, () ⇒ complete())
-
           position += readBytes
           buffer.clear()
         } else {
@@ -132,8 +137,14 @@ private[akka] final class FileSource(path: Path, chunkSize: Int)
       }
 
       private def read(): Unit = if (!waitingForData) {
-        channel.read(buffer, position, chunkCallback, FileSource.completionHandler)
-        waitingForData = true
+        try {
+          channel.read(buffer, position, chunkCallback, FileSource.completionHandler)
+          waitingForData = true
+        } catch {
+          case NonFatal(ex) ⇒
+            ioResultPromise.trySuccess(IOResult(position, Failure(ex)))
+            throw ex
+        }
       }
 
       setHandler(out, this)

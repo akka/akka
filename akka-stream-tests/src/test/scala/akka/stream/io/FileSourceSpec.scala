@@ -194,7 +194,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         }
       }
 
-    "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
+    "use non blocking dispatcher by default" in assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
       try {
@@ -202,7 +202,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
         materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
-        try assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher") finally p.cancel()
+        try assertDispatcher(ref, "akka.test.stream-dispatcher") finally p.cancel()
       } finally shutdown(sys)
     }
 
