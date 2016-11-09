@@ -42,6 +42,14 @@ abstract class ExtendedActorMaterializer extends ActorMaterializer {
   /**
    * INTERNAL API
    */
+  def materialize[Mat](
+    _runnableGraph:    Graph[ClosedShape, Mat],
+    subflowFuser:      GraphInterpreterShell ⇒ ActorRef,
+    initialAttributes: Attributes): Mat
+
+  /**
+   * INTERNAL API
+   */
   override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val dispatcher =
       if (props.deploy.dispatcher == Deploy.NoDispatcherGiven) effectiveSettings(context.effectiveAttributes).dispatcher
@@ -109,7 +117,7 @@ private[akka] case class ActorMaterializerImpl(
 
   private[this] def createFlowName(): String = flowNames.next()
 
-  private val initialAttributes = Attributes(
+  private val defaultInitialAttributes = Attributes(
     Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
       ActorAttributes.Dispatcher(settings.dispatcher) ::
       ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
@@ -135,11 +143,19 @@ private[akka] case class ActorMaterializerImpl(
     system.scheduler.scheduleOnce(delay, task)(executionContext)
 
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
-    materialize(_runnableGraph, null)
+    materialize(_runnableGraph, null, defaultInitialAttributes)
+
+  override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat =
+    materialize(_runnableGraph, null, initialAttributes)
+
+  override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], subflowFuser: (GraphInterpreterShell) ⇒ ActorRef): Mat =
+    materialize(_runnableGraph, subflowFuser, defaultInitialAttributes)
 
   override def materialize[Mat](
-    _runnableGraph: Graph[ClosedShape, Mat],
-    subflowFuser:   GraphInterpreterShell ⇒ ActorRef): Mat = {
+    _runnableGraph:    Graph[ClosedShape, Mat],
+    subflowFuser:      GraphInterpreterShell ⇒ ActorRef,
+    initialAttributes: Attributes
+  ): Mat = {
     val runnableGraph =
       if (settings.autoFusing) Fusing.aggressive(_runnableGraph)
       else _runnableGraph
@@ -254,6 +270,9 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
   override def executionContext: ExecutionContextExecutor = delegate.executionContext
 
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat = delegate.materialize(runnable, registerShell)
+
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat =
+    delegate.materialize(runnable, registerShell, initialAttributes)
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = delegate.scheduleOnce(delay, task)
 
