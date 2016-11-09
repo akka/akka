@@ -13,6 +13,7 @@ import akka.testkit.TestKit
 import org.scalatest.{ BeforeAndAfter, WordSpecLike }
 import scala.collection.JavaConversions.enumerationAsScalaIterator
 import org.scalatest.BeforeAndAfterAll
+import akka.testkit.SocketUtil
 
 class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")) with WordSpecLike with BeforeAndAfterAll {
 
@@ -37,7 +38,7 @@ class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")
           // generate a random 32 bit multicast address with the high order bit set
           val randomAddress: String = (Random.nextInt().abs.toLong | (1L << 31)).toHexString.toUpperCase
           val group = randomAddress.grouped(4).mkString("FF02::", ":", "")
-          val port = TestUtils.temporaryUdpIpv6Port(ipv6iface)
+          val port = SocketUtil.temporaryUdpIpv6Port(ipv6iface)
           val msg = "ohi"
           val sink = testActor
           val iface = ipv6iface.getName
@@ -70,12 +71,3 @@ class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")
 
 }
 
-object TestUtils {
-  def temporaryUdpIpv6Port(iface: NetworkInterface) = {
-    val serverSocket = DatagramChannel.open(StandardProtocolFamily.INET6).socket()
-    serverSocket.bind(new InetSocketAddress(iface.getInetAddresses.nextElement(), 0))
-    val port = serverSocket.getLocalPort
-    serverSocket.close()
-    port
-  }
-}
