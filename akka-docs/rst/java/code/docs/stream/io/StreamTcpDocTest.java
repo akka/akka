@@ -12,7 +12,6 @@ import docs.AbstractJavaTest;
 import docs.stream.SilenceSystemOut;
 import java.net.InetSocketAddress;
 
-import docs.util.SocketUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,6 +23,7 @@ import akka.stream.javadsl.*;
 import akka.stream.javadsl.Tcp.*;
 import akka.stream.stage.*;
 import akka.testkit.JavaTestKit;
+import akka.testkit.SocketUtil;
 import akka.testkit.TestProbe;
 import akka.util.ByteString;
 
@@ -70,7 +70,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
     }
     {
 
-      final InetSocketAddress localhost = SocketUtils.temporaryServerAddress();
+      final InetSocketAddress localhost = SocketUtil.temporaryServerAddress("127.0.0.1", false);
       final Source<IncomingConnection, CompletionStage<ServerBinding>> connections =
         Tcp.get(system).bind(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
 
@@ -93,7 +93,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
   @Test
   public void actuallyWorkingClientServerApp() {
 
-    final InetSocketAddress localhost = SocketUtils.temporaryServerAddress();
+    final InetSocketAddress localhost = SocketUtil.temporaryServerAddress("127.0.0.1", false);
 
     final TestProbe serverProbe = new TestProbe(system);
 
