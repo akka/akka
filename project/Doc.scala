@@ -137,6 +137,9 @@ object Unidoc extends AutoPlugin {
 
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
     genjavadocExtraSettings ++ Seq(
+      javacOptions in compile += "-Xdoclint:none",
+      javacOptions in test += "-Xdoclint:none",
+      javacOptions in doc += "-Xdoclint:none",
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
       unidocGenjavadocVersion in Global := "0.10",
       // FIXME: see #18056
