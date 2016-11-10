@@ -177,6 +177,20 @@ object Source {
     new Source(scaladsl.Source.fromCompletionStage(future))
 
   /**
+   * A graph with the shape of a source logically is a source.
+   * This method makes an asynchronous graph of such shape in type with
+   * an asynchronous materialized value.
+   */
+  def fromFutureGraph[T, M](future: Future[Graph[SourceShape[T], M]]): javadsl.Source[T, Future[M]] = new Source(scaladsl.Source.fromFutureGraph(future))
+
+  /**
+   * A graph with the shape of a source logically is a source.
+   * This method makes an asynchronous graph of such shape in type with
+   * an asynchronous materialized value.
+   */
+  def fromGraphCompletionStage[T, M](future: CompletionStage[Graph[SourceShape[T], M]]): javadsl.Source[T, CompletionStage[M]] = new Source(scaladsl.Source.fromGraphCompletionStage(future))
+
+  /**
    * Elements are emitted periodically with the specified interval.
    * The tick element will be delivered to downstream consumers that has requested any elements.
    * If a consumer has not requested any elements at the point in time when the tick

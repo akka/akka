@@ -3,13 +3,17 @@
  */
 package akka.stream.impl
 
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration._
+
+import java.util.concurrent.CompletionStage
+import scala.compat.java8.FutureConverters._
+
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit.StreamSpec
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-
-import scala.concurrent.duration._
 
 class StreamLayoutSpec extends StreamSpec {
   import StreamLayout._
@@ -29,6 +33,8 @@ class StreamLayoutSpec extends StreamSpec {
   def testSink(): Module = testAtomic(1, 0)
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withAutoFusing(false))
+
+  implicit def ec: ExecutionContext = materializer.executionContext
 
   "StreamLayout" must {
 
@@ -166,6 +172,33 @@ class StreamLayoutSpec extends StreamSpec {
         val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
         mat should ===(1)
         fut.futureValue(veryPatient) should ===(List(42))
+      }
+
+      "starting from a future Source" in {
+        val g = Source.fromFutureGraph(Future {
+          Thread.sleep(2000)
+          Fusing.aggressive((1 to tooDeepForStack).
+            foldLeft(Source.single(42).mapMaterializedValue(_ ⇒ 1))(
+              (f, i) ⇒ f.map(identity)))
+        })
+
+        val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
+        mat.futureValue(veryPatient) should ===(1)
+        fut.futureValue(veryPatient) should ===(List(42))
+      }
+
+      "starting from a completion stage of Source" in {
+        val future: Future[Graph[SourceShape[Int], Int]] = Future {
+          Fusing.aggressive((1 to tooDeepForStack).
+            foldLeft(Source.single(43).mapMaterializedValue(_ ⇒ 1))(
+              (f, i) ⇒ f.map(identity)))
+        }
+        val stage: CompletionStage[Graph[SourceShape[Int], Int]] = future.toJava
+        val g = Source.fromGraphCompletionStage(stage)
+
+        val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
+        mat.toScala.futureValue(veryPatient) should ===(1)
+        fut.futureValue(veryPatient) should ===(List(43))
       }
 
       "starting from a Flow" in {
