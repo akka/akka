@@ -15,6 +15,8 @@ that handle complete suffixes of paths (like the `getFromDirectory` directives a
 
 Use `mapUnmatchedPath` to change the value of the unmatched path.
 
+See also @ref[extractMatchedPath](extractMatchedPath.md#extractmatchedpath) to see similar directive for matched path.
+
 ## Example
 
 @@snip [BasicDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #extractUnmatchedPath-example }

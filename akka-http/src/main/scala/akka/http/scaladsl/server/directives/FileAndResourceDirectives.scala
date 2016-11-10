@@ -146,26 +146,25 @@ trait FileAndResourceDirectives {
   def listDirectoryContents(directories: String*)(implicit renderer: DirectoryRenderer): Route =
     get {
       extractRequestContext { ctx ⇒
-        val path = ctx.unmatchedPath
-        val fullPath = ctx.request.uri.path.toString
-        val matchedLength = fullPath.lastIndexOf(path.toString)
-        require(matchedLength >= 0, s"Unmatched path '$path' wasn't a suffix of full path '$fullPath'. " +
-          "This usually means that ctx.unmatchedPath was manipulated inconsistently " +
-          "with ctx.request.uri.path")
-        val pathPrefix = fullPath.substring(0, matchedLength)
-        val pathString = withTrailingSlash(safeJoinPaths("/", path, ctx.log, '/'))
-        val dirs = directories flatMap { dir ⇒
-          safeDirectoryChildPath(withTrailingSlash(dir), path, ctx.log) match {
-            case "" ⇒ None
-            case fileName ⇒
-              val file = new File(fileName)
-              if (file.isDirectory && file.canRead) Some(file) else None
-          }
-        }
-        implicit val marshaller: ToEntityMarshaller[DirectoryListing] = renderer.marshaller(ctx.settings.renderVanityFooter)
+        extractMatchedPath { matched ⇒
+          val prefixPath = matched.toString
+          val remainingPath = ctx.unmatchedPath
+          val pathString = withTrailingSlash(safeJoinPaths("/", remainingPath, ctx.log, '/'))
 
-        if (dirs.isEmpty) reject
-        else complete(DirectoryListing(pathPrefix + pathString, isRoot = pathString == "/", dirs.flatMap(_.listFiles)))
+          val dirs = directories flatMap { dir ⇒
+            safeDirectoryChildPath(withTrailingSlash(dir), remainingPath, ctx.log) match {
+              case "" ⇒ None
+              case fileName ⇒
+                val file = new File(fileName)
+                if (file.isDirectory && file.canRead) Some(file) else None
+            }
+          }
+
+          implicit val marshaller: ToEntityMarshaller[DirectoryListing] = renderer.marshaller(ctx.settings.renderVanityFooter)
+
+          if (dirs.isEmpty) reject
+          else complete(DirectoryListing(prefixPath + pathString, isRoot = pathString == "/", dirs.flatMap(_.listFiles)))
+        }
       }
     }
 

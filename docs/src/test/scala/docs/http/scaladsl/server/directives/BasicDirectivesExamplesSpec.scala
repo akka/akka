@@ -713,6 +713,25 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     }
     //#mapSettings-examples
   }
+  "extractMatchedPath-example" in {
+    //#extractMatchedPath-example
+    val route =
+      pathPrefix("abc") {
+        extractMatchedPath { matched =>
+          complete(matched.toString)
+        }
+      }
+
+    // tests:
+    Get("/abc") ~> route ~> check {
+      responseAs[String] shouldEqual "/abc"
+    }
+    Get("/abc/xyz") ~> route ~> check {
+      responseAs[String] shouldEqual "/abc"
+    }
+
+    //#extractMatchedPath-example
+  }
   "extractRequestContext-example" in {
     //#extractRequestContext-example
     val route =

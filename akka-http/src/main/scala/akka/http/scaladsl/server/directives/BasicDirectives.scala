@@ -10,12 +10,13 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, ExecutionContextExecutor }
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.collection.immutable
 import akka.event.LoggingAdapter
+import akka.http.scaladsl.model.Uri.Path
 import akka.stream.impl.ConstantFun.scalaIdentityFunction
 import akka.stream.{ ActorMaterializerHelper, Materializer }
-import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
+import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.server.util.Tuple
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model._
@@ -195,6 +196,13 @@ trait BasicDirectives {
   def extractUnmatchedPath: Directive1[Uri.Path] = BasicDirectives._extractUnmatchedPath
 
   /**
+   * Extracts the already matched path from the RequestContext.
+   *
+   * @group basic
+   */
+  def extractMatchedPath: Directive1[Uri.Path] = BasicDirectives._extractMatchedPath
+
+  /**
    * Extracts the current [[HttpRequest]] instance.
    *
    * @group basic
@@ -365,6 +373,7 @@ trait BasicDirectives {
 
 object BasicDirectives extends BasicDirectives {
   private val _extractUnmatchedPath: Directive1[Uri.Path] = extract(_.unmatchedPath)
+  private val _extractMatchedPath: Directive1[Uri.Path] = extract(extractMatched)
   private val _extractRequest: Directive1[HttpRequest] = extract(_.request)
   private val _extractUri: Directive1[Uri] = extract(_.request.uri)
   private val _extractExecutionContext: Directive1[ExecutionContextExecutor] = extract(_.executionContext)
@@ -375,4 +384,18 @@ object BasicDirectives extends BasicDirectives {
   private val _extractRequestContext: Directive1[RequestContext] = extract(scalaIdentityFunction)
   private val _extractRequestEntity: Directive1[RequestEntity] = extract(_.request.entity)
   private val _extractDataBytes: Directive1[Source[ByteString, Any]] = extract(_.request.entity.dataBytes)
+
+  private def extractMatched(ctx: RequestContext) = {
+    val unmatchedPath = ctx.unmatchedPath.toString
+    val fullPath = ctx.request.uri.path.toString
+
+    require(
+      fullPath.endsWith(unmatchedPath),
+      s"Unmatched path '$unmatchedPath' wasn't a suffix of full path '$fullPath'. " +
+        "This usually means that ctx.unmatchedPath was manipulated inconsistently " +
+        "with ctx.request.uri.path"
+    )
+
+    Path(fullPath.substring(0, fullPath.length - unmatchedPath.length))
+  }
 }

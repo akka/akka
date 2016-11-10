@@ -723,6 +723,17 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
   }
 
   @Test
+  public void testExtractMatchedPath() {
+    //#extractMatchedPath
+    final Route route = pathPrefix("abc", () -> extractMatchedPath(this::complete));
+
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/abc")).assertEntity("/abc");
+    testRoute(route).run(HttpRequest.GET("/abc/xyz")).assertEntity("/abc");
+    //#extractMatchedPath
+  }
+
+  @Test
   public void testExtractUri() {
     //#extractUri
     final Route route = extractUri(uri ->

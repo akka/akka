@@ -168,6 +168,15 @@ abstract class BasicDirectives {
   }
 
   /**
+   * Extracts the already matched path from the RequestContext.
+   */
+  def extractMatchedPath(inner: JFunction[String, Route]) = RouteAdapter {
+    D.extractMatchedPath { path ⇒
+      inner.apply(path.toString).delegate
+    }
+  }
+
+  /**
    * Extracts the current [[HttpRequest]] instance.
    */
   def extractRequest(inner: JFunction[HttpRequest, Route]) = RouteAdapter {

@@ -53,4 +53,58 @@ class BasicDirectivesSpec extends RoutingSpec {
       } ~> check { responseEntity shouldEqual httpEntity }
     }
   }
+
+  "The `extractMatchedPath` directive" should {
+    "extract bar if /foo has been matched for /foo/bar" in {
+      Get("/foo") ~> {
+        pathPrefix("foo") {
+          extractMatchedPath { matched ⇒
+            complete(matched.toString)
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "/foo" }
+    }
+
+    "extract bar with slash if /foo/ with slash has been matched for /foo/bar" in {
+      Get("/foo/") ~> {
+        pathPrefix("foo"/) {
+          extractMatchedPath { matched ⇒
+            complete(matched.toString)
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "/foo/" }
+    }
+
+    "extract bar with slash if /foo/ with slash has been matched for /foo/bar if nested directives used" in {
+      Get("/foo/bar/car") ~> {
+        pathPrefix("foo") {
+          pathPrefix("bar") {
+            extractMatchedPath { matched ⇒
+              complete(matched.toString)
+            }
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "/foo/bar" }
+    }
+
+    "extract all if fully matched" in {
+      Get("/foo/bar") ~> {
+        pathPrefix("foo") {
+          pathPrefix("bar") {
+            extractMatchedPath { matched ⇒
+              complete(matched.toString)
+            }
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "/foo/bar" }
+    }
+
+    "extract nothing if root path" in {
+      Get("/foo/bar") ~> {
+        extractMatchedPath { matched ⇒
+          complete(matched.toString)
+        }
+      } ~> check { responseAs[String] shouldEqual "" }
+    }
+  }
 }
