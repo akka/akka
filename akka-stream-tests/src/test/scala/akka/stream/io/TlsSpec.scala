@@ -453,7 +453,6 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
         .via(new Timeout(6.seconds))
         .dropWhile(_.size < scenario.output.size)
 
-
       val f =
         Source(scenario.inputs)
           .via(outFlow)
