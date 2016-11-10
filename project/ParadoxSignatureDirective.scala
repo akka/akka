@@ -11,7 +11,7 @@ import org.pegdown.Printer
 import org.pegdown.ast.{DirectiveNode, HtmlBlockNode, VerbatimNode, Visitor}
 
 import scala.collection.JavaConverters._
-import scala.io.Source
+import scala.io.{Codec, Source}
 
 object ParadoxSupport {
   val paradoxWithSignatureDirective = Seq(
@@ -40,7 +40,7 @@ object ParadoxSupport {
         val Signature = """\s*((def|val|type) (\w+)(?=[:(\[]).*)(\s+\=.*)""".r // stupid approximation to match a signature
         //println(s"Looking for signature regex '$Signature'")
         val text =
-          Source.fromFile(file).getLines.collect {
+          Source.fromFile(file)(Codec.UTF8).getLines.collect {
             case line@Signature(signature, kind, l, definition) if labels contains l.toLowerCase() =>
               //println(s"Found label '$l' with sig '$full' in line $line")
               if (kind == "type") signature + definition
