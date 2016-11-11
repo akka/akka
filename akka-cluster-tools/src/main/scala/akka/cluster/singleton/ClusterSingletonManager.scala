@@ -262,14 +262,17 @@ object ClusterSingletonManager {
       def add(m: Member): Unit = {
         if (matchingRole(m))
           trackChange { () ⇒
-            membersByAge -= m // replace
+            // replace, it's possible that the upNumber is changed
+            membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
             membersByAge += m
           }
       }
 
       def remove(m: Member): Unit = {
         if (matchingRole(m))
-          trackChange { () ⇒ membersByAge -= m }
+          trackChange { () ⇒
+            membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
+          }
       }
 
       def sendFirstChange(): Unit = {
