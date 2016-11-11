@@ -83,7 +83,7 @@ abstract class ActorSelection extends Serializable {
   def resolveOne(timeout: FiniteDuration): Future[ActorRef] = resolveOne()(timeout)
 
   /**
-   * Java API (8) for [[#resolveOne]]
+   * Java API for [[#resolveOne]]
    *
    * Resolve the [[ActorRef]] matching this selection.
    * The result is returned as a CompletionStage that is completed with the [[ActorRef]]
