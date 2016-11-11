@@ -4,7 +4,6 @@
 package docs.http.scaladsl
 
 import akka.http.scaladsl.server.Directives
-import org.scalatest.{ Matchers, WordSpec }
 
 class SprayJsonPrettyMarshalSpec extends server.RoutingSpec {
 
@@ -43,10 +42,10 @@ class SprayJsonPrettyMarshalSpec extends server.RoutingSpec {
     // verify the pretty printed JSON
     Get("/") ~> service.route ~> check {
       responseAs[String] shouldEqual
-        """{
-          |  "name": "akka",
-          |  "id": 42
-          |}""".stripMargin
+        """{""" + "\n" +
+        """  "name": "akka",""" + "\n" +
+        """  "id": 42""" + "\n" +
+        """}"""
     }
     //#example
   }
