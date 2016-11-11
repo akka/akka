@@ -353,9 +353,7 @@ object GraphStages {
         def onPull(): Unit = {}
 
         override def onUpstreamFinish(): Unit =
-          if (!sinkIn.isAvailable /* && isClosed(in) */ ) {
-            completeStage()
-          }
+          if (!sinkIn.isAvailable) completeStage()
 
         override def postStop(): Unit = sinkIn.cancel()
       }
