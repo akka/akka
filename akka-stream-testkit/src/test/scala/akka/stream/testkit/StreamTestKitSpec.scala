@@ -129,6 +129,18 @@ class StreamTestKitSpec extends AkkaSpec {
       }.getMessage should include("message matching partial function")
     }
 
+    "#expectNextPF should fail after timeout when element delayed" in {
+      intercept[AssertionError] {
+        val timeout = 100 millis
+        val overTimeout = timeout + (10 millis)
+        Source.tick(overTimeout, 1 millis, 1).runWith(TestSink.probe)
+          .request(1)
+          .expectNextPF(timeout, {
+            case 1 ⇒
+          })
+      }.getMessage should include("timeout")
+    }
+
     "#expectNextChainingPF should pass with right element" in {
       Source.single(1).runWith(TestSink.probe)
         .request(1)
@@ -153,6 +165,18 @@ class StreamTestKitSpec extends AkkaSpec {
             case 2 ⇒
           }
       }.getMessage should include("message matching partial function")
+    }
+
+    "#expectNextChainingPF should fail after timeout when element delayed" in {
+      intercept[AssertionError] {
+        val timeout = 100 millis
+        val overTimeout = timeout + (10 millis)
+        Source.tick(overTimeout, 1 millis, 1).runWith(TestSink.probe)
+          .request(1)
+          .expectNextChainingPF(timeout, {
+            case 1 ⇒
+          })
+      }.getMessage should include("timeout")
     }
 
     "#expectNextN given a number of elements" in {

@@ -528,23 +528,46 @@ object TestSubscriber {
       self
     }
 
-    def expectNextPF[T](f: PartialFunction[Any, T]): T = {
-      expectEventPF {
-        case OnNext(n) if f.isDefinedAt(n) ⇒ f(n)
-      }
-    }
+    /**
+     * Wait for the next element and test it with partial function.
+     *
+     */
+    def expectNextPF[T](f: PartialFunction[Any, T]): T =
+      expectNextPF(Duration.Undefined, f)
 
     /**
-     * Expect next element and test it with partial function.
+     * Wait for the next element and test it with partial function.
+     *
+     * @param max wait no more than max time, otherwise throw AssertionError
+     */
+    def expectNextPF[T](max: Duration, f: PartialFunction[Any, T]): T =
+      expectEventPF(max, {
+        case OnNext(n) if f.isDefinedAt(n) ⇒ f(n)
+      })
+
+    /**
+     * Wait for the next element and test it with partial function.
+     *
+     * Allows chaining probe methods.
+     *
+     * @param max wait no more than max time, otherwise throw AssertionError
+     */
+    def expectNextChainingPF(max: Duration, f: PartialFunction[Any, Any]): Self =
+      expectNextPF(max, f.andThen(_ ⇒ self))
+
+    /**
+     * Wait for the next element and test it with partial function.
      *
      * Allows chaining probe methods.
      */
-    def expectNextChainingPF(f: PartialFunction[Any, Any]): Self = {
-      expectNextPF(f.andThen(_ ⇒ self))
-    }
+    def expectNextChainingPF(f: PartialFunction[Any, Any]): Self =
+      expectNextChainingPF(Duration.Undefined, f)
+
+    def expectEventPF[T](max: Duration, f: PartialFunction[SubscriberEvent, T]): T =
+      probe.expectMsgPF[T](max, hint = "message matching partial function")(f.asInstanceOf[PartialFunction[Any, T]])
 
     def expectEventPF[T](f: PartialFunction[SubscriberEvent, T]): T =
-      probe.expectMsgPF[T](hint = "message matching partial function")(f.asInstanceOf[PartialFunction[Any, T]])
+      expectEventPF(Duration.Undefined, f)
 
     /**
      * Receive messages for a given duration or until one does not match a given partial function.
