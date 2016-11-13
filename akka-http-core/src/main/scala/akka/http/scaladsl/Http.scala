@@ -40,6 +40,8 @@ import scala.compat.java8.FutureConverters._
 class HttpExt(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
 
+  akka.http.Version.check(system.settings.config)
+
   import Http._
 
   override val sslConfig = AkkaSSLConfig(system)

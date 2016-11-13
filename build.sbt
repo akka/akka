@@ -60,6 +60,7 @@ lazy val parsing = project("akka-parsing")
 
 lazy val httpCore = project("akka-http-core")
   .settings(Dependencies.httpCore)
+  .settings(Version.versionSettings)
   .dependsOn(parsing)
   //.disablePlugins(MimaPlugin)
 
