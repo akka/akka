@@ -577,9 +577,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   }
 
-  private[akka] final case class Doubler[T]() extends GraphStage[FlowShape[T, T]] {
-    val out: Outlet[T] = Outlet("Doubler.out")
-    val in: Inlet[T] = Inlet("Doubler.in")
+  private[akka] final case class Doubler[T]() extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -608,12 +606,9 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
         setHandlers(in, out, this)
       }
 
-    override val shape: FlowShape[T, T] = FlowShape(in, out)
   }
 
-  private[akka] final case class KeepGoing[T]() extends GraphStage[FlowShape[T, T]] {
-    val in = Inlet[T]("KeepGoing.in")
-    val out = Outlet[T]("KeepGoing.out")
+  private[akka] final case class KeepGoing[T]() extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -638,7 +633,6 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
         setHandlers(in, out, this)
       }
 
-    override val shape: FlowShape[T, T] = FlowShape(in, out)
   }
 
   private[akka] class PushFinishStage(onPostStop: () ⇒ Unit = () ⇒ ()) extends SimpleLinearGraphStage[Any] {

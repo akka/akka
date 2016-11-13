@@ -129,11 +129,7 @@ final case class TakeWhile[T](p: T ⇒ Boolean, inclusive: Boolean = false) exte
 /**
  * INTERNAL API
  */
-final case class DropWhile[T](p: T ⇒ Boolean) extends GraphStage[FlowShape[T, T]] {
-  val in = Inlet[T]("DropWhile.in")
-  val out = Outlet[T]("DropWhile.out")
-  override val shape = FlowShape(in, out)
-
+final case class DropWhile[T](p: T ⇒ Boolean) extends SimpleLinearGraphStage[T] {
   override def initialAttributes: Attributes = DefaultAttributes.dropWhile
 
   def createLogic(inheritedAttributes: Attributes) = new SupervisedGraphStageLogic(inheritedAttributes, shape) with InHandler with OutHandler {
@@ -232,12 +228,8 @@ final case class Collect[In, Out](pf: PartialFunction[In, Out]) extends GraphSta
 /**
  * INTERNAL API
  */
-final case class Recover[T](pf: PartialFunction[Throwable, T]) extends GraphStage[FlowShape[T, T]] {
-  val in = Inlet[T]("Recover.in")
-  val out = Outlet[T]("Recover.out")
-  override val shape: FlowShape[T, T] = FlowShape(in, out)
-
-  override protected val initialAttributes: Attributes = DefaultAttributes.recover
+final case class Recover[T](pf: PartialFunction[Throwable, T]) extends SimpleLinearGraphStage[T] {
+  override protected def initialAttributes: Attributes = DefaultAttributes.recover
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
 
@@ -649,15 +641,10 @@ final class FoldAsync[In, Out](zero: Out, f: (Out, In) ⇒ Future[Out]) extends 
 /**
  * INTERNAL API
  */
-final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) extends GraphStage[FlowShape[T, T]] {
+final case class Intersperse[T](start: Option[T], inject: T, end: Option[T]) extends SimpleLinearGraphStage[T] {
   ReactiveStreamsCompliance.requireNonNullElement(inject)
   if (start.isDefined) ReactiveStreamsCompliance.requireNonNullElement(start.get)
   if (end.isDefined) ReactiveStreamsCompliance.requireNonNullElement(end.get)
-
-  private val in = Inlet[T]("in")
-  private val out = Outlet[T]("out")
-
-  override val shape = FlowShape(in, out)
 
   override def createLogic(attr: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
     val startInHandler = new InHandler {
@@ -747,11 +734,7 @@ final case class Grouped[T](n: Int) extends GraphStage[FlowShape[T, immutable.Se
 /**
  * INTERNAL API
  */
-final case class LimitWeighted[T](val n: Long, val costFn: T ⇒ Long) extends GraphStage[FlowShape[T, T]] {
-  val in = Inlet[T]("LimitWeighted.in")
-  val out = Outlet[T]("LimitWeighted.out")
-  override val shape = FlowShape(in, out)
-
+final case class LimitWeighted[T](val n: Long, val costFn: T ⇒ Long) extends SimpleLinearGraphStage[T] {
   override def initialAttributes: Attributes = DefaultAttributes.limitWeighted
 
   def createLogic(inheritedAttributes: Attributes) = new SupervisedGraphStageLogic(inheritedAttributes, shape) with InHandler with OutHandler {
