@@ -847,7 +847,7 @@ final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy) extend
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
 
-    var buffer: BufferImpl[T] = _
+    private var buffer: BufferImpl[T] = _
 
     val enqueueAction: T ⇒ Unit =
       overflowStrategy match {
@@ -884,34 +884,28 @@ final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy) extend
 
     override def onPush(): Unit = {
       val elem = grab(in)
+      // If out is available, then it has been pulled but no dequeued element has been delivered.
+      // It means the buffer at this moment is definitely empty,
+      // so we just push the current element to out, then pull.
       if (isAvailable(out)) {
-        if (buffer.isEmpty) {
-          push(out, elem)
-          pull(in)
-        } else {
-          push(out, buffer.dequeue())
-          enqueueAction(elem)
-        }
+        push(out, elem)
+        pull(in)
       } else {
         enqueueAction(elem)
       }
     }
 
     override def onPull(): Unit = {
+      if (buffer.nonEmpty) push(out, buffer.dequeue())
       if (isClosed(in)) {
-        if (buffer.nonEmpty) push(out, buffer.dequeue())
         if (buffer.isEmpty) completeStage()
       } else if (!hasBeenPulled(in)) {
-        if (buffer.nonEmpty) push(out, buffer.dequeue())
         pull(in)
-      } else if (buffer.nonEmpty) {
-        push(out, buffer.dequeue())
       }
     }
 
     override def onUpstreamFinish(): Unit = {
       if (buffer.isEmpty) completeStage()
-      else if (isAvailable(out)) onPull()
     }
 
     setHandlers(in, out, this)
