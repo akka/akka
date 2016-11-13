@@ -124,10 +124,11 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     new File(snapshotDir, s"snapshot-${URLEncoder.encode(metadata.persistenceId, UTF_8)}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 
   private def snapshotMetadatas(persistenceId: String, criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {
-    val files = snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId))
+    val files = snapshotDir.listFiles(new SnapshotFilenameFilter(URLEncoder.encode(persistenceId)))
     if (files eq null) Nil // if the dir was removed
-    else files.map(_.getName).collect {
-      case FilenamePattern(pid, snr, tms) ⇒ SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr.toLong, tms.toLong)
+    else files.map(_.getName).map { filename ⇒
+      val (pid, snr, tms) = extractMetadata(filename).get
+      SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr, tms)
     }.filter(md ⇒ criteria.matches(md) && !saving.contains(md)).toVector
   }
 
@@ -148,10 +149,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
 
   private final class SnapshotFilenameFilter(persistenceId: String) extends FilenameFilter {
     def accept(dir: File, name: String): Boolean = {
-      name match {
-        case FilenamePattern(pid, snr, tms) ⇒ pid.equals(URLEncoder.encode(persistenceId))
-        case _                              ⇒ false
-      }
+      extractMetadata(name).exists(_._1.equals(persistenceId))
     }
   }
 
@@ -167,5 +165,20 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
         case _                              ⇒ false
       }
 
+  }
+
+  private def extractMetadata(filename: String): Option[(String, Long, Long)] = {
+    val persistenceIdStartIdx = filename.indexOf('-') + 1
+    val sequenceNumberEndIdx = filename.lastIndexOf('-')
+    val persistenceIdEndIdx = filename.lastIndexOf('-', sequenceNumberEndIdx - 1)
+    val timestampString = filename.substring(sequenceNumberEndIdx + 1)
+    if (persistenceIdStartIdx == 0 || persistenceIdStartIdx >= persistenceIdEndIdx ||
+      timestampString.exists(!_.isDigit)) None
+    else {
+      val persistenceId = filename.substring(persistenceIdStartIdx, persistenceIdEndIdx)
+      val sequenceNumber = filename.substring(persistenceIdEndIdx + 1, sequenceNumberEndIdx).toLong
+      val timestamp = filename.substring(sequenceNumberEndIdx + 1).toLong
+      Some((persistenceId, sequenceNumber, timestamp))
+    }
   }
 }
