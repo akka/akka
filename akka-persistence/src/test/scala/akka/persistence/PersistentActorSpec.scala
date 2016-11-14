@@ -411,6 +411,28 @@ object PersistentActorSpec {
     }
   }
 
+  class RecoverMessageCausedRestart(name: String) extends NamedPersistentActor(name) {
+    var master: ActorRef = _
+
+    val receiveCommand: Receive = {
+      case "Boom" ⇒
+        master = sender()
+        throw new TestException("boom")
+    }
+
+    override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+      if (master ne null) {
+        master ! "failed with " + reason.getClass.getSimpleName + " while processing " + message.getOrElse("")
+      }
+      context stop self
+    }
+
+    override def receiveRecover = {
+      case _ ⇒ ()
+    }
+
+  }
+
   class MultipleAndNestedPersists(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
       case s: String ⇒
@@ -911,7 +933,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg("d-3")
       expectNoMsg(100.millis)
     }
-    "invoke deferred handlers, perserving the original sender references" in {
+    "invoke deferred handlers, preserving the original sender references" in {
       val persistentActor = namedPersistentActor[DeferringWithAsyncPersistActor]
       val p1, p2 = TestProbe()
 
@@ -945,7 +967,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       persistentActor2 ! GetState
       expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42", RecoveryCompleted))
     }
-    "preserv order of incoming messages" in {
+    "preserve order of incoming messages" in {
       val persistentActor = namedPersistentActor[StressOrdering]
       persistentActor ! Cmd("a")
       val latch = TestLatch(1)
@@ -1092,6 +1114,11 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg(Nil)
     }
 
+    "recover the message which caused the restart" in {
+      val persistentActor = namedPersistentActor[RecoverMessageCausedRestart]
+      persistentActor ! "Boom"
+      expectMsg("failed with TestException while processing Boom")
+    }
   }
 
 }
