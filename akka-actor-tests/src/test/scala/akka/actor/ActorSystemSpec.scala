@@ -5,7 +5,6 @@ package akka.actor
 
 import language.postfixOps
 import akka.testkit._
-import org.scalatest.junit.JUnitSuiteLike
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.{ ExecutionContext, Await, Future }
 import scala.concurrent.duration._
@@ -17,7 +16,6 @@ import akka.dispatch._
 import com.typesafe.config.Config
 import akka.util.Switch
 import akka.util.Helpers.ConfigOps
-import scala.util.control.NoStackTrace
 
 object ActorSystemSpec {
 
