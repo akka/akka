@@ -9,12 +9,12 @@ import java.util.UUID
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import akka.actor.{ DeadLetter, ReceiveTimeout, StashOverflowException }
+import akka.actor.{ DeadLetter, StashOverflowException }
 import akka.util.Helpers.ConfigOps
 import akka.event.Logging
 import akka.event.LoggingAdapter
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -205,9 +205,9 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         case Some(ReplayedMessage(m)) ⇒
           flushJournalBatch()
           super.aroundPreRestart(reason, Some(m))
-        case mo ⇒
+        case mo: Option[Any] ⇒
           flushJournalBatch()
-          super.aroundPreRestart(reason, None)
+          super.aroundPreRestart(reason, mo)
       }
     }
   }
