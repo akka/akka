@@ -26,6 +26,7 @@ import scala.util._
  */
 private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLogging {
   private val FilenamePattern = """^snapshot-(.+)-(\d+)-(\d+)""".r
+  private val persistenceIdStartIdx = 9 // Persistence ID starts after the "snapshot-" substring
 
   import akka.util.Helpers._
   private val config = context.system.settings.config.getConfig("akka.persistence.snapshot-store.local")
@@ -124,12 +125,15 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     new File(snapshotDir, s"snapshot-${URLEncoder.encode(metadata.persistenceId, UTF_8)}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 
   private def snapshotMetadatas(persistenceId: String, criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {
-    val files = snapshotDir.listFiles(new SnapshotFilenameFilter(URLEncoder.encode(persistenceId)))
+    val files = snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId))
     if (files eq null) Nil // if the dir was removed
-    else files.map(_.getName).map { filename ⇒
-      val (pid, snr, tms) = extractMetadata(filename).get
-      SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr, tms)
-    }.filter(md ⇒ criteria.matches(md) && !saving.contains(md)).toVector
+    else {
+      files.map(_.getName).flatMap { filename ⇒
+        extractMetadata(filename).map {
+          case (pid, snr, tms) ⇒ SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr, tms)
+        }
+      }.filter(md ⇒ criteria.matches(md) && !saving.contains(md)).toVector
+    }
   }
 
   override def preStart() {
@@ -148,8 +152,10 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
   }
 
   private final class SnapshotFilenameFilter(persistenceId: String) extends FilenameFilter {
+    val encodedPersistenceId = URLEncoder.encode(persistenceId)
+
     def accept(dir: File, name: String): Boolean = {
-      extractMetadata(name).exists(_._1.equals(persistenceId))
+      name.startsWith(encodedPersistenceId, persistenceIdStartIdx)
     }
   }
 
@@ -172,8 +178,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     val sequenceNumberEndIdx = filename.lastIndexOf('-')
     val persistenceIdEndIdx = filename.lastIndexOf('-', sequenceNumberEndIdx - 1)
     val timestampString = filename.substring(sequenceNumberEndIdx + 1)
-    if (persistenceIdStartIdx == 0 || persistenceIdStartIdx >= persistenceIdEndIdx ||
-      timestampString.exists(!_.isDigit)) None
+    if (persistenceIdStartIdx >= persistenceIdEndIdx || timestampString.exists(!_.isDigit)) None
     else {
       val persistenceId = filename.substring(persistenceIdStartIdx, persistenceIdEndIdx)
       val sequenceNumber = filename.substring(persistenceIdEndIdx + 1, sequenceNumberEndIdx).toLong
