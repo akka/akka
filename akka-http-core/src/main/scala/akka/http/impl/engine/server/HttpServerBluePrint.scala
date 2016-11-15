@@ -243,10 +243,10 @@ private[http] object HttpServerBluePrint {
 
   class RequestTimeoutSupport(initialTimeout: Duration)
     extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
-    private val requestIn = Inlet[HttpRequest]("requestIn")
-    private val requestOut = Outlet[HttpRequest]("requestOut")
-    private val responseIn = Inlet[HttpResponse]("responseIn")
-    private val responseOut = Outlet[HttpResponse]("responseOut")
+    private val requestIn = Inlet[HttpRequest]("RequestTimeoutSupport.requestIn")
+    private val requestOut = Outlet[HttpRequest]("RequestTimeoutSupport.requestOut")
+    private val responseIn = Inlet[HttpResponse]("RequestTimeoutSupport.responseIn")
+    private val responseOut = Outlet[HttpResponse]("RequestTimeoutSupport.responseOut")
 
     override def initialAttributes = Attributes.name("RequestTimeoutSupport")
 
@@ -357,10 +357,10 @@ private[http] object HttpServerBluePrint {
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
     extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingContext]] {
-    private val requestParsingIn = Inlet[RequestOutput]("requestParsingIn")
-    private val requestPrepOut = Outlet[RequestOutput]("requestPrepOut")
-    private val httpResponseIn = Inlet[HttpResponse]("httpResponseIn")
-    private val responseCtxOut = Outlet[ResponseRenderingContext]("responseCtxOut")
+    private val requestParsingIn = Inlet[RequestOutput]("ControllerStage.requestParsingIn")
+    private val requestPrepOut = Outlet[RequestOutput]("ControllerStage.requestPrepOut")
+    private val httpResponseIn = Inlet[HttpResponse]("ControllerStage.httpResponseIn")
+    private val responseCtxOut = Outlet[ResponseRenderingContext]("ControllerStage.responseCtxOut")
 
     override def initialAttributes = Attributes.name("ControllerStage")
 
@@ -517,8 +517,8 @@ private[http] object HttpServerBluePrint {
         }
 
       case object OneHundredContinueStage extends GraphStage[FlowShape[ParserOutput, ParserOutput]] {
-        val in: Inlet[ParserOutput] = Inlet("GraphStage.in")
-        val out: Outlet[ParserOutput] = Outlet("GraphStage.out")
+        val in: Inlet[ParserOutput] = Inlet("OneHundredContinueStage.in")
+        val out: Outlet[ParserOutput] = Outlet("OneHundredContinueStage.out")
         override val shape: FlowShape[ParserOutput, ParserOutput] = FlowShape(in, out)
 
         override def initialAttributes = Attributes.name("expect100continueTrigger")
@@ -560,11 +560,11 @@ private[http] object HttpServerBluePrint {
   private class ProtocolSwitchStage(settings: ServerSettings, log: LoggingAdapter)
     extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes]] {
 
-    private val fromNet = Inlet[SessionBytes]("fromNet")
-    private val toNet = Outlet[ByteString]("toNet")
+    private val fromNet = Inlet[SessionBytes]("ProtocolSwitchStage.fromNet")
+    private val toNet = Outlet[ByteString]("ProtocolSwitchStage.toNet")
 
-    private val toHttp = Outlet[SessionBytes]("toHttp")
-    private val fromHttp = Inlet[ResponseRenderingOutput]("fromHttp")
+    private val toHttp = Outlet[SessionBytes]("ProtocolSwitchStage.toHttp")
+    private val fromHttp = Inlet[ResponseRenderingOutput]("ProtocolSwitchStage.fromHttp")
 
     override def initialAttributes = Attributes.name("ProtocolSwitchStage")
 

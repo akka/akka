@@ -103,12 +103,12 @@ package util {
   private[http] class ToStrict(timeout: FiniteDuration, contentType: ContentType)
     extends GraphStage[FlowShape[ByteString, HttpEntity.Strict]] {
 
-    val in = Inlet[ByteString]("in")
-    val out = Outlet[HttpEntity.Strict]("out")
+    val byteStringIn = Inlet[ByteString]("ToStrict.byteStringIn")
+    val httpEntityOut = Outlet[HttpEntity.Strict]("ToStrict.httpEntityOut")
 
     override def initialAttributes = Attributes.name("ToStrict")
 
-    override val shape = FlowShape(in, out)
+    override val shape = FlowShape(byteStringIn, httpEntityOut)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       val bytes = ByteString.newBuilder
@@ -116,23 +116,23 @@ package util {
 
       override def preStart(): Unit = scheduleOnce("ToStrictTimeoutTimer", timeout)
 
-      setHandler(out, new OutHandler {
+      setHandler(httpEntityOut, new OutHandler {
         override def onPull(): Unit = {
           if (emptyStream) {
-            push(out, HttpEntity.Strict(contentType, ByteString.empty))
+            push(httpEntityOut, HttpEntity.Strict(contentType, ByteString.empty))
             completeStage()
-          } else pull(in)
+          } else pull(byteStringIn)
         }
       })
 
-      setHandler(in, new InHandler {
+      setHandler(byteStringIn, new InHandler {
         override def onPush(): Unit = {
-          bytes ++= grab(in)
-          pull(in)
+          bytes ++= grab(byteStringIn)
+          pull(byteStringIn)
         }
         override def onUpstreamFinish(): Unit = {
-          if (isAvailable(out)) {
-            push(out, HttpEntity.Strict(contentType, bytes.result()))
+          if (isAvailable(httpEntityOut)) {
+            push(httpEntityOut, HttpEntity.Strict(contentType, bytes.result()))
             completeStage()
           } else emptyStream = true
         }

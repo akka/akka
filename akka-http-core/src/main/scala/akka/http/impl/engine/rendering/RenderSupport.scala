@@ -79,8 +79,8 @@ private object RenderSupport {
   }
 
   class ChunkTransformer extends GraphStage[FlowShape[HttpEntity.ChunkStreamPart, ByteString]] {
-    val out: Outlet[ByteString] = Outlet("ChunkTransformer.out")
     val in: Inlet[HttpEntity.ChunkStreamPart] = Inlet("ChunkTransformer.in")
+    val out: Outlet[ByteString] = Outlet("ChunkTransformer.out")
     val shape: FlowShape[HttpEntity.ChunkStreamPart, ByteString] = FlowShape.of(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =

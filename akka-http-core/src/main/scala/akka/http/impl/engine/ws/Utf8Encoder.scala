@@ -23,9 +23,9 @@ private[http] object Utf8Encoder extends GraphStage[FlowShape[String, ByteString
 
   def lowerNBitsSet(n: Int): Long = (1L << n) - 1
 
-  val in = Inlet[String]("Utf8Encoder.in")
-  val out = Outlet[ByteString]("Utf8Encoder.out")
-  override val shape = FlowShape(in, out)
+  val stringIn = Inlet[String]("Utf8Encoder.stringIn")
+  val byteStringOut = Outlet[ByteString]("Utf8Encoder.byteStringOut")
+  override val shape = FlowShape(stringIn, byteStringOut)
   override val initialAttributes: Attributes = Attributes.name("utf8Encoder")
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -65,23 +65,23 @@ private[http] object Utf8Encoder extends GraphStage[FlowShape[String, ByteString
         } else throw new IllegalArgumentException(f"Expected UTF-16 surrogate continuation")
 
       var offset = 0
-      val input = grab(in)
+      val input = grab(stringIn)
       while (offset < input.length) {
         step(input(offset))
         offset += 1
       }
 
-      if (builder.length > 0) push(out, builder.result())
-      else pull(in)
+      if (builder.length > 0) push(byteStringOut, builder.result())
+      else pull(stringIn)
     }
 
     override def onUpstreamFinish(): Unit =
       if (inSurrogatePair) failStage(new IllegalArgumentException("Truncated String input (ends in the middle of surrogate pair)"))
       else completeStage()
 
-    override def onPull(): Unit = pull(in)
+    override def onPull(): Unit = pull(stringIn)
 
-    setHandlers(in, out, this)
+    setHandlers(stringIn, byteStringOut, this)
   }
 
   override def toString: String = "Utf8Encoder"

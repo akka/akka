@@ -22,8 +22,8 @@ import scala.concurrent.duration.FiniteDuration
  */
 private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDuration, log: LoggingAdapter)
   extends GraphStage[FlowShape[FrameOutHandler.Input, FrameStart]] {
-  val in = Inlet[FrameOutHandler.Input]("in")
-  val out = Outlet[FrameStart]("out")
+  val in = Inlet[FrameOutHandler.Input]("FrameOutHandler.in")
+  val out = Outlet[FrameStart]("FrameOutHandler.out")
 
   override def shape = FlowShape(in, out)
 

@@ -60,8 +60,8 @@ private[http] class HttpResponseRendererFactory(
   def renderer: Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = Flow.fromGraph(HttpResponseRenderer)
 
   object HttpResponseRenderer extends GraphStage[FlowShape[ResponseRenderingContext, ResponseRenderingOutput]] {
-    val in = Inlet[ResponseRenderingContext]("in")
-    val out = Outlet[ResponseRenderingOutput]("out")
+    val in = Inlet[ResponseRenderingContext]("HttpResponseRenderer.in")
+    val out = Outlet[ResponseRenderingOutput]("HttpResponseRenderer.out")
     val shape: FlowShape[ResponseRenderingContext, ResponseRenderingOutput] = FlowShape(in, out)
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
