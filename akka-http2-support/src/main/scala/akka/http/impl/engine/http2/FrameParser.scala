@@ -23,7 +23,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
       }
 
       object ReadPreface extends Step {
-        def parse(reader: ByteReader): ParseResult[FrameEvent] =
+        override def parse(reader: ByteReader): ParseResult[FrameEvent] =
           if (reader.remainingSize < 24) throw NeedMoreData
           else if (reader.take(24) == Http2Protocol.ClientConnectionPreface)
             ParseResult(None, ReadFrame, acceptUpstreamFinish = false)
@@ -32,7 +32,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
       }
 
       object ReadFrame extends Step {
-        def parse(reader: ByteReader): ParseResult[FrameEvent] = {
+        override def parse(reader: ByteReader): ParseResult[FrameEvent] = {
           val length = reader.readShortBE() << 8 | reader.readByte()
           val tpe = reader.readByte() // TODO: make sure it's valid
           val flags = new ByteFlag(reader.readByte())

@@ -41,25 +41,6 @@ class HttpRequestHeaderHpackDecompressionSpec extends AkkaSpec with ScalaFutures
       val request = runToRequest(http2SubStreams)
       request.method should ===(HttpMethods.POST)
     }
-    "decompress given CONTINUATION Headers frames" in {
-      pending // FIXME: this test seems to be bogus?!?
-      val streamId = 0
-      val frames = List(
-        Http2SubStream(
-          HeadersFrame(streamId, endStream = false, endHeaders = false, parseHeaderBlock(encodedGET)), // the header here is nog interesting, we'll override it
-          Source.fromIterator(() ⇒ List(
-            HeadersFrame(streamId, endStream = false, endHeaders = false, parseHeaderBlock(encodedPOST)),
-            HeadersFrame(streamId, endStream = false, endHeaders = true, parseHeaderBlock(encodedPathSamplePath))
-          ).iterator
-          )
-        )
-      )
-
-      val request = runToRequest(frames)
-      request.method should ===(HttpMethods.POST)
-      request.uri.toString should ===("/sample/path")
-    }
-
     // TODO a test that has different streamIds
   }
 

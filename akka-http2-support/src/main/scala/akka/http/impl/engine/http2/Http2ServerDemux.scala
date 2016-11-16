@@ -62,6 +62,7 @@ import akka.stream.stage.OutHandler
  * only available in this stage.
  */
 class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+
   import Http2ServerDemux._
 
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
@@ -74,9 +75,12 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with BufferedOutletSupport { logic ⇒
-      case class SubStream(
+    new GraphStageLogic(shape) with BufferedOutletSupport {
+      logic ⇒
+
+      final case class SubStream(
         streamId:                  Int,
+        headers:                   HeadersFrame,
         state:                     StreamState,
         outlet:                    SubSourceOutlet[StreamFrameEvent],
         inlet:                     Option[SubSinkInlet[FrameEvent]],
@@ -100,17 +104,32 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
       setHandler(frameIn, new InHandler {
         def onPush(): Unit = {
-          grab(frameIn) match {
+          val in = grab(frameIn)
+          in match {
             case headers @ HeadersFrame(streamId, endStream, endHeaders, fragment) ⇒
               val subSource = new SubSourceOutlet[StreamFrameEvent](s"substream-out-$streamId")
-              val handler = new SubStream(streamId, StreamState.Open /* FIXME */ , subSource, None, streamLevelWindow)
-              incomingStreams += streamId → handler
+              val handler = SubStream(streamId, headers, StreamState.Open /* FIXME stream state */ , subSource, None, streamLevelWindow)
+              incomingStreams += streamId → handler // TODO optimise for lookup later on
 
-              val sub =
-                if (endStream && endHeaders) Http2SubStream(headers, Source.empty)
-                else Http2SubStream(headers, Source.fromGraph(subSource.source))
+              val sub = makeHttp2SubStream(handler)
+              if (sub.initialFrame.endHeaders) dispatchSubstream(sub)
+            // else we're expecting some continuation frames before we kick off the dispatch
 
-              dispatchSubstream(sub)
+            case cont: ContinuationFrame ⇒
+              // continue to build up headers (CONTINUATION come directly after HEADERS frame, and before DATA)
+              val streamId = cont.streamId
+              incomingStreams.get(streamId) match {
+                case Some(handler) ⇒
+                  val updatedHandler = concatContinuationIntoHeaders(handler, cont)
+                  val sub = makeHttp2SubStream(updatedHandler)
+                  if (updatedHandler.headers.endHeaders) dispatchSubstream(sub)
+                case None ⇒
+                  throw ContinuationFrameForUnknownStreamEncounteredException(streamId)
+              }
+
+            case data: DataFrame ⇒
+              // technically this case is the same as StreamFrameEvent, however we're handling it earlier in the match here for efficiency
+              incomingStreams(data.streamId).push(data) // pushing http entity, handle flow control from here somehow?
 
             case RstStreamFrame(streamId, errorCode) ⇒
               // FIXME: also need to handle the other case when no response has been produced yet (inlet still None)
@@ -155,6 +174,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       })
 
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
+
       def dispatchSubstream(sub: Http2SubStream): Unit = bufferedSubStreamOutput.push(sub)
 
       setHandler(substreamIn, new InHandler {
@@ -178,12 +198,6 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       })
 
       val bufferedFrameOut = new BufferedOutlet[FrameEvent](frameOut) {
-        override def push(elem: FrameEvent): Unit = {
-          super.push(elem)
-
-          if (buffer.size > 0) println(s"Now buffered: ${buffer.size()}")
-        }
-
         override def doPush(elem: FrameEvent): Unit = {
           elem match {
             case d @ DataFrame(streamId, _, pl) ⇒
@@ -204,7 +218,33 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           }
         }
       }
+
+      private def concatContinuationIntoHeaders(handler: SubStream, cont: ContinuationFrame) = {
+        val concatHeaderBlockFragment = handler.headers.headerBlockFragment ++ cont.payload
+        val moreCompleteHeadersFrame = HeadersFrame(handler.streamId, cont.endHeaders, cont.endHeaders, concatHeaderBlockFragment)
+        // update the SubStream we keep around
+        val moreCompleteHandler = handler.copy(headers = moreCompleteHeadersFrame)
+        incomingStreams += handler.streamId → moreCompleteHandler
+        moreCompleteHandler
+      }
+
+      def makeHttp2SubStream(handler: SubStream): Http2SubStream = {
+        val headers = handler.headers
+        val subStream = handler.outlet
+        if (headers.endStream && headers.endHeaders) {
+          Http2SubStream(headers, Source.empty)
+        } else {
+          // FIXME a bit naive but correct I think -- todo check the spec 
+          val remainingFrames = Source.fromGraph(subStream.source)
+            .collect({
+              case d: DataFrame ⇒ d
+              case f            ⇒ throw new Exception("Unexpected frame type! We thought only DataFrames are accepted from here on. Was: " + f)
+            })
+          Http2SubStream(headers, remainingFrames)
+        }
+      }
     }
+
 }
 
 object Http2ServerDemux {
@@ -220,4 +260,7 @@ object Http2ServerDemux {
     // case object ReservedLocal extends StreamState
     // case object ReservedRemote extends StreamState
   }
+
+  final case class ContinuationFrameForUnknownStreamEncounteredException(streamId: Int)
+    extends IllegalArgumentException(s"Received ContinuationFrame for unknown streamId ($streamId)!")
 }

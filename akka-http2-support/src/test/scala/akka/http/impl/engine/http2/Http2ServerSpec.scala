@@ -10,6 +10,8 @@ import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
+import akka.http.impl.util.StringRendering
+import akka.http.scaladsl.{ ConnectionContext, Http2, HttpConnectionContext }
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpMethods
@@ -19,14 +21,14 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.util.ByteString
 import akka.util.ByteStringBuilder
 import com.twitter.hpack.Decoder
@@ -35,6 +37,7 @@ import com.twitter.hpack.HeaderListener
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
+import scala.util.control.NoStackTrace
 
 class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
   implicit val mat = ActorMaterializer()
@@ -126,19 +129,26 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
       "parse headers to modeled headers" in pending
     }
 
-    "support stream support for request entity data" should {
+    "support stream for request entity data" should {
       abstract class WaitingForRequestData extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(1, request, endStream = false)
 
         val receivedRequest = expectRequest()
-        receivedRequest.withEntity(HttpEntity.Empty) shouldBe request
+        val entityDataIn = ByteStringSinkProbe()
+        receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
+        entityDataIn.ensureSubscription()
+      }
+      abstract class WaitingForRequest(request: HttpRequest) extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+        sendRequest(1, request, endStream = false)
+
+        val receivedRequest = expectRequest()
         val entityDataIn = ByteStringSinkProbe()
         receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
         entityDataIn.ensureSubscription()
       }
 
-      "send data frames to entity stream" inPendingUntilFixed new WaitingForRequestData {
+      "xoxo send data frames to entity stream" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
         sendDATA(1, endStream = false, data1)
         entityDataIn.expectBytes(data1)
@@ -150,6 +160,19 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
         val data3 = ByteString("mnopq")
         sendDATA(1, endStream = true, data3)
         entityDataIn.expectBytes(data3)
+        entityDataIn.expectComplete()
+      }
+      "handle content-length and content-type of incoming request" in new WaitingForRequest(
+        HttpRequest(
+          method = HttpMethods.POST,
+          uri = "https://example.com/upload",
+          entity = HttpEntity(ContentTypes.`application/json`, 1337, Source.repeat("x").take(1337).map(ByteString(_))),
+          protocol = HttpProtocols.`HTTP/2.0`)) {
+
+        receivedRequest.entity.contentType should ===(ContentTypes.`application/json`)
+        receivedRequest.entity.isIndefiniteLength should ===(false)
+        receivedRequest.entity.contentLengthOption should ===(Some(1337L))
+        entityDataIn.expectBytes(ByteString("x" * 1337))
         entityDataIn.expectComplete()
       }
       "fail entity stream if peer sends RST_STREAM frame" inPendingUntilFixed new WaitingForRequestData {
@@ -223,7 +246,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
         entityDataOut.sendNext(data1)
         expectDATA(1, endStream = false, data1)
 
-        entityDataOut.sendError(new RuntimeException)
+        entityDataOut.sendError(new RuntimeException with NoStackTrace)
         expectRST_STREAM(1, ErrorCode.INTERNAL_ERROR)
       }
       "fail if advertised content-length doesn't match" in pending
@@ -316,6 +339,8 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
       "reject double sub-streams creation" in pending
       "reject substream creation for streams invalidated by skipped substream IDs" in pending
     }
+
+    "must not swallow errors / warnings" in pending
   }
 
   abstract class TestSetupWithoutHandshake {
@@ -401,8 +426,9 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     def sendFrame(frameType: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): Unit =
       sendBytes(FrameRenderer.renderFrame(frameType, flags, streamId, payload))
 
-    def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit =
+    def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = {
       sendFrame(FrameType.DATA, Flags.END_STREAM.ifSet(endStream), streamId, data)
+    }
 
     def sendHEADERS(streamId: Int, endStream: Boolean, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment)))
@@ -427,9 +453,10 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
 
   /** Helper that allows automatic HPACK encoding/decoding for wire sends / expectations */
   trait AutomaticHpackWireSupport extends TestSetupWithoutHandshake {
-    def sendRequest(streamId: Int, request: HttpRequest, endStream: Boolean = true): Unit = {
-      require(request.entity.isKnownEmpty, "Only empty entities supported for `sendRequest`")
+    def sendRequest(streamId: Int, request: HttpRequest, endStream: Boolean = true)(implicit mat: Materializer): Unit = {
       sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeHeaders(request))
+      if (!request.entity.isKnownEmpty)
+        sendDATA(streamId, endStream = true, request.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue)
     }
     def expectResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
       val headerBlockBytes = expectHeaderBlock(streamId, endStream)
@@ -444,6 +471,11 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
       encode(":scheme", request.uri.scheme.toString)
       encode(":path", request.uri.path.toString)
       encode(":authority", request.uri.authority.toString.drop(2) /* Authority.toString prefixes two slashes */ )
+
+      encode("content-type", request.entity.contentType.render(new StringRendering).get)
+      request.entity.contentLengthOption.collect {
+        case len if len != 0 ⇒ encode("content-length", len.toString)
+      }
 
       request.headers.filter(_.renderInRequests()).foreach { h ⇒
         encode(h.lowercaseName, h.value)

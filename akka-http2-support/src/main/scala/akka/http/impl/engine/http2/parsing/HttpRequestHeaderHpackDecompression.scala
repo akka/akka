@@ -9,12 +9,20 @@ import akka.http.impl.engine.http2._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{ Flow, Sink, Source, SourceQueueWithComplete }
 import akka.stream.stage._
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+import akka.stream._
 import com.twitter.hpack.HeaderListener
 import HttpRequestHeaderHpackDecompression._
+import akka.NotUsed
+
+import scala.collection.immutable
 import akka.dispatch.ExecutionContexts
+import akka.http.impl.engine.parsing.BodyPartParser
+import akka.http.impl.engine.parsing.BodyPartParser.{ BodyPartStart, EntityPart }
+import akka.http.impl.engine.ws.FrameOutHandler
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+import akka.stream.impl.fusing.SubSource
 import akka.util.ByteString
 
 /** INTERNAL API */
@@ -37,8 +45,26 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
       /** If the outer upstream has completed while we were pulling substream frames, we should complete it after we emit the request. */
       private var completionPending = false
 
-      val zeroRequest = HttpRequest().withProtocol(HttpProtocols.`HTTP/2.0`)
-      private[this] var beingBuiltRequest: HttpRequest = zeroRequest // TODO replace with "RequestBuilder" that's more efficient
+      private[this] def resetBeingBuiltRequest(http2SubStream: Http2SubStream): Unit = {
+        val streamId = http2SubStream.streamId
+
+        beingBuiltRequest =
+          HttpRequest(headers = immutable.Seq(Http2StreamIdHeader(streamId)))
+            .withProtocol(HttpProtocols.`HTTP/2.0`)
+
+        val entity =
+          if (http2SubStream.initialFrame.endStream) {
+            HttpEntity.Strict(ContentTypes.NoContentType, ByteString.empty)
+          } else {
+            // FIXME fix the size and entity type according to info from headers
+            val data = http2SubStream.frames.completeAfter(_.endStream).map(_.payload)
+            HttpEntity.Default(ContentTypes.NoContentType, Long.MaxValue, data) // FIXME that 1 is a hack, since it must be positive, and we're awaiting a real content length...
+          }
+
+        beingBuiltRequest = beingBuiltRequest.copy(entity = entity)
+      }
+
+      private[this] var beingBuiltRequest: HttpRequest = _ // TODO replace with "RequestBuilder" that's more efficient
 
       val decoder = new com.twitter.hpack.Decoder(maxHeaderSize, maxHeaderTableSize)
 
@@ -46,6 +72,7 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
       val bufferedRequestOut = new BufferedOutlet(requestOut)
 
       setHandler(streamIn, this)
+
       override def preStart(): Unit = pull(streamIn)
 
       override def onPush(): Unit = {
@@ -53,31 +80,20 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
         // no backpressure (limited by SETTINGS_MAX_CONCURRENT_STREAMS)
         pull(streamIn)
 
-        httpSubStream.initialFrame match {
-          case h: HeadersFrame ⇒
-            if (h.endStream && !h.endHeaders) {
-              handleHeadersFromExpectedContinuations(httpSubStream, h)
-            } else if (h.endStream /* && h.endHeaders, implied by above if */ ) {
-              processFrame(httpSubStream, httpSubStream.initialFrame)
+        resetBeingBuiltRequest(httpSubStream)
+        processFrame(httpSubStream.initialFrame)
 
-              // we know frames should be empty here.
-              // but for sanity lets kill that stream anyway I guess (at least for now)
-              requireRemainingStreamEmpty(httpSubStream)
-            } else {
-              // endStream == false => more data in following frames
-              processFrame(httpSubStream, httpSubStream.initialFrame)
-
-              pullingSubStreamFrames = true
-              completionPending = false
-              processRemainingFrames(httpSubStream)
-            }
+        if (httpSubStream.initialFrame.endStream) {
+          // we know frames should be empty here.
+          // but for sanity lets kill that stream anyway I guess (at least for now)
+          requireRemainingStreamEmpty(httpSubStream)
         }
-
       }
 
       // this is invoked synchronously from decoder.decode()
       override def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit = {
-        val nameString = new String(name) // FIXME wasteful :-(
+        // FIXME wasteful :-(
+        val nameString = new String(name)
         val valueString = new String(value)
 
         // FIXME lookup here must be optimised
@@ -106,8 +122,36 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
               throw new Exception(s": prefixed header should be emitted well-typed! Was: '${new String(unknown)}'. This is a bug.")
           }
         } else {
-          // FIXME handle all typed headers
-          beingBuiltRequest = beingBuiltRequest.addHeader(RawHeader(nameString, new String(value)))
+          nameString match {
+            case "content-type" ⇒
+
+              val entity = beingBuiltRequest.entity
+              ContentType.parse(valueString) match {
+                case Right(ct) ⇒
+                  val len = entity.contentLengthOption.getOrElse(0L)
+                  // FIXME instead of putting in random 1, this should become a builder, that emits the right type of entity (with known size or not)
+                  val newEntity =
+                    if (len == 0) HttpEntity.Strict(ct, ByteString.empty) // HttpEntity.empty(entity.contentType)
+                    else HttpEntity.Default(ct, len, entity.dataBytes)
+
+                  beingBuiltRequest = beingBuiltRequest.copy(entity = newEntity) // FIXME not quite correct still
+                case Left(errorInfos) ⇒ throw new ParsingException(errorInfos.head)
+              }
+
+            case "content-length" ⇒
+              val entity = beingBuiltRequest.entity
+              val len = java.lang.Long.parseLong(valueString)
+              val newEntity =
+                if (len == 0) HttpEntity.Strict(entity.contentType, ByteString.empty) // HttpEntity.empty(entity.contentType)
+                else HttpEntity.Default(entity.contentType, len, entity.dataBytes)
+
+              beingBuiltRequest = beingBuiltRequest.copy(entity = newEntity) // FIXME not quite correct still
+
+            case _ ⇒
+              // other headers we simply expose as RawHeader
+              // FIXME handle all typed headers
+              beingBuiltRequest = beingBuiltRequest.addHeader(RawHeader(nameString, new String(value)))
+          }
         }
       }
 
@@ -122,105 +166,20 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
       }
 
       // TODO needs cleanup?
-      private def processFrame(http2SubStream: Http2SubStream, frame: StreamFrameEvent): Boolean = frame match {
-        case h: HeadersFrame ⇒
-          val is = ByteStringInputStream(h.headerBlockFragment)
+      private def processFrame(frame: StreamFrameEvent): Unit = {
+        frame match {
+          case h: HeadersFrame ⇒
+            require(h.endHeaders, s"${getClass.getSimpleName} requires a complete HeadersFrame, the stage before it should concat incoming continuation frames into it.")
 
-          decoder.decode(is, this) // this: HeaderListener (invoked synchronously)
-          beingBuiltRequest = beingBuiltRequest.addHeader(Http2StreamIdHeader(h.streamId))
-          pushBeingBuiltRequestIf(h.endHeaders)
+            // TODO optimise
+            val is = ByteStringInputStream(h.headerBlockFragment)
+            decoder.decode(is, this) // this: HeaderListener (invoked synchronously)
+            decoder.endHeaderBlock()
 
-        case c: ContinuationFrame ⇒
-          // not checking streamId, I believe we're guaranteed here by construction to have the right one hmmm...?
-          val is = ByteStringInputStream(http2SubStream.initialFrame.asInstanceOf[HeadersFrame].headerBlockFragment ++ c.payload) // FIXME hack; unmarshall only complete thing
-          decoder.decode(is, this) // this: HeaderListener (invoked synchronously)
-          beingBuiltRequest = beingBuiltRequest.addHeader(Http2StreamIdHeader(c.streamId))
-          pushBeingBuiltRequestIf(c.endHeaders)
+            emit(requestOut, beingBuiltRequest)
 
-        case _ ⇒
-          throw new UnsupportedOperationException(s"Not implemented to handle $frame! TODO / FIXME for impl.")
-      }
-
-      private def processRemainingFrames(http2SubStream: Http2SubStream): Unit = {
-        val subIn = new SubSinkInlet[StreamFrameEvent]("frames.in(for:Http2SubStream)")
-        subIn.setHandler(new InHandler {
-          override def onPush(): Unit = {
-            val frame = subIn.grab()
-            val pushedResponse = processFrame(http2SubStream, frame)
-            if (pushedResponse) {
-              // FIXME but we need to keep pulling it until completion, as it may contain DataFrames
-
-              // FIXME then finally we can pull the outer stream again, which gives us a new substream to work on
-              pull(streamIn) // pull outer stream, we're ready for new SubStream
-            } else {
-              // still more data to read from the SubSource before we can start emitting the HttpResponse (e.g. more headers)
-              subIn.pull()
-            }
-          }
-        })
-        subIn.pull()
-        http2SubStream.frames.runWith(subIn.sink)(interpreter.subFusingMaterializer)
-      }
-
-      /**
-       * We received a STREAM_END, but no HEADERS_END, thus CONTINUATION is expected in substream.
-       *
-       * Spec:
-       * A HEADERS frame carries the END_STREAM flag that signals the end of a stream.
-       * However,a HEADERS frame with the END_STREAM flag set can be followed by CONTINUATION frames on the same stream.
-       * Logically, the CONTINUATION frames are part of the HEADERS frame.
-       */
-      private def handleHeadersFromExpectedContinuations(http2SubStream: Http2SubStream, initialHeadersFrame: HeadersFrame): Unit = {
-        val subIn = new SubSinkInlet[StreamFrameEvent]("frames.in(for:Http2SubStream)")
-        subIn.setHandler(new InHandler {
-
-          // we need to aggregate the incoming data from CONTINUATIONs, and then pass them into the decoder
-          // TODO: from my attempts at doing it in a more streaming fashion the decoder did not properly survive that it seems.
-          private var accumulatedHeaderBlock = initialHeadersFrame.headerBlockFragment
-
-          override def onPush(): Unit = {
-            val frame = subIn.grab()
-            frame match {
-              case c: ContinuationFrame if c.endHeaders ⇒
-                val accHeaderBlock = accumulatedHeaderBlock ++ c.payload
-                accumulatedHeaderBlock = ByteString.empty // clears // TODO what else here? we'll keep pulling data now hm hm
-                // TODO somehow get away without constructing this mock frame?
-                val pushedResponse = processFrame(http2SubStream, HeadersFrame(http2SubStream.streamId, true, true, accHeaderBlock))
-                if (pushedResponse) {
-                  // FIXME but we need to keep pulling it until completion, as it may contain DataFrames
-
-                  if (!hasBeenPulled(streamIn)) pull(streamIn) // pull outer stream, we're ready for new SubStream
-                }
-
-              case c: ContinuationFrame ⇒
-                // FIXME: needs upper limit
-                // continue accumulating the headers data
-                accumulatedHeaderBlock = accumulatedHeaderBlock ++ c.payload
-
-              case unexpectedFrame ⇒
-                // FIXME make this a proper failure, it should fail though, spec requires it (PROTOCOL_ERROR)
-                throw new RuntimeException("Expected only CONTINUATION frames here, as we're collecting data for HEADERS parsing in one go!")
-            }
-
-            // still more data to read from the SubSource before we can start emitting the HttpResponse (e.g. more headers)
-            subIn.pull()
-
-          }
-        })
-        subIn.pull()
-        http2SubStream.frames.runWith(subIn.sink)(interpreter.subFusingMaterializer)
-      }
-
-      /** Returns `true` if it emitted a complete [[HttpRequest]], and `false` otherwise */
-      private def pushBeingBuiltRequestIf(endHeaders: Boolean): Boolean = {
-        if (endHeaders) {
-          decoder.endHeaderBlock()
-          bufferedRequestOut.push(beingBuiltRequest)
-          beingBuiltRequest = zeroRequest
-          true
-        } else {
-          // else we're awaiting a CONTINUATION frame with the remaining headers
-          false
+          case _ ⇒
+            throw new UnsupportedOperationException(s"Not implemented to handle $frame! TODO / FIXME for impl.")
         }
       }
 
@@ -241,6 +200,26 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
 
 /** INTERNAL API */
 private[http2] object HttpRequestHeaderHpackDecompression {
+
+  implicit class CompleteAfterSource[T](val s: Source[T, _]) extends AnyVal {
+    /**
+     * Passes through elements until the test returns `true`.
+     * The element that triggered this is then passed through, and *after* that completion is signalled.
+     */
+    def completeAfter(test: T ⇒ Boolean) =
+      s.via(new SimpleLinearGraphStage[T] {
+        override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+          override def onPush(): Unit = {
+            val el = grab(in)
+            if (test(el)) emit(out, el, () ⇒ completeStage())
+            else push(out, el)
+          }
+          override def onPull(): Unit = pull(in)
+          setHandlers(in, out, this)
+        }
+      })
+  }
+
   final val maxHeaderSize = 4096
   final val maxHeaderTableSize = 4096
 }

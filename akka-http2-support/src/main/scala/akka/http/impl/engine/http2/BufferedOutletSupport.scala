@@ -37,17 +37,21 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
      */
     protected def doPush(elem: T): Unit = outlet.push(elem)
 
-    override def onPull(): Unit =
-      if (!buffer.isEmpty) doPush(buffer.pop())
-
+    override def onPull(): Unit = {
+      if (!buffer.isEmpty) {
+        val popped = buffer.pop()
+        doPush(popped)
+      }
+    }
     outlet.setHandler(this)
 
     def push(elem: T): Unit =
       if (outlet.canBePushed && buffer.isEmpty) doPush(elem)
       else buffer.addLast(elem)
 
-    def tryFlush(): Unit =
+    def tryFlush(): Unit = {
       if (outlet.canBePushed && !buffer.isEmpty)
         doPush(buffer.pop())
+    }
   }
 }
