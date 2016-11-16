@@ -132,7 +132,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     "support stream for request entity data" should {
       abstract class WaitingForRequestData extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
-        sendRequest(1, request, endStream = false)
+        sendRequestHEADERS(1, request, endStream = false)
 
         val receivedRequest = expectRequest()
         val entityDataIn = ByteStringSinkProbe()
@@ -140,7 +140,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
         entityDataIn.ensureSubscription()
       }
       abstract class WaitingForRequest(request: HttpRequest) extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
-        sendRequest(1, request, endStream = false)
+        sendRequest(1, request)
 
         val receivedRequest = expectRequest()
         val entityDataIn = ByteStringSinkProbe()
@@ -148,7 +148,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
         entityDataIn.ensureSubscription()
       }
 
-      "xoxo send data frames to entity stream" in new WaitingForRequestData {
+      "send data frames to entity stream" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
         sendDATA(1, endStream = false, data1)
         entityDataIn.expectBytes(data1)
@@ -192,7 +192,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
         entityDataIn.cancel()
         expectRST_STREAM(1, ErrorCode.CANCEL)
       }
-      "fail if advertised content-length doesn't match" in pending
+      "fail entity stream if advertised content-length doesn't match" in pending
     }
 
     "support stream support for sending response entity data" should {
@@ -253,7 +253,46 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     }
 
     "support multiple concurrent substreams" should {
-      "receive two requests concurrently" in pending
+      "receive two requests concurrently" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+        val request1 =
+          HttpRequest(
+            protocol = HttpProtocols.`HTTP/2.0`,
+            entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, ""))
+
+        sendRequestHEADERS(1, request1, endStream = false)
+
+        val gotRequest1 = expectRequest()
+        gotRequest1.withEntity(HttpEntity.Empty) shouldBe request1.withEntity(HttpEntity.Empty)
+        val request1EntityProbe = ByteStringSinkProbe()
+        gotRequest1.entity.dataBytes.runWith(request1EntityProbe.sink)
+
+        val request2 =
+          HttpRequest(
+            protocol = HttpProtocols.`HTTP/2.0`,
+            entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, ""))
+
+        sendRequestHEADERS(3, request2, endStream = false)
+
+        val gotRequest2 = expectRequest()
+        gotRequest2.withEntity(HttpEntity.Empty) shouldBe request2.withEntity(HttpEntity.Empty)
+        val request2EntityProbe = ByteStringSinkProbe()
+        gotRequest2.entity.dataBytes.runWith(request2EntityProbe.sink)
+
+        sendDATA(3, endStream = false, ByteString("abc"))
+        request2EntityProbe.expectUtf8EncodedString("abc")
+
+        sendDATA(1, endStream = false, ByteString("def"))
+        request1EntityProbe.expectUtf8EncodedString("def")
+
+        // now fail stream 2
+        //sendRST_STREAM(3, ErrorCode.INTERNAL_ERROR)
+        //request2EntityProbe.expectError()
+
+        // make sure that other stream is not affected
+        sendDATA(1, endStream = true, ByteString("ghi"))
+        request1EntityProbe.expectUtf8EncodedString("ghi")
+        request1EntityProbe.expectComplete()
+      }
       "send two responses concurrently" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(1, theRequest)
@@ -426,9 +465,8 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     def sendFrame(frameType: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): Unit =
       sendBytes(FrameRenderer.renderFrame(frameType, flags, streamId, payload))
 
-    def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = {
+    def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit =
       sendFrame(FrameType.DATA, Flags.END_STREAM.ifSet(endStream), streamId, data)
-    }
 
     def sendHEADERS(streamId: Int, endStream: Boolean, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment)))
@@ -453,11 +491,17 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
 
   /** Helper that allows automatic HPACK encoding/decoding for wire sends / expectations */
   trait AutomaticHpackWireSupport extends TestSetupWithoutHandshake {
-    def sendRequest(streamId: Int, request: HttpRequest, endStream: Boolean = true)(implicit mat: Materializer): Unit = {
+    def sendRequestHEADERS(streamId: Int, request: HttpRequest, endStream: Boolean)(implicit mat: Materializer): Unit =
       sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeHeaders(request))
-      if (!request.entity.isKnownEmpty)
+
+    def sendRequest(streamId: Int, request: HttpRequest)(implicit mat: Materializer): Unit = {
+      val isEmpty = request.entity.isKnownEmpty
+      sendHEADERS(streamId, endStream = isEmpty, endHeaders = true, encodeHeaders(request))
+
+      if (!isEmpty)
         sendDATA(streamId, endStream = true, request.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue)
     }
+
     def expectResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
       val headerBlockBytes = expectHeaderBlock(streamId, endStream)
       decodeHeaders(headerBlockBytes)
