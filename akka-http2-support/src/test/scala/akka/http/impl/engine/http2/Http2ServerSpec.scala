@@ -26,15 +26,16 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit.TestSubscriber
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.ByteString
 import akka.util.ByteStringBuilder
 import com.twitter.hpack.Decoder
 import com.twitter.hpack.Encoder
 import com.twitter.hpack.HeaderListener
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.scalatest.concurrent.{ Eventually, PatienceConfiguration }
+import org.scalatest.concurrent.Eventually
 
 import scala.annotation.tailrec
 import scala.concurrent.duration._
@@ -202,14 +203,14 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         var totallySentBytes = 0
 
         def sendWindowFullOfData(): Unit = {
-          val dataLength = remainingOutgoingWindowFor(TheStreamId)
+          val dataLength = remainingToServerWindowFor(TheStreamId)
           sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
           totallySentBytes += dataLength
         }
 
         eventually(Timeout(1.second)) {
           sendWindowFullOfData()
-          remainingOutgoingWindowFor(TheStreamId) shouldBe 0
+          remainingToServerWindowFor(TheStreamId) shouldBe 0
           expectNoWindowUpdates(100.millis) // might fail here until all buffers have been filled
         }
 
@@ -217,7 +218,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         entityDataIn.expectBytes(totallySentBytes)
 
         eventually(Timeout(1.second)) {
-          remainingOutgoingWindowFor(TheStreamId) should be > 0
+          remainingToServerWindowFor(TheStreamId) should be > 0
         }
       }
 
@@ -282,24 +283,57 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       "fail if advertised content-length doesn't match" in pending
 
       "backpressure response entity stream until WINDOW_UPDATE was received" in new WaitingForResponseDataSetup {
-        pending
-        var totalRead = 0
+        var totalSentBytes = 0
+        var totalReceivedBytes = 0
+
+        entityDataOut.ensureSubscription()
+
+        def receiveData(maxBytes: Int = Int.MaxValue): Unit = {
+          val (false, data) = expectDATAFrame(TheStreamId)
+          totalReceivedBytes += data.size
+        }
+
         def sendAWindow(): Unit = {
-          val dataLength = remainingOutgoingWindowFor(TheStreamId)
-          entityDataOut.sendNext(bytes(dataLength, 0x42))
+          val window = remainingFromServerWindowFor(TheStreamId)
+          val dataToSend = window max 60000 // send at least 10 bytes
+          entityDataOut.sendNext(bytes(dataToSend, 0x42))
+          totalSentBytes += dataToSend
 
-          expectDATA(TheStreamId, endStream = false, dataLength) // read data from network but send no WINDOW_UPDATE
-          totalRead += dataLength
+          if (window > 0) receiveData(window)
         }
 
-        eventually(Timeout(1.second)) {
-          sendAWindow()
+        /**
+         * Loop that checks for a while that publisherProbe has outstanding demand and runs body to fulfill it
+         * Will fail if there's still demand after the timeout.
+         */
+        def fulfillDemandWithin(publisherProbe: TestPublisher.Probe[_], timeout: FiniteDuration)(body: ⇒ Unit): Unit = {
+          // HACK to support `expectRequest` with a timeout
+          def within[T](publisherProbe: TestPublisher.Probe[_], dur: FiniteDuration)(t: ⇒ T): T = {
+            val field = classOf[ManualProbe[_]].getDeclaredField("probe")
+            field.setAccessible(true)
+            field.get(publisherProbe).asInstanceOf[TestProbe].within(dur)(t)
+          }
+          def expectRequest(timeout: FiniteDuration): Long =
+            within(publisherProbe, timeout)(publisherProbe.expectRequest())
 
-          entityDataOut.pending shouldBe 0
-          entityDataOut.expectNoMsg(100.millis)
+          eventually(Timeout(timeout)) {
+            while (publisherProbe.pending > 0) body
+
+            try expectRequest(10.millis)
+            catch {
+              case ex ⇒ // ignore error here
+            }
+            publisherProbe.pending shouldBe 0 // fail here if there's still demand after the timeout
+          }
         }
 
-        sendWINDOW_UPDATE(TheStreamId, totalRead)
+        fulfillDemandWithin(entityDataOut, 3.seconds)(sendAWindow())
+
+        sendWINDOW_UPDATE(TheStreamId, totalSentBytes)
+        sendWINDOW_UPDATE(0, totalSentBytes)
+
+        while (totalReceivedBytes < totalSentBytes)
+          receiveData()
 
         // we must get at least a bit of demand
         entityDataOut.sendNext(bytes(1000, 0x23))
@@ -455,6 +489,8 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
 
     def expectDATAFrame(streamId: Int): (Boolean, ByteString) = {
       val (flags, payload) = expectFrameFlagsAndPayload(FrameType.DATA, streamId)
+      updateFromServerWindowForConnection(_ - payload.size)
+      updateFromServerWindows(streamId, _ - payload.size)
       (Flags.END_STREAM.isSet(flags), payload)
     }
 
@@ -486,13 +522,28 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       ErrorCode.byId(new ByteReader(payload).readIntBE())
     }
 
-    def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString) = {
-      val header = expectFrameHeader()
-      header.frameType shouldBe frameType
+    def autoFrameHandler: PartialFunction[FrameHeader, Unit] = {
+      case FrameHeader(FrameType.WINDOW_UPDATE, _, streamId, payloadLength) ⇒
+        val data = expectBytes(payloadLength)
+        val windowSizeIncrement = new ByteReader(data).readIntBE()
 
-      header.streamId shouldBe streamId
-      val data = expectBytes(header.payloadLength)
-      (header.flags, data)
+        if (streamId == 0) updateToServerWindowForConnection(_ + windowSizeIncrement)
+        else updateToServerWindows(streamId, _ + windowSizeIncrement)
+    }
+
+    @tailrec
+    final def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString) = {
+      val header = expectFrameHeader()
+      if (header.frameType != frameType && autoFrameHandler.isDefinedAt(header)) {
+        autoFrameHandler(header)
+        expectFrameFlagsAndPayload(frameType, streamId) // recursive call
+      } else {
+        header.frameType shouldBe frameType
+
+        header.streamId shouldBe streamId
+        val data = expectBytes(header.payloadLength)
+        (header.flags, data)
+      }
     }
     def expectFramePayload(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int): ByteString = {
       val (flags, data) = expectFrameFlagsAndPayload(frameType, streamId)
@@ -534,17 +585,44 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       sendFrame(FrameType.RST_STREAM, ByteFlag.Zero, streamId, bb.result())
     }
 
-    def sendWINDOW_UPDATE(streamId: Int, windowSizeIncrement: Int): Unit =
+    def sendWINDOW_UPDATE(streamId: Int, windowSizeIncrement: Int): Unit = {
       sendBytes(FrameRenderer.render(WindowUpdateFrame(streamId, windowSizeIncrement)))
+      updateFromServerWindowForConnection(_ + windowSizeIncrement)
+      updateFromServerWindows(streamId, _ + windowSizeIncrement)
+    }
 
     // keep counters that are updated on outgoing sendDATA and incoming WINDOW_UPDATE frames
-    def remainingOutgoingWindowForConnection: Int = ???
-    def remainingOutgoingWindowFor(streamId: Int): Int = ???
+    private var toServerWindows = Map.empty[Int, Int].withDefaultValue(Http2Protocol.InitialWindowSize)
+    private var toServerWindowForConnection = Http2Protocol.InitialWindowSize
+    def remainingToServerWindowForConnection: Int = toServerWindowForConnection
+    def remainingToServerWindowFor(streamId: Int): Int = toServerWindows(streamId) min remainingToServerWindowForConnection
+
     def expectNoWindowUpdates(duration: FiniteDuration): Unit = ???
 
+    private var fromServerWindows = Map.empty[Int, Int].withDefaultValue(Http2Protocol.InitialWindowSize)
+    private var fromServerWindowForConnection = Http2Protocol.InitialWindowSize
     // keep counters that are updated for incoming DATA frames and outgoing WINDOW_UPDATE frames
-    def remainingIncomingWindowForConnection: Int = ???
-    def remainingIncomingWindowFor(streamId: Int): Int = ???
+    def remainingFromServerWindowForConnection: Int = fromServerWindowForConnection
+    def remainingFromServerWindowFor(streamId: Int): Int = fromServerWindows(streamId) min remainingFromServerWindowForConnection
+
+    def updateWindowMap(streamId: Int, update: Int ⇒ Int): Map[Int, Int] ⇒ Map[Int, Int] =
+      map ⇒ map.updated(streamId, update(map(streamId)))
+
+    def safeUpdate(update: Int ⇒ Int): Int ⇒ Int = { oldValue ⇒
+      val newValue = update(oldValue)
+      newValue should be >= 0
+      newValue
+    }
+
+    def updateToServerWindows(streamId: Int, update: Int ⇒ Int): Unit =
+      toServerWindows = updateWindowMap(streamId, safeUpdate(update))(toServerWindows)
+    def updateToServerWindowForConnection(update: Int ⇒ Int): Unit =
+      toServerWindowForConnection = safeUpdate(update)(toServerWindowForConnection)
+
+    def updateFromServerWindows(streamId: Int, update: Int ⇒ Int): Unit =
+      fromServerWindows = updateWindowMap(streamId, safeUpdate(update))(fromServerWindows)
+    def updateFromServerWindowForConnection(update: Int ⇒ Int): Unit =
+      fromServerWindowForConnection = safeUpdate(update)(fromServerWindowForConnection)
   }
   case class FrameHeader(frameType: FrameType, flags: ByteFlag, streamId: Int, payloadLength: Int)
 
