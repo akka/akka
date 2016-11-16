@@ -11,7 +11,6 @@ import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.StringRendering
-import akka.http.scaladsl.{ ConnectionContext, Http2, HttpConnectionContext }
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpMethods
@@ -28,18 +27,21 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
-import akka.testkit.{ AkkaSpec, SocketUtil }
+import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import akka.util.ByteStringBuilder
 import com.twitter.hpack.Decoder
 import com.twitter.hpack.Encoder
 import com.twitter.hpack.HeaderListener
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatest.concurrent.{ Eventually, PatienceConfiguration }
 
 import scala.annotation.tailrec
+import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 
-class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
+class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventually {
   implicit val mat = ActorMaterializer()
 
   "The Http/2 server implementation" should {
@@ -130,35 +132,38 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     }
 
     "support stream for request entity data" should {
-      abstract class WaitingForRequestData extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
-        val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
-        sendRequestHEADERS(1, request, endStream = false)
+      abstract class RequestEntityTestSetup extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+        val TheStreamId = 1
+        protected def sendRequest(): Unit
 
+        sendRequest()
         val receivedRequest = expectRequest()
         val entityDataIn = ByteStringSinkProbe()
         receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
         entityDataIn.ensureSubscription()
       }
-      abstract class WaitingForRequest(request: HttpRequest) extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
-        sendRequest(1, request)
 
-        val receivedRequest = expectRequest()
-        val entityDataIn = ByteStringSinkProbe()
-        receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
-        entityDataIn.ensureSubscription()
+      abstract class WaitingForRequest(request: HttpRequest) extends RequestEntityTestSetup {
+        protected def sendRequest(): Unit = sendRequest(TheStreamId, request)
+      }
+      abstract class WaitingForRequestData extends RequestEntityTestSetup {
+        lazy val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
+
+        protected def sendRequest(): Unit =
+          sendRequestHEADERS(TheStreamId, request, endStream = false)
       }
 
       "send data frames to entity stream" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
-        sendDATA(1, endStream = false, data1)
+        sendDATA(TheStreamId, endStream = false, data1)
         entityDataIn.expectBytes(data1)
 
         val data2 = ByteString("zyxwvu")
-        sendDATA(1, endStream = false, data2)
+        sendDATA(TheStreamId, endStream = false, data2)
         entityDataIn.expectBytes(data2)
 
         val data3 = ByteString("mnopq")
-        sendDATA(1, endStream = true, data3)
+        sendDATA(TheStreamId, endStream = true, data3)
         entityDataIn.expectBytes(data3)
         entityDataIn.expectComplete()
       }
@@ -177,54 +182,79 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
       }
       "fail entity stream if peer sends RST_STREAM frame" inPendingUntilFixed new WaitingForRequestData {
         val data1 = ByteString("abcdef")
-        sendDATA(1, endStream = false, data1)
+        sendDATA(TheStreamId, endStream = false, data1)
         entityDataIn.expectBytes(data1)
 
-        sendRST_STREAM(1, ErrorCode.INTERNAL_ERROR)
+        sendRST_STREAM(TheStreamId, ErrorCode.INTERNAL_ERROR)
         val error = entityDataIn.expectError()
         error.getMessage should contain("Peer canceled stream with INTERNAL_ERROR(0x2) error code.")
       }
       "send RST_STREAM if entity stream is canceled" inPendingUntilFixed new WaitingForRequestData {
         val data1 = ByteString("abcdef")
-        sendDATA(1, endStream = false, data1)
+        sendDATA(TheStreamId, endStream = false, data1)
         entityDataIn.expectBytes(data1)
 
         entityDataIn.cancel()
-        expectRST_STREAM(1, ErrorCode.CANCEL)
+        expectRST_STREAM(TheStreamId, ErrorCode.CANCEL)
       }
+      "backpressure until request entity stream is read (don't send out unlimited WINDOW_UPDATE before)" in new WaitingForRequestData {
+        pending
+        var totallySentBytes = 0
+
+        def sendWindowFullOfData(): Unit = {
+          val dataLength = remainingOutgoingWindowFor(TheStreamId)
+          sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
+          totallySentBytes += dataLength
+        }
+
+        eventually(Timeout(1.second)) {
+          sendWindowFullOfData()
+          remainingOutgoingWindowFor(TheStreamId) shouldBe 0
+          expectNoWindowUpdates(100.millis) // might fail here until all buffers have been filled
+        }
+
+        // now drain entity source
+        entityDataIn.expectBytes(totallySentBytes)
+
+        eventually(Timeout(1.second)) {
+          remainingOutgoingWindowFor(TheStreamId) should be > 0
+        }
+      }
+
       "fail entity stream if advertised content-length doesn't match" in pending
     }
 
     "support stream support for sending response entity data" should {
       class WaitingForResponseDataSetup extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+        val TheStreamId = 1
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
-        sendRequest(1, theRequest)
+        sendRequest(TheStreamId, theRequest)
         expectRequest() shouldBe theRequest
 
         val entityDataOut = TestPublisher.probe[ByteString]()
         val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
-        emitResponse(1, response)
-        expectResponseHEADERS(streamId = 1, endStream = false) shouldBe response.withEntity(HttpEntity.Empty)
+        emitResponse(TheStreamId, response)
+        expectResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty)
       }
 
       "send entity data as data frames" in new WaitingForResponseDataSetup {
         val data1 = ByteString("abcd")
         entityDataOut.sendNext(data1)
-        expectDATA(1, endStream = false, data1)
+        expectDATA(TheStreamId, endStream = false, data1)
 
         val data2 = ByteString("efghij")
         entityDataOut.sendNext(data2)
-        expectDATA(1, endStream = false, data2)
+        expectDATA(TheStreamId, endStream = false, data2)
 
         entityDataOut.sendComplete()
-        expectDATA(1, endStream = true, ByteString.empty)
+        expectDATA(TheStreamId, endStream = true, ByteString.empty)
       }
       "cancel entity data source when peer sends RST_STREAM" in new WaitingForResponseDataSetup {
         val data1 = ByteString("abcd")
         entityDataOut.sendNext(data1)
-        expectDATA(1, endStream = false, data1)
+        expectDATA(TheStreamId, endStream = false, data1)
 
-        sendRST_STREAM(1, ErrorCode.CANCEL)
+        sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
         entityDataOut.expectCancellation()
       }
       "cancel entity data source when peer sends RST_STREAM before entity is subscribed" inPendingUntilFixed new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
@@ -244,12 +274,36 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
       "send RST_STREAM when entity data stream fails" inPendingUntilFixed new WaitingForResponseDataSetup {
         val data1 = ByteString("abcd")
         entityDataOut.sendNext(data1)
-        expectDATA(1, endStream = false, data1)
+        expectDATA(TheStreamId, endStream = false, data1)
 
         entityDataOut.sendError(new RuntimeException with NoStackTrace)
         expectRST_STREAM(1, ErrorCode.INTERNAL_ERROR)
       }
       "fail if advertised content-length doesn't match" in pending
+
+      "backpressure response entity stream until WINDOW_UPDATE was received" in new WaitingForResponseDataSetup {
+        pending
+        var totalRead = 0
+        def sendAWindow(): Unit = {
+          val dataLength = remainingOutgoingWindowFor(TheStreamId)
+          entityDataOut.sendNext(bytes(dataLength, 0x42))
+
+          expectDATA(TheStreamId, endStream = false, dataLength) // read data from network but send no WINDOW_UPDATE
+          totalRead += dataLength
+        }
+
+        eventually(Timeout(1.second)) {
+          sendAWindow()
+
+          entityDataOut.pending shouldBe 0
+          entityDataOut.expectNoMsg(100.millis)
+        }
+
+        sendWINDOW_UPDATE(TheStreamId, totalRead)
+
+        // we must get at least a bit of demand
+        entityDataOut.sendNext(bytes(1000, 0x23))
+      }
     }
 
     "support multiple concurrent substreams" should {
@@ -479,6 +533,18 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
       bb.putInt(errorCode.id)
       sendFrame(FrameType.RST_STREAM, ByteFlag.Zero, streamId, bb.result())
     }
+
+    def sendWINDOW_UPDATE(streamId: Int, windowSizeIncrement: Int): Unit =
+      sendBytes(FrameRenderer.render(WindowUpdateFrame(streamId, windowSizeIncrement)))
+
+    // keep counters that are updated on outgoing sendDATA and incoming WINDOW_UPDATE frames
+    def remainingOutgoingWindowForConnection: Int = ???
+    def remainingOutgoingWindowFor(streamId: Int): Int = ???
+    def expectNoWindowUpdates(duration: FiniteDuration): Unit = ???
+
+    // keep counters that are updated for incoming DATA frames and outgoing WINDOW_UPDATE frames
+    def remainingIncomingWindowForConnection: Int = ???
+    def remainingIncomingWindowFor(streamId: Int): Int = ???
   }
   case class FrameHeader(frameType: FrameType, flags: ByteFlag, streamId: Int, payloadLength: Int)
 
@@ -567,4 +633,6 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
     def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
       Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)
   }
+
+  def bytes(num: Int, byte: Byte): ByteString = ByteString(Array.fill[Byte](num)(byte))
 }
