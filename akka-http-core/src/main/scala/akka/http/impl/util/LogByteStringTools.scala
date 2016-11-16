@@ -23,7 +23,7 @@ private[akka] object LogByteStringTools {
   def logByteString(name: String, maxBytes: Int = MaxBytesPrinted): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].log(name, printByteString(_, maxBytes))
 
-  def logTLSBidi(name: String, maxBytes: Int = MaxBytesPrinted): scaladsl.BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
+  def logTLSBidi(name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
     BidiFlow.fromFlows(
       logTlsOutbound(s"$name DOWN", maxBytes),
       logTlsInbound(s"$name UP", maxBytes))
@@ -50,9 +50,8 @@ private[akka] object LogByteStringTools {
         else '.'
 
       def formatLine(bs: ByteString): String = {
-        val data = bs.toSeq
-        val hex = data.map(asHex).mkString(" ")
-        val ascii = data.map(asASCII).mkString
+        val hex = bs.map(asHex).mkString(" ")
+        val ascii = bs.map(asASCII).mkString
         f"$indent%s  $hex%-48s | $ascii"
       }
       def formatBytes(bs: ByteString): String =

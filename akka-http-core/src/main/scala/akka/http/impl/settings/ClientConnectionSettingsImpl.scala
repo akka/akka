@@ -9,6 +9,7 @@ import java.util.Random
 import akka.http.impl.engine.ws.Randoms
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers.`User-Agent`
+import akka.http.scaladsl.settings.ClientConnectionSettings.LogUnencryptedNetworkBytes
 import akka.http.scaladsl.settings.ParserSettings
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
@@ -18,13 +19,14 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /** INTERNAL API */
 private[akka] final case class ClientConnectionSettingsImpl(
-  userAgentHeader:        Option[`User-Agent`],
-  connectingTimeout:      FiniteDuration,
-  idleTimeout:            Duration,
-  requestHeaderSizeHint:  Int,
-  websocketRandomFactory: () ⇒ Random,
-  socketOptions:          immutable.Seq[SocketOption],
-  parserSettings:         ParserSettings)
+  userAgentHeader:            Option[`User-Agent`],
+  connectingTimeout:          FiniteDuration,
+  idleTimeout:                Duration,
+  requestHeaderSizeHint:      Int,
+  logUnencryptedNetworkBytes: Option[Int],
+  websocketRandomFactory:     () ⇒ Random,
+  socketOptions:              immutable.Seq[SocketOption],
+  parserSettings:             ParserSettings)
   extends akka.http.scaladsl.settings.ClientConnectionSettings {
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
@@ -41,9 +43,9 @@ object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSe
       connectingTimeout = c getFiniteDuration "connecting-timeout",
       idleTimeout = c getPotentiallyInfiniteDuration "idle-timeout",
       requestHeaderSizeHint = c getIntBytes "request-header-size-hint",
+      logUnencryptedNetworkBytes = LogUnencryptedNetworkBytes(c getString "log-unencrypted-network-bytes"),
       websocketRandomFactory = Randoms.SecureRandomInstances, // can currently only be overridden from code
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
       parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")))
   }
-
 }

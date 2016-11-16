@@ -4,10 +4,10 @@
 
 package akka.http.impl.engine.server
 
-import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
-import scala.concurrent.{ Promise, Future }
-import scala.concurrent.duration.{ Deadline, FiniteDuration, Duration }
+
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.{ Deadline, Duration, FiniteDuration }
 import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.NotUsed
@@ -27,11 +27,12 @@ import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRe
 import akka.http.impl.engine.ws._
 import akka.http.impl.util._
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
-import akka.http.scaladsl.{ TimeoutAccess, Http }
+import akka.http.scaladsl.{ Http, TimeoutAccess }
 import akka.http.scaladsl.model.headers.`Timeout-Access`
 import akka.http.javadsl.model
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.Message
+import akka.http.impl.util.LogByteStringTools._
 
 /**
  * INTERNAL API
@@ -62,7 +63,8 @@ private[http] object HttpServerBluePrint {
       controller(settings, log) atop
       parsingRendering(settings, log) atop
       websocketSupport(settings, log) atop
-      tlsSupport
+      tlsSupport atop
+      tlsLogger(settings)
 
   val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, NotUsed] =
     BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x })
@@ -81,6 +83,12 @@ private[http] object HttpServerBluePrint {
 
   def requestTimeoutSupport(timeout: Duration): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
     BidiFlow.fromGraph(new RequestTimeoutSupport(timeout)).reversed
+
+  def tlsLogger(settings: ServerSettings): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
+    settings
+      .logUnencryptedNetworkBytes
+      .map(maxBytes ⇒ logTLSBidi("ExchangeLogger", maxBytes))
+      .getOrElse(BidiFlow.identity)
 
   /**
    * Two state stage, either transforms an incoming RequestOutput into a HttpRequest with strict entity and then pushes

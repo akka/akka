@@ -12,9 +12,10 @@ import akka.http.javadsl.model.headers.Server
 import akka.io.Inet.SocketOption
 import akka.http.impl.util.JavaMapping.Implicits._
 import com.typesafe.config.Config
-import scala.collection.JavaConverters._
-import scala.compat.java8.OptionConverters._
 
+import scala.collection.JavaConverters._
+import scala.compat.java8.OptionConverters
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
@@ -35,6 +36,7 @@ abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def getDefaultHostHeader: Host
   def getWebsocketRandomFactory: java.util.function.Supplier[Random]
   def getParserSettings: ParserSettings
+  def getLogUnencryptedNetworkBytes: Optional[Int]
 
   // ---
 
@@ -52,6 +54,7 @@ abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def withDefaultHostHeader(newValue: Host): ServerSettings = self.copy(defaultHostHeader = newValue.asScala)
   def withParserSettings(newValue: ParserSettings): ServerSettings = self.copy(parserSettings = newValue.asScala)
   def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketRandomFactory = () ⇒ newValue.get())
+  def withLogUnencryptedNetworkBytes(newValue: Optional[Int]): ServerSettings = self.copy(logUnencryptedNetworkBytes = OptionConverters.toScala(newValue))
 
 }
 

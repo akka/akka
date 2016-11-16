@@ -6,6 +6,7 @@ package akka.http.scaladsl.settings
 import java.util.Random
 import java.util.function.Supplier
 
+import akka.http.impl.util._
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.{ settings ⇒ js }
@@ -38,6 +39,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def defaultHostHeader: Host
   def websocketRandomFactory: () ⇒ Random
   def parserSettings: ParserSettings
+  def logUnencryptedNetworkBytes: Option[Int]
 
   /* Java APIs */
 
@@ -54,6 +56,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getTimeouts = timeouts
   override def getRawRequestUriHeader = rawRequestUriHeader
   override def getRemoteAddressHeader = remoteAddressHeader
+  override def getLogUnencryptedNetworkBytes = OptionConverters.toJava(logUnencryptedNetworkBytes)
   override def getWebsocketRandomFactory = new Supplier[Random] {
     override def get(): Random = websocketRandomFactory()
   }
@@ -75,6 +78,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   // overloads for Scala idiomatic use
   def withTimeouts(newValue: ServerSettings.Timeouts): ServerSettings = self.copy(timeouts = newValue)
   def withServerHeader(newValue: Option[Server]): ServerSettings = self.copy(serverHeader = newValue)
+  def withLogUnencryptedNetworkBytes(newValue: Option[Int]): ServerSettings = self.copy(logUnencryptedNetworkBytes = newValue)
   def withDefaultHostHeader(newValue: Host): ServerSettings = self.copy(defaultHostHeader = newValue)
   def withParserSettings(newValue: ParserSettings): ServerSettings = self.copy(parserSettings = newValue)
   def withWebsocketRandomFactory(newValue: () ⇒ Random): ServerSettings = self.copy(websocketRandomFactory = newValue)
@@ -95,4 +99,12 @@ object ServerSettings extends SettingsCompanion[ServerSettings] {
 
   override def apply(config: Config): ServerSettings = ServerSettingsImpl(config)
   override def apply(configOverrides: String): ServerSettings = ServerSettingsImpl(configOverrides)
+
+  object LogUnencryptedNetworkBytes {
+    def apply(string: String): Option[Int] =
+      string.toRootLowerCase match {
+        case "off" ⇒ None
+        case value ⇒ Option(value.toInt)
+      }
+  }
 }

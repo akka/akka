@@ -7,6 +7,7 @@ package akka.http.impl.engine.client
 import akka.NotUsed
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ParserSettings }
 import akka.stream.impl.ConstantFun
+
 import language.existentials
 import scala.annotation.tailrec
 import scala.concurrent.Promise
@@ -18,13 +19,14 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers
-import akka.http.scaladsl.model.{ IllegalResponseException, HttpRequest, HttpResponse, ResponseEntity }
-import akka.http.impl.engine.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, IllegalResponseException, ResponseEntity }
+import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RequestRenderingContext }
 import akka.http.impl.engine.parsing._
 import akka.http.impl.util._
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.{ InHandler, OutHandler }
+import akka.http.impl.util.LogByteStringTools._
 
 /**
  * INTERNAL API
@@ -118,8 +120,16 @@ private[http] object OutgoingConnectionBlueprint {
         terminationFanout.out(1))
     })
 
-    One2OneBidiFlow[HttpRequest, HttpResponse](-1) atop core
+    One2OneBidiFlow[HttpRequest, HttpResponse](-1) atop
+      core atop
+      tlsLogger(settings)
   }
+
+  def tlsLogger(settings: ClientConnectionSettings): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
+    settings
+      .logUnencryptedNetworkBytes
+      .map(maxBytes ⇒ logTLSBidi("RequestLogger", maxBytes))
+      .getOrElse(BidiFlow.identity)
 
   // a simple merge stage that simply forwards its first input and ignores its second input
   // (the terminationBackchannelInput), but applies a special completion handling

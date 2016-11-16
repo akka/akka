@@ -7,38 +7,37 @@ package akka.http.impl.settings
 import java.util.Random
 
 import akka.http.impl.engine.ws.Randoms
-import akka.http.scaladsl.settings.{ ServerSettings, ParserSettings }
+import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
 import com.typesafe.config.Config
 
 import scala.language.implicitConversions
 import scala.collection.immutable
 import scala.concurrent.duration._
-
 import akka.http.javadsl.{ settings ⇒ js }
 import akka.ConfigurationException
 import akka.io.Inet.SocketOption
-
 import akka.http.impl.util._
-
 import akka.http.scaladsl.model.HttpHeader
 import akka.http.scaladsl.model.headers.{ Host, Server }
+import akka.http.scaladsl.settings.ServerSettings.LogUnencryptedNetworkBytes
 
 /** INTERNAL API */
 private[akka] final case class ServerSettingsImpl(
-  serverHeader:            Option[Server],
-  timeouts:                ServerSettings.Timeouts,
-  maxConnections:          Int,
-  pipeliningLimit:         Int,
-  remoteAddressHeader:     Boolean,
-  rawRequestUriHeader:     Boolean,
-  transparentHeadRequests: Boolean,
-  verboseErrorMessages:    Boolean,
-  responseHeaderSizeHint:  Int,
-  backlog:                 Int,
-  socketOptions:           immutable.Seq[SocketOption],
-  defaultHostHeader:       Host,
-  websocketRandomFactory:  () ⇒ Random,
-  parserSettings:          ParserSettings) extends ServerSettings {
+  serverHeader:               Option[Server],
+  timeouts:                   ServerSettings.Timeouts,
+  maxConnections:             Int,
+  pipeliningLimit:            Int,
+  remoteAddressHeader:        Boolean,
+  rawRequestUriHeader:        Boolean,
+  transparentHeadRequests:    Boolean,
+  verboseErrorMessages:       Boolean,
+  responseHeaderSizeHint:     Int,
+  backlog:                    Int,
+  logUnencryptedNetworkBytes: Option[Int],
+  socketOptions:              immutable.Seq[SocketOption],
+  defaultHostHeader:          Host,
+  websocketRandomFactory:     () ⇒ Random,
+  parserSettings:             ParserSettings) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
@@ -63,7 +62,7 @@ object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.ht
 
   def fromSubConfig(root: Config, c: Config) = new ServerSettingsImpl(
     c.getString("server-header").toOption.map(Server(_)),
-    new Timeouts(
+    Timeouts(
       c getPotentiallyInfiniteDuration "idle-timeout",
       c getPotentiallyInfiniteDuration "request-timeout",
       c getFiniteDuration "bind-timeout"),
@@ -75,6 +74,7 @@ object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.ht
     c getBoolean "verbose-error-messages",
     c getIntBytes "response-header-size-hint",
     c getInt "backlog",
+    LogUnencryptedNetworkBytes(c getString "log-unencrypted-network-bytes"),
     SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
     defaultHostHeader =
       HttpHeader.parse("Host", c getString "default-host-header", ParserSettings(root)) match {

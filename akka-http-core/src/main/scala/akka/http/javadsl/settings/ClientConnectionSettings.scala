@@ -10,9 +10,10 @@ import akka.http.impl.settings.ClientConnectionSettingsImpl
 import akka.http.javadsl.model.headers.UserAgent
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
-
 import akka.http.impl.util.JavaMapping.Implicits._
+
 import scala.collection.JavaConverters._
+import scala.compat.java8.OptionConverters
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
@@ -27,6 +28,7 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   def getWebsocketRandomFactory: java.util.function.Supplier[Random]
   def getSocketOptions: java.lang.Iterable[SocketOption]
   def getParserSettings: ParserSettings
+  def getLogUnencryptedNetworkBytes: Optional[Int]
 
   // ---
 
@@ -34,6 +36,7 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   def withConnectingTimeout(newValue: FiniteDuration): ClientConnectionSettings = self.copy(connectingTimeout = newValue)
   def withIdleTimeout(newValue: Duration): ClientConnectionSettings = self.copy(idleTimeout = newValue)
   def withRequestHeaderSizeHint(newValue: Int): ClientConnectionSettings = self.copy(requestHeaderSizeHint = newValue)
+  def withLogUnencryptedNetworkBytes(newValue: Optional[Int]): ClientConnectionSettings = self.copy(logUnencryptedNetworkBytes = OptionConverters.toScala(newValue))
   def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ClientConnectionSettings = self.copy(websocketRandomFactory = () ⇒ newValue.get())
   def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue.asScala.toList)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue.asScala)
