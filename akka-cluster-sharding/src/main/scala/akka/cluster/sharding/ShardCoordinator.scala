@@ -21,6 +21,7 @@ import akka.cluster.ddata.Replicator._
 import akka.dispatch.ExecutionContexts
 import akka.pattern.{ AskTimeoutException, pipe }
 import akka.persistence._
+import akka.cluster.ClusterEvent
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -840,7 +841,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
   val initEmptyState = State.empty.withRememberEntities(settings.rememberEntities)
 
-  node.subscribe(self, ClusterShuttingDown.getClass)
+  node.subscribe(self, ClusterEvent.InitialStateAsEvents, ClusterShuttingDown.getClass)
 
   // get state from ddata replicator, repeat until GetSuccess
   getState()
