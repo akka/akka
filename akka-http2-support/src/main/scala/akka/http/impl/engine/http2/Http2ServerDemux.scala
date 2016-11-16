@@ -186,10 +186,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           incomingStreams = incomingStreams.updated(sub.streamId, incomingStreams(sub.streamId).copy(inlet = Some(subIn)))
           subIn.pull()
           subIn.setHandler(new InHandler {
-            def onPush(): Unit = {
-              bufferedFrameOut.push(subIn.grab())
-              subIn.pull() // FIXME: this is too greedy, we should wait until the next one is sent out
-            }
+            def onPush(): Unit = bufferedFrameOut.pushWithTrigger(subIn.grab(), () ⇒
+              if (!subIn.isClosed) subIn.pull())
 
             override def onUpstreamFinish(): Unit = () // FIXME: check for truncation (last frame must have endStream / endHeaders set)
           })
@@ -197,9 +195,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         }
       })
 
-      val bufferedFrameOut = new BufferedOutlet[FrameEvent](frameOut) {
-        override def doPush(elem: FrameEvent): Unit = {
-          elem match {
+      val bufferedFrameOut = new BufferedOutletExtended[FrameEvent](frameOut) {
+        override def doPush(elem: ElementAndTrigger): Unit = {
+          elem.element match {
             case d @ DataFrame(streamId, _, pl) ⇒
               if (pl.size <= totalOutboundWindowLeft && pl.size <= incomingStreams(streamId).outboundWindowLeft) {
                 super.doPush(elem)
@@ -209,10 +207,11 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                 incomingStreams(streamId).outboundWindowLeft -= size
               } else {
                 println(s"Couldn't send because no window left. Size: ${pl.size} total: $totalOutboundWindowLeft per stream: ${incomingStreams(streamId).outboundWindowLeft}")
-                buffer.add(d)
+                // adding to end of the queue only works if there's only ever one frame per
+                // substream in the queue (which is the case since backpressure was introduced)
+                // TODO: we should try to find another stream to push data in this case
+                buffer.add(elem)
               }
-
-            //println(f"After sending $size%6d bytes to stream [$streamId%3d] totalWindow: $totalOutboundWindowLeft stream: ${incomingStreams(streamId).outboundWindowLeft}")
             case _ ⇒
               super.doPush(elem)
           }
