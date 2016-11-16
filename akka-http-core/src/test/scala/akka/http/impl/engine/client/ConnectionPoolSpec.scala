@@ -34,7 +34,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
     akka.loggers = []
     akka.loglevel = OFF
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
-    akka.io.tcp.trace-logging = off""") {
+    akka.io.tcp.trace-logging = off
+    akka.test.single-expect-default = 5000""") { // timeout for checks, adjust as necessary, set here to 5s
   implicit val materializer = ActorMaterializer()
 
   // FIXME: Extract into proper util class to be reusable
