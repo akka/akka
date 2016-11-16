@@ -275,6 +275,22 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
           xxxxxxxx=55  # weight
          """ should parseTo(PriorityFrame(0x23, exclusiveFlag = true, streamDependency = 0x100, weight = 0x55), checkRendering = false)
     }
+    "WINDOW_UPDATE" in {
+      b"""xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=4   # length
+          00001000     # type = 0x8 = WINDOW_UPDATE          xxxxxxxx=42  # stream ID = 42
+          00000000     # no flags
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=42  # stream ID = 42
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=12345 # windowSizeIncrement
+         """ should parseTo(WindowUpdateFrame(0x42, 0x12345))
+    }
   }
 
   private def parseTo(events: FrameEvent*): Matcher[ByteString] =

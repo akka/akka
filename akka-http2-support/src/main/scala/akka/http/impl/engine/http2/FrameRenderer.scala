@@ -37,6 +37,18 @@ object FrameRenderer {
           streamId,
           headerBlockFragment
         )
+
+      case WindowUpdateFrame(streamId, windowSizeIncrement) ⇒
+        val bb = new ByteStringBuilder
+        bb.putInt(windowSizeIncrement)
+
+        renderFrame(
+          Http2Protocol.FrameType.WINDOW_UPDATE,
+          Http2Protocol.Flags.NO_FLAGS,
+          streamId,
+          bb.result()
+        )
+
       case ContinuationFrame(streamId, endHeaders, payload) ⇒
         renderFrame(
           Http2Protocol.FrameType.CONTINUATION,
