@@ -25,6 +25,7 @@ from a background with non-"streaming first" HTTP Servers.
 * [case-class-extraction](case-class-extraction.md)
 * [source-streaming-support](source-streaming-support.md)
 * [testkit](testkit.md)
+* [http-app](HttpApp.md)
 
 @@@
 
@@ -35,6 +36,19 @@ This is a complete, very basic Akka HTTP application relying on the Routing DSL:
 @@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
 
 It starts an HTTP Server on localhost and replies to GET requests to `/hello` with a simple response.
+
+@@@ warning { title="API may change" }
+The following example uses an experimental feature and its API is subjected to change in future releases of Akka HTTP.
+For further information about this marker, see @extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#The_@DoNotInherit_and_@ApiMayChange_markers)
+in the Akka documentation.
+@@@
+
+To help start a server Akka HTTP provides an experimental helper class called `HttpApp`.
+This is the same example as before rewritten using `HttpApp`:
+
+@@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #minimal-routing-example }
+
+See @ref[HttpApp Bootstrap](HttpApp.md) for more details about setting up a server using this approach.
 
 <a id="long-example"></a>
 ## Longer Example
