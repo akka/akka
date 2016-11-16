@@ -135,31 +135,31 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               // FIXME: also need to handle the other case when no response has been produced yet (inlet still None)
               incomingStreams(streamId).inlet.foreach(_.cancel())
 
-            case e: StreamFrameEvent if e.streamId > 0 ⇒
-              incomingStreams(e.streamId).push(e)
-
-            case SettingsFrame(settings) ⇒
-              println(s"Got ${settings.length} settings!")
-              settings.foreach {
-                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
-                  println(s"Setting initial window to $value")
-                  val delta = value - streamLevelWindow
-                  streamLevelWindow = value
-                  incomingStreams.values.foreach(_.outboundWindowLeft += delta)
-                case Setting(id, value) ⇒ println(s"Ignoring setting $id -> $value")
-              }
-
-              bufferedFrameOut.push(SettingsAckFrame)
-
             case WindowUpdateFrame(0, increment) ⇒
               totalOutboundWindowLeft += increment
-              println(f"outbound window is now $totalOutboundWindowLeft%10d after increment $increment%6d")
+              debug(f"outbound window is now $totalOutboundWindowLeft%10d after increment $increment%6d")
               bufferedFrameOut.tryFlush()
 
             case WindowUpdateFrame(streamId, increment) ⇒
               incomingStreams(streamId).outboundWindowLeft += increment
-              println(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
+              debug(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
               bufferedFrameOut.tryFlush()
+
+            case e: StreamFrameEvent if e.streamId > 0 ⇒
+              incomingStreams(e.streamId).push(e)
+
+            case SettingsFrame(settings) ⇒
+              debug(s"Got ${settings.length} settings!")
+              settings.foreach {
+                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
+                  debug(s"Setting initial window to $value")
+                  val delta = value - streamLevelWindow
+                  streamLevelWindow = value
+                  incomingStreams.values.foreach(_.outboundWindowLeft += delta)
+                case Setting(id, value) ⇒ debug(s"Ignoring setting $id -> $value")
+              }
+
+              bufferedFrameOut.push(SettingsAckFrame)
 
             case PingFrame(true, _) ⇒ // ignore for now (we don't send any pings)
             case PingFrame(false, data) ⇒
@@ -205,8 +205,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                 val size = pl.size
                 totalOutboundWindowLeft -= size
                 incomingStreams(streamId).outboundWindowLeft -= size
+
+                debug(s"Pushed $size bytes of data for stream $streamId total window left: $totalOutboundWindowLeft per stream window left: ${incomingStreams(streamId).outboundWindowLeft}")
               } else {
-                println(s"Couldn't send because no window left. Size: ${pl.size} total: $totalOutboundWindowLeft per stream: ${incomingStreams(streamId).outboundWindowLeft}")
+                debug(s"Couldn't send because no window left. Size: ${pl.size} total: $totalOutboundWindowLeft per stream: ${incomingStreams(streamId).outboundWindowLeft}")
                 // adding to end of the queue only works if there's only ever one frame per
                 // substream in the queue (which is the case since backpressure was introduced)
                 // TODO: we should try to find another stream to push data in this case
@@ -242,6 +244,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           Http2SubStream(headers, remainingFrames)
         }
       }
+
+      def debug(msg: String): Unit = println(msg)
     }
 
 }
