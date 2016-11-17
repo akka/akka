@@ -155,7 +155,9 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     val encodedPersistenceId = URLEncoder.encode(persistenceId)
 
     def accept(dir: File, name: String): Boolean = {
-      name.startsWith(encodedPersistenceId, persistenceIdStartIdx)
+      val persistenceIdEndIdx = name.lastIndexOf('-', name.lastIndexOf('-') - 1)
+      persistenceIdStartIdx + encodedPersistenceId.length == persistenceIdEndIdx &&
+        name.startsWith(encodedPersistenceId, persistenceIdStartIdx)
     }
   }
 
@@ -174,7 +176,6 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
   }
 
   private def extractMetadata(filename: String): Option[(String, Long, Long)] = {
-    val persistenceIdStartIdx = filename.indexOf('-') + 1
     val sequenceNumberEndIdx = filename.lastIndexOf('-')
     val persistenceIdEndIdx = filename.lastIndexOf('-', sequenceNumberEndIdx - 1)
     val timestampString = filename.substring(sequenceNumberEndIdx + 1)
