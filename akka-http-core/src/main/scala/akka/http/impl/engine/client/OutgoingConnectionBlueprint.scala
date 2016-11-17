@@ -122,14 +122,8 @@ private[http] object OutgoingConnectionBlueprint {
 
     One2OneBidiFlow[HttpRequest, HttpResponse](-1) atop
       core atop
-      tlsLogger(settings)
+      logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes)
   }
-
-  def tlsLogger(settings: ClientConnectionSettings): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
-    settings
-      .logUnencryptedNetworkBytes
-      .map(maxBytes ⇒ logTLSBidi("RequestLogger", maxBytes))
-      .getOrElse(BidiFlow.identity)
 
   // a simple merge stage that simply forwards its first input and ignores its second input
   // (the terminationBackchannelInput), but applies a special completion handling

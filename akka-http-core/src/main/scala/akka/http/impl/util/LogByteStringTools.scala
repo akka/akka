@@ -70,4 +70,9 @@ private[akka] object LogByteStringTools {
 
     formatBytes(bytes).mkString("")
   }
+
+  def logTLSBidiBySetting(tag: String, maxBytesSetting: Option[Int]): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, Any] =
+    maxBytesSetting
+      .map(logTLSBidi(tag, _)).
+      getOrElse(BidiFlow.identity)
 }

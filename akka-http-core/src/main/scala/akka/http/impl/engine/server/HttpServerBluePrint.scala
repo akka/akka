@@ -64,7 +64,7 @@ private[http] object HttpServerBluePrint {
       parsingRendering(settings, log) atop
       websocketSupport(settings, log) atop
       tlsSupport atop
-      tlsLogger(settings)
+      logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
 
   val tlsSupport: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, SessionBytes, NotUsed] =
     BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect { case x: SessionBytes ⇒ x })
@@ -83,12 +83,6 @@ private[http] object HttpServerBluePrint {
 
   def requestTimeoutSupport(timeout: Duration): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
     BidiFlow.fromGraph(new RequestTimeoutSupport(timeout)).reversed
-
-  def tlsLogger(settings: ServerSettings): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
-    settings
-      .logUnencryptedNetworkBytes
-      .map(maxBytes ⇒ logTLSBidi("ExchangeLogger", maxBytes))
-      .getOrElse(BidiFlow.identity)
 
   /**
    * Two state stage, either transforms an incoming RequestOutput into a HttpRequest with strict entity and then pushes
