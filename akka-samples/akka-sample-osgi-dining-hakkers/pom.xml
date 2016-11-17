@@ -10,8 +10,11 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <akka.version>2.4-SNAPSHOT</akka.version>
-        <karaf.version>2.3.1</karaf.version>
-        <karaf.tooling.exam.version>${karaf.version}</karaf.tooling.exam.version>
+        <!-- Support for eecap-1.8 (Java 8) is from 3.0.2 -->
+        <!-- https://github.com/apache/karaf/blob/karaf-3.0.2/assemblies/features/framework/src/main/filtered-resources/resources/etc/config.properties -->
+        <karaf.version>3.0.8</karaf.version>
+        <karaf.tooling.exam.version>2.3.12</karaf.tooling.exam.version>
+        <karaf.tooling.maven.version>2.4.4</karaf.tooling.maven.version>
         <netty.version>3.10.5.Final</netty.version>
         <osgi.version>4.3.1</osgi.version>
         <paxexam.version>2.6.0</paxexam.version>
@@ -19,7 +22,6 @@
         <protobuf.version>2.5.0</protobuf.version>
         <scala.version>2.11.7</scala.version>
         <scala.dep.version>2.11</scala.dep.version>
-        <scalatest.version>2.2.3</scalatest.version>
         <typesafe.config.version>1.3.0</typesafe.config.version>
         <leveldb.version>0.7</leveldb.version>
         <leveldbjni.version>1.8</leveldbjni.version>
@@ -144,12 +146,6 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>org.scalatest</groupId>
-                <artifactId>scalatest_${scala.dep.version}</artifactId>
-                <version>${scalatest.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>4.10</version>
@@ -183,6 +179,14 @@
         <repository>
             <id>oss-sonatype-releases</id>
             <url>https://oss.sonatype.org/content/repositories/releases</url>
+        </repository>
+        <repository>
+            <id>springsource-releases</id>
+            <url>http://repository.springsource.com/maven/bundles/release</url>
+        </repository>
+        <repository>
+            <id>springsource-external</id>
+            <url>http://repository.springsource.com/maven/bundles/external</url>
         </repository>
     </repositories>
 
