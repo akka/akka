@@ -4,37 +4,36 @@
 package akka.stream.impl.io
 
 import java.nio.ByteBuffer
-import java.util
-import java.util.Collections
 import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
 import javax.net.ssl._
+
 import akka.actor._
 import akka.stream._
 import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
 import akka.stream.impl._
 import akka.util.ByteString
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
 import scala.annotation.tailrec
 import akka.stream.TLSProtocol._
+
+import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API.
  */
-object TLSActor {
+private[stream] object TLSActor {
 
   def props(
-    settings:     ActorMaterializerSettings,
-    sslContext:   SSLContext,
-    sslConfig:    Option[AkkaSSLConfig],
-    firstSession: NegotiateNewSession,
-    role:         TLSRole,
-    closing:      TLSClosing,
-    hostInfo:     Option[(String, Int)],
-    tracing:      Boolean                   = false): Props =
-    Props(new TLSActor(settings, sslContext, sslConfig, firstSession, role, closing, hostInfo, tracing)).withDeploy(Deploy.local)
+    settings:        ActorMaterializerSettings,
+    createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+    verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+    closing:         TLSClosing,
+    tracing:         Boolean                               = false): Props =
+    Props(new TLSActor(settings, createSSLEngine, verifySession, closing, tracing)).withDeploy(Deploy.local)
 
   final val TransportIn = 0
   final val TransportOut = 0
@@ -46,12 +45,12 @@ object TLSActor {
 /**
  * INTERNAL API.
  */
-class TLSActor(
-  settings:          ActorMaterializerSettings,
-  sslContext:        SSLContext,
-  externalSslConfig: Option[AkkaSSLConfig],
-  firstSession:      NegotiateNewSession, role: TLSRole, closing: TLSClosing,
-  hostInfo: Option[(String, Int)], tracing: Boolean)
+private[stream] class TLSActor(
+  settings:        ActorMaterializerSettings,
+  createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+  verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+  closing:         TLSClosing,
+  tracing:         Boolean)
   extends Actor with ActorLogging with Pump {
 
   import TLSActor._
@@ -147,43 +146,22 @@ class TLSActor(
   private val transportInChoppingBlock = new ChoppingBlock(TransportIn, "TransportIn")
   transportInChoppingBlock.prepare(transportInBuffer)
 
-  private val sslConfig = externalSslConfig.getOrElse(AkkaSSLConfig(context.system))
-  private val hostnameVerifier = sslConfig.hostnameVerifier
+  // The engine could also be instantiated in ActorMaterializerImpl but if creation fails
+  // during materialization it would be worse than failing later on.
+  val engine =
+    try createSSLEngine(context.system) catch { case NonFatal(ex) ⇒ fail(ex, closeTransport = true); throw ex }
 
-  val engine: SSLEngine = {
-    val e = hostInfo match {
-      case Some((hostname, port)) ⇒ sslContext.createSSLEngine(hostname, port)
-      case None                   ⇒ sslContext.createSSLEngine()
-    }
-    sslConfig.sslEngineConfigurator.configure(e, sslContext)
-    e.setUseClientMode(role == Client)
-    e
-  }
+  engine.beginHandshake()
+  lastHandshakeStatus = engine.getHandshakeStatus
 
   var currentSession = engine.getSession
-  applySessionParameters(firstSession)
-
-  def applySessionParameters(params: NegotiateNewSession): Unit = {
-    params.enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
-    params.enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))
-    params.clientAuth match {
-      case Some(TLSClientAuth.None) ⇒ engine.setNeedClientAuth(false)
-      case Some(TLSClientAuth.Want) ⇒ engine.setWantClientAuth(true)
-      case Some(TLSClientAuth.Need) ⇒ engine.setNeedClientAuth(true)
-      case _                        ⇒ // do nothing
-    }
-
-    // configure Server Name Indication unless ssl-config disabled it (in which case we already logged many warnings)
-    applySNI(params)
-
-    engine.beginHandshake()
-    lastHandshakeStatus = engine.getHandshakeStatus
-  }
 
   def setNewSessionParameters(params: NegotiateNewSession): Unit = {
     if (tracing) log.debug(s"applying $params")
     currentSession.invalidate()
-    applySessionParameters(params)
+    TlsUtils.applySessionParameters(engine, params)
+    engine.beginHandshake()
+    lastHandshakeStatus = engine.getHandshakeStatus
     corkUser = true
   }
 
@@ -434,12 +412,12 @@ class TLSActor(
     if (tracing) log.debug("handshake finished")
     val session = engine.getSession
 
-    hostInfo.map(_._1) match {
-      case Some(hostname) if !hostnameVerifier.verify(hostname, session) ⇒
-        fail(new ConnectionException(s"Hostname verification failed! Expected session to be for $hostname"), closeTransport = true)
-      case _ ⇒
+    verifySession(context.system, session) match {
+      case Success(()) ⇒
         currentSession = session
         corkUser = false
+      case Failure(ex) ⇒
+        fail(ex, closeTransport = true)
     }
   }
 
@@ -458,6 +436,7 @@ class TLSActor(
     pump()
   }
 
+  // FIXME: what happens if this actor dies unexpectedly?
   override def postStop(): Unit = {
     if (tracing) log.debug("postStop")
     super.postStop()
@@ -471,33 +450,36 @@ class TLSActor(
     if (tracing) log.debug(s"STOP Outbound Closed: ${engine.isOutboundDone} Inbound closed: ${engine.isInboundDone}")
     context.stop(self)
   }
+}
 
-  // Additional ssl-config related setup
-
-  // since setting a custom HostnameVerified (in JDK8, update 60 still) disables SNI
-  // see here: https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html#SNIExamples
-  // resolves: https://github.com/akka/akka/issues/19287
-  private def applySNI(params: NegotiateNewSession): Unit = {
-    for {
-      sslParams ← params.sslParameters
-      (hostname, _) ← hostInfo
-      if !sslConfig.config.loose.disableSNI
-    } yield {
-      // first copy the *mutable* SLLParameters before modifying to prevent race condition in `setServerNames`
-      val clone = new SSLParameters()
-      clone.setCipherSuites(sslParams.getCipherSuites)
-      clone.setProtocols(sslParams.getProtocols)
-      clone.setWantClientAuth(sslParams.getWantClientAuth)
-      clone.setNeedClientAuth(sslParams.getNeedClientAuth)
-      clone.setEndpointIdentificationAlgorithm(sslParams.getEndpointIdentificationAlgorithm)
-      clone.setAlgorithmConstraints(sslParams.getAlgorithmConstraints)
-      clone.setSNIMatchers(sslParams.getSNIMatchers)
-      clone.setUseCipherSuitesOrder(sslParams.getUseCipherSuitesOrder)
-
-      // apply the changes
-      clone.setServerNames(Collections.singletonList(new SNIHostName(hostname)))
-      engine.setSSLParameters(clone)
+/**
+ * INTERNAL API
+ */
+private[stream] object TlsUtils {
+  def applySessionParameters(engine: SSLEngine, sessionParameters: NegotiateNewSession): Unit = {
+    sessionParameters.enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
+    sessionParameters.enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))
+    sessionParameters.clientAuth match {
+      case Some(TLSClientAuth.None) ⇒ engine.setNeedClientAuth(false)
+      case Some(TLSClientAuth.Want) ⇒ engine.setWantClientAuth(true)
+      case Some(TLSClientAuth.Need) ⇒ engine.setNeedClientAuth(true)
+      case _                        ⇒ // do nothing
     }
+
+    sessionParameters.sslParameters.foreach(engine.setSSLParameters)
   }
 
+  def cloneParameters(old: SSLParameters): SSLParameters = {
+    val newParameters = new SSLParameters()
+    newParameters.setAlgorithmConstraints(old.getAlgorithmConstraints)
+    newParameters.setCipherSuites(old.getCipherSuites)
+    newParameters.setEndpointIdentificationAlgorithm(old.getEndpointIdentificationAlgorithm)
+    newParameters.setNeedClientAuth(old.getNeedClientAuth)
+    newParameters.setProtocols(old.getProtocols)
+    newParameters.setServerNames(old.getServerNames)
+    newParameters.setSNIMatchers(old.getSNIMatchers)
+    newParameters.setUseCipherSuitesOrder(old.getUseCipherSuitesOrder)
+    newParameters.setWantClientAuth(old.getWantClientAuth)
+    newParameters
+  }
 }
