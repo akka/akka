@@ -205,7 +205,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         case Some(ReplayedMessage(m)) ⇒
           flushJournalBatch()
           super.aroundPreRestart(reason, Some(m))
-        case mo: Option[Any] ⇒
+        case mo ⇒
           flushJournalBatch()
           super.aroundPreRestart(reason, mo)
       }
