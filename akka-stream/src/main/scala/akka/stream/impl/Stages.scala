@@ -155,9 +155,4 @@ object Stages {
 
   }
 
-  final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy, attributes: Attributes = buffer) extends SymbolicStage[T, T] {
-    require(size > 0, s"Buffer size must be larger than zero but was [$size]")
-    override def create(attr: Attributes): Stage[T, T] = fusing.Buffer(size, overflowStrategy)
-  }
-
 }

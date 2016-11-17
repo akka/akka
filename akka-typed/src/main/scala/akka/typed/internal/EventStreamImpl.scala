@@ -190,9 +190,11 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
       }
     } catch {
       case e: Exception ⇒
-        System.err.println("error while starting up loggers")
-        e.printStackTrace()
-        throw new akka.ConfigurationException("Could not start logger due to [" + e.toString + "]")
+        if (!system.whenTerminated.isCompleted) {
+          System.err.println("error while starting up loggers")
+          e.printStackTrace()
+          throw new akka.ConfigurationException("Could not start logger due to [" + e.toString + "]")
+        }
     }
   }
 
