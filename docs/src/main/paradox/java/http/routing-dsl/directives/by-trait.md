@@ -18,7 +18,7 @@ All predefined directives are organized into traits that form one part of the ov
 :   Filter and extract based on the target host.
 
 @ref[ParameterDirectives](parameter-directives/index.md#parameterdirectives-java), @ref[FormFieldDirectives](form-field-directives/index.md#formfielddirectives-java)
-:   Filter and extract based on query parameters or form fields.
+:   Filter and extract based on query parameters or form fields (of Content-Type `application/x-www-form-urlencoded` or `multipart/form-data`).
 
 @ref[CodingDirectives](coding-directives/index.md#codingdirectives-java)
 :   Filter and decode compressed request content.

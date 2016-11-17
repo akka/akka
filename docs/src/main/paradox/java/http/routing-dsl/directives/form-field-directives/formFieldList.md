@@ -3,9 +3,9 @@
 
 ## Description
 
-Extracts all HTTP form fields at once in the original order as (name, value) tuples of type `Map.Entry<String, String>`.
+Extracts all HTTP form fields at once in the original order as (name, value) tuples of type `Map.Entry<String, String>`. Data posted from [HTML Forms](http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4) is either of type `application/x-www-form-urlencoded` or of type `multipart/form-data`.
 
-This directive can be used if the exact order of form fields is important or if parameters can occur several times.
+This directive can be used if the exact order of form fields is important or if parameters can occur several times. 
 
 ## Warning
 
