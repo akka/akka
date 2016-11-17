@@ -108,6 +108,15 @@ public class LambdaPersistenceDocTest {
     }
     //#recovery-completed
 
+    abstract class MyPersistentActor6 extends AbstractPersistentActor {
+      //#recovery-no-snap
+      @Override
+      public Recovery recovery() {
+        return Recovery.create(SnapshotSelectionCriteria.none());
+      }
+      //#recovery-no-snap
+    }
+
     abstract class MyActor extends AbstractPersistentActor {
       //#backoff
       @Override

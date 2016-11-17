@@ -153,12 +153,25 @@ They are cached and received by a persistent actor after recovery phase complete
   as the original sender is presumed to be long gone. If you indeed have to notify an actor during
   recovery in the future, store its ``ActorPath`` explicitly in your persisted events.
 
+.. _recovery-custom-scala:
+
 Recovery customization
 ^^^^^^^^^^^^^^^^^^^^^^
 
 Applications may also customise how recovery is performed by returning a customised ``Recovery`` object
-in the ``recovery`` method of a ``PersistentActor``, for example setting an upper bound to the replay
-which allows the actor to be replayed to a certain point "in the past" instead to its most up to date state:
+in the ``recovery`` method of a ``PersistentActor``, 
+
+To skip loading snapshots and replay all events you can use ``SnapshotSelectionCriteria.None``.
+This can be useful if snapshot serialization format has changed in an incompatible way.
+It should typically not be used when events have been deleted.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recovery-no-snap
+
+Another example, which can be fun for experiments but probably not in a real application, is setting an 
+upper bound to the replay which allows the actor to be replayed to a certain point "in the past" 
+instead to its most up to date state. Note that after that it is a bad idea to persist new 
+events because a later recovery will probably be confused by the new events that follow the 
+events that were previously skipped.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recovery-custom
 
@@ -345,6 +358,8 @@ next message.
 
 If there is a problem with recovering the state of the actor from the journal when the actor is
 started, ``onRecoveryFailure`` is called (logging the error by default), and the actor will be stopped.
+Note that failure to load snapshot is also treated like this, but you can disable loading of snapshots
+if you for example know that serialization format has changed in an incompatible way, see :ref:`recovery-custom-scala`.
 
 Atomic writes
 -------------
