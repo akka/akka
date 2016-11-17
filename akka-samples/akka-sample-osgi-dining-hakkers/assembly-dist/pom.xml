@@ -47,7 +47,7 @@
             <plugin>
                 <groupId>org.apache.karaf.tooling</groupId>
                 <artifactId>features-maven-plugin</artifactId>
-                <version>${karaf.version}</version>
+                <version>${karaf.tooling.maven.version}</version>
                 <executions>
                     <execution>
                         <id>add-features-to-repo</id>
@@ -57,8 +57,8 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>mvn:org.apache.karaf.assemblies.features/standard/${karaf.version}/xml/features</descriptor>
-                                <descriptor>mvn:org.apache.karaf.assemblies.features/enterprise/${karaf.version}/xml/features</descriptor>
+                                <descriptor>mvn:org.apache.karaf.assemblies.features/standard/${karaf.tooling.maven.version}/xml/features</descriptor>
+                                <descriptor>mvn:org.apache.karaf.assemblies.features/enterprise/${karaf.tooling.maven.version}/xml/features</descriptor>
                                 <descriptor>mvn:com.typesafe.akka.akka-sample-osgi-dining-hakkers/akka-sample-osgi-dining-hakkers/${project.version}/xml/features</descriptor>
                             </descriptors>
                             <repository>target/generated-features-repo</repository>
