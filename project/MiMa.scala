@@ -1018,7 +1018,10 @@ object MiMa extends AutoPlugin {
 
       ),
       "2.4.12" -> Seq(
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.materialize")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.materialize"),
+        
+        // #21775 - overrode ByteString.stringPrefix and made it final
+        ProblemFilters.exclude[FinalMethodProblem]("akka.util.ByteString.stringPrefix")
       )
     )
   }
