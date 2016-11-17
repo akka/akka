@@ -41,6 +41,12 @@ final case class ContinuationFrame(
   endHeaders: Boolean,
   payload:    ByteString) extends StreamFrameEvent
 
+final case class PriorityFrame(
+  streamId:         Int,
+  exclusiveFlag:    Boolean,
+  streamDependency: Int,
+  weight:           Int) extends StreamFrameEvent
+
 final case class Setting(
   identifier: SettingIdentifier,
   value:      Int)

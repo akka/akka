@@ -257,6 +257,24 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
           xxxxxxxx=2   # error code = 0x2 = INTERNAL_ERROR
          """ should parseTo(RstStreamFrame(0x23, ErrorCode.INTERNAL_ERROR))
     }
+    "PRIORITY_FRAME" in {
+      b"""xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=5   # length
+          00000010     # type = 0x2 = PRIORITY
+          00000000     # no flags
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=23  # stream ID = 23
+          1            # E flag set
+           xxxxxxx
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=100 # stream dependency
+          xxxxxxxx=55  # weight
+         """ should parseTo(PriorityFrame(0x23, exclusiveFlag = true, streamDependency = 0x100, weight = 0x55), checkRendering = false)
+    }
   }
 
   private def parseTo(events: FrameEvent*): Matcher[ByteString] =
