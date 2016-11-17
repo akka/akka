@@ -313,7 +313,7 @@ First ``thenApply`` is still executed on ``ForkJoinPool.commonPool()`` (because 
 which is always executed on global Java pool).
 
 Then we wait for stages to complete so second and third ``thenApply`` are executed on completed ``CompletionStage``,
-and stages are executed on the current thread - ``main`` in our case.
+and stages are executed on the current thread - the thread which called second and third ``thenApply``.
 
 
 Async methods

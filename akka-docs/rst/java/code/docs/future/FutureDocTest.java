@@ -70,6 +70,7 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.pattern.Patterns;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.*;
 
@@ -579,14 +580,15 @@ public class FutureDocTest extends AbstractJavaTest {
       });
 
     completedStage.toCompletableFuture().get(2, SECONDS); // complete current CompletionStage
+    final String currentThread = Thread.currentThread().getName();
 
     CompletionStage<String> stage2 = completedStage
       .thenApply(s -> { // 2
-        assertThat(Thread.currentThread().getName(), containsString("main"));
+        assertThat(Thread.currentThread().getName(), is(currentThread));
         return s;
       })
       .thenApply(s -> { // 3
-        assertThat(Thread.currentThread().getName(), containsString("main"));
+        assertThat(Thread.currentThread().getName(), is(currentThread));
         return s;
       });
     //#apply-main-thread
