@@ -102,6 +102,17 @@ The :class:`Framing` helper class contains a convenience method to parse message
 
 .. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeParseLines.java#parse-lines
 
+Dealing with compressed data streams
+------------------------------------
+
+**Situation:** A gzipped stream of bytes is given as a stream of ``ByteString`` s, for example from a ``FileIO`` source.
+
+The :class:`Compression` helper class contains convenience methods for decompressing data streams compressed with
+Gzip or Deflate.
+
+.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeDecompress.java#decompress-gzip
+
+
 Implementing reduce-by-key
 --------------------------
 
