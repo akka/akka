@@ -14,7 +14,7 @@ object Compression {
    * coming out of the flow can be fully decompressed without waiting for additional data. This may
    * come at a compression performance cost for very small chunks.
    *
-   * FIXME: should compression level / strategy / flush mode be configurable?
+   * FIXME: should compression level / strategy / flush mode be configurable? See https://github.com/akka/akka/issues/21849
    */
   def gzip: Flow[ByteString, ByteString, NotUsed] =
     CompressionUtils.compressorFlow(() ⇒ new GzipCompressor)
@@ -34,7 +34,7 @@ object Compression {
    * coming out of the flow can be fully decompressed without waiting for additional data. This may
    * come at a compression performance cost for very small chunks.
    *
-   * FIXME: should compression level / strategy / flush mode be configurable?
+   * FIXME: should compression level / strategy / flush mode be configurable? See https://github.com/akka/akka/issues/21849
    */
   def deflate: Flow[ByteString, ByteString, NotUsed] =
     CompressionUtils.compressorFlow(() ⇒ new DeflateCompressor)

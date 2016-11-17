@@ -39,6 +39,8 @@ private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Def
         }
       }
     }
+
+    override def postStop(): Unit = inflater.end()
   }
 }
 
