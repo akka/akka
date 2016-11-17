@@ -45,6 +45,8 @@ private[akka] class DeflateCompressor extends Compressor {
     res
   }
 
+  def close(): Unit = deflater.end()
+
   private def newTempBuffer(size: Int = 65536): Array[Byte] = {
     // The default size is somewhat arbitrary, we'd like to guess a better value but Deflater/zlib
     // is buffering in an unpredictable manner.

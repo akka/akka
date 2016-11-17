@@ -13,39 +13,32 @@ import akka.util.ByteString
 /** INTERNAL API */
 private[stream] object CompressionUtils {
   /**
-   * Exposes a constructor for a (mutable) [[Compressor]] as a [[Flow[ByteString, ByteString, NotUsed]]]
+   * Creates a flow from a compressor constructor.
    */
-  def compressorToFlow(newCompressor: () ⇒ Compressor): Flow[ByteString, ByteString, NotUsed] = {
-    val compressor = newCompressor()
+  def compressorFlow(newCompressor: () ⇒ Compressor): Flow[ByteString, ByteString, NotUsed] =
+    Flow.fromGraph {
+      new SimpleLinearGraphStage[ByteString] {
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+          val compressor = newCompressor()
 
-    def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)
-    def finish(): ByteString = compressor.finish()
+          override def onPush(): Unit = {
+            val data = compressor.compress(grab(in))
+            if (data.nonEmpty) push(out, data)
+            else pull(in)
+          }
 
-    Flow[ByteString].via(byteStringTransformer(encodeChunk, finish))
-  }
+          override def onPull(): Unit = pull(in)
 
-  /**
-   * Creates a transformer that will call `f` for each incoming ByteString and output its result. After the complete
-   * input has been read it will call `finish` once to determine the final ByteString to post to the output.
-   * Empty ByteStrings are discarded.
-   */
-  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): GraphStage[FlowShape[ByteString, ByteString]] = new SimpleLinearGraphStage[ByteString] {
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-      override def onPush(): Unit = {
-        val data = f(grab(in))
-        if (data.nonEmpty) push(out, data)
-        else pull(in)
+          override def onUpstreamFinish(): Unit = {
+            val data = compressor.finish()
+            if (data.nonEmpty) emit(out, data)
+            completeStage()
+          }
+
+          override def postStop(): Unit = compressor.close()
+
+          setHandlers(in, out, this)
+        }
       }
-
-      override def onPull(): Unit = pull(in)
-
-      override def onUpstreamFinish(): Unit = {
-        val data = finish()
-        if (data.nonEmpty) emit(out, data)
-        completeStage()
-      }
-
-      setHandlers(in, out, this)
     }
-  }
 }

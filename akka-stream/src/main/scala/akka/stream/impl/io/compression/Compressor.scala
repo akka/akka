@@ -34,4 +34,7 @@ private[akka] abstract class Compressor {
   def compressAndFlush(input: ByteString): ByteString
   /** Combines `compress` + `finish` */
   def compressAndFinish(input: ByteString): ByteString
+
+  /** Make sure any resources have been released */
+  def close(): Unit
 }

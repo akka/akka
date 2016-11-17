@@ -17,7 +17,7 @@ object Compression {
    * FIXME: should compression level / strategy / flush mode be configurable?
    */
   def gzip: Flow[ByteString, ByteString, NotUsed] =
-    CompressionUtils.compressorToFlow(() ⇒ new GzipCompressor)
+    CompressionUtils.compressorFlow(() ⇒ new GzipCompressor)
 
   /**
    * Creates a Flow that decompresses gzip-compressed stream of data.
@@ -29,15 +29,15 @@ object Compression {
       .named("gunzip")
 
   /**
-    * Creates a flow that deflate-compresses a stream of ByteString. Note that the compressor
-    * will SYNC_FLUSH'd after every [[ByteString]] so that it is guaranteed that every [[ByteString]]
-    * coming out of the flow can be fully decompressed without waiting for additional data. This may
-    * come at a compression performance cost for very small chunks.
-    *
-    * FIXME: should compression level / strategy / flush mode be configurable?
-    */
+   * Creates a flow that deflate-compresses a stream of ByteString. Note that the compressor
+   * will SYNC_FLUSH'd after every [[ByteString]] so that it is guaranteed that every [[ByteString]]
+   * coming out of the flow can be fully decompressed without waiting for additional data. This may
+   * come at a compression performance cost for very small chunks.
+   *
+   * FIXME: should compression level / strategy / flush mode be configurable?
+   */
   def deflate: Flow[ByteString, ByteString, NotUsed] =
-    CompressionUtils.compressorToFlow(() ⇒ new DeflateCompressor)
+    CompressionUtils.compressorFlow(() ⇒ new DeflateCompressor)
 
   /**
    * Creates a Flow that decompresses deflate-compressed stream of data.
