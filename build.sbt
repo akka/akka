@@ -1,5 +1,4 @@
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
-import com.typesafe.sbt.pgp.PgpKeys._
 import akka._
 
 inThisBuild(Def.settings(
@@ -7,6 +6,10 @@ inThisBuild(Def.settings(
   organizationName := "Lightbend",
   organizationHomepage := Some(url("https://www.lightbend.com")),
   homepage := Some(url("http://akka.io")),
+  apiURL := {
+    val apiVersion = if (isSnapshot.value) "current" else version.value
+    Some(url(s"http://doc.akka.io/api/akka-http/$apiVersion/"))
+  },
   scmInfo := Some(
     ScmInfo(url("https://github.com/akka/akka-http"), "git@github.com:akka/akka-http.git")),
   developers := List(
@@ -15,7 +18,7 @@ inThisBuild(Def.settings(
   ),
   startYear := Some(2014),
   //  test in assembly := {},
-  licenses := Seq("Apache License 2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
+  licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8", // yes, this is 2 args
@@ -36,6 +39,7 @@ lazy val root = Project(
     base = file(".")
   )
   .enablePlugins(UnidocRoot, NoPublish)
+  .disablePlugins(BintrayPlugin)
   .settings(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing)
@@ -86,6 +90,7 @@ lazy val httpTests = project("akka-http-tests")
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   //.disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
+  .disablePlugins(BintrayPlugin)
   .aggregate(httpSprayJson, httpXml)
 
 lazy val httpXml =
@@ -97,6 +102,7 @@ lazy val httpSprayJson =
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   //.disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
+  .disablePlugins(BintrayPlugin)
   .aggregate(httpJackson)
 
 lazy val httpJackson =
@@ -123,6 +129,7 @@ def httpMarshallersJavaSubproject(name: String) =
 
 lazy val docs = project("docs")
   .enablePlugins(ParadoxPlugin, NoPublish)
+  .disablePlugins(BintrayPlugin)
   .dependsOn(
     httpCore, http, httpXml, httpMarshallersJava, httpMarshallersScala,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"

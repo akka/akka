@@ -37,7 +37,7 @@ public class RouteDirectivesTest extends JUnitRouteTest {
         path("no-limit", () ->
           extractEntity(entity ->
             extractMaterializer(mat ->
-              onSuccess(() -> entity
+              this.<ByteString>onSuccess(() -> entity // fails to infer type parameter with some older oracle JDK versions
                   .withoutSizeLimit()
                   .getDataBytes()
                   .runWith(Sink.<ByteString>head(), mat),
@@ -59,7 +59,7 @@ public class RouteDirectivesTest extends JUnitRouteTest {
       path("limit-5", () ->
         extractEntity(entity ->
           extractMaterializer(mat ->
-            onSuccess(() -> entity
+            this.<ByteString>onSuccess(() -> entity // fails to infer type parameter with some older oracle JDK versions
                 .withSizeLimit(5)
                 .getDataBytes()
                 .runWith(Sink.head(), mat),

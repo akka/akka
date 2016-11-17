@@ -1,6 +1,4 @@
 import akka._
-import com.typesafe.sbt.pgp.PgpKeys._
-//import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 
 Dependencies.httpTests
 
