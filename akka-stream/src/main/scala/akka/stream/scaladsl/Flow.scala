@@ -1208,7 +1208,7 @@ trait FlowOps[+Out, +Mat] {
    * @param size The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out] = andThen(Buffer(size, overflowStrategy))
+  def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out] = via(fusing.Buffer(size, overflowStrategy))
 
   /**
    * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
