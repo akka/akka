@@ -600,6 +600,12 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           a.asByteBuffers.zip(a.getByteBuffers().asScala).forall(x ⇒ x._1 == x._2)
         }
       }
+
+      "toString should start with ByteString(" in {
+        check { (bs: ByteString) ⇒
+          bs.toString.startsWith("ByteString(")
+        }
+      }
     }
     "behave like a Vector" when {
       "concatenating" in { check { (a: ByteString, b: ByteString) ⇒ likeVectors(a, b) { _ ++ _ } } }
