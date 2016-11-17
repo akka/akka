@@ -100,6 +100,16 @@ The :class:`Framing` helper object contains a convenience method to parse messag
 
 .. includecode:: ../code/docs/stream/cookbook/RecipeParseLines.scala#parse-lines
 
+Dealing with compressed data streams
+------------------------------------
+
+**Situation:** A gzipped stream of bytes is given as a stream of ``ByteString`` s, for example from a ``FileIO`` source.
+
+The :class:`Compression` helper object contains convenience methods for decompressing data streams compressed with
+Gzip or Deflate.
+
+.. includecode:: ../code/docs/stream/cookbook/RecipeDecompress.scala#decompress-gzip
+
 Implementing reduce-by-key
 --------------------------
 
