@@ -301,12 +301,11 @@ final case class Take[T](count: Long) extends SimpleLinearGraphStage[T] {
     private var left: Long = count
 
     override def onPush(): Unit = {
-      val leftBefore = left
-      if (leftBefore >= 1) {
-        left = leftBefore - 1
+      if (left > 0) {
         push(out, grab(in))
+        left -= 1
       }
-      if (leftBefore <= 1) completeStage()
+      if (left <= 0) completeStage()
     }
 
     override def onPull(): Unit = {
@@ -333,7 +332,13 @@ final case class Drop[T](count: Long) extends SimpleLinearGraphStage[T] {
       if (left > 0) {
         left -= 1
         pull(in)
-      } else push(out, grab(in))
+      } else {
+        push(out, grab(in))
+        // After dropping N elements, the following behavior is just pushing
+        setHandler(in, new InHandler {
+          def onPush() = push(out, grab(in))
+        })
+      }
     }
 
     override def onPull(): Unit = pull(in)
@@ -765,8 +770,8 @@ final case class LimitWeighted[T](val n: Long, val costFn: T ⇒ Long) extends S
     override def onPush(): Unit = {
       val elem = grab(in)
       withSupervision(() ⇒ costFn(elem)) match {
-        case Some(wight) ⇒
-          left -= wight
+        case Some(weight) ⇒
+          left -= weight
           if (left >= 0) push(out, elem) else failStage(new StreamLimitReachedException(n))
         case None ⇒ //do nothing
       }
@@ -1595,11 +1600,9 @@ final class TakeWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraph
 
     def onPull(): Unit = pull(in)
 
-    setHandler(in, this)
-    setHandler(out, this)
+    setHandlers(in, out, this)
 
-    final override protected def onTimer(key: Any): Unit =
-      completeStage()
+    final override protected def onTimer(key: Any): Unit = completeStage()
 
     override def preStart(): Unit = scheduleOnce("TakeWithinTimer", timeout)
   }
@@ -1610,21 +1613,19 @@ final class TakeWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraph
 final class DropWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
-    private var allow = false
+    override def preStart(): Unit = scheduleOnce("DropWithinTimer", timeout)
 
-    def onPush(): Unit = {
-      if (allow) push(out, grab(in))
-      else pull(in)
-    }
+    final override protected def onTimer(key: Any): Unit =
+      setHandler(in, new InHandler {
+        def onPush() = push(out, grab(in))
+      })
+
+    def onPush(): Unit = pull(in)
 
     def onPull(): Unit = pull(in)
 
-    setHandler(in, this)
-    setHandler(out, this)
+    setHandlers(in, out, this)
 
-    final override protected def onTimer(key: Any): Unit = allow = true
-
-    override def preStart(): Unit = scheduleOnce("DropWithinTimer", timeout)
   }
 
   override def toString = "DropWithin"
