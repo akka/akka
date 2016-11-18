@@ -18,12 +18,13 @@ cache:
     - $HOME/.sbt/boot
 
 script:
-  - sbt -J-XX:ReservedCodeCacheSize=256m +test:compile 'set concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)' test
+  # need to override as the default is to test
+  - sbt -J-XX:ReservedCodeCacheSize=256m +update
 
 deploy:
   provider: script
   script:
-    - sbt -J-XX:ReservedCodeCacheSize=128m +publish akka-http/bintraySyncMavenCentral
+    - sbt -J-XX:ReservedCodeCacheSize=256m +publish akka-http/bintraySyncMavenCentral
   on:
     tags: true
     repo: akka/akka-http

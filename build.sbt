@@ -38,11 +38,13 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish)
+  .enablePlugins(UnidocRoot, NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin)
   .settings(
     // Unidoc doesn't like macros
-    unidocProjectExcludes := Seq(parsing)
+    unidocProjectExcludes := Seq(parsing),
+    deployRsyncArtifact :=
+      (sbtunidoc.Plugin.UnidocKeys.unidoc in Compile).value zip Seq(s"www/api/akka-http/${version.value}", s"www/japi/akka-http/${version.value}")
   )
   .aggregate(
     parsing,
@@ -128,7 +130,7 @@ def httpMarshallersJavaSubproject(name: String) =
   //.disablePlugins(MimaPlugin)
 
 lazy val docs = project("docs")
-  .enablePlugins(ParadoxPlugin, NoPublish)
+  .enablePlugins(ParadoxPlugin, NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin)
   .dependsOn(
     httpCore, http, httpXml, httpMarshallersJava, httpMarshallersScala,
@@ -150,7 +152,8 @@ lazy val docs = project("docs")
       "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion}/%s",
       "github.base_url" -> GitHub.url(version.value)
     ),
-    Formatting.docFormatSettings
+    Formatting.docFormatSettings,
+    deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
 
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
