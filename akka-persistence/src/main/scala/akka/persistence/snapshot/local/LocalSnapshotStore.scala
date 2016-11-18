@@ -18,6 +18,7 @@ import akka.util.ByteString.UTF_8
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util._
+import scala.util.matching.Regex
 
 /**
  * INTERNAL API
@@ -25,8 +26,7 @@ import scala.util._
  * Local filesystem backed snapshot store.
  */
 private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLogging {
-  private val FilenamePattern = """^snapshot-(.+)-(\d+)-(\d+)""".r
-  private val persistenceIdStartIdx = 9 // Persistence ID starts after the "snapshot-" substring
+  import LocalSnapshotStore._
 
   import akka.util.Helpers._
   private val config = context.system.settings.config.getConfig("akka.persistence.snapshot-store.local")
@@ -164,7 +164,26 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     dir
   }
 
-  private final class SnapshotFilenameFilter(persistenceId: String) extends FilenameFilter {
+  private def extractMetadata(filename: String): Option[(String, Long, Long)] = {
+    val sequenceNumberEndIdx = filename.lastIndexOf('-')
+    val persistenceIdEndIdx = filename.lastIndexOf('-', sequenceNumberEndIdx - 1)
+    val timestampString = filename.substring(sequenceNumberEndIdx + 1)
+    if (persistenceIdStartIdx >= persistenceIdEndIdx || timestampString.exists(!_.isDigit)) None
+    else {
+      val persistenceId = filename.substring(persistenceIdStartIdx, persistenceIdEndIdx)
+      val sequenceNumber = filename.substring(persistenceIdEndIdx + 1, sequenceNumberEndIdx).toLong
+      val timestamp = filename.substring(sequenceNumberEndIdx + 1).toLong
+      Some((persistenceId, sequenceNumber, timestamp))
+    }
+  }
+}
+
+/** INTERNAL API */
+private[persistence] object LocalSnapshotStore {
+  private val FilenamePattern = """^snapshot-(.+)-(\d+)-(\d+)""".r
+  private val persistenceIdStartIdx = "snapshot-".length // Persistence ID starts after the "snapshot-" substring
+
+  final class SnapshotFilenameFilter(persistenceId: String) extends FilenameFilter {
     val encodedPersistenceId = URLEncoder.encode(persistenceId)
 
     def accept(dir: File, name: String): Boolean = {
@@ -174,7 +193,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     }
   }
 
-  private final class SnapshotSeqNrFilenameFilter(md: SnapshotMetadata) extends FilenameFilter {
+  final class SnapshotSeqNrFilenameFilter(md: SnapshotMetadata) extends FilenameFilter {
     private final def matches(pid: String, snr: String, tms: String): Boolean = {
       pid.equals(URLEncoder.encode(md.persistenceId)) &&
         Try(snr.toLong == md.sequenceNr && (md.timestamp == 0L || tms.toLong == md.timestamp)).getOrElse(false)
@@ -188,16 +207,4 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
 
   }
 
-  private def extractMetadata(filename: String): Option[(String, Long, Long)] = {
-    val sequenceNumberEndIdx = filename.lastIndexOf('-')
-    val persistenceIdEndIdx = filename.lastIndexOf('-', sequenceNumberEndIdx - 1)
-    val timestampString = filename.substring(sequenceNumberEndIdx + 1)
-    if (persistenceIdStartIdx >= persistenceIdEndIdx || timestampString.exists(!_.isDigit)) None
-    else {
-      val persistenceId = filename.substring(persistenceIdStartIdx, persistenceIdEndIdx)
-      val sequenceNumber = filename.substring(persistenceIdEndIdx + 1, sequenceNumberEndIdx).toLong
-      val timestamp = filename.substring(sequenceNumberEndIdx + 1).toLong
-      Some((persistenceId, sequenceNumber, timestamp))
-    }
-  }
 }
