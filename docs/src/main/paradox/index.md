@@ -1,4 +1,4 @@
-# Contents
+# Akka HTTP
 
 @@toc { depth=1 }
 
