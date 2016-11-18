@@ -49,6 +49,10 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
   def parseFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteReader): FrameEvent = {
     // TODO: add @switch? seems non-trivial for now
     tpe match {
+      case GOAWAY ⇒
+        Http2Compliance.requireZeroStreamId(streamId)
+        GoAwayFrame(payload.readIntBE(), ErrorCode.byId(payload.readIntBE()), payload.takeAll())
+
       case HEADERS ⇒
         val pad = Flags.PADDED.isSet(flags)
         val endStream = Flags.END_STREAM.isSet(flags)
@@ -65,7 +69,6 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
           if (priority) payload.readByte() & 0xff
           else 0
 
-        // TODO: check that streamId != 0
         // TODO: also write out Priority frame if priority was set
         HeadersFrame(streamId, endStream, endHeaders, payload.take(payload.remainingSize - paddingLength))
 
@@ -106,7 +109,6 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
 
       case CONTINUATION ⇒
         val endHeaders = Flags.END_HEADERS.isSet(flags)
-        Http2Compliance.requirePositiveStreamId(streamId)
 
         ContinuationFrame(streamId, endHeaders, payload.remainingData)
 

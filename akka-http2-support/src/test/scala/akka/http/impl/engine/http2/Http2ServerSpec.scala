@@ -456,15 +456,43 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     }
 
     "respect the substream state machine" should {
-      "reject other frame than HEADERS/PUSH_PROMISE in idle state with connection-level PROTOCOL_ERROR (5.1)" in pending
+      abstract class SimpleRequestResponseRoundtripSetup extends TestSetup with RequestResponseProbes
+
+      "reject other frame than HEADERS/PUSH_PROMISE in idle state with connection-level PROTOCOL_ERROR (5.1)" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
+        sendDATA(9, endStream = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        expectGOAWAY(0)
+        // after GOAWAY we expect graceful completion after x amount of time
+        // TODO: completion logic, wait?!
+        expectGracefulCompletion()
+      }
       "reject incoming frames on already half-closed substream" in pending
 
-      "reject even-numbered client-initiated substreams" in pending
+      "reject even-numbered client-initiated substreams" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
+        sendHEADERS(2, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        expectGOAWAY(0)
+        // after GOAWAY we expect graceful completion after x amount of time
+        // TODO: completion logic, wait?!
+        expectGracefulCompletion()
+      }
 
       "reject all other frames while waiting for CONTINUATION frames" in pending
 
-      "reject double sub-streams creation" in pending
-      "reject substream creation for streams invalidated by skipped substream IDs" in pending
+      "reject double sub-streams creation" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
+        sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        expectGOAWAY(0)
+        // after GOAWAY we expect graceful completion after x amount of time
+        // TODO: completion logic, wait?!
+        expectGracefulCompletion()
+      }
+      "reject substream creation for streams invalidated by skipped substream IDs" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
+        sendHEADERS(9, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        expectGOAWAY(0)
+        // after GOAWAY we expect graceful completion after x amount of time
+        // TODO: completion logic, wait?!
+        expectGracefulCompletion()
+      }
     }
 
     "must not swallow errors / warnings" in pending
@@ -529,6 +557,12 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
 
         if (streamId == 0) updateToServerWindowForConnection(_ + windowSizeIncrement)
         else updateToServerWindows(streamId, _ + windowSizeIncrement)
+    }
+
+    def expectGOAWAY(streamId: Int): (Int, ErrorCode) = {
+      val payload = expectFramePayload(FrameType.GOAWAY, ByteFlag.Zero, streamId)
+      val reader = new ByteReader(payload)
+      (reader.readIntBE(), ErrorCode.byId(reader.readIntBE()))
     }
 
     @tailrec
@@ -700,6 +734,11 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     def expectRequestRaw(): HttpRequest = requestIn.requestNext() // TODO, make it so that internal headers are not listed in `headers` etc?
     def emitResponse(streamId: Int, response: HttpResponse): Unit =
       responseOut.sendNext(response.addHeader(Http2StreamIdHeader(streamId)))
+
+    def expectGracefulCompletion(): Unit = {
+      toNet.expectComplete()
+      requestIn.expectComplete()
+    }
   }
 
   /** Provides the user handler flow as a handler function */

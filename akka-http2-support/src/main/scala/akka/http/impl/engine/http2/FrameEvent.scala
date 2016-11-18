@@ -14,6 +14,9 @@ sealed trait StreamFrameEvent extends FrameEvent {
   def streamId: Int
 }
 
+final case class GoAwayFrame(lastStreamId: Int, errorCode: ErrorCode, debug: ByteString = ByteString.empty) extends FrameEvent {
+  override def toString: String = s"GoAwayFrame($lastStreamId,$errorCode,debug:<hidden>)"
+}
 final case class DataFrame(
   streamId:  Int,
   endStream: Boolean,
@@ -27,12 +30,10 @@ final case class HeadersFrame(
 
 //final case class PriorityFrame(streamId: Int, streamDependency: Int, weight: Int) extends StreamFrameEvent
 final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends StreamFrameEvent
-final case class SettingsFrame(
-  settings: Seq[Setting]) extends FrameEvent
+final case class SettingsFrame(settings: Seq[Setting]) extends FrameEvent
 case object SettingsAckFrame extends FrameEvent
 //case class PushPromiseFrame(streamId: Int) extends StreamFrameEvent
 case class PingFrame(ack: Boolean, data: ByteString) extends FrameEvent
-//case class GoAwayFrame(streamId: Int) extends StreamFrameEvent
 final case class WindowUpdateFrame(
   streamId:            Int,
   windowSizeIncrement: Int) extends StreamFrameEvent

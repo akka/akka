@@ -16,11 +16,10 @@ private[akka] object Http2Compliance {
 
   // require methods use `if` because `require` allocates
 
-  // FIXME: this should be checking client/server ids instead (odd / even)
-  @Deprecated final def requirePositiveStreamId(id: Int): Unit =
-    if (id < 1) throw new IllegalHttp2StreamIdException(id, "MUST be > 0.")
-
   final def requireZeroStreamId(id: Int): Unit =
     if (id != 0) throw new IllegalHttp2StreamIdException(id, "MUST BE == 0.")
+
+  /** checks if the stream id was client initiated, by checking if the stream id was odd-numbered */
+  final def isClientInitiatedStreamId(id: Int): Boolean = id % 2 != 0
 
 }

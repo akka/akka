@@ -291,6 +291,49 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
           xxxxxxxx=12345 # windowSizeIncrement
          """ should parseTo(WindowUpdateFrame(0x42, 0x12345))
     }
+    "GOAWAY frame" - {
+      "without debug data" in {
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=8   # length
+            00000111     # type = 0x7 = GOAWAY
+            00000000     # no flags
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # stream ID = 0
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=21  # last stream ID = 21
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=2   # error code = 0x2 = INTERNAL_ERROR
+         """ should parseTo(GoAwayFrame(0x21, ErrorCode.INTERNAL_ERROR))
+      }
+      "with debug data" in {
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=9  # length
+            00000111     # type = 0x7 = GOAWAY
+            00000000     # no flags
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # stream ID = 0
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=21  # last stream ID = 21
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=1   # error code = 0x1 = PROTOCOL_ERROR
+            xxxxxxxx=1
+         """ should parseTo(GoAwayFrame(0x21, ErrorCode.PROTOCOL_ERROR, "1".parseHexByteString))
+      }
+    }
   }
 
   private def parseTo(events: FrameEvent*): Matcher[ByteString] =
