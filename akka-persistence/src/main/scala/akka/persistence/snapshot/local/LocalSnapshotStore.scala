@@ -138,11 +138,14 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     val files = snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId))
     if (files eq null) Nil // if the dir was removed
     else {
-      files.map(_.getName).flatMap { filename ⇒
-        extractMetadata(filename).map {
-          case (pid, snr, tms) ⇒ SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr, tms)
-        }
-      }.filter(md ⇒ criteria.matches(md) && !saving.contains(md)).toVector
+      files.iterator
+        .map(_.getName)
+        .flatMap { filename ⇒
+          extractMetadata(filename).map {
+            case (pid, snr, tms) ⇒ SnapshotMetadata(URLDecoder.decode(pid, UTF_8), snr, tms)
+          }
+        }.filter(md ⇒ criteria.matches(md) && !saving.contains(md))
+        .toVector
     }
   }
 
