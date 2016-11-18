@@ -19,7 +19,7 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.8"), // "2.12.0"
     scalaVersion := crossScalaVersions.value.head,
-    scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7"),
+    scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
       if (scalaVersion.value.startsWith("2.12")) "1.13.4" // does not work for 2.11
       else "1.13.2"
