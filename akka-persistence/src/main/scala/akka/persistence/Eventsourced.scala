@@ -45,6 +45,7 @@ private[persistence] object Eventsourced {
 private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash with PersistenceIdentity with PersistenceRecovery {
   import JournalProtocol._
   import SnapshotProtocol.LoadSnapshotResult
+  import SnapshotProtocol.LoadSnapshotFailed
   import Eventsourced._
 
   private val extension = Persistence(context.system)
@@ -501,6 +502,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         }
         changeState(recovering(recoveryBehavior, timeout))
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
+
+      case LoadSnapshotFailed(cause) ⇒
+        timeoutCancellable.cancel()
+        try onRecoveryFailure(cause, event = None) finally context.stop(self)
 
       case RecoveryTick(true) ⇒
         try onRecoveryFailure(

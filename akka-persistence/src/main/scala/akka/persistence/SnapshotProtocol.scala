@@ -209,6 +209,12 @@ private[persistence] object SnapshotProtocol {
     extends Response
 
   /**
+   * Reply message to a failed [[LoadSnapshot]] request.
+   * @param cause failure cause.
+   */
+  final case class LoadSnapshotFailed(cause: Throwable) extends Response
+
+  /**
    * Instructs snapshot store to save a snapshot.
    *
    * @param metadata snapshot metadata.
