@@ -6,24 +6,31 @@ package akka.stream.io
 import java.io.IOException
 import java.lang.management.ManagementFactory
 import java.util.concurrent.TimeoutException
+
 import akka.actor.ActorSystem
-import akka.stream._
 import akka.stream.Attributes.inputBuffer
+import akka.stream._
+import akka.stream.impl.ActorMaterializerImpl
+import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.OutputStreamSourceStage
-import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
-import akka.stream.scaladsl.{ Keep, StreamConverters, Sink }
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.StreamConverters
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
 import akka.util.ByteString
+
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration.Duration.Zero
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
 import scala.util.Random
 
 class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
+
   import system.dispatcher
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
@@ -204,5 +211,37 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       assertNoBlockedThreads()
     }
+
+    "correctly complete the stage after close" in assertAllStagesStopped {
+      // actually this was a race, so it only happened in at least one of 20 runs
+      for (_ ← 1 to 20) {
+        val sourceProbe = TestProbe()
+        val (outputStream, probe) = TestSourceStage(new OutputStreamSourceStage(timeout), sourceProbe)
+          .toMat(TestSink.probe[ByteString])(Keep.both).run
+
+        outputStream.write(1)
+        outputStream.write(1)
+        outputStream.write(1)
+        outputStream.write(1)
+        outputStream.write(1)
+        outputStream.write(1)
+        outputStream.write(1)
+        outputStream.write(1)
+
+        // await the request, so that the close
+        // will come before
+        materializer.scheduleOnce(500.milliseconds, new Runnable {
+          override def run(): Unit = {
+            probe.request(8)
+            probe.expectNextN(8)
+
+            probe.expectComplete()
+          }
+        })
+
+        outputStream.close()
+      }
+    }
+
   }
 }
