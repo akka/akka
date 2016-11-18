@@ -176,11 +176,7 @@ object Timers {
 
   }
 
-  final class DelayInitial[T](val delay: FiniteDuration) extends GraphStage[FlowShape[T, T]] {
-    val in: Inlet[T] = Inlet("IdleInject.in")
-    val out: Outlet[T] = Outlet("IdleInject.out")
-    override val shape: FlowShape[T, T] = FlowShape(in, out)
-
+  final class DelayInitial[T](val delay: FiniteDuration) extends SimpleLinearGraphStage[T] {
     override def initialAttributes = DefaultAttributes.delayInitial
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
