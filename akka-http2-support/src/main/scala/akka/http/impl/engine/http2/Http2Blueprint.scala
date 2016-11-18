@@ -11,6 +11,7 @@ import akka.http.impl.engine.http2.rendering.HttpResponseHeaderHpackCompression
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
+import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
@@ -73,8 +74,11 @@ object Http2Blueprint {
   def handleWithStreamIdHeader(parallelism: Int)(handler: HttpRequest ⇒ Future[HttpResponse])(implicit ec: ExecutionContext): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest]
       .mapAsyncUnordered(parallelism) { req ⇒
-        val streamIdHeader = req.header[Http2StreamIdHeader].get
         val response = handler(req)
-        response.map(_.addHeader(streamIdHeader))
+
+        req.header[Http2StreamIdHeader] match {
+          case Some(streamIdHeader) ⇒ response.map(_.addHeader(streamIdHeader)) // add stream id header when request had it
+          case None                 ⇒ response
+        }
       }
 }

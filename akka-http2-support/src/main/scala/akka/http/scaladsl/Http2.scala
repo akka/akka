@@ -13,9 +13,9 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.http2.Http2Blueprint
-import akka.http.impl.engine.http2.WrappedSslContextSPI
+import akka.http.impl.engine.http2.{ AlpnSwitch, Http2Blueprint, WrappedSslContextSPI }
 import akka.http.impl.engine.server.HttpAttributes
+import akka.http.impl.util.LogByteStringTools
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -60,27 +60,44 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
 
     val effectivePort = if (port >= 0) port else 443
 
-    val serverLayer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
-      val wrappedContext = WrappedSslContextSPI.wrapContext(httpsContext)
+    val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
+      BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
+        case SessionBytes(_, bytes) ⇒ bytes
+      })
+
+    def http2Layer(): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+      Http2Blueprint.serverStack() atop
+        unwrapTls
+
+    // Flow is not reusable because we need a side-channel to transport the protocol
+    // chosen by ALPN from the SSLEngine to the switching stage
+    def serverLayer(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+      // Mutable cell to transport the chosen protocol from the SSLEngine to
+      // the switch stage.
+      // Doesn't need to be volatile because there's a happens-before relationship (enforced by memory barriers)
+      // between the SSL handshake and sending out the first SessionBytes, and receiving the first SessionBytes
+      // and reading out the variable.
+      var chosenProtocol: Option[String] = None
+      def setChosenProtocol(protocol: String): Unit =
+        if (chosenProtocol.isEmpty) chosenProtocol = Some(protocol)
+        else throw new IllegalStateException("ChosenProtocol was set twice. Http2.serverLayer is not reusable.")
+      def getChosenProtocol(): String = chosenProtocol.getOrElse("h1") // default to http/1, e.g. when ALPN jar is missing
+
+      val wrappedContext = WrappedSslContextSPI.wrapContext(httpsContext, setChosenProtocol)
       val tls = http.sslTlsStage(wrappedContext, TLSRole.server)
 
-      val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
-        BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
-          case SessionBytes(_, bytes) ⇒ bytes
-        })
-
-      Http2Blueprint.serverStack() atop
-        unwrapTls atop
+      AlpnSwitch(getChosenProtocol, Http().serverLayer(), http2Layer()) atop
         tls
     }
 
-    val fullLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(Fusing.aggressive(
+    // Not reusable, see above.
+    def fullLayer(): Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(Fusing.aggressive(
       Flow[HttpRequest]
         .watchTermination()(Keep.right)
         // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
         // to buffer requests that cannot be handled in parallel
         .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
-        .joinMat(serverLayer)(Keep.left)))
+        .joinMat(serverLayer())(Keep.left)))
 
     val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
 
@@ -88,8 +105,8 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
       case incoming: Tcp.IncomingConnection ⇒
         try {
           val layer =
-            if (settings.remoteAddressHeader) fullLayer.addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
-            else fullLayer
+            if (settings.remoteAddressHeader) fullLayer().addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
+            else fullLayer()
 
           layer.joinMat(incoming.flow)(Keep.left)
             .run().recover {

@@ -6,23 +6,18 @@ package akka.http.impl.engine.http2
 
 import java.security.SecureRandom
 import java.{ util ⇒ ju }
-import javax.net.ssl.KeyManager
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLContextSpi
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLException
-import javax.net.ssl.SSLServerSocketFactory
-import javax.net.ssl.SSLSessionContext
-import javax.net.ssl.SSLSocketFactory
-import javax.net.ssl.TrustManager
+import javax.net.ssl._
 
 import akka.http.scaladsl.HttpsConnectionContext
 import org.eclipse.jetty.alpn.ALPN
+import org.eclipse.jetty.alpn.ALPN.ServerProvider
 
 /**
+ * INTERNAL API
+ *
  * Wraps an SSLContext so that all engines it creates will announce HTTP/2 if possible.
  */
-class WrappedSslContextSPI(underlying: SSLContext) extends SSLContextSpi {
+private[akka] class WrappedSslContextSPI(underlying: SSLContext, setChosenProtocol: String ⇒ Unit) extends SSLContextSpi {
   def engineGetSocketFactory(): SSLSocketFactory =
     underlying.getSocketFactory()
 
@@ -30,22 +25,23 @@ class WrappedSslContextSPI(underlying: SSLContext) extends SSLContextSpi {
     underlying.init(keyManagers, trustManagers, secureRandom)
 
   def engineCreateSSLEngine(): SSLEngine = {
-    val engine = underlying.createSSLEngine()
-    ALPN.put(engine, new ALPN.ServerProvider {
-      def select(protocols: ju.List[String]): String =
-        try
-          if (protocols.contains("h2")) {
-            System.out.println("HTTP/2 is supported!")
-            "h2"
-          } else
-            // FIXME: actually negotiate and fall back to HTTP/1.1
-            throw new SSLException("No supported protocol found. Only 'h2' supported right now.")
-        finally ALPN.remove(engine)
 
-      def unsupported(): Unit = {
-        println("ALPN not supported by client!") // FIXME: remove
-        ALPN.remove(engine)
-      }
+    val engine = underlying.createSSLEngine()
+
+    ALPN.put(engine, new ServerProvider {
+      override def select(protocols: ju.List[String]): String =
+        choose {
+          if (protocols.contains("h2")) "h2"
+          else "h1"
+        }
+
+      override def unsupported(): Unit =
+        choose("h1")
+
+      def choose(protocol: String): String = try {
+        setChosenProtocol(protocol)
+        protocol
+      } finally ALPN.remove(engine)
     })
     engine
   }
@@ -63,16 +59,16 @@ class WrappedSslContextSPI(underlying: SSLContext) extends SSLContextSpi {
     underlying.getServerSocketFactory()
 }
 
-object WrappedSslContextSPI {
+private[akka] object WrappedSslContextSPI {
   val field = {
     val field = classOf[SSLContext].getDeclaredField("contextSpi")
     field.setAccessible(true)
     field
   }
 
-  def wrapContext(context: HttpsConnectionContext): HttpsConnectionContext = {
+  def wrapContext(context: HttpsConnectionContext, setChosenProtocol: String ⇒ Unit): HttpsConnectionContext = {
     val newContext = SSLContext.getInstance("TLS")
-    field.set(newContext, new WrappedSslContextSPI(context.sslContext))
+    field.set(newContext, new WrappedSslContextSPI(context.sslContext, setChosenProtocol))
 
     new HttpsConnectionContext(
       newContext,
