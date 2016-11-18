@@ -183,7 +183,7 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
 
     case req: SnapshotProtocol.Request ⇒ req match { // exhaustive match
       case LoadSnapshot(persistenceId, criteria, toSequenceNr) ⇒
-        sender() ! LoadSnapshotResult(None, toSequenceNr)
+        sender() ! LoadSnapshotFailed(timeoutException)
       case SaveSnapshot(metadata, snapshot) ⇒
         sender() ! SaveSnapshotFailure(metadata, timeoutException)
       case DeleteSnapshot(metadata) ⇒

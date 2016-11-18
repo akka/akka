@@ -48,7 +48,12 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     // Hence, an attempt to load that snapshot will fail but loading an older snapshot may succeed.
     //
     val metadata = snapshotMetadatas(persistenceId, criteria).sorted.takeRight(maxLoadAttempts)
-    Future(load(metadata))(streamDispatcher)
+    Future {
+      load(metadata) match {
+        case Success(s) ⇒ s
+        case Failure(e) ⇒ throw e // all attempts failed, fail the future
+      }
+    }(streamDispatcher)
   }
 
   override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
@@ -86,14 +91,19 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
   }
 
   @scala.annotation.tailrec
-  private def load(metadata: immutable.Seq[SnapshotMetadata]): Option[SelectedSnapshot] = metadata.lastOption match {
-    case None ⇒ None
+  private def load(metadata: immutable.Seq[SnapshotMetadata]): Try[Option[SelectedSnapshot]] = metadata.lastOption match {
+    case None ⇒ Success(None) // no snapshots stored
     case Some(md) ⇒
       Try(withInputStream(md)(deserialize)) match {
-        case Success(s) ⇒ Some(SelectedSnapshot(md, s.data))
+        case Success(s) ⇒
+          Success(Some(SelectedSnapshot(md, s.data)))
         case Failure(e) ⇒
-          log.error(e, s"Error loading snapshot [${md}]")
-          load(metadata.init) // try older snapshot
+          val remaining = metadata.init
+          log.error(e, s"Error loading snapshot [{}], remaining attempts: [{}]", md, remaining.size)
+          if (remaining.isEmpty)
+            Failure(e) // all attempts failed
+          else
+            load(remaining) // try older snapshot
       }
   }
 
@@ -121,7 +131,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     try { p(stream) } finally { stream.close() }
 
   /** Only by persistenceId and sequenceNr, timestamp is informational - accomodates for 2.13.x series files */
-  private def snapshotFileForWrite(metadata: SnapshotMetadata, extension: String = ""): File =
+  protected def snapshotFileForWrite(metadata: SnapshotMetadata, extension: String = ""): File =
     new File(snapshotDir, s"snapshot-${URLEncoder.encode(metadata.persistenceId, UTF_8)}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 
   private def snapshotMetadatas(persistenceId: String, criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {

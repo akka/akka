@@ -85,6 +85,15 @@ public class PersistenceDocTest {
           }
           //#recovery-completed
         }
+
+        abstract class MyPersistentActor6 extends UntypedPersistentActor {
+            //#recovery-no-snap
+            @Override
+            public Recovery recovery() {
+                return Recovery.create(SnapshotSelectionCriteria.none());
+            }
+            //#recovery-no-snap
+        }
         
         abstract class MyActor extends UntypedPersistentActor {
           //#backoff

@@ -73,9 +73,10 @@ object SnapshotFailureRobustnessSpec {
 
   class FailingLocalSnapshotStore extends LocalSnapshotStore {
     override def save(metadata: SnapshotMetadata, snapshot: Any): Unit = {
-      if (metadata.sequenceNr == 2) {
+      if (metadata.sequenceNr == 2 || snapshot == "boom") {
         val bytes = "b0rk".getBytes("UTF-8")
-        withOutputStream(metadata)(_.write(bytes))
+        val tmpFile = withOutputStream(metadata)(_.write(bytes))
+        tmpFile.renameTo(snapshotFileForWrite(metadata))
       } else super.save(metadata, snapshot)
     }
   }
@@ -112,10 +113,11 @@ class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.conf
       sPersistentActor ! Cmd("kablama")
       expectMsg(2)
       system.eventStream.publish(TestEvent.Mute(
-        EventFilter.error(start = "Error loading snapshot [")))
+        EventFilter[java.io.NotSerializableException](start = "Error loading snapshot")))
       system.eventStream.subscribe(testActor, classOf[Logging.Error])
       try {
         val lPersistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
+        expectMsgType[Logging.Error].message.toString should startWith("Error loading snapshot")
         expectMsgPF() {
           case (SnapshotMetadata(`persistenceId`, 1, timestamp), state) ⇒
             state should ===("blahonga")
@@ -124,6 +126,40 @@ class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.conf
         expectMsg("kablama-2")
         expectMsg(RecoveryCompleted)
         expectNoMsg(1 second)
+      } finally {
+        system.eventStream.unsubscribe(testActor, classOf[Logging.Error])
+        system.eventStream.publish(TestEvent.UnMute(
+          EventFilter.error(start = "Error loading snapshot [")))
+      }
+    }
+
+    "fail recovery and stop actor when no snapshot could be loaded" in {
+      val sPersistentActor = system.actorOf(Props(classOf[SaveSnapshotTestPersistentActor], name, testActor))
+      val persistenceId = name
+
+      expectMsg(RecoveryCompleted)
+      sPersistentActor ! Cmd("ok")
+      expectMsg(1)
+      // max-attempts = 3
+      sPersistentActor ! Cmd("boom")
+      expectMsg(2)
+      sPersistentActor ! Cmd("boom")
+      expectMsg(3)
+      sPersistentActor ! Cmd("boom")
+      expectMsg(4)
+      system.eventStream.publish(TestEvent.Mute(
+        EventFilter[java.io.NotSerializableException](start = "Error loading snapshot")))
+      system.eventStream.publish(TestEvent.Mute(
+        EventFilter[java.io.NotSerializableException](start = "Persistence failure")))
+      system.eventStream.subscribe(testActor, classOf[Logging.Error])
+      try {
+        val lPersistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
+        (1 to 3).foreach { _ ⇒
+          expectMsgType[Logging.Error].message.toString should startWith("Error loading snapshot")
+        }
+        expectMsgType[Logging.Error].message.toString should startWith("Persistence failure")
+        watch(lPersistentActor)
+        expectTerminated(lPersistentActor)
       } finally {
         system.eventStream.unsubscribe(testActor, classOf[Logging.Error])
         system.eventStream.publish(TestEvent.UnMute(
