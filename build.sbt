@@ -30,12 +30,12 @@ inThisBuild(Def.settings(
   ),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
-  Formatting.formatSettings
+  Formatting.formatSettings,
+  shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 ))
 
-
 lazy val root = Project(
-    id = "akka-http-root",
+    id = "root",
     base = file(".")
   )
   .enablePlugins(UnidocRoot, NoPublish, DeployRsync)
@@ -84,6 +84,7 @@ lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test")
+  .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release tests
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
@@ -155,5 +156,3 @@ lazy val docs = project("docs")
     Formatting.docFormatSettings,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
-
-shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
