@@ -539,15 +539,26 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
       wakeupIdx(wheelSlot)
       tail = tail + 1
       if (activeConsumers == 0) {
-        val completedMessage = HubCompleted(None)
-        // Notify pending consumers and set tombstone
-        state.getAndSet(Closed(None)).asInstanceOf[Open].registrations foreach { consumer ⇒
-          consumer.callback.invoke(completedMessage)
-        }
-
         // Existing consumers have already consumed all elements and will see completion status in the queue
         completeStage()
       }
+    }
+
+    override def postStop(): Unit = {
+      // Notify pending consumers and set tombstone
+
+      @tailrec def tryClose(): Unit = state.get() match {
+        case Closed(_) ⇒ // Already closed, ignore
+        case open: Open ⇒
+          if (state.compareAndSet(open, Closed(None))) {
+            val completedMessage = HubCompleted(None)
+            open.registrations foreach { consumer ⇒
+              consumer.callback.invoke(completedMessage)
+            }
+          } else tryClose()
+      }
+
+      tryClose()
     }
 
     private def publish(elem: T): Unit = {
