@@ -22,7 +22,7 @@ private[stream] object CompressionUtils {
           val compressor = newCompressor()
 
           override def onPush(): Unit = {
-            val data = compressor.compress(grab(in))
+            val data = compressor.compressAndFlush(grab(in))
             if (data.nonEmpty) push(out, data)
             else pull(in)
           }
