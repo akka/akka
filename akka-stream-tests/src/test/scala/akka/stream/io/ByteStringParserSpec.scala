@@ -3,13 +3,12 @@
  */
 package akka.stream.io
 
-import akka.stream.{ ActorMaterializer, Attributes, ThrottleMode }
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.impl.io.ByteStringParser.{ ByteReader, ParseResult, ParseStep }
-import akka.stream.io.compression.LogByteStringTools
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.stage.GraphStageLogic
 import akka.stream.testkit.StreamSpec
+import akka.stream.{ ActorMaterializer, Attributes, ThrottleMode }
 import akka.util.ByteString
 
 import scala.concurrent.Await
@@ -82,6 +81,33 @@ class ByteStringParserSpec extends StreamSpec() {
       run(ByteString(0xca), ByteString(0xfe, 0xef, 0x12)) shouldEqual ByteString(0xef, 0x12)
       run(ByteString(0xca, 0xfe), ByteString(0xef, 0x12)) shouldEqual ByteString(0xef, 0x12)
       run(ByteString(0xca, 0xfe, 0xef, 0x12)) shouldEqual ByteString(0xef, 0x12)
+    }
+
+    "don't spin when logic is flawed" in {
+      object SpinningLogic extends ByteStringParser[Int] {
+        def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new ParsingLogic {
+          object State1 extends ParseStep[Int] {
+            def parse(reader: ByteReader): ParseResult[Int] =
+              ParseResult(None, State2)
+          }
+          object State2 extends ParseStep[Int] {
+            def parse(reader: ByteReader): ParseResult[Int] =
+              ParseResult(None, State1)
+          }
+
+          startWith(State1)
+
+          override protected def recursionLimit: Int = 10 // fail even earlier than the default
+        }
+      }
+
+      (the[IllegalStateException] thrownBy Await.result(
+        Source.single(ByteString("abc"))
+          .via(SpinningLogic)
+          .runWith(Sink.ignore),
+        3.seconds)).getMessage shouldBe "Parsing logic didn't produce result after 10 steps. " +
+        "Aborting processing to avoid infinite cycles. In the unlikely case that the parsing logic needs more recursion, " +
+        "override ParsingLogic.recursionLimit."
     }
   }
 
