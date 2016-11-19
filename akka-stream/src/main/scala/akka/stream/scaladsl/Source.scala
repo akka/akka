@@ -356,6 +356,14 @@ object Source {
         shape("FailedSource")))
 
   /**
+   * Creates a `Source` that is not materialized until there is downstream demand, when the source gets materialized
+   * the materialized future is completed with its value, if downstream cancels or fails without any demand the
+   * create factory is never called and the materialized `Future` is failed.
+   */
+  def lazily[T, M](create: () => Source[T, M]): Source[T, Future[M]] =
+    Source.fromGraph(new LazySource[T, M](create))
+
+  /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
   def asSubscriber[T]: Source[T, Subscriber[T]] =

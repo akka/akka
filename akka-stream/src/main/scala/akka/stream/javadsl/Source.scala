@@ -222,6 +222,14 @@ object Source {
     new Source(scaladsl.Source.failed(cause))
 
   /**
+   * Creates a `Source` that is not materialized until there is downstream demand, when the source gets materialized
+   * the materialized future is completed with its value, if downstream cancels or fails without any demand the
+   * `create` factory is never called and the materialized `CompletionStage` is failed.
+   */
+  def lazily[T, M](create: function.Creator[Source[T, M]]): Source[T, CompletionStage[M]] =
+    scaladsl.Source.lazily[T, M](() => create.create().asScala).mapMaterializedValue(_.toJava).asJava
+
+  /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
   def asSubscriber[T](): Source[T, Subscriber[T]] =
