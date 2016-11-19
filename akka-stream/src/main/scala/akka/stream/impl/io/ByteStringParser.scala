@@ -8,7 +8,7 @@ import akka.stream.stage._
 import akka.util.ByteString
 
 import scala.annotation.tailrec
-import scala.util.control.NoStackTrace
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * INTERNAL API
@@ -64,6 +64,8 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
             // Not enough data in buffer and upstream is closed
             if (isClosed(bytesIn)) current.onTruncation()
             else pull(bytesIn)
+          case NonFatal(ex) ⇒
+            failStage(new ParsingException(s"Parsing failed in step $current", ex))
         }
       } else {
         if (isClosed(bytesIn)) {
@@ -138,6 +140,8 @@ private[akka] object ByteStringParser {
     override def parse(reader: ByteReader) =
       throw new IllegalStateException("no initial parser installed: you must use startWith(...)")
   }
+
+  class ParsingException(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
 
   val NeedMoreData = new Exception with NoStackTrace
 

@@ -71,7 +71,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
       "throw an error on corrupt input" in {
         (the[RuntimeException] thrownBy {
           ourDecode(corruptContent)
-        }).getCause should be(a[DataFormatException])
+        }).ultimateCause should be(a[DataFormatException])
       }
     }
 

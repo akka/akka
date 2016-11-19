@@ -17,7 +17,7 @@ private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int)
     val inflater: Inflater
     def afterInflate: ParseStep[ByteString]
     def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
-    val inflateState: Inflate
+    val Inflating: Inflate
 
     abstract class Inflate(noPostProcessing: Boolean) extends ParseStep[ByteString] {
       override def canWorkWithPartialData = true
