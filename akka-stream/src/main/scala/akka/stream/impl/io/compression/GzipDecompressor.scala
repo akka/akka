@@ -41,7 +41,7 @@ private[akka] class GzipDecompressor(maxBytesPerChunk: Int)
 
         inflater.reset()
         crc32.reset()
-        ParseResult(None, Inflating, false)
+        ParseResult(None, Inflating, acceptUpstreamFinish = false)
       }
     }
     var crc32: CRC32 = new CRC32
@@ -54,7 +54,7 @@ private[akka] class GzipDecompressor(maxBytesPerChunk: Int)
         if (readIntLE() != crc32.getValue.toInt) fail("Corrupt data (CRC32 checksum error)")
         if (readIntLE() != inflater.getBytesWritten.toInt /* truncated to 32bit */ )
           fail("Corrupt GZIP trailer ISIZE")
-        ParseResult(None, ReadHeaders, true)
+        ParseResult(None, ReadHeaders, acceptUpstreamFinish = true)
       }
     }
   }
