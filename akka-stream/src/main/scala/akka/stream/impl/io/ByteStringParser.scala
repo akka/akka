@@ -7,7 +7,6 @@ import akka.stream._
 import akka.stream.stage._
 import akka.util.ByteString
 
-import scala.annotation.tailrec
 import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
@@ -55,6 +54,10 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
           } else {
             buffer = reader.remainingData
             current = parseResult.nextStep
+
+            // If this step didn't produce a result, continue parsing.
+            if (parseResult.result.isEmpty)
+              doParse()
           }
         } catch {
           case NeedMoreData ⇒
@@ -116,7 +119,8 @@ private[akka] object ByteStringParser {
   val CompactionThreshold = 16
 
   /**
-   * @param result - parser can return some element for downstream or return None if no element was generated
+   * @param result - parser can return some element for downstream or return None if no element was generated in this step
+   *               and parsing should immediately continue with the next step.
    * @param nextStep - next parser
    * @param acceptUpstreamFinish - if true - stream will complete when received `onUpstreamFinish`, if "false"
    *                             - onTruncation will be called

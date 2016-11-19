@@ -14,7 +14,7 @@ private[akka] class DeflateDecompressor(maxBytesPerChunk: Int)
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
     override val inflater: Inflater = new Inflater()
 
-    override case object Inflating extends Inflate(true) {
+    override case object Inflating extends Inflate(noPostProcessing = true) {
       override def onTruncation(): Unit = completeStage()
     }
 
