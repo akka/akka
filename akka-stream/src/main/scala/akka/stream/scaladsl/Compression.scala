@@ -8,6 +8,8 @@ import akka.stream.impl.io.compression._
 import akka.util.ByteString
 
 object Compression {
+  final val MaxBytesPerChunkDefault = 64 * 1024
+
   /**
    * Creates a flow that gzip-compresses a stream of ByteStrings. Note that the compressor
    * will SYNC_FLUSH after every [[ByteString]] so that it is guaranteed that every [[ByteString]]
@@ -24,7 +26,7 @@ object Compression {
    *
    * @param maxBytesPerChunk Maximum length of an output [[ByteString]] chunk.
    */
-  def gunzip(maxBytesPerChunk: Int = DeflateDecompressorBase.MaxBytesPerChunkDefault): Flow[ByteString, ByteString, NotUsed] =
+  def gunzip(maxBytesPerChunk: Int = MaxBytesPerChunkDefault): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(new GzipDecompressor(maxBytesPerChunk))
       .named("gunzip")
 
@@ -44,7 +46,7 @@ object Compression {
    *
    * @param maxBytesPerChunk Maximum length of an output [[ByteString]] chunk.
    */
-  def inflate(maxBytesPerChunk: Int = DeflateDecompressorBase.MaxBytesPerChunkDefault): Flow[ByteString, ByteString, NotUsed] =
+  def inflate(maxBytesPerChunk: Int = MaxBytesPerChunkDefault): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(new DeflateDecompressor(maxBytesPerChunk))
       .named("inflate")
 }

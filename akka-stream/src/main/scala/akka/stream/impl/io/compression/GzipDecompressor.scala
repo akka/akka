@@ -11,7 +11,7 @@ import akka.stream.impl.io.ByteStringParser.{ ParseResult, ParseStep }
 import akka.util.ByteString
 
 /** INTERNAL API */
-private[akka] class GzipDecompressor(maxBytesPerChunk: Int = DeflateDecompressorBase.MaxBytesPerChunkDefault)
+private[akka] class GzipDecompressor(maxBytesPerChunk: Int)
   extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
