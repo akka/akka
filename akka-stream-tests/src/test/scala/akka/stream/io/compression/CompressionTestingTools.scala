@@ -4,6 +4,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
+import scala.annotation.tailrec
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success }
@@ -28,5 +29,15 @@ object CompressionTestingTools {
       byteStringStream.runFold(ByteString.empty)(_ ++ _)
     def utf8String(implicit materializer: Materializer, ec: ExecutionContext): Future[String] =
       join.map(_.utf8String)
+  }
+
+  implicit class EnhancedThrowable(val throwable: Throwable) extends AnyVal {
+    def ultimateCause: Throwable = {
+      @tailrec def rec(ex: Throwable): Throwable =
+        if (ex.getCause == null) ex
+        else rec(ex.getCause)
+
+      rec(throwable)
+    }
   }
 }

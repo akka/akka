@@ -23,7 +23,7 @@ private[akka] class GzipDecompressor(maxBytesPerChunk: Int)
     trait Step extends ParseStep[ByteString] {
       override def onTruncation(): Unit = failStage(new ZipException("Truncated GZIP stream"))
     }
-    override val inflateState = new Inflate(false) with Step
+    override case object Inflating extends Inflate(false) with Step
     startWith(ReadHeaders)
 
     /** Reading the header bytes */
@@ -41,7 +41,7 @@ private[akka] class GzipDecompressor(maxBytesPerChunk: Int)
 
         inflater.reset()
         crc32.reset()
-        ParseResult(None, inflateState, false)
+        ParseResult(None, Inflating, false)
       }
     }
     var crc32: CRC32 = new CRC32

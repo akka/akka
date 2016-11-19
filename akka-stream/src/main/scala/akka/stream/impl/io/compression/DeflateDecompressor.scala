@@ -14,14 +14,14 @@ private[akka] class DeflateDecompressor(maxBytesPerChunk: Int)
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
     override val inflater: Inflater = new Inflater()
 
-    override val inflateState = new Inflate(true) {
+    override case object Inflating extends Inflate(true) {
       override def onTruncation(): Unit = completeStage()
     }
 
-    override def afterInflate = inflateState
+    override def afterInflate = Inflating
     override def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit = {}
 
-    startWith(inflateState)
+    startWith(Inflating)
   }
 }
 
