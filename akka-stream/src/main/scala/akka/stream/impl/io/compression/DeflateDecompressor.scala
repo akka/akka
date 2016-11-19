@@ -6,12 +6,9 @@ package akka.stream.impl.io.compression
 import java.util.zip.Inflater
 
 import akka.stream.Attributes
-import akka.stream.impl.io.ByteStringParser
-import akka.stream.impl.io.ByteStringParser.{ ParseResult, ParseStep }
-import akka.util.ByteString
 
 /** INTERNAL API */
-private[akka] class DeflateDecompressor(maxBytesPerChunk: Int = DeflateDecompressorBase.MaxBytesPerChunkDefault)
+private[akka] class DeflateDecompressor(maxBytesPerChunk: Int)
   extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {

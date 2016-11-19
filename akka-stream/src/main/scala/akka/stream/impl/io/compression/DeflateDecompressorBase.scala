@@ -10,7 +10,7 @@ import akka.stream.impl.io.ByteStringParser.{ ParseResult, ParseStep }
 import akka.util.ByteString
 
 /** INTERNAL API */
-private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = DeflateDecompressorBase.MaxBytesPerChunkDefault)
+private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int)
   extends ByteStringParser[ByteString] {
 
   abstract class DecompressorParsingLogic extends ParsingLogic {
@@ -45,6 +45,4 @@ private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Def
 }
 
 /** INTERNAL API */
-private[akka] object DeflateDecompressorBase {
-  final val MaxBytesPerChunkDefault = 64 * 1024
-}
+private[akka] object DeflateDecompressorBase
