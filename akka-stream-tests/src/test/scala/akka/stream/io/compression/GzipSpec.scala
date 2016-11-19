@@ -34,15 +34,15 @@ class GzipSpec extends CoderSpec("gzip") {
     }
     "throw an error on truncated input" in {
       val ex = the[RuntimeException] thrownBy ourDecode(streamEncode(smallTextBytes).dropRight(5))
-      ex.getCause.getMessage should equal("Truncated GZIP stream")
+      ex.ultimateCause.getMessage should equal("Truncated GZIP stream")
     }
     "throw an error if compressed data is just missing the trailer at the end" in {
       def brokenCompress(payload: String) = newCompressor().compress(ByteString(payload, "UTF-8"))
       val ex = the[RuntimeException] thrownBy ourDecode(brokenCompress("abcdefghijkl"))
-      ex.getCause.getMessage should equal("Truncated GZIP stream")
+      ex.ultimateCause.getMessage should equal("Truncated GZIP stream")
     }
     "throw early if header is corrupt" in {
-      val cause = (the[RuntimeException] thrownBy ourDecode(ByteString(0, 1, 2, 3, 4))).getCause
+      val cause = (the[RuntimeException] thrownBy ourDecode(ByteString(0, 1, 2, 3, 4))).ultimateCause
       cause should (be(a[ZipException]) and have message "Not in GZIP format")
     }
   }
