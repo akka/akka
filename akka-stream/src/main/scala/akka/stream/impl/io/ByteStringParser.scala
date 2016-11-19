@@ -7,6 +7,7 @@ import akka.stream._
 import akka.stream.stage._
 import akka.util.ByteString
 
+import scala.annotation.tailrec
 import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
@@ -29,6 +30,8 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
 
     final protected def startWith(step: ParseStep[T]): Unit = current = step
 
+    protected def recursionLimit: Int = 1000
+
     /**
      * doParse() is the main driver for the parser. It can be called from onPush, onPull and onUpstreamFinish.
      * The general logic is that invocation of this method either results in an emitted parsed element, or an indication
@@ -40,8 +43,10 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
      *    buffer. This can lead to two conditions:
      *     - drained, empty buffer. This is either accepted completion (acceptUpstreamFinish) or a truncation.
      *     - parser demands more data than in buffer. This is always a truncation.
+     *
+     * If the return value is true the method must be called another time to continue processing.
      */
-    private def doParse(): Unit = {
+    private def doParseInner(): Boolean =
       if (buffer.nonEmpty) {
         val reader = new ByteReader(buffer)
         try {
@@ -51,13 +56,16 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
 
           if (parseResult.nextStep == FinishedParser) {
             completeStage()
+            DontRecurse
           } else {
             buffer = reader.remainingData
             current = parseResult.nextStep
 
             // If this step didn't produce a result, continue parsing.
             if (parseResult.result.isEmpty)
-              doParse()
+              Recurse
+            else
+              DontRecurse
           }
         } catch {
           case NeedMoreData ⇒
@@ -67,8 +75,12 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
             // Not enough data in buffer and upstream is closed
             if (isClosed(bytesIn)) current.onTruncation()
             else pull(bytesIn)
+
+            DontRecurse
           case NonFatal(ex) ⇒
             failStage(new ParsingException(s"Parsing failed in step $current", ex))
+
+            DontRecurse
         }
       } else {
         if (isClosed(bytesIn)) {
@@ -77,8 +89,21 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
           if (acceptUpstreamFinish) completeStage()
           else current.onTruncation()
         } else pull(bytesIn)
+
+        DontRecurse
       }
-    }
+
+    @tailrec private def doParse(remainingRecursions: Int = recursionLimit): Unit =
+      if (remainingRecursions == 0)
+        failStage(
+          new IllegalStateException(s"Parsing logic didn't produce result after $recursionLimit steps. " +
+            "Aborting processing to avoid infinite cycles. In the unlikely case that the parsing logic " +
+            "needs more recursion, override ParsingLogic.recursionLimit.")
+        )
+      else {
+        val recurse = doParseInner()
+        if (recurse) doParse(remainingRecursions - 1)
+      }
 
     // Completion is handled by doParse as the buffer either gets empty after this call, or the parser requests
     // data that we can no longer provide (truncation).
@@ -117,6 +142,9 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
 private[akka] object ByteStringParser {
 
   val CompactionThreshold = 16
+
+  private final val Recurse = true
+  private final val DontRecurse = false
 
   /**
    * @param result - parser can return some element for downstream or return None if no element was generated in this step
