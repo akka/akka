@@ -6,6 +6,9 @@ import akka.stream.stage.{ GraphStageWithMaterializedValue, InHandler, OutHandle
 import akka.stream._
 import akka.testkit.TestProbe
 
+/**
+ * Messages emitted after the corresponding `stageUnderTest` methods has been invoked.
+ */
 object GraphStageMessages {
   case object Push extends NoSerializationVerificationNeeded
   case object UpstreamFinish extends NoSerializationVerificationNeeded
@@ -45,8 +48,8 @@ private[testkit] class TestSinkStage[T, M](
     val inHandler = logic.handlers(in.id).asInstanceOf[InHandler]
     logic.handlers(in.id) = new InHandler {
       override def onPush(): Unit = {
-        probe.ref ! GraphStageMessages.Push
         inHandler.onPush()
+        probe.ref ! GraphStageMessages.Push
       }
       override def onUpstreamFinish(): Unit = {
         try {
@@ -98,8 +101,8 @@ private[testkit] class TestSourceStage[T, M](
     val outHandler = logic.handlers(out.id).asInstanceOf[OutHandler]
     logic.handlers(out.id) = new OutHandler {
       override def onPull(): Unit = {
-        probe.ref ! GraphStageMessages.Pull
         outHandler.onPull()
+        probe.ref ! GraphStageMessages.Pull
       }
       override def onDownstreamFinish(): Unit = {
         try {
