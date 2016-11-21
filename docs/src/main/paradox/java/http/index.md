@@ -33,8 +33,8 @@ akka-http-jackson
 
 * [introduction](introduction.md)
 * [configuration](configuration.md)
-* [common/index](common/index.md)
 * [http-model](http-model.md)
+* [common/index](common/index.md)
 * [implications-of-streaming-http-entity](implications-of-streaming-http-entity.md)
 * [server-side/low-level-server-side-api](server-side/low-level-server-side-api.md)
 * [routing-dsl/index](routing-dsl/index.md)

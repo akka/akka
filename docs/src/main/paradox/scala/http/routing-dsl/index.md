@@ -25,7 +25,6 @@ from a background with non-"streaming first" HTTP Servers.
 * [case-class-extraction](case-class-extraction.md)
 * [source-streaming-support](source-streaming-support.md)
 * [testkit](testkit.md)
-* [websocket-support](websocket-support.md)
 
 @@@
 

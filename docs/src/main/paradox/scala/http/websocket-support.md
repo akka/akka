@@ -14,7 +14,7 @@ i.e. a sequence of octets or a text message, i.e. a sequence of Unicode code poi
 
 Akka HTTP provides a straight-forward model for this abstraction:
 
-@@snip [Message.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala) { #message-model }
+@@snip [Message.scala](../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala) { #message-model }
 
 The data of a message is provided as a stream because WebSocket messages do not have a predefined size and could
 (in theory) be infinitely long. However, only one message can be open per direction of the WebSocket connection,
@@ -74,7 +74,7 @@ Let's look at an @github[example](/docs/src/test/scala/docs/http/scaladsl/server
 WebSocket requests come in like any other requests. In the example, requests to `/greeter` are expected to be
 WebSocket requests:
 
-@@snip [WebSocketExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-request-handling }
+@@snip [WebSocketExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-request-handling }
 
 It uses pattern matching on the path and then inspects the request to query for the `UpgradeToWebSocket` header. If
 such a header is found, it is used to generate a response by passing a handler for WebSocket messages to the
@@ -83,22 +83,22 @@ such a header is found, it is used to generate a response by passing a handler f
 The passed handler expects text messages where each message is expected to contain (a person's) name
 and then responds with another text message that contains a greeting:
 
-@@snip [WebSocketExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-handler }
+@@snip [WebSocketExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-handler }
 
 @@@ note
-Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](../common/timeouts.md#idle-timeouts-scala).
+Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](common/timeouts.md#idle-timeouts-scala).
 In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
 'keep-alive' messages regularly.
 @@@
 
 ## Routing support
 
-The routing DSL provides the @ref[handleWebSocketMessages](directives/websocket-directives/handleWebSocketMessages.md#handlewebsocketmessages) directive to install a WebSocket handler if the request
+The routing DSL provides the @ref[handleWebSocketMessages](routing-dsl/directives/websocket-directives/handleWebSocketMessages.md#handlewebsocketmessages) directive to install a WebSocket handler if the request
 was a WebSocket request. Otherwise, the directive rejects the request.
 
 Here's the above simple request handler rewritten as a route:
 
-@@snip [WebSocketDirectivesExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #greeter-service }
+@@snip [WebSocketDirectivesExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #greeter-service }
 
 The example also includes code demonstrating the testkit support for WebSocket services. It allows to create WebSocket
 requests to run against a route using *WS* which can be used to provide a mock WebSocket probe that allows manual

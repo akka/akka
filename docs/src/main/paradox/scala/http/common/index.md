@@ -11,7 +11,6 @@ which are specific to one side only.
 
 @@@ index
 
-* [http-model](http-model.md)
 * [marshalling](marshalling.md)
 * [unmarshalling](unmarshalling.md)
 * [de-coding](de-coding.md)
