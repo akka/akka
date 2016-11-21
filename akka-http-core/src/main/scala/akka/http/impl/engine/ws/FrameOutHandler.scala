@@ -13,6 +13,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.stage._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
+import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -154,12 +155,14 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
 
     /** We handle [[ProtocolException]] in a special way (by terminating with a ProtocolError) */
     private trait ProcotolExceptionHandling extends InHandler {
-      override def onUpstreamFailure(cause: Throwable): Unit =
+      @tailrec override final def onUpstreamFailure(cause: Throwable): Unit =
         cause match {
           case p: ProtocolException ⇒
             becomeSendOutCloseFrameAndComplete(FrameEvent.closeFrame(Protocol.CloseCodes.ProtocolError))
             absorbTermination()
-          case _ ⇒ super.onUpstreamFailure(cause)
+          case x if x.getCause ne null ⇒ onUpstreamFailure(x.getCause)
+          case _ ⇒
+            super.onUpstreamFailure(cause)
         }
     }
 

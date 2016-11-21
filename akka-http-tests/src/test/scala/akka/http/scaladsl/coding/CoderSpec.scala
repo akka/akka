@@ -72,7 +72,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
       "throw an error on corrupt input" in {
         (the[RuntimeException] thrownBy {
           ourDecode(corruptContent)
-        }).getCause should be(a[DataFormatException])
+        }).ultimateCause should be(a[DataFormatException])
       }
     }
 
@@ -188,4 +188,14 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
 
   def decodeFromIterator(iterator: () ⇒ Iterator[ByteString]): ByteString =
     Await.result(Source.fromIterator(iterator).via(Coder.decoderFlow).join, 3.seconds)
+
+  implicit class EnhancedThrowable(val throwable: Throwable) {
+    def ultimateCause: Throwable = {
+      @tailrec def rec(ex: Throwable): Throwable =
+        if (ex.getCause == null) ex
+        else rec(ex.getCause)
+
+      rec(throwable)
+    }
+  }
 }
