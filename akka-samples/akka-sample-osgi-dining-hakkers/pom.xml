@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.typesafe.akka.akka-sample-osgi-dining-hakkers</groupId>
     <artifactId>project</artifactId>
-    <version>2.4-SNAPSHOT</version>
+    <version>2.4.14</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <akka.version>2.4-SNAPSHOT</akka.version>
+        <akka.version>2.4.14</akka.version>
         <!-- Support for eecap-1.8 (Java 8) is from 3.0.2 -->
         <!-- https://github.com/apache/karaf/blob/karaf-3.0.2/assemblies/features/framework/src/main/filtered-resources/resources/etc/config.properties -->
         <karaf.version>3.0.8</karaf.version>

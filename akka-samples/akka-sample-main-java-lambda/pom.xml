@@ -7,7 +7,7 @@
   <artifactId>akka-sample-main-java-lambda</artifactId>
   <groupId>com.typesafe.akka.samples</groupId>
   <name>Akka Main in Java</name>
-  <version>2.4-SNAPSHOT</version>
+  <version>2.4.14</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -17,7 +17,7 @@
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-actor_2.11</artifactId>
-      <version>2.4-SNAPSHOT</version>
+      <version>2.4.14</version>
     </dependency>
   </dependencies>
 

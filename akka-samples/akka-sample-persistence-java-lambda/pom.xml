@@ -11,23 +11,23 @@
     <groupId>sample</groupId>
     <artifactId>akka-sample-persistence-java8</artifactId>
     <packaging>jar</packaging>
-    <version>2.4-SNAPSHOT</version>
+    <version>2.4.14</version>
 
     <dependencies>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor_2.11</artifactId>
-            <version>2.4-SNAPSHOT</version>
+            <version>2.4.14</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-persistence_2.11</artifactId>
-            <version>2.4-SNAPSHOT</version>
+            <version>2.4.14</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-testkit_2.11</artifactId>
-            <version>2.4-SNAPSHOT</version>
+            <version>2.4.14</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

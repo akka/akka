@@ -51,9 +51,9 @@ To start the application (on a unix-based system):
 .. code-block:: none
 
    cd target/universal/
-   unzip akka-sample-main-scala-2.4-SNAPSHOT.zip
-   chmod u+x akka-sample-main-scala-2.4-SNAPSHOT/bin/akka-sample-main-scala
-   akka-sample-main-scala-2.4-SNAPSHOT/bin/akka-sample-main-scala sample.hello.Main
+   unzip akka-sample-main-scala-2.4.14.zip
+   chmod u+x akka-sample-main-scala-2.4.14/bin/akka-sample-main-scala
+   akka-sample-main-scala-2.4.14/bin/akka-sample-main-scala sample.hello.Main
 
 Use ``Ctrl-C`` to interrupt and exit the application.
 

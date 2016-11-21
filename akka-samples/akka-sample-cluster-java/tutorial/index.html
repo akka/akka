@@ -8,7 +8,7 @@
 <div>
 <p>
 This tutorial contains 4 samples illustrating different 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/cluster-usage.html" target="_blank">Akka cluster</a> features.
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/cluster-usage.html" target="_blank">Akka cluster</a> features.
 </p>
 <ul>
 <li>Subscribe to cluster membership events</li>
@@ -54,7 +54,7 @@ actor.
 
 <p>
 You can read more about the cluster concepts in the 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/cluster-usage.html" target="_blank">documentation</a>.
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/cluster-usage.html" target="_blank">documentation</a>.
 </p>
 
 <p>
@@ -143,7 +143,7 @@ that happen in the cluster.
 <p>
 In the previous sample we saw how to subscribe to cluster membership events.
 You can read more about it in the 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/cluster-usage.html#Subscribe_to_Cluster_Events" target="_blank">documentation</a>.
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/cluster-usage.html#Subscribe_to_Cluster_Events" target="_blank">documentation</a>.
 How can cluster membership events be used?
 </p>
 
@@ -233,7 +233,7 @@ interesting to run them in separate processes. Stop the application in the
 <h2>Cluster Aware Routers</h2>
 
 <p>
-All <a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/routing.html" target="_blank">routers</a>
+All <a href="http://doc.akka.io/docs/akka/2.4.14/java/routing.html" target="_blank">routers</a>
 can be made aware of member nodes in the cluster, i.e. deploying new routees or looking up routees
 on nodes in the cluster.
 When a node becomes unreachable or leaves the cluster the routees of that node are
@@ -244,7 +244,7 @@ when a node becomes reachable again, after having been unreachable.
 
 <p>
 You can read more about cluster aware routers in the 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/cluster-usage.html#Cluster_Aware_Routers" target="_blank">documentation</a>.
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/cluster-usage.html#Cluster_Aware_Routers" target="_blank">documentation</a>.
 </p>
 
 <p>
@@ -346,7 +346,7 @@ and deploys workers instead of looking them up.
 
 <p>
 Open <a href="#code/src/main/java/sample/cluster/stats/StatsSampleOneMasterMain.java" class="shortcut">StatsSampleOneMasterMain.java</a>.
-To keep track of a single master we use the <a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/contrib/cluster-singleton.html" target="_blank">Cluster Singleton</a>
+To keep track of a single master we use the <a href="http://doc.akka.io/docs/akka/2.4.14/contrib/cluster-singleton.html" target="_blank">Cluster Singleton</a>
 in the contrib module. The <code>ClusterSingletonManager</code> is started on each node.
 </p>
 
@@ -411,7 +411,7 @@ the <code>AdaptiveLoadBalancingPool</code> and <code>AdaptiveLoadBalancingGroup<
 
 <p>
 You can read more about cluster metrics in the 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/cluster-usage.html#Cluster_Metrics" target="_blank">documentation</a>.
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/cluster-usage.html#Cluster_Metrics" target="_blank">documentation</a>.
 </p>
 
 <p>

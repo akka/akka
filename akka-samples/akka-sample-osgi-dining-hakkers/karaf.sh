@@ -1,7 +1,7 @@
 #!/bin/bash
 
 projdir=$(cd $(dirname $0); pwd)
-version=2.4-SNAPSHOT
+version=2.4.14
 
 # This directory is specified in the build as the root of the tar
 # Use tar --strip-components=1 to ignore the root

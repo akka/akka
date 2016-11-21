@@ -8,7 +8,7 @@
 <div>
 <p>
 This tutorial contains examples that illustrate a subset of
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/persistence.html" target="_blank">Akka Persistence</a> features.
+<a href="http://doc.akka.io/docs/akka/2.4.14/scala/persistence.html" target="_blank">Akka Persistence</a> features.
 </p>
 <ul>
 <li>persistent actor</li>
@@ -27,7 +27,7 @@ Custom storage locations for the journal and snapshots can be defined in
 <h2>Persistent actor</h2>
 <p>
 <a href="#code/src/main/scala/sample/persistence/PersistentActorExample.scala" class="shortcut">PersistentActorExample.scala</a>
-is described in detail in the <a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/persistence.html#event-sourcing" target="_blank">Event sourcing</a>
+is described in detail in the <a href="http://doc.akka.io/docs/akka/2.4.14/scala/persistence.html#event-sourcing" target="_blank">Event sourcing</a>
 section of the user documentation. With every application run, the <code>ExamplePersistentActor</code> is recovered from
 events stored in previous application runs, processes new commands, stores new events and snapshots and prints the
 current persistent actor state to <code>stdout</code>.
@@ -85,7 +85,7 @@ To run this example, go to the <a href="#run" class="shortcut">Run</a> tab, and 
 </p>
 
 <p>
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/persistence.html#event-sourcing" target="_blank">Event sourcing</a>
+<a href="http://doc.akka.io/docs/akka/2.4.14/scala/persistence.html#event-sourcing" target="_blank">Event sourcing</a>
 on the other hand, does not persist commands directly but rather events that have been derived from received commands
 (not shown here). These events are known to be successfully applicable to current processor state i.e. there's
 no need for deleting them from the journal. Event sourced processors usually have a lower throughput than command

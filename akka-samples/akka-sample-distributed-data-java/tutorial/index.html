@@ -8,7 +8,7 @@
 <div>
 <p>
 This tutorial contains 5 samples illustrating how to use  
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html" target="_blank">Akka Distributed Data</a>.
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/distributed-data.html" target="_blank">Akka Distributed Data</a>.
 </p>
 <ul>
 <li>Low Latency Voting Service</li>
@@ -47,7 +47,7 @@ out-of-date value.
 
 <p>
 Note that there are some 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Limitations" target="_blank">Limitations</a>
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/distributed-data.html#Limitations" target="_blank">Limitations</a>
 that you should be aware of. For example, Akka Distributed Data is not intended for <i>Big Data</i>.
 </p>
 
@@ -71,7 +71,7 @@ Open <a href="#code/src/main/java/sample/distributeddata/VotingService.java" cla
 of the grand total number of votes. The actor is started on each cluster node. First it expects an 
 <code>OPEN</code> message on one or several nodes. After that the counting can begin. The open
 signal is immediately replicated to all nodes with a boolean
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Flags_and_Registers" target="_blank">Flag</a>.
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/distributed-data.html#Flags_and_Registers" target="_blank">Flag</a>.
 Note <code>writeAll</code>.  
 </p>
 
@@ -94,7 +94,7 @@ replicator.tell(new Subscribe&lt;&gt;(openedKey, self()), ActorRef.noSender());
 
 <p>
 The counters are kept in a 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Counters" target="_blank">PNCounterMap</a>
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/distributed-data.html#Counters" target="_blank">PNCounterMap</a>
 and updated with:
 </p>
 
@@ -139,7 +139,7 @@ The multi-node test for the <code>VotingService</code> can be found in
 
 <p>
 Read the 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Using_the_Replicator" target="_blank">Using the Replicator</a>
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/distributed-data.html#Using_the_Replicator" target="_blank">Using the Replicator</a>
 documentation for more details of how to use <code>Get</code>, <code>Update</code>, and <code>Subscribe</code>.
 </p>
 
@@ -165,7 +165,7 @@ instances may be started on different nodes and used at the same time.
 
 <p>
 Each product in the cart is represented by a <code>LineItem</code> and all items in the cart
-is collected in a <a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Maps" target="_blank">LWWMap</a>.
+is collected in a <a href="http://doc.akka.io/docs/akka/2.4.14/java/distributed-data.html#Maps" target="_blank">LWWMap</a>.
 </p>
 
 <p>
@@ -187,7 +187,7 @@ The multi-node test for the <code>ShoppingCart</code> can be found in
 
 <p>
 Read the 
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Consistency" target="_blank">Consistency</a>
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/distributed-data.html#Consistency" target="_blank">Consistency</a>
 section in the documentation to understand the consistency considerations.
 </p>
 
@@ -218,7 +218,7 @@ It supports two basic commands:
 
 <p>
 For each named service it is using an
-<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/distributed-data.html#Sets" target="_blank">ORSet</a>.
+<a href="http://doc.akka.io/docs/akka/2.4.14/java/distributed-data.html#Sets" target="_blank">ORSet</a>.
 Here we are using top level <code>ORSet</code> entries. An alternative would have been to use a 
 <code>ORMultiMap</code> holding all services. That would have a disadvantage if we have many services.
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e. when you 
