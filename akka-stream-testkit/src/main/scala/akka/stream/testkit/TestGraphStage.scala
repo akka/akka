@@ -6,16 +6,25 @@ import akka.stream.stage.{ GraphStageWithMaterializedValue, InHandler, OutHandle
 import akka.stream._
 import akka.testkit.TestProbe
 
+import scala.util.control.NonFatal
+
 /**
  * Messages emitted after the corresponding `stageUnderTest` methods has been invoked.
  */
 object GraphStageMessages {
-  case object Push extends NoSerializationVerificationNeeded
-  case object UpstreamFinish extends NoSerializationVerificationNeeded
-  case class Failure(ex: Throwable) extends NoSerializationVerificationNeeded
+  sealed trait StageMessage
+  case object Push extends StageMessage with NoSerializationVerificationNeeded
+  case object UpstreamFinish extends StageMessage with NoSerializationVerificationNeeded
+  case class Failure(ex: Throwable) extends StageMessage with NoSerializationVerificationNeeded
 
-  case object Pull extends NoSerializationVerificationNeeded
-  case object DownstreamFinish extends NoSerializationVerificationNeeded
+  case object Pull extends StageMessage with NoSerializationVerificationNeeded
+  case object DownstreamFinish extends StageMessage with NoSerializationVerificationNeeded
+
+  /**
+   * Sent to the probe when the stage callback threw an exception
+   * @param operation The operation that failed
+   */
+  case class StageFailure(operation: StageMessage, exception: Throwable)
 }
 
 object TestSinkStage {
@@ -48,21 +57,34 @@ private[testkit] class TestSinkStage[T, M](
     val inHandler = logic.handlers(in.id).asInstanceOf[InHandler]
     logic.handlers(in.id) = new InHandler {
       override def onPush(): Unit = {
-        inHandler.onPush()
-        probe.ref ! GraphStageMessages.Push
+        try {
+          inHandler.onPush()
+          probe.ref ! GraphStageMessages.Push
+        } catch {
+          case NonFatal(ex) ⇒
+            probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.Push, ex)
+            throw ex
+        }
       }
       override def onUpstreamFinish(): Unit = {
         try {
           inHandler.onUpstreamFinish()
-        } finally {
           probe.ref ! GraphStageMessages.UpstreamFinish
+        } catch {
+          case NonFatal(ex) ⇒
+            probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.UpstreamFinish, ex)
+            throw ex
         }
+
       }
       override def onUpstreamFailure(ex: Throwable): Unit = {
         try {
           inHandler.onUpstreamFailure(ex)
-        } finally {
           probe.ref ! GraphStageMessages.Failure(ex)
+        } catch {
+          case NonFatal(ex) ⇒
+            probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.Failure(ex), ex)
+            throw ex
         }
       }
     }
@@ -101,14 +123,23 @@ private[testkit] class TestSourceStage[T, M](
     val outHandler = logic.handlers(out.id).asInstanceOf[OutHandler]
     logic.handlers(out.id) = new OutHandler {
       override def onPull(): Unit = {
-        outHandler.onPull()
-        probe.ref ! GraphStageMessages.Pull
+        try {
+          outHandler.onPull()
+          probe.ref ! GraphStageMessages.Pull
+        } catch {
+          case NonFatal(ex) ⇒
+            probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.Pull, ex)
+            throw ex
+        }
       }
       override def onDownstreamFinish(): Unit = {
         try {
           outHandler.onDownstreamFinish()
-        } finally {
           probe.ref ! GraphStageMessages.DownstreamFinish
+        } catch {
+          case NonFatal(ex) ⇒
+            probe.ref ! GraphStageMessages.StageFailure(GraphStageMessages.DownstreamFinish, ex)
+            throw ex
         }
       }
     }
