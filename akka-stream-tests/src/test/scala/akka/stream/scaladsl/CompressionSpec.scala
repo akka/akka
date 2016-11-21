@@ -23,23 +23,23 @@ class CompressionSpec extends StreamSpec {
 
   "Gzip decompression" must {
     "be able to decompress a gzipped stream" in {
-      Source.single(gzip(data))
+      val source = Source.single(gzip(data))
         .via(Compression.gunzip())
         .map(_.decodeString(StandardCharsets.UTF_8))
-        .runWith(TestSink.probe)
-        .requestNext(data)
-        .expectComplete()
+
+      val res = source.runFold("")(_ + _)
+      res.futureValue should ===(data)
     }
   }
 
   "Deflate decompression" must {
     "be able to decompress a deflated stream" in {
-      Source.single(deflate(data))
+      val source = Source.single(deflate(data))
         .via(Compression.inflate())
         .map(_.decodeString(StandardCharsets.UTF_8))
-        .runWith(TestSink.probe)
-        .requestNext(data)
-        .expectComplete()
+
+      val res = source.runFold("")(_ + _)
+      res.futureValue should ===(data)
     }
   }
 }

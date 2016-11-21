@@ -111,8 +111,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
     }
 
     "shouldn't produce huge ByteStrings for some input" in {
-      val array = new Array[Byte](10) // FIXME
-      util.Arrays.fill(array, 1.toByte)
+      val array = Array.fill(10)(1.toByte)
       val compressed = streamEncode(ByteString(array))
       val limit = 10000
       val resultBs =
@@ -187,7 +186,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
   }
 
   def decodeChunks(input: Source[ByteString, NotUsed]): ByteString =
-    input.via(decoderFlow()).join.awaitResult(3.seconds)
+    input.via(decoderFlow()).join.awaitResult(3.seconds) // TODO make it use remaining?
 
   def decodeFromIterator(iterator: () ⇒ Iterator[ByteString]): ByteString =
     Await.result(Source.fromIterator(iterator).via(decoderFlow()).join, 3.seconds)
