@@ -98,7 +98,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * If no such attribute exists the `default` value is returned.
    */
   def getFirst[T <: Attribute: ClassTag](default: T): T =
-    getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]], default)
+    getFirstAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]], default)
 
   /**
    * Scala API: Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.

@@ -11,7 +11,7 @@ import akka.stream.impl.io.ByteStringParser.{ ParseResult, ParseStep }
 import akka.util.ByteString
 
 /** INTERNAL API */
-private[akka] class GzipDecompressor(maxBytesPerChunk: Int = DeflateDecompressorBase.MaxBytesPerChunkDefault)
+private[akka] class GzipDecompressor(maxBytesPerChunk: Int)
   extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
@@ -23,7 +23,7 @@ private[akka] class GzipDecompressor(maxBytesPerChunk: Int = DeflateDecompressor
     trait Step extends ParseStep[ByteString] {
       override def onTruncation(): Unit = failStage(new ZipException("Truncated GZIP stream"))
     }
-    override val inflateState = new Inflate(false) with Step
+    override case object inflating extends Inflate(false) with Step
     startWith(ReadHeaders)
 
     /** Reading the header bytes */
@@ -41,7 +41,7 @@ private[akka] class GzipDecompressor(maxBytesPerChunk: Int = DeflateDecompressor
 
         inflater.reset()
         crc32.reset()
-        ParseResult(None, inflateState, false)
+        ParseResult(None, inflating, acceptUpstreamFinish = false)
       }
     }
     var crc32: CRC32 = new CRC32
@@ -54,7 +54,7 @@ private[akka] class GzipDecompressor(maxBytesPerChunk: Int = DeflateDecompressor
         if (readIntLE() != crc32.getValue.toInt) fail("Corrupt data (CRC32 checksum error)")
         if (readIntLE() != inflater.getBytesWritten.toInt /* truncated to 32bit */ )
           fail("Corrupt GZIP trailer ISIZE")
-        ParseResult(None, ReadHeaders, true)
+        ParseResult(None, ReadHeaders, acceptUpstreamFinish = true)
       }
     }
   }
