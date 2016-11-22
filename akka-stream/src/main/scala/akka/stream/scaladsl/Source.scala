@@ -467,8 +467,9 @@ object Source {
    * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueue.watchCompletion]].
    * It returns future that completes with success when stream is completed or fail when stream is failed.
    *
-   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait for downstream demand.
-   * When `bufferSize` is 0 the `overflowStrategy` does not matter.
+   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
+   * for downstream demand unless there is another message waiting for downstream demand, in that case
+   * offer result will be completed according to the overflow strategy.
    *
    * SourceQueue that current source is materialized to is for single thread usage only.
    *
