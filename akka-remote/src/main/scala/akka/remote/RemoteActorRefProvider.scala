@@ -454,10 +454,10 @@ private[akka] class RemoteActorRefProvider(
     remoteDeploymentWatcher ! RemoteDeploymentWatcher.WatchRemote(ref, supervisor)
   }
 
-  def getExternalAddressFor(addr: Address): Option[Address] = {
-    addr match {
-      case _ if hasAddress(addr)           ⇒ Some(local.rootPath.address)
-      case Address(_, _, Some(_), Some(_)) ⇒ try Some(transport.localAddressForRemote(addr)) catch { case NonFatal(_) ⇒ None }
+  def getExternalAddressFor(address: Address): Option[Address] = {
+    address match {
+      case _ if hasAddress(address)           ⇒ Some(local.rootPath.address)
+      case Address(_, _, Some(_), Some(_)) ⇒ try Some(transport.localAddressForRemote(address)) catch { case NonFatal(_) ⇒ None }
       case _                               ⇒ None
     }
   }
