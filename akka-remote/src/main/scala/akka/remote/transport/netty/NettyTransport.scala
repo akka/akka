@@ -119,7 +119,7 @@ class NettyTransportSettings(config: Config) {
 
   val TcpKeepalive: Boolean = getBoolean("tcp-keepalive")
 
-  val TcpReuseAddr: Boolean = getString("tcp-reuse-address") match {
+  val TcpReuseAddress: Boolean = getString("tcp-reuse-address") match {
     case "off-for-windows" ⇒ !Helpers.isWindows
     case _                 ⇒ getBoolean("tcp-reuse-address")
   }
@@ -374,7 +374,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     bootstrap.setOption("backlog", settings.Backlog)
     bootstrap.setOption("child.tcpNoDelay", settings.TcpNodelay)
     bootstrap.setOption("child.keepAlive", settings.TcpKeepalive)
-    bootstrap.setOption("reuseAddress", settings.TcpReuseAddr)
+    bootstrap.setOption("reuseAddress", settings.TcpReuseAddress)
     if (isDatagram) bootstrap.setOption("receiveBufferSizePredictorFactory", new FixedReceiveBufferSizePredictorFactory(ReceiveBufferSize.get))
     settings.ReceiveBufferSize.foreach(sz ⇒ bootstrap.setOption("receiveBufferSize", sz))
     settings.SendBufferSize.foreach(sz ⇒ bootstrap.setOption("sendBufferSize", sz))

@@ -90,7 +90,7 @@ class RemoteConfigSpec extends AkkaSpec(
       Backlog should ===(4096)
       TcpNodelay should ===(true)
       TcpKeepalive should ===(true)
-      TcpReuseAddr should ===(!Helpers.isWindows)
+      TcpReuseAddress should ===(!Helpers.isWindows)
       c.getString("hostname") should ===("")
       c.getString("bind-hostname") should ===("")
       c.getString("bind-port") should ===("")
