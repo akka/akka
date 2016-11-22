@@ -401,7 +401,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   // now add deployments, if so desired
 
   private final case class Replacement(tag: String, role: RoleName) {
-    lazy val addr = node(role).address.toString
+    lazy val address = node(role).address.toString
   }
 
   private val replacements = roles map (r ⇒ Replacement("@" + r.name + "@", r))
@@ -415,11 +415,11 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
             case -1 ⇒ base
             case start ⇒
               val replaceWith = try
-                r.addr
+                r.address
               catch {
                 case NonFatal(e) ⇒
                   // might happen if all test cases are ignored (excluded) and
-                  // controller node is finished/exited before r.addr is run
+                  // controller node is finished/exited before r.address is run
                   // on the other nodes
                   val unresolved = "akka://unresolved-replacement-" + r.role.name
                   log.warning(unresolved + " due to: " + e.getMessage)
