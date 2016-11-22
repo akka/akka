@@ -79,21 +79,21 @@ class UntrustedSpec extends AkkaSpec("""
       akka.remote.artery.canonical.hostname = localhost
       akka.remote.artery.canonical.port = 0
       """))
-  val addr = RARP(system).provider.getDefaultAddress
+  val address = RARP(system).provider.getDefaultAddress
 
   val receptionist = system.actorOf(Props(classOf[Receptionist], testActor), "receptionist")
 
   lazy val remoteDaemon = {
     {
       val p = TestProbe()(client)
-      client.actorSelection(RootActorPath(addr) / receptionist.path.elements).tell(IdentifyReq("/remote"), p.ref)
+      client.actorSelection(RootActorPath(address) / receptionist.path.elements).tell(IdentifyReq("/remote"), p.ref)
       p.expectMsgType[ActorIdentity].ref.get
     }
   }
 
   lazy val target2 = {
     val p = TestProbe()(client)
-    client.actorSelection(RootActorPath(addr) / receptionist.path.elements).tell(
+    client.actorSelection(RootActorPath(address) / receptionist.path.elements).tell(
       IdentifyReq("child2"), p.ref)
     p.expectMsgType[ActorIdentity].ref.get
   }
@@ -108,7 +108,7 @@ class UntrustedSpec extends AkkaSpec("""
   "UntrustedMode" must {
 
     "allow actor selection to configured white list" in {
-      val sel = client.actorSelection(RootActorPath(addr) / receptionist.path.elements)
+      val sel = client.actorSelection(RootActorPath(address) / receptionist.path.elements)
       sel ! "hello"
       expectMsg("hello")
     }
@@ -150,14 +150,14 @@ class UntrustedSpec extends AkkaSpec("""
     }
 
     "discard actor selection" in {
-      val sel = client.actorSelection(RootActorPath(addr) / testActor.path.elements)
+      val sel = client.actorSelection(RootActorPath(address) / testActor.path.elements)
       sel ! "hello"
       expectNoMsg(1.second)
     }
 
     "discard actor selection with non root anchor" in {
       val p = TestProbe()(client)
-      client.actorSelection(RootActorPath(addr) / receptionist.path.elements).tell(
+      client.actorSelection(RootActorPath(address) / receptionist.path.elements).tell(
         Identify(None), p.ref)
       val clientReceptionistRef = p.expectMsgType[ActorIdentity].ref.get
 
@@ -167,19 +167,19 @@ class UntrustedSpec extends AkkaSpec("""
     }
 
     "discard actor selection to child of matching white list" in {
-      val sel = client.actorSelection(RootActorPath(addr) / receptionist.path.elements / "child1")
+      val sel = client.actorSelection(RootActorPath(address) / receptionist.path.elements / "child1")
       sel ! "hello"
       expectNoMsg(1.second)
     }
 
     "discard actor selection with wildcard" in {
-      val sel = client.actorSelection(RootActorPath(addr) / receptionist.path.elements / "*")
+      val sel = client.actorSelection(RootActorPath(address) / receptionist.path.elements / "*")
       sel ! "hello"
       expectNoMsg(1.second)
     }
 
     "discard actor selection containing harmful message" in {
-      val sel = client.actorSelection(RootActorPath(addr) / receptionist.path.elements)
+      val sel = client.actorSelection(RootActorPath(address) / receptionist.path.elements)
       sel ! PoisonPill
       expectNoMsg(1.second)
     }
