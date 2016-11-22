@@ -54,7 +54,7 @@ object ActorPath {
    * Parse string as actor path; throws java.net.MalformedURLException if unable to do so.
    */
   def fromString(s: String): ActorPath = s match {
-    case ActorPathExtractor(addr, elems) ⇒ RootActorPath(addr) / elems
+    case ActorPathExtractor(address, elems) ⇒ RootActorPath(address) / elems
     case _                               ⇒ throw new MalformedURLException("cannot parse as ActorPath: " + s)
   }
 
@@ -275,11 +275,11 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 
   override val toSerializationFormat: String = toString
 
-  override def toStringWithAddress(addr: Address): String =
+  override def toStringWithAddress(givenAddress: Address): String =
     if (address.host.isDefined) address + name
-    else addr + name
+    else givenAddress + name
 
-  override def toSerializationFormatWithAddress(addr: Address): String = toStringWithAddress(addr)
+  override def toSerializationFormatWithAddress(address: Address): String = toStringWithAddress(address)
 
   override def compareTo(other: ActorPath): Int = other match {
     case r: RootActorPath  ⇒ toString compareTo r.toString // FIXME make this cheaper by comparing address and name in isolation
@@ -357,23 +357,23 @@ final class ChildActorPath private[akka] (val parent: ActorPath, val name: Strin
     case c: ChildActorPath ⇒ c.toStringLength + 1
   }
 
-  override def toStringWithAddress(addr: Address): String = {
-    val diff = addressStringLengthDiff(addr)
+  override def toStringWithAddress(address: Address): String = {
+    val diff = addressStringLengthDiff(address)
     val length = toStringLength + diff
-    buildToString(new JStringBuilder(length), length, diff, _.toStringWithAddress(addr)).toString
+    buildToString(new JStringBuilder(length), length, diff, _.toStringWithAddress(address)).toString
   }
 
-  override def toSerializationFormatWithAddress(addr: Address): String = {
-    val diff = addressStringLengthDiff(addr)
+  override def toSerializationFormatWithAddress(address: Address): String = {
+    val diff = addressStringLengthDiff(address)
     val length = toStringLength + diff
-    val sb = buildToString(new JStringBuilder(length + 12), length, diff, _.toStringWithAddress(addr))
+    val sb = buildToString(new JStringBuilder(length + 12), length, diff, _.toStringWithAddress(address))
     appendUidFragment(sb).toString
   }
 
-  private def addressStringLengthDiff(addr: Address): Int = {
+  private def addressStringLengthDiff(address: Address): Int = {
     val r = root
     if (r.address.host.isDefined) 0
-    else (addr.toString.length - r.address.toString.length)
+    else (address.toString.length - r.address.toString.length)
   }
 
   /**
