@@ -35,7 +35,7 @@ class RemoteReDeploymentConfig(artery: Boolean) extends MultiNodeConfig {
          acceptable-heartbeat-pause=2.5s
        }
        akka.remote.artery.enabled = $artery
-       """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
+       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   testTransport(on = true)
 
