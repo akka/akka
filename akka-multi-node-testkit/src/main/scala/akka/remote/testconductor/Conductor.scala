@@ -64,7 +64,7 @@ trait Conductor { this: TestConductorExt ⇒
     _controller = system.actorOf(Props(classOf[Controller], participants, controllerPort), "controller")
     import Settings.BarrierTimeout
     import system.dispatcher
-    controller ? GetSockAddr flatMap { case sockAddr: InetSocketAddress ⇒ startClient(name, sockAddr) map (_ ⇒ sockAddr) }
+    controller ? GetSockAddress flatMap { case sockAddress: InetSocketAddress ⇒ startClient(name, sockAddress) map (_ ⇒ sockAddress) }
   }
 
   /**
@@ -72,9 +72,9 @@ trait Conductor { this: TestConductorExt ⇒
    * will deviate from the configuration in `akka.testconductor.port` in case
    * that was given as zero.
    */
-  def sockAddr: Future[InetSocketAddress] = {
+  def sockAddress: Future[InetSocketAddress] = {
     import Settings.QueryTimeout
-    controller ? GetSockAddr mapTo classTag[InetSocketAddress]
+    controller ? GetSockAddress mapTo classTag[InetSocketAddress]
   }
 
   /**
@@ -372,7 +372,7 @@ private[akka] object Controller {
   final case class ClientDisconnected(name: RoleName) extends DeadLetterSuppression
   class ClientDisconnectedException(msg: String) extends AkkaException(msg) with NoStackTrace
   case object GetNodes
-  case object GetSockAddr
+  case object GetSockAddress
   final case class CreateServerFSM(channel: Channel) extends NoSerializationVerificationNeeded
 
   final case class NodeInfo(name: RoleName, address: Address, fsm: ActorRef)
@@ -474,7 +474,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
     case GetNodes    ⇒ sender() ! nodes.keys
-    case GetSockAddr ⇒ sender() ! connection.getLocalAddress
+    case GetSockAddress ⇒ sender() ! connection.getLocalAddress
   }
 
   override def postStop() {
