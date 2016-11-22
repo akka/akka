@@ -2068,7 +2068,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.watchTermination()((left, right) ⇒ matF(left, right.toJava)))
 
   /**
-   * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
