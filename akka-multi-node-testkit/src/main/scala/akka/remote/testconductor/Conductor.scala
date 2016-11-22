@@ -16,7 +16,7 @@ import akka.util.Timeout
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import org.jboss.netty.channel.{ Channel, ChannelHandlerContext, ChannelStateEvent, MessageEvent, SimpleChannelUpstreamHandler }
-import RemoteConnection.getAddrString
+import RemoteConnection.getAddressString
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -251,14 +251,14 @@ private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorR
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
-    log.debug("connection from {}", getAddrString(channel))
+    log.debug("connection from {}", getAddressString(channel))
     val fsm: ActorRef = Await.result(controller ? Controller.CreateServerFSM(channel) mapTo classTag[ActorRef], Duration.Inf)
     clients.put(channel, fsm)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
-    log.debug("disconnect from {}", getAddrString(channel))
+    log.debug("disconnect from {}", getAddressString(channel))
     val fsm = clients.get(channel)
     fsm ! Controller.ClientDisconnected
     clients.remove(channel)
@@ -266,12 +266,12 @@ private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorR
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val channel = event.getChannel
-    log.debug("message from {}: {}", getAddrString(channel), event.getMessage)
+    log.debug("message from {}: {}", getAddressString(channel), event.getMessage)
     event.getMessage match {
       case msg: NetworkOp ⇒
         clients.get(channel) ! msg
       case msg ⇒
-        log.info("client {} sent garbage '{}', disconnecting", getAddrString(channel), msg)
+        log.info("client {} sent garbage '{}', disconnecting", getAddressString(channel), msg)
         channel.close()
     }
   }
@@ -329,14 +329,14 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
       controller ! NodeInfo(roleName, address, self)
       goto(Ready)
     case Event(x: NetworkOp, _) ⇒
-      log.warning("client {} sent no Hello in first message (instead {}), disconnecting", getAddrString(channel), x)
+      log.warning("client {} sent no Hello in first message (instead {}), disconnecting", getAddressString(channel), x)
       channel.close()
       stop()
     case Event(ToClient(msg), _) ⇒
       log.warning("cannot send {} in state Initial", msg)
       stay
     case Event(StateTimeout, _) ⇒
-      log.info("closing channel to {} because of Hello timeout", getAddrString(channel))
+      log.info("closing channel to {} because of Hello timeout", getAddressString(channel))
       channel.close()
       stop()
   }
@@ -349,7 +349,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
       controller ! op
       stay
     case Event(msg: NetworkOp, _) ⇒
-      log.warning("client {} sent unsupported message {}", getAddrString(channel), msg)
+      log.warning("client {} sent unsupported message {}", getAddressString(channel), msg)
       stop()
     case Event(ToClient(msg: UnconfirmedClientOp), _) ⇒
       channel.write(msg)

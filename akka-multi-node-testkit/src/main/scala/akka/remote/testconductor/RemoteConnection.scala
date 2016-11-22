@@ -95,7 +95,7 @@ private[akka] object RemoteConnection {
     }
   }
 
-  def getAddrString(channel: Channel) = channel.getRemoteAddress match {
+  def getAddressString(channel: Channel) = channel.getRemoteAddress match {
     case i: InetSocketAddress ⇒ i.toString
     case _                    ⇒ "[unknown]"
   }
