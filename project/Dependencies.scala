@@ -149,7 +149,7 @@ object Dependencies {
 
   lazy val httpXml = versionDependentDeps(scalaXml)
 
-  lazy val httpSprayJson = versionDependentDeps(sprayJson)
+  lazy val httpSprayJson = versionDependentDeps(sprayJson) // FIXME how to add scalatest here?
 
   lazy val httpJackson = l ++= Seq(jackson)
 
