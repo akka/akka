@@ -497,7 +497,7 @@ Create the child using JavaTestKit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``JavaTestKit`` class can in fact create actors that will run with the test probe as parent.
-This will cause any messages the the child actor sends to `context().getParent()` to
+This will cause any messages the child actor sends to `context().getParent()` to
 end up in the test probe.
 
 .. includecode:: code/docs/testkit/ParentChildTest.java#test-TestProbe-parent
