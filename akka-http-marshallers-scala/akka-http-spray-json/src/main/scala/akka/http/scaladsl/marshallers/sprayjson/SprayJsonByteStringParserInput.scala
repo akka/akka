@@ -20,7 +20,7 @@ final class SprayJsonByteStringParserInput(bytes: ByteString) extends DefaultPar
   import SprayJsonByteStringParserInput._
 
   private[this] val byteBuffer = ByteBuffer.allocate(4)
-  private[this] val charBuffer = CharBuffer.allocate(1)
+  private[this] val charBuffer = CharBuffer.allocate(2)
 
   private[this] val decoder = Charset.forName("UTF-8").newDecoder()
 
@@ -41,20 +41,26 @@ final class SprayJsonByteStringParserInput(bytes: ByteString) extends DefaultPar
         charBuffer.flip()
         val result = if (coderResult.isUnderflow & charBuffer.hasRemaining) charBuffer.get() else ErrorChar
         byteBuffer.clear()
-        charBuffer.clear()
+        if (!charBuffer.hasRemaining) charBuffer.clear()
         result
       }
     }
 
-    _cursor += 1
-    if (_cursor < bytes.length) {
-      val byte = bytes(_cursor)
-      if (byte >= 0) byte.toChar // 7-Bit ASCII
-      else if ((byte & 0xE0) == 0xC0) decode(byte, 1) // 2-byte UTF-8 sequence
-      else if ((byte & 0xF0) == 0xE0) decode(byte, 2) // 3-byte UTF-8 sequence
-      else if ((byte & 0xF8) == 0xF0) decode(byte, 3) // 4-byte UTF-8 sequence, will probably produce an (unsupported) surrogate pair
-      else ErrorChar
-    } else EOI
+    if (charBuffer.position() > 0) {
+      val result = charBuffer.get()
+      charBuffer.clear()
+      result
+    } else {
+      _cursor += 1
+      if (_cursor < bytes.length) {
+        val byte = bytes(_cursor)
+        if (byte >= 0) byte.toChar // 7-Bit ASCII
+        else if ((byte & 0xE0) == 0xC0) decode(byte, 1) // 2-byte UTF-8 sequence
+        else if ((byte & 0xF0) == 0xE0) decode(byte, 2) // 3-byte UTF-8 sequence
+        else if ((byte & 0xF8) == 0xF0) decode(byte, 3) // 4-byte UTF-8 sequence
+        else ErrorChar
+      } else EOI
+    }
   }
 
   override def length: Int = bytes.size
