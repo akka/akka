@@ -75,7 +75,7 @@ private[akka] case object Server extends Role
  * INTERNAL API.
  */
 private[akka] object RemoteConnection {
-  def apply(role: Role, sockaddr: InetSocketAddress, poolSize: Int, handler: ChannelUpstreamHandler): Channel = {
+  def apply(role: Role, sockAddress: InetSocketAddress, poolSize: Int, handler: ChannelUpstreamHandler): Channel = {
     role match {
       case Client ⇒
         val socketfactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool,
@@ -83,7 +83,7 @@ private[akka] object RemoteConnection {
         val bootstrap = new ClientBootstrap(socketfactory)
         bootstrap.setPipelineFactory(new TestConductorPipelineFactory(handler))
         bootstrap.setOption("tcpNoDelay", true)
-        bootstrap.connect(sockaddr).getChannel
+        bootstrap.connect(sockAddress).getChannel
       case Server ⇒
         val socketfactory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool,
           poolSize)
@@ -91,7 +91,7 @@ private[akka] object RemoteConnection {
         bootstrap.setPipelineFactory(new TestConductorPipelineFactory(handler))
         bootstrap.setOption("reuseAddress", !Helpers.isWindows)
         bootstrap.setOption("child.tcpNoDelay", true)
-        bootstrap.bind(sockaddr)
+        bootstrap.bind(sockAddress)
     }
   }
 
