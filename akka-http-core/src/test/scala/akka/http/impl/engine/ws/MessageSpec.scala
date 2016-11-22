@@ -8,7 +8,7 @@ import akka.NotUsed
 
 import scala.concurrent.duration._
 import scala.util.Random
-import org.scalatest.{ Matchers, FreeSpec }
+import org.scalatest.{ FreeSpec, Matchers }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.util.ByteString
@@ -16,8 +16,9 @@ import akka.http.scaladsl.model.ws._
 import Protocol.Opcode
 import akka.testkit.EventFilter
 import akka.stream.OverflowStrategy
+import org.scalatest.concurrent.{ Eventually, PatienceConfiguration }
 
-class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
+class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with Eventually {
   import WSTestUtils._
 
   val InvalidUtf8TwoByteSequence: ByteString = ByteString(
@@ -233,6 +234,18 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
           pushInput(header)
           expectTextMessage(TextMessage.Strict(""))
+        }
+      }
+      "apply backpressure to the network if a message isn't read by the user" in new ServerTestSetup {
+        val mask = Random.nextInt()
+        val header = frameHeader(Opcode.Text, 65535, fin = false, mask = Some(mask))
+
+        pushInput(header)
+
+        // push single-byte ByteStrings without reading anything until it fails
+        // this should be after the internal input buffers have filled up
+        eventually(PatienceConfiguration.Timeout(500.millis), PatienceConfiguration.Interval(1.milli)) {
+          the[AssertionError] thrownBy pushInput(ByteString("a"))
         }
       }
     }
