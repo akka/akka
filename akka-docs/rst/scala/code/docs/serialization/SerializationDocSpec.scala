@@ -221,9 +221,9 @@ package docs.serialization {
       object ExternalAddress extends ExtensionKey[ExternalAddressExt]
 
       class ExternalAddressExt(system: ExtendedActorSystem) extends Extension {
-        def addressFor(remoteAddr: Address): Address =
-          system.provider.getExternalAddressFor(remoteAddr) getOrElse
-            (throw new UnsupportedOperationException("cannot send to " + remoteAddr))
+        def addressFor(remoteAddress: Address): Address =
+          system.provider.getExternalAddressFor(remoteAddress) getOrElse
+            (throw new UnsupportedOperationException("cannot send to " + remoteAddress))
       }
 
       def serializeTo(ref: ActorRef, remote: Address): String =
