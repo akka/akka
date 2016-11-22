@@ -119,9 +119,9 @@ class NettyTransportSettings(config: Config) {
 
   val TcpKeepalive: Boolean = getBoolean("tcp-keepalive")
 
-  val TcpReuseAddr: Boolean = getString("tcp-reuse-addr") match {
+  val TcpReuseAddr: Boolean = getString("tcp-reuse-address") match {
     case "off-for-windows" ⇒ !Helpers.isWindows
-    case _                 ⇒ getBoolean("tcp-reuse-addr")
+    case _                 ⇒ getBoolean("tcp-reuse-address")
   }
 
   val Hostname: String = getString("hostname") match {
