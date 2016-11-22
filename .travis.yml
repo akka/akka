@@ -8,6 +8,11 @@ scala:
 jdk:
   - oraclejdk8
 
+addons:
+  apt:
+    packages:
+    - graphviz
+
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt  -name "*.lock"               -print -delete
