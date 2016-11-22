@@ -345,7 +345,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     def compare(x: RoleName, y: RoleName) = addressOrdering.compare(address(x), address(y))
   }
 
-  def roleName(addr: Address): Option[RoleName] = roles.find(address(_) == addr)
+  def roleName(roleAddress: Address): Option[RoleName] = roles.find(address(_) == roleAddress)
 
   /**
    * Marks a node as available in the failure detector if
