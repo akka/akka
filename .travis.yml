@@ -24,7 +24,8 @@ script:
 deploy:
   provider: script
   script:
-    - sbt -J-XX:ReservedCodeCacheSize=256m +publish akka-http/bintraySyncMavenCentral
+    - sbt -J-XX:ReservedCodeCacheSize=256m +publish
+#    - sbt -J-XX:ReservedCodeCacheSize=256m +publish akka-http/bintraySyncMavenCentral # enable if we want to sync to central automatically
   on:
     tags: true
     repo: akka/akka-http
