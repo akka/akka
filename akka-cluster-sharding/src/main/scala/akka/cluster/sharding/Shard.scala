@@ -227,7 +227,7 @@ private[akka] class Shard(
         messageBuffers = messageBuffers.updated(id, Vector.empty)
         entity ! stopMessage
 
-      case _ ⇒ //ignored
+      case _ ⇒ log.debug("Unknown entity. Not sending stopMessage back to entity.")
     }
   }
 
