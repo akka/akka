@@ -341,5 +341,19 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
       enterBarrier("after-11")
     }
+
+    "receive proper unsubscribeAck message" in within(15 seconds) {
+      runOn(first) {
+        val user = createChatUser("u111")
+        val topic = "sample-topic1"
+        val s1 = Subscribe(topic, user)
+        mediator ! s1
+        expectMsg(SubscribeAck(s1))
+        val uns = Unsubscribe(topic, user)
+        mediator ! uns
+        expectMsg(UnsubscribeAck(uns))
+      }
+      enterBarrier("after-12")
+    }
   }
 }
