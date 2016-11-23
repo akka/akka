@@ -115,10 +115,11 @@ object StreamLayout {
       }
     def apply(module: Module): Boolean =
       module match {
-        case _: AtomicModule | EmptyModule        ⇒ true
-        case CopiedModule(_, _, module)           ⇒ IgnorableMatValComp(module)
-        case CompositeModule(_, _, _, _, comp, _) ⇒ IgnorableMatValComp(comp)
-        case FusedModule(_, _, _, _, comp, _, _)  ⇒ IgnorableMatValComp(comp)
+        case _: AtomicModule | EmptyModule                      ⇒ true
+        case CopiedModule(_, _, module)                         ⇒ IgnorableMatValComp(module)
+        case CompositeModule(_, _, _, _, comp, _)               ⇒ IgnorableMatValComp(comp)
+        case FusedModule(_, _, _, _, comp, _, _)                ⇒ IgnorableMatValComp(comp)
+        case StructuralInfoModule(_, _, _, _, _, _, _, comp, _) ⇒ IgnorableMatValComp(comp)
       }
   }
 
@@ -445,6 +446,40 @@ object StreamLayout {
     def apply(m: Module, s: Shape): CompositeModule = CompositeModule(Set(m), s, Map.empty, Map.empty, Atomic(m), Attributes.none)
   }
 
+  /**
+   * INTERNAL API
+   *
+   * When fusing a [[Graph]] a part of the internal stage wirings are hidden within
+   * [[akka.stream.impl.fusing.GraphInterpreter#GraphAssembly]] objects that are
+   * optimized for high-speed execution. This structural information module contains
+   * the wirings in a more accessible form, allowing traversal from port to upstream
+   * or downstream port and from there to the owning module (or graph vertex).
+   */
+  final case class StructuralInfoModule(
+    override val subModules:                   Set[Module],
+    override val shape:                        Shape,
+    override val downstreams:                  Map[OutPort, InPort],
+    override val upstreams:                    Map[InPort, OutPort],
+    inOwners:                                  Map[InPort, Module],
+    outOwners:                                 Map[OutPort, Module],
+    matValues:                                 List[(Module, MaterializedValueNode)],
+    override val materializedValueComputation: MaterializedValueNode,
+    override val attributes:                   Attributes) extends Module {
+
+    override def isFused: Boolean = false
+
+    override def replaceShape(s: Shape): Module =
+      if (s != shape) {
+        shape.requireSamePortsAs(s)
+        copy(shape = s)
+      } else this
+
+    override def carbonCopy: Module = CopiedModule(shape.deepCopy(), attributes, copyOf = this)
+
+    override def withAttributes(attributes: Attributes): StructuralInfoModule = copy(attributes = attributes)
+
+  }
+
   final case class FusedModule(
     override val subModules:                   Set[Module],
     override val shape:                        Shape,
@@ -452,7 +487,7 @@ object StreamLayout {
     override val upstreams:                    Map[InPort, OutPort],
     override val materializedValueComputation: MaterializedValueNode,
     override val attributes:                   Attributes,
-    info:                                      Fusing.StructuralInfo) extends Module {
+    info:                                      StructuralInfoModule) extends Module {
 
     override def isFused: Boolean = true
 
@@ -921,7 +956,7 @@ abstract class MaterializerSession(val topLevel: StreamLayout.Module, val initia
           enterScope(copied)
           materializedValues.put(copied, materializeModule(copied, subEffectiveAttributes))
           exitScope(copied)
-        case composite @ (_: CompositeModule | _: FusedModule) ⇒
+        case composite @ (_: CompositeModule | _: FusedModule | _: StructuralInfoModule) ⇒
           materializedValues.put(composite, materializeComposite(composite, subEffectiveAttributes))
         case EmptyModule ⇒ // nothing to do or say
       }
