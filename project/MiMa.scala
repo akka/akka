@@ -1015,13 +1015,16 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.VirtualPathContainer.log"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.VirtualPathContainer.this"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteSystemDaemon.this")
-
       ),
       "2.4.12" -> Seq(
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.materialize"),
         
         // #21775 - overrode ByteString.stringPrefix and made it final
-        ProblemFilters.exclude[FinalMethodProblem]("akka.util.ByteString.stringPrefix")
+        ProblemFilters.exclude[FinalMethodProblem]("akka.util.ByteString.stringPrefix"),
+
+        // #20553 Tree flattening should be separate from Fusing
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$")
       )
     )
   }
