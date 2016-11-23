@@ -53,7 +53,7 @@ object LatencySpec extends MultiNodeConfig {
            }
          }
        }
-       """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
+       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   final case object Reset
 

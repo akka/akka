@@ -7,7 +7,7 @@ import akka.remote.RemotingMultiNodeSpec
 import akka.testkit.LongRunningTest
 
 object MultiNodeSpecMultiJvmSpec extends MultiNodeConfig {
-  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
+  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   val node1 = role("node1")
   val node2 = role("node2")

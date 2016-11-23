@@ -67,7 +67,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
            }
          }
        }
-       """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
+       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   case object Run
   sealed trait Echo extends DeadLetterSuppression with JavaSerializable
