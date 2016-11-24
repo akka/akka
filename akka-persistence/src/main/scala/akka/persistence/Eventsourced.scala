@@ -556,11 +556,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         case RecoverySuccess(highestSeqNr) ⇒
           timeoutCancellable.cancel()
           onReplaySuccess() // callback for subclass implementation
-          changeState(processingCommands)
           sequenceNr = highestSeqNr
           setLastSequenceNr(highestSeqNr)
-          internalStash.unstashAll()
           Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
+          transitToProcessingState()
         case ReplayMessagesFailure(cause) ⇒
           timeoutCancellable.cancel()
           try onRecoveryFailure(cause, event = None) finally context.stop(self)
@@ -576,6 +575,17 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         // snapshot tick, ignore
         case other ⇒
           stashInternally(other)
+      }
+
+      private def transitToProcessingState(): Unit = {
+        if (eventBatch.nonEmpty) flushBatch()
+
+        if (pendingStashingPersistInvocations > 0) changeState(persistingEvents)
+        else {
+          changeState(processingCommands)
+          internalStash.unstashAll()
+        }
+
       }
     }
 

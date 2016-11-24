@@ -646,6 +646,14 @@ object PersistentActorSpec {
     }
   }
 
+  class PersistInRecovery(name: String) extends ExamplePersistentActor(name) {
+    override def receiveRecover = super.receiveRecover orElse {
+      case RecoveryCompleted ⇒
+        persist(Evt(RecoveryCompleted))(updateState)
+    }
+
+    def receiveCommand = commonBehavior
+  }
 }
 
 abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
@@ -1118,6 +1126,12 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       val persistentActor = namedPersistentActor[RecoverMessageCausedRestart]
       persistentActor ! "Boom"
       expectMsg("failed with TestException while processing Boom")
+    }
+
+    "be able to persist events that happen during recovery" in {
+      val persistentActor = namedPersistentActor[PersistInRecovery]
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", RecoveryCompleted))
     }
   }
 
