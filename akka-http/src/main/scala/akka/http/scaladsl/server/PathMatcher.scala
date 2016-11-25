@@ -289,12 +289,13 @@ trait ImplicitPathMatcherConstruction {
    * Creates a PathMatcher from the given Map of path segments (prefixes) to extracted values.
    * If the unmatched path starts with a segment having one of the maps keys as a prefix
    * the matcher consumes this path segment (prefix) and extracts the corresponding map value.
+   * For keys sharing a common prefix the longest matching prefix is selected.
    *
    * @group pathmatcherimpl
    */
   implicit def _valueMap2PathMatcher[T](valueMap: Map[String, T]): PathMatcher1[T] =
     if (valueMap.isEmpty) PathMatchers.nothingMatcher
-    else valueMap.map { case (prefix, value) ⇒ _stringExtractionPair2PathMatcher((prefix, value)) }.reduceLeft(_ | _)
+    else valueMap.toSeq.sortWith(_._1 > _._1).map(_stringExtractionPair2PathMatcher).reduceLeft(_ | _)
 }
 
 /**
