@@ -333,8 +333,8 @@ As mentioned above, default *async* methods are always executed on ``ForkJoinPoo
 This example is behaving like ``Future``: every stage is executed on an explicitly specified ``Executor``.
 
 .. note::
-   When in doubt, use explicit versions. Always use explicit versions with a dedicated executor/dispatcher
-   for long-running or blocking computations, such as IO operations.
+   When in doubt, async methods with explicit executor should be used. Always async methods with a dedicated
+   executor/dispatcher for long-running or blocking computations, such as IO operations.
 
 See also:
 
