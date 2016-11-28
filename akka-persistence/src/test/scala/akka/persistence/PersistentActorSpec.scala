@@ -647,12 +647,21 @@ object PersistentActorSpec {
   }
 
   class PersistInRecovery(name: String) extends ExamplePersistentActor(name) {
-    override def receiveRecover = super.receiveRecover orElse {
+    override def receiveRecover = {
+      case Evt("invalid") ⇒
+        persist(Evt("invalid-recovery"))(updateState)
+      case e: Evt ⇒ updateState(e)
       case RecoveryCompleted ⇒
-        persist(Evt(RecoveryCompleted))(updateState)
+        persistAsync(Evt("rc-1"))(updateState)
+        persist(Evt("rc-2"))(updateState)
+        persistAsync(Evt("rc-3"))(updateState)
     }
 
-    def receiveCommand = commonBehavior
+    override def onRecoveryFailure(cause: scala.Throwable, event: Option[Any]): Unit = ()
+
+    def receiveCommand = commonBehavior orElse {
+      case Cmd(d) ⇒ persist(Evt(d))(updateState)
+    }
   }
 }
 
@@ -1131,7 +1140,15 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
     "be able to persist events that happen during recovery" in {
       val persistentActor = namedPersistentActor[PersistInRecovery]
       persistentActor ! GetState
-      expectMsg(List("a-1", "a-2", RecoveryCompleted))
+      expectMsg(List("a-1", "a-2", "rc-1", "rc-2"))
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "rc-1", "rc-2", "rc-3"))
+      persistentActor ! Cmd("invalid")
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "rc-1", "rc-2", "rc-3", "invalid"))
+      watch(persistentActor)
+      persistentActor ! "boom"
+      expectTerminated(persistentActor)
     }
   }
 
