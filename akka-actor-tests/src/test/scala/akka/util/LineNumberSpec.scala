@@ -56,7 +56,7 @@ class LineNumberSpec extends AkkaSpec {
       }
 
       "work for anonymous classes" in {
-        LineNumbers(l.f3()) should ===(SourceFileLines("LineNumberSpecCodeForJava.java", 30, 34))
+        LineNumbers(l.f3()) should ===(SourceFileLines("LineNumberSpecCodeForJava.java", 30, 35))
       }
 
     }
