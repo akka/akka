@@ -2,7 +2,7 @@ name := "akka-sample-supervision-java-lambda"
 
 version := "2.4-SNAPSHOT"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint")
 
