@@ -360,7 +360,7 @@ object Source {
    * the materialized future is completed with its value, if downstream cancels or fails without any demand the
    * create factory is never called and the materialized `Future` is failed.
    */
-  def lazily[T, M](create: () => Source[T, M]): Source[T, Future[M]] =
+  def lazily[T, M](create: () ⇒ Source[T, M]): Source[T, Future[M]] =
     Source.fromGraph(new LazySource[T, M](create))
 
   /**
