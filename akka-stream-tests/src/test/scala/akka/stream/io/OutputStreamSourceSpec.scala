@@ -14,9 +14,7 @@ import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.OutputStreamSourceStage
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.StreamConverters
+import akka.stream.scaladsl.{ Keep, Sink, Source, StreamConverters }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
@@ -214,33 +212,23 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "correctly complete the stage after close" in assertAllStagesStopped {
       // actually this was a race, so it only happened in at least one of 20 runs
-      for (_ ← 1 to 20) {
-        val sourceProbe = TestProbe()
-        val (outputStream, probe) = TestSourceStage(new OutputStreamSourceStage(timeout), sourceProbe)
-          .toMat(TestSink.probe[ByteString])(Keep.both).run
 
-        outputStream.write(1)
-        outputStream.write(1)
-        outputStream.write(1)
-        outputStream.write(1)
-        outputStream.write(1)
-        outputStream.write(1)
-        outputStream.write(1)
-        outputStream.write(1)
+      val bufSize = 4
+      val sourceProbe = TestProbe()
+      val (outputStream, probe) = StreamConverters.asOutputStream(timeout)
+        .addAttributes(Attributes.inputBuffer(bufSize, bufSize))
+        .toMat(TestSink.probe[ByteString])(Keep.both).run
 
-        // await the request, so that the close
-        // will come before
-        materializer.scheduleOnce(500.milliseconds, new Runnable {
-          override def run(): Unit = {
-            probe.request(8)
-            probe.expectNextN(8)
-
-            probe.expectComplete()
-          }
-        })
-
+      // fill the buffer up
+      (1 to (bufSize - 1)).foreach(outputStream.write)
+      Future {
         outputStream.close()
       }
+      // here is the race, has the elements reached the stage buffer yet?
+      Thread.sleep(500)
+      probe.request(bufSize - 1)
+      probe.expectNextN(bufSize - 1)
+      probe.expectComplete()
     }
 
   }
