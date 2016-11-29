@@ -24,12 +24,12 @@ object LateConnectSpec {
 
 }
 
-class LateConnectSpec extends AkkaSpec(LateConnectSpec.config) with ImplicitSender {
+class LateConnectSpec extends ArteryMultiNodeSpec(LateConnectSpec.config) with ImplicitSender {
 
   val portB = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.canonical.port = $portB")
-    .withFallback(system.settings.config)
-  lazy val systemB = ActorSystem("systemB", configB)
+  lazy val systemB = newRemoteSystem(
+    name = Some("systemB"),
+    extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
 
   "Connection" must {
 
@@ -54,10 +54,4 @@ class LateConnectSpec extends AkkaSpec(LateConnectSpec.config) with ImplicitSend
       expectMsg("ping3")
     }
   }
-
-  override def afterTermination(): Unit = {
-    shutdown(systemB)
-    super.afterTermination()
-  }
-
 }

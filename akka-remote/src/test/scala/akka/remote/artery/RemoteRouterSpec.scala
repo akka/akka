@@ -81,7 +81,8 @@ class RemoteRouterSpec extends AkkaSpec(ConfigFactory.parseString("""
 
   override def afterTermination(): Unit = {
     shutdown(masterSystem)
-    super.afterTermination()
+    handleFlightRecorderFile(system)
+    handleFlightRecorderFile(masterSystem)
   }
 
   def collectRouteePaths(probe: TestProbe, router: ActorRef, n: Int): immutable.Seq[ActorPath] = {

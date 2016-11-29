@@ -69,11 +69,11 @@ object UntrustedSpec {
 
 }
 
-class UntrustedSpec extends AkkaSpec(UntrustedSpec.config) with ImplicitSender with FlightRecorderSpecIntegration {
+class UntrustedSpec extends ArteryMultiNodeSpec(UntrustedSpec.config) with ImplicitSender {
 
   import UntrustedSpec._
 
-  val client = ActorSystem("UntrustedSpec-client", ArterySpecSupport.defaultConfig)
+  val client = newRemoteSystem(name = Some("UntrustedSpec-client"))
   val addr = RARP(system).provider.getDefaultAddress
 
   val receptionist = system.actorOf(Props(classOf[Receptionist], testActor), "receptionist")
@@ -91,11 +91,6 @@ class UntrustedSpec extends AkkaSpec(UntrustedSpec.config) with ImplicitSender w
     client.actorSelection(RootActorPath(addr) / receptionist.path.elements).tell(
       IdentifyReq("child2"), p.ref)
     p.expectMsgType[ActorIdentity].ref.get
-  }
-
-  override def afterTermination() {
-    shutdown(client)
-    super.afterTermination()
   }
 
   // need to enable debug log-level without actually printing those messages

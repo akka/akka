@@ -17,21 +17,20 @@ object SerializationErrorSpec {
 
 }
 
-class SerializationErrorSpec extends AkkaSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
+class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
   import SerializationErrorSpec._
 
-  val configB = ConfigFactory.parseString("""
-     akka.actor.serialization-identifiers {
-       # this will cause deserialization error
-       "akka.serialization.ByteArraySerializer" = -4
-     }
-     """).withFallback(system.settings.config)
-  val systemB = ActorSystem("systemB", configB)
+  val systemB = newRemoteSystem(
+    name = Some("systemB"),
+    extraConfig = Some("""
+       akka.actor.serialization-identifiers {
+         # this will cause deserialization error
+         "akka.serialization.ByteArraySerializer" = -4
+       }
+       """))
   systemB.actorOf(TestActors.echoActorProps, "echo")
-  val addressB = RARP(systemB).provider.getDefaultAddress
+  val addressB = address(systemB)
   val rootB = RootActorPath(addressB)
-
-  override def afterTermination(): Unit = shutdown(systemB)
 
   "Serialization error" must {
 

@@ -16,13 +16,12 @@ class RemoteSendConsistencyWithThreeLanesSpec extends AbstractRemoteSendConsiste
   ConfigFactory.parseString("""
       akka.remote.artery.advanced.outbound-lanes = 3
       akka.remote.artery.advanced.inbound-lanes = 3
-    """).withFallback(ArterySpecSupport.defaultConfig)) with FlightRecorderSpecIntegration
+    """).withFallback(ArterySpecSupport.defaultConfig))
 
-abstract class AbstractRemoteSendConsistencySpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
+abstract class AbstractRemoteSendConsistencySpec(config: Config) extends ArteryMultiNodeSpec(config) with ImplicitSender {
 
-  val systemB = ActorSystem("systemB", system.settings.config)
-  val addressB = RARP(systemB).provider.getDefaultAddress
-  println(addressB)
+  val systemB = newRemoteSystem(name = Some("systemB"))
+  val addressB = address(systemB)
   val rootB = RootActorPath(addressB)
 
   "Artery" must {
@@ -117,11 +116,6 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config) extends AkkaSpe
       }
     }
 
-  }
-
-  override def afterTermination(): Unit = {
-    shutdown(systemB)
-    super.shutdown(systemB)
   }
 
 }

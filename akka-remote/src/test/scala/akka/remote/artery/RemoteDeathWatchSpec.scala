@@ -30,19 +30,13 @@ object RemoteDeathWatchSpec {
     """).withFallback(ArterySpecSupport.defaultConfig)
 }
 
-class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with ImplicitSender with DefaultTimeout with DeathWatchSpec with FlightRecorderSpecIntegration {
+class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.config) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
   import RemoteDeathWatchSpec._
 
   system.eventStream.publish(TestEvent.Mute(
     EventFilter[io.aeron.exceptions.RegistrationException]()))
 
-  val other = ActorSystem("other", ConfigFactory.parseString(s"akka.remote.artery.canonical.port=$otherPort")
-    .withFallback(system.settings.config))
-
-  override def afterTermination() {
-    shutdown(other)
-    super.afterTermination()
-  }
+  val other = newRemoteSystem(name = Some("other"), extraConfig = Some(s"akka.remote.artery.canonical.port=$otherPort"))
 
   override def expectedTestDuration: FiniteDuration = 120.seconds
 
