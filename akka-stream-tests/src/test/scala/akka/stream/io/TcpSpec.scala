@@ -3,25 +3,26 @@
  */
 package akka.stream.io
 
-import akka.NotUsed
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorSystem, Address, Kill }
 import akka.io.Tcp._
-import akka.stream.scaladsl.Tcp.IncomingConnection
+import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
 import akka.stream.scaladsl.{ Flow, _ }
 import akka.stream.testkit.TestUtils.temporaryServerAddress
 
 import scala.util.control.NonFatal
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.stream.{ ActorMaterializer, BindFailedException, StreamTcpException }
+import akka.stream._
 import akka.util.{ ByteString, Helpers }
 
 import scala.collection.immutable
-import scala.concurrent.{ Await, Promise }
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
-import java.net.{ BindException, InetSocketAddress }
+import java.net.{ BindException, InetSocketAddress, Socket, SocketException }
 
-import akka.testkit.{ EventFilter, TestLatch }
+import akka.testkit.{ EventFilter, TestKit, TestLatch }
+import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
@@ -509,22 +510,72 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
     }
 
     "not shut down connections after the connection stream cancelled" in assertAllStagesStopped {
-      val address = temporaryServerAddress()
-      val (futureBinding, _) = Tcp().bind(address.getHostName, address.getPort).take(1).toMat(Sink.foreach { tcp ⇒
-        Thread.sleep(1000) // we're testing here to see if it survives such race
-        tcp.flow.join(Flow[ByteString]).run()
-      })(Keep.both)
-        .run()
 
-      // make sure server is running first
-      futureBinding.futureValue
+      // configure a few timeouts we do not want to hit
+      val config = ConfigFactory.parseString("""
+        akka.loglevel=debug
+        akka.actor.serializer-messages = off
+        akka.io.tcp.register-timeout = 42s
+        akka.io.tcp.trace-logging = on
+      """)
+      val serverSystem = ActorSystem("server", config)
+      val clientSystem = ActorSystem("client", config)
 
-      // then connect, should trigger a block and then
-      val total = Source(immutable.Iterable.fill(1000)(ByteString(0)))
-        .via(Tcp().outgoingConnection(address))
-        .runFold(0)(_ + _.size)
+      try {
+        val serverMaterializer = ActorMaterializer(ActorMaterializerSettings(serverSystem)
+          .withSubscriptionTimeoutSettings(StreamSubscriptionTimeoutSettings(
+            StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(serverSystem)
 
-      total.futureValue should ===(1000)
+        val clientMaterializer = ActorMaterializer(ActorMaterializerSettings(clientSystem)
+          .withSubscriptionTimeoutSettings(StreamSubscriptionTimeoutSettings(
+            StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(clientSystem)
+
+        val address = temporaryServerAddress()
+        val completeRequest = TestLatch()(serverSystem)
+        val gotRequest = Promise[Done]()
+
+        def portClosed(): Boolean =
+          try {
+            new Socket(address.getHostString, address.getPort).close()
+            false
+          } catch {
+            case _: SocketException ⇒ true
+          }
+
+        import serverSystem.dispatcher
+        val futureBinding: Future[ServerBinding] =
+          Tcp(serverSystem).bind(address.getHostName, address.getPort)
+            // accept one connection, then cancel
+            .take(1)
+            // keep the accepted request hanging
+            .map { connection ⇒
+              gotRequest.success(Done)
+              Await.ready(completeRequest, remainingOrDefault)
+              connection.flow.join(Flow[ByteString]).run()
+            }
+            .to(Sink.ignore)
+            .run()(serverMaterializer)
+
+        // make sure server is running first
+        futureBinding.futureValue
+
+        // then connect once, which should lead to the server cancelling
+        val total = Source(immutable.Iterable.fill(100)(ByteString(0)))
+          .via(Tcp(clientSystem).outgoingConnection(address))
+          .runFold(0)(_ + _.size)(clientMaterializer)
+
+        // wait for request arrive and then server stop accepting incoming connections
+        // before letting the request through
+        gotRequest.future.futureValue
+        awaitCond(portClosed())
+        completeRequest.open()
+
+        total.futureValue should ===(100)
+
+      } finally {
+        TestKit.shutdownActorSystem(serverSystem)
+        TestKit.shutdownActorSystem(clientSystem)
+      }
     }
 
     "shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
