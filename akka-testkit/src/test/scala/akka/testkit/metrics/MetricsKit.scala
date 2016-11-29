@@ -83,13 +83,16 @@ private[akka] trait MetricsKit extends MetricsKitOps {
     clearMetrics()
   }
 
+  def reportMetricsEnabled: Boolean = true
+
   /**
    * Causes immediate flush of metrics, using all registered reporters.
    *
    * HINT: this operation can be costy, run outside of your tested code, or rely on scheduled reporting.
    */
   def reportMetrics() {
-    reporters foreach { _.report() }
+    if (reportMetricsEnabled)
+      reporters foreach { _.report() }
   }
 
   /**

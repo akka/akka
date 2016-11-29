@@ -11,8 +11,26 @@ import akka.testkit.metrics._
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit.metrics.HeapMemoryUsage
 import com.codahale.metrics.{ Histogram }
+import com.typesafe.config.ConfigFactory
 
 object ActorCreationPerfSpec {
+
+  val config = ConfigFactory.parseString("""
+    akka.test.actor.ActorPerfSpec {
+      warmUp = 5
+      numberOfActors = 10
+      numberOfRepeats = 1
+      force-gc = off
+      report-metrics = off
+      # For serious measurements use something like the following values
+      #warmUp = 50000
+      #numberOfActors = 100000
+      #numberOfRepeats = 3
+      #force-gc = on
+      #report-metrics = on
+    }
+    akka.actor.serialize-messages = off
+    """)
 
   final case class Create(number: Int, props: () ⇒ Props)
   case object Created
@@ -98,7 +116,7 @@ object ActorCreationPerfSpec {
   }
 }
 
-class ActorCreationPerfSpec extends AkkaSpec("akka.actor.serialize-messages = off") with ImplicitSender
+class ActorCreationPerfSpec extends AkkaSpec(ActorCreationPerfSpec.config) with ImplicitSender
   with MetricsKit with BeforeAndAfterAll {
 
   import ActorCreationPerfSpec._
@@ -108,9 +126,11 @@ class ActorCreationPerfSpec extends AkkaSpec("akka.actor.serialize-messages = of
   val BlockingTimeKey = ActorCreationKey / "synchronous-part"
   val TotalTimeKey = ActorCreationKey / "total"
 
-  val warmUp: Int = Integer.getInteger("akka.test.actor.ActorPerfSpec.warmUp", 50000)
-  val nrOfActors: Int = Integer.getInteger("akka.test.actor.ActorPerfSpec.numberOfActors", 100000)
-  val nrOfRepeats: Int = Integer.getInteger("akka.test.actor.ActorPerfSpec.numberOfRepeats", 3)
+  val warmUp = metricsConfig.getInt("akka.test.actor.ActorPerfSpec.warmUp")
+  val nrOfActors = metricsConfig.getInt("akka.test.actor.ActorPerfSpec.numberOfActors")
+  val nrOfRepeats = metricsConfig.getInt("akka.test.actor.ActorPerfSpec.numberOfRepeats")
+  override val reportMetricsEnabled = metricsConfig.getBoolean("akka.test.actor.ActorPerfSpec.report-metrics")
+  override val forceGcEnabled = metricsConfig.getBoolean("akka.test.actor.ActorPerfSpec.force-gc")
 
   def runWithCounterInside(metricName: String, scenarioName: String, number: Int, propsCreator: () ⇒ Props) {
     val hist = histogram(BlockingTimeKey / metricName)

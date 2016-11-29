@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
@@ -102,7 +103,7 @@ class FlowOrElseSpec extends AkkaSpec {
     "complete when both inputs completes without emitting elements, regardless of order" in new OrElseProbedFlow {
       outProbe.ensureSubscription()
       inProbe2.sendComplete()
-      outProbe.expectNoMsg() // make sure it did not complete here
+      outProbe.expectNoMsg(200.millis) // make sure it did not complete here
       inProbe1.sendComplete()
       outProbe.expectComplete()
     }

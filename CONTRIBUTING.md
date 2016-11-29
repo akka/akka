@@ -254,7 +254,13 @@ In order to speed up PR validation times, the Akka build contains a special sbt 
 which is smart enough to figure out which projects should be built if a PR only has changes in some parts of the project.
 For example, if your PR only touches `akka-persistence`, no `akka-remote` tests need to be run, however the task
 will validate all projects that depend on `akka-persistence` (including samples).
-Also, tests tagged as `PerformanceTest` and the likes of it are excluded from PR validation.
+Also, tests tagged as `PerformanceTest`, `TimingTest`, `LongRunningTest` and all multi-node tests are excluded from PR validation.
+
+You can exclude the same kind of tests in your local build by starting sbt with:
+
+```
+sbt -Dakka.test.tags.exclude=performance,timing,long-running -Dakka.test.multi-in-test=false
+```
 
 In order to force the `validatePullRequest` task to build the entire project, regardless of dependency analysis of a PRs
 changes one can use the special `PLS BUILD ALL` command (typed in a comment on Github, on the Pull Request), which will cause

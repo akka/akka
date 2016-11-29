@@ -11,6 +11,7 @@ import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 
 import scala.concurrent.Await
+import akka.testkit.TimingTest
 
 class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
 
@@ -20,7 +21,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
 
   "A GroupedWithin" must {
 
-    "group elements within the duration" in assertAllStagesStopped {
+    "group elements within the duration" taggedAs TimingTest in assertAllStagesStopped {
       val input = Iterator.from(1)
       val p = TestPublisher.manualProbe[Int]()
       val c = TestSubscriber.manualProbe[immutable.Seq[Int]]()
@@ -47,7 +48,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       c.expectNoMsg(200.millis)
     }
 
-    "deliver bufferd elements onComplete before the timeout" in {
+    "deliver bufferd elements onComplete before the timeout" taggedAs TimingTest in {
       val c = TestSubscriber.manualProbe[immutable.Seq[Int]]()
       Source(1 to 3).groupedWithin(1000, 10.second).to(Sink.fromSubscriber(c)).run()
       val cSub = c.expectSubscription
@@ -57,7 +58,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       c.expectNoMsg(200.millis)
     }
 
-    "buffer groups until requested from downstream" in {
+    "buffer groups until requested from downstream" taggedAs TimingTest in {
       val input = Iterator.from(1)
       val p = TestPublisher.manualProbe[Int]()
       val c = TestSubscriber.manualProbe[immutable.Seq[Int]]()
@@ -78,7 +79,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       c.expectNoMsg(100.millis)
     }
 
-    "drop empty groups" in {
+    "drop empty groups" taggedAs TimingTest in {
       val p = TestPublisher.manualProbe[Int]()
       val c = TestSubscriber.manualProbe[immutable.Seq[Int]]()
       Source.fromPublisher(p).groupedWithin(1000, 500.millis).to(Sink.fromSubscriber(c)).run()
@@ -99,7 +100,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       c.expectNoMsg(100.millis)
     }
 
-    "reset time window when max elements reached" in {
+    "reset time window when max elements reached" taggedAs TimingTest in {
       val inputs = Iterator.from(1)
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
@@ -124,18 +125,18 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       downstream.expectNoMsg(100.millis)
     }
 
-    "group evenly" in {
+    "group evenly" taggedAs TimingTest in {
       def script = Script(TestConfig.RandomTestRange map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) → Seq(immutable.Seq(x, y, z)) }: _*)
       TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.groupedWithin(3, 10.minutes)))
     }
 
-    "group with rest" in {
+    "group with rest" taggedAs TimingTest in {
       def script = Script((TestConfig.RandomTestRange.map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) → Seq(immutable.Seq(x, y, z)) }
         :+ { val x = random.nextInt(); Seq(x) → Seq(immutable.Seq(x)) }): _*)
       TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.groupedWithin(3, 10.minutes)))
     }
 
-    "group with small groups with backpressure" in {
+    "group with small groups with backpressure" taggedAs TimingTest in {
       Source(1 to 10)
         .groupedWithin(1, 1.day)
         .throttle(1, 110.millis, 0, ThrottleMode.Shaping)
