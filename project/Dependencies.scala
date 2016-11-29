@@ -149,7 +149,10 @@ object Dependencies {
 
   lazy val httpXml = versionDependentDeps(scalaXml)
 
-  lazy val httpSprayJson = versionDependentDeps(sprayJson) // FIXME how to add scalatest here?
+  lazy val httpSprayJson = Seq(
+    versionDependentDeps(sprayJson),
+    libraryDependencies += Test.scalatest.value
+  )
 
   lazy val httpJackson = l ++= Seq(jackson)
 
@@ -176,7 +179,7 @@ object DependencyHelpers {
    * dependent entries.
    */
   def versionDependentDeps(modules: ScalaVersionDependentModuleID*): Def.Setting[Seq[ModuleID]] =
-    libraryDependencies <++= scalaVersion(version => modules.flatMap(m => m.modules(version)))
+    libraryDependencies ++= scalaVersion(version => modules.flatMap(m => m.modules(version))).value
 
   val ScalaVersion = """\d\.\d+\.\d+(?:-(?:M|RC)\d+)?""".r
   val nominalScalaVersion: String => String = {
