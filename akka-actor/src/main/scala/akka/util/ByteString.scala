@@ -542,26 +542,27 @@ object ByteString {
     }
 
     override def takeRight(n: Int): ByteString =
-      if (n <= 0) ByteString.empty
-      else if (n >= length) this
-      else takeRight0(n)
+      if (0 < n && n < length) takeRight0(n)
+      else if (n <= 0) ByteString.empty
+      else this
 
     private def takeRight0(n: Int): ByteString = {
       val byteStringsSize = bytestrings.size
-      @tailrec def findSplit(fullTakes: Int, remainingToTake: Int): (Int, Int) = {
+      @tailrec def takeRightWithFullTakesAndRemaining(fullTakes: Int, remainingToTake: Int): ByteString = {
         val bs = bytestrings(byteStringsSize - fullTakes - 1)
-        if (bs.length > remainingToTake) (fullTakes, remainingToTake)
-        else findSplit(fullTakes + 1, remainingToTake - bs.length)
+        if (bs.length > remainingToTake) {
+          if (fullTakes == 0)
+            bytestrings(byteStringsSize - 1).takeRight(n)
+          else if (remainingToTake == 0)
+            new ByteStrings(bytestrings.takeRight(fullTakes), n)
+          else
+            new ByteStrings(bytestrings(byteStringsSize - fullTakes - 1).takeRight1(remainingToTake) +: bytestrings.takeRight(fullTakes), n)
+        } else {
+          takeRightWithFullTakesAndRemaining(fullTakes + 1, remainingToTake - bs.length)
+        }
       }
 
-      val (fullTakes, remainingToTake) = findSplit(0, n)
-
-      if (fullTakes == 0)
-        bytestrings(byteStringsSize - 1).takeRight(n)
-      else if (remainingToTake == 0)
-        new ByteStrings(bytestrings.takeRight(fullTakes), n)
-      else
-        new ByteStrings(bytestrings(byteStringsSize - fullTakes - 1).takeRight1(remainingToTake) +: bytestrings.takeRight(fullTakes), n)
+      takeRightWithFullTakesAndRemaining(0, n)
     }
 
     override def dropRight(n: Int): ByteString =
