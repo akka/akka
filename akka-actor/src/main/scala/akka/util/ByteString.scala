@@ -487,26 +487,27 @@ object ByteString {
     }
 
     override def dropRight(n: Int): ByteString =
-      if (n <= 0) this
+      if (0 < n && n < length) dropRight0(n)
       else if (n >= length) ByteString.empty
-      else dropRight0(n)
+      else this
 
     private def dropRight0(n: Int): ByteString = {
       val byteStringsSize = bytestrings.length
-      @tailrec def findSplit(fullDrops: Int, remainingToDrop: Int): (Int, Int) = {
+      @tailrec def dropRightWithFullDropsAndRemainig(fullDrops: Int, remainingToDrop: Int): ByteString = {
         val bs = bytestrings(byteStringsSize - fullDrops - 1)
-        if (bs.length > remainingToDrop) (fullDrops, remainingToDrop)
-        else findSplit(fullDrops + 1, remainingToDrop - bs.length)
+        if (bs.length > remainingToDrop) {
+          if (fullDrops == byteStringsSize - 1)
+            bytestrings(0).dropRight(remainingToDrop)
+          else if (remainingToDrop == 0)
+            new ByteStrings(bytestrings.dropRight(fullDrops), length - n)
+          else
+            new ByteStrings(bytestrings.dropRight(fullDrops + 1) :+ bytestrings(byteStringsSize - fullDrops - 1).dropRight1(remainingToDrop), length - n)
+        } else {
+          dropRightWithFullDropsAndRemainig(fullDrops + 1, remainingToDrop - bs.length)
+        }
       }
 
-      val (fullDrops, remainingToDrop) = findSplit(0, n)
-
-      if (fullDrops == byteStringsSize - 1)
-        bytestrings(0).dropRight(remainingToDrop)
-      else if (remainingToDrop == 0)
-        new ByteStrings(bytestrings.dropRight(fullDrops), length - n)
-      else
-        new ByteStrings(bytestrings.dropRight(fullDrops + 1) :+ bytestrings(byteStringsSize - fullDrops - 1).dropRight1(remainingToDrop), length - n)
+      dropRightWithFullDropsAndRemainig(0, n)
     }
 
     override def slice(from: Int, until: Int): ByteString =
