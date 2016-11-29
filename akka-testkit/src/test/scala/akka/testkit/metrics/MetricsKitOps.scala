@@ -54,10 +54,12 @@ private[akka] trait MetricsKitOps extends MetricKeyDSL {
     registry.histogram((key / "histogram").toString)
   }
 
+  def forceGcEnabled: Boolean = true
+
   /** Yet another delegate to `System.gc()` */
   def gc() {
-    // todo add some form of logging, to differentiate manual gc calls from "normal" ones
-    System.gc()
+    if (forceGcEnabled)
+      System.gc()
   }
 
   /**

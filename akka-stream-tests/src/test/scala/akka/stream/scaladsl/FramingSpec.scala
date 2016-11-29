@@ -16,6 +16,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.Random
+import akka.testkit.LongRunningTest
 
 class FramingSpec extends StreamSpec {
 
@@ -70,6 +71,8 @@ class FramingSpec extends StreamSpec {
 
   val rechunk = Flow[ByteString].via(new Rechunker).named("rechunker")
 
+  override def expectedTestDuration = 2.minutes
+
   "Delimiter bytes based framing" must {
 
     val delimiterBytes = List("\n", "\r\n", "FOO").map(ByteString(_))
@@ -85,7 +88,7 @@ class FramingSpec extends StreamSpec {
         yield delimiter.take(prefix) ++ s
 
     "work with various delimiters and test sequences" in {
-      for (delimiter ← delimiterBytes; _ ← 1 to 100) {
+      for (delimiter ← delimiterBytes; _ ← 1 to 5) {
         val testSequence = completeTestSequences(delimiter)
         val f = Source(testSequence)
           .map(_ ++ delimiter)
@@ -161,9 +164,8 @@ class FramingSpec extends StreamSpec {
       ByteString(Array.ofDim[Byte](fieldOffset)) ++ header ++ payload
     }
 
-    "work with various byte orders, frame lengths and offsets" in {
+    "work with various byte orders, frame lengths and offsets" taggedAs LongRunningTest in {
       for {
-        _ ← (1 to 10)
         byteOrder ← byteOrders
         fieldOffset ← fieldOffsets
         fieldLength ← fieldLengths
@@ -229,7 +231,7 @@ class FramingSpec extends StreamSpec {
         .failed.futureValue shouldBe a[FramingException]
     }
 
-    "report truncated frames" in {
+    "report truncated frames" taggedAs LongRunningTest in {
       for {
         //_ ← 1 to 10
         byteOrder ← byteOrders
