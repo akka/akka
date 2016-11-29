@@ -21,11 +21,7 @@ object RemoteRouterSpec {
   }
 }
 
-class RemoteRouterSpec extends AkkaSpec("""
-    akka.actor.provider = remote
-    akka.remote.artery.enabled = on
-    akka.remote.artery.canonical.hostname = localhost
-    akka.remote.artery.canonical.port = 0
+class RemoteRouterSpec extends AkkaSpec(ConfigFactory.parseString("""
     akka.actor.deployment {
       /remote-override {
         router = round-robin-pool
@@ -39,7 +35,7 @@ class RemoteRouterSpec extends AkkaSpec("""
         router = round-robin-pool
         nr-of-instances = 6
       }
-    }""") {
+    }""").withFallback(ArterySpecSupport.defaultConfig)) with FlightRecorderSpecIntegration {
 
   import RemoteRouterSpec._
 
@@ -85,6 +81,7 @@ class RemoteRouterSpec extends AkkaSpec("""
 
   override def afterTermination(): Unit = {
     shutdown(masterSystem)
+    super.afterTermination()
   }
 
   def collectRouteePaths(probe: TestProbe, router: ActorRef, n: Int): immutable.Seq[ActorPath] = {

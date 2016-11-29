@@ -18,15 +18,9 @@ import com.typesafe.config.ConfigFactory
 object LateConnectSpec {
 
   val config = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-       remote.artery.advanced.handshake-timeout = 3s
-       remote.artery.advanced.image-liveness-timeout = 2.9s
-     }
-  """)
+     akka.remote.artery.advanced.handshake-timeout = 3s
+     akka.remote.artery.advanced.image-liveness-timeout = 2.9s
+  """).withFallback(ArterySpecSupport.defaultConfig)
 
 }
 
@@ -61,6 +55,9 @@ class LateConnectSpec extends AkkaSpec(LateConnectSpec.config) with ImplicitSend
     }
   }
 
-  override def afterTermination(): Unit = shutdown(systemB)
+  override def afterTermination(): Unit = {
+    shutdown(systemB)
+    super.afterTermination()
+  }
 
 }

@@ -17,22 +17,16 @@ object HandshakeRetrySpec {
   val portB = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
 
   val commonConfig = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-       remote.artery.advanced.handshake-timeout = 10s
-       remote.artery.advanced.image-liveness-timeout = 7s
-     }
-  """)
+     akka.remote.artery.advanced.handshake-timeout = 10s
+     akka.remote.artery.advanced.image-liveness-timeout = 7s
+  """).withFallback(ArterySpecSupport.defaultConfig)
 
   val configB = ConfigFactory.parseString(s"akka.remote.artery.canonical.port = $portB")
     .withFallback(commonConfig)
 
 }
 
-class HandshakeRetrySpec extends AkkaSpec(HandshakeRetrySpec.commonConfig) with ImplicitSender {
+class HandshakeRetrySpec extends AkkaSpec(HandshakeRetrySpec.commonConfig) with ImplicitSender with FlightRecorderSpecIntegration {
   import HandshakeRetrySpec._
 
   var systemB: ActorSystem = null
@@ -58,7 +52,9 @@ class HandshakeRetrySpec extends AkkaSpec(HandshakeRetrySpec.commonConfig) with 
 
   }
 
-  override def afterTermination(): Unit =
+  override def afterTermination(): Unit = {
     if (systemB != null) shutdown(systemB)
+    super.afterTermination()
+  }
 
 }

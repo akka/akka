@@ -32,13 +32,7 @@ object RemoteDeploymentSpec {
   }
 }
 
-class RemoteDeploymentSpec extends AkkaSpec("""
-    #akka.loglevel=DEBUG
-    akka.actor.provider = remote
-    akka.remote.artery.enabled = on
-    akka.remote.artery.canonical.hostname = localhost
-    akka.remote.artery.canonical.port = 0
-    """) {
+class RemoteDeploymentSpec extends AkkaSpec(ArterySpecSupport.defaultConfig) {
 
   import RemoteDeploymentSpec._
 

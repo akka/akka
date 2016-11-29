@@ -26,14 +26,11 @@ object RemoteDeathWatchSpec {
             }
         }
         remote.watch-failure-detector.acceptable-heartbeat-pause = 3s
-        remote.artery.enabled = on
-        remote.artery.canonical.hostname = localhost
-        remote.artery.canonical.port = 0
     }
-    """)
+    """).withFallback(ArterySpecSupport.defaultConfig)
 }
 
-class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
+class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with ImplicitSender with DefaultTimeout with DeathWatchSpec with FlightRecorderSpecIntegration {
   import RemoteDeathWatchSpec._
 
   system.eventStream.publish(TestEvent.Mute(
@@ -44,6 +41,7 @@ class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with Im
 
   override def afterTermination() {
     shutdown(other)
+    super.afterTermination()
   }
 
   override def expectedTestDuration: FiniteDuration = 120.seconds

@@ -59,26 +59,21 @@ object UntrustedSpec {
     }
   }
 
+  val config = ConfigFactory.parseString(
+    """
+      akka.remote.artery.untrusted-mode = on
+      akka.remote.artery.trusted-selection-paths = ["/user/receptionist", ]
+      akka.loglevel = DEBUG # the test is verifying some Debug logging
+    """
+  ).withFallback(ArterySpecSupport.defaultConfig)
+
 }
 
-class UntrustedSpec extends AkkaSpec("""
-  akka.actor.provider = remote
-  akka.remote.artery.untrusted-mode = on
-  akka.remote.artery.trusted-selection-paths = ["/user/receptionist", ]
-  akka.remote.artery.enabled = on
-  akka.remote.artery.canonical.hostname = localhost
-  akka.remote.artery.canonical.port = 0
-  akka.loglevel = DEBUG # the test is verifying some Debug logging
-  """) with ImplicitSender {
+class UntrustedSpec extends AkkaSpec(UntrustedSpec.config) with ImplicitSender with FlightRecorderSpecIntegration {
 
   import UntrustedSpec._
 
-  val client = ActorSystem("UntrustedSpec-client", ConfigFactory.parseString("""
-      akka.actor.provider = remote
-      akka.remote.artery.enabled = on
-      akka.remote.artery.canonical.hostname = localhost
-      akka.remote.artery.canonical.port = 0
-      """))
+  val client = ActorSystem("UntrustedSpec-client", ArterySpecSupport.defaultConfig)
   val addr = RARP(system).provider.getDefaultAddress
 
   val receptionist = system.actorOf(Props(classOf[Receptionist], testActor), "receptionist")
@@ -100,6 +95,7 @@ class UntrustedSpec extends AkkaSpec("""
 
   override def afterTermination() {
     shutdown(client)
+    super.afterTermination()
   }
 
   // need to enable debug log-level without actually printing those messages

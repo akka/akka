@@ -13,24 +13,11 @@ import akka.testkit.EventFilter
 
 object SerializationErrorSpec {
 
-  val config = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-       actor {
-         serialize-creators = false
-         serialize-messages = false
-       }
-     }
-  """)
-
   object NotSerializableMsg
 
 }
 
-class SerializationErrorSpec extends AkkaSpec(SerializationErrorSpec.config) with ImplicitSender {
+class SerializationErrorSpec extends AkkaSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
   import SerializationErrorSpec._
 
   val configB = ConfigFactory.parseString("""

@@ -63,15 +63,7 @@ object RemoteWatcherSpec {
 
 }
 
-class RemoteWatcherSpec extends AkkaSpec(
-  """akka {
-       loglevel = INFO
-       log-dead-letters-during-shutdown = false
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-     }""") with ImplicitSender {
+class RemoteWatcherSpec extends AkkaSpec(ArterySpecSupport.defaultConfig) with ImplicitSender with FlightRecorderSpecIntegration {
 
   import RemoteWatcherSpec._
   import RemoteWatcher._
@@ -88,6 +80,7 @@ class RemoteWatcherSpec extends AkkaSpec(
 
   override def afterTermination() {
     shutdown(remoteSystem)
+    super.afterTermination()
   }
 
   val heartbeatRspB = ArteryHeartbeatRsp(remoteAddressUid)
