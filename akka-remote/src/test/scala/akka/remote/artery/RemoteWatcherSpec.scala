@@ -63,15 +63,15 @@ object RemoteWatcherSpec {
 
 }
 
-class RemoteWatcherSpec extends AkkaSpec(ArterySpecSupport.defaultConfig) with ImplicitSender with FlightRecorderSpecIntegration {
+class RemoteWatcherSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
 
   import RemoteWatcherSpec._
   import RemoteWatcher._
 
   override def expectedTestDuration = 2.minutes
 
-  val remoteSystem = ActorSystem("RemoteSystem", system.settings.config)
-  val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
+  val remoteSystem = newRemoteSystem(name = Some("RemoteSystem"))
+  val remoteAddress = address(remoteSystem)
   def remoteAddressUid = AddressUidExtension(remoteSystem).longAddressUid
 
   Seq(system, remoteSystem).foreach(muteDeadLetters(

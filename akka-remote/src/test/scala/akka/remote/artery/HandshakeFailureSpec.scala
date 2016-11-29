@@ -22,15 +22,10 @@ object HandshakeFailureSpec {
      akka.remote.artery.advanced.image-liveness-timeout = 1.9s
   """).withFallback(ArterySpecSupport.defaultConfig)
 
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.canonical.port = $portB")
-    .withFallback(commonConfig)
-
 }
 
-class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) with ImplicitSender with FlightRecorderSpecIntegration {
+class HandshakeFailureSpec extends ArteryMultiNodeSpec(HandshakeFailureSpec.commonConfig) with ImplicitSender {
   import HandshakeFailureSpec._
-
-  var systemB: ActorSystem = null
 
   "Artery handshake" must {
 
@@ -39,7 +34,9 @@ class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) w
       sel ! "hello"
       expectNoMsg(3.seconds) // longer than handshake-timeout
 
-      systemB = ActorSystem("systemB", HandshakeFailureSpec.configB)
+      val systemB = newRemoteSystem(
+        name = Some("systemB"),
+        extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
       systemB.actorOf(TestActors.echoActorProps, "echo")
 
       within(10.seconds) {
@@ -58,8 +55,5 @@ class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) w
     }
 
   }
-
-  override def afterTermination(): Unit =
-    if (systemB != null) shutdown(systemB)
 
 }

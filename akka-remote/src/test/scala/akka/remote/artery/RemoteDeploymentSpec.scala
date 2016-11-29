@@ -32,24 +32,20 @@ object RemoteDeploymentSpec {
   }
 }
 
-class RemoteDeploymentSpec extends AkkaSpec(ArterySpecSupport.defaultConfig) {
+class RemoteDeploymentSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) {
 
   import RemoteDeploymentSpec._
 
   val port = RARP(system).provider.getDefaultAddress.port.get
-  val conf = ConfigFactory.parseString(
+  val conf =
     s"""
     akka.actor.deployment {
       /blub.remote = "akka://${system.name}@localhost:$port"
     }
-    """).withFallback(system.settings.config)
+    """
 
-  val masterSystem = ActorSystem("Master" + system.name, conf)
-  val masterPort = RARP(masterSystem).provider.getDefaultAddress.port.get
-
-  override def afterTermination(): Unit = {
-    shutdown(masterSystem)
-  }
+  val masterSystem = newRemoteSystem(name = Some("Master" + system.name), extraConfig = Some(conf))
+  val masterPort = address(masterSystem).port.get
 
   "Remoting" must {
 

@@ -30,8 +30,7 @@ object ArterySpecSupport {
       }
     }""")
 
-  /** artery enabled, flight recorder enabled, dynamic selection of port on localhost */
-  def defaultConfig =
+  def newFlightRecorderConfig =
     ConfigFactory.parseString(s"""
       akka {
         remote.artery {
@@ -41,38 +40,50 @@ object ArterySpecSupport {
           }
         }
       }
-    """).withFallback(staticArteryRemotingConfig)
+    """)
+
+  /**
+   * Artery enabled, flight recorder enabled, dynamic selection of port on localhost.
+   * Combine with [[FlightRecorderSpecIntegration]] or remember to delete flight recorder file if using manually
+   */
+  def defaultConfig = newFlightRecorderConfig.withFallback(staticArteryRemotingConfig)
 
 }
 
 /**
  * Dumps flight recorder data on test failure if artery flight recorder is enabled
+ *
+ * Important note: if you more than one (the default AkkaSpec.system) systems you need to override
+ * afterTermination and call handleFlightRecorderFile manually in the spec or else it will not be dumped
+ * on failure but also leak the afr file
  */
 trait FlightRecorderSpecIntegration { self: AkkaSpec ⇒
 
   def system: ActorSystem
 
-  private val flightRecorderFile: Path =
+  protected final def flightRecorderFileFor(system: ActorSystem): Path =
     FileSystems.getDefault.getPath(RARP(system).provider.remoteSettings.Artery.Advanced.FlightRecorderDestination)
 
   // keep track of failure so that we can print flight recorder output on failures
-  private var failed = false
+  protected final def failed = _failed
+  private var _failed = false
   override protected def withFixture(test: NoArgTest): Outcome = {
     val out = test()
-    if (!out.isSucceeded) failed = true
+    if (!out.isSucceeded) _failed = true
     out
   }
 
   override def afterTermination(): Unit = {
     self.afterTermination()
-    handleFlightRecorderFile()
+    handleFlightRecorderFile(system)
   }
 
-  protected def handleFlightRecorderFile(): Unit = {
+  protected def handleFlightRecorderFile(system: ActorSystem): Unit = {
+    val flightRecorderFile = flightRecorderFileFor(system)
     if (Files.exists(flightRecorderFile)) {
       if (failed) {
         // logger may not be alive anymore so we have to use stdout here
-        println("Flight recorder dump:")
+        println(s"Flight recorder dump for system [${system.name}]:")
         FlightRecorderReader.dumpToStdout(flightRecorderFile)
       }
       Files.delete(flightRecorderFile)
