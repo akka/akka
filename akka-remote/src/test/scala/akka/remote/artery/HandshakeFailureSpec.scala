@@ -18,22 +18,16 @@ object HandshakeFailureSpec {
   val portB = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
 
   val commonConfig = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-       remote.artery.advanced.handshake-timeout = 2s
-       remote.artery.advanced.image-liveness-timeout = 1.9s
-     }
-  """)
+     akka.remote.artery.advanced.handshake-timeout = 2s
+     akka.remote.artery.advanced.image-liveness-timeout = 1.9s
+  """).withFallback(ArterySpecSupport.defaultConfig)
 
   val configB = ConfigFactory.parseString(s"akka.remote.artery.canonical.port = $portB")
     .withFallback(commonConfig)
 
 }
 
-class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) with ImplicitSender {
+class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) with ImplicitSender with FlightRecorderSpecIntegration {
   import HandshakeFailureSpec._
 
   var systemB: ActorSystem = null

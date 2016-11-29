@@ -31,23 +31,11 @@ import akka.util.OptionVal
 
 object SystemMessageDeliverySpec {
 
-  val config = ConfigFactory.parseString(s"""
-     akka.loglevel=INFO
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-     }
-     akka.actor.serialize-creators = off
-     akka.actor.serialize-messages = off
-  """)
-
   case class TestSysMsg(s: String) extends SystemMessageDelivery.AckedDeliveryMessage
 
 }
 
-class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.config) with ImplicitSender {
+class SystemMessageDeliverySpec extends AkkaSpec(ArterySpecSupport.defaultConfig) with ImplicitSender with FlightRecorderSpecIntegration {
   import SystemMessageDeliverySpec._
 
   val addressA = UniqueAddress(
@@ -63,7 +51,10 @@ class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.confi
 
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
 
-  override def afterTermination(): Unit = shutdown(systemB)
+  override def afterTermination(): Unit = {
+    shutdown(systemB)
+    super.afterTermination()
+  }
 
   private def send(sendCount: Int, resendInterval: FiniteDuration, outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
     val deadLetters = TestProbe().ref
