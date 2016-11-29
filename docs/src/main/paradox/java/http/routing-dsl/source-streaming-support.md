@@ -2,10 +2,10 @@
 <a id="json-streaming-java"></a>
 # Source Streaming
 
-Akka HTTP supports completing a request with an Akka `Source<T, _>`, which makes it possible to easily build
+Akka HTTP supports completing a request with an Akka `Source<T, ?>`, which makes it possible to easily build
 and consume streaming end-to-end APIs which apply back-pressure throughout the entire stack. 
 
-It is possible to complete requests with raw `Source<ByteString, _>`, however often it is more convenient to 
+It is possible to complete requests with raw `Source<ByteString, ?>`, however often it is more convenient to 
 stream on an element-by-element basis, and allow Akka HTTP to handle the rendering internally - for example as a JSON array,
 or CSV stream (where each element is separated by a new-line).
 
@@ -28,7 +28,7 @@ In the below examples, we'll be referring to the `Tweet` and `Measurement` case 
 In this example we implement an API representing an infinite stream of tweets, very much like Twitter's [Streaming API](https://dev.twitter.com/streaming/overview).
 
 Firstly, we'll need to get some additional marshalling infrastructure set up, that is able to marshal to and from an
-Akka Streams `Source<T,_>`. Here we'll use the `Jackson` helper class from `akka-http-jackson` (a separate library
+Akka Streams `Source<T, ?>`. Here we'll use the `Jackson` helper class from `akka-http-jackson` (a separate library
 that you should add as a dependency if you want to use Jackson with Akka HTTP).
 
 First we enable JSON Streaming by making an implicit `EntityStreamingSupport` instance available (Step 1).

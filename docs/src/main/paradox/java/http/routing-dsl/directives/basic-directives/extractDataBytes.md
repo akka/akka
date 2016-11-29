@@ -3,7 +3,7 @@
 
 ## Description
 
-Extracts the entities data bytes as `Source[ByteString, Any]` from the `RequestContext`.
+Extracts the entities data bytes as `Source<ByteString, NotUsed>` from the `RequestContext`.
 
 The directive returns a stream containing the request data bytes.
 

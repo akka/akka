@@ -13,7 +13,7 @@ This directive does not implement the complete OAuth2 protocol, but instead enab
 by extracting the needed token from the HTTP headers.
 @@@
 
-Given a function returning `Some<T>` upon successful authentication and `None` otherwise,
+Given a function returning a non empty `Optional<T>` upon successful authentication and an empty `Optional<T>` otherwise,
 respectively applies the inner route or rejects the request with a `AuthenticationFailedRejection` rejection,
 which by default is mapped to an `401 Unauthorized` response.
 

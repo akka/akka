@@ -83,20 +83,20 @@ It wraps a plain `ByteString` and  represents a standard, unchunked entity with 
 
 HttpEntityDefault
 : The general, unchunked HTTP/1.1 message entity.
-It has a known length and presents its data as a `Source[ByteString]` which can be only materialized once.
+It has a known length and presents its data as a `Source<ByteString, ?>` which can be only materialized once.
 It is an error if the provided source doesn't produce exactly as many bytes as specified.
 The distinction of `HttpEntityStrict` and `HttpEntityDefault` is an API-only one. One the wire,
 both kinds of entities look the same.
 
 HttpEntityChunked
 : The model for HTTP/1.1 [chunked content](http://tools.ietf.org/html/rfc7230#section-4.1) (i.e. sent with `Transfer-Encoding: chunked`).
-The content length is unknown and the individual chunks are presented as a `Source[ChunkStreamPart]`.
+The content length is unknown and the individual chunks are presented as a `Source<ChunkStreamPart, ?>`.
 A `ChunkStreamPart` is either a non-empty chunk or the empty last chunk containing optional trailer headers.
 The stream consists of zero or more non-empty chunks parts and can be terminated by an optional last chunk.
 
 HttpEntityCloseDelimited
 : An unchunked entity of unknown length that is implicitly delimited by closing the connection (`Connection: close`).
-Content data is presented as a `Source[ByteString]`.
+Content data is presented as a `Source<ByteString, ?>`.
 Since the connection must be closed after sending an entity of this type it can only be used on the server-side for
 sending a response.
 Also, the main purpose of `CloseDelimited` entities is compatibility with HTTP/1.0 peers, which do not support
@@ -118,7 +118,7 @@ the body data collected into a `ByteString`.
 
 The class `HttpEntities` contains static methods to create entities from common types easily.
 
-You can use the `isX` methods of ``HttpEntity` to find out of which subclass an entity is if you want to provide
+You can use the `isX` methods of `HttpEntity` to find out of which subclass an entity is if you want to provide
 special handling for each of the subtypes. However, in many cases a recipient of an `HttpEntity` doesn't care about
 of which subtype an entity is (and how data is transported exactly on the HTTP layer). Therefore, the general method
 `HttpEntity.getDataBytes()` is provided which returns a `Source<ByteString, ?>` that allows access to the data of an

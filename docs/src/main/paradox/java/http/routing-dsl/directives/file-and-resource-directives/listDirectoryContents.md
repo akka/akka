@@ -10,7 +10,7 @@ To just serve files use @ref[getFromDirectory](getFromDirectory.md#getfromdirect
 
 To serve files and provide a browseable directory listing use @ref[getFromBrowseableDirectories](getFromBrowseableDirectories.md#getfrombrowseabledirectories-java) instead.
 
-The rendering can be overridden by providing a custom `Marshaller[DirectoryListing]`, you can read more about it in
+The rendering can be overridden by providing a custom `DirectoryRenderer` implementation, you can read more about it in
 @ref[getFromDirectory](getFromDirectory.md#getfromdirectory-java) 's documentation.
 
 Note that it's not required to wrap this directive with `get` as this directive will only respond to `GET` requests.

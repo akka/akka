@@ -15,7 +15,7 @@ Generally when a route receives a request (or rather a `RequestContext` for it) 
  * Complete the request by returning the value of `requestContext.complete(...)`
  * Reject the request by returning the value of `requestContext.reject(...)` (see @ref[Rejections](rejections.md#rejections-java))
  * Fail the request by returning the value of `requestContext.fail(...)` or by just throwing an exception (see @ref[Exception Handling](exception-handling.md#exception-handling-java))
- * Do any kind of asynchronous processing and instantly return a `Future[RouteResult]` to be eventually completed later
+ * Do any kind of asynchronous processing and instantly return a `CompletionStage<RouteResult>` to be eventually completed later
 
 The first case is pretty clear, by calling `complete` a given response is sent to the client as reaction to the
 request. In the second case "reject" means that the route does not want to handle the request. You'll see further down

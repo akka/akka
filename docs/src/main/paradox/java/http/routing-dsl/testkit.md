@@ -39,7 +39,8 @@ All of the defined assertions provide HTTP specific error messages aiding in dia
 
 Currently, these methods are defined on `TestResponse` to assert on the response:
 
-|Assertion                                        Description ====== | ============================================================ =======================================================================|
+|Inspector                                                           | Description                                                                                                                         |
+|--------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
 |`assertStatusCode(int expectedCode)`                                | Asserts that the numeric response status code equals the expected one                                                               |
 |`assertStatusCode(StatusCode expectedCode)`                         | Asserts that the response `StatusCode` equals the expected one                                                                      |
 |`assertMediaType(String expectedType)`                              | Asserts that the media type part of the response's content type matches the given String                                            |

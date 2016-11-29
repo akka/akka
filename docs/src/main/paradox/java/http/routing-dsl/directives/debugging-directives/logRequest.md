@@ -8,7 +8,7 @@ Logs the request. The directive is available with the following parameters:
 >
  * A marker to prefix each log message with.
  * A log level.
- * A function that creates a :class:`LogEntry` from the :class:`HttpRequest`
+ * A function that creates a `LogEntry` from the `HttpRequest`
 
 Use `logResult` for logging the response, or `logRequestResult` for logging both.
 
