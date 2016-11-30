@@ -21,7 +21,7 @@ class StreamUtilsSpec extends AkkaSpec {
 
         newSource.runWith(Sink.ignore)
 
-        Await.result(whenCompleted, 3.seconds) shouldBe ()
+        Await.result(whenCompleted, 3.seconds) shouldBe (())
       }
 
       "upstream fails" in {
@@ -39,7 +39,7 @@ class StreamUtilsSpec extends AkkaSpec {
 
         newSource.runWith(Sink.head)
 
-        Await.result(whenCompleted, 3.seconds) shouldBe ()
+        Await.result(whenCompleted, 3.seconds) shouldBe (())
       }
     }
   }

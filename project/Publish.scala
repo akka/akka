@@ -1,5 +1,6 @@
 package akka
 
+import scala.language.postfixOps
 import sbt._, Keys._
 
 /**

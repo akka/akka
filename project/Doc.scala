@@ -28,7 +28,7 @@ object Scaladoc extends AutoPlugin {
 
   override lazy val projectSettings = {
     inTask(doc)(Seq(
-      scalacOptions in Compile <++= (version, baseDirectory in ThisBuild) map scaladocOptions,
+      scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
       autoAPIMappings := CliOptions.scaladocAutoAPI.get
     )) ++
     Seq(validateDiagrams in Compile := true) ++

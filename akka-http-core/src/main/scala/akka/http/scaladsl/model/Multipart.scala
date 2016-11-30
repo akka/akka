@@ -29,8 +29,6 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
-import akka.http.javadsl.model.RequestEntity
-
 /**
  * The model of multipart content for media-types `multipart/\*` (general multipart content),
  * `multipart/form-data` and `multipart/byteranges`.

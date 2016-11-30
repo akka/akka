@@ -12,10 +12,10 @@ import sbt.Keys._
 object Version {
 
   def versionSettings: Seq[Setting[_]] = inConfig(Compile)(Seq(
-    resourceGenerators <+= generateVersion(resourceManaged, _ / "akka-http-version.conf",
+    resourceGenerators += generateVersion(resourceManaged, _ / "akka-http-version.conf",
       """|akka.http.version = "%s"
-         |"""),
-    sourceGenerators <+= generateVersion(sourceManaged, _ / "akka" / "http" / "Version.scala",
+         |""").taskValue,
+    sourceGenerators += generateVersion(sourceManaged, _ / "akka" / "http" / "Version.scala",
       """|package akka.http
          |
          |import com.typesafe.config.Config
@@ -31,7 +31,7 @@ object Version {
          |    }
          |  }
          |}
-         |""")
+         |""").taskValue
   ))
 
   def generateVersion(dir: SettingKey[File], locate: File => File, template: String) = Def.task[Seq[File]] {

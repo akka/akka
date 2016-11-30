@@ -28,7 +28,7 @@ object JavaAccessors {
 
   /** INTERNAL API */
   def HttpEntity(contentType: ContentType, file: File): UniversalEntity =
-    model.HttpEntity(contentType.asScala, file)
+    model.HttpEntity.fromPath(contentType.asScala, file.toPath)
 
   /** INTERNAL API */
   def HttpEntity(contentType: ContentType, file: Path): UniversalEntity =
