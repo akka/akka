@@ -481,7 +481,8 @@ trait Actor {
    * @param receive current behavior.
    * @param msg current message.
    */
-  protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = receive.applyOrElse(msg, unhandled)
+  protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit =
+    receive.applyOrElse(msg, unhandledFun)
 
   /**
    * Can be overridden to intercept calls to `preStart`. Calls `preStart` by default.
@@ -581,4 +582,15 @@ trait Actor {
       case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender(), self))
     }
   }
+
+  private[this] def unhandledFun: Any ⇒ Unit =
+    context match {
+      case cell: ActorCell ⇒
+        // use cached function to avoid allocations in aroundReceive,
+        // can't use a val in Actor due to binary compatibility restriction
+        if (cell.unhandledFun eq null)
+          cell.unhandledFun = unhandled
+        cell.unhandledFun
+      case _ ⇒ unhandled
+    }
 }

@@ -412,6 +412,13 @@ private[akka] class ActorCell(
     unstashed
   }
 
+  /**
+   * INTERNAL API
+   * Cached function to unhandled to avoid allocations in aroundReceive,
+   * can't use a val in Actor due to binary compatibility restriction
+   */
+  private[akka] var unhandledFun: Any ⇒ Unit = null
+
   /*
    * MESSAGE PROCESSING
    */
@@ -636,6 +643,7 @@ private[akka] class ActorCell(
     setActorFields(actorInstance, context = null, self = if (recreate) self else system.deadLetters)
     currentMessage = null
     behaviorStack = emptyBehaviorStack
+    unhandledFun = null
   }
 
   final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef): Unit =
