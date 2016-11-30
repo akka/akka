@@ -227,7 +227,7 @@ object Source {
    * `create` factory is never called and the materialized `CompletionStage` is failed.
    */
   def lazily[T, M](create: function.Creator[Source[T, M]]): Source[T, CompletionStage[M]] =
-    scaladsl.Source.lazily[T, M](() => create.create().asScala).mapMaterializedValue(_.toJava).asJava
+    scaladsl.Source.lazily[T, M](() ⇒ create.create().asScala).mapMaterializedValue(_.toJava).asJava
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]

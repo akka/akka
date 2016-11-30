@@ -14,11 +14,17 @@ import scala.concurrent._
 import akka.Done
 import akka.stream.testkit.{ StreamSpec, TestSubscriber, TestSourceStage, GraphStageMessages }
 import akka.stream.testkit.scaladsl.TestSink
+import org.scalatest.time.Span
 
 class QueueSourceSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
   val pause = 300.millis
+
+  // more frequent checks than defaults from AkkaSpec
+  implicit val testPatience = PatienceConfig(
+    testKitSettings.DefaultTimeout.duration,
+    Span(5, org.scalatest.time.Millis))
 
   def assertSuccess(f: Future[QueueOfferResult]): Unit = {
     f.futureValue should ===(QueueOfferResult.Enqueued)

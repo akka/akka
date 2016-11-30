@@ -35,7 +35,7 @@ object ActorSelectionSpec {
 
 }
 
-class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTimeout {
+class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
   import ActorSelectionSpec._
 
   val c1 = system.actorOf(p, "c1")
@@ -298,7 +298,7 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
         case `c2` ⇒ lastSender
       }
       actors should ===(Seq(c21))
-      expectNoMsg(1 second)
+      expectNoMsg(200.millis)
     }
 
     "resolve one actor with explicit timeout" in {

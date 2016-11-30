@@ -14,6 +14,7 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.ThrottleMode
+import akka.testkit.TimingTest
 
 class FlowDelaySpec extends StreamSpec {
 
@@ -21,13 +22,13 @@ class FlowDelaySpec extends StreamSpec {
 
   "A Delay" must {
 
-    "deliver elements with some time shift" in {
+    "deliver elements with some time shift" taggedAs TimingTest in {
       Await.result(
         Source(1 to 10).delay(1.seconds).grouped(100).runWith(Sink.head),
         1200.millis) should ===(1 to 10)
     }
 
-    "add delay to initialDelay if exists upstream" in {
+    "add delay to initialDelay if exists upstream" taggedAs TimingTest in {
       Source(1 to 10).initialDelay(1.second).delay(1.second).runWith(TestSink.probe[Int])
         .request(10)
         .expectNoMsg(1800.millis)
@@ -127,7 +128,7 @@ class FlowDelaySpec extends StreamSpec {
       pSub.sendError(new RuntimeException() with NoStackTrace)
     }
 
-    "properly delay according to buffer size" in {
+    "properly delay according to buffer size" taggedAs TimingTest in {
       import akka.pattern.pipe
       import system.dispatcher
 

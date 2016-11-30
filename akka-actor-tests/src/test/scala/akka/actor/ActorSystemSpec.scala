@@ -339,18 +339,13 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       val system2 = ActorSystem(name = "default", config = Some(config), defaultExecutionContext = Some(ec))
 
       try {
-        val ref = system2.actorOf(Props(new Actor {
-          def receive = {
-            case "ping" ⇒ sender() ! "pong"
-          }
-        }))
-
+        val ref = system2.actorOf(TestActors.echoActorProps)
         val probe = TestProbe()
 
         ref.tell("ping", probe.ref)
 
-        ecProbe.expectNoMsg()
-        probe.expectMsg(1.second, "pong")
+        ecProbe.expectNoMsg(200.millis)
+        probe.expectMsg(1.second, "ping")
       } finally {
         shutdown(system2)
       }

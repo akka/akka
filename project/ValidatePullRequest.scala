@@ -264,9 +264,9 @@ object MultiNodeWithPrValidation extends AutoPlugin {
 
   override def trigger = allRequirements
   override def requires = ValidatePullRequest && MultiNode
-  override lazy val projectSettings = Seq(
-    additionalTasks in ValidatePR += MultiNode.multiTest
-  )
+  override lazy val projectSettings =
+    if (MultiNode.multiNodeTestInTest) Seq(additionalTasks in ValidatePR += MultiNode.multiTest)
+    else Nil
 }
 
 /**
