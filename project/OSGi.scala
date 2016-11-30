@@ -18,7 +18,8 @@ object OSGi {
     packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
     // This will fail the build instead of accidentally removing classes from the resulting artifact.
     // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
-    OsgiKeys.failOnUndecidedPackage := true 
+    OsgiKeys.failOnUndecidedPackage := true,
+    OsgiKeys.privatePackage := Seq()
   )
 
   val actor = osgiSettings ++ Seq(
