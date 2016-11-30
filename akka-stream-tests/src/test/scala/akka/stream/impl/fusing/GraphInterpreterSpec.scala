@@ -6,7 +6,6 @@ package akka.stream.impl.fusing
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
 import akka.stream.{ OverflowStrategy, Attributes }
-import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.scaladsl.{ Merge, Broadcast, Balance, Zip }
 import GraphInterpreter._
 

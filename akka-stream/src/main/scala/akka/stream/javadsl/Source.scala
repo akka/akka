@@ -11,7 +11,6 @@ import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
 import akka.stream.impl.{ ConstantFun, StreamLayout, SourceQueueAdapter }
-import akka.stream.stage.Stage
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
@@ -1699,15 +1698,6 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
    */
   def buffer(size: Int, overflowStrategy: OverflowStrategy): javadsl.Source[Out, Mat] =
     new Source(delegate.buffer(size, overflowStrategy))
-
-  /**
-   * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
-   * This operator makes it possible to extend the `Flow` API when there is no specialized
-   * operator that performs the transformation.
-   */
-  @deprecated("Use via(GraphStage) instead.", "2.4.3")
-  def transform[U](mkStage: function.Creator[Stage[Out, U]]): javadsl.Source[U, Mat] =
-    new Source(delegate.transform(() ⇒ mkStage.create()))
 
   /**
    * Takes up to `n` elements from the stream (less than `n` if the upstream completes before emitting `n` elements)

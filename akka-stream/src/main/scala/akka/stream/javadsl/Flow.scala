@@ -8,7 +8,6 @@ import akka.event.LoggingAdapter
 import akka.japi.{ Pair, function }
 import akka.stream.impl.{ ConstantFun, StreamLayout }
 import akka.stream._
-import akka.stream.stage.Stage
 import org.reactivestreams.Processor
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -1097,15 +1096,6 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   def buffer(size: Int, overflowStrategy: OverflowStrategy): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.buffer(size, overflowStrategy))
-
-  /**
-   * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
-   * This operator makes it possible to extend the `Flow` API when there is no specialized
-   * operator that performs the transformation.
-   */
-  @deprecated("Use via(GraphStage) instead.", "2.4.3")
-  def transform[U](mkStage: function.Creator[Stage[Out, U]]): javadsl.Flow[In, U, Mat] =
-    new Flow(delegate.transform(() ⇒ mkStage.create()))
 
   /**
    * Takes up to `n` elements from the stream (less than `n` if the upstream completes before emitting `n` elements)

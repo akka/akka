@@ -8,7 +8,6 @@ import akka.event.LoggingAdapter
 import akka.japi.function
 import akka.stream._
 import akka.stream.impl.ConstantFun
-import akka.stream.stage.Stage
 import scala.collection.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
@@ -918,15 +917,6 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    */
   def buffer(size: Int, overflowStrategy: OverflowStrategy): SubSource[Out, Mat] =
     new SubSource(delegate.buffer(size, overflowStrategy))
-
-  /**
-   * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
-   * This operator makes it possible to extend the `Flow` API when there is no specialized
-   * operator that performs the transformation.
-   */
-  @deprecated("Use via(GraphStage) instead.", "2.4.3")
-  def transform[U](mkStage: function.Creator[Stage[Out, U]]): SubSource[U, Mat] =
-    new SubSource(delegate.transform(() ⇒ mkStage.create()))
 
   /**
    * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements)

@@ -9,7 +9,6 @@ import akka.Done
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing._
-import akka.stream.stage.AbstractStage.{ PushPullGraphStage, PushPullGraphStageWithMaterializedValue }
 import akka.stream.stage._
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import scala.annotation.unchecked.uncheckedVariance
@@ -1211,15 +1210,6 @@ trait FlowOps[+Out, +Mat] {
   def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out] = via(fusing.Buffer(size, overflowStrategy))
 
   /**
-   * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
-   * This operator makes it possible to extend the `Flow` API when there is no specialized
-   * operator that performs the transformation.
-   */
-  @deprecated("Use via(GraphStage) instead.", "2.4.3")
-  def transform[T](mkStage: () ⇒ Stage[Out, T]): Repr[T] =
-    via(new PushPullGraphStage((attr) ⇒ mkStage(), Attributes.none))
-
-  /**
    * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements)
    * and returns a pair containing a strict sequence of the taken element
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
@@ -1965,9 +1955,9 @@ trait FlowOps[+Out, +Mat] {
    */
   def async: Repr[Out]
 
-  /** INTERNAL API */
-  private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T] =
-    via(SymbolicGraphStage(op))
+  //  /** INTERNAL API */
+  //  private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T] =
+  //    via(SymbolicGraphStage(op))
 }
 
 /**
@@ -2199,11 +2189,5 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) ⇒ Mat2): ReprMat[Out, Mat2] =
     viaMat(GraphStages.monitor)(combine)
-
-  /**
-   * INTERNAL API.
-   */
-  private[akka] def transformMaterializing[T, M](mkStageAndMaterialized: () ⇒ (Stage[Out, T], M)): ReprMat[T, M] =
-    viaMat(new PushPullGraphStageWithMaterializedValue[Out, T, NotUsed, M]((attr) ⇒ mkStageAndMaterialized(), Attributes.none))(Keep.right)
 
 }

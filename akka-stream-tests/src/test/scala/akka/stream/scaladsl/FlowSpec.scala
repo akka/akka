@@ -9,7 +9,6 @@ import akka.stream.Supervision._
 import akka.stream.impl._
 import akka.stream.impl.fusing.ActorGraphInterpreter
 import akka.stream.impl.fusing.GraphInterpreter.GraphAssembly
-import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream._

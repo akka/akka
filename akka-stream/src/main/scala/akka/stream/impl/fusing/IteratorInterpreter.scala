@@ -3,10 +3,9 @@
  */
 package akka.stream.impl.fusing
 
-import akka.event.{ NoLogging }
+import akka.event.NoLogging
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter.{ GraphAssembly, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
-import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage._
 import java.{ util ⇒ ju }
 
