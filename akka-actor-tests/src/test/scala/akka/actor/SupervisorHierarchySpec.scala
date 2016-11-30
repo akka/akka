@@ -24,6 +24,7 @@ import akka.event.Logging
 import java.util.concurrent.atomic.AtomicInteger
 import java.lang.System.identityHashCode
 import akka.util.Helpers.ConfigOps
+import akka.testkit.LongRunningTest
 
 object SupervisorHierarchySpec {
   import FSM.`→`
@@ -728,7 +729,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
 
   "A Supervisor Hierarchy" must {
 
-    "restart manager and workers in AllForOne" in {
+    "restart manager and workers in AllForOne" taggedAs LongRunningTest in {
       val countDown = new CountDownLatch(4)
 
       val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy()(List(classOf[Exception])))))
@@ -749,7 +750,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       }
     }
 
-    "send notification to supervisor when permanent failure" in {
+    "send notification to supervisor when permanent failure" taggedAs LongRunningTest in {
       val countDownMessages = new CountDownLatch(1)
       val countDownMax = new CountDownLatch(1)
       val boss = system.actorOf(Props(new Actor {
@@ -773,7 +774,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       }
     }
 
-    "resume children after Resume" in {
+    "resume children after Resume" taggedAs LongRunningTest in {
       val boss = system.actorOf(Props[Resumer], "resumer")
       boss ! "spawn"
       val middle = expectMsgType[ActorRef]
@@ -790,7 +791,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       expectMsg("pong")
     }
 
-    "suspend children while failing" in {
+    "suspend children while failing" taggedAs LongRunningTest in {
       val latch = TestLatch()
       val slowResumer = system.actorOf(Props(new Actor {
         override def supervisorStrategy = OneForOneStrategy() { case _ ⇒ Await.ready(latch, 4.seconds.dilated); SupervisorStrategy.Resume }
@@ -816,7 +817,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       expectMsg("pong")
     }
 
-    "handle failure in creation when supervision startegy returns Resume and Restart" in {
+    "handle failure in creation when supervision startegy returns Resume and Restart" taggedAs LongRunningTest in {
       val createAttempt = new AtomicInteger(0)
       val preStartCalled = new AtomicInteger(0)
       val postRestartCalled = new AtomicInteger(0)
@@ -866,7 +867,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       postRestartCalled.get should ===(0)
     }
 
-    "survive being stressed" in {
+    "survive being stressed" taggedAs LongRunningTest in {
       system.eventStream.publish(Mute(
         EventFilter[Failure](),
         EventFilter.warning("Failure"),

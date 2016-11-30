@@ -62,7 +62,7 @@ object PersistenceDocSpec {
 
     trait MyPersistentActor5 extends PersistentActor {
       //#recovery-no-snap
-      override def recovery = 
+      override def recovery =
         Recovery(fromSnapshot = SnapshotSelectionCriteria.None)
       //#recovery-no-snap
     }

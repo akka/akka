@@ -161,7 +161,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       expectNoMsg(2 seconds)
     }
 
-    "generate AddressTerminated when missing heartbeats" in {
+    "generate AddressTerminated when missing heartbeats" taggedAs LongRunningTest in {
       val p = TestProbe()
       val q = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[TestRemoteWatcher.AddressTerm])
@@ -198,7 +198,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       expectNoMsg(2 seconds)
     }
 
-    "generate AddressTerminated when missing first heartbeat" in {
+    "generate AddressTerminated when missing first heartbeat" taggedAs LongRunningTest in {
       val p = TestProbe()
       val q = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[TestRemoteWatcher.AddressTerm])
@@ -234,7 +234,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       expectNoMsg(2 seconds)
     }
 
-    "generate AddressTerminated for new watch after broken connection that was re-established and broken again" in {
+    "generate AddressTerminated for new watch after broken connection that was re-established and broken again" taggedAs LongRunningTest in {
       val p = TestProbe()
       val q = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[TestRemoteWatcher.AddressTerm])
