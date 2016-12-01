@@ -82,6 +82,11 @@ object MiMa extends AutoPlugin {
     import com.typesafe.tools.mima.core._
 
     val bcIssuesBetween24and25 = Seq(
+      
+      // #21537 coordinated shutdown
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterCoreDaemon.removed"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.convergence"),  
+        
       // #21423 removal of deprecated stages (in 2.5.x)
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.transform"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SubSource.transform"),

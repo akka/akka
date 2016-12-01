@@ -20,6 +20,8 @@ import akka.testkit._
 import akka.util._
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import akka.Done
+import akka.actor.CoordinatedShutdown
 
 //#my-actor
 class MyActor extends Actor {
@@ -629,6 +631,32 @@ class ActorDocSpec extends AkkaSpec("""
       superviseWith(OneForOneStrategy() { case _ => Stop; Restart; Resume; Escalate })
       superviseWith(AllForOneStrategy() { case _ => Stop; Restart; Resume; Escalate })
     })
+  }
+
+  "using CoordinatedShutdown" in {
+    val someActor = system.actorOf(Props(classOf[Replier], this))
+    //#coordinated-shutdown-addTask
+    CoordinatedShutdown(system).addTask(
+      CoordinatedShutdown.PhaseBeforeServiceUnbind, "someTaskName") { () =>
+      import akka.pattern.ask
+      import system.dispatcher
+      implicit val timeout = Timeout(5.seconds)
+      (someActor ? "stop").map(_ => Done)
+    }
+    //#coordinated-shutdown-addTask
+
+    //#coordinated-shutdown-jvm-hook
+    CoordinatedShutdown(system).addJvmShutdownHook { () =>
+      println("custom JVM shutdown hook...")
+    }
+    //#coordinated-shutdown-jvm-hook
+
+    // don't run this
+    def dummy(): Unit = {
+      //#coordinated-shutdown-run
+      val done: Future[Done] = CoordinatedShutdown(system).run()
+      //#coordinated-shutdown-run
+    }
   }
 
 }

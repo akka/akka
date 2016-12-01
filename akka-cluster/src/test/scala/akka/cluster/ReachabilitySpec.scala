@@ -12,11 +12,11 @@ class ReachabilitySpec extends WordSpec with Matchers {
 
   import Reachability.{ Reachable, Unreachable, Terminated, Record }
 
-  val nodeA = UniqueAddress(Address("akka.tcp", "sys", "a", 2552), 1)
-  val nodeB = UniqueAddress(Address("akka.tcp", "sys", "b", 2552), 2)
-  val nodeC = UniqueAddress(Address("akka.tcp", "sys", "c", 2552), 3)
-  val nodeD = UniqueAddress(Address("akka.tcp", "sys", "d", 2552), 4)
-  val nodeE = UniqueAddress(Address("akka.tcp", "sys", "e", 2552), 5)
+  val nodeA = UniqueAddress(Address("akka.tcp", "sys", "a", 2552), 1L)
+  val nodeB = UniqueAddress(Address("akka.tcp", "sys", "b", 2552), 2L)
+  val nodeC = UniqueAddress(Address("akka.tcp", "sys", "c", 2552), 3L)
+  val nodeD = UniqueAddress(Address("akka.tcp", "sys", "d", 2552), 4L)
+  val nodeE = UniqueAddress(Address("akka.tcp", "sys", "e", 2552), 5L)
 
   "Reachability table" must {
 

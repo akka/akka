@@ -453,8 +453,10 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
         val sys2 = ActorSystem(
           system.name,
           ConfigFactory.parseString(
-            if (RARP(system).provider.remoteSettings.Artery.Enabled) s"akka.remote.artery.canonical.port=$port"
-            else s"akka.remote.netty.tcp.port=$port").withFallback(system.settings.config))
+            s"""
+              akka.remote.artery.canonical.port=$port
+              akka.remote.netty.tcp.port=$port
+              """).withFallback(system.settings.config))
         Cluster(sys2).join(Cluster(sys2).selfAddress)
         val service2 = sys2.actorOf(Props(classOf[TestService], testActor), "service2")
         ClusterClientReceptionist(sys2).registerService(service2)
