@@ -276,10 +276,12 @@ private[akka] trait HandleBackoff { this: Actor ⇒
       // use the BackoffSupervisor as sender
       context.parent ! msg
 
-    case msg ⇒ (child, replyWhileStopped) match {
-      case (Some(c), _) ⇒ c.forward(msg)
-      case (_, Some(r)) ⇒ sender ! r
-      case _            ⇒ context.system.deadLetters.forward(msg)
+    case msg ⇒ child match {
+      case Some(c) ⇒ c.forward(msg)
+      case None ⇒ replyWhileStopped match {
+        case Some(r) ⇒ sender ! r
+        case None    ⇒ context.system.deadLetters.forward(msg)
+      }
     }
   }
 }
