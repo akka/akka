@@ -353,7 +353,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
     "not allow top-level actor creation with custom guardian" in {
       val sys = new ActorSystemImpl("custom", ConfigFactory.defaultReference(),
-        getClass.getClassLoader, None, Some(Props.empty))
+        getClass.getClassLoader, None, Some(Props.empty), ActorSystemSetup.empty)
       sys.start()
       try {
         intercept[UnsupportedOperationException] {
