@@ -22,6 +22,7 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
         override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
           override def onPush(): Unit = push(out, grab(in))
           override def onPull(): Unit = pull(in)
+          setHandlers(in, out, this)
         }
       }
 

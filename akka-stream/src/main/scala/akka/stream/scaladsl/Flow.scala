@@ -1955,9 +1955,6 @@ trait FlowOps[+Out, +Mat] {
    */
   def async: Repr[Out]
 
-  //  /** INTERNAL API */
-  //  private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T] =
-  //    via(SymbolicGraphStage(op))
 }
 
 /**
