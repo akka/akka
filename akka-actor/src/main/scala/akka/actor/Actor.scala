@@ -493,7 +493,7 @@ trait Actor {
    */
   protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     // optimization: avoid allocation of lambda
-    if (receive.applyOrElse(msg, Actor.notHandledFun) == Actor.NotHandled) {
+    if (receive.applyOrElse(msg, Actor.notHandledFun).asInstanceOf[AnyRef] eq Actor.NotHandled) {
       unhandled(msg)
     }
   }
