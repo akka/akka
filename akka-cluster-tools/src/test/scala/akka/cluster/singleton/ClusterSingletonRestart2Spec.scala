@@ -31,6 +31,7 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
   akka.loglevel = INFO
   akka.cluster.roles = [singleton]
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
+  akka.cluster.auto-down-unreachable-after = 2s
   akka.remote {
     netty.tcp {
       hostname = "127.0.0.1"
@@ -59,7 +60,7 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
           settings = ClusterSingletonManagerSettings(from).withRole("singleton")),
         name = "echo")
 
-    within(10.seconds) {
+    within(45.seconds) {
       awaitAssert {
         Cluster(from) join Cluster(to).selfAddress
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
@@ -98,8 +99,10 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
 
         val sys4Config =
           ConfigFactory.parseString(
-            if (RARP(sys1).provider.remoteSettings.Artery.Enabled) s"akka.remote.artery.canonical.port=$sys2port"
-            else s"akka.remote.netty.tcp.port=$sys2port").withFallback(system.settings.config)
+            s"""
+            akka.remote.artery.canonical.port=$sys2port
+            akka.remote.netty.tcp.port=$sys2port
+            """).withFallback(system.settings.config)
 
         ActorSystem(system.name, sys4Config)
       }

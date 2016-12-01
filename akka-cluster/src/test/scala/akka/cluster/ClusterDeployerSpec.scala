@@ -34,6 +34,7 @@ object ClusterDeployerSpec {
         }
       }
       akka.remote.netty.tcp.port = 0
+      akka.remote.artery.canonical.port = 0
       """, ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {

@@ -33,7 +33,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
        # for serious measurements you should increase the totalMessagesFactor (20)
-       akka.test.MaxThroughputSpec.totalMessagesFactor = 1.0
+       akka.test.MaxThroughputSpec.totalMessagesFactor = 10.0
        akka.test.MaxThroughputSpec.real-message = off
        akka {
          loglevel = INFO

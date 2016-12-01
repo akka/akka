@@ -184,37 +184,6 @@ public class ClusterShardingTest {
 
   //#counter-actor
 
-  static//#graceful-shutdown
-  public class IllustrateGracefulShutdown extends AbstractActor {
-
-    public IllustrateGracefulShutdown() {
-      final ActorSystem system = context().system();
-      final Cluster cluster = Cluster.get(system);
-      final ActorRef region = ClusterSharding.get(system).shardRegion("Entity");
-
-      receive(ReceiveBuilder.
-        match(String.class, s -> s.equals("leave"), s -> {
-          context().watch(region);
-          region.tell(ShardRegion.gracefulShutdownInstance(), self());
-        }).
-        match(Terminated.class, t -> t.actor().equals(region), t -> {
-          cluster.registerOnMemberRemoved(() ->
-            self().tell("member-removed", self()));
-          cluster.leave(cluster.selfAddress());
-        }).
-        match(String.class, s -> s.equals("member-removed"), s -> {
-          // Let singletons hand over gracefully before stopping the system
-          context().system().scheduler().scheduleOnce(Duration.create(10, SECONDS),
-              self(), "stop-system", context().dispatcher(), self());
-        }).
-        match(String.class, s -> s.equals("stop-system"), s -> {
-          system.terminate();
-        }).
-        build());
-    }
-  }
-  //#graceful-shutdown
-
   static//#supervisor
   public class CounterSupervisor extends UntypedActor {
 
