@@ -368,12 +368,12 @@ object Actor {
   /**
    * INTERNAL API
    */
-  private[akka] final val NotHandled = new Object
+  private final val NotHandled = new Object
 
   /**
    * INTERNAL API
    */
-  private[akka] final val notHandledFun = (_: Any) ⇒ NotHandled
+  private final val notHandledFun = (_: Any) ⇒ NotHandled
 }
 
 /**
