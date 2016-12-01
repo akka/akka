@@ -9,7 +9,7 @@ resolvers += "Bintray Jcenter" at "https://jcenter.bintray.com/"
 resolvers += Resolver.url("2m-sbt-plugin-releases", url("https://dl.bintray.com/2m/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.8")
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.9")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.12")
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.6.0")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.2.6")
