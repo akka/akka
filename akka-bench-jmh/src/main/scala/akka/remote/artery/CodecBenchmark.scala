@@ -3,34 +3,27 @@
  */
 package akka.remote.artery
 
-import java.io.File
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.nio.channels.FileChannel
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-
-import akka.remote.artery.compress._
-import akka.stream.impl.ConstantFun
-import org.openjdk.jmh.annotations.Scope
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.NotUsed
 import akka.actor._
-import akka.remote.AddressUidExtension
-import akka.remote.RARP
-import akka.remote.RemoteActorRef
-import akka.remote.UniqueAddress
+import akka.Done
+import akka.NotUsed
+import akka.remote._
+import akka.remote.artery.compress._
+import akka.serialization.{ BaseSerializer, ByteBufferSerializer, SerializationExtension }
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl._
+import akka.util.{ ByteString, OptionVal }
 import com.typesafe.config.ConfigFactory
+import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
-import akka.util.OptionVal
-import akka.actor.Address
+import scala.annotation.tailrec
+import scala.concurrent.Await
 import scala.concurrent.Future
-import akka.Done
+import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -39,21 +32,13 @@ import akka.Done
 @Warmup(iterations = 4)
 @Measurement(iterations = 5)
 class CodecBenchmark {
+  import CodecBenchmark._
 
-  val config = ConfigFactory.parseString(
-    """
-    akka {
-       loglevel = WARNING
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.hostname = localhost
-       remote.artery.port = 0
-     }
-    """
-  )
+  @Param(Array(Standard, RemoteInstrument))
+  private var configType: String = _
 
-  implicit val system = ActorSystem("CodecBenchmark", config)
-  val systemB = ActorSystem("systemB", system.settings.config)
+  var system: ActorSystem = _
+  var systemB: ActorSystem = _
 
   private val envelopePool = new EnvelopeBufferPool(1024 * 1024, 128)
   private val inboundEnvelopePool = ReusableInboundEnvelope.createObjectPool(capacity = 16)
@@ -62,11 +47,8 @@ class CodecBenchmark {
   val headerIn = HeaderBuilder.in(NoInboundCompressions)
   val envelopeTemplateBuffer = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.LITTLE_ENDIAN)
 
-  val uniqueLocalAddress = UniqueAddress(
-    system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
-    AddressUidExtension(system).longAddressUid
-  )
-  val payload = Array.ofDim[Byte](1000)
+  var uniqueLocalAddress: UniqueAddress = _
+  val payload = DummyMessageInstance
 
   private val inboundContext: InboundContext = new InboundContext {
     override def localAddress: UniqueAddress = uniqueLocalAddress
@@ -85,10 +67,45 @@ class CodecBenchmark {
   private var senderStringA: String = _
   private var recipientStringB: String = _
 
-  @Setup
-  def setup(): Unit = {
+  private var encodeGraph: Flow[String, Unit, NotUsed] = _
+  private var decodeGraph: Flow[String, Unit, NotUsed] = _
+  private var encodeDecodeGraph: Flow[String, Unit, NotUsed] = _
+
+  @Setup(Level.Trial)
+  def setupTrial(): Unit = {
+    val commonConfig = ConfigFactory.parseString(
+      s"""
+    akka {
+       loglevel = WARNING
+       actor.provider = remote
+       remote.artery.enabled = on
+       remote.artery.canonical.hostname = localhost
+       remote.artery.canonical.port = 0
+       actor.serializers.codec-benchmark = "${classOf[DummyMessageSerializer].getName}"
+       actor.serialization-identifiers { "${classOf[DummyMessageSerializer].getName}" = 4711 }
+       actor.serialization-bindings {"${classOf[DummyMessage].getName}" = codec-benchmark }
+    }
+    """
+    )
+    val config = configType match {
+      case RemoteInstrument =>
+        ConfigFactory.parseString(
+          s"""akka.remote.artery.advanced.instruments = [ "${classOf[DummyRemoteInstrument].getName}" ]"""
+        ).withFallback(commonConfig)
+      case _ =>
+        commonConfig
+    }
+
+    system = ActorSystem("CodecBenchmark", config)
+    systemB = ActorSystem("systemB", system.settings.config)
+
     val settings = ActorMaterializerSettings(system)
-    materializer = ActorMaterializer(settings)
+    materializer = ActorMaterializer(settings)(system)
+
+    uniqueLocalAddress = UniqueAddress(
+      system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
+      AddressUidExtension(system).longAddressUid
+    )
 
     val actorOnSystemA = system.actorOf(Props.empty, "a")
     senderStringA = actorOnSystemA.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)
@@ -102,76 +119,34 @@ class CodecBenchmark {
     resolvedRef = actorOnSystemA.asInstanceOf[InternalActorRef]
     recipientStringB = remoteRefB.path.toSerializationFormatWithAddress(addressB)
 
+    val metadataContainer: ByteString = if (configType == RemoteInstrument) {
+      val map = MetadataMap[ByteString]
+      val instrument = new DummyRemoteInstrument()
+      val metadata = instrument.remoteMessageSent(remoteRefB, payload, actorOnSystemA)
+      map.set(instrument.identifier, metadata)
+      new MetadataMapRendering(map).render()
+    } else null
     val envelope = new EnvelopeBuffer(envelopeTemplateBuffer)
     headerIn setVersion 1
     headerIn setUid 42
-    headerIn setSerializer 4
     headerIn setSenderActorRef actorOnSystemA
     headerIn setRecipientActorRef remoteRefB
     headerIn setManifest ""
-    envelope.writeHeader(headerIn)
-    envelope.byteBuffer.put(payload)
+    headerIn setMetadataContainer metadataContainer
+    MessageSerializer.serializeForArtery(SerializationExtension(system), payload, headerIn, envelope)
     envelope.byteBuffer.flip()
-  }
 
-  @TearDown
-  def shutdown(): Unit = {
-    Await.result(system.terminate(), 5.seconds)
-    Await.result(systemB.terminate(), 5.seconds)
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(100000)
-  def reference(): Unit = {
-    val latch = new CountDownLatch(1)
-    val N = 100000
-
-    Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .runWith(new LatchSink(N, latch))(materializer)
-
-    if (!latch.await(30, TimeUnit.SECONDS))
-      throw new RuntimeException("Latch didn't complete in time")
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(100000)
-  def encode(): Unit = {
-    val latch = new CountDownLatch(1)
-    val N = 100000
-
+    // Now build up the graphs
     val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, Encoder.ChangeOutboundCompression] =
       Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool, envelopePool, false))
-
-    Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
-      .via(encoder)
-      .map(envelope => envelopePool.release(envelope))
-      .runWith(new LatchSink(N, latch))(materializer)
-
-    if (!latch.await(30, TimeUnit.SECONDS))
-      throw new RuntimeException("Latch didn't complete in time")
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(100000)
-  def decode(): Unit = {
-    val latch = new CountDownLatch(1)
-    val N = 100000
-
-    val localRecipient = resolvedRef.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)
-    val provider = RARP(system).provider
-    val resolveActorRefWithLocalAddress: String ⇒ InternalActorRef = {
-      recipient ⇒
-        // juggling with the refs, since we don't run the real thing
-        val resolved = provider.resolveActorRefWithLocalAddress(localRecipient, uniqueLocalAddress.address)
-        resolved
-    }
-
+    val encoderInput: Flow[String, OutboundEnvelope, NotUsed] =
+      Flow[String].map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
         uniqueLocalAddress, NoInboundCompressions, envelopePool, inboundEnvelopePool))
-
-    Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
+    val deserializer: Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
+      Flow.fromGraph(new Deserializer(inboundContext, system.asInstanceOf[ExtendedActorSystem], envelopePool))
+    val decoderInput: Flow[String, EnvelopeBuffer, NotUsed] = Flow[String]
       .map { _ =>
         val envelope = envelopePool.acquire()
         envelopeTemplateBuffer.rewind()
@@ -179,11 +154,51 @@ class CodecBenchmark {
         envelope.byteBuffer.flip()
         envelope
       }
+
+    encodeGraph = encoderInput
+      .via(encoder)
+      .map(envelope => envelopePool.release(envelope))
+
+    decodeGraph = decoderInput
       .via(decoder)
+      .via(deserializer)
       .map {
         case env: ReusableInboundEnvelope => inboundEnvelopePool.release(env)
         case _ =>
       }
+
+    encodeDecodeGraph = encoderInput
+      .via(encoder)
+      .via(decoder)
+      .via(deserializer)
+      .map {
+        case env: ReusableInboundEnvelope => inboundEnvelopePool.release(env)
+        case _ =>
+      }
+  }
+
+  @TearDown(Level.Trial)
+  def tearDownTrial(): Unit = {
+    Await.result(system.terminate(), 5.seconds)
+    Await.result(systemB.terminate(), 5.seconds)
+  }
+
+  @Setup(Level.Iteration)
+  def setupIteration(): Unit = {
+    System.gc()
+  }
+
+  @TearDown(Level.Iteration)
+  def tearDownIteration(): Unit = {
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(OperationsPerInvocation)
+  def reference(): Unit = {
+    val latch = new CountDownLatch(1)
+    val N = OperationsPerInvocation
+
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
       .runWith(new LatchSink(N, latch))(materializer)
 
     if (!latch.await(30, TimeUnit.SECONDS))
@@ -191,39 +206,107 @@ class CodecBenchmark {
   }
 
   @Benchmark
-  @OperationsPerInvocation(100000)
-  def encode_decode(): Unit = {
+  @OperationsPerInvocation(OperationsPerInvocation)
+  def encode(): Unit = {
     val latch = new CountDownLatch(1)
-    val N = 100000
-
-    val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, Encoder.ChangeOutboundCompression] =
-      Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool, envelopePool, false))
-
-    val localRecipient = resolvedRef.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)
-    val provider = RARP(system).provider
-    val resolveActorRefWithLocalAddress: String ⇒ InternalActorRef = {
-      recipient ⇒
-        // juggling with the refs, since we don't run the real thing
-        val resolved = provider.resolveActorRefWithLocalAddress(localRecipient, uniqueLocalAddress.address)
-        resolved
-    }
-
-    val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
-      Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
-        uniqueLocalAddress, NoInboundCompressions, envelopePool, inboundEnvelopePool))
+    val N = OperationsPerInvocation
 
     Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
-      .via(encoder)
-      .via(decoder)
-      .map {
-        case env: ReusableInboundEnvelope => inboundEnvelopePool.release(env)
-        case _ =>
-      }
+      .via(encodeGraph)
       .runWith(new LatchSink(N, latch))(materializer)
 
     if (!latch.await(30, TimeUnit.SECONDS))
       throw new RuntimeException("Latch didn't complete in time")
   }
 
+  @Benchmark
+  @OperationsPerInvocation(OperationsPerInvocation)
+  def decode(): Unit = {
+    val latch = new CountDownLatch(1)
+    val N = OperationsPerInvocation
+
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
+      .via(decodeGraph)
+      .runWith(new LatchSink(N, latch))(materializer)
+
+    if (!latch.await(30, TimeUnit.SECONDS))
+      throw new RuntimeException("Latch didn't complete in time")
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(OperationsPerInvocation)
+  def both(): Unit = {
+    val latch = new CountDownLatch(1)
+    val N = OperationsPerInvocation
+
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem"))
+      .via(encodeDecodeGraph)
+      .runWith(new LatchSink(N, latch))(materializer)
+
+    if (!latch.await(30, TimeUnit.SECONDS))
+      throw new RuntimeException("Latch didn't complete in time")
+  }
+
+}
+
+object CodecBenchmark {
+  // Configurations
+  final val Standard = "Standard"
+  final val RemoteInstrument = "RemoteInstrument"
+
+  // How many iterations between materializations
+  final val OperationsPerInvocation = 1000000
+
+  // DummyMessage and serailizer that doesn't consume bytes during serialization/deserialization
+  val DummyMessageInstance = new DummyMessage
+  class DummyMessage
+
+  class DummyMessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer with ByteBufferSerializer {
+    private val TheMagicConstant: Byte = 47
+    private val Preserialized = {
+      val buf = ByteBuffer.allocate(100)
+      buf.put(TheMagicConstant)
+      buf.flip()
+      buf.array()
+    }
+
+    override def includeManifest: Boolean = false
+
+    override def toBinary(o: AnyRef, buf: ByteBuffer): Unit = buf.put(TheMagicConstant)
+
+    override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = {
+      val b = buf.get()
+      if (b == TheMagicConstant)
+        DummyMessageInstance
+      else
+        throw new IOException(s"DummyMessage deserialization error. Expected $TheMagicConstant got $b")
+    }
+
+    override def toBinary(o: AnyRef): Array[Byte] = Preserialized
+
+    override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
+      fromBinary(ByteBuffer.wrap(bytes), "NoManifestForYou")
+  }
+
+  // DummyRemoteInstrument that doesn't allocate unnecessary bytes during serialization/deserialization
+  class DummyRemoteInstrument extends RemoteInstrument {
+    private val Metadata = ByteString("slevin".getBytes)
+
+    override def identifier: Byte = 7 // Lucky number slevin
+
+    override def remoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef): ByteString =
+      Metadata
+
+    override def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, metadata: ByteString): Unit = {
+      val length = Metadata.length
+      @tailrec
+      def compare(pos: Int): Boolean = {
+        if (pos == length) true
+        else if (Metadata(pos) == metadata(pos)) compare(pos + 1)
+        else false
+      }
+      if (metadata.length != length || !compare(0))
+        throw new IOException(s"DummyInstrument deserialization error. Expected ${Metadata.toString} got ${metadata.toString}")
+    }
+  }
 }
