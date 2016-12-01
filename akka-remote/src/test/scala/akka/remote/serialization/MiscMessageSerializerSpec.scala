@@ -11,6 +11,7 @@ import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 
 import scala.util.control.NoStackTrace
+import java.util.Optional
 
 object MiscMessageSerializerSpec {
   val serializationTestOverrides =
@@ -77,11 +78,12 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "ActorRef" → ref,
       "Some" → Some("value"),
       "None" → None,
+      "Optional.present" → Optional.of("value2"),
+      "Optional.empty" → Optional.empty(),
       "Kill" → Kill,
       "PoisonPill" → PoisonPill,
       "RemoteWatcher.Heartbeat" → RemoteWatcher.Heartbeat,
-      "RemoteWatcher.HertbeatRsp" → RemoteWatcher.HeartbeatRsp(65537)
-    ).foreach {
+      "RemoteWatcher.HertbeatRsp" → RemoteWatcher.HeartbeatRsp(65537)).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for $scenario" in {
             val serializer = SerializationExtension(system)
