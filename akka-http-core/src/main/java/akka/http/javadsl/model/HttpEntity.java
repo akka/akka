@@ -53,7 +53,7 @@ public interface HttpEntity {
      * @deprecated Will be removed in Akka 3.x, use {@link HttpEntities#EMPTY} instead.
      */
     @Deprecated
-    // FIXME: Remove in Akka 3.0
+    // FIXME: Remove in Akka 10.0
     HttpEntity.Strict EMPTY = HttpEntities.EMPTY;
 
     /**

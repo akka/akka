@@ -23,7 +23,7 @@ final case class HttpChallenge(scheme: String, realm: String,
   def getParams: util.Map[String, String] = params.asJava
 }
 
-// FIXME: AbstractFunction3 required for bin compat. remove in Akka 3.0 and change realm in case class to option #20786
+// FIXME: AbstractFunction3 required for bin compat. remove in Akka 10.0 and change realm in case class to option #20786
 object HttpChallenge extends scala.runtime.AbstractFunction3[String, String, Map[String, String], HttpChallenge] {
 
   def apply(scheme: String, realm: Option[String]): HttpChallenge =

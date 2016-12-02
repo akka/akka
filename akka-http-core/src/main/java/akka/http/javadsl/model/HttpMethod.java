@@ -50,6 +50,6 @@ public abstract class HttpMethod {
     /**
      * Java API: Returns the entity acceptance level for this method.
      */
-    // TODO: Rename it to requestEntityAcceptance() in Akka 3.0
+    // TODO: Rename it to requestEntityAcceptance() in Akka 10.0
     public abstract akka.http.javadsl.model.RequestEntityAcceptance getRequestEntityAcceptance();
 }

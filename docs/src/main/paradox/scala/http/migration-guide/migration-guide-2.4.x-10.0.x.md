@@ -1,4 +1,4 @@
-# Migration Guide between Akka HTTP 2.4.x and 3.0.x
+# Migration Guide between Akka HTTP 2.4.x and 10.0.x
 
 ## General notes
 

@@ -17,6 +17,6 @@ public interface LanguageRange {
      *             Will be removed in Akka 3.x, use {@link LanguageRanges#ALL} instead.
      */
     @Deprecated
-    // FIXME: Remove in Akka 3.0
+    // FIXME: Remove in Akka 10.0
     public static final LanguageRange ALL = LanguageRanges.ALL;
 }

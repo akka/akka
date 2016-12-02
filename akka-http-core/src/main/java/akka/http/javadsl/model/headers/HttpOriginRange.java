@@ -23,6 +23,6 @@ public abstract class HttpOriginRange {
    * Will be removed in Akka 3.x, use {@link HttpEncodingRanges#ALL} instead.
    */
   @Deprecated
-  // FIXME: Remove in Akka 3.0
+  // FIXME: Remove in Akka 10.0
   public static final HttpOriginRange ALL = HttpOriginRanges.ALL;
 }

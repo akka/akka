@@ -37,6 +37,6 @@ public abstract class RemoteAddress {
      *             Will be removed in Akka 3.x, use {@link RemoteAddresses#UNKNOWN} instead.
      */
     @Deprecated
-    // FIXME: Remove in Akka 3.0
+    // FIXME: Remove in Akka 10.0
     public static final RemoteAddress UNKNOWN = RemoteAddresses.UNKNOWN;
 }
