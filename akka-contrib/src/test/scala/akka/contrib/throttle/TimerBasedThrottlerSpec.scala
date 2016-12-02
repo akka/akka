@@ -78,15 +78,15 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
       throttler ! SetTarget(Some(echo))
       1 to 3 foreach { throttler ! _ }
       throttler ! SetTarget(None)
-      within(1 second) {
-        1 to 3 foreach { expectMsg(_) }
+      within(0.34 second) {
+        expectMsg(1)
         expectNoMsg()
       }
       expectNoMsg(1 second)
       throttler ! SetTarget(Some(echo))
       4 to 7 foreach { throttler ! _ }
-      within(1.5 seconds) {
-        4 to 7 foreach { expectMsg(_) }
+      within(2.1 seconds) {
+        2 to 7 foreach { expectMsg(_) }
       }
     }
 
@@ -96,14 +96,14 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
       throttler ! SetTarget(Some(echo))
       1 to 7 foreach { throttler ! _ }
       throttler ! SetTarget(None)
-      within(1 second) {
-        1 to 3 foreach { expectMsg(_) }
+      within(0.34 second) {
+        expectMsg(1)
         expectNoMsg()
       }
       expectNoMsg(1 second)
       throttler ! SetTarget(Some(echo))
-      within(1.5 seconds) {
-        4 to 7 foreach { expectMsg(_) }
+      within(2.1 seconds) {
+        2 to 7 foreach { expectMsg(_) }
       }
     }
 
