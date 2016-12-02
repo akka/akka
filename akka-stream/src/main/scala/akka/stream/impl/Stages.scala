@@ -7,8 +7,6 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes._
 import akka.stream.Supervision.Decider
 import akka.stream._
-import akka.stream.stage.AbstractStage.PushPullGraphStage
-import akka.stream.stage.Stage
 
 /**
  * INTERNAL API
@@ -135,25 +133,5 @@ object Stages {
   }
 
   import DefaultAttributes._
-
-  /*
-   * Stage that is backed by a GraphStage but can be symbolically introspected
-   */
-  case class SymbolicGraphStage[-In, +Out, Ext](symbolicStage: SymbolicStage[In, Out])
-    extends PushPullGraphStage[In, Out, Ext](
-      symbolicStage.create,
-      symbolicStage.attributes) {
-  }
-
-  sealed trait SymbolicStage[-In, +Out] {
-    def attributes: Attributes
-    def create(effectiveAttributes: Attributes): Stage[In, Out]
-
-    // FIXME: No supervision hooked in yet.
-
-    protected def supervision(attributes: Attributes): Decider =
-      attributes.get[SupervisionStrategy](SupervisionStrategy(Supervision.stoppingDecider)).decider
-
-  }
 
 }

@@ -3,7 +3,7 @@
  */
 package akka
 
-import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
+import com.typesafe.tools.mima.plugin.MimaKeys.mimaReportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
 import net.virtualvoid.sbt.graph.DependencyGraphKeys._
@@ -279,7 +279,7 @@ object MimaWithPrValidation extends AutoPlugin {
   override def trigger = allRequirements
   override def requires = ValidatePullRequest && MimaPlugin
   override lazy val projectSettings = Seq(
-    additionalTasks in ValidatePR += reportBinaryIssues
+    additionalTasks in ValidatePR += mimaReportBinaryIssues
   )
 }
 

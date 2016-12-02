@@ -156,7 +156,7 @@ object Agent {
  * participate in that transaction. Agents are integrated with the STM -
  * any dispatches made in a transaction are held until that transaction
  * commits, and are discarded if it is retried or aborted.
- * 
+ *
  * @deprecated Agents are deprecated and scheduled for removal in the next major version, use Actors instead.
  */
 @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
