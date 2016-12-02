@@ -251,7 +251,7 @@ Graphs are constructed using :class:`GraphDSL` like this:
 
 As you can see, we use graph builder ``b`` to construct the graph using ``UniformFanOutShape`` and ``Flow`` s.
 
-``GraphDSL.create`` returns a :class:`Graph`, in this example a ``Graph<ClosedShape,Unit>`` where
+``GraphDSL.create`` returns a :class:`Graph`, in this example a ``Graph<ClosedShape,NotUsed>`` where
 :class:`ClosedShape` means that it is *a fully connected graph* or "closed" - there are no unconnected inputs or outputs.
 Since it is closed it is possible to transform the graph into a :class:`RunnableGraph` using ``RunnableGraph.fromGraph``.
 The runnable graph can then be ``run()`` to materialize a stream out of it.
