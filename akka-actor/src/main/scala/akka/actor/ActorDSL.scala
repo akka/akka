@@ -65,7 +65,7 @@ import akka.util.Helpers.ConfigOps
  * <b>Note:</b> If you want to use an `Act with Stash`, you should use the
  * `ActWithStash` trait in order to have the actor get the necessary deque-based
  * mailbox setting.
- * 
+ *
  * @deprecated Use the normal `actorOf` methods defined on `ActorSystem` and `ActorContext` to create Actors instead.
  */
 @deprecated("deprecated Use the normal `actorOf` methods defined on `ActorSystem` and `ActorContext` to create Actors instead.", since = "2.5.0")
