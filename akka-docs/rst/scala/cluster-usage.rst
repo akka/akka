@@ -607,7 +607,7 @@ Router Example with Pool of Remote Deployed Routees
 
 Let's take a look at how to use a cluster aware router on single master node that creates
 and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton-scala`
-in the contrib module. The ``ClusterSingletonManager`` is started on each node.
+in the cluster-tools module. The ``ClusterSingletonManager`` is started on each node.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/stats/StatsSampleOneMaster.scala#create-singleton-manager
 
