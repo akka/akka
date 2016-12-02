@@ -142,7 +142,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * the same exception as the child.
    */
   def escalate = Escalate
-
+  
   /**
    * When supervisorStrategy is not specified for an actor this
    * `Decider` is used by default in the supervisor strategy.
@@ -155,6 +155,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
     case _: ActorInitializationException ⇒ Stop
     case _: ActorKilledException         ⇒ Stop
     case _: DeathPactException           ⇒ Stop
+    case m: IncompatibleClassChangeError ⇒ detectAkkaBinaryIncompatibilityWarningAndStop(m)
     case _: Exception                    ⇒ Restart
   }
 
@@ -176,6 +177,18 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
       case _: Exception ⇒ Stop
     }
     OneForOneStrategy()(stoppingDecider)
+  }
+  
+  final def detectAkkaBinaryIncompatibilityWarningAndStop(m: IncompatibleClassChangeError): Directive = {
+    if (m.getMessage startsWith "akka") 
+      println(
+        s"""!!! Detected ${m.getClass} error, which MAY be caused by incompatible Akka versions on the classpath.       !!! 
+           |!!! Please note that a given Akka version MUST be the same across all modules of Akka that you are using,   !!!
+           |!!! e.g. if you use akka-actor [${akka.Version.current} (resolved from current classpath)] all other core   !!!
+           |!!! Akka modules MUST be of the same version. External projects like Alpakka, Persistence plugins or Akka   !!!
+           |!!! HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries. !!!
+         """.stripMargin)
+    Stop
   }
 
   /**
