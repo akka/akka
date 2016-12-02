@@ -3,10 +3,11 @@
  */
 package akka.stream.tck
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Attributes }
 import akka.stream.scaladsl.Flow
-import akka.stream.stage.{ Context, PushStage }
-import org.reactivestreams.{ Processor }
+import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
+import org.reactivestreams.Processor
 
 class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
@@ -16,12 +17,16 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
     implicit val materializer = ActorMaterializer(settings)(system)
 
-    val mkStage = () ⇒
-      new PushStage[Int, Int] {
-        override def onPush(in: Int, ctx: Context[Int]) = ctx.push(in)
+    val stage =
+      new SimpleLinearGraphStage[Int] {
+        override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+          override def onPush(): Unit = push(out, grab(in))
+          override def onPull(): Unit = pull(in)
+          setHandlers(in, out, this)
+        }
       }
 
-    Flow[Int].transform(mkStage).toProcessor.run()
+    Flow[Int].via(stage).toProcessor.run()
   }
 
   override def createElement(element: Int): Int = element

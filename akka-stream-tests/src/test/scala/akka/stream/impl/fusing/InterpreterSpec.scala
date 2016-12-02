@@ -553,26 +553,6 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       upstream.onNextAndComplete(1)
       lastEvents() should be(Set(OnNext(1), OnComplete))
-
-    }
-
-    //#20386
-    @deprecated("Usage of PushPullStage is deprecated, please use GraphStage instead", "2.4.5")
-    class InvalidAbsorbTermination extends PushPullStage[Int, Int] {
-      override def onPull(ctx: Context[Int]): SyncDirective = ctx.pull()
-      override def onPush(elem: Int, ctx: Context[Int]): SyncDirective = ctx.push(elem)
-      override def onDownstreamFinish(ctx: Context[Int]): TerminationDirective = ctx.absorbTermination()
-    }
-
-    // This test must be kept since it tests the compatibility layer, which while is deprecated it is still here.
-    "not allow absorbTermination from onDownstreamFinish()" in new OneBoundedSetup[Int]((new InvalidAbsorbTermination).toGS) {
-      lastEvents() should be(Set.empty)
-
-      EventFilter[UnsupportedOperationException]("It is not allowed to call absorbTermination() from onDownstreamFinish.", occurrences = 1).intercept {
-        downstream.cancel()
-        lastEvents() should be(Set(Cancel))
-      }
-
     }
 
   }

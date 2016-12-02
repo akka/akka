@@ -7,7 +7,8 @@ import java.nio.ByteOrder
 
 import akka.NotUsed
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.{ Attributes, Inlet, Outlet, FlowShape }
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.stage._
 import akka.util.{ ByteIterator, ByteString }
 
@@ -90,17 +91,7 @@ object Framing {
    * Protocol encoder that is used by [[Framing#simpleFramingProtocol]]
    */
   def simpleFramingProtocolEncoder(maximumMessageLength: Int): Flow[ByteString, ByteString, NotUsed] =
-    Flow[ByteString].transform(() ⇒ new PushStage[ByteString, ByteString] {
-      override def onPush(message: ByteString, ctx: Context[ByteString]): SyncDirective = {
-        val msgSize = message.size
-        if (msgSize > maximumMessageLength)
-          ctx.fail(new FramingException(s"Maximum allowed message size is $maximumMessageLength but tried to send $msgSize bytes"))
-        else {
-          val header = ByteString((msgSize >> 24) & 0xFF, (msgSize >> 16) & 0xFF, (msgSize >> 8) & 0xFF, msgSize & 0xFF)
-          ctx.push(header ++ message)
-        }
-      }
-    })
+    Flow[ByteString].via(new SimpleFramingProtocolEncoder(maximumMessageLength))
 
   class FramingException(msg: String) extends RuntimeException(msg)
 
@@ -126,6 +117,26 @@ object Framing {
       count -= 1
     }
     decoded & Mask
+  }
+
+  private class SimpleFramingProtocolEncoder(maximumMessageLength: Long) extends SimpleLinearGraphStage[ByteString] {
+    override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+      setHandlers(in, out, this)
+
+      override def onPush(): Unit = {
+        val message = grab(in)
+        val msgSize = message.size
+
+        if (msgSize > maximumMessageLength)
+          failStage(new FramingException(s"Maximum allowed message size is $maximumMessageLength but tried to send $msgSize bytes"))
+        else {
+          val header = ByteString((msgSize >> 24) & 0xFF, (msgSize >> 16) & 0xFF, (msgSize >> 8) & 0xFF, msgSize & 0xFF)
+          push(out, header ++ message)
+        }
+      }
+
+      override def onPull(): Unit = pull(in)
+    }
   }
 
   private class DelimiterFramingStage(val separatorBytes: ByteString, val maximumLineBytes: Int, val allowTruncation: Boolean)

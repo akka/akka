@@ -8,7 +8,6 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Supervision.Decider
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, Failed, GraphAssembly, UpstreamBoundaryStageLogic }
-import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, _ }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
@@ -328,15 +327,6 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       .connect(upstream, stagein)
       .connect(stageout, downstream)
       .init()
-  }
-
-  implicit class ToGraphStage[I, O](stage: Stage[I, O]) {
-    def toGS: PushPullGraphStage[Any, Any, Any] = {
-      val s = stage
-      new PushPullGraphStage[Any, Any, Any](
-        (_) ⇒ s.asInstanceOf[Stage[Any, Any]],
-        Attributes.none)
-    }
   }
 
   abstract class OneBoundedSetupWithDecider[T](decider: Decider, _ops: GraphStageWithMaterializedValue[Shape, Any]*) extends Builder {

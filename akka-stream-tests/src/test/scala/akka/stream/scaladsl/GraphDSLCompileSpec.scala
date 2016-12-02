@@ -5,7 +5,7 @@ package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.stream.impl.fusing.GraphStages
-import akka.stream.{ ActorMaterializer, ClosedShape, FlowShape, OverflowStrategy }
+import akka.stream._
 import akka.stream.testkit._
 import akka.stream.stage._
 
@@ -19,21 +19,26 @@ class GraphDSLCompileSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
 
-  def op[In, Out]: () ⇒ PushStage[In, Out] = { () ⇒
-    new PushStage[In, Out] {
-      override def onPush(elem: In, ctx: Context[Out]): SyncDirective =
-        ctx.push(elem.asInstanceOf[Out])
+  def op[In, Out] = new GraphStage[FlowShape[In, Out]] {
+    val in = Inlet[In]("op.in")
+    val out = Outlet[Out]("op.out")
+    override val shape = FlowShape[In, Out](in, out)
+    override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+      override def onPush() = push(out, grab(in).asInstanceOf[Out])
+      override def onPull(): Unit = pull(in)
+      setHandlers(in, out, this)
     }
+
   }
 
   val apples = () ⇒ Iterator.continually(new Apple)
 
-  val f1 = Flow[String].transform(op[String, String]).named("f1")
-  val f2 = Flow[String].transform(op[String, String]).named("f2")
-  val f3 = Flow[String].transform(op[String, String]).named("f3")
-  val f4 = Flow[String].transform(op[String, String]).named("f4")
-  val f5 = Flow[String].transform(op[String, String]).named("f5")
-  val f6 = Flow[String].transform(op[String, String]).named("f6")
+  val f1 = Flow[String].via(op[String, String]).named("f1")
+  val f2 = Flow[String].via(op[String, String]).named("f2")
+  val f3 = Flow[String].via(op[String, String]).named("f3")
+  val f4 = Flow[String].via(op[String, String]).named("f4")
+  val f5 = Flow[String].via(op[String, String]).named("f5")
+  val f6 = Flow[String].via(op[String, String]).named("f6")
 
   val in1 = Source(List("a", "b", "c"))
   val in2 = Source(List("d", "e", "f"))
@@ -169,7 +174,7 @@ class GraphDSLCompileSpec extends StreamSpec {
         val out2 = Sink.asPublisher[String](false)
         val out9 = Sink.asPublisher[String](false)
         val out10 = Sink.asPublisher[String](false)
-        def f(s: String) = Flow[String].transform(op[String, String]).named(s)
+        def f(s: String) = Flow[String].via(op[String, String]).named(s)
         import GraphDSL.Implicits._
 
         in7 ~> f("a") ~> b7 ~> f("b") ~> m11 ~> f("c") ~> b11 ~> f("d") ~> out2

@@ -192,43 +192,50 @@ public class FlowTest extends StreamTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
     // duplicate each element, stop after 4 elements, and emit sum to the end
-    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).transform(new Creator<Stage<Integer, Integer>>() {
+    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).via(new GraphStage<FlowShape<Integer, Integer>>() {
+
+      public final Inlet<Integer> in = Inlet.create("in");
+      public final Outlet<Integer> out = Outlet.create("out");
+  
       @Override
-      public PushPullStage<Integer, Integer> create() throws Exception {
-        return new StatefulStage<Integer, Integer>() {
+      public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
+        return new GraphStageLogic(shape()) {
           int sum = 0;
           int count = 0;
-
-          @Override
-          public StageState<Integer, Integer> initial() {
-            return new StageState<Integer, Integer>() {
+          
+          {
+            setHandler(in, new AbstractInHandler() {
               @Override
-              public SyncDirective onPush(Integer element, Context<Integer> ctx) {
-                sum += element;
-                count += 1;
-                if (count == 4) {
-                  return emitAndFinish(Arrays.asList(element, element, sum).iterator(), ctx);
-                } else {
-                  return emit(Arrays.asList(element, element).iterator(), ctx);
-                }
+              public void onPush() throws Exception {
+                final Integer element = grab(in);
+                  sum += element;
+                    count += 1;
+                    if (count == 4) {
+                      emitMultiple(out, Arrays.asList(element, element, sum).iterator(), () -> completeStage());
+                    } else {
+                      emitMultiple(out, Arrays.asList(element, element).iterator());
+                    }
+                
               }
-
-            };
+            });
+            setHandler(out, new AbstractOutHandler() {
+              @Override
+              public void onPull() throws Exception {
+                pull(in);
+              }
+            });
           }
-
-          @Override
-          public TerminationDirective onUpstreamFinish(Context<Integer> ctx) {
-            return terminationEmit(Collections.singletonList(sum).iterator(), ctx);
-          }
-
         };
       }
-    });
-    Source.from(input).via(flow).runForeach(new Procedure<Integer>() {
-      public void apply(Integer elem) {
-        probe.getRef().tell(elem, ActorRef.noSender());
+  
+      @Override
+      public FlowShape<Integer, Integer> shape() {
+        return FlowShape.of(in, out);
       }
-    }, materializer);
+                                                                            }
+    );
+    Source.from(input).via(flow).runForeach((Procedure<Integer>) elem -> 
+      probe.getRef().tell(elem, ActorRef.noSender()), materializer);
 
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(0);
@@ -308,21 +315,34 @@ public class FlowTest extends StreamTest {
     assertEquals(Arrays.asList(Arrays.asList("A", "B", "C", "."), Arrays.asList("D", "."), Arrays.asList("E", "F")), result);
   }
 
-  public <T> Creator<Stage<T, T>> op() {
-    return new akka.japi.function.Creator<Stage<T, T>>() {
+  public <T> GraphStage<FlowShape<T, T>> op() {
+    return new GraphStage<FlowShape<T, T>>() {
+      public final Inlet<T> in = Inlet.create("in");
+      public final Outlet<T> out = Outlet.create("out");
+  
       @Override
-      public PushPullStage<T, T> create() throws Exception {
-        return new PushPullStage<T, T>() {
-          @Override
-          public SyncDirective onPush(T element, Context<T> ctx) {
-            return ctx.push(element);
-          }
-
-          @Override
-          public SyncDirective onPull(Context<T> ctx) {
-            return ctx.pull();
+      public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
+        return new GraphStageLogic(shape()) {
+          {
+            setHandler(in, new AbstractInHandler() {
+              @Override
+              public void onPush() throws Exception {
+                push(out, grab(in));
+              }
+            });
+            setHandler(out, new AbstractOutHandler() {
+              @Override
+              public void onPull() throws Exception {
+                pull(in);
+              }
+            });
           }
         };
+      }
+
+      @Override
+      public FlowShape<T, T> shape() {
+        return FlowShape.of(in, out);
       }
     };
   }
@@ -330,12 +350,12 @@ public class FlowTest extends StreamTest {
   @Test
   public void mustBeAbleToUseMerge() throws Exception {
     final Flow<String, String, NotUsed> f1 =
-        Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f1");
+        Flow.of(String.class).via(FlowTest.this.op()).named("f1");
     final Flow<String, String, NotUsed> f2 =
-        Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f2");
+        Flow.of(String.class).via(FlowTest.this.op()).named("f2");
     @SuppressWarnings("unused")
     final Flow<String, String, NotUsed> f3 =
-        Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f3");
+        Flow.of(String.class).via(FlowTest.this.op()).named("f3");
 
     final Source<String, NotUsed> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, NotUsed> in2 = Source.from(Arrays.asList("d", "e", "f"));
@@ -849,11 +869,7 @@ public class FlowTest extends StreamTest {
     Integer result =
         Source.<Integer>maybe()
             .via(Flow.of(Integer.class)
-              .keepAlive(Duration.create(1, "second"), new Creator<Integer>() {
-                public Integer create() {
-                  return 0;
-                }
-              })
+              .keepAlive(Duration.create(1, "second"), (Creator<Integer>) () -> 0)
             )
             .takeWithin(Duration.create(1500, "milliseconds"))
             .runWith(Sink.<Integer>head(), materializer)
