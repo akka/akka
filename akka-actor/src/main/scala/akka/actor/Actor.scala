@@ -364,6 +364,16 @@ object Actor {
    * that will be translated to the receiving system's deadLetters.
    */
   final val noSender: ActorRef = null
+
+  /**
+   * INTERNAL API
+   */
+  private final val NotHandled = new Object
+
+  /**
+   * INTERNAL API
+   */
+  private final val notHandledFun = (_: Any) ⇒ NotHandled
 }
 
 /**
@@ -481,7 +491,12 @@ trait Actor {
    * @param receive current behavior.
    * @param msg current message.
    */
-  protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = receive.applyOrElse(msg, unhandled)
+  protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
+    // optimization: avoid allocation of lambda
+    if (receive.applyOrElse(msg, Actor.notHandledFun).asInstanceOf[AnyRef] eq Actor.NotHandled) {
+      unhandled(msg)
+    }
+  }
 
   /**
    * Can be overridden to intercept calls to `preStart`. Calls `preStart` by default.
