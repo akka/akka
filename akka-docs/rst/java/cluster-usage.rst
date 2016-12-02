@@ -610,7 +610,7 @@ Router Example with Pool of Remote Deployed Routees
 
 Let's take a look at how to use a cluster aware router on single master node that creates
 and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton-java`
-in the contrib module. The ``ClusterSingletonManager`` is started on each node.
+in the cluster-tools module. The ``ClusterSingletonManager`` is started on each node.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsSampleOneMasterMain.java#create-singleton-manager
 
