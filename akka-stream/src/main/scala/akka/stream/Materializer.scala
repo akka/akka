@@ -9,6 +9,18 @@ import scala.concurrent.ExecutionContextExecutor
 
 import scala.concurrent.duration.FiniteDuration
 
+/** 
+ * Materializer SPI (Service Provider Interface) 
+ * 
+ * Binary compatibility is NOT guaranteed on materializer internals.
+ * 
+ * Custom materializer implementations should be aware that the materializer SPI
+ * is not yet final and may change in patch releases of Akka. Please note that this
+ * does not impact end-users of Akka streams, only implementors of custom materializers,
+ * with whom the Akka team co-ordinates such changes.
+ * 
+ * Once the SPI is final this notice will be removed.
+ */
 abstract class Materializer {
 
   /**
