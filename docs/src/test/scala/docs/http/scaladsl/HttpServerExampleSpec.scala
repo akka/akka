@@ -509,15 +509,9 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     //#stream-random-numbers
   }
 
-
-  object Auction {
-    import akka.actor.Props
-    def props: Props = ???
-  }
-
   "interact with an actor" in compileOnlySpec {
     //#actor-interaction
-    import akka.actor.ActorSystem
+    import akka.actor.{Actor, ActorSystem, Props}
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.StatusCodes
     import akka.http.scaladsl.server.Directives._
@@ -535,6 +529,13 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       case object GetBids
       case class Bids(bids: List[Bid])
 
+      class Auction extends Actor {
+        def receive = {
+          case Bid(userId, bid) => println(s"Bid complete: $userId, $bid")
+          case _ => println("Invalid message")
+        }
+      }
+
       // these are from spray-json
       implicit val bidFormat = jsonFormat2(Bid)
       implicit val bidsFormat = jsonFormat1(Bids)
@@ -545,7 +546,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
         // needed for the future flatMap/onComplete in the end
         implicit val executionContext = system.dispatcher
 
-        val auction = system.actorOf(Auction.props, "auction")
+        val auction = system.actorOf(Props[Auction], "auction")
 
         val route =
           path("auction") {
