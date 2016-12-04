@@ -184,7 +184,7 @@ more advanced graph elements to finally be consumed by a ``Sink<In,M3>``.
 
 The first type parameter—:class:`Tweet` in this case—designates the kind of elements produced
 by the source while the ``M`` type parameters describe the object that is created during
-materialization (:ref:`see below <materialized-values-quick-java>`)—:class:`BoxedUnit` (from the ``scala.runtime``
+materialization (:ref:`see below <materialized-values-quick-java>`)—:class:`NotUsed` (from the ``scala.runtime``
 package) means that no value is produced, it is the generic equivalent of ``void``.
 
 The operations should look familiar to anyone who has used the Scala Collections library,
