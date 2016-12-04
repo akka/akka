@@ -116,6 +116,390 @@ object ByteString {
     }
   }
 
+  private[akka] object BinaryIndexedTree {
+    // FixMe: What should we have for sumTable and elemTable? Array(0), null, or something else?
+    val empty = BinaryIndexedTree(0, 0, 0, 0, Array(0), Array(0))
+
+    def apply(strings: Vector[ByteString1]): BinaryIndexedTree = {
+      val elemTable = createElemTable(strings)
+      val sumTable = createSumTable(elemTable)
+      BinaryIndexedTree(0, 0, strings.length, 0, sumTable, elemTable)
+    }
+
+    private def createElemTable(strings: Vector[ByteString1]): Array[Int] = {
+      val size = strings.size
+      val elemTable = new Array[Int](size)
+      var i = 0
+      while (i < size) {
+        elemTable(i) = strings(i).length
+        i += 1
+      }
+      elemTable
+    }
+
+    private[akka] def createSumTable(elemTable: Array[Int]): Array[Int] = {
+      val tableSize = elemTable.size
+      val sumTable = new Array[Int](tableSize)
+      System.arraycopy(elemTable, 0, sumTable, 0, tableSize)
+
+      var oneBasedIdx = 2
+      while (oneBasedIdx <= tableSize) {
+        var i = 1
+        while (oneBasedIdx * i <= tableSize) {
+          val idx = oneBasedIdx * i
+          sumTable(idx - 1) += sumTable(idx - oneBasedIdx / 2 - 1) // add up sub-sum of sumTable(idx-1)
+          i += 1
+        }
+        oneBasedIdx *= 2
+      }
+
+      sumTable
+    }
+  }
+
+  /**
+   * Binary Indexed Tree(BIT) with some extension to store `length` of each of the ByteStrings' internal strings
+   *
+   * [Basics]
+   * The basic data structure of BIT is as follows;
+   * Suppos we have a ByteString that has 8 internal strings. To make the example simple, we assume each string has
+   * the length of 1.
+   *
+   * 1) All the odd-index element represetnts it's corresponding string's length.
+   *    Each of the 1st, 3rd, 5th and 7th element represents it's length 1.
+   *
+   * 2) Other elements represent sum of itself and other elements.
+   *    For example, index of power of 2 contain the sum between 1 to itself:
+   *      2nd index => 1(1st elem) + 1(2nd string)
+   *      4th index => 2(2nd elem) + 1(3rd elem) + 1(4th string)
+   *      8th index => 4(4th elem) + 2(6th elem) + 1(7th elem) + 1(8th string)
+   *    Note that some elements represent the _partial_ sum:
+   *      6th index => 1(5th elem) + 1(6th string)
+   *
+   * 3) Complexity
+   *    3-1) Space complexity: O(N) = exactly N where N is the number of strings
+   *    3-2) Time complexity:
+   *      create BIT (using an array representing internal string lengths): O(N) = almost 2*N => N + N/2 + N/4 + ...
+   *      find lower bound of 'n': O(log(N))
+   *      take(n) / drop(n) / slice(start, until) : O(log(N))
+   *
+   * < Visual aid of BIT: each number represetns 1-based index >
+   * +-----------------------------------------+
+   * |                    8                    |
+   * +-----------------------------------------+
+   * +--------------------+
+   * |         4          |
+   * +--------------------+
+   * +---------+            +---------+
+   * |    2    |            |    6    |
+   * +---------+            +---------+
+   * +---+      +---+       +---+      +---+
+   * | 1 |      | 3 |       | 5 |      | 7 |
+   * +---+      +---+       +---+      +---+
+   *
+   * < Visual aid of BIT: each number represents the actual element contained in each indice >
+   * +-----------------------------------------+
+   * |                    8                    |
+   * +-----------------------------------------+
+   * +--------------------+
+   * |         4          |
+   * +--------------------+
+   * +---------+            +---------+
+   * |    2    |            |    2    |
+   * +---------+            +---------+
+   * +---+      +---+       +---+      +---+
+   * | 1 |      | 1 |       | 1 |      | 1 |
+   * +---+      +---+       +---+      +---+
+   *
+   * In our BinaryIndexTree, sumTable works as a basic BIT. To achieve a more efficient BIT, we'll extend this basics as follows.
+   *
+   * [Extension]
+   * 1)
+   * In addtion to the basic mechanism of BIT, we have some metadata;
+   *   - fullDrops indicates the number of (BIT) elements to drop starting from the 1st index.
+   *   - restToDrop indicates the number of length to drop at index _fullDrops_.
+   *   - fullTakes indicates the number of (BIT) elements to take starting from the 1st index.
+   *   - restToTake indicates the number of length to additionally take at index _fullTakes_.
+   *
+   * As we do some operation, such as take(n) and drop(n), we MUST maintain BIT that correctly describes ByteString's internal
+   * string lengths. If we recreate BIT itself, which is sumTable(Array[Int]) in our case, it takes time more than we expect.
+   *
+   * Instead of reconstructing sumTable(Array[Int]) everytime we do these operations, we can reuse it and update the metadata. This leads
+   * to an efficient BIT manipulation, then we can expect performance increase. This is where our metadata comes into play.
+   * Suppose we have ByteString with 4 internal strings, each of which has the length of 1, 2, 3 and 4, then we have;
+   *
+   * < Visual aid of sumTable: each number represetns the actual element contained in each indice >
+   * +--------------------+
+   * |        10          |
+   * +--------------------+
+   * +---------+
+   * |    3    |
+   * +---------+
+   * +---+      +---+
+   * | 1 |      | 3 |
+   * +---+      +---+
+   *
+   * Initially we have the following metadata.
+   *   - fullDrops  = 0 as we don't have to drop anything
+   *   - restToDrop = 0 as we don't have to drop anything
+   *   - fullTakes  = 4 as we have 4 elements in sumTable
+   *   - restToDrop = 0 as we don't have any additional elements to take (in addition to fullTakes)
+   *
+   * 1-1) If we drop(1), we just need to _drop_ the first whole element from sumTable.
+   *      Even we don't recreate sumTable, we can still have the correct BIT information
+   *      by updating fullDrops from 0 to 1 and keeping the same sumTable.
+   *
+   * +----|----------------+
+   * |    |    10          |
+   * +----|----------------+
+   * +----|-----+
+   * | 1  |  2  |
+   * +----|-----+
+   * +---+|      +---+
+   * | 1 ||      | 3 |
+   * +---+|      +---+
+   *
+   * 1-2) If we take(2), we need to take the first whole element AND one additional element from the second element.
+   *      Again we can just reuse the same sumTable and update the metadata(fullTakes from 4 to 1 and restToTake from 0 to 1)
+   *
+   * +-------|--------------+
+   * |       |  10          |
+   * +-------|--------------+
+   * +---|---|---+
+   * | 1   1 | 1 |
+   * +---|---|---+
+   * +---+   |    +---+
+   * | 1 |   |    | 3 |
+   * +---+   |    +---+
+   *
+   * 2) elemTable
+   * In addition to these metadata, we have another piece of information that contains lengths of internal strings.
+   * As it's a little bit costly to calculate i-th element from BIT(sumTable), whose time complexity is O(log(N)),
+   * it takes time to access to i-th elem. So we'd better have this additional information (with space compelexity O(N)).
+   *
+   * Time complexity:
+   *   access to i-th elem: O(1)
+   * Space complexity:
+   *   O(N)
+   *
+   *
+   * Detailed explanation of the params below is given above.
+   * @param fullDrops  Number of (BIT) elements to drop starting from the 1st index.
+   * @param restToDrop Number of length to drop at index _fullDrops_
+   * @param fullTakes  Number of (BIT) elements to take starting from the 1st index
+   * @param restToTake Number of length to additionally take at index _fullTakes_
+   * @param sumTable   Basic BIT to represent whole ByteString internal string lengths
+   * @param elemTable  Array to represent each length of internal strings
+   *                   FIXME: what would be the better name? _lengths_ whould be better?
+   */
+  private[akka] case class BinaryIndexedTree(fullDrops: Int, restToDrop: Int, fullTakes: Int, restToTake: Int, sumTable: Array[Int], elemTable: Array[Int]) {
+
+    def isEmpty: Boolean = fullDrops == fullTakes && restToDrop == restToTake
+
+    /**
+     * This is a helper function to perform take(n), drop(n) and slice(start, until) efficiently.
+     * - The basic concept is similar to C++ Vector's lower_bound() for example.
+     * - Find the lower bound of _n_, in other words find the BIT index that represent _n_ length
+     * starting from the _current_ head.
+     * - fullDrops and restToDrop is considered to calculate the index.
+     */
+    private[akka] def findLowerBoundIndexByNumberOfElements(numElems: Int): Int = {
+      val numDrops = addUpTo(fullDrops) + restToDrop
+      @tailrec def findLowrBound(low: Int, high: Int): Int = {
+        if (high - low > 1) {
+          val mid = (high + low) / 2
+          val sumToMid = addUpTo(mid + 1) - numDrops
+          if (sumToMid >= numElems) findLowrBound(low, mid)
+          else findLowrBound(mid, high)
+        } else high
+      }
+
+      val low = fullDrops - 1
+      val high = if (restToTake == 0) fullTakes else fullTakes + 1
+      findLowrBound(low, high)
+    }
+
+    /**
+     * Return the sum between the index 1 to n where index is 1-based.
+     */
+    private[this] def addUpTo(oneBasedIdx: Int): Int = {
+      @tailrec def addUpToI(acc: Int, i: Int): Int = {
+        if (i > 0) addUpToI(acc + sumTable(i - 1), i & (i - 1))
+        else acc
+      }
+      addUpToI(0, oneBasedIdx)
+    }
+
+    // Total length of internal strings
+    // FixMe: What is the better variable name?
+    private[this] val total =
+      if (isEmpty) {
+        0
+      } else {
+        val takes = addUpTo(fullTakes) + restToTake
+        val drops = addUpTo(fullDrops) + restToDrop
+        takes - drops
+      }
+
+    def take(n: Int): BinaryIndexedTree =
+      if (n <= 0) BinaryIndexedTree.empty
+      else if (n >= total) this
+      else take1(n)
+
+    private[this] def take1(n: Int): BinaryIndexedTree = {
+      val total = addUpTo(fullDrops) + restToDrop + n
+      val bound = findLowerBoundIndexByNumberOfElements(n)
+      val sum = addUpTo(bound + 1)
+      val newFullTakes = if (sum == total) bound + 1 else bound
+      var newRestToTake = if (sum == total) 0 else total - addUpTo(bound)
+
+      if (newFullTakes == fullTakes)
+        newRestToTake = math.min(newRestToTake, restToTake)
+
+      BinaryIndexedTree(fullDrops, restToDrop, newFullTakes, newRestToTake, sumTable, elemTable)
+    }
+
+    def drop(n: Int): BinaryIndexedTree =
+      if (n <= 0) this
+      else if (n >= total) BinaryIndexedTree.empty
+      else drop1(n)
+
+    private[this] def drop1(n: Int): BinaryIndexedTree = {
+      val total = addUpTo(fullDrops) + restToDrop + n
+      val bound = findLowerBoundIndexByNumberOfElements(n)
+      val sum = addUpTo(bound + 1)
+      val newFullDrops = if (sum == total) bound + 1 else bound
+      var newRestToDrop = if (sum == total) 0 else total - addUpTo(bound)
+
+      if (newFullDrops == fullDrops)
+        newRestToDrop = math.max(newRestToDrop, restToDrop)
+
+      BinaryIndexedTree(newFullDrops, newRestToDrop, fullTakes, restToTake, sumTable, elemTable)
+    }
+
+    def slice(from: Int, until: Int): BinaryIndexedTree = {
+      val length = total
+      if (from <= 0 && length <= until) this
+      else if (until <= from) BinaryIndexedTree.empty
+      else if (0 <= from && until <= length) slice1(from, until)
+      else if (from < 0) take(until)
+      else drop(from)
+    }
+
+    private[this] def slice1(from: Int, until: Int): BinaryIndexedTree = {
+      val fromTotal = addUpTo(fullDrops) + restToDrop + from
+      val fromBound = findLowerBoundIndexByNumberOfElements(from + 1)
+      val fromSum = addUpTo(fromBound + 1)
+      val newFullDrops = if (fromTotal == fromSum) fromBound + 1 else fromBound
+      var newRestToDrop = if (fromTotal == fromSum) 0 else fromTotal - addUpTo(fromBound)
+
+      val untilTotal = addUpTo(fullDrops) + restToDrop + until
+      val untilBound = findLowerBoundIndexByNumberOfElements(until)
+      val untilSum = addUpTo(untilBound + 1)
+      val newFullTakes = if (untilTotal == untilSum) untilBound + 1 else untilBound
+      var newRestToTake = if (untilTotal == untilSum) 0 else untilTotal - addUpTo(untilBound)
+
+      if (newFullDrops == fullDrops) newRestToDrop = math.max(newRestToDrop, restToDrop)
+      if (newFullTakes == fullTakes) newRestToTake = math.min(newRestToTake, restToTake)
+
+      BinaryIndexedTree(newFullDrops, newRestToDrop, newFullTakes, newRestToTake, sumTable, elemTable)
+    }
+
+    /**
+     * Number of valid BIT elements based on fullDrops, restToDrop, fullTakes and restToTake.
+     */
+    def size: Int = {
+      if (isEmpty) 0
+      else if (fullTakes == fullDrops) 1
+      else {
+        val base = fullTakes - fullDrops
+        if (restToTake > 0) base + 1
+        else base
+      }
+    }
+
+    /**
+     * Return index (fullTakes, restToTake) to get i-th element
+     * considering fullDrops and restToDrop.
+     * @param n (1-based) i-th element to calculate the index where 0 < n < length is always satisfied.
+     */
+    def getIndex(n: Int): (Int, Int) = {
+      // FixMe: Just calculate fullTakes and restToTake instead of creating a new instance (bit),
+      //        which should be faster as we don't generate an instance.
+      val newBIT = take(n)
+      val fullTakes = newBIT.fullTakes - newBIT.fullDrops
+      val restToTake = if (fullTakes == 0) newBIT.restToTake - newBIT.restToDrop else newBIT.restToTake
+      (fullTakes, restToTake)
+    }
+
+    @inline
+    private[this] def adjustElemTable(firstIdx: Int, lastIdx: Int, restToDrop: Int, restToTake: Int, elemTable: Array[Int]): Unit = {
+      // To correctly handle this (especially where fullDrops == fullTakes is met),
+      // we need to do the following *in order*:
+      // 1. Substitute restToTake to the last elem of both this and other if necessary (restToTake > 0)
+      // 2. Subtract restToDrop from the first elem of both this and other
+      if (restToTake > 0) elemTable(lastIdx) = restToTake
+      /*if (restToDrop > 0)*/ elemTable(firstIdx) -= restToDrop
+    }
+
+    def :+(other: Int): BinaryIndexedTree = {
+      if (other <= 0) this
+      else {
+        if (this.isEmpty) {
+          BinaryIndexedTree(0, 0, 1, 0, Array(other), Array(other))
+        } else {
+          val thisSize = this.size
+          val newTableSize = thisSize + 1
+          val newElemTable = new Array[Int](newTableSize)
+          newElemTable(newTableSize - 1) = other
+          System.arraycopy(this.elemTable, this.fullDrops, newElemTable, 0, thisSize)
+          adjustElemTable(0, newTableSize - 2, restToDrop, restToTake, newElemTable)
+
+          BinaryIndexedTree(0, 0, newTableSize, 0, BinaryIndexedTree.createSumTable(newElemTable), newElemTable)
+        }
+      }
+    }
+
+    def +:(other: Int): BinaryIndexedTree = {
+      if (other <= 0) this
+      else {
+        if (this.isEmpty) {
+          BinaryIndexedTree(0, 0, 1, 0, Array(other), Array(other))
+        } else {
+          val thisSize = this.size
+          val newTableSize = thisSize + 1
+          val newElemTable = new Array[Int](newTableSize)
+          newElemTable(0) = other
+          System.arraycopy(this.elemTable, this.fullDrops, newElemTable, 1, thisSize)
+          adjustElemTable(1, newTableSize - 1, restToDrop, restToTake, newElemTable)
+
+          BinaryIndexedTree(0, 0, newTableSize, 0, BinaryIndexedTree.createSumTable(newElemTable), newElemTable)
+        }
+      }
+    }
+
+    def ++(other: BinaryIndexedTree): BinaryIndexedTree = {
+      if (this.isEmpty) other
+      else if (other.isEmpty) this
+      else append1(other)
+    }
+
+    private[this] def append1(other: BinaryIndexedTree): BinaryIndexedTree = {
+      val thisSize = this.size
+      val otherSize = other.size
+      val newTableSize = thisSize + otherSize
+      val newElemTable = new Array[Int](newTableSize)
+      System.arraycopy(this.elemTable, this.fullDrops, newElemTable, 0, thisSize)
+      System.arraycopy(other.elemTable, other.fullDrops, newElemTable, thisSize, otherSize)
+
+      adjustElemTable(0, thisSize - 1, this.restToDrop, this.restToTake, newElemTable)
+      adjustElemTable(thisSize, newTableSize - 1, other.restToDrop, other.restToTake, newElemTable)
+
+      val newSumTable = BinaryIndexedTree.createSumTable(newElemTable)
+      BinaryIndexedTree(0, 0, newTableSize, 0, newSumTable, newElemTable)
+    }
+  }
+
   /**
    * A compact (unsliced) and unfragmented ByteString, implementation of ByteString1C.
    */
@@ -274,7 +658,15 @@ object ByteString {
       else ByteString1(bytes, startIndex, n)
 
     override def slice(from: Int, until: Int): ByteString =
-      drop(from).take(until - Math.max(0, from))
+      if (from <= 0 && length <= until) this
+      else slice1(from, until)
+
+    private[akka] def slice1(from: Int, until: Int): ByteString1 =
+      // if (from <= 0 && length <= until) this
+      if (until <= from) ByteString1.empty
+      else if (0 <= from && until <= bytes.length) ByteString1(bytes, startIndex + from, until - from)
+      else if (from < 0) ByteString1(bytes, startIndex, until)
+      else /*(until > bytes.length)*/ ByteString1(bytes, startIndex + from, bytes.length - from)
 
     override def copyToBuffer(buffer: ByteBuffer): Int =
       writeToBuffer(buffer)
@@ -337,33 +729,40 @@ object ByteString {
   }
 
   private[akka] object ByteStrings extends Companion {
-    def apply(bytestrings: Vector[ByteString1]): ByteString = new ByteStrings(bytestrings, (0 /: bytestrings)(_ + _.length))
+    def apply(bytestrings: Vector[ByteString1]): ByteString = new ByteStrings(bytestrings, (0 /: bytestrings)(_ + _.length), BinaryIndexedTree(bytestrings))
 
-    def apply(bytestrings: Vector[ByteString1], length: Int): ByteString = new ByteStrings(bytestrings, length)
+    def apply(bytestrings: Vector[ByteString1], length: Int): ByteString = new ByteStrings(bytestrings, length, BinaryIndexedTree(bytestrings))
 
     def apply(b1: ByteString1, b2: ByteString1): ByteString = compare(b1, b2) match {
-      case 3 ⇒ new ByteStrings(Vector(b1, b2), b1.length + b2.length)
+      case 3 ⇒
+        val byteStrings = Vector(b1, b2)
+        new ByteStrings(byteStrings, b1.length + b2.length, BinaryIndexedTree(byteStrings))
       case 2 ⇒ b2
       case 1 ⇒ b1
       case 0 ⇒ ByteString.empty
     }
 
     def apply(b: ByteString1, bs: ByteStrings): ByteString = compare(b, bs) match {
-      case 3 ⇒ new ByteStrings(b +: bs.bytestrings, bs.length + b.length)
+      case 3 ⇒
+        val byteStrings = b +: bs.bytestrings
+        new ByteStrings(byteStrings, bs.length + b.length, b.length +: bs.bit)
       case 2 ⇒ bs
       case 1 ⇒ b
       case 0 ⇒ ByteString.empty
     }
 
     def apply(bs: ByteStrings, b: ByteString1): ByteString = compare(bs, b) match {
-      case 3 ⇒ new ByteStrings(bs.bytestrings :+ b, bs.length + b.length)
+      case 3 ⇒
+        val byteStrings = bs.bytestrings :+ b
+        new ByteStrings(byteStrings, bs.length + b.length, bs.bit :+ b.length)
       case 2 ⇒ b
       case 1 ⇒ bs
       case 0 ⇒ ByteString.empty
     }
 
     def apply(bs1: ByteStrings, bs2: ByteStrings): ByteString = compare(bs1, bs2) match {
-      case 3 ⇒ new ByteStrings(bs1.bytestrings ++ bs2.bytestrings, bs1.length + bs2.length)
+      case 3 ⇒
+        new ByteStrings(bs1.bytestrings ++ bs2.bytestrings, bs1.length + bs2.length, bs1.bit ++ bs2.bit)
       case 2 ⇒ bs2
       case 1 ⇒ bs1
       case 0 ⇒ ByteString.empty
@@ -381,36 +780,35 @@ object ByteString {
       val nByteStrings = is.readInt()
 
       val builder = new VectorBuilder[ByteString1]
+      val elemTable = new Array[Int](nByteStrings)
       var length = 0
 
       builder.sizeHint(nByteStrings)
 
-      for (_ ← 0 until nByteStrings) {
+      for (i ← 0 until nByteStrings) {
         val bs = ByteString1.readFromInputStream(is)
         builder += bs
         length += bs.length
+        elemTable(i) = bs.length
       }
 
-      new ByteStrings(builder.result(), length)
+      val byteStrings = builder.result()
+      val bit = BinaryIndexedTree(0, 0, nByteStrings, 0, BinaryIndexedTree.createSumTable(elemTable), elemTable)
+      new ByteStrings(byteStrings, length, bit)
     }
   }
 
   /**
    * A ByteString with 2 or more fragments.
    */
-  final class ByteStrings private (private[akka] val bytestrings: Vector[ByteString1], val length: Int) extends ByteString with Serializable {
+  final class ByteStrings private (private[akka] val bytestrings: Vector[ByteString1], val length: Int, private[akka] val bit: BinaryIndexedTree) extends ByteString with Serializable {
     if (bytestrings.isEmpty) throw new IllegalArgumentException("bytestrings must not be empty")
     if (bytestrings.head.isEmpty) throw new IllegalArgumentException("bytestrings.head must not be empty")
 
     def apply(idx: Int): Byte = {
       if (0 <= idx && idx < length) {
-        var pos = 0
-        var seen = 0
-        while (idx >= seen + bytestrings(pos).length) {
-          seen += bytestrings(pos).length
-          pos += 1
-        }
-        bytestrings(pos)(idx - seen)
+        val (pos, i) = bit.getIndex(idx)
+        bytestrings(pos)(i)
       } else throw new IndexOutOfBoundsException(idx.toString)
     }
 
@@ -468,77 +866,116 @@ object ByteString {
     }
 
     override def take(n: Int): ByteString =
-      if (n <= 0) ByteString.empty
-      else if (n >= length) this
-      else take0(n)
+      if (0 < n && n < length) take0(n)
+      else if (n <= 0) ByteString.empty
+      else this
 
-    private[akka] def take0(n: Int): ByteString = {
-      @tailrec def go(last: Int, restToTake: Int): (Int, Int) = {
-        val bs = bytestrings(last)
-        if (bs.length > restToTake) (last, restToTake)
-        else go(last + 1, restToTake - bs.length)
+    private[this] def take0(n: Int): ByteString = {
+      val newBIT = bit.take(n)
+      val fullTakes = newBIT.fullTakes - newBIT.fullDrops
+      val restToTake = if (fullTakes == 0) newBIT.restToTake - newBIT.restToDrop else newBIT.restToTake
+      val vectorSize = bytestrings.size
+
+      if (fullTakes == 0)
+        bytestrings(fullTakes).take(restToTake)
+      else if (fullTakes * 2 < vectorSize) {
+        if (restToTake == 0)
+          new ByteStrings(bytestrings.take(fullTakes), n, newBIT)
+        else
+          new ByteStrings(bytestrings.take(fullTakes) :+ bytestrings(fullTakes).take1(restToTake), n, newBIT)
+      } else {
+        if (restToTake == 0)
+          new ByteStrings(bytestrings.dropRight(vectorSize - fullTakes), n, newBIT)
+        else
+          new ByteStrings(bytestrings.dropRight(vectorSize - fullTakes) :+ bytestrings(fullTakes).take1(restToTake), n, newBIT)
       }
-
-      val (last, restToTake) = go(0, n)
-
-      if (last == 0) bytestrings(last).take(restToTake)
-      else if (restToTake == 0) new ByteStrings(bytestrings.take(last), n)
-      else new ByteStrings(bytestrings.take(last) :+ bytestrings(last).take1(restToTake), n)
     }
 
     override def dropRight(n: Int): ByteString =
-      if (0 < n && n < length) dropRight0(n)
+      if (0 < n && n < length) take0(length - n)
       else if (n >= length) ByteString.empty
       else this
 
-    private def dropRight0(n: Int): ByteString = {
-      val byteStringsSize = bytestrings.length
-      @tailrec def dropRightWithFullDropsAndRemainig(fullDrops: Int, remainingToDrop: Int): ByteString = {
-        val bs = bytestrings(byteStringsSize - fullDrops - 1)
-        if (bs.length > remainingToDrop) {
-          if (fullDrops == byteStringsSize - 1)
-            bytestrings(0).dropRight(remainingToDrop)
-          else if (remainingToDrop == 0)
-            new ByteStrings(bytestrings.dropRight(fullDrops), length - n)
-          else
-            new ByteStrings(bytestrings.dropRight(fullDrops + 1) :+ bytestrings(byteStringsSize - fullDrops - 1).dropRight1(remainingToDrop), length - n)
-        } else {
-          dropRightWithFullDropsAndRemainig(fullDrops + 1, remainingToDrop - bs.length)
-        }
-      }
+    override def slice(from: Int, until: Int): ByteString =
+      if (from <= 0 && length <= until) this
+      else if (until <= from) ByteString.empty
+      else if (0 <= from && until <= length) slice1(from, until) // drop0(from).take(until - from) // TODO: optimization
+      else if (from < 0) take(until)
+      else drop(from)
 
-      dropRightWithFullDropsAndRemainig(0, n)
+    private[this] def slice1(from: Int, until: Int): ByteString = {
+      val newBIT = bit.slice(from, until)
+      val fullDrops = newBIT.fullDrops - bit.fullDrops
+      val restToDrop = if (fullDrops == 0) newBIT.restToDrop - bit.restToDrop else newBIT.restToDrop
+
+      if (newBIT.fullDrops == newBIT.fullTakes) {
+        //FixMe: is it faster if we do the following as we don't have to create a new BIT again?
+        // new ByteStrings(Vector(bss), until - from, newBIT)
+        bytestrings(fullDrops).slice(restToDrop, newBIT.restToTake)
+      } else if (newBIT.fullTakes - newBIT.fullDrops == 1) {
+        if (restToDrop == 0) {
+          if (newBIT.restToTake == 0)
+            //FixMe: is it faster if we do the following?
+            // new ByteStrings(Vector(bss), until - from, newBIT)
+            bytestrings(fullDrops)
+          else
+            new ByteStrings(Vector(
+              bytestrings(fullDrops),
+              bytestrings(fullDrops + 1).take1(newBIT.restToTake)), until - from, newBIT)
+        } else {
+          if (newBIT.restToTake == 0)
+            //FixMe: is it faster if we do the following?
+            // new ByteStrings(Vector(bss), until - from, newBIT)
+            bytestrings(fullDrops).drop1(restToDrop)
+          else
+            new ByteStrings(Vector(
+              bytestrings(fullDrops).drop1(restToDrop),
+              bytestrings(fullDrops + 1).take1(newBIT.restToTake)), until - from, newBIT)
+        }
+      } else {
+        val fullTakes = newBIT.fullTakes - newBIT.fullDrops
+        val base = bytestrings.slice(if (restToDrop > 0) fullDrops + 1 else fullDrops, fullDrops + fullTakes)
+        val bss =
+          if (restToDrop == 0 && newBIT.restToTake == 0)
+            base
+          else if (newBIT.restToTake == 0)
+            bytestrings(fullDrops).drop1(restToDrop) +: base
+          else if (restToDrop == 0)
+            base :+ bytestrings(fullDrops + fullTakes).take1(newBIT.restToTake)
+          else
+            bytestrings(fullDrops).drop1(restToDrop) +: base :+ bytestrings(fullDrops + fullTakes).take1(newBIT.restToTake)
+        new ByteStrings(bss, until - from, newBIT)
+      }
     }
 
-    override def slice(from: Int, until: Int): ByteString =
-      if (from <= 0 && until >= length) this
-      else if (from > length || until <= from) ByteString.empty
-      else drop(from).dropRight(length - until)
-
     override def drop(n: Int): ByteString =
-      if (n <= 0) this
+      if (0 < n && n < length) drop0(n)
       else if (n >= length) ByteString.empty
-      else drop0(n)
+      else this
 
-    private def drop0(n: Int): ByteString = {
+    private[this] def drop0(n: Int): ByteString = {
       // impl note: could be optimised a bit by using VectorIterator instead,
       //            however then we're forced to call .toVector which halfs performance
       //            We can work around that, as there's a Scala private method "remainingVector" which is fast,
       //            but let's not go into calling private APIs here just yet.
-      @tailrec def findSplit(fullDrops: Int, remainingToDrop: Int): (Int, Int) = {
-        val bs = bytestrings(fullDrops)
-        if (bs.length > remainingToDrop) (fullDrops, remainingToDrop)
-        else findSplit(fullDrops + 1, remainingToDrop - bs.length)
+      val newBIT = bit.drop(n)
+      val fullDrops = newBIT.fullDrops - bit.fullDrops
+      val restToDrop = if (fullDrops == 0) newBIT.restToDrop - bit.restToDrop else newBIT.restToDrop
+      val vectorSize = bytestrings.size
+
+      if (fullDrops == vectorSize - 1)
+        bytestrings(fullDrops).drop(restToDrop)
+      else if (fullDrops * 2 < vectorSize) {
+        if (restToDrop == 0)
+          new ByteStrings(bytestrings.drop(fullDrops), length - n, newBIT)
+        else
+          new ByteStrings(bytestrings(fullDrops).drop1(restToDrop) +: bytestrings.drop(fullDrops + 1), length - n, newBIT)
+      } else {
+        if (restToDrop == 0)
+          new ByteStrings(bytestrings.takeRight(vectorSize - fullDrops), length - n, newBIT)
+        else
+          new ByteStrings(bytestrings(fullDrops).drop1(restToDrop) +: bytestrings.takeRight(vectorSize - fullDrops - 1), length - n, newBIT)
       }
-
-      val (fullDrops, remainingToDrop) = findSplit(0, n)
-
-      if (remainingToDrop == 0)
-        new ByteStrings(bytestrings.drop(fullDrops), length - n)
-      else if (fullDrops == bytestrings.length - 1)
-        bytestrings(fullDrops).drop(remainingToDrop)
-      else
-        new ByteStrings(bytestrings(fullDrops).drop1(remainingToDrop) +: bytestrings.drop(fullDrops + 1), length - n)
     }
 
     override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
