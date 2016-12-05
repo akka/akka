@@ -10,6 +10,7 @@ import scala.util.Success
 import scala.util.Failure
 import scala.util.control.NonFatal
 import akka.persistence.AtomicWrite
+import com.typesafe.config.Config
 import scala.concurrent.Future
 
 /**
@@ -17,9 +18,11 @@ import scala.concurrent.Future
  * set for each actor system that uses the store via `SharedLeveldbJournal.setStore`. The
  * shared LevelDB store is for testing only.
  */
-class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.leveldb-shared.store" } with LeveldbStore {
+class SharedLeveldbStore extends LeveldbStore {
   import AsyncWriteTarget._
   import context.dispatcher
+
+  protected override def transformConfig(cfg: Config) = cfg.getConfig("store")
 
   def receive = {
     case WriteMessages(messages) ⇒

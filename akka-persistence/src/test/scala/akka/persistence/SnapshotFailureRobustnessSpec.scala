@@ -97,7 +97,12 @@ object SnapshotFailureRobustnessSpec {
 class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "SnapshotFailureRobustnessSpec", serialization = "off", extraConfig = Some(
   """
   akka.persistence.snapshot-store.local.class = "akka.persistence.SnapshotFailureRobustnessSpec$FailingLocalSnapshotStore"
-  akka.persistence.snapshot-store.local-delete-fail.class = "akka.persistence.SnapshotFailureRobustnessSpec$DeleteFailingLocalSnapshotStore"
+  akka.persistence.snapshot-store.local-delete-fail {
+    class = "akka.persistence.SnapshotFailureRobustnessSpec$DeleteFailingLocalSnapshotStore"
+    stream-dispatcher = "akka.persistence.dispatchers.default-stream-dispatcher"
+    dir = "snapshots"
+    max-load-attempts = 3
+  }
   """))) with ImplicitSender {
 
   import SnapshotFailureRobustnessSpec._

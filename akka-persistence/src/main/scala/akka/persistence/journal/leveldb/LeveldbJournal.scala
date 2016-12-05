@@ -19,7 +19,7 @@ import akka.pattern.pipe
  *
  * Journal backed by a local LevelDB store. For production use.
  */
-private[persistence] class LeveldbJournal extends { val configPath = "akka.persistence.journal.leveldb" } with AsyncWriteJournal with LeveldbStore {
+private[persistence] class LeveldbJournal extends AsyncWriteJournal with LeveldbStore {
   import LeveldbJournal._
 
   override def receivePluginInternal: Receive = {

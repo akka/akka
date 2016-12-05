@@ -6,10 +6,11 @@
 package akka.persistence.journal.leveldb
 
 import java.io.File
+
 import scala.collection.mutable
 import akka.actor._
 import akka.persistence._
-import akka.persistence.journal.{ WriteJournalBase }
+import akka.persistence.journal.WriteJournalBase
 import akka.serialization.SerializationExtension
 import org.iq80.leveldb._
 import scala.collection.immutable
@@ -17,14 +18,16 @@ import scala.util._
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 import akka.persistence.journal.Tagged
+import com.typesafe.config.Config
 
 /**
  * INTERNAL API.
  */
 private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with LeveldbIdMapping with LeveldbRecovery {
-  val configPath: String
 
-  val config = context.system.settings.config.getConfig(configPath)
+  protected def transformConfig(cfg: Config) = cfg
+
+  val config = transformConfig(Persistence(context.system).configFor(self))
   val nativeLeveldb = config.getBoolean("native")
 
   val leveldbOptions = new Options().createIfMissing(true)

@@ -29,7 +29,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
   private val persistenceIdStartIdx = 9 // Persistence ID starts after the "snapshot-" substring
 
   import akka.util.Helpers._
-  private val config = context.system.settings.config.getConfig("akka.persistence.snapshot-store.local")
+  private val config = Persistence(context.system).configFor(self)
   private val maxLoadAttempts = config.getInt("max-load-attempts")
     .requiring(_ > 1, "max-load-attempts must be >= 1")
 
