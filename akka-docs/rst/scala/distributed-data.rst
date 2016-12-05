@@ -448,6 +448,56 @@ look like for the ``TwoPhaseSet``:
 
 .. includecode:: code/docs/ddata/protobuf/TwoPhaseSetSerializer2.scala#serializer
   
+Durable Storage
+---------------
+
+By default the data is only kept in memory. It is redundant since it is replicated to other nodes 
+in the cluster, but if you stop all nodes the data is lost, unless you have saved it 
+elsewhere. 
+
+Entries can be configured to be durable, i.e. stored on local disk on each node. The stored data will be loaded
+next time the replicator is started, i.e. when actor system is restarted. This means data will survive as 
+long as at least one node from the old cluster takes part in a new cluster. The keys of the durable entries
+are configured with::
+
+  akka.cluster.distributed-data.durable.keys = ["a", "b", "durable*"]
+
+Prefix matching is supported by using ``*`` at the end of a key.
+
+All entries can be made durable by specifying::
+
+  akka.cluster.distributed-data.durable.keys = ["*"]
+
+`LMDB <https://symas.com/products/lightning-memory-mapped-database/>`_ is the default storage implementation. It is 
+possible to replace that with another implementation by implementing the actor protocol described in 
+``akka.cluster.ddata.DurableStore`` and defining the ``akka.cluster.distributed-data.durable.store-actor-class``
+property for the new implementation. 
+
+The location of the files for the data is configured with::
+
+  # Directory of LMDB file. There are two options:
+  # 1. A relative or absolute path to a directory that ends with 'ddata'
+  #    the full name of the directory will contain name of the ActorSystem
+  #    and its remote port.
+  # 2. Otherwise the path is used as is, as a relative or absolute path to
+  #    a directory.
+  akka.cluster.distributed-data.durable.lmdb.dir = "ddata"
+
+Making the data durable has of course a performance cost. By default, each update is flushed
+to disk before the ``UpdateSuccess`` reply is sent. For better performance, but with the risk of losing 
+the last writes if the JVM crashes, you can enable write behind mode. Changes are then accumulated during
+a time period before it is written to LMDB and flushed to disk. Enabling write behind is especially
+efficient when performing many writes to the same key, because it is only the last value for each key 
+that will be serialized and stored. The risk of losing writes if the JVM crashes is small since the 
+data is typically replicated to other nodes immediately according to the given ``WriteConsistency``.
+
+::
+
+  akka.cluster.distributed-data.lmdb.write-behind-interval = 200 ms
+
+Note that you should be prepared to receive ``WriteFailure`` as reply to an ``Update`` of a 
+durable entry if the data could not be stored for some reason. When enabling ``write-behind-interval``
+such errors will only be logged and ``UpdateSuccess`` will still be the reply to the ``Update``.
 
 CRDT Garbage
 ------------
@@ -493,11 +543,6 @@ if you add one element to a Set with 100 existing elements, all 101 elements are
 other nodes. This means that you cannot have too large data entries, because then the remote message
 size will be too large. We might be able to make this more efficient by implementing
 `Efficient State-based CRDTs by Delta-Mutation <http://gsd.di.uminho.pt/members/cbm/ps/delta-crdt-draft16may2014.pdf>`_.
-
-The data is only kept in memory. It is redundant since it is replicated to other nodes 
-in the cluster, but if you stop all nodes the data is lost, unless you have saved it 
-elsewhere. Making the data durable is a possible future feature, but even if we implement that
-it is not intended to be a full featured database.
 
 Learn More about CRDTs
 ======================

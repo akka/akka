@@ -20,12 +20,12 @@ object WriteAggregatorSpec {
   val key = GSetKey[String]("a")
 
   def writeAggregatorProps(data: GSet[String], consistency: Replicator.WriteConsistency,
-                           probes: Map[Address, ActorRef], nodes: Set[Address], replyTo: ActorRef): Props =
-    Props(new TestWriteAggregator(data, consistency, probes, nodes, replyTo))
+                           probes: Map[Address, ActorRef], nodes: Set[Address], replyTo: ActorRef, durable: Boolean): Props =
+    Props(new TestWriteAggregator(data, consistency, probes, nodes, replyTo, durable))
 
   class TestWriteAggregator(data: GSet[String], consistency: Replicator.WriteConsistency,
-                            probes: Map[Address, ActorRef], nodes: Set[Address], replyTo: ActorRef)
-    extends WriteAggregator(key, DataEnvelope(data), consistency, None, nodes, replyTo) {
+                            probes: Map[Address, ActorRef], nodes: Set[Address], replyTo: ActorRef, durable: Boolean)
+    extends WriteAggregator(key, DataEnvelope(data), consistency, None, nodes, replyTo, durable) {
 
     override def replica(address: Address): ActorSelection =
       context.actorSelection(probes(address).path)
@@ -43,6 +43,8 @@ object WriteAggregatorSpec {
     def receive = {
       case WriteAck ⇒
         replicator.foreach(_ ! WriteAck)
+      case WriteNack ⇒
+        replicator.foreach(_ ! WriteNack)
       case msg ⇒
         replicator = Some(sender())
         replica ! msg
@@ -50,9 +52,14 @@ object WriteAggregatorSpec {
   }
 }
 
-class WriteAggregatorSpec extends AkkaSpec("""
+class WriteAggregatorSpec extends AkkaSpec(s"""
       akka.actor.provider = "cluster"
-      akka.remote.netty.tcp.port=0
+      akka.remote.netty.tcp.port = 0
+      akka.remote.artery.canonical.port = 0
+      akka.cluster.distributed-data.durable.lmdb {
+        dir = target/WriteAggregatorSpec-${System.currentTimeMillis}-ddata
+        map-size = 10 MiB
+      }
       """)
   with ImplicitSender {
 
@@ -69,7 +76,7 @@ class WriteAggregatorSpec extends AkkaSpec("""
 
   val data = GSet.empty + "A" + "B"
   val timeout = 3.seconds.dilated
-  val writeTwo = WriteTo(2, timeout)
+  val writeThree = WriteTo(3, timeout)
   val writeMajority = WriteMajority(timeout)
 
   def probes(probe: ActorRef): Map[Address, ActorRef] =
@@ -79,7 +86,7 @@ class WriteAggregatorSpec extends AkkaSpec("""
     "send to at least N/2+1 replicas when WriteMajority" in {
       val probe = TestProbe()
       val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(
-        data, writeMajority, probes(probe.ref), nodes, testActor))
+        data, writeMajority, probes(probe.ref), nodes, testActor, durable = false))
 
       probe.expectMsgType[Write]
       probe.lastSender ! WriteAck
@@ -93,7 +100,7 @@ class WriteAggregatorSpec extends AkkaSpec("""
     "send to more when no immediate reply" in {
       val probe = TestProbe()
       val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(
-        data, writeMajority, probes(probe.ref), nodes, testActor))
+        data, writeMajority, probes(probe.ref), nodes, testActor, durable = false))
 
       probe.expectMsgType[Write]
       // no reply
@@ -112,7 +119,7 @@ class WriteAggregatorSpec extends AkkaSpec("""
     "timeout when less than required acks" in {
       val probe = TestProbe()
       val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(
-        data, writeMajority, probes(probe.ref), nodes, testActor))
+        data, writeMajority, probes(probe.ref), nodes, testActor, durable = false))
 
       probe.expectMsgType[Write]
       // no reply
@@ -126,6 +133,84 @@ class WriteAggregatorSpec extends AkkaSpec("""
       watch(aggr)
       expectTerminated(aggr)
     }
-
   }
+
+  "Durable WriteAggregator" must {
+    "not reply before local confirmation" in {
+      val probe = TestProbe()
+      val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(
+        data, writeThree, probes(probe.ref), nodes, testActor, durable = true))
+
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteAck
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteAck
+      expectNoMsg(200.millis)
+
+      // the local write
+      aggr ! UpdateSuccess(WriteAggregatorSpec.key, None)
+
+      expectMsg(UpdateSuccess(WriteAggregatorSpec.key, None))
+      watch(aggr)
+      expectTerminated(aggr)
+    }
+
+    "tolerate WriteNack if enough WriteAck" in {
+      val probe = TestProbe()
+      val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(
+        data, writeThree, probes(probe.ref), nodes, testActor, durable = true))
+
+      aggr ! UpdateSuccess(WriteAggregatorSpec.key, None) // the local write
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteAck
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteNack
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteAck
+
+      expectMsg(UpdateSuccess(WriteAggregatorSpec.key, None))
+      watch(aggr)
+      expectTerminated(aggr)
+    }
+
+    "reply with StoreFailure when too many nacks" in {
+      val probe = TestProbe()
+      val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(
+        data, writeMajority, probes(probe.ref), nodes, testActor, durable = true))
+
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteNack
+      aggr ! UpdateSuccess(WriteAggregatorSpec.key, None) // the local write
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteAck
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteNack
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteNack
+
+      expectMsg(StoreFailure(WriteAggregatorSpec.key, None))
+      watch(aggr)
+      expectTerminated(aggr)
+    }
+
+    "timeout when less than required acks" in {
+      val probe = TestProbe()
+      val aggr = system.actorOf(WriteAggregatorSpec.writeAggregatorProps(
+        data, writeMajority, probes(probe.ref), nodes, testActor, durable = true))
+
+      probe.expectMsgType[Write]
+      // no reply
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteAck
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteNack
+      probe.expectMsgType[Write]
+      probe.lastSender ! WriteNack
+
+      expectMsg(UpdateTimeout(WriteAggregatorSpec.key, None))
+      watch(aggr)
+      expectTerminated(aggr)
+    }
+  }
+
 }
