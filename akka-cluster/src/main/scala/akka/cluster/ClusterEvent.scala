@@ -210,7 +210,9 @@ object ClusterEvent {
    * Marker interface to facilitate subscription of
    * both [[UnreachableMember]] and [[ReachableMember]].
    */
-  sealed trait ReachabilityEvent extends ClusterDomainEvent
+  sealed trait ReachabilityEvent extends ClusterDomainEvent {
+    def member: Member
+  }
 
   /**
    * A member is considered as unreachable by the failure detector.
