@@ -27,7 +27,7 @@ object Version {
          |    if (configVersion != current) {
          |      throw new akka.ConfigurationException(
          |        "Akka JAR version [" + current + "] does not match the provided " +
-         |        "config version [" + configVersion + "]")
+         |          "config version [" + configVersion + "]")
          |    }
          |  }
          |}
