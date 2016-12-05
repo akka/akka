@@ -100,7 +100,7 @@ class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.conf
   akka.persistence.snapshot-store.local-delete-fail {
     class = "akka.persistence.SnapshotFailureRobustnessSpec$DeleteFailingLocalSnapshotStore"
     stream-dispatcher = "akka.persistence.dispatchers.default-stream-dispatcher"
-    dir = "snapshots"
+    dir = "target/snapshots-SnapshotFailureRobustnessSpec/"
     max-load-attempts = 3
   }
   """))) with ImplicitSender {
