@@ -3,13 +3,11 @@
  */
 package akka.http.javadsl
 
-import java.util
 import java.util.{ Collections, Optional }
-import javax.net.ssl.{ SSLContext, SSLSessionContext }
+import javax.net.ssl.SSLContext
 
-import akka.http.javadsl.model._
 import akka.stream.TLSClientAuth
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.{ Matchers, WordSpec }
 
 class ConnectionContextSpec extends WordSpec with Matchers {
 

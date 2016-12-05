@@ -6,11 +6,9 @@ package akka.http.javadsl
 
 import java.lang.reflect.{ Modifier, Method }
 
-import akka.http.javadsl.server.AllDirectives
 import akka.http.javadsl.server.directives.CorrespondsTo
 import org.scalatest.exceptions.TestPendingException
 import org.scalatest.{ Matchers, WordSpec }
-import scala.reflect.runtime.{ universe ⇒ ru }
 
 import scala.util.control.NoStackTrace
 

@@ -3,7 +3,6 @@ package akka.http.impl.engine.http2
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.model.headers.CacheDirectives
-import akka.http.scaladsl.model.headers.HttpCookie
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.model.headers.RawHeader
 

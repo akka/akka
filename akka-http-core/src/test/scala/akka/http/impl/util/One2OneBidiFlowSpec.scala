@@ -10,7 +10,6 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import org.scalactic.ConversionCheckedTripleEquals
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

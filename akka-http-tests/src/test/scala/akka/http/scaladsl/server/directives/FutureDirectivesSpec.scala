@@ -6,7 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.pattern.{ CircuitBreaker, CircuitBreakerOpenException }
+import akka.pattern.CircuitBreaker
 
 import scala.concurrent.Future
 import akka.testkit.EventFilter

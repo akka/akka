@@ -13,11 +13,10 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
-import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 
-import akka.stream.stage.{ Context, GraphStage, SyncDirective, TerminationDirective }
+import akka.stream.stage.GraphStage
 import akka.stream._
-import akka.stream.scaladsl.{ Sink, Source, Flow, Keep }
+import akka.stream.scaladsl.{ Sink, Source, Flow }
 /**
  * INTERNAL API
  */

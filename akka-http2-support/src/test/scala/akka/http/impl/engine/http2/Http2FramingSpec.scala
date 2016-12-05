@@ -17,8 +17,6 @@ import scala.concurrent.duration._
 class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   import BitBuilder._
 
-  import Http2Protocol.Flags._
-
   "The WebSocket parser/renderer round-trip should work for" - {
     "DATA frames" - {
       "without padding" in {

@@ -9,20 +9,15 @@ import akka.http.impl.engine.http2._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.stream.scaladsl.{ Flow, Sink, Source, SourceQueueWithComplete }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.stage._
 import akka.stream._
 import com.twitter.hpack.HeaderListener
 import HttpRequestHeaderHpackDecompression._
-import akka.NotUsed
 
 import scala.collection.immutable
 import akka.dispatch.ExecutionContexts
-import akka.http.impl.engine.parsing.BodyPartParser
-import akka.http.impl.engine.parsing.BodyPartParser.{ BodyPartStart, EntityPart }
-import akka.http.impl.engine.ws.FrameOutHandler
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.fusing.SubSource
 import akka.util.ByteString
 
 /** INTERNAL API */

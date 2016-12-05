@@ -5,12 +5,9 @@
 package akka.http.impl.engine.http2.rendering
 
 import java.io.ByteArrayOutputStream
-import java.io.OutputStream
-import java.nio.{ ByteBuffer, ByteOrder }
 
 import akka.http.impl.engine.http2.DataFrame
-import akka.http.impl.engine.http2.{ HeadersFrame, Http2Protocol, Http2SubStream }
-import akka.http.impl.util._
+import akka.http.impl.engine.http2.{ HeadersFrame, Http2SubStream }
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.stream.scaladsl.Source

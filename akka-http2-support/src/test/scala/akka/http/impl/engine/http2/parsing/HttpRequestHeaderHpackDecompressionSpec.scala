@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.http2.parsing
 
-import akka.http.impl.engine.http2.{ ByteFlag, HeadersFrame, Http2Protocol, Http2SubStream }
+import akka.http.impl.engine.http2.{ HeadersFrame, Http2SubStream }
 import akka.http.scaladsl.model.{ HttpMethods, HttpRequest }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }

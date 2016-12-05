@@ -6,15 +6,10 @@ package akka.http.scaladsl
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.testkit.{ EventFilter, TestKit, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ Matchers, WordSpec }
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class SslConfigWarningsSpec extends WordSpec with Matchers {
   val testConf: Config = ConfigFactory.parseString("""

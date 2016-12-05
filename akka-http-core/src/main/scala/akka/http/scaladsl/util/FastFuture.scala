@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.util
 
-import scala.language.{ higherKinds }
+import scala.language.higherKinds
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 import scala.collection.generic.CanBuildFrom

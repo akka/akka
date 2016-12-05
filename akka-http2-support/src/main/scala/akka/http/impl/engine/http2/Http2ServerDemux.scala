@@ -9,7 +9,6 @@ import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
-import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.scaladsl.Source
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStage

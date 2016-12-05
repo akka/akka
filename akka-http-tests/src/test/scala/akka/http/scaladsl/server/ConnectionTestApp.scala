@@ -5,12 +5,10 @@
 package akka.http.scaladsl.server
 
 import akka.actor._
-import akka.dispatch.MessageDispatcher
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.{ ActorMaterializer, OverflowStrategy }
-import akka.util.Index
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Future

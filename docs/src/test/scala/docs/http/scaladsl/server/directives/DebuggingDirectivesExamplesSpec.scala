@@ -6,7 +6,7 @@ package docs.http.scaladsl.server.directives
 
 import akka.event.{ LoggingAdapter, Logging }
 import akka.event.Logging.LogLevel
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.RouteResult.{ Rejected, Complete }
 import akka.http.scaladsl.server.directives.{ DebuggingDirectives, LogEntry, LoggingMagnet }

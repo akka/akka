@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl
 
-import akka.http.scaladsl.model.{ HttpRequest, StatusCodes, HttpResponse }
+import akka.http.scaladsl.model.HttpRequest
 import akka.util.ByteString
 import com.typesafe.config.{ ConfigFactory, Config }
 import akka.actor.ActorSystem

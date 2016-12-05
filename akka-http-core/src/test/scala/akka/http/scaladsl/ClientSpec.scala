@@ -11,7 +11,7 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ Matchers, WordSpec }
 import scala.concurrent.duration._
-import scala.concurrent.{ Await }
+import scala.concurrent.Await
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit.TestKit
 

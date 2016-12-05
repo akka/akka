@@ -15,11 +15,9 @@ import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ AlpnSwitch, Http2Blueprint, WrappedSslContextSPI }
 import akka.http.impl.engine.server.HttpAttributes
-import akka.http.impl.util.LogByteStringTools
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Fusing
 import akka.stream.Materializer

@@ -18,7 +18,6 @@ import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers._
 import MediaTypes._
-import HttpCharsets._
 import akka.testkit.TestKit
 
 class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {

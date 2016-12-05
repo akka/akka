@@ -4,7 +4,6 @@
 package akka.http.javadsl
 
 import akka.http.javadsl.model._
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
 class ConnectHttpSpec extends WordSpec with Matchers with BeforeAndAfterAll {

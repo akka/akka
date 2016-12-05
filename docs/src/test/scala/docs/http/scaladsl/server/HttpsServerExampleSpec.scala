@@ -10,7 +10,7 @@ import java.security.{ SecureRandom, KeyStore }
 import javax.net.ssl.{ SSLContext, TrustManagerFactory, KeyManagerFactory }
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.server.{ RouteResult, Route, Directives }
+import akka.http.scaladsl.server.{ Route, Directives }
 import akka.http.scaladsl.{ ConnectionContext, HttpsConnectionContext, Http }
 import akka.stream.ActorMaterializer
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
