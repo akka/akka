@@ -5,7 +5,7 @@
 package docs.http.scaladsl
 
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.model.{ RequestEntity, StatusCodes }
+import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.Sink
 import akka.testkit.TestActors
 import docs.CompileOnlySpec
@@ -640,7 +640,6 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   "drain entity using request#discardEntityBytes" in compileOnlySpec {
     //#discard-discardEntityBytes
     import akka.actor.ActorSystem
-    import akka.stream.scaladsl.FileIO
     import akka.http.scaladsl.server.Directives._
     import akka.stream.ActorMaterializer
     import akka.http.scaladsl.model.HttpRequest

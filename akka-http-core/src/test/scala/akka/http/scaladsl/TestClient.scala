@@ -5,8 +5,7 @@
 package akka.http.scaladsl
 
 import java.io.File
-import java.nio.file.spi.FileSystemProvider
-import java.nio.file.{ FileSystem, Path }
+import java.nio.file.Path
 
 import com.typesafe.config.{ Config, ConfigFactory }
 

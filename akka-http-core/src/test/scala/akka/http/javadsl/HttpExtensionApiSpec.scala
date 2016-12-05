@@ -23,7 +23,6 @@ import akka.stream.testkit.TestSubscriber
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.util.Try
 

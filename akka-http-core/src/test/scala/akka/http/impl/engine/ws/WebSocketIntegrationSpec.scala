@@ -3,11 +3,8 @@
  */
 package akka.http.impl.engine.ws
 
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration.DurationInt
-import org.scalactic.ConversionCheckedTripleEquals
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.Span.convertDurationToSpan
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.apply
@@ -21,7 +18,6 @@ import java.net.InetSocketAddress
 
 import akka.Done
 import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.stream.impl.fusing.GraphStages
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.util.ByteString
 import akka.stream.testkit.scaladsl.TestSink

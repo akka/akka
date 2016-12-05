@@ -6,7 +6,6 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
 import com.typesafe.config.{ ConfigFactory, Config }
-import akka.util.ByteString
 
 import headers._
 import scala.concurrent.Await

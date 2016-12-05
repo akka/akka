@@ -4,13 +4,8 @@
 
 package akka.http.impl.engine.client
 
-import java.util.concurrent.CountDownLatch
-
-import akka.http.impl.util.One2OneBidiFlow
-
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowShape, OverflowStrategy }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowShape }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import akka.http.scaladsl.{ Http, TestUtils }

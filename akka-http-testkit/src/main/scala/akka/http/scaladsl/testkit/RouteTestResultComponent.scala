@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext }
+import scala.concurrent.ExecutionContext
 import akka.stream.Materializer
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart

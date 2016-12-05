@@ -5,7 +5,6 @@
 package akka.http.scaladsl.model
 
 import akka.Done
-import akka.http.scaladsl.model.HttpEntity.Chunked
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._

@@ -4,14 +4,10 @@
 
 package akka.http.scaladsl
 
-import scala.concurrent.duration._
-import org.scalatest.concurrent.ScalaFutures
-import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
-import scala.concurrent.Await
 import akka.testkit.AkkaSpec
 
 class FormDataSpec extends AkkaSpec {

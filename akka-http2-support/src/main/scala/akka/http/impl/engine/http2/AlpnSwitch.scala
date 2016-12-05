@@ -3,7 +3,7 @@
  */
 package akka.http.impl.engine.http2
 
-import javax.net.ssl.{ SSLContext, SSLException }
+import javax.net.ssl.SSLException
 
 import akka.NotUsed
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
@@ -11,8 +11,6 @@ import akka.stream.TLSProtocol.{ SessionBytes, SessionTruncated, SslTlsInbound, 
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
-
-import scala.concurrent.Future
 
 object AlpnSwitch {
   type HttpServerBidiFlow = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed]

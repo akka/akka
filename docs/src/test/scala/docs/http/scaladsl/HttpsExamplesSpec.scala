@@ -4,10 +4,9 @@
 
 package docs.http.scaladsl
 
-import akka.actor.{ ActorLogging, ActorSystem }
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
-import akka.util.ByteString
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }

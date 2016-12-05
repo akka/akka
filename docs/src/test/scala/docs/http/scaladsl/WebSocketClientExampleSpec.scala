@@ -68,7 +68,7 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
 
   "half-closed-WebSocket-closing-example" in compileOnlySpec {
     import akka.actor.ActorSystem
-    import akka.{ Done, NotUsed }
+    import akka.NotUsed
     import akka.http.scaladsl.Http
     import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
@@ -76,7 +76,6 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    import system.dispatcher
 
     //#half-closed-WebSocket-closing-example
 
@@ -105,7 +104,6 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    import system.dispatcher
 
     //#half-closed-WebSocket-working-example
 
@@ -128,7 +126,6 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
 
   "half-closed-WebSocket-finite-working-example" in compileOnlySpec {
     import akka.actor.ActorSystem
-    import akka.{ Done, NotUsed }
     import akka.http.scaladsl.Http
     import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
@@ -138,7 +135,6 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    import system.dispatcher
 
     //#half-closed-WebSocket-finite-working-example
 

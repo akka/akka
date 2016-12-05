@@ -6,7 +6,6 @@ package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import org.scalactic.source.Position
 import org.scalatest.Inside
 
 class PathDirectivesSpec extends RoutingSpec with Inside {

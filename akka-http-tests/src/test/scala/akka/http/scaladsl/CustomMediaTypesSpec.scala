@@ -7,9 +7,7 @@ package akka.http.scaladsl
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.MediaType.WithFixedCharset
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.{ Directives, RoutingSpec }
-import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
+import akka.http.scaladsl.server.Directives
 import akka.stream.ActorMaterializer
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
