@@ -456,7 +456,6 @@ object UntypedActorPublisher {
  * Java API
  * @see [[akka.stream.actor.ActorPublisher]]
  */
-@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 abstract class UntypedActorPublisher[T] extends UntypedActor with ActorPublisher[T]
 
@@ -478,7 +477,6 @@ object AbstractActorPublisher {
  * 
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 abstract class AbstractActorPublisher[T] extends AbstractActor with ActorPublisher[T]
 
@@ -489,7 +487,6 @@ abstract class AbstractActorPublisher[T] extends AbstractActor with ActorPublish
  * 
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 abstract class AbstractActorPublisherWithStash[T] extends AbstractActor with ActorPublisher[T] with Stash
 

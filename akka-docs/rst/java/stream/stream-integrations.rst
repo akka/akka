@@ -439,7 +439,7 @@ ActorPublisher
 
 .. warning::
   **Deprecation warning:** ``ActorPublisher`` is deprecated in favour of the vastly more 
-  type-safe and safe to implement :class:`akka.stream.stage.GraphStage`. It may also 
+  type-safe and safe to implement :class:`akka.stream.stage.GraphStage`. It can also 
   expose a "stage actor ref" is needed to be addressed as-if an Actor. 
   Custom stages implemented using ``GraphStage`` are also automatically fusable.
   
@@ -492,7 +492,7 @@ ActorSubscriber
 
 .. warning::
   **Deprecation warning:** ``ActorSubscriber`` is deprecated in favour of the vastly more 
-  type-safe and safe to implement :class:`akka.stream.stage.GraphStage`. It may also 
+  type-safe and safe to implement :class:`akka.stream.stage.GraphStage`. It can also 
   expose a "stage actor ref" is needed to be addressed as-if an Actor. 
   Custom stages implemented using ``GraphStage`` are also automatically fusable.
   
