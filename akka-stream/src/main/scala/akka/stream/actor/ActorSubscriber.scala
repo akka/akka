@@ -158,7 +158,11 @@ abstract class MaxInFlightRequestStrategy(max: Int) extends RequestStrategy {
  * together with [[ZeroRequestStrategy]] or some other strategy. In that case
  * you must also call [[#request]] when the actor is started or when it is ready, otherwise
  * it will not receive any elements.
+ * 
+ * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
+@Deprecated
+@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 trait ActorSubscriber extends Actor {
   import ActorSubscriber._
   import ActorSubscriberMessage._
@@ -347,12 +351,20 @@ object UntypedActorSubscriber {
 /**
  * Java API
  * @see [[akka.stream.actor.ActorSubscriber]]
+ * 
+ * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
+@Deprecated
+@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 abstract class UntypedActorSubscriber extends UntypedActor with ActorSubscriber
 
 /**
  * Java API compatible with lambda expressions
+ * 
+ * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
+@Deprecated
+@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 object AbstractActorSubscriber {
   /**
    * Java API compatible with lambda expressions: Attach a [[AbstractActorSubscriber]] actor
@@ -365,5 +377,9 @@ object AbstractActorSubscriber {
 /**
  * Java API compatible with lambda expressions
  * @see [[akka.stream.actor.ActorSubscriber]]
+ * 
+ * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
+@Deprecated
+@deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 abstract class AbstractActorSubscriber extends AbstractActor with ActorSubscriber
