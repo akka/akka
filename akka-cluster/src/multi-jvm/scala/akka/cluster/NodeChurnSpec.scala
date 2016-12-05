@@ -18,6 +18,7 @@ import akka.actor.ActorRef
 import akka.event.Logging.Info
 import akka.actor.Actor
 import akka.actor.Props
+import akka.remote.RARP
 
 object NodeChurnMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -27,7 +28,12 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = 1s
-      akka.remote.log-frame-size-exceeding = 2000b
+      akka.remote.log-frame-size-exceeding = 1200b
+      akka.remote.artery.advanced {
+        idle-cpu-level = 1
+        embedded-media-driver = off
+        aeron-dir = "target/aeron-NodeChurnSpec"
+      }
       """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 
@@ -45,18 +51,29 @@ class NodeChurnMultiJvmNode2 extends NodeChurnSpec
 class NodeChurnMultiJvmNode3 extends NodeChurnSpec
 
 abstract class NodeChurnSpec
-  extends MultiNodeSpec(NodeChurnMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender {
+  extends MultiNodeSpec({
+    // Aeron media driver must be started before ActorSystem
+    SharedMediaDriverSupport.startMediaDriver(NodeChurnMultiJvmSpec)
+    NodeChurnMultiJvmSpec
+  }) with MultiNodeClusterSpec with ImplicitSender {
 
   import NodeChurnMultiJvmSpec._
 
   def seedNodes: immutable.IndexedSeq[Address] = Vector(first, second, third)
 
-  override def afterAll(): Unit = {
-    super.afterAll()
+  override protected def afterTermination(): Unit = {
+    SharedMediaDriverSupport.stopMediaDriver(StressMultiJvmSpec)
+    super.afterTermination()
   }
 
-  val rounds = 3
+  Runtime.getRuntime.addShutdownHook(new Thread {
+    override def run(): Unit = {
+      if (SharedMediaDriverSupport.isMediaDriverRunningByThisNode)
+        println("Abrupt exit of JVM without closing media driver. This should not happen and may cause test failure.")
+    }
+  })
+
+  val rounds = 5
 
   override def expectedTestDuration: FiniteDuration = 45.seconds * rounds
 
@@ -80,7 +97,7 @@ abstract class NodeChurnSpec
     within(3.seconds) {
       awaitAssert {
         additionaSystems.foreach { s ⇒
-          withClue(s"Cluster(s).self:") {
+          withClue(s"${Cluster(s).selfAddress}:") {
             Cluster(s).isTerminated should be(true)
           }
         }
@@ -88,9 +105,12 @@ abstract class NodeChurnSpec
     }
   }
 
+  def isArteryEnabled: Boolean = RARP(system).provider.remoteSettings.Artery.Enabled
+
+  // FIXME issue #21483
+  if (isArteryEnabled) pending
+
   "Cluster with short lived members" must {
-    "TODO work with artery" in (pending)
-    /*
     "setup stable nodes" taggedAs LongRunningTest in within(15.seconds) {
       val logListener = system.actorOf(Props(classOf[LogListener], testActor), "logListener")
       system.eventStream.subscribe(logListener, classOf[Info])
@@ -105,7 +125,7 @@ abstract class NodeChurnSpec
       // It will fail after a while if vector clock entries of removed nodes are not pruned.
       for (n ← 1 to rounds) {
         log.info("round-" + n)
-        val systems = Vector.fill(5)(ActorSystem(system.name, system.settings.config))
+        val systems = Vector.fill(2)(ActorSystem(system.name, system.settings.config))
         systems.foreach { s ⇒
           muteDeadLetters()(s)
           Cluster(s).joinSeedNodes(seedNodes)
@@ -120,14 +140,14 @@ abstract class NodeChurnSpec
         }
         awaitRemoved(systems, n)
         enterBarrier("members-removed-" + n)
-        systems.foreach(_.terminate().await)
+        systems.foreach(s ⇒ TestKit.shutdownActorSystem(s, verifySystemShutdown = true))
+        enterBarrier("end-round-" + n)
         log.info("end of round-" + n)
         // log listener will send to testActor if payload size exceed configured log-frame-size-exceeding
         expectNoMsg(2.seconds)
       }
       expectNoMsg(5.seconds)
     }
-    */
 
   }
 
