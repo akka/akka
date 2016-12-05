@@ -15,7 +15,7 @@ potentially existing `pathPrefix` or @ref[rawPathPrefix](rawPathPrefix.md#rawpat
 Its one parameter is usually an expression evaluating to a `PathMatcher` instance (see also: @ref[The PathMatcher DSL](../../path-matchers.md#pathmatcher-dsl)).
 
 As opposed to its @ref[rawPathPrefix](rawPathPrefix.md#rawpathprefix) counterpart `pathPrefix` automatically adds a leading slash to its
-`PathMatcher` argument, you therefore don't have to start your matching expression with an explicit slash.
+`PathMatcher` argument, you therefore don't have to start your matching expression with an explicit slash. For a comparison between path directives check @ref[Overview of path directives](index.md#overview-path-scala).
 
 Depending on the type of its `PathMatcher` argument the `pathPrefix` directive extracts zero or more values from
 the URI. If the match fails the request is rejected with an @ref[empty rejection set](../../rejections.md#empty-rejections).

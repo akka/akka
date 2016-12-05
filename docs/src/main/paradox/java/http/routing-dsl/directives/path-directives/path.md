@@ -17,7 +17,7 @@ The `path` directive attempts to match the **complete** remaining path, not just
 a path prefix and then delegate further filtering to a lower level in your routing structure use the @ref[pathPrefix](pathPrefix.md#pathprefix-java)
 directive instead. As a consequence it doesn't make sense to nest a `path` or @ref[pathPrefix](pathPrefix.md#pathprefix-java) directive
 underneath another `path` directive, as there is no way that they will ever match (since the unmatched path underneath
-a `path` directive will always be empty).
+a `path` directive will always be empty). For a comparison between path directives check @ref[Overview of path directives](index.md#overview-path-java).
 
 Depending on the type of its `PathMatcher` argument the `path` directive extracts zero or more values from the URI.
 If the match fails the request is rejected with an @ref[empty rejection set](../../rejections.md#empty-rejections).
