@@ -528,7 +528,11 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.UpstreamDirective"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.FreeDirective"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$AndThen"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.SyncDirective")
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.SyncDirective"),
+
+        // # 21944
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ClusterEvent#ReachabilityEvent.member")
+
       )
     )
   }
