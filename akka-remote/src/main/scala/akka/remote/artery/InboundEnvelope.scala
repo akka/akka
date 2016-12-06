@@ -130,6 +130,11 @@ private[remote] final class ReusableInboundEnvelope extends InboundEnvelope {
     this
   }
 
+  def withEnvelopeBuffer(envelopeBuffer: EnvelopeBuffer): InboundEnvelope = {
+    _envelopeBuffer = envelopeBuffer
+    this
+  }
+
   override def toString: String =
     s"InboundEnvelope($recipient, $message, $sender, $originUid, $association)"
 }
