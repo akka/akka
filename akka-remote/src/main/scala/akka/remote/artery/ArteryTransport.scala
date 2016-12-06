@@ -984,11 +984,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       createFlightRecorderEventSink()))
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
-    val originAddress = m.association match {
-      case OptionVal.Some(a) ⇒ OptionVal.Some(a.remoteAddress)
-      case OptionVal.None    ⇒ OptionVal.None
-    }
-    messageDispatcher.dispatch(m.recipient.get, m.message, m.sender, originAddress)
+    messageDispatcher.dispatch(m)
     m match {
       case r: ReusableInboundEnvelope ⇒ inboundEnvelopePool.release(r)
       case _                          ⇒
