@@ -217,6 +217,13 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       inputStream.close()
     }
+
+    "read next byte as an int from InputStream" in assertAllStagesStopped {
+      val bytes = ByteString(0, 100, 200, 255)
+      val inputStream = Source.single(bytes).runWith(StreamConverters.asInputStream())
+      List.fill(5)(inputStream.read()) should ===(List(0, 100, 200, 255, -1))
+      inputStream.close()
+    }
   }
 
   "fail to materialize with zero sized input buffer" in {
