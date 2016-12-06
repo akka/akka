@@ -7,7 +7,7 @@ import org.scalacheck.{ Arbitrary, Gen }
 import org.scalatest.prop.Checkers
 import org.scalatest.{ Matchers, WordSpec }
 
-class MetaMetadataSerializerSpec extends WordSpec with Matchers with Checkers {
+class RemoteInstrumentsSpec extends WordSpec with Matchers with Checkers {
 
   case class KeyLen(k: Key, l: Len) {
     override def toString = s" key = ${k}, len = ${l}"
@@ -22,48 +22,50 @@ class MetaMetadataSerializerSpec extends WordSpec with Matchers with Checkers {
     } yield KeyLen(key, len)
   }
 
-  "MetaMetadataSerializer" must {
+  "RemoteInstruments" must {
 
-    "perform roundtrip masking/unmasking of entry key+length" in {
+    "combine and decompose single key and length" in {
       val key: Byte = 17
       val len = 812
-      val kl = MetadataEnvelopeSerializer.muxEntryKeyLength(key, len)
+      val kl = RemoteInstruments.combineKeyLength(key, len)
 
-      val key2 = MetadataEnvelopeSerializer.unmaskEntryKey(kl)
+      val key2 = RemoteInstruments.getKey(kl)
       key2 should ===(key)
-      val len2 = MetadataEnvelopeSerializer.unmaskEntryLength(kl)
+      val len2 = RemoteInstruments.getLength(kl)
       len2 should ===(len)
     }
 
-    "perform key roundtrip using mask/unmask" in {
+    "combine and decompose key with 0 multiple times" in {
       check { (kl: KeyLen) ⇒
         val k = kl.k
 
-        val masked = MetadataEnvelopeSerializer.maskEntryKey(k)
-        val uk = MetadataEnvelopeSerializer.unmaskEntryKey(masked)
+        val masked = RemoteInstruments.combineKeyLength(k, 0)
+        val uk = RemoteInstruments.getKey(masked)
         uk should ===(k)
         uk == k
       }
     }
-    "perform length roundtrip using mask/unmask" in {
+
+    "combine and decompose length with 0 multiple times" in {
       check { (kl: KeyLen) ⇒
         val l = kl.l
 
-        val masked = MetadataEnvelopeSerializer.maskEntryLength(l)
-        val ul = MetadataEnvelopeSerializer.unmaskEntryLength(masked)
+        val masked = RemoteInstruments.combineKeyLength(0, l)
+        val ul = RemoteInstruments.getLength(masked)
         ul should ===(l)
         ul == l
       }
     }
-    "perform muxed roundtrip using mask/unmask" in {
+
+    "combine and decompose key and length multiple times" in {
       check { (kl: KeyLen) ⇒
         val k = kl.k
         val l = kl.l
 
-        val masked = MetadataEnvelopeSerializer.muxEntryKeyLength(k, l)
-        val uk = MetadataEnvelopeSerializer.unmaskEntryKey(masked)
+        val masked = RemoteInstruments.combineKeyLength(k, l)
+        val uk = RemoteInstruments.getKey(masked)
         uk should ===(k)
-        val ul = MetadataEnvelopeSerializer.unmaskEntryLength(masked)
+        val ul = RemoteInstruments.getLength(masked)
         ul should ===(l)
         ul == l && uk == k
       }
