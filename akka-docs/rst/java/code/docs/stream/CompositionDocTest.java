@@ -243,19 +243,19 @@ public class CompositionDocTest extends AbstractJavaTest {
   @Test
   public void materializedValues() throws Exception {
     //#mat-combine-1
-    // Materializes to Promise<BoxedUnit>                                     (red)
+    // Materializes to CompletableFuture<Optional<Integer>>                   (red)
     final Source<Integer, CompletableFuture<Optional<Integer>>> source = Source.<Integer>maybe();
 
-    // Materializes to BoxedUnit                                              (black)
+    // Materializes to NotUsed                                                (black)
     final Flow<Integer, Integer, NotUsed> flow1 = Flow.of(Integer.class).take(100);
 
-    // Materializes to Promise<Option<>>                                     (red)
+    // Materializes to CompletableFuture<Optional<Integer>>                  (red)
     final Source<Integer, CompletableFuture<Optional<Integer>>> nestedSource =
       source.viaMat(flow1, Keep.left()).named("nestedSource");
       //#mat-combine-1
 
     //#mat-combine-2
-    // Materializes to BoxedUnit                                              (orange)
+    // Materializes to NotUsed                                                (orange)
     final Flow<Integer, ByteString, NotUsed> flow2 = Flow.of(Integer.class)
       .map(i -> ByteString.fromString(i.toString()));
 

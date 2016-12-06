@@ -247,7 +247,7 @@ The propagation of the individual materialized values from the enclosed modules 
 |
 
 To implement the above, first, we create a composite :class:`Source`, where the enclosed :class:`Source` have a
-materialized type of :class:`Promise<BoxedUnit>`. By using the combiner function ``Keep.left()``, the resulting materialized
+materialized type of :class:`CompletableFuture<Optional<Integer>>>`. By using the combiner function ``Keep.left()``, the resulting materialized
 type is of the nested module (indicated by the color *red* on the diagram):
 
 .. includecode:: ../code/docs/stream/CompositionDocTest.java#mat-combine-1
