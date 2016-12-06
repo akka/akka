@@ -50,7 +50,7 @@ override ``onPull()`` which indicates that we are free to emit a single element.
 ``onDownstreamFinish()`` which is called if the downstream cancelled. Since the default behavior of that callback is
 to stop the stage, we don't need to override it. In the ``onPull`` callback we simply emit the next number.
 
-Instances of the above :class:`GraphStage` are subclasses of ``Graph<SourceShape<Int>,Unit>`` which means
+Instances of the above :class:`GraphStage` are subclasses of ``Graph<SourceShape<Integer>,NotUsed>`` which means
 that they are already usable in many situations, but do not provide the DSL methods we usually have for other
 :class:`Source` s. In order to convert this :class:`Graph` to a proper :class:`Source` we need to wrap it using
 ``Source.fromGraph`` (see :ref:`composition-java` for more details about graphs and DSLs). Now we can use the
@@ -379,7 +379,7 @@ or ``unwatch(ref)`` methods. The reference can be also watched by external actor
 Custom materialized values
 --------------------------
 
-Custom stages can return materialized values instead of ``Unit`` by inheriting from :class:`GraphStageWithMaterializedValue`
+Custom stages can return materialized values instead of ``NotUsed`` by inheriting from :class:`GraphStageWithMaterializedValue`
 instead of the simpler :class:`GraphStage`. The difference is that in this case the method
 ``createLogicAndMaterializedValue(inheritedAttributes)`` needs to be overridden, and in addition to the
 stage logic the materialized value must be provided
