@@ -11,21 +11,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-object FlushOnShutdownSpec {
-
-  val config = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       actor.serialize-creators = off
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-     }
-  """)
-
-}
-
-class FlushOnShutdownSpec extends ArteryMultiNodeSpec(FlushOnShutdownSpec.config) {
+class FlushOnShutdownSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) {
 
   val remoteSystem = newRemoteSystem()
 

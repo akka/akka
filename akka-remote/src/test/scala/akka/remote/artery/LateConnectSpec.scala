@@ -18,24 +18,18 @@ import com.typesafe.config.ConfigFactory
 object LateConnectSpec {
 
   val config = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-       remote.artery.advanced.handshake-timeout = 3s
-       remote.artery.advanced.image-liveness-timeout = 2.9s
-     }
-  """)
+     akka.remote.artery.advanced.handshake-timeout = 3s
+     akka.remote.artery.advanced.image-liveness-timeout = 2.9s
+  """).withFallback(ArterySpecSupport.defaultConfig)
 
 }
 
-class LateConnectSpec extends AkkaSpec(LateConnectSpec.config) with ImplicitSender {
+class LateConnectSpec extends ArteryMultiNodeSpec(LateConnectSpec.config) with ImplicitSender {
 
   val portB = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.canonical.port = $portB")
-    .withFallback(system.settings.config)
-  lazy val systemB = ActorSystem("systemB", configB)
+  lazy val systemB = newRemoteSystem(
+    name = Some("systemB"),
+    extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
 
   "Connection" must {
 
@@ -60,7 +54,4 @@ class LateConnectSpec extends AkkaSpec(LateConnectSpec.config) with ImplicitSend
       expectMsg("ping3")
     }
   }
-
-  override def afterTermination(): Unit = shutdown(systemB)
-
 }
