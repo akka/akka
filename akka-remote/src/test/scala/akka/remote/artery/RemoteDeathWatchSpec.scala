@@ -26,25 +26,17 @@ object RemoteDeathWatchSpec {
             }
         }
         remote.watch-failure-detector.acceptable-heartbeat-pause = 3s
-        remote.artery.enabled = on
-        remote.artery.canonical.hostname = localhost
-        remote.artery.canonical.port = 0
     }
-    """)
+    """).withFallback(ArterySpecSupport.defaultConfig)
 }
 
-class RemoteDeathWatchSpec extends AkkaSpec(RemoteDeathWatchSpec.config) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
+class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.config) with ImplicitSender with DefaultTimeout with DeathWatchSpec {
   import RemoteDeathWatchSpec._
 
   system.eventStream.publish(TestEvent.Mute(
     EventFilter[io.aeron.exceptions.RegistrationException]()))
 
-  val other = ActorSystem("other", ConfigFactory.parseString(s"akka.remote.artery.canonical.port=$otherPort")
-    .withFallback(system.settings.config))
-
-  override def afterTermination() {
-    shutdown(other)
-  }
+  val other = newRemoteSystem(name = Some("other"), extraConfig = Some(s"akka.remote.artery.canonical.port=$otherPort"))
 
   override def expectedTestDuration: FiniteDuration = 120.seconds
 
