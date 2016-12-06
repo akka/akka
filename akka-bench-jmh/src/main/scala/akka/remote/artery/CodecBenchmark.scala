@@ -12,7 +12,7 @@ import akka.serialization.{ BaseSerializer, ByteBufferSerializer, SerializationE
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl._
-import akka.util.{ ByteString, OptionVal }
+import akka.util.OptionVal
 import com.typesafe.config.ConfigFactory
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -119,21 +119,18 @@ class CodecBenchmark {
     resolvedRef = actorOnSystemA.asInstanceOf[InternalActorRef]
     recipientStringB = remoteRefB.path.toSerializationFormatWithAddress(addressB)
 
-    val metadataContainer: ByteString = if (configType == RemoteInstrument) {
-      val map = MetadataMap[ByteString]
-      val instrument = new DummyRemoteInstrument()
-      val metadata = instrument.remoteMessageSent(remoteRefB, payload, actorOnSystemA)
-      map.set(instrument.identifier, metadata)
-      new MetadataMapRendering(map).render()
+    val remoteInstruments: RemoteInstruments = if (configType == RemoteInstrument) {
+      new RemoteInstruments(system.asInstanceOf[ExtendedActorSystem], system.log, Vector(new DummyRemoteInstrument()))
     } else null
     val envelope = new EnvelopeBuffer(envelopeTemplateBuffer)
+    val outboundEnvelope = OutboundEnvelope(OptionVal.None, payload, OptionVal.None)
     headerIn setVersion 1
     headerIn setUid 42
     headerIn setSenderActorRef actorOnSystemA
     headerIn setRecipientActorRef remoteRefB
     headerIn setManifest ""
-    headerIn setMetadataContainer metadataContainer
-    MessageSerializer.serializeForArtery(SerializationExtension(system), payload, headerIn, envelope)
+    headerIn setRemoteInstruments remoteInstruments
+    MessageSerializer.serializeForArtery(SerializationExtension(system), outboundEnvelope, headerIn, envelope)
     envelope.byteBuffer.flip()
 
     // Now build up the graphs
@@ -290,23 +287,30 @@ object CodecBenchmark {
 
   // DummyRemoteInstrument that doesn't allocate unnecessary bytes during serialization/deserialization
   class DummyRemoteInstrument extends RemoteInstrument {
-    private val Metadata = ByteString("slevin".getBytes)
+    private val Metadata = "slevin".getBytes
 
     override def identifier: Byte = 7 // Lucky number slevin
 
-    override def remoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef): ByteString =
-      Metadata
+    override def remoteWriteMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit = {
+      buffer.putInt(Metadata.length)
+      buffer.put(Metadata)
+    }
 
-    override def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, metadata: ByteString): Unit = {
+    override def remoteReadMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit = {
       val length = Metadata.length
+      val metaLength = buffer.getInt
       @tailrec
       def compare(pos: Int): Boolean = {
         if (pos == length) true
-        else if (Metadata(pos) == metadata(pos)) compare(pos + 1)
+        else if (Metadata(pos) == buffer.get()) compare(pos + 1)
         else false
       }
-      if (metadata.length != length || !compare(0))
-        throw new IOException(s"DummyInstrument deserialization error. Expected ${Metadata.toString} got ${metadata.toString}")
+      if (metaLength != length || !compare(0))
+        throw new IOException(s"DummyInstrument deserialization error. Expected ${Metadata.toString}")
     }
+
+    override def remoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit = ()
+
+    override def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit = ()
   }
 }

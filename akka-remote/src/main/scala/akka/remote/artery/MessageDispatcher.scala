@@ -29,14 +29,17 @@ private[remote] class MessageDispatcher(
   private val log = Logging.withMarker(system, getClass.getName)
   private val debugLogEnabled = log.isDebugEnabled
 
-  def dispatch(
-    recipient:     InternalActorRef,
-    message:       AnyRef,
-    senderOption:  OptionVal[ActorRef],
-    originAddress: OptionVal[Address]): Unit = {
-
+  def dispatch(inboundEnvelope: InboundEnvelope): Unit = {
     import provider.remoteSettings.Artery._
     import Logging.messageClassName
+
+    val recipient = inboundEnvelope.recipient.get
+    val message = inboundEnvelope.message
+    val senderOption = inboundEnvelope.sender
+    val originAddress = inboundEnvelope.association match {
+      case OptionVal.Some(a) ⇒ OptionVal.Some(a.remoteAddress)
+      case OptionVal.None    ⇒ OptionVal.None
+    }
 
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
     val originalReceiver = recipient.path
