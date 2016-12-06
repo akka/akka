@@ -129,13 +129,13 @@ class StreamTestKitSpec extends AkkaSpec {
       }.getMessage should include("message matching partial function")
     }
 
-    "#expectNextPF should fail after timeout when element delayed" in {
+    "#expectNextWithTimeoutPF should fail after timeout when element delayed" in {
       intercept[AssertionError] {
         val timeout = 100 millis
         val overTimeout = timeout + (10 millis)
         Source.tick(overTimeout, 1 millis, 1).runWith(TestSink.probe)
           .request(1)
-          .expectNextPF(timeout, {
+          .expectNextWithTimeoutPF(timeout, {
             case 1 ⇒
           })
       }.getMessage should include("timeout")
