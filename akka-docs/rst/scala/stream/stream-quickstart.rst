@@ -248,7 +248,7 @@ As you can see, inside the :class:`GraphDSL` we use an implicit graph builder ``
 using the ``~>`` "edge operator" (also read as "connect" or "via" or "to"). The operator is provided implicitly
 by importing ``GraphDSL.Implicits._``.
 
-``GraphDSL.create`` returns a :class:`Graph`, in this example a :class:`Graph[ClosedShape, Unit]` where
+``GraphDSL.create`` returns a :class:`Graph`, in this example a :class:`Graph[ClosedShape, NotUsed]` where
 :class:`ClosedShape` means that it is *a fully connected graph* or "closed" - there are no unconnected inputs or outputs.
 Since it is closed it is possible to transform the graph into a :class:`RunnableGraph` using ``RunnableGraph.fromGraph``.
 The runnable graph can then be ``run()`` to materialize a stream out of it.
