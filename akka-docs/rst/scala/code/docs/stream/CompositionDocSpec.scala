@@ -181,7 +181,7 @@ class CompositionDocSpec extends AkkaSpec {
     // Materializes to Promise[Option[Int]]                                   (red)
     val source: Source[Int, Promise[Option[Int]]] = Source.maybe[Int]
 
-    // Materializes to Unit                                                   (black)
+    // Materializes to NotUsed                                               (black)
     val flow1: Flow[Int, Int, NotUsed] = Flow[Int].take(100)
 
     // Materializes to Promise[Int]                                          (red)
@@ -190,7 +190,7 @@ class CompositionDocSpec extends AkkaSpec {
     //#mat-combine-1
 
     //#mat-combine-2
-    // Materializes to Unit                                                   (orange)
+    // Materializes to NotUsed                                                (orange)
     val flow2: Flow[Int, ByteString, NotUsed] = Flow[Int].map { i => ByteString(i.toString) }
 
     // Materializes to Future[OutgoingConnection]                             (yellow)
