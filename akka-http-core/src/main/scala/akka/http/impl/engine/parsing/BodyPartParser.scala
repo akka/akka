@@ -76,7 +76,7 @@ private[http] final class BodyPartParser(
       override def onPush(): Unit = {
         if (!shouldTerminate) {
           val elem = grab(in)
-          try state(elem)
+          try run(elem)
           catch {
             case e: ParsingException ⇒ fail(e.info)
             case NotEnoughDataException ⇒
@@ -99,6 +99,27 @@ private[http] final class BodyPartParser(
 
       override def onUpstreamFinish(): Unit = {
         if (isAvailable(out)) onPull()
+      }
+
+      // hacky trampolining support: parsing states may call `trampoline(continuation)` to loop safely
+      def run(data: ByteString): Unit = {
+        @tailrec def loop(): Unit =
+          trampoline match {
+            case null ⇒
+            case f ⇒
+              trampoline = null
+              f()
+              loop()
+          }
+
+        state(data)
+        loop()
+      }
+      private var trampoline: () ⇒ StateResult = null
+      def trampoline(continue: ⇒ StateResult): StateResult = {
+        require(trampoline eq null)
+        trampoline = continue _
+        done()
       }
 
       setHandlers(in, out, this)
@@ -202,7 +223,10 @@ private[http] final class BodyPartParser(
             val needleEnd = currentPartEnd + needle.length
             if (crlf(input, needleEnd)) {
               emitFinalChunk()
-              parseHeaderLines(input, needleEnd + 2)
+              // Need to trampoline here, otherwise we have a mutual tail recursion between parseHeaderLines and
+              // parseEntity that is not tail-call optimized away and may lead to stack overflows on big chunks of data
+              // containing many parts.
+              trampoline(parseHeaderLines(input, needleEnd + 2))
             } else if (doubleDash(input, needleEnd)) {
               emitFinalChunk()
               setShouldTerminate()

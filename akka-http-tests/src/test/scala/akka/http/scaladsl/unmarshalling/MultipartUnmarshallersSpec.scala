@@ -162,6 +162,24 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |--simple boundary--""".stripMarginWithNewline("\r\n")))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity.empty(ContentTypes.`text/plain(UTF-8)`)))
       }
+      "many small parts received in one go" in {
+        val num = 5000
+        val singlePart =
+          """--12345
+            |
+            |data
+            |""".stripMarginWithNewline("\r\n")
+
+        val manyParts = singlePart * num + "--12345--"
+
+        val content = ByteString(manyParts)
+
+        Unmarshal(HttpEntity.Default(`multipart/mixed` withBoundary "12345", content.length, Source.single(content)))
+          .to[Multipart.General]
+          .flatMap(_.toStrict(1.second))
+          .awaitResult(5.second)
+          .strictParts.size shouldBe num
+      }
     }
 
     "multipartGeneralUnmarshaller should reject illegal multipart content with" - {
