@@ -9,7 +9,6 @@ import akka.persistence.journal._
 import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
 import akka.persistence.PersistentRepr
-
 import scala.concurrent.Future
 import akka.persistence.JournalProtocol.RecoverySuccess
 import akka.persistence.JournalProtocol.ReplayMessagesFailure

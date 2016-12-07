@@ -6,7 +6,6 @@
 package akka.persistence.journal.leveldb
 
 import java.io.File
-
 import scala.collection.mutable
 import akka.actor._
 import akka.persistence._
