@@ -443,7 +443,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     override def run(): Unit = {
       if (hasBeenShutdown.compareAndSet(false, true)) {
         log.debug("Shutting down [{}] via shutdownHook", localAddress)
-        Await.result(internalShutdown(), 20.seconds)
+        Await.result(internalShutdown(), settings.Advanced.DriverTimeout + 3.seconds)
       }
     }
   }
