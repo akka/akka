@@ -117,7 +117,7 @@ private[akka] class InputStreamAdapter(
   @scala.throws(classOf[IOException])
   override def read(): Int = {
     val a = Array[Byte](1)
-    if (read(a, 0, 1) != -1) a(0)
+    if (read(a, 0, 1) != -1) a(0) & 0xff
     else -1
   }
 
