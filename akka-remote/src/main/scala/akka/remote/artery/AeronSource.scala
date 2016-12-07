@@ -23,6 +23,8 @@ import org.agrona.concurrent.BackoffIdleStrategy
 import org.agrona.hints.ThreadHints
 import akka.stream.stage.GraphStageWithMaterializedValue
 import scala.util.control.NonFatal
+import akka.stream.stage.StageLogging
+import io.aeron.exceptions.DriverTimeoutException
 
 /**
  * INTERNAL API
@@ -86,7 +88,7 @@ private[remote] class AeronSource(
   override val shape: SourceShape[EnvelopeBuffer] = SourceShape(out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val logic = new GraphStageLogic(shape) with OutHandler with ResourceLifecycle {
+    val logic = new GraphStageLogic(shape) with OutHandler with ResourceLifecycle with StageLogging {
 
       private val sub = aeron.addSubscription(channel, streamId)
       // spin between 100 to 10000 depending on idleCpuLevel
@@ -109,14 +111,20 @@ private[remote] class AeronSource(
         freeSessionBuffers()
       }
 
+      override protected def logSource = classOf[AeronSource]
+
       override def preStart(): Unit = {
         flightRecorder.loFreq(AeronSource_Started, channelMetadata)
       }
 
       override def postStop(): Unit = {
-        sub.close()
         taskRunner.command(Remove(addPollTask.task))
-        flightRecorder.loFreq(AeronSource_Stopped, channelMetadata)
+        try sub.close() catch {
+          case e: DriverTimeoutException ⇒
+            // media driver was shutdown
+            log.debug("DriverTimeout when closing subscription. {}", e.getMessage)
+        } finally
+          flightRecorder.loFreq(AeronSource_Stopped, channelMetadata)
       }
 
       // OutHandler
