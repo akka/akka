@@ -265,18 +265,19 @@ Java 8, CompletionStage and CompletableFuture
 ---------------------------------------------
 
 Starting with Akka 2.4.2 we have begun to introduce Java 8 ``java.util.concurrent.CompletionStage`` in Java APIs.
-It's a ``Future`` counterpart in Java; conversion from ``Future`` is done using ``scala-java8-compat`` library.
+It's a ``scala.concurrent.Future`` counterpart in Java; conversion from ``scala.concurrent.Future`` is done using
+``scala-java8-compat`` library.
 
-Unlike ``Future``, ``CompletionStage`` has *async* and *non-async* methods.
+Unlike ``scala.concurrent.Future`` which has async methods only, ``CompletionStage`` has *async* and *non-async* methods.
 
-``scala-java8-compat`` library returns own implementation of ``CompletionStage`` which delegates all *non-async*
+The ``scala-java8-compat`` library returns its own implementation of ``CompletionStage`` which delegates all *non-async*
 methods to their *async* counterparts. The implementation extends standard Java ``CompletableFuture``.
 Java 8 ``CompletableFuture`` creates a new instance of ``CompletableFuture`` for any new stage,
 which means ``scala-java8-compat`` implementation is not used after the first mapping method.
 
 .. note::
-   After adding any additional computation stage to ``CompletionStage`` returned by ``scala-java8-compat`` (so, by Akka)
-   it falls back to standard behaviour of Java ``CompletableFuture``.
+   After adding any additional computation stage to ``CompletionStage`` returned by ``scala-java8-compat``
+   (e.g. ``CompletionStage`` instances returned by Akka) it falls back to standard behaviour of Java ``CompletableFuture``.
 
 Actions supplied for dependent completions of *non-async* methods may be performed by the thread
 that completes the current ``CompletableFuture``, or by any other caller of a completion method.
