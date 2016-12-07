@@ -136,9 +136,10 @@ object BackoffSupervisor {
 
   final case class RestartCount(count: Int)
 
-  private[akka] final case object StartChild extends DeadLetterSuppression
+  // not final for binary compatibility with 2.4.1
+  private[akka] case object StartChild extends DeadLetterSuppression
 
-  // not final for binary compatibility with 2.4.1 
+  // not final for binary compatibility with 2.4.1
   private[akka] case class ResetRestartCount(current: Int) extends DeadLetterSuppression
 
   /**
