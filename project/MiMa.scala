@@ -528,7 +528,13 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.UpstreamDirective"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.FreeDirective"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$AndThen"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.SyncDirective")
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.SyncDirective"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.snapshot.local.LocalSnapshotStore.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.configPath"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.configPath"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.SharedLeveldbStore.configPath"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.SharedLeveldbStore.this")
       )
     )
   }

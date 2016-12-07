@@ -18,11 +18,9 @@ import scala.concurrent.Future
  * set for each actor system that uses the store via `SharedLeveldbJournal.setStore`. The
  * shared LevelDB store is for testing only.
  */
-class SharedLeveldbStore extends LeveldbStore {
+class SharedLeveldbStore(cfg: Config) extends { override val config = cfg.getConfig("store") } with LeveldbStore {
   import AsyncWriteTarget._
   import context.dispatcher
-
-  protected override def transformConfig(cfg: Config) = cfg.getConfig("store")
 
   def receive = {
     case WriteMessages(messages) ⇒
