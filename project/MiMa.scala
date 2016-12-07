@@ -529,6 +529,16 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.FreeDirective"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$AndThen"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.SyncDirective"),
+
+        // # 21944
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ClusterEvent#ReachabilityEvent.member"),
+        
+        // #21645 durable distributed data
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.WriteAggregator.props"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.WriteAggregator.this"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.write"),
+
+        // #21394
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.snapshot.local.LocalSnapshotStore.this"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.configPath"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.configPath"),

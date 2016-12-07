@@ -24,6 +24,7 @@ private[akka] final case class PruningState(owner: UniqueAddress, phase: Pruning
 
   def merge(that: PruningState): PruningState =
     (this.phase, that.phase) match {
+      // FIXME this will add the PruningPerformed back again when one is None
       case (PruningPerformed, _) ⇒ this
       case (_, PruningPerformed) ⇒ that
       case (PruningInitialized(thisSeen), PruningInitialized(thatSeen)) ⇒
