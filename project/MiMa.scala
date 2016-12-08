@@ -21,9 +21,17 @@ object MiMa extends AutoPlugin {
 
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions = {
+      def latestMinorVersionOf(major: String) = mimaIgnoredProblems.keys
+        .map(_.stripPrefix(major))
+        .map(minor => scala.util.Try(minor.toInt))
+        .collect {
+          case scala.util.Success(m) => m
+        }
+        .max
+
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka24StreamVersions = (2 to 11) map ("2.4." + _)
-      val akka24WithScala212 = (12 to 13) map ("2.4." + _)
+      val akka24StreamVersions = (2 to 12) map ("2.4." + _)
+      val akka24WithScala212 = (13 to latestMinorVersionOf("2.4.")) map ("2.4." + _)
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
@@ -58,6 +66,60 @@ object MiMa extends AutoPlugin {
 
   val mimaIgnoredProblems = {
     import com.typesafe.tools.mima.core._
+
+    val bcIssuesBetween24and25 = Seq(
+      // #21423 removal of deprecated stages (in 2.5.x)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SubSource.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Flow.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SubFlow.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.transformMaterializing"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.transformMaterializing"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.andThen"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.transformMaterializing"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.andThen"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.andThen"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.Directive"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AsyncDirective"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.TerminationDirective"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Become$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$PushPullGraphStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$EmittingState$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$PushPullGraphLogic"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.Context"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.Stage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.DetachedStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Become"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StageState"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$PushPullGraphStageWithMaterializedValue"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.DownstreamDirective"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.PushPullStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.LifecycleContext"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$EmittingState"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.PushStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.DetachedContext"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$State"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.UpstreamDirective"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.FreeDirective"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$AndThen"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.SyncDirective"),
+
+      // deprecated method transform(scala.Function0)akka.stream.scaladsl.FlowOps in class akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl does not have a correspondent in current version
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.transform"),
+      // method andThen(akka.stream.impl.Stages#SymbolicStage)akka.stream.scaladsl.FlowOps in class akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl does not have a correspondent in current version
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.andThen"),
+      // object akka.stream.stage.StatefulStage#Stay does not have a correspondent in current version
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Stay$"),
+      // object akka.stream.stage.StatefulStage#Finish does not have a correspondent in current version
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$")
+    )
 
     Map(
       "2.4.0" -> Seq(
@@ -204,9 +266,6 @@ object MiMa extends AutoPlugin {
         // #20214
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createClientHttpsContext"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings")
-      ),
-      "2.4.3" -> Seq(
-
       ),
       "2.4.4" -> Seq(
         // #20080, #20081 remove race condition on HTTP client
@@ -559,57 +618,12 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$")
       ),
       "2.4.13" -> Seq(
-        FilterAnyProblemStartingWith("akka.stream.impl"),
-
         // extension method isEmpty$extension(Int)Boolean in object akka.remote.artery.compress.TopHeavyHitters#HashCodeVal does not have a correspondent in current version
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.TopHeavyHitters#HashCodeVal.isEmpty$extension"),
         // isEmpty()Boolean in class akka.remote.artery.compress.TopHeavyHitters#HashCodeVal does not have a correspondent in current version
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.TopHeavyHitters#HashCodeVal.isEmpty")
       ),
-      "2.4.14" -> Seq(
-        // #21423 removal of deprecated stages (in 2.5.x)
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.transform"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SubSource.transform"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Flow.transform"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SubFlow.transform"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.transformMaterializing"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.transform"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.transformMaterializing"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.andThen"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.transform"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.transformMaterializing"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.andThen"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.transform"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.andThen"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.Directive"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AsyncDirective"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.TerminationDirective"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Become$"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$PushPullGraphStage"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$EmittingState$"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$PushPullGraphLogic"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.Context"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.Stage"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.DetachedStage"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Become"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StageState"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$PushPullGraphStageWithMaterializedValue"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.DownstreamDirective"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.PushPullStage"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.LifecycleContext"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$EmittingState"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.PushStage"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.DetachedContext"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$State"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.UpstreamDirective"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.FreeDirective"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$AndThen"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.SyncDirective"),
-
+      "2.4.14" -> (Seq(
         // # 21944
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ClusterEvent#ReachabilityEvent.member"),
 
@@ -619,8 +633,16 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.write"),
 
         // #20737 aligned test sink and test source stage factory methods types
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.TestSinkStage.apply")
-      )
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.TestSinkStage.apply"),
+
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+        FilterAnyProblemStartingWith("akka.remote.artery"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.MessageSerializer.serializeForArtery"),
+
+        // https://github.com/akka/akka/pull/21688
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo")
+      ) ++ bcIssuesBetween24and25)
     )
   }
 }
