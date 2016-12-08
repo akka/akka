@@ -22,8 +22,7 @@ object MiMa extends AutoPlugin {
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions = {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka24StreamVersions = (2 to 11) map ("2.4." + _)
-      val akka24WithScala212 = (12 to 14) map ("2.4." + _)
+      val akka24StreamVersions = (2 to 7) map ("2.4." + _)
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
@@ -31,8 +30,7 @@ object MiMa extends AutoPlugin {
         "akka-stream-testkit"
       )
       scalaBinaryVersion match {
-        case "2.11" => (if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions else Seq.empty) ++ akka24StreamVersions ++ akka24WithScala212
-        case "2.12" => akka24WithScala212
+        case "2.11" => (if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions else Seq.empty) ++ akka24StreamVersions
       }
     }
 
@@ -71,7 +69,13 @@ object MiMa extends AutoPlugin {
         FilterAnyProblem("akka.cluster.sharding.DDataShardCoordinator"),
 
         // #18328 optimize VersionVector for size 1
-        FilterAnyProblem("akka.cluster.ddata.VersionVector")
+        FilterAnyProblem("akka.cluster.ddata.VersionVector"),
+
+        ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.sharding.ShardRegion$GetCurrentRegions$"),
+        //FilterAnyProblemStartingWith("akka.cluster.sharding.ShardCoordinator#Internal")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator#Internal#State.apply"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator#Internal#State.copy"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator#Internal#State.this")
       ),
       "2.4.1" -> Seq(
         // #19008
@@ -98,7 +102,9 @@ object MiMa extends AutoPlugin {
 
         // #19440
         ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.PipeToSupport.pipeCompletionStage"),
-        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.FutureTimeoutSupport.afterCompletionStage")
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.FutureTimeoutSupport.afterCompletionStage"),
+
+        ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.PersistenceStash.internalStashOverflowStrategy")
       ),
       "2.4.2" -> Seq(
         //internal API
@@ -198,6 +204,9 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createClientHttpsContext"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings")
       ),
+      "2.4.3" -> Seq(
+
+      ),
       "2.4.4" -> Seq(
         // #20080, #20081 remove race condition on HTTP client
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.gatewayFuture"),
@@ -296,7 +305,18 @@ object MiMa extends AutoPlugin {
         // #20462 - now uses a Set instead of a Seq within the private API of the cluster client
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.client.ClusterClient.contacts_="),
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.contacts"),
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.initialContactsSel")
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.initialContactsSel"),
+
+        // * field EMPTY in class akka.http.javadsl.model.HttpEntities's type is different in current version, where it is: akka.http.javadsl.model.HttpEntity#Strict rather than: akka.http.scaladsl.model.HttpEntity#Strict
+        ProblemFilters.exclude[IncompatibleFieldTypeProblem]("akka.http.javadsl.model.HttpEntities.EMPTY"),
+        //  method createIndefiniteLength(akka.http.javadsl.model.ContentType,akka.stream.javadsl.Source)akka.http.scaladsl.model.HttpEntity#IndefiniteLength in class akka.http.javadsl.model.HttpEntities has a different result type in current version, where it is akka.http.javadsl.model.HttpEntity#IndefiniteLength rather than akka.http.scaladsl.model.HttpEntity#IndefiniteLength
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.model.HttpEntities.createIndefiniteLength"),
+        // method createCloseDelimited(akka.http.javadsl.model.ContentType,akka.stream.javadsl.Source)akka.http.scaladsl.model.HttpEntity#CloseDelimited in class akka.http.javadsl.model.HttpEntities has a different result type in current version, where it is akka.http.javadsl.model.HttpEntity#CloseDelimited rather than akka.http.scaladsl.model.HttpEntity#CloseDelimited
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.model.HttpEntities.createCloseDelimited"),
+        // method createChunked(akka.http.javadsl.model.ContentType,akka.stream.javadsl.Source)akka.http.scaladsl.model.HttpEntity#Chunked in class akka.http.javadsl.model.HttpEntities has a different result type in current version, where it is akka.http.javadsl.model.HttpEntity#Chunked rather than akka.http.scaladsl.model.HttpEntity#Chunked
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.model.HttpEntities.createChunked"),
+        // method create(akka.http.javadsl.model.ContentType,akka.stream.javadsl.Source)akka.http.scaladsl.model.HttpEntity#Chunked in class akka.http.javadsl.model.HttpEntities has a different result type in current version, where it is akka.http.javadsl.model.HttpEntity#Chunked rather than akka.http.scaladsl.model.HttpEntity#Chunked
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.model.HttpEntities.create")
       ),
       "2.4.6" -> Seq(
         // internal api
@@ -340,7 +360,21 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.discardEntityBytes"),
 
         // #20288 migrate BodyPartRenderer to GraphStage
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.BodyPartRenderer.streamed")
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.BodyPartRenderer.streamed"),
+
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.scaladsl.TLS.apply$default$5"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.TLS.apply$default$4"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.deprecatedAndThen")
+      ),
+      "2.4.7" -> Seq(
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializer.downcast"),
+        FilterAnyProblemStartingWith("akka.cluster.pubsub.DistributedPubSubMediator$Internal"),
+
+        // abstract method discardEntityBytes(akka.stream.Materializer)akka.http.javadsl.model.HttpMessage#DiscardedEntity in interface akka.http.javadsl.model.HttpMessage is present only in current version
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage.discardEntityBytes"),
+        // method discardEntityBytes(akka.stream.Materializer)akka.http.scaladsl.model.HttpMessage#DiscardedEntity in trait akka.http.scaladsl.model.HttpMessage is present only in current version
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.discardEntityBytes")
       ),
       "2.4.8" -> Seq(
         // #20717 example snippet for akka http java dsl: SecurityDirectives
