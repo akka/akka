@@ -22,7 +22,7 @@ object MiMa extends AutoPlugin {
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions = {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka24StreamVersions = (2 to 7) map ("2.4." + _)
+      val akka24StreamVersions = (2 to 8) map ("2.4." + _)
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
@@ -430,7 +430,11 @@ object MiMa extends AutoPlugin {
 
         // #20942 ClusterSingleton
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.singleton.ClusterSingletonManager.addRemoved"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.singleton.ClusterSingletonManager.selfAddressOption")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.singleton.ClusterSingletonManager.selfAddressOption"),
+
+        // method create(java.lang.Class,Array[java.lang.Object])akka.actor.Props in object akka.actor.Props in current version does not have a correspondent with same parameter signature among (java.lang.Class,akka.japi.Creator)akka.actor.Props, (java.lang.Class,scala.collection.Seq)akka.actor.Props
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.Props.create"),
+        FilterAnyProblemStartingWith("akka.stream.impl")
       ),
       "2.4.9" -> Seq(
         // #21025 new orElse flow op
