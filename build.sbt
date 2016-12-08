@@ -1,5 +1,6 @@
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import akka._
+import AkkaDependency._
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -68,6 +69,8 @@ lazy val httpCore = project("akka-http-core")
   .settings(Dependencies.httpCore)
   .settings(Version.versionSettings)
   .dependsOn(parsing)
+  .addAkkaModuleDependency("akka-stream")
+  .addAkkaModuleDependency("akka-stream-testkit", "test")
   //.disablePlugins(MimaPlugin)
 
 lazy val http = project("akka-http")
@@ -75,10 +78,12 @@ lazy val http = project("akka-http")
 
 lazy val http2Support = project("akka-http2-support")
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
+  .addAkkaModuleDependency("akka-stream-testkit", "test")
 
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(Dependencies.httpTestkit)
   .dependsOn(http)
+  .addAkkaModuleDependency("akka-stream-testkit")
 
 lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
@@ -88,6 +93,7 @@ lazy val httpTests = project("akka-http-tests")
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
+  .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")

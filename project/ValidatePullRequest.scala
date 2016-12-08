@@ -75,7 +75,7 @@ object ValidatePullRequest extends AutoPlugin {
 
   // determining touched dirs and projects
   val changedDirectories = taskKey[immutable.Set[String]]("List of touched modules in this PR branch")
-  val projectBuildMode = taskKey[BuildMode]("Determines what will run when this project is affected by the PR and should be rebuilt")
+  val validatePRprojectBuildMode = taskKey[BuildMode]("Determines what will run when this project is affected by the PR and should be rebuilt")
 
   // running validation
   val validatePullRequest = taskKey[Unit]("Validate pull request")
@@ -185,7 +185,7 @@ object ValidatePullRequest extends AutoPlugin {
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
     testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
 
-    projectBuildMode in ValidatePR := {
+    validatePRprojectBuildMode in ValidatePR := {
       val log = streams.value.log
       log.debug(s"Analysing project (for inclusion in PR validation): [${name.value}]")
       val changedDirs = (changedDirectories in ValidatePR).value
@@ -221,7 +221,7 @@ object ValidatePullRequest extends AutoPlugin {
 
     validatePullRequest := Def.taskDyn {
       val log = streams.value.log
-      val buildMode = (projectBuildMode in ValidatePR).value
+      val buildMode = (validatePRprojectBuildMode in ValidatePR).value
 
       buildMode.log(name.value, log)
 

@@ -4,17 +4,14 @@
 
 package akka.http.impl.engine.ws
 
-import scala.concurrent.{ Promise, Future }
-import scala.util.{ Try, Failure, Success }
+import akka.Done
 
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
 import spray.json._
-
 import akka.actor.ActorSystem
-
 import akka.stream.ActorMaterializer
-import akka.stream.stage.{ TerminationDirective, Context, SyncDirective, PushStage }
 import akka.stream.scaladsl._
-
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.ws._
@@ -167,28 +164,8 @@ object WSClientAutobahnTest extends App {
   def runWs[T](uri: Uri, clientFlow: Flow[Message, Message, T]): T =
     Http().singleWebSocketRequest(uri, clientFlow)._2
 
-  def completionSignal[T]: Flow[T, T, Future[Unit]] =
-    Flow[T].transformMaterializing { () ⇒
-      val p = Promise[Unit]()
-      val stage =
-        new PushStage[T, T] {
-          def onPush(elem: T, ctx: Context[T]): SyncDirective = ctx.push(elem)
-          override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
-            p.success(())
-            super.onUpstreamFinish(ctx)
-          }
-          override def onDownstreamFinish(ctx: Context[T]): TerminationDirective = {
-            p.success(()) // should this be failure as well?
-            super.onDownstreamFinish(ctx)
-          }
-          override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
-            p.failure(cause)
-            super.onUpstreamFailure(cause, ctx)
-          }
-        }
-
-      (stage, p.future)
-    }
+  def completionSignal[T]: Flow[T, T, Future[Done]] =
+    Flow[T].watchTermination()((_, res) ⇒ res)
 
   /**
    * The autobahn tests define a weird API where every request must be a WebSocket request and

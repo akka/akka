@@ -352,28 +352,6 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "log materialization errors in `bindAndHandle`" which {
-
-      "are triggered in `transform`" in Utils.assertAllStagesStopped {
-        // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
-        pending
-        val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
-        val flow = Flow[HttpRequest].transform[HttpResponse](() ⇒ sys.error("BOOM"))
-        val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
-        val b1 = Await.result(binding, 3.seconds)
-
-        EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
-          val (_, responseFuture) =
-            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
-          try Await.result(responseFuture, 5.second).status should ===(StatusCodes.InternalServerError)
-          catch {
-            case _: StreamTcpException ⇒
-            // Also fine, depends on the race between abort and 500, caused by materialization panic which
-            // tries to tear down everything, but the order is nondeterministic
-          }
-        }(system2)
-        Await.result(b1.unbind(), 1.second)
-      }(materializer2)
-
       "are triggered in `mapMaterialized`" in Utils.assertAllStagesStopped {
         // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
         pending

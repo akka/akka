@@ -27,8 +27,6 @@ object Dependencies {
 
   object Compile {
     // Compile
-    val akkaStream        = "com.typesafe.akka"      %% "akka-stream"                  % akkaVersion // Apache v2
-    val akkaStreamTestkit = "com.typesafe.akka"      %% "akka-stream-testkit"          % akkaVersion // Apache v2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val netty         = "io.netty"                    % "netty"                        % "3.10.6.Final" // ApacheV2
@@ -64,10 +62,6 @@ object Dependencies {
     }
 
     object Test {
-      val akkaTestkit          = "com.typesafe.akka"      %% "akka-testkit"                % akkaVersion        % "test" // Apache v2
-      val akkaMmltinodeTestKit = "com.typesafe.akka"      %% "akka-multi-node-testkit"     % akkaVersion        % "test" // Apache v2
-      val akkaStreamTestkit = Compile.akkaStreamTestkit % "test"
-
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
@@ -113,16 +107,6 @@ object Dependencies {
 
   lazy val l = libraryDependencies
 
-  lazy val common = l ++= Seq(
-    akkaStream,
-    Test.scalatest.value
-  )
-
-  lazy val core = l ++=  Seq(
-    Test.sprayJson, // for WS Autobahn test metadata
-    Test.junitIntf, Test.junit, Test.scalatest.value
-  )
-
   lazy val parsing = Seq(
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
@@ -130,22 +114,20 @@ object Dependencies {
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
   )
 
-  lazy val httpCore = l ++= Seq(akkaStream,
-    Test.akkaStreamTestkit,
+  lazy val httpCore = l ++= Seq(
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest.value, Test.scalacheck.value, Test.junit)
 
   lazy val http = l ++= Seq()
 
-  lazy val http2 = l ++= Seq(hpack, alpnApi, Test.akkaStreamTestkit)
+  lazy val http2 = l ++= Seq(hpack, alpnApi)
 
   lazy val httpTestkit = l ++= Seq(
-    akkaStreamTestkit,
     Test.junit, Test.junitIntf, Compile.junit % "provided",
     Test.scalatest.value.copy(configurations = Some("provided; test"))
   )
 
-  lazy val httpTests = l ++= Seq(Test.akkaMmltinodeTestKit, Test.junit, Test.scalatest.value, Test.junitIntf)
+  lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
 
   lazy val httpXml = versionDependentDeps(scalaXml)
 
@@ -157,7 +139,6 @@ object Dependencies {
   lazy val httpJackson = l ++= Seq(jackson)
 
   lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson)
-
 }
 
 
