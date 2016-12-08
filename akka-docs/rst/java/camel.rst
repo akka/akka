@@ -1,9 +1,14 @@
 
 .. _camel-java:
 
-#############
- Camel
-#############
+Camel
+#####
+
+.. warning::
+  Akka Camel is deprecated in favour of `Alpakka`_ , the Akka Streams based collection of integrations to various endpoints (including Camel).
+
+.. _Alpakka: https://github.com/akka/alpakka
+
 
 Introduction
 ============
