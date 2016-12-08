@@ -22,7 +22,7 @@ object MiMa extends AutoPlugin {
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions = {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka24StreamVersions = (2 to 9) map ("2.4." + _)
+      val akka24StreamVersions = (2 to 10) map ("2.4." + _)
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
@@ -454,9 +454,6 @@ object MiMa extends AutoPlugin {
         // #20888 new FoldAsync op for Flow
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync"),
 
-        // method create(java.lang.Class,Array[java.lang.Object])akka.actor.Props in object akka.actor.Props in current version does not have a correspondent with same parameter signature among (java.lang.Class,akka.japi.Creator)akka.actor.Props, (java.lang.Class,scala.collection.Seq)akka.actor.Props
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.Props.create"),
-
         // method ChaseLimit()Int in object akka.stream.impl.fusing.GraphInterpreter does not have a correspondent in current version
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.ChaseLimit"),
         FilterAnyProblemStartingWith("akka.http.impl.engine")
@@ -493,7 +490,13 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.takeWhile"),
 
         // #21131 new implementation for Akka Typed
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.isWatching")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.isWatching"),
+
+        // method create(java.lang.Class,Array[java.lang.Object])akka.actor.Props in object akka.actor.Props in current version does not have a correspondent with same parameter signature among (java.lang.Class,akka.japi.Creator)akka.actor.Props, (java.lang.Class,scala.collection.Seq)akka.actor.Props
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.Props.create"),
+
+        // class akka.stream.impl.fusing.Map is declared final in current version
+        ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.fusing.Map")
       ),
       "2.4.11" -> Seq(
         // #20795  IOResult construction exposed
