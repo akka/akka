@@ -38,7 +38,7 @@ object MiMa extends AutoPlugin {
         
         "akka-http-testkit",
         "akka-stream-testkit"
-        
+
         // TODO enable once not experimental anymore
         // "akka-http-experimental",
         // "akka-http-jackson-experimental",
@@ -1026,11 +1026,14 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$")
       ), 
-      "2.4.14" -> Seq(        
+      "2.4.14" -> Seq(
         // #21645 durable distributed data
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.WriteAggregator.props"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.WriteAggregator.this"),
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.write")
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.write"),
+
+        // #20737 aligned test sink and test source stage factory methods types
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.TestSinkStage.apply")
       )
     )
   }
