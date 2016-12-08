@@ -267,6 +267,36 @@ class JsonFramingSpec extends AkkaSpec {
                                                       |   }
                                                       |}""".stripMargin
         }
+
+        "successfully parse an escaped backslash followed by a double quote" in {
+          val buffer = new JsonObjectParser()
+          buffer.offer(ByteString(
+            """
+              |{
+              | "key": "\\"
+              | }
+              | """.stripMargin
+          ))
+
+          buffer.poll().get.utf8String shouldBe """{
+                                          | "key": "\\"
+                                          | }""".stripMargin
+        }
+
+        "successfully parse a string that contains an escaped quote" in {
+          val buffer = new JsonObjectParser()
+          buffer.offer(ByteString(
+            """
+              |{
+              | "key": "\""
+              | }
+              | """.stripMargin
+          ))
+
+          buffer.poll().get.utf8String shouldBe """{
+                                                  | "key": "\""
+                                                  | }""".stripMargin
+        }
       }
 
       "has nested array" should {
