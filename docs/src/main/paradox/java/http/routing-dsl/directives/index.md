@@ -83,4 +83,38 @@ transformations, both (or either) on the request and on the response side.
 
 ## Composing Directives
 
-TODO rewrite for Java API
+
+As you have seen from the examples presented so far the "normal" way of composing directives is nesting.
+Let's take a look at this concrete example:
+
+@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #example1 }
+
+Here the `get` and `put` routes are chained together with using the `orElse` method to form a higher-level route that
+serves as the inner route of the `path` directive. Let's rewrite it in the following way:
+
+@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #getOrPut }
+
+In this previous example, we combined the `get` and `put` directives into one composed directive and extracted it to its own method, which could be reused anywhere else in our code.
+
+In case you are constantly nesting the same directives several times in you code, you could factor them out in their own method and use it everywhere:
+
+@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #composeNesting }
+
+Here we simple created our own combined directive that accepts either `GET` or `PUT` requests, then extracts the method and completes it with an inner route that takes this HTTP method as a parameter.
+
+As you have already seen in the previous section, you can also use the `route` method defined in `RouteDirectives` as an alternative to `orElse` chaining. Here you can see the first example again, rewritten using `route`:
+
+@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRoute }
+
+The `route` combinator comes handy when you want to avoid nesting. Here you can see an illustrative example:
+ 
+@@snip [DirectiveExamplesTest.java](../../../../../../test/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRouteBig }
+
+Notice how you could adjust the indentation in these last two examples to have a more readable code.
+
+Note that going too far with "compressing" several directives into a single one probably doesn't result in the most
+readable and therefore maintainable routing code. It might even be that the very first of this series of examples, or the analogous one using `route`,
+is in fact the most readable one.
+
+Still, the purpose of the exercise presented here is to show you how flexible directives can be and how you can
+use their power to define your web service behavior at the level of abstraction that is right for **your** application.
