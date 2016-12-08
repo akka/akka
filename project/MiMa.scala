@@ -23,6 +23,7 @@ object MiMa extends AutoPlugin {
     val versions = {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
       val akka24StreamVersions = (2 to 11) map ("2.4." + _)
+      val akka24WithScala212 = (12 to 13) map ("2.4." + _)
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
@@ -30,7 +31,8 @@ object MiMa extends AutoPlugin {
         "akka-stream-testkit"
       )
       scalaBinaryVersion match {
-        case "2.11" => (if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions else Seq.empty) ++ akka24StreamVersions
+        case "2.11" => (if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions else Seq.empty) ++ akka24StreamVersions ++ akka24WithScala212
+        case "2.12" => akka24WithScala212
       }
     }
 
@@ -363,7 +365,6 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.deprecatedAndThen")
       ),
       "2.4.7" -> Seq(
-        FilterAnyProblemStartingWith("akka.stream.impl"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializer.downcast"),
         FilterAnyProblemStartingWith("akka.cluster.pubsub.DistributedPubSubMediator$Internal"),
 
@@ -426,9 +427,7 @@ object MiMa extends AutoPlugin {
 
         // #20942 ClusterSingleton
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.singleton.ClusterSingletonManager.addRemoved"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.singleton.ClusterSingletonManager.selfAddressOption"),
-
-        FilterAnyProblemStartingWith("akka.stream.impl")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.singleton.ClusterSingletonManager.selfAddressOption")
       ),
       "2.4.9" -> Seq(
         // #21025 new orElse flow op
@@ -558,6 +557,14 @@ object MiMa extends AutoPlugin {
         // #20553 Tree flattening should be separate from Fusing
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$")
+      ),
+      "2.4.13" -> Seq(
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+
+        // extension method isEmpty$extension(Int)Boolean in object akka.remote.artery.compress.TopHeavyHitters#HashCodeVal does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.TopHeavyHitters#HashCodeVal.isEmpty$extension"),
+        // isEmpty()Boolean in class akka.remote.artery.compress.TopHeavyHitters#HashCodeVal does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.TopHeavyHitters#HashCodeVal.isEmpty")
       ),
       "2.4.14" -> Seq(
         // #21423 removal of deprecated stages (in 2.5.x)
