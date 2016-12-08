@@ -62,8 +62,8 @@ class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
 
       flowOutProbe.sendComplete()
       upstreamProbe.expectCancellation()
-      flowInProbe.expectError(One2OneBidiFlow.OutputTruncationException)
-      downstreamProbe.expectError(One2OneBidiFlow.OutputTruncationException)
+      flowInProbe.expectError(One2OneBidiFlow.OutputTruncationException(1))
+      downstreamProbe.expectError(One2OneBidiFlow.OutputTruncationException(1))
     }
 
     "trigger an `UnexpectedOutputException` if the wrapped stream produces out-of-order elements" in assertAllStagesStopped {
@@ -76,7 +76,7 @@ class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
 
         outOut.request(1)
         outIn.sendNext(3)
-        outOut.expectError(new One2OneBidiFlow.UnexpectedOutputException(3))
+        outOut.expectError(One2OneBidiFlow.UnexpectedOutputException(3))
       }
     }
 

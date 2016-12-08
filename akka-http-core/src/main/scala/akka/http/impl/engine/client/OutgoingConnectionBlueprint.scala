@@ -28,6 +28,8 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.{ InHandler, OutHandler }
 import akka.http.impl.util.LogByteStringTools._
 
+import scala.util.control.NoStackTrace
+
 /**
  * INTERNAL API
  */
@@ -120,7 +122,10 @@ private[http] object OutgoingConnectionBlueprint {
         terminationFanout.out(1))
     })
 
-    One2OneBidiFlow[HttpRequest, HttpResponse](-1) atop
+    One2OneBidiFlow[HttpRequest, HttpResponse](
+      -1,
+      outputTruncationException = new UnexpectedConnectionClosureException(_)
+    ) atop
       core atop
       logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes)
   }
@@ -352,4 +357,7 @@ private[http] object OutgoingConnectionBlueprint {
       override def preStart(): Unit = getNextMethod()
     }
   }
+
+  class UnexpectedConnectionClosureException(outstandingResponses: Int)
+    extends RuntimeException(s"The http server closed the connection unexpectedly before delivering responses for $outstandingResponses outstanding requests")
 }

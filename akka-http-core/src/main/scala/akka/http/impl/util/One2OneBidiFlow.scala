@@ -15,10 +15,10 @@ import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
  */
 private[http] object One2OneBidiFlow {
 
-  case class UnexpectedOutputException(element: Any) extends RuntimeException(element.toString) with NoStackTrace
-  case object OutputTruncationException
-    extends RuntimeException("Inner stream finished before inputs completed. Outputs might have been truncated.")
-    with NoStackTrace
+  case class UnexpectedOutputException(element: Any)
+    extends RuntimeException(s"Inner flow produced unexpected result element '$element' when no element was outstanding")
+  case class OutputTruncationException(missingOutputElements: Int)
+    extends RuntimeException(s"Inner flow was completed without producing result elements for $missingOutputElements outstanding elements")
 
   /**
    * Creates a generic ``BidiFlow`` which verifies that another flow produces exactly one output element per
@@ -33,8 +33,11 @@ private[http] object One2OneBidiFlow {
    * 4. Backpressures the input side if the maximum number of pending output elements has been reached,
    *    which is given via the ``maxPending`` parameter. You can use -1 to disable this feature.
    */
-  def apply[I, O](maxPending: Int): BidiFlow[I, I, O, O, NotUsed] =
-    BidiFlow.fromGraph(new One2OneBidi[I, O](maxPending))
+  def apply[I, O](
+    maxPending:                Int,
+    outputTruncationException: Int ⇒ Throwable = OutputTruncationException,
+    unexpectedOutputException: Any ⇒ Throwable = UnexpectedOutputException): BidiFlow[I, I, O, O, NotUsed] =
+    BidiFlow.fromGraph(new One2OneBidi[I, O](maxPending, outputTruncationException, unexpectedOutputException))
 
   /*
    *    +--------------------+
@@ -43,7 +46,10 @@ private[http] object One2OneBidiFlow {
    * <~ | out    fromWrapped | <~
    *    +--------------------+
    */
-  class One2OneBidi[I, O](maxPending: Int) extends GraphStage[BidiShape[I, I, O, O]] {
+  class One2OneBidi[I, O](
+    maxPending:                Int,
+    outputTruncationException: Int ⇒ Throwable,
+    unexpectedOutputException: Any ⇒ Throwable) extends GraphStage[BidiShape[I, I, O, O]] {
     val in = Inlet[I]("One2OneBidi.in")
     val out = Outlet[O]("One2OneBidi.out")
     val toWrapped = Outlet[I]("One2OneBidi.toWrapped")
@@ -83,10 +89,10 @@ private[http] object One2OneBidiFlow {
               pullSuppressed = false
               if (!isClosed(in)) pull(in)
             }
-          } else throw new UnexpectedOutputException(element)
+          } else failStage(unexpectedOutputException(element))
         }
         override def onUpstreamFinish(): Unit = {
-          if (insideWrappedFlow > 0) throw OutputTruncationException
+          if (insideWrappedFlow > 0) failStage(outputTruncationException(insideWrappedFlow))
           else completeStage()
         }
       })
