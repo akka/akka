@@ -35,7 +35,10 @@ object ParadoxSupport {
     def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit =
       try {
         val labels = node.attributes.values("identifier").asScala.map(_.toLowerCase())
-        val file = new File(page.file.getParentFile, node.source)
+        val file = node.source match {
+          case direct: DirectiveNode.Source.Direct => new File(page.file.getParentFile, direct.value)
+          case _                                   => sys.error("Source references are not supported")
+        }
 
         val Signature = """\s*((def|val|type) (\w+)(?=[:(\[]).*)(\s+\=.*)""".r // stupid approximation to match a signature
         //println(s"Looking for signature regex '$Signature'")

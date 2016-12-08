@@ -146,11 +146,16 @@ lazy val docs = project("docs")
       "akka.version" -> Dependencies.akkaVersion,
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scala.version" -> scalaVersion.value,
+      "scaladoc.version" -> scalaVersion.value,
       "crossString" -> (scalaVersion.value match {
         case akka.Doc.BinVer(_) => ""
         case _                  => "cross CrossVersion.full"
       }),
       "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion}/%s",
+      "javadoc.akka.http.base_url" -> {
+        val v = if (isSnapshot.value) "current" else version.value
+        s"http://doc.akka.io/japi/akka-http/$v"
+      },
       "github.base_url" -> GitHub.url(version.value)
     ),
     Formatting.docFormatSettings,
