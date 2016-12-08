@@ -40,9 +40,10 @@ private[akka] class LoggerMailbox(owner: ActorRef, system: ActorSystem)
       // Drain all remaining messages to the StandardOutLogger.
       // cleanUp is called after switching out the mailbox, which is why
       // this kind of look works without a limit.
+      val loggingEnabled = Logging.AllLogLevels.contains(logLevel)
       while (envelope ne null) {
         // skip logging if level is OFF
-        if (Logging.AllLogLevels.contains(logLevel))
+        if (loggingEnabled)
           envelope.message match {
             case e: LogEvent if e.level <= logLevel ⇒
               // Logging.StandardOutLogger is a MinimalActorRef, i.e. not a "real" actor
