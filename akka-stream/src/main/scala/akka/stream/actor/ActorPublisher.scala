@@ -12,7 +12,6 @@ import concurrent.duration.FiniteDuration
 import akka.stream.impl.CancelledSubscription
 import akka.stream.impl.ReactiveStreamsCompliance._
 
-@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 object ActorPublisher {
 
@@ -125,7 +124,6 @@ object ActorPublisherMessage {
  * 
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 trait ActorPublisher[T] extends Actor {
   import ActorPublisher.Internal._
@@ -497,7 +495,6 @@ abstract class AbstractActorPublisherWithStash[T] extends AbstractActor with Act
  * 
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 abstract class AbstractActorPublisherWithUnboundedStash[T] extends AbstractActor with ActorPublisher[T] with UnboundedStash
 
@@ -508,6 +505,5 @@ abstract class AbstractActorPublisherWithUnboundedStash[T] extends AbstractActor
  * 
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
-@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 abstract class AbstractActorPublisherWithUnrestrictedStash[T] extends AbstractActor with ActorPublisher[T] with UnrestrictedStash
