@@ -22,7 +22,7 @@ object MiMa extends AutoPlugin {
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions = {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka24StreamVersions = (2 to 8) map ("2.4." + _)
+      val akka24StreamVersions = (2 to 9) map ("2.4." + _)
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
@@ -322,9 +322,6 @@ object MiMa extends AutoPlugin {
         // internal api
         FilterAnyProblemStartingWith("akka.stream.impl"),
 
-        // #20888 new FoldAsync op for Flow
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync"),
-
         // #20214 SNI disabling for single connections (AkkaSSLConfig being passed around)
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.sslConfig"), // class meant only for internal extension
 
@@ -432,8 +429,6 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.singleton.ClusterSingletonManager.addRemoved"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.singleton.ClusterSingletonManager.selfAddressOption"),
 
-        // method create(java.lang.Class,Array[java.lang.Object])akka.actor.Props in object akka.actor.Props in current version does not have a correspondent with same parameter signature among (java.lang.Class,akka.japi.Creator)akka.actor.Props, (java.lang.Class,scala.collection.Seq)akka.actor.Props
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.Props.create"),
         FilterAnyProblemStartingWith("akka.stream.impl")
       ),
       "2.4.9" -> Seq(
@@ -454,7 +449,17 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ws.BinaryMessage.getStreamedData"),
 
         // #21273 minor cleanup of WildcardIndex
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardIndex.empty")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardIndex.empty"),
+
+        // #20888 new FoldAsync op for Flow
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync"),
+
+        // method create(java.lang.Class,Array[java.lang.Object])akka.actor.Props in object akka.actor.Props in current version does not have a correspondent with same parameter signature among (java.lang.Class,akka.japi.Creator)akka.actor.Props, (java.lang.Class,scala.collection.Seq)akka.actor.Props
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.Props.create"),
+
+        // method ChaseLimit()Int in object akka.stream.impl.fusing.GraphInterpreter does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.ChaseLimit"),
+        FilterAnyProblemStartingWith("akka.http.impl.engine")
       ),
       "2.4.10" -> Seq(
         // #21290 new zipWithIndex flow op
