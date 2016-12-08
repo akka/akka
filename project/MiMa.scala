@@ -22,7 +22,7 @@ object MiMa extends AutoPlugin {
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions = {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka24StreamVersions = (2 to 10) map ("2.4." + _)
+      val akka24StreamVersions = (2 to 11) map ("2.4." + _)
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
@@ -109,7 +109,6 @@ object MiMa extends AutoPlugin {
       "2.4.2" -> Seq(
         //internal API
         FilterAnyProblemStartingWith("akka.http.impl"),
-        FilterAnyProblemStartingWith("akka.stream.impl"),
 
         ProblemFilters.exclude[FinalClassProblem]("akka.stream.stage.GraphStageLogic$Reading"), // this class is private
 
@@ -462,9 +461,6 @@ object MiMa extends AutoPlugin {
         // #21290 new zipWithIndex flow op
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipWithIndex"),
 
-        // #21541 new ScanAsync flow op
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.scanAsync"),
-
         // Remove useUntrustedMode which is an internal API and not used anywhere anymore
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.Remoting.useUntrustedMode"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteTransport.useUntrustedMode"),
@@ -486,8 +482,6 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatorMessages#UniqueAddressOrBuilder.getUid2"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteWatcher.receiveHeartbeatRsp"),
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.RemoteWatcher.selfHeartbeatRspMsg"),
-        // #21330 takeWhile inclusive flag
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.takeWhile"),
 
         // #21131 new implementation for Akka Typed
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.isWatching"),
@@ -513,7 +507,47 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.LocalActorRefProvider.log"),
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.VirtualPathContainer.log"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.VirtualPathContainer.this"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteSystemDaemon.this")
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteSystemDaemon.this"),
+
+        //  method this(akka.actor.ExtendedActorSystem,akka.remote.RemoteActorRefProvider,akka.event.LoggingAdapter)Unit in class akka.remote.DefaultMessageDispatcher's type is different in current version, where it is (akka.actor.ExtendedActorSystem,akka.remote.RemoteActorRefProvider,akka.event.MarkerLoggingAdapter)Unit instead of (akka.actor.ExtendedActorSystem,akka.remote.RemoteActorRefProvider,akka.event.LoggingAdapter)Unit
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.DefaultMessageDispatcher.this"),
+        // trait akka.remote.artery.StageLogging does not have a correspondent in current version
+        ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.StageLogging"),
+        // method SSLProtocol()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLProtocol"),
+        // method SSLTrustStorePassword()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLTrustStorePassword"),
+        // method SSLKeyStorePassword()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLKeyStorePassword"),
+        // method SSLRandomNumberGenerator()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLRandomNumberGenerator"),
+        // method SSLKeyPassword()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLKeyPassword"),
+        // method SSLKeyStore()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLKeyStore"),
+        //  method SSLTrustStore()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLTrustStore"),
+        // method initializeClientSSL(akka.remote.transport.netty.SSLSettings,akka.event.LoggingAdapter)org.jboss.netty.handler.ssl.SslHandler in object akka.remote.transport.netty.NettySSLSupport does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.NettySSLSupport.initializeClientSSL"),
+        // method apply(akka.remote.transport.netty.SSLSettings,akka.event.LoggingAdapter,Boolean)org.jboss.netty.handler.ssl.SslHandler in object akka.remote.transport.netty.NettySSLSupport's type is different in current version, where it is (akka.remote.transport.netty.SSLSettings,akka.event.MarkerLoggingAdapter,Boolean)org.jboss.netty.handler.ssl.SslHandler instead of (akka.remote.transport.netty.SSLSettings,akka.event.LoggingAdapter,Boolean)org.jboss.netty.handler.ssl.SslHandler
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.transport.netty.NettySSLSupport.apply"),
+        // initializeCustomSecureRandom(scala.Option,akka.event.LoggingAdapter)java.security.SecureRandom in object akka.remote.transport.netty.NettySSLSupport does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.NettySSLSupport.initializeCustomSecureRandom"),
+        // method initializeServerSSL(akka.remote.transport.netty.SSLSettings,akka.event.LoggingAdapter)org.jboss.netty.handler.ssl.SslHandler in object akka.remote.transport.netty.NettySSLSupport does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.NettySSLSupport.initializeServerSSL"),
+        // abstract method makeLogger(java.lang.Class)akka.event.LoggingAdapter in interface akka.stream.MaterializerLoggingProvider is inherited by class ActorMaterializer in current version.
+        ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.MaterializerLoggingProvider.makeLogger"),
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+        // synthetic method currentEventsByTag$default$2()Long in class akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal has a different result type in current version, where it is akka.persistence.query.Offset rather than Long
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal.currentEventsByTag$default$2"),
+        // synthetic method eventsByTag$default$2()Long in class akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal has a different result type in current version, where it is akka.persistence.query.Offset rather than Long
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal.eventsByTag$default$2"),
+
+        // #21330 takeWhile inclusive flag
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.takeWhile"),
+
+        // #21541 new ScanAsync flow op
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.scanAsync")
       ),
       "2.4.12" -> Seq(
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.materialize"),
