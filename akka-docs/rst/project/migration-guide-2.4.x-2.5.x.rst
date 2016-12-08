@@ -34,6 +34,23 @@ would now be::
 
 as the ``GraphStage`` itself is a factory of logic instances.
 
+Deprecation of ActorSubscriber and ActorPublisher
+-------------------------------------------------
+
+The classes ``ActorPublisher`` and ``ActorSubscriber`` were the first user-facing Reactive Streams integration
+API that we provided for end-users. Akka Streams APIs have evolved and improved a lot since then, and now
+there is no need to use these low-level abstractions anymore. It is easy to get things wrong when implementing them,
+and one would have to validate each implementation of such Actor using the Reactive Streams Technology Compatibility Kit.
+
+The replacement API is the powerful ``GraphStage``. It has all features that raw Actors provided for implementing Stream 
+stages and adds additional protocol and type-safety. You can learn all about it in the documentation: 
+:ref:`stream-customize-scala`and :ref:`Custom stream processing in JavaDSL <stream-customize-java>`. 
+
+You should also read the blog post series on the official team blog, starting with `Mastering GraphStages, part I`_,
+which explains using and implementing GraphStages in more practical terms than the reference documentation.
+
+.. _Mastering GraphStages, part I: http://blog.akka.io/streams/2016/07/30/mastering-graph-stage-part-1
+
 Agents
 ======
 
