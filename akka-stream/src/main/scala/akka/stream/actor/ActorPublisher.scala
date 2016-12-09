@@ -121,7 +121,7 @@ object ActorPublisherMessage {
  *
  * If the actor is stopped the stream will be completed, unless it was not already terminated with
  * failure, completed or canceled.
- * 
+ *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
@@ -472,7 +472,7 @@ object AbstractActorPublisher {
 /**
  * Java API compatible with lambda expressions
  * @see [[akka.stream.actor.ActorPublisher]]
- * 
+ *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
@@ -482,7 +482,7 @@ abstract class AbstractActorPublisher[T] extends AbstractActor with ActorPublish
  * Java API compatible with lambda expressions.
  * This class adds a Stash to {@link AbstractActorPublisher}.
  * @see [[akka.stream.actor.ActorPublisher]] and [[akka.stream.actor.AbstractActorWithStash]]
- * 
+ *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
@@ -492,7 +492,7 @@ abstract class AbstractActorPublisherWithStash[T] extends AbstractActor with Act
  * Java API compatible with lambda expressions.
  * This class adds an unbounded Stash to {@link AbstractActorPublisher}.
  * @see [[akka.stream.actor.ActorPublisher]] and [[akka.stream.actor.AbstractActorWithUnboundedStash]]
- * 
+ *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
@@ -502,7 +502,7 @@ abstract class AbstractActorPublisherWithUnboundedStash[T] extends AbstractActor
  * Java API compatible with lambda expressions.
  * This class adds an unrestricted Stash to {@link AbstractActorPublisher}.
  * @see [[akka.stream.actor.ActorPublisher]] and [[akka.stream.actor.AbstractActorWithUnrestrictedStash]]
- * 
+ *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
