@@ -1,8 +1,8 @@
 .. _migration-guide-2.4.x-2.5.x:
 
-#######################################
-Upcoming Migration Guide 2.4.x to 2.5.x
-#######################################
+##############################
+Migration Guide 2.4.x to 2.5.x
+##############################
 
 Akka Streams
 ============
@@ -79,3 +79,19 @@ A new :ref:`persistence plugin proxy<persistence-plugin-proxy>` was added, that 
 non-sharable journal or snapshot store. The proxy is available by setting ``akka.persistence.journal.plugin`` or
 ``akka.persistence.snapshot-store.plugin`` to ``akka.persistence.journal.proxy`` or ``akka.persistence.snapshot-store.proxy``,
 respectively. The proxy supplants the :ref:`Shared LevelDB journal<shared-leveldb-journal>`.
+
+
+Cluster
+=======
+
+Cluster Management Command Line Tool
+------------------------------------
+
+There is a new cluster management tool with HTTP API that has the same functionality as the command line tool.
+The HTTP API gives you access to cluster membership information as JSON including full reachability status between the nodes.
+It supports the ordinary cluster operations such as join, leave, and down.
+
+See documentation of `akka/akka-cluster-management <https://github.com/akka/akka-cluster-management>`_.
+
+The command line script for cluster management has been deprecated and is scheduled for removal 
+in the next major version. Use the HTTP API with `curl <https://curl.haxx.se/>`_ or similar instead.
