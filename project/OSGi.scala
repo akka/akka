@@ -19,6 +19,7 @@ object OSGi {
     // This will fail the build instead of accidentally removing classes from the resulting artifact.
     // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
     OsgiKeys.failOnUndecidedPackage := true,
+    // By default an entry is generated from module group-id, but our modules do not adhere to such package naming
     OsgiKeys.privatePackage := Seq()
   )
 
