@@ -198,7 +198,7 @@ a vector clock for versioning, so the variant of push-pull gossip used in Akka
 makes use of this version to only push the actual state as needed.
 
 Periodically, the default is every 1 second, each node chooses another random
-node to initiate a round of gossip with. If less than ½ of the nodes resides in the
+node to initiate a round of gossip with. If less than half of the nodes resides in the
 seen set (have seen the new state) then the cluster gossips 3 times instead of once
 every second. This adjusted gossip interval is a way to speed up the convergence process
 in the early dissemination phase after a state change.
@@ -356,3 +356,4 @@ Failure Detection and Unreachability
     to the state signaling that the cluster is unable to talk to this node,
     after being unreachable the failure detector may detect it as reachable
     again and thereby remove the flag
+	

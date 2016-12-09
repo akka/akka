@@ -644,12 +644,12 @@ used with it.
 
 Previously:
 
-    def deliver(destination: ActorPath, deliveryIdToMessage: Long ⇒ Any): Unit
+    def deliver(destination: ActorPath, deliveryIdToMessage: Long => Any): Unit
 
 Now:
 
-    def deliver(destination: ActorSelection)(deliveryIdToMessage: Long ⇒ Any): Unit
-    def deliver(destination: ActorPath)(deliveryIdToMessage: Long ⇒ Any): Unit
+    def deliver(destination: ActorSelection)(deliveryIdToMessage: Long => Any): Unit
+    def deliver(destination: ActorPath)(deliveryIdToMessage: Long => Any): Unit
 
 The Java API remains unchanged and has simply gained the 2nd overload which allows ``ActorSelection`` to be
 passed in directly (without converting to ``ActorPath``).

@@ -1,0 +1,16 @@
+/**
+ * Copyright (C) 2014-2015 Lightbend Inc. <http://www.lightbend.com>
+ */
+package docs.persistence;
+
+//#protobuf-read-optional-proto
+// FlightAppModels.proto
+option java_package = "docs.persistence.proto";
+option optimize_for = SPEED;
+
+message SeatReserved {
+  required string letter   = 1;
+  required uint32 row      = 2;
+  optional string seatType = 3; // the new field
+}
+//#protobuf-read-optional-proto

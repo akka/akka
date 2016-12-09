@@ -332,5 +332,5 @@ filling in will they be transferred into the real mailbox. Thus,
    assert(MyCustomMailbox.getInstance().getLastEnqueued().equals("bang"));
 
 will probably fail; you will have to allow for some time to pass and retry the
-check à la :meth:`TestKit.awaitCond`.
+check a la :meth:`TestKit.awaitCond`.
 

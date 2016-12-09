@@ -87,6 +87,7 @@ dispatcher to use, see more below). Here are some examples of how to create a
 :class:`Props` instance.
 
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#import-props
+
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#creating-props
 
 The second variant shows how to pass constructor arguments to the
@@ -151,6 +152,7 @@ Actors are created by passing a :class:`Props` instance into the
 :class:`ActorContext`.
 
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#import-actorRef
+
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#system-actorOf
 
 Using the :class:`ActorSystem` will create top-level actors, supervised by the
@@ -193,6 +195,7 @@ constructor arguments are determined by a dependency injection framework.
 __ Props_
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-indirect
+
 .. includecode:: code/docs/actor/UntypedActorDocTest.java
    :include: creating-indirectly
    :exclude: obtain-fresh-Actor-instance-from-DI-framework
@@ -483,6 +486,7 @@ negative result is generated. Please note that this does not mean that delivery
 of that reply is guaranteed, it still is a normal message.
 
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#import-identify
+
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#identify
 
 You can also acquire an :class:`ActorRef` for an :class:`ActorSelection` with
@@ -560,6 +564,7 @@ The ``ask`` pattern involves actors as well as futures, hence it is offered as
 a use pattern rather than a method on :class:`ActorRef`:
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#import-ask
+
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#ask-pipe
 
 This example demonstrates ``ask`` together with the ``pipe`` pattern on

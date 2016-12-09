@@ -454,7 +454,9 @@ The example below highlights how messages arrive in the Actor's mailbox and how 
 mechanism when ``persist()`` is used. Notice the early stop behaviour that occurs when ``PoisonPill`` is used:
 
 .. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#safe-shutdown
+
 .. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#safe-shutdown-example-bad
+
 .. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#safe-shutdown-example-good
 
 .. _persistent-views-java-lambda:
