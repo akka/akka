@@ -238,7 +238,7 @@ object Source {
    * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
    * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
    * be [[akka.stream.actor.ActorPublisher]].
-   * 
+   *
    * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
    */
   @deprecated("Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")

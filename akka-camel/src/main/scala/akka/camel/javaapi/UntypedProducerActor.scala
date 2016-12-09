@@ -11,7 +11,7 @@ import org.apache.camel.impl.DefaultCamelContext
 
 /**
  * Subclass this abstract class to create an untyped producer actor. This class is meant to be used from Java.
- * 
+ *
  * @deprecated Akka Camel is deprecated since 2.5.0 in favour of 'Alpakka', the Akka Streams based collection of integrations to various endpoints (including Camel).
  */
 @Deprecated
