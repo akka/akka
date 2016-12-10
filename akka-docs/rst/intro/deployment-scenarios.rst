@@ -27,7 +27,7 @@ Define sbt version in ``project/build.properties`` file:
 
 .. code-block:: none
 
-    sbt.version=0.13.7
+    sbt.version=0.13.12
 
 Add `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ in ``project/plugins.sbt`` file:
 
