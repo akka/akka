@@ -82,24 +82,6 @@ package util {
   import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
   import scala.concurrent.duration.FiniteDuration
 
-  /**
-   * Maps error with the provided function if it is defined for an error or, otherwise, passes it on unchanged.
-   */
-  private[http] final case class MapError[T](f: PartialFunction[Throwable, Throwable]) extends SimpleLinearGraphStage[T] {
-    override def createLogic(attr: Attributes) =
-      new GraphStageLogic(shape) with InHandler with OutHandler {
-        override def onPush(): Unit = push(out, grab(in))
-
-        override def onUpstreamFailure(ex: Throwable): Unit =
-          if (f.isDefinedAt(ex)) super.onUpstreamFailure(f(ex))
-          else super.onUpstreamFailure(ex)
-
-        override def onPull(): Unit = pull(in)
-
-        setHandlers(in, out, this)
-      }
-  }
-
   private[http] class ToStrict(timeout: FiniteDuration, contentType: ContentType)
     extends GraphStage[FlowShape[ByteString, HttpEntity.Strict]] {
 

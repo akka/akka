@@ -2,3 +2,7 @@
 
 # Internal class change
 FilterAnyProblemStartingWith("akka.http.impl.util.One2OneBidiFlow")
+
+# Removal of internal MapError since present as method on Flow in Akka 2.4.16
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.MapError")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.MapError$")
