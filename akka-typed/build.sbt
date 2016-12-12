@@ -14,5 +14,3 @@ initialCommands := """
   import akka.util.Timeout
   implicit val timeout = Timeout(5.seconds)
 """
-
-cancelable in Global := true
