@@ -3,11 +3,6 @@
 
 Akka HTTP supports TLS encryption on the client-side as well as on the @ref[server-side](../server-side-https-support.md#serversidehttps-scala).
 
-@@@ warning
-Akka HTTP 1.0 does not completely validate certificates when using HTTPS. Please do not treat HTTPS connections
-made with this version as secure. Requests are vulnerable to a Man-In-The-Middle attack via certificate substitution.
-@@@
-
 The central vehicle for configuring encryption is the `HttpsConnectionContext`, which can be created using
 the static method `ConnectionContext.https` which is defined like this:
 
@@ -56,7 +51,7 @@ Akka HTTP relies on [Typesafe SSL-Config](http://typesafehub.github.io/ssl-confi
 things related to SSL/TLS much simpler than using the raw SSL APIs provided by the JDK. Please refer to its
 documentation to learn more about it.
 
-All configuration options available to this library may be set under the `akka.ssl-context` configuration for Akka HTTP applications.
+All configuration options available to this library may be set under the `akka.ssl-config` configuration for Akka HTTP applications.
 
 @@@ note
 When encountering problems connecting to HTTPS hosts we highly encourage to reading up on the excellent ssl-config
