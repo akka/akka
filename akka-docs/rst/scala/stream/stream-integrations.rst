@@ -437,6 +437,14 @@ These can be consumed by other Reactive Stream libraries or used as an Akka Stre
 ActorPublisher
 --------------
 
+.. warning::
+  **Deprecation warning:** ``ActorPublisher`` is deprecated in favour of the vastly more 
+  type-safe and safe to implement :class:`akka.stream.stage.GraphStage`. It can also 
+  expose a "stage actor ref" is needed to be addressed as-if an Actor. 
+  Custom stages implemented using ``GraphStage`` are also automatically fusable.
+  
+  To learn more about implementing custom stages using it refer to :ref:`graphstage-scala`.
+
 Extend/mixin :class:`akka.stream.actor.ActorPublisher` in your :class:`Actor` to make it a
 stream publisher that keeps track of the subscription life cycle and requested elements.
 
@@ -481,6 +489,14 @@ subscription attempts will be rejected with an :class:`IllegalStateException`.
 
 ActorSubscriber
 ---------------
+
+.. warning::
+  **Deprecation warning:** ``ActorSubscriber`` is deprecated in favour of the vastly more 
+  type-safe and safe to implement :class:`akka.stream.stage.GraphStage`. It can also 
+  expose a "stage actor ref" is needed to be addressed as-if an Actor. 
+  Custom stages implemented using ``GraphStage`` are also automatically fusable.
+  
+  To learn more about implementing custom stages using it refer to :ref:`graphstage-scala`.
 
 Extend/mixin :class:`akka.stream.actor.ActorSubscriber` in your :class:`Actor` to make it a
 stream subscriber with full control of stream back pressure. It will receive

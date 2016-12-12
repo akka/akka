@@ -443,7 +443,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     override def run(): Unit = {
       if (hasBeenShutdown.compareAndSet(false, true)) {
         log.debug("Shutting down [{}] via shutdownHook", localAddress)
-        Await.result(internalShutdown(), 20.seconds)
+        Await.result(internalShutdown(), settings.Advanced.DriverTimeout + 3.seconds)
       }
     }
   }
@@ -984,11 +984,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       createFlightRecorderEventSink()))
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
-    val originAddress = m.association match {
-      case OptionVal.Some(a) ⇒ OptionVal.Some(a.remoteAddress)
-      case OptionVal.None    ⇒ OptionVal.None
-    }
-    messageDispatcher.dispatch(m.recipient.get, m.message, m.sender, originAddress)
+    messageDispatcher.dispatch(m)
     m match {
       case r: ReusableInboundEnvelope ⇒ inboundEnvelopePool.release(r)
       case _                          ⇒

@@ -7,7 +7,7 @@ package akka.remote
 import akka.remote.WireFormats._
 import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
-import akka.remote.artery.{ EnvelopeBuffer, HeaderBuilder }
+import akka.remote.artery.{ EnvelopeBuffer, HeaderBuilder, OutboundEnvelope }
 import akka.serialization.Serialization
 import akka.serialization.ByteBufferSerializer
 import akka.serialization.SerializationExtension
@@ -63,7 +63,8 @@ private[akka] object MessageSerializer {
     }
   }
 
-  def serializeForArtery(serialization: Serialization, message: AnyRef, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): Unit = {
+  def serializeForArtery(serialization: Serialization, outboundEnvelope: OutboundEnvelope, headerBuilder: HeaderBuilder, envelope: EnvelopeBuffer): Unit = {
+    val message = outboundEnvelope.message
     val serializer = serialization.findSerializerFor(message)
 
     headerBuilder setSerializer serializer.identifier
@@ -76,11 +77,11 @@ private[akka] object MessageSerializer {
     serializer match {
       case ser: ByteBufferSerializer ⇒
         headerBuilder setManifest manifest
-        envelope.writeHeader(headerBuilder)
+        envelope.writeHeader(headerBuilder, outboundEnvelope)
         ser.toBinary(message, envelope.byteBuffer)
       case _ ⇒
         headerBuilder setManifest manifest
-        envelope.writeHeader(headerBuilder)
+        envelope.writeHeader(headerBuilder, outboundEnvelope)
         envelope.byteBuffer.put(serializer.toBinary(message))
     }
   }
