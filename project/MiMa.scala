@@ -544,9 +544,6 @@ object MiMa extends AutoPlugin {
         // #21131 new implementation for Akka Typed
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.isWatching"),
 
-        // method create(java.lang.Class,Array[java.lang.Object])akka.actor.Props in object akka.actor.Props in current version does not have a correspondent with same parameter signature among (java.lang.Class,akka.japi.Creator)akka.actor.Props, (java.lang.Class,scala.collection.Seq)akka.actor.Props
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.Props.create"),
-
         // class akka.stream.impl.fusing.Map is declared final in current version
         ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.fusing.Map")
       ),
