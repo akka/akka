@@ -50,8 +50,13 @@ import java.util.Arrays;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
+
+import scala.compat.java8.FutureConverters;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
 import org.junit.ClassRule;
@@ -65,6 +70,8 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.pattern.Patterns;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.*;
 
 public class FutureDocTest extends AbstractJavaTest {
@@ -523,6 +530,131 @@ public class FutureDocTest extends AbstractJavaTest {
     //#after
     Await.result(result, Duration.create(2, SECONDS));
   }
+
+  @Test
+  public void thenApplyCompletionThread() throws Exception {
+    //#apply-completion-thread
+    final ExecutionContext ec = system.dispatcher();
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+
+    Future<String> scalaFuture = Futures.future(() -> {
+      assertThat(Thread.currentThread().getName(), containsString("akka.actor.default-dispatcher"));
+      countDownLatch.await(); // do not complete yet
+      return "hello";
+    }, ec);
+
+    CompletionStage<String> fromScalaFuture = FutureConverters.toJava(scalaFuture)
+      .thenApply(s -> { // 1
+        assertThat(Thread.currentThread().getName(), containsString("ForkJoinPool.commonPool"));
+        return s;
+      })
+      .thenApply(s -> { // 2
+        assertThat(Thread.currentThread().getName(), containsString("ForkJoinPool.commonPool"));
+        return s;
+      })
+      .thenApply(s -> { // 3
+        assertThat(Thread.currentThread().getName(), containsString("ForkJoinPool.commonPool"));
+        return s;
+      });
+
+    countDownLatch.countDown(); // complete scalaFuture
+    //#apply-completion-thread
+
+    fromScalaFuture.toCompletableFuture().get(2, SECONDS);
+  }
+
+  @Test
+  public void thenApplyMainThread() throws Exception {
+    final ExecutionContext ec = system.dispatcher();
+
+    //#apply-main-thread
+    Future<String> scalaFuture = Futures.future(() -> {
+      assertThat(Thread.currentThread().getName(), containsString("akka.actor.default-dispatcher"));
+      return "hello";
+    }, ec);
+
+    CompletionStage<String> completedStage = FutureConverters.toJava(scalaFuture)
+      .thenApply(s -> { // 1
+        assertThat(Thread.currentThread().getName(), containsString("ForkJoinPool.commonPool"));
+        return s;
+      });
+
+    completedStage.toCompletableFuture().get(2, SECONDS); // complete current CompletionStage
+    final String currentThread = Thread.currentThread().getName();
+
+    CompletionStage<String> stage2 = completedStage
+      .thenApply(s -> { // 2
+        assertThat(Thread.currentThread().getName(), is(currentThread));
+        return s;
+      })
+      .thenApply(s -> { // 3
+        assertThat(Thread.currentThread().getName(), is(currentThread));
+        return s;
+      });
+    //#apply-main-thread
+
+    stage2.toCompletableFuture().get(2, SECONDS);
+  }
+
+  @Test
+  public void thenApplyAsyncDefault() throws Exception {
+    final ExecutionContext ec = system.dispatcher();
+
+    Future<String> scalaFuture = Futures.future(() -> {
+      assertThat(Thread.currentThread().getName(), containsString("akka.actor.default-dispatcher"));
+      return "hello";
+    }, ec);
+
+    //#apply-async-default
+    CompletionStage<String> fromScalaFuture = FutureConverters.toJava(scalaFuture)
+      .thenApplyAsync(s -> { // 1
+        assertThat(Thread.currentThread().getName(), containsString("ForkJoinPool.commonPool"));
+        return s;
+      })
+      .thenApplyAsync(s -> { // 2
+        assertThat(Thread.currentThread().getName(), containsString("ForkJoinPool.commonPool"));
+        return s;
+      })
+      .thenApplyAsync(s -> { // 3
+        assertThat(Thread.currentThread().getName(), containsString("ForkJoinPool.commonPool"));
+        return s;
+      });
+    //#apply-async-default
+
+    fromScalaFuture.toCompletableFuture().get(2, SECONDS);
+  }
+
+  @Test
+  public void thenApplyAsyncExecutor() throws Exception {
+    final ExecutionContext ec = system.dispatcher();
+
+    Future<String> scalaFuture = Futures.future(() -> {
+      assertThat(Thread.currentThread().getName(), containsString("akka.actor.default-dispatcher"));
+      return "hello";
+    }, ec);
+
+    //#apply-async-executor
+    final Executor ex = system.dispatcher();
+
+    CompletionStage<String> fromScalaFuture = FutureConverters.toJava(scalaFuture)
+      .thenApplyAsync(s -> {
+        assertThat(Thread.currentThread().getName(), containsString("akka.actor.default-dispatcher"));
+        return s;
+      }, ex)
+      .thenApplyAsync(s -> {
+        assertThat(Thread.currentThread().getName(), containsString("akka.actor.default-dispatcher"));
+        return s;
+      }, ex)
+      .thenApplyAsync(s -> {
+        assertThat(Thread.currentThread().getName(), containsString("akka.actor.default-dispatcher"));
+        return s;
+      }, ex);
+    //#apply-async-executor
+
+    fromScalaFuture.toCompletableFuture().get(2, SECONDS);
+  }
+
+
 
   public static class MyActor extends UntypedActor {
     public void onReceive(Object message) {
