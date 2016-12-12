@@ -8,12 +8,16 @@ import akka.event.LoggingAdapter
 import akka.japi.function
 import akka.stream._
 import akka.stream.impl.ConstantFun
+
 import scala.collection.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util
 import java.util.Comparator
 import java.util.concurrent.CompletionStage
+
+import akka.stream.impl.fusing.MapError
+
 import scala.compat.java8.FutureConverters._
 
 /**
@@ -717,6 +721,28 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    */
   def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): SubSource[T, Mat @uncheckedVariance] =
     new SubSource(delegate.recoverWithRetries(attempts, pf))
+
+  /**
+   * While similar to [[recover]] this stage can be used to transform an error signal to a different one *without* logging
+   * it as an error in the process. So in that sense it is NOT exactly equivalent to `recover(t => throw t2)` since recover
+   * would log the `t2` error.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * Similarily to [[recover]] throwing an exception inside `mapError` _will_ be logged.
+   *
+   * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
+  def mapError(pf: PartialFunction[Throwable, Throwable]): SubSource[Out, Mat] =
+    new SubSource(delegate.mapError(pf))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given

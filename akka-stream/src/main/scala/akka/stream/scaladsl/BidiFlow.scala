@@ -238,4 +238,5 @@ object BidiFlow {
    */
   def bidirectionalIdleTimeout[I, O](timeout: FiniteDuration): BidiFlow[I, I, O, O, NotUsed] =
     fromGraph(new Timers.IdleTimeoutBidi(timeout))
+
 }

@@ -4,8 +4,10 @@
 package akka.stream.impl.io
 
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
+import akka.NotUsed
 import akka.actor.{ ActorRef, Terminated }
 import akka.dispatch.ExecutionContexts
 import akka.io.Inet.SocketOption
@@ -15,13 +17,14 @@ import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
-import akka.stream.scaladsl.{ BidiFlow, Flow, Tcp ⇒ StreamTcp }
+import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp ⇒ StreamTcp }
 import akka.stream.stage._
 import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ Future, Promise }
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -111,7 +114,7 @@ private[stream] class ConnectionSourceStage(
 
         // FIXME: Previous code was wrong, must add new tests
         val handler = idleTimeout match {
-          case d: FiniteDuration ⇒ tcpFlow.join(BidiFlow.bidirectionalIdleTimeout[ByteString, ByteString](d))
+          case d: FiniteDuration ⇒ tcpFlow.join(TcpIdleTimeout(d, Some(connected.remoteAddress)))
           case _                 ⇒ tcpFlow
         }
 
@@ -353,4 +356,27 @@ private[stream] class OutgoingConnectionStage(
   }
 
   override def toString = s"TCP-to($remoteAddress)"
+}
+
+/** INTERNAL API */
+private[akka] object TcpIdleTimeout {
+  def apply(idleTimeout: FiniteDuration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
+    val connectionToString = remoteAddress match {
+      case Some(addr) ⇒ s"on connection to [$addr]"
+      case _          ⇒ ""
+    }
+
+    val toNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
+      BidiFlow.fromFlows(
+        Flow[ByteString].mapError { case t: TimeoutException ⇒ new TcpIdleTimeoutException(s"TCP idle-timeout encountered $connectionToString, no bytes passed in the last $idleTimeout", idleTimeout) },
+        Flow[ByteString]
+      )
+    val fromNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
+      BidiFlow.fromFlows(
+        Flow[ByteString],
+        Flow[ByteString].mapError { case t: TimeoutException ⇒ new TcpIdleTimeoutException(s"TCP idle-timeout encountered $connectionToString, no bytes passed in the last $idleTimeout", idleTimeout) }
+      )
+
+    fromNetTimeout atop BidiFlow.bidirectionalIdleTimeout[ByteString, ByteString](idleTimeout) atop toNetTimeout
+  }
 }
