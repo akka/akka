@@ -228,7 +228,7 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
         .withoutPath(s"""$journalPath.event-adapter-bindings."${classOf[EndToEndEventAdapterSpec].getCanonicalName}$$A"""")
 
       withActorSystem("MissingAdapterSystem", journalConfig.withFallback(missingAdapterConfig)) { implicit system2 ⇒
-        EventFilter[ActorInitializationException](occurrences = 1, pattern = ".*akka.persistence.journal.leveldb.*") intercept {
+        EventFilter[ActorInitializationException](occurrences = 1, pattern = ".*undefined event-adapter.*") intercept {
           intercept[IllegalArgumentException] {
             Persistence(system2).adaptersFor(s"akka.persistence.journal.$journalName").get(classOf[String])
           }.getMessage should include("was bound to undefined event-adapter: a (bindings: [a, b], known adapters: b)")
