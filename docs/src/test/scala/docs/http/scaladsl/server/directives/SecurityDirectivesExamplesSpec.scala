@@ -230,7 +230,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
   }
 
   "0authorize-0" in {
-    //#0authorize-0
+    //#authorize0-0
     case class User(name: String)
 
     // authenticate the user:
@@ -269,11 +269,11 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
       route ~> check {
         responseAs[String] shouldEqual "'Peter' visited Peter's lair"
       }
-    //#0authorize-0
+    //#authorize0-0
   }
 
   "0authorizeAsync" in {
-    //#0authorizeAsync
+    //#authorizeAsync0
     case class User(name: String)
 
     // authenticate the user:
@@ -313,11 +313,11 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
       route ~> check {
         responseAs[String] shouldEqual "'Peter' visited Peter's lair"
       }
-    //#0authorizeAsync
+    //#authorizeAsync0
   }
 
   "0extractCredentials" in {
-    //#0extractCredentials
+    //#extractCredentials0
     val route =
       extractCredentials { creds =>
         complete {
@@ -338,6 +338,6 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "No credentials"
     }
-    //#0extractCredentials
+    //#extractCredentials0
   }
 }

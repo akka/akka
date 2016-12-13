@@ -23,7 +23,7 @@ import scala.util.control.NonFatal
 
 class BasicDirectivesExamplesSpec extends RoutingSpec {
   "0extract" in {
-    //#0extract
+    //#extract0
     val uriLength = extract(_.request.uri.toString.length)
     val route =
       uriLength { len =>
@@ -34,10 +34,10 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abcdef") ~> route ~> check {
       responseAs[String] shouldEqual "The length of the request URI is 25"
     }
-    //#0extract
+    //#extract0
   }
   "0extractLog" in {
-    //#0extractLog
+    //#extract0Log
     val route =
       extractLog { log =>
         log.debug("I'm logging things in much detail..!")
@@ -48,7 +48,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abcdef") ~> route ~> check {
       responseAs[String] shouldEqual "It's amazing!"
     }
-    //#0extractLog
+    //#extract0Log
   }
   "withMaterializer-0" in {
     //#withMaterializer-0
@@ -152,7 +152,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     //#extractExecutionContext-0
   }
   "0withLog" in {
-    //#0withLog
+    //#withLog0
     val special = Logging(system, "SpecialRoutes")
 
     def sample() =
@@ -180,7 +180,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/special/sample") ~> route ~> check {
       responseAs[String] shouldEqual s"Logging using $special!"
     }
-    //#0withLog
+    //#withLog0
   }
   "withSettings-0" in compileOnlySpec {
     //#withSettings-0
@@ -245,7 +245,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     //#tprovide
   }
   "0mapResponse" in {
-    //#0mapResponse
+    //#mapResponse0
     def overwriteResultStatus(response: HttpResponse): HttpResponse =
       response.copy(status = StatusCodes.BadGateway)
     val route = mapResponse(overwriteResultStatus)(complete("abc"))
@@ -254,10 +254,10 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abcdef?ghi=12") ~> route ~> check {
       status shouldEqual StatusCodes.BadGateway
     }
-    //#0mapResponse
+    //#mapResponse0
   }
   "1mapResponse-advanced-json" in {
-    //#1mapResponse-advanced
+    //#mapResponse1-advanced
     trait ApiRoutes {
       protected def system: ActorSystem
 
@@ -277,7 +277,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       def apiRoute(innerRoutes: => Route): Route =
         mapResponse(nonSuccessToEmptyJsonEntity)(innerRoutes)
     }
-    //#1mapResponse-advanced
+    //#mapResponse1-advanced
 
     import StatusCodes._
     val __system = system
@@ -286,7 +286,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     }
     import routes.apiRoute
 
-    //#1mapResponse-advanced
+    //#mapResponse1-advanced
     val route: Route =
       apiRoute {
         get {
@@ -298,7 +298,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "{}"
     }
-    //#1mapResponse-advanced
+    //#mapResponse1-advanced
   }
   "mapRouteResult" in {
     //#mapRouteResult
@@ -500,7 +500,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     //#recoverRejectionsWith
   }
   "0mapRequest" in {
-    //#0mapRequest
+    //#mapRequest0
     def transformToPostRequest(req: HttpRequest): HttpRequest = req.copy(method = HttpMethods.POST)
     val route =
       mapRequest(transformToPostRequest) {
@@ -512,7 +512,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "The request method was POST"
     }
-    //#0mapRequest
+    //#mapRequest0
   }
   "mapRequestContext" in {
     //#mapRequestContext
@@ -533,7 +533,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     //#mapRequestContext
   }
   "0mapRouteResult" in {
-    //#0mapRouteResult
+    //#mapRouteResult0
     val rejectAll = // not particularly useful directive
       mapRouteResult {
         case _ => Rejected(List(AuthorizationFailedRejection))
@@ -547,7 +547,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       rejections.nonEmpty shouldEqual true
     }
-    //#0mapRouteResult
+    //#mapRouteResult0
   }
   "mapRouteResultPF" in {
     //#mapRouteResultPF
@@ -615,7 +615,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     //#pass
   }
   "0provide" in {
-    //#0provide
+    //#provide0
     def providePrefixedString(value: String): Directive1[String] = provide("prefix:" + value)
     val route =
       providePrefixedString("test") { value =>
@@ -626,7 +626,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "prefix:test"
     }
-    //#0provide
+    //#provide0
   }
   "cancelRejections-filter-example" in {
     //#cancelRejections-filter-example
