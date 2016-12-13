@@ -316,7 +316,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * @param handler handler for each persisted `event`
    */
   def persist[A](event: A)(handler: A ⇒ Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot persist event during recovery")
+    if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     pendingStashingPersistInvocations += 1
     pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
     eventBatch ::= AtomicWrite(PersistentRepr(event, persistenceId = persistenceId,
@@ -332,7 +332,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * @param handler handler for each persisted `events`
    */
   def persistAll[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot persist event during recovery")
+    if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     if (events.nonEmpty) {
       events.foreach { event ⇒
         pendingStashingPersistInvocations += 1
@@ -371,7 +371,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * @param handler handler for each persisted `event`
    */
   def persistAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot persist event during recovery")
+    if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
     eventBatch ::= AtomicWrite(PersistentRepr(event, persistenceId = persistenceId,
       sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender()))
@@ -386,7 +386,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * @param handler handler for each persisted `events`
    */
   def persistAllAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot persist event during recovery")
+    if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     if (events.nonEmpty) {
       events.foreach { event ⇒
         pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
@@ -418,7 +418,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * @param handler handler for the given `event`
    */
   def deferAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot persist event during recovery")
+    if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     if (pendingInvocations.isEmpty) {
       handler(event)
     } else {
