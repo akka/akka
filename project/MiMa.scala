@@ -646,7 +646,10 @@ object MiMa extends AutoPlugin {
 
         // https://github.com/akka/akka/pull/21688
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo")
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo"),
+        
+        // https://github.com/akka/akka/pull/21989 - add more information in tcp connection shutdown logs (add mapError)
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.mapError")
       ) ++ bcIssuesBetween24and25)
     )
   }
