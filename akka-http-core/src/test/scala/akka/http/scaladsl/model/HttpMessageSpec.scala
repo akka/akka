@@ -18,6 +18,15 @@ class HttpMessageSpec extends WordSpec with Matchers {
     an[IllegalUriException] should be thrownBy
       HttpRequest.effectiveUri(Uri(uri), List(hostHeader), securedConnection = false, null)
 
+  def failWithNoHostHeader(hostHeader: Option[Host], details: String) = {
+    val thrown = the[IllegalUriException] thrownBy
+      HttpRequest.effectiveUri(Uri("/relative"), hostHeader.toList, securedConnection = false, Host(""))
+
+    thrown should have message
+      s"Cannot establish effective URI of request to `/relative`, request has a relative URI and $details; " +
+      "consider setting `akka.http.server.default-host-header`"
+  }
+
   "HttpRequest" should {
     "provide an effective URI for relative URIs or matching Host-headers" in {
       test("/segment", Host("example.com"), "http://example.com/segment")
@@ -29,6 +38,14 @@ class HttpMessageSpec extends WordSpec with Matchers {
       fail("http://example.net/", Host("example.com"))
       fail("http://example.com:8080/", Host("example.com"))
       fail("http://example.com/", Host("example.com", 8080))
+    }
+
+    "throw IllegalUriException for relative URI with no default Host header" in {
+      failWithNoHostHeader(None, "is missing a `Host` header")
+    }
+
+    "throw IllegalUriException for relative URI with empty Host header and no default Host header" in {
+      failWithNoHostHeader(Some(Host("")), "an empty `Host` header")
     }
   }
 
