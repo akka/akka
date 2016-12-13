@@ -14,6 +14,7 @@ import akka.persistence.serialization._
 import akka.persistence.snapshot._
 import akka.serialization.SerializationExtension
 import akka.util.ByteString.UTF_8
+import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -24,12 +25,11 @@ import scala.util._
  *
  * Local filesystem backed snapshot store.
  */
-private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLogging {
+private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotStore with ActorLogging {
   private val FilenamePattern = """^snapshot-(.+)-(\d+)-(\d+)""".r
   private val persistenceIdStartIdx = 9 // Persistence ID starts after the "snapshot-" substring
 
   import akka.util.Helpers._
-  private val config = context.system.settings.config.getConfig("akka.persistence.snapshot-store.local")
   private val maxLoadAttempts = config.getInt("max-load-attempts")
     .requiring(_ > 1, "max-load-attempts must be >= 1")
 
