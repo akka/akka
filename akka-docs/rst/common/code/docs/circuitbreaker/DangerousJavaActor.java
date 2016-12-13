@@ -5,7 +5,7 @@ package docs.circuitbreaker;
 
 //#imports1
 
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import scala.concurrent.Future;
 import akka.event.LoggingAdapter;
 import scala.concurrent.duration.Duration;
@@ -20,7 +20,7 @@ import java.util.concurrent.Callable;
 //#imports1
 
 //#circuit-breaker-initialization
-public class DangerousJavaActor extends UntypedActor {
+public class DangerousJavaActor extends AbstractActor {
 
   private final CircuitBreaker breaker;
   private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
@@ -47,22 +47,21 @@ public class DangerousJavaActor extends UntypedActor {
   }
 
   @Override
-  public void onReceive(Object message) {
-    if (message instanceof String) {
-      String m = (String) message;
-      if ("is my middle name".equals(m)) {
+  public Receive createReceive() {
+    return receiveBuilder().
+      match(String.class, m -> "is my middle name".equals(m), m -> {
         pipe(
           breaker.callWithCircuitBreaker(() -> 
             future(() -> dangerousCall(), getContext().dispatcher())
           ), getContext().dispatcher()
-        ).to(getSender());
-      }
-      if ("block for me".equals(m)) {
-        getSender().tell(breaker
+        ).to(sender());
+      })
+      .match(String.class, m -> "block for me".equals(m), m -> {
+        sender().tell(breaker
           .callWithSyncCircuitBreaker(
-            () -> dangerousCall()), getSelf());
-      }
-    }
+            () -> dangerousCall()), self());
+      })
+      .build();
   }
 //#circuit-breaker-usage
 

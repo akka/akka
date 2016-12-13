@@ -1,8 +1,8 @@
 .. _lambda-fsm:
 
-################################
- FSM (Java with Lambda Support)
-################################
+#####
+ FSM 
+#####
 
 
 Overview

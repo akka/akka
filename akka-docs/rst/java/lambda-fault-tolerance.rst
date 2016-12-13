@@ -1,7 +1,7 @@
-.. _lambda-fault-tolerance-java:
+.. _fault-tolerance-java:
 
-Fault Tolerance (Java with Lambda Support)
-===========================================
+Fault Tolerance
+===============
 
 As explained in :ref:`actor-systems` each actor is the supervisor of its
 children, and as such each actor defines fault handling supervisor strategy.
@@ -51,7 +51,7 @@ The child actor is stopped if the limit is exceeded.
   If the strategy is declared inside the supervising actor (as opposed to
   a separate class) its decider has access to all internal state of
   the actor in a thread-safe fashion, including obtaining a reference to the
-  currently failed child (available as the ``getSender`` of the failure message).
+  currently failed child (available as the ``sender`` of the failure message).
 
 Default Supervisor Strategy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -89,7 +89,7 @@ higher in the hierarchy.
 You can mute the default logging of a ``SupervisorStrategy`` by setting
 ``loggingEnabled`` to ``false`` when instantiating it. Customized logging
 can be done inside the ``Decider``. Note that the reference to the currently
-failed child is available as the ``getSender`` when the ``SupervisorStrategy`` is
+failed child is available as the ``sender`` when the ``SupervisorStrategy`` is
 declared inside the supervising actor.
 
 You may also customize the logging in your own ``SupervisorStrategy`` implementation

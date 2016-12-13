@@ -73,10 +73,10 @@ As you can see from the example above the following pattern is used to find an a
 
 Once you obtained a selection to the actor you can interact with it they same way you would with a local actor, e.g.::
 
-  selection.tell("Pretty awesome feature", getSelf());
+  selection.tell("Pretty awesome feature", self());
 
 To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to
-send a message to the selection and use the ``getSender`` reference of the reply from
+send a message to the selection and use the ``sender`` reference of the reply from
 the actor. There is a built-in ``Identify`` message that all Actors will understand
 and automatically reply to with a ``ActorIdentity`` message containing the
 :class:`ActorRef`. This can also be done with the ``resolveOneCS`` method of

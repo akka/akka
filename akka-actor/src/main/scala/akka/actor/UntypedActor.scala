@@ -92,6 +92,7 @@ package akka.actor
  *  }
  * }}}
  */
+@deprecated("Use AbstractActor instead of UntypedActor.", since = "2.5.0")
 abstract class UntypedActor extends Actor {
 
   /**

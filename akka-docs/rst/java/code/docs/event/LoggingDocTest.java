@@ -22,7 +22,7 @@ import akka.event.Logging.Debug;
 import docs.AbstractJavaTest;
 import org.junit.Test;
 import akka.testkit.JavaTestKit;
-import scala.Option;
+import java.util.Optional;
 
 //#imports-mdc
 import akka.event.Logging;
@@ -80,15 +80,18 @@ public class LoggingDocTest extends AbstractJavaTest {
     }
   }
 
-  static class Listener extends UntypedActor {
+  static class Listener extends AbstractActor {
     @Override
-    public void onReceive(Object message) throws Exception {
-      if (message instanceof Jazz) {
-        System.out.printf("%s is listening to: %s%n", self().path().name(), message);
-      } else if (message instanceof Electronic) {
-        System.out.printf("%s is listening to: %s%n", self().path().name(), message);
+      public Receive createReceive() {
+        return receiveBuilder()
+          .match(Jazz.class, msg -> 
+            System.out.printf("%s is listening to: %s%n", self().path().name(), msg)
+          )
+          .match(Electronic.class, msg -> 
+            System.out.printf("%s is listening to: %s%n", self().path().name(), msg)
+          )
+          .build();
       }
-    }
   }
   //#superclass-subscription-eventstream
 
@@ -148,7 +151,7 @@ public class LoggingDocTest extends AbstractJavaTest {
   }
 
   //#my-actor
-  class MyActor extends UntypedActor {
+  class MyActor extends AbstractActor {
     LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
     @Override
@@ -157,68 +160,86 @@ public class LoggingDocTest extends AbstractJavaTest {
     }
 
     @Override
-    public void preRestart(Throwable reason, Option<Object> message) {
+    public void preRestart(Throwable reason, Optional<Object> message) {
       log.error(reason, "Restarting due to [{}] when processing [{}]",
-        reason.getMessage(), message.isDefined() ? message.get() : "");
+        reason.getMessage(), message.isPresent() ? message.get() : "");
     }
 
-    public void onReceive(Object message) {
-      if (message.equals("test")) {
-        log.info("Received test");
-      } else {
-        log.warning("Received unknown message: {}", message);
-      }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("test", msg ->
+          log.info("Received test")
+        )
+        .matchAny(msg ->
+          log.warning("Received unknown message: {}", msg)
+        )
+        .build();
     }
   }
 
   //#my-actor
 
   //#mdc-actor
-  class MdcActor extends UntypedActor {
+  class MdcActor extends AbstractActor {
 
       final DiagnosticLoggingAdapter log = Logging.getLogger(this);
 
-      public void onReceive(Object message) {
+      @Override
+      public Receive createReceive() {
+        return receiveBuilder()
+          .matchAny(msg -> {
+            Map<String, Object> mdc;
+            mdc = new HashMap<String, Object>();
+            mdc.put("requestId", 1234);
+            mdc.put("visitorId", 5678);
+            log.setMDC(mdc);
 
-          Map<String, Object> mdc;
-          mdc = new HashMap<String, Object>();
-          mdc.put("requestId", 1234);
-          mdc.put("visitorId", 5678);
-          log.setMDC(mdc);
+            log.info("Starting new request");
 
-          log.info("Starting new request");
-
-          log.clearMDC();
+            log.clearMDC();
+          })
+          .build();
       }
   }
 
   //#mdc-actor
 
   //#my-event-listener
-  class MyEventListener extends UntypedActor {
-    public void onReceive(Object message) {
-      if (message instanceof InitializeLogger) {
-        getSender().tell(Logging.loggerInitialized(), getSelf());
-      } else if (message instanceof Error) {
-        // ...
-      } else if (message instanceof Warning) {
-        // ...
-      } else if (message instanceof Info) {
-        // ...
-      } else if (message instanceof Debug) {
-        // ...
-      }
+  class MyEventListener extends AbstractActor {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(InitializeLogger.class, msg -> {
+          sender().tell(Logging.loggerInitialized(), self());
+        })
+        .match(Error.class, msg -> {
+          // ...
+        })
+        .match(Warning.class, msg -> {
+          // ...           
+        })
+        .match(Info.class, msg -> {
+          // ...           
+        })
+        .match(Debug.class, msg -> {
+          // ...
+        })
+        .build();
     }
   }
   //#my-event-listener
 
   static
   //#deadletter-actor
-  public class DeadLetterActor extends UntypedActor {
-    public void onReceive(Object message) {
-      if (message instanceof DeadLetter) {
-        System.out.println(message);
-      }
+  public class DeadLetterActor extends AbstractActor {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(DeadLetter.class, msg -> {
+          System.out.println(msg);
+        })
+        .build();
     }
   }
   //#deadletter-actor

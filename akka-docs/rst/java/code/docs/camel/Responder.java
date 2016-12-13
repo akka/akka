@@ -1,16 +1,16 @@
 package docs.camel;
 //#CustomRoute
-import akka.actor.UntypedActor;
+import akka.actor.UntypedAbstractActor;
 import akka.camel.CamelMessage;
 import akka.dispatch.Mapper;
 import akka.japi.Function;
 
-public class Responder extends UntypedActor{
+public class Responder extends UntypedAbstractActor{
 
   public void onReceive(Object message) {
     if (message instanceof CamelMessage) {
       CamelMessage camelMessage = (CamelMessage) message;
-      getSender().tell(createResponse(camelMessage), getSelf());
+      sender().tell(createResponse(camelMessage), self());
     } else
       unhandled(message);
   }

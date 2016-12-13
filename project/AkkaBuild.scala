@@ -74,7 +74,6 @@ object AkkaBuild extends Build {
     protobuf,
     remote,
     remoteTests,
-    samples,
     slf4j,
     stream,
     streamTestkit,
@@ -95,7 +94,7 @@ object AkkaBuild extends Build {
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM)
     // samples don't work with dbuild right now
-    aggregate = aggregatedProjects diff List[ProjectReference](agent, docs, samples)
+    aggregate = aggregatedProjects diff List[ProjectReference](agent, docs)
   ).disablePlugins(ValidatePullRequest, MimaPlugin)
 
   lazy val actor = Project(

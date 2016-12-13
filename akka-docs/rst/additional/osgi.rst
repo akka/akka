@@ -114,8 +114,7 @@ Activator
 To bootstrap Akka inside an OSGi environment, you can use the ``akka.osgi.ActorSystemActivator`` class
 to conveniently set up the ActorSystem.
 
-.. includecode:: code/docs/osgi/Activator.scala#Activator
-
+.. includecode:: ../../../akka-osgi/src/test/scala/docs/osgi/Activator.scala#Activator
 
 The goal here is to map the OSGi lifecycle more directly to the Akka lifecycle. The ``ActorSystemActivator`` creates
 the actor system with a class loader that finds resources (``application.conf`` and ``reference.conf`` files) and classes

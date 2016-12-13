@@ -66,7 +66,7 @@ Such an actor is unlikely to be reused in a different actor hierarchy and contai
 
 This pattern provides a way to encapsulate supervision and error propagation to the temporary actor.
 Finally the promise returned by Patterns.ask() is fulfilled as a failure, including the exception
-(see also :ref:`actor-java-lambda` for Java compatibility).
+(see also :ref:`scala-java-compat` for Java compatibility).
 
 Let's have a look at the example code:
 

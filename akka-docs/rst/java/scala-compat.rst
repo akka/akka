@@ -1,7 +1,7 @@
-.. _actor-java-lambda:
+.. _scala-java-compat:
 
-Actors (Java with Lambda Support)
-=================================
+Java 8 and Scala Compatibility
+==============================
 
 Starting with Akka 2.4.2 we have begun to introduce Java 8 types (most
 prominently ``java.util.concurrent.CompletionStage`` and
@@ -22,11 +22,3 @@ we can rely on Scala 2.12 to provide full interoperability—this will mean that
 Scala users can directly implement Java Functional Interfaces using lambda syntax
 as well as that Java users can directly implement Scala functions using lambda
 syntax.
-
-.. toctree::
-   :maxdepth: 2
-
-   lambda-actors
-   lambda-fault-tolerance
-   lambda-fsm
-   lambda-persistence

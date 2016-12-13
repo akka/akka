@@ -51,7 +51,7 @@ public class MatchBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldHandleMatchOnGenericClass() {
-    Match<Object, String> pf = Match.create(Match.match(GenericClass.class, new FI.Apply<GenericClass<String>, String>() {
+    Match<Object, String> pf = Match.create(Match.matchUnchecked(GenericClass.class, new FI.Apply<GenericClass<String>, String>() {
       @Override
       public String apply(GenericClass<String> stringGenericClass) {
         return stringGenericClass.val;
@@ -64,7 +64,7 @@ public class MatchBuilderTest extends JUnitSuite {
 
   @Test
   public void shouldHandleMatchWithPredicateOnGenericClass() {
-    Match<Object, String> pf = Match.create(Match.match(GenericClass.class, new FI.TypedPredicate<GenericClass<String>>() {
+    Match<Object, String> pf = Match.create(Match.matchUnchecked(GenericClass.class, new FI.TypedPredicate<GenericClass<String>>() {
       @Override
       public boolean defined(GenericClass<String> genericClass) {
         return !genericClass.val.isEmpty();

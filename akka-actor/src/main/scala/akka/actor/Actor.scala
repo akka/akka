@@ -10,6 +10,7 @@ import akka.event.LoggingAdapter
 import scala.annotation.tailrec
 import scala.beans.BeanProperty
 import scala.util.control.NoStackTrace
+import java.util.Optional
 
 /**
  * INTERNAL API
@@ -76,7 +77,17 @@ final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
    * Java API: `ActorRef` of the actor replying to the request or
    * null if no actor matched the request.
    */
+  @deprecated("Use getActorRef instead", "2.5.0")
   def getRef: ActorRef = ref.orNull
+
+  /**
+   * Java API: `ActorRef` of the actor replying to the request or
+   * not defined if no actor matched the request.
+   */
+  def getActorRef: Optional[ActorRef] = {
+    import scala.compat.java8.OptionConverters._
+    ref.asJava
+  }
 }
 
 /**
@@ -390,7 +401,7 @@ object Actor {
  * initial behavior of the actor as a partial function (behavior can be changed
  * using `context.become` and `context.unbecome`).
  *
- * This is the Scala API (hence the Scala code below), for the Java API see [[akka.actor.UntypedActor]].
+ * This is the Scala API (hence the Scala code below), for the Java API see [[akka.actor.AbstractActor]].
  *
  * {{{
  * class ExampleActor extends Actor {
@@ -434,14 +445,14 @@ trait Actor {
   type Receive = Actor.Receive
 
   /**
-   * Stores the context for this actor, including self, and sender.
+   * Scala API: Stores the context for this actor, including self, and sender.
    * It is implicit to support operations such as `forward`.
    *
    * WARNING: Only valid within the Actor itself, so do not close over it and
    * publish it to other threads!
    *
    * [[akka.actor.ActorContext]] is the Scala API. `getContext` returns a
-   * [[akka.actor.UntypedActorContext]], which is the Java API of the actor
+   * [[akka.actor.AbstractActor.ActorContext]], which is the Java API of the actor
    * context.
    */
   implicit val context: ActorContext = {
@@ -476,7 +487,7 @@ trait Actor {
   final def sender(): ActorRef = context.sender()
 
   /**
-   * This defines the initial actor behavior, it must return a partial function
+   * Scala API: This defines the initial actor behavior, it must return a partial function
    * with the actor logic.
    */
   //#receive
@@ -550,7 +561,7 @@ trait Actor {
   //#lifecycle-hooks
 
   /**
-   * User overridable callback: '''By default it disposes of all children and then calls `postStop()`.'''
+   * Scala API: User overridable callback: '''By default it disposes of all children and then calls `postStop()`.'''
    * @param reason the Throwable that caused the restart to happen
    * @param message optionally the current message the actor processed when failing, if applicable
    * <p/>

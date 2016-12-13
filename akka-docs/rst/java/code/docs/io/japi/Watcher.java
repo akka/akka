@@ -4,9 +4,9 @@ import java.util.concurrent.CountDownLatch;
 
 import akka.actor.ActorRef;
 import akka.actor.Terminated;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 
-public class Watcher extends UntypedActor {
+public class Watcher extends AbstractActor {
   
   static public class Watch {
     final ActorRef target;
@@ -22,13 +22,16 @@ public class Watcher extends UntypedActor {
   }
 
   @Override
-  public void onReceive(Object msg) throws Exception {
-    if (msg instanceof Watch) {
-      getContext().watch(((Watch) msg).target);
-    } else if (msg instanceof Terminated) {
-      latch.countDown();
-      if (latch.getCount() == 0) getContext().stop(getSelf());
-    }
+  public Receive createReceive() {
+    return receiveBuilder()
+      .match(Watch.class, msg -> {
+        getContext().watch(msg.target);
+      })
+      .match(Terminated.class, msg -> {
+        latch.countDown();
+        if (latch.getCount() == 0) getContext().stop(self());
+      })
+      .build();
   }
 
 }

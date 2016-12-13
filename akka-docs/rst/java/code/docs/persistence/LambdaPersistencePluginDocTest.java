@@ -14,11 +14,19 @@ import akka.persistence.snapshot.japi.*;
 import akka.actor.*;
 import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
-import akka.japi.pf.ReceiveBuilder;
+
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import scala.concurrent.Future;
 import java.util.function.Consumer;
+import org.iq80.leveldb.util.FileUtils;
 import java.util.Optional;
+
+import akka.persistence.japi.journal.JavaJournalSpec;
+import akka.persistence.japi.snapshot.JavaSnapshotStoreSpec;
 
 
 public class LambdaPersistencePluginDocTest {
@@ -35,21 +43,24 @@ public class LambdaPersistencePluginDocTest {
       @Override
       public void preStart() throws Exception {
         String path = "akka.tcp://example@127.0.0.1:2552/user/store";
-        ActorSelection selection = context().actorSelection(path);
+        ActorSelection selection = getContext().actorSelection(path);
         selection.tell(new Identify(1), self());
       }
 
-      public SharedStorageUsage() {
-        receive(ReceiveBuilder.
-          match(ActorIdentity.class, ai -> {
+      @Override
+      public Receive createReceive() {
+        return receiveBuilder()
+          .match(ActorIdentity.class, ai -> {
             if (ai.correlationId().equals(1)) {
-              ActorRef store = ai.getRef();
-              if (store != null) {
-                SharedLeveldbJournal.setStore(store, context().system());
+              Optional<ActorRef> store = ai.getActorRef();
+              if (store.isPresent()) {
+                SharedLeveldbJournal.setStore(store.get(), getContext().system());
+              } else {
+                throw new RuntimeException("Couldn't identify store");
               }
             }
-          }).build()
-        );
+          })
+          .build();
       }
     }
     //#shared-store-usage
@@ -111,4 +122,79 @@ public class LambdaPersistencePluginDocTest {
       return null;
     }
   }
+  
+  static Object o2 = new Object() {
+    //#journal-tck-java
+    class MyJournalSpecTest extends JavaJournalSpec {
+
+      public MyJournalSpecTest() {
+        super(ConfigFactory.parseString(
+          "persistence.journal.plugin = " +
+            "\"akka.persistence.journal.leveldb-shared\""));
+      }
+
+      @Override
+      public CapabilityFlag supportsRejectingNonSerializableObjects() {
+        return CapabilityFlag.off();
+      }
+    }
+    //#journal-tck-java
+  };
+
+  static Object o3 = new Object() {
+    //#snapshot-store-tck-java
+    class MySnapshotStoreTest extends JavaSnapshotStoreSpec {
+
+      public MySnapshotStoreTest() {
+        super(ConfigFactory.parseString(
+          "akka.persistence.snapshot-store.plugin = " +
+            "\"akka.persistence.snapshot-store.local\""));
+      }
+    }
+    //#snapshot-store-tck-java
+  };
+
+  static Object o4 = new Object() {
+    //#journal-tck-before-after-java
+    class MyJournalSpecTest extends JavaJournalSpec {
+
+      List<File> storageLocations = new ArrayList<File>();
+
+      public MyJournalSpecTest() {
+        super(ConfigFactory.parseString(
+          "persistence.journal.plugin = " +
+            "\"akka.persistence.journal.leveldb-shared\""));
+
+        Config config = system().settings().config();
+        storageLocations.add(new File(
+          config.getString("akka.persistence.journal.leveldb.dir")));
+        storageLocations.add(new File(
+          config.getString("akka.persistence.snapshot-store.local.dir")));
+      }
+
+
+      @Override
+      public CapabilityFlag supportsRejectingNonSerializableObjects() {
+        return CapabilityFlag.on();
+      }
+
+      @Override
+      public void beforeAll() {
+        for (File storageLocation : storageLocations) {
+          FileUtils.deleteRecursively(storageLocation);
+        }
+        super.beforeAll();
+      }
+
+      @Override
+      public void afterAll() {
+        super.afterAll();
+        for (File storageLocation : storageLocations) {
+          FileUtils.deleteRecursively(storageLocation);
+        }
+      }
+    }
+    //#journal-tck-before-after-java
+  };
+
 }

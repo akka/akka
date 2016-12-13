@@ -26,8 +26,8 @@ public class UdpConnectedDocTest {
 
   static public class Demo extends UntypedActor {
     ActorRef connectionActor = null;
-    ActorRef handler = getSelf();
-    ActorSystem system = context().system();
+    ActorRef handler = self();
+    ActorSystem system = getContext().system();
 
     @Override
     public void onReceive(Object msg) {
@@ -38,7 +38,7 @@ public class UdpConnectedDocTest {
         //#connect
         final InetSocketAddress remoteAddr =
             new InetSocketAddress("127.0.0.1", 12345);
-        udp.tell(UdpConnectedMessage.connect(handler, remoteAddr), getSelf());
+        udp.tell(UdpConnectedMessage.connect(handler, remoteAddr), self());
         //#connect
         //#connect-with-options
         final InetSocketAddress localAddr =
@@ -46,13 +46,13 @@ public class UdpConnectedDocTest {
         final List<Inet.SocketOption> options =
             new ArrayList<Inet.SocketOption>();
         options.add(UdpSO.broadcast(true));
-        udp.tell(UdpConnectedMessage.connect(handler, remoteAddr, localAddr, options), getSelf());
+        udp.tell(UdpConnectedMessage.connect(handler, remoteAddr, localAddr, options), self());
         //#connect-with-options
       } else
         //#connected
         if (msg instanceof UdpConnected.Connected) {
           final UdpConnected.Connected conn = (UdpConnected.Connected) msg;
-          connectionActor = getSender(); // Save the worker ref for later use
+          connectionActor = sender(); // Save the worker ref for later use
         }
         //#connected
         else
@@ -73,7 +73,7 @@ public class UdpConnectedDocTest {
           if ("send".equals(msg)) {
             ByteString data = ByteString.empty();
             //#send
-            connectionActor.tell(UdpConnectedMessage.send(data), getSelf());
+            connectionActor.tell(UdpConnectedMessage.send(data), self());
             //#send
           }
     }

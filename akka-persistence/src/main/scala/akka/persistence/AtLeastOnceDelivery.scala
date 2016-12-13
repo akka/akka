@@ -366,6 +366,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
  * @see [[AtLeastOnceDelivery]]
  * @see [[AtLeastOnceDeliveryLike]]
  */
+@deprecated("Use AbstractPersistentActorWithAtLeastOnceDelivery instead.", since = "2.5.0")
 abstract class UntypedPersistentActorWithAtLeastOnceDelivery extends UntypedPersistentActor with AtLeastOnceDeliveryLike {
   /**
    * Java API: Send the message created by the `deliveryIdToMessage` function to

@@ -316,21 +316,6 @@ trait ActorRefFactory {
    * Java API: Look-up an actor by applying the given path elements, starting from the
    * current context, where `".."` signifies the parent of an actor.
    *
-   * Example:
-   * {{{
-   * public class MyActor extends UntypedActor {
-   *   public void onReceive(Object msg) throws Exception {
-   *     ...
-   *     final List<String> path = new ArrayList<String>();
-   *     path.add("..");
-   *     path.add("myBrother");
-   *     path.add("myNephew");
-   *     final ActorRef target = getContext().actorFor(path);
-   *     ...
-   *   }
-   * }
-   * }}}
-   *
    * For maximum performance use a collection with efficient head & tail operations.
    *
    * Actor references acquired with `actorFor` do not always include the full information
