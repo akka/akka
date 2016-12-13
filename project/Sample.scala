@@ -16,7 +16,7 @@ object Sample {
      *
      * Default: true
      */
-    val aggregateSamples  = sys.props.getOrElse("akka.build.aggregateSamples", "true").toBoolean
+    val aggregateSamples  = sys.props.getOrElse("akka.build.aggregateSamples", "false").toBoolean
   }
 
   final val akkaOrganization = "com.typesafe.akka"

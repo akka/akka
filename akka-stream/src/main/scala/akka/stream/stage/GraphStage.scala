@@ -563,8 +563,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
             pos += 1
             if (pos == n) andThen(result)
           },
-          () ⇒ onClose(result.take(pos)))
-        )
+          () ⇒ onClose(result.take(pos))))
       } else andThen(result)
     }
 

@@ -28,7 +28,7 @@ public class ParentChildTest {
 
   //#test-example
   static class Parent extends UntypedActor {
-    final ActorRef child = context().actorOf(Props.create(Child.class), "child");
+    final ActorRef child = getContext().actorOf(Props.create(Child.class), "child");
     boolean ponged = false;
 
     @Override public void onReceive(Object message) throws Exception {
@@ -45,7 +45,7 @@ public class ParentChildTest {
   static class Child extends UntypedActor {
     @Override public void onReceive(Object message) throws Exception {
       if ("ping".equals(message)) {
-        context().parent().tell("pong", self());
+        getContext().parent().tell("pong", self());
       } else {
         unhandled(message);
       }
@@ -79,7 +79,7 @@ public class ParentChildTest {
     boolean ponged = false;
 
     public DependentParent(Props childProps) {
-      child = context().actorOf(childProps, "child");
+      child = getContext().actorOf(childProps, "child");
     }
 
     @Override public void onReceive(Object message) throws Exception {
@@ -102,7 +102,7 @@ public class ParentChildTest {
 
     public GenericDependentParent(Function<ActorRefFactory, ActorRef> childMaker)
       throws Exception {
-      child = childMaker.apply(context());
+      child = childMaker.apply(getContext());
     }
 
     @Override public void onReceive(Object message) throws Exception {
@@ -175,13 +175,13 @@ public class ParentChildTest {
 
     @Override public Actor create() throws Exception {
       return new UntypedActor() {
-        final ActorRef child = context().actorOf(Props.create(Child.class), "child");
+        final ActorRef child = getContext().actorOf(Props.create(Child.class), "child");
 
         @Override public void onReceive(Object x) throws Exception {
           if (sender().equals(child)) {
-            proxy.ref().forward(x, context());
+            proxy.ref().forward(x, getContext());
           } else {
-            child.forward(x, context());
+            child.forward(x, getContext());
           }
         }
       };

@@ -411,21 +411,18 @@ case class AllForOneStrategy(
 
   /**
    * Java API: compatible with lambda expressions
-   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
    */
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.Decider) =
     this(maxNrOfRetries = maxNrOfRetries, withinTimeRange = withinTimeRange)(decider)
 
   /**
    * Java API: compatible with lambda expressions
-   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
    */
   def this(loggingEnabled: Boolean, decider: SupervisorStrategy.Decider) =
     this(loggingEnabled = loggingEnabled)(decider)
 
   /**
    * Java API: compatible with lambda expressions
-   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
    */
   def this(decider: SupervisorStrategy.Decider) =
     this()(decider)
@@ -487,21 +484,15 @@ case class OneForOneStrategy(
 
   /**
    * Java API: compatible with lambda expressions
-   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
    */
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.Decider) =
     this(maxNrOfRetries = maxNrOfRetries, withinTimeRange = withinTimeRange)(decider)
 
-  /**
-   * Java API: compatible with lambda expressions
-   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
-   */
   def this(loggingEnabled: Boolean, decider: SupervisorStrategy.Decider) =
     this(loggingEnabled = loggingEnabled)(decider)
 
   /**
    * Java API: compatible with lambda expressions
-   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
    */
   def this(decider: SupervisorStrategy.Decider) =
     this()(decider)

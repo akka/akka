@@ -1,4 +1,4 @@
-.. _lambda-fault-tolerance-sample-java:
+.. _fault-tolerance-sample-java:
 
 Diagrams of the Fault Tolerance Sample
 ----------------------------------------------

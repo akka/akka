@@ -15,7 +15,7 @@ import java.net.InetSocketAddress;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.io.Tcp;
 import akka.io.Tcp.Bound;
 import akka.io.Tcp.CommandFailed;
@@ -34,7 +34,7 @@ public class IODocTest extends AbstractJavaTest {
 
   static
   //#server
-  public class Server extends UntypedActor {
+  public class Server extends AbstractActor {
     
     final ActorRef manager;
     
@@ -49,25 +49,28 @@ public class IODocTest extends AbstractJavaTest {
     @Override
     public void preStart() throws Exception {
       final ActorRef tcp = Tcp.get(getContext().system()).manager();
-      tcp.tell(TcpMessage.bind(getSelf(),
-          new InetSocketAddress("localhost", 0), 100), getSelf());
+      tcp.tell(TcpMessage.bind(self(),
+          new InetSocketAddress("localhost", 0), 100), self());
     }
 
     @Override
-    public void onReceive(Object msg) throws Exception {
-      if (msg instanceof Bound) {
-        manager.tell(msg, getSelf());
-
-      } else if (msg instanceof CommandFailed) {
-        getContext().stop(getSelf());
-      
-      } else if (msg instanceof Connected) {
-        final Connected conn = (Connected) msg;
-        manager.tell(conn, getSelf());
-        final ActorRef handler = getContext().actorOf(
-            Props.create(SimplisticHandler.class));
-        getSender().tell(TcpMessage.register(handler), getSelf());
-      }
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(Bound.class, msg -> {
+          manager.tell(msg, self());
+  
+        })
+        .match(CommandFailed.class, msg -> {
+          getContext().stop(self());
+        
+        })
+        .match(Connected.class, conn -> {
+          manager.tell(conn, self());
+          final ActorRef handler = getContext().actorOf(
+              Props.create(SimplisticHandler.class));
+          sender().tell(TcpMessage.register(handler), self());
+        })
+        .build();
     }
     
   }
@@ -75,23 +78,26 @@ public class IODocTest extends AbstractJavaTest {
 
   static
   //#simplistic-handler
-  public class SimplisticHandler extends UntypedActor {
+  public class SimplisticHandler extends AbstractActor {
     @Override
-    public void onReceive(Object msg) throws Exception {
-      if (msg instanceof Received) {
-        final ByteString data = ((Received) msg).data();
-        System.out.println(data);
-        getSender().tell(TcpMessage.write(data), getSelf());
-      } else if (msg instanceof ConnectionClosed) {
-        getContext().stop(getSelf());
-      }
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(Received.class, msg -> {
+          final ByteString data = msg.data();
+          System.out.println(data);
+          sender().tell(TcpMessage.write(data), self());
+        })
+        .match(ConnectionClosed.class, msg -> {
+          getContext().stop(self());
+        })
+        .build();
     }
   }
   //#simplistic-handler
   
   static
   //#client
-  public class Client extends UntypedActor {
+  public class Client extends AbstractActor {
     
     final InetSocketAddress remote;
     final ActorRef listener;
@@ -105,44 +111,43 @@ public class IODocTest extends AbstractJavaTest {
       this.listener = listener;
       
       final ActorRef tcp = Tcp.get(getContext().system()).manager();
-      tcp.tell(TcpMessage.connect(remote), getSelf());
+      tcp.tell(TcpMessage.connect(remote), self());
     }
 
     @Override
-    public void onReceive(Object msg) throws Exception {
-      if (msg instanceof CommandFailed) {
-        listener.tell("failed", getSelf());
-        getContext().stop(getSelf());
-        
-      } else if (msg instanceof Connected) {
-        listener.tell(msg, getSelf());
-        getSender().tell(TcpMessage.register(getSelf()), getSelf());
-        getContext().become(connected(getSender()));
-      }
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(CommandFailed.class, msg -> {
+          listener.tell("failed", self());
+          getContext().stop(self());
+          
+        })
+        .match(Connected.class, msg -> {
+          listener.tell(msg, self());
+          sender().tell(TcpMessage.register(self()), self());
+          getContext().become(connected(sender()));
+        })
+        .build();
     }
 
-    private Procedure<Object> connected(final ActorRef connection) {
-      return new Procedure<Object>() {
-        @Override
-        public void apply(Object msg) throws Exception {
-          
-          if (msg instanceof ByteString) {
-            connection.tell(TcpMessage.write((ByteString) msg), getSelf());
-        
-          } else if (msg instanceof CommandFailed) {
-            // OS kernel socket buffer was full
-          
-          } else if (msg instanceof Received) {
-            listener.tell(((Received) msg).data(), getSelf());
-          
-          } else if (msg.equals("close")) {
-            connection.tell(TcpMessage.close(), getSelf());
-          
-          } else if (msg instanceof ConnectionClosed) {
-            getContext().stop(getSelf());
-          }
-        }
-      };
+    private Receive connected(final ActorRef connection) {
+      return receiveBuilder()
+        .match(ByteString.class, msg -> {
+            connection.tell(TcpMessage.write((ByteString) msg), self());
+        })
+        .match(CommandFailed.class, msg -> {
+          // OS kernel socket buffer was full
+        })
+        .match(Received.class, msg -> {
+          listener.tell(msg.data(), self());
+        })
+        .matchEquals("close", msg -> {
+          connection.tell(TcpMessage.close(), self());
+        })
+        .match(ConnectionClosed.class, msg -> {
+          getContext().stop(self());
+        })
+        .build();
     }
     
   }

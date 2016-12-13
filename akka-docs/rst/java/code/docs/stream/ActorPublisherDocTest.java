@@ -67,6 +67,7 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
     }
     public static final JobDeniedMessage JobDenied = new JobDeniedMessage();
   }
+  
   public static class JobManager extends AbstractActorPublisher<JobManagerProtocol.Job> {
 
     public static Props props() { return Props.create(JobManager.class); }
@@ -74,12 +75,13 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
     private final int MAX_BUFFER_SIZE = 100;
     private final List<JobManagerProtocol.Job> buf = new ArrayList<>();
 
-    public JobManager() {
-      receive(ReceiveBuilder.
-        match(JobManagerProtocol.Job.class, job -> buf.size() == MAX_BUFFER_SIZE, job -> {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(JobManagerProtocol.Job.class, job -> buf.size() == MAX_BUFFER_SIZE, job -> {
           sender().tell(JobManagerProtocol.JobDenied, self());
-        }).
-        match(JobManagerProtocol.Job.class, job -> {
+        })
+        .match(JobManagerProtocol.Job.class, job -> {
           sender().tell(JobManagerProtocol.JobAccepted, self());
 
           if (buf.isEmpty() && totalDemand() > 0)
@@ -88,10 +90,10 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
             buf.add(job);
             deliverBuf();
           }
-        }).
-        match(ActorPublisherMessage.Request.class, request -> deliverBuf()).
-        match(ActorPublisherMessage.Cancel.class, cancel -> context().stop(self())).
-        build());
+        })
+        .match(ActorPublisherMessage.Request.class, request -> deliverBuf())
+        .match(ActorPublisherMessage.Cancel.class, cancel -> getContext().stop(self()))
+        .build();
     }
 
     void deliverBuf() {

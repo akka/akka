@@ -8,8 +8,8 @@ import akka.dispatch.RequiresMessageQueue;
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;
 import docs.AbstractJavaTest;
-import docs.actor.MyBoundedUntypedActor;
-import docs.actor.MyUntypedActor;
+import docs.actorlambda.MyBoundedActor;
+import docs.actorlambda.MyActor;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.ExecutionContext;
@@ -17,7 +17,7 @@ import scala.concurrent.ExecutionContext;
 //#imports
 import akka.actor.*;
 //#imports
-
+import akka.actor.AbstractActor.Receive;
 //#imports-prio
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -52,7 +52,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   public void defineDispatcherInConfig() {
     //#defining-dispatcher-in-config
     ActorRef myActor =
-      system.actorOf(Props.create(MyUntypedActor.class),
+      system.actorOf(Props.create(MyActor.class),
         "myactor");
     //#defining-dispatcher-in-config
   }
@@ -62,7 +62,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   public void defineDispatcherInCode() {
     //#defining-dispatcher-in-code
     ActorRef myActor =
-      system.actorOf(Props.create(MyUntypedActor.class).withDispatcher("my-dispatcher"),
+      system.actorOf(Props.create(MyActor.class).withDispatcher("my-dispatcher"),
         "myactor3");
     //#defining-dispatcher-in-code
   }
@@ -71,7 +71,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   @Test
   public void defineFixedPoolSizeDispatcher() {
     //#defining-fixed-pool-size-dispatcher
-    ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class)
+    ActorRef myActor = system.actorOf(Props.create(MyActor.class)
         .withDispatcher("blocking-io-dispatcher"));
     //#defining-fixed-pool-size-dispatcher
   }
@@ -80,7 +80,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   @Test
   public void definePinnedDispatcher() {
     //#defining-pinned-dispatcher
-    ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class)
+    ActorRef myActor = system.actorOf(Props.create(MyActor.class)
         .withDispatcher("my-pinned-dispatcher"));
     //#defining-pinned-dispatcher
   }
@@ -99,7 +99,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   public void defineMailboxInConfig() {
     //#defining-mailbox-in-config
     ActorRef myActor =
-      system.actorOf(Props.create(MyUntypedActor.class),
+      system.actorOf(Props.create(MyActor.class),
         "priomailboxactor");
     //#defining-mailbox-in-config
   }
@@ -109,7 +109,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   public void defineMailboxInCode() {
     //#defining-mailbox-in-code
     ActorRef myActor =
-      system.actorOf(Props.create(MyUntypedActor.class)
+      system.actorOf(Props.create(MyActor.class)
         .withMailbox("prio-mailbox"));
     //#defining-mailbox-in-code
   }
@@ -118,7 +118,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   @Test
   public void usingARequiredMailbox() {
     ActorRef myActor =
-      system.actorOf(Props.create(MyBoundedUntypedActor.class));
+      system.actorOf(Props.create(MyBoundedActor.class));
   }
 
   @Test
@@ -126,18 +126,21 @@ public class DispatcherDocTest extends AbstractJavaTest {
     JavaTestKit probe = new JavaTestKit(system);
     //#prio-dispatcher
 
-    class Demo extends UntypedActor {
+    class Demo extends AbstractActor {
       LoggingAdapter log = Logging.getLogger(getContext().system(), this);
       {
         for (Object msg : new Object[] { "lowpriority", "lowpriority",
             "highpriority", "pigdog", "pigdog2", "pigdog3", "highpriority",
             PoisonPill.getInstance() }) {
-          getSelf().tell(msg, getSelf());
+          self().tell(msg, self());
         }
       }
 
-      public void onReceive(Object message) {
-        log.info(message.toString());
+      @Override
+      public Receive createReceive() {
+        return receiveBuilder().matchAny(message -> {
+          log.info(message.toString());
+        }).build();
       }
     }
 
@@ -166,17 +169,20 @@ public class DispatcherDocTest extends AbstractJavaTest {
     JavaTestKit probe = new JavaTestKit(system);
     //#control-aware-dispatcher
 
-    class Demo extends UntypedActor {
+    class Demo extends AbstractActor {
       LoggingAdapter log = Logging.getLogger(getContext().system(), this);
       {
         for (Object msg : new Object[] { "foo", "bar", new MyControlMessage(),
                 PoisonPill.getInstance() }) {
-          getSelf().tell(msg, getSelf());
+          self().tell(msg, self());
         }
       }
 
-      public void onReceive(Object message) {
-        log.info(message.toString());
+      @Override
+      public Receive createReceive() {
+        return receiveBuilder().matchAny(message -> {
+          log.info(message.toString());
+        }).build();
       }
     }
 
@@ -226,18 +232,18 @@ public class DispatcherDocTest extends AbstractJavaTest {
 
   @Test
   public void requiredMailboxDispatcher() throws Exception {
-    ActorRef myActor = system.actorOf(Props.create(MyUntypedActor.class)
+    ActorRef myActor = system.actorOf(Props.create(MyActor.class)
       .withDispatcher("custom-dispatcher"));
   }
 
   static
   //#require-mailbox-on-actor
-  public class MySpecialActor extends UntypedActor implements
+  public class MySpecialActor extends AbstractActor implements
     RequiresMessageQueue<MyUnboundedJMessageQueueSemantics> {
     //#require-mailbox-on-actor
     @Override
-    public void onReceive(Object message) throws Exception {
-      unhandled(message);
+    public Receive createReceive() {
+      return AbstractActor.emptyBehavior();
     }
     //#require-mailbox-on-actor
     // ...

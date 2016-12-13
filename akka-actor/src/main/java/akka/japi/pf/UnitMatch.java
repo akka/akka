@@ -16,7 +16,6 @@ import scala.runtime.BoxedUnit;
  *
  * @param <I> the input type, that this PartialFunction will be applied to
  *
- * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
 
@@ -29,8 +28,18 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * @return a builder with the case statement added
    * @see UnitPFBuilder#match(Class, FI.UnitApply)
    */
-  public static <F, P> UnitPFBuilder<F> match(final Class<? extends P> type, FI.UnitApply<? extends P> apply) {
+  public static <F, P> UnitPFBuilder<F> match(final Class<P> type, FI.UnitApply<P> apply) {
     return new UnitPFBuilder<F>().match(type, apply);
+  }
+
+  /**
+   * Convenience function to create a {@link UnitPFBuilder} with the first
+   * case statement added. Should normally not be used.
+   *
+   * @see UnitPFBuilder#matchUnchecked(Class, FI.UnitApply)
+   */
+  public static UnitPFBuilder<Object> matchUnchecked(final Class<?> type, final FI.UnitApply<?> apply) {
+    return new UnitPFBuilder<Object>().matchUnchecked(type, apply);
   }
 
   /**
@@ -43,10 +52,22 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * @return a builder with the case statement added
    * @see UnitPFBuilder#match(Class, FI.TypedPredicate, FI.UnitApply)
    */
-  public static <F, P> UnitPFBuilder<F> match(final Class<? extends P> type,
-                                              final FI.TypedPredicate<? extends P> predicate,
-                                              final FI.UnitApply<? extends P> apply) {
+  public static <F, P> UnitPFBuilder<F> match(final Class<P> type,
+                                              final FI.TypedPredicate<P> predicate,
+                                              final FI.UnitApply<P> apply) {
     return new UnitPFBuilder<F>().match(type, predicate, apply);
+  }
+
+  /**
+   * Convenience function to create a {@link UnitPFBuilder} with the first
+   * case statement added. Should normally not be used.
+   *
+   * @see UnitPFBuilder#matchUnchecked(Class, FI.TypedPredicate, FI.UnitApply)
+   */
+  public static <F, P> UnitPFBuilder<F> matchUnchecked(final Class<?> type,
+                                              final FI.TypedPredicate<?> predicate,
+                                              final FI.UnitApply<?> apply) {
+    return new UnitPFBuilder<F>().matchUnchecked(type, predicate, apply);
   }
 
   /**
@@ -110,7 +131,7 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * <p>
    * <pre><code>
    *   UnitMatcher&lt;X&gt; matcher = UnitMatcher.create(...);
-   * 
+   *
    *   matcher.match(obj);
    * </code></pre>
    *

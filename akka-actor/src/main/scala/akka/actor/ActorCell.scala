@@ -18,6 +18,8 @@ import java.util.concurrent.ThreadLocalRandom
 import scala.util.control.NonFatal
 import akka.dispatch.MessageDispatcher
 import akka.util.Reflect
+import akka.japi.pf.ReceiveBuilder
+import akka.actor.AbstractActor.Receive
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -161,28 +163,10 @@ trait ActorContext extends ActorRefFactory {
 }
 
 /**
- * AbstractActorContext is the AbstractActor equivalent of ActorContext,
- * containing the Java API
- */
-trait AbstractActorContext extends ActorContext {
-
-  /**
-   * Returns an unmodifiable Java Collection containing the linked actors,
-   * please note that the backing map is thread-safe but not immutable
-   */
-  def getChildren(): java.lang.Iterable[ActorRef]
-
-  /**
-   * Returns a reference to the named child or null if no child with
-   * that name exists.
-   */
-  def getChild(name: String): ActorRef
-}
-
-/**
  * UntypedActorContext is the UntypedActor equivalent of ActorContext,
  * containing the Java API
  */
+@deprecated("Use AbstractActor instead of UntypedActor.", since = "2.5.0")
 trait UntypedActorContext extends ActorContext {
 
   /**
@@ -377,7 +361,7 @@ private[akka] class ActorCell(
   final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
   val dispatcher:  MessageDispatcher,
   val parent:      InternalActorRef)
-  extends UntypedActorContext with AbstractActorContext with Cell
+  extends UntypedActorContext with AbstractActor.ActorContext with Cell
   with dungeon.ReceiveTimeout
   with dungeon.Children
   with dungeon.Dispatch

@@ -137,7 +137,7 @@ public class JavaAPI extends JUnitSuite {
     final Tuple4<Integer, String, Integer, Long> t4 = Tuple4.create(1, "2", 3, 4L);
     Tuple22.create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22);
   }
-  
+
   @Test
   public void mustBeAbleToCreateOptionFromOptional() {
     Option<Object> empty = Util.option(Optional.ofNullable(null));
@@ -147,7 +147,7 @@ public class JavaAPI extends JUnitSuite {
     assertTrue(full.isDefined());
   }
 
-  public static class ActorWithConstructorParams extends UntypedActor {
+  public static class ActorWithConstructorParams extends UntypedAbstractActor {
 
     private final String a;
     private final String b;
@@ -189,7 +189,6 @@ public class JavaAPI extends JUnitSuite {
       this.d = d;
     }
 
-    @Override
     public void onReceive(Object msg) {
       String reply = String.valueOf(a) + "-" + String.valueOf(b) + "-" + String.valueOf(c) + "-" + String.valueOf(d);
       getSender().tell(reply, getSelf());

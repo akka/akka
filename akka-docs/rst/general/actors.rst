@@ -8,7 +8,7 @@ hierarchies and are the smallest unit when building an application. This
 section looks at one such actor in isolation, explaining the concepts you
 encounter while implementing it. For a more in depth reference with all the
 details please refer to
-:ref:`Actors (Scala) <actors-scala>` and :ref:`Untyped Actors (Java) <untyped-actors-java>`.
+:ref:`Actors (Scala) <actors-scala>` and :ref:`Actors (Java) <actors-java>`.
 
 An actor is a container for `State`_, `Behavior`_, a `Mailbox`_, `Child Actors`_
 and a `Supervisor Strategy`_. All of this is encapsulated behind an `Actor

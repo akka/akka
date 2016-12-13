@@ -11,10 +11,11 @@ import java.util.concurrent.TimeUnit;
 //#imports1
 
 //#imports2
-import akka.actor.UntypedActor;
 import akka.actor.Cancellable;
 //#imports2
 
+import docs.actorlambda.MyActor;
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.AkkaSpec;
@@ -28,7 +29,7 @@ public class SchedulerDocTest extends AbstractJavaTest {
       AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
-  private ActorRef testActor = system.actorOf(Props.create(MyUntypedActor.class));
+  private ActorRef testActor = system.actorOf(Props.create(MyActor.class));
 
   @Test
   public void scheduleOneOffTask() {
@@ -51,14 +52,14 @@ public class SchedulerDocTest extends AbstractJavaTest {
   @Test
   public void scheduleRecurringTask() {
     //#schedule-recurring
-    class Ticker extends UntypedActor {
+    class Ticker extends AbstractActor {
       @Override
-      public void onReceive(Object message) {
-        if (message.equals("Tick")) {
-          // Do someting
-        } else {
-          unhandled(message);
-        }
+      public Receive createReceive() {
+        return receiveBuilder()
+          .matchEquals("Tick", m -> {
+            // Do someting
+          })
+          .build();
       }
     }
     
