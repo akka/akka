@@ -44,6 +44,8 @@ function ensureNodeIsRunningAndAvailable {
     fi
 }
 
+echo "This tool is deprecated use curl and https://github.com/akka/akka-cluster-management instead, since 2.5.0"
+
 # switch on command
 case "$1" in
 
