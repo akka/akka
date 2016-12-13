@@ -49,7 +49,9 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
     val dataQueue = new LinkedBlockingQueue[ByteString](maxBuffer)
     val downstreamStatus = new AtomicReference[DownstreamStatus](Ok)
 
-    val logic = new GraphStageLogic(shape) with CallbackWrapper[(AdapterToStageMessage, Promise[Unit])] {
+    final class OutputStreamSourceLogic extends GraphStageLogic(shape)
+      with CallbackWrapper[(AdapterToStageMessage, Promise[Unit])] {
+
       var flush: Option[Promise[Unit]] = None
       var close: Option[Promise[Unit]] = None
 
@@ -148,6 +150,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       }
     }
 
+    val logic = new OutputStreamSourceLogic
     (logic, new OutputStreamAdapter(dataQueue, downstreamStatus, logic.wakeUp, writeTimeout))
   }
 }
