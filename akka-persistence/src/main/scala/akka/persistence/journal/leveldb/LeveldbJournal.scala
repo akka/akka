@@ -13,13 +13,14 @@ import scala.concurrent.Future
 import akka.persistence.JournalProtocol.RecoverySuccess
 import akka.persistence.JournalProtocol.ReplayMessagesFailure
 import akka.pattern.pipe
+import com.typesafe.config.Config
 
 /**
  * INTERNAL API.
  *
  * Journal backed by a local LevelDB store. For production use.
  */
-private[persistence] class LeveldbJournal extends { val configPath = "akka.persistence.journal.leveldb" } with AsyncWriteJournal with LeveldbStore {
+private[persistence] class LeveldbJournal(val config: Config) extends AsyncWriteJournal with LeveldbStore {
   import LeveldbJournal._
 
   override def receivePluginInternal: Receive = {
