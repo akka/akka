@@ -176,7 +176,7 @@ private[stream] object TcpConnectionStage {
    * to attach an extra, fused buffer to the end of this flow. Keeping this stage non-detached makes it much simpler and
    * easier to maintain and understand.
    */
-  class TcpStreamLogic(val shape: FlowShape[ByteString, ByteString], val role: TcpRole) extends GraphStageLogic(shape) {
+  class TcpStreamLogic(val shape: FlowShape[ByteString, ByteString], val role: TcpRole, remoteAddress: InetSocketAddress) extends GraphStageLogic(shape) {
     implicit def self: ActorRef = stageActor.ref
 
     private def bytesIn = shape.in
@@ -276,10 +276,10 @@ private[stream] object TcpConnectionStage {
       override def onUpstreamFailure(ex: Throwable): Unit = {
         if (connection != null) {
           if (interpreter.log.isDebugEnabled) {
-            interpreter.log.debug(
-              "Aborting tcp connection because of upstream failure: {}\n{}",
-              ex.getMessage,
-              ex.getStackTrace.mkString("\n"))
+            val msg = "Aborting tcp connection to {} because of upstream failure: {}"
+
+            if (ex.getStackTrace.isEmpty) interpreter.log.debug(msg, remoteAddress, ex.getMessage)
+            else interpreter.log.debug(msg + "\n{}", remoteAddress, ex.getMessage, ex.getStackTrace.mkString("\n"))
           }
           connection ! Abort
         } else failStage(ex)
@@ -313,7 +313,7 @@ class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAdd
     if (hasBeenCreated.get) throw new IllegalStateException("Cannot materialize an incoming connection Flow twice.")
     hasBeenCreated.set(true)
 
-    new TcpStreamLogic(shape, Inbound(connection, halfClose))
+    new TcpStreamLogic(shape, Inbound(connection, halfClose), remoteAddress)
   }
 
   override def toString = s"TCP-from($remoteAddress)"
@@ -350,7 +350,8 @@ private[stream] class OutgoingConnectionStage(
       manager,
       Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
       localAddressPromise,
-      halfClose))
+      halfClose),
+      remoteAddress)
 
     (logic, localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))(ExecutionContexts.sameThreadExecutionContext))
   }
@@ -362,20 +363,20 @@ private[stream] class OutgoingConnectionStage(
 private[akka] object TcpIdleTimeout {
   def apply(idleTimeout: FiniteDuration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val connectionToString = remoteAddress match {
-      case Some(addr) ⇒ s"on connection to [$addr]"
+      case Some(addr) ⇒ s" on connection to [$addr]"
       case _          ⇒ ""
     }
 
     val toNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
       BidiFlow.fromFlows(
-        Flow[ByteString].mapError { case t: TimeoutException ⇒ new TcpIdleTimeoutException(s"TCP idle-timeout encountered $connectionToString, no bytes passed in the last $idleTimeout", idleTimeout) },
+        Flow[ByteString].mapError {
+          case t: TimeoutException ⇒
+            new TcpIdleTimeoutException(s"TCP idle-timeout encountered$connectionToString, no bytes passed in the last $idleTimeout", idleTimeout)
+        },
         Flow[ByteString]
       )
     val fromNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
-      BidiFlow.fromFlows(
-        Flow[ByteString],
-        Flow[ByteString].mapError { case t: TimeoutException ⇒ new TcpIdleTimeoutException(s"TCP idle-timeout encountered $connectionToString, no bytes passed in the last $idleTimeout", idleTimeout) }
-      )
+      toNetTimeout.reversed // now the bottom flow transforms the exception, the top one doesn't (since that one is "fromNet") 
 
     fromNetTimeout atop BidiFlow.bidirectionalIdleTimeout[ByteString, ByteString](idleTimeout) atop toNetTimeout
   }
