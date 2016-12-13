@@ -5,6 +5,7 @@ import akka.testkit.AkkaSpec
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import akka.testkit.TimingTest
 
 class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
 
@@ -13,7 +14,7 @@ class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
   val strategy = EntityRecoveryStrategy.constantStrategy(system, 1.second, 2)
 
   "ConstantRateEntityRecoveryStrategy" must {
-    "recover entities" in {
+    "recover entities" taggedAs (TimingTest) in {
       val entities = Set[EntityId]("1", "2", "3", "4", "5")
       val startTime = System.nanoTime()
       val resultWithTimes = strategy.recoverEntities(entities).map(
