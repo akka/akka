@@ -91,7 +91,7 @@ seed nodes in the existing cluster.
 
 If you don't configure seed nodes you need to join the cluster programmatically or manually.
 
-Manual joining can be performed by using ref:`cluster_jmx_java` or :ref:`cluster_command_line_java`.
+Manual joining can be performed by using ref:`cluster_jmx_java` or :ref:`cluster_http_java`.
 Joining programmatically can be performed with ``Cluster.get(system).join``. Unsuccessful join attempts are
 automatically retried after the time period defined in configuration property ``retry-unsuccessful-join-after``.
 Retries can be disabled by setting the property to ``off``.
@@ -134,7 +134,7 @@ leader is not allowed to perform its duties, such as changing status of
 new joining members to 'Up'. The node must first become reachable again, or the
 status of the unreachable member must be changed to 'Down'. Changing status to 'Down'
 can be performed automatically or manually. By default it must be done manually, using
-:ref:`cluster_jmx_java` or :ref:`cluster_command_line_java`.
+:ref:`cluster_jmx_java` or :ref:`cluster_http_java`.
 
 It can also be performed programmatically with ``Cluster.get(system).down(address)``.
 
@@ -180,7 +180,7 @@ as unreachable and removed after the automatic or manual downing as described
 above.
 
 A more graceful exit can be performed if you tell the cluster that a node shall leave.
-This can be performed using :ref:`cluster_jmx_java` or :ref:`cluster_command_line_java`.
+This can be performed using :ref:`cluster_jmx_java` or :ref:`cluster_http_java`.
 It can also be performed programmatically with:
 
 .. includecode:: code/docs/cluster/ClusterDocTest.java#leave
@@ -637,10 +637,21 @@ The member nodes of the cluster can collect system health metrics and publish th
 and to the registered subscribers on the system event bus with the help of :doc:`cluster-metrics`.
 
 
+Management
+^^^^^^^^^^
+
+.. _cluster_http_java:
+
+HTTP
+----
+
+Information and management of the cluster is available with a HTTP API. 
+See documentation of `akka/akka-cluster-management <https://github.com/akka/akka-cluster-management>`_.
+
 .. _cluster_jmx_java:
 
 JMX
-^^^
+---
 
 Information and management of the cluster is available as JMX MBeans with the root name ``akka.Cluster``.
 The JMX information can be displayed with an ordinary JMX console such as JConsole or JVisualVM.
@@ -658,8 +669,13 @@ Member nodes are identified by their address, in format `akka.<protocol>://<acto
 
 .. _cluster_command_line_java:
 
-Command Line Management
-^^^^^^^^^^^^^^^^^^^^^^^
+Command Line
+------------
+
+.. warning::
+  **Deprecation warning** - The command line script has been deprecated and is scheduled for removal 
+  in the next major version. Use the :ref:`cluster_http_java` API with `curl <https://curl.haxx.se/>`_
+  or similar instead.
 
 The cluster can be managed with the script `bin/akka-cluster` provided in the
 Akka distribution.
@@ -690,13 +706,8 @@ Run it without parameters to see instructions about how to use the script::
 
 
 To be able to use the script you must enable remote monitoring and management when starting the JVMs of the cluster nodes,
-as described in `Monitoring and Management Using JMX Technology <http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html>`_
-
-Example of system properties to enable remote monitoring and management::
-
-  java -Dcom.sun.management.jmxremote.port=9999 \
-  -Dcom.sun.management.jmxremote.authenticate=false \
-  -Dcom.sun.management.jmxremote.ssl=false
+as described in `Monitoring and Management Using JMX Technology <http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html>`_.
+Make sure you understand the security implications of enabling remote monitoring and management.
 
 .. _cluster_configuration_java:
 
