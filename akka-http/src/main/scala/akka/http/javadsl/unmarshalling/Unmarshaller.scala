@@ -6,10 +6,11 @@ package akka.http.javadsl.unmarshalling
 
 import java.util.concurrent.CompletionStage
 
+import akka.http.impl.model.JavaQuery
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model._
-import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, IllegalUriException, MediaTypes, Uri }
+import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes }
 import akka.http.scaladsl.unmarshalling
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, UnsupportedContentTypeException }
@@ -53,25 +54,13 @@ object Unmarshaller {
   def entityToByteArray: Unmarshaller[HttpEntity, Array[Byte]]       = unmarshalling.Unmarshaller.byteArrayUnmarshaller
   def entityToCharArray: Unmarshaller[HttpEntity, Array[Char]]       = unmarshalling.Unmarshaller.charArrayUnmarshaller
   def entityToString: Unmarshaller[HttpEntity, String]               = unmarshalling.Unmarshaller.stringUnmarshaller
-  def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = urlEncodedFormDataUnmarshaller(MediaTypes.`application/x-www-form-urlencoded`)
+  def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller.map(scalaFormData => new FormData(JavaQuery(scalaFormData.fields)))
   def entityToMultipartByteRanges: Unmarshaller[HttpEntity, Multipart.ByteRanges] = downcast(unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller, classOf[Multipart.ByteRanges])
   def entityToMultipartFormData: Unmarshaller[HttpEntity, Multipart.FormData] = downcast(unmarshalling.MultipartUnmarshallers.multipartFormDataUnmarshaller, classOf[Multipart.FormData])
   // format: ON
 
   val requestToEntity: Unmarshaller[HttpRequest, RequestEntity] =
     unmarshalling.Unmarshaller.strict[HttpRequest, RequestEntity](_.entity)
-
-  def urlEncodedFormDataUnmarshaller(ranges: ContentTypeRange*): FromEntityUnmarshaller[FormData] =
-    unmarshalling.Unmarshaller.stringUnmarshaller.forContentTypes(ranges: _*).mapWithInput { (entity, string) ⇒
-      if (entity.isKnownEmpty) FormData.EMPTY
-      else {
-        try new FormData(Query.create(string, unmarshalling.Unmarshaller.bestUnmarshallingCharsetFor(entity).asJava.nioCharset(), Uri.ParsingMode.Relaxed))
-        catch {
-          case IllegalUriException(info) ⇒
-            throw new IllegalArgumentException(info.formatPretty.replace("Query,", "form content,"))
-        }
-      }
-    }
 
   def forMediaType[B](t: MediaType, um: Unmarshaller[HttpEntity, B]): Unmarshaller[HttpEntity, B] = {
     unmarshalling.Unmarshaller.withMaterializer[HttpEntity, B] { implicit ex ⇒ implicit mat ⇒ jEntity ⇒ {
