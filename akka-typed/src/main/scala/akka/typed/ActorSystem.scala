@@ -7,7 +7,7 @@ import scala.concurrent.ExecutionContext
 import akka.{ actor ⇒ a, event ⇒ e }
 import java.util.concurrent.ThreadFactory
 
-import akka.actor.ActorSystemSetups$
+import akka.actor.setup.ActorSystemSetup
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
@@ -170,7 +170,7 @@ object ActorSystem {
                  config:              Option[Config]           = None,
                  classLoader:         Option[ClassLoader]      = None,
                  executionContext:    Option[ExecutionContext] = None,
-                 actorSystemSettings: ActorSystemSetups      = ActorSystemSetups.empty): ActorSystem[T] = {
+                 actorSystemSettings: ActorSystemSetup         = ActorSystemSetup.empty): ActorSystem[T] = {
     Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
