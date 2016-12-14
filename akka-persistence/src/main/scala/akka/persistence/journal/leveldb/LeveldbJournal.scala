@@ -23,10 +23,10 @@ import com.typesafe.config.Config
 private[persistence] class LeveldbJournal(cfg: Config) extends AsyncWriteJournal with LeveldbStore {
   import LeveldbJournal._
 
-  def this() = this(null)
+  def this() = this(LeveldbStore.emptyConfig)
 
   override def prepareConfig: Config =
-    if (cfg ne null) cfg
+    if (cfg ne LeveldbStore.emptyConfig) cfg
     else context.system.settings.config.getConfig("akka.persistence.journal.leveldb")
 
   override def receivePluginInternal: Receive = {

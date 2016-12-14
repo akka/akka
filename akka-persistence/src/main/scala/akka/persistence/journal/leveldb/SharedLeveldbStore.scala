@@ -22,10 +22,10 @@ class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
   import AsyncWriteTarget._
   import context.dispatcher
 
-  def this() = this(null)
+  def this() = this(LeveldbStore.emptyConfig)
 
   override def prepareConfig: Config =
-    if (cfg ne null) cfg.getConfig("store")
+    if (cfg ne LeveldbStore.emptyConfig) cfg.getConfig("store")
     else context.system.settings.config.getConfig("akka.persistence.journal.leveldb-shared.store")
 
   def receive = {
