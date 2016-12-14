@@ -6,7 +6,7 @@ package docs.persistence.query
 import akka.NotUsed
 import akka.persistence.journal.{ EventAdapter, EventSeq }
 import akka.testkit.AkkaSpec
-import akka.persistence.query.{ EventEnvelope, EventEnvelope, PersistenceQuery, Sequence }
+import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
 import akka.persistence.query.scaladsl._
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.journal.Tagged

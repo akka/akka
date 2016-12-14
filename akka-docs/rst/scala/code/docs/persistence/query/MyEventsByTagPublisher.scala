@@ -6,7 +6,7 @@ package docs.persistence.query
 
 import akka.actor.Props
 import akka.persistence.PersistentRepr
-import akka.persistence.query.{ EventEnvelope, EventEnvelope, Sequence }
+import akka.persistence.query.{ EventEnvelope, Sequence }
 import akka.serialization.SerializationExtension
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }

@@ -9,6 +9,7 @@ import akka.actor.Scheduler;
 import akka.japi.Pair;
 import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.PersistentRepr;
+import akka.persistence.query.Offset;
 import akka.serialization.Serialization;
 import akka.serialization.SerializationExtension;
 import akka.stream.actor.AbstractActorPublisher;
@@ -107,7 +108,7 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
             final PersistentRepr p = 
                 serialization.deserialize(bytes, PersistentRepr.class).get();
 
-            return new EventEnvelope(id, p.persistenceId(), p.sequenceNr(), p.payload());
+            return new EventEnvelope(Offset.sequence(id), p.persistenceId(), p.sequenceNr(), p.payload());
           }).collect(toList());
         }
       } catch(Exception e) {

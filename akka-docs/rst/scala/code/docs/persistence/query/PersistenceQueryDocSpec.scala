@@ -60,10 +60,6 @@ object PersistenceQueryDocSpec {
         val props = MyEventsByTagPublisher.props(tag, offsetValue, refreshInterval)
         Source.actorPublisher[EventEnvelope](props)
           .mapMaterializedValue(_ => NotUsed)
-          .map {
-            case EventEnvelope(offset, id, seqNr, event) =>
-              EventEnvelope(Sequence(offset), id, seqNr, event)
-          }
       case _ ⇒
         throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
     }

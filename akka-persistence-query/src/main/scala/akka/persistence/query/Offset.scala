@@ -15,7 +15,7 @@ object Offset {
 
 }
 
-trait Offset
+abstract class Offset
 
 final case class Sequence(value: Long) extends Offset with Ordered[Sequence] {
   override def compare(that: Sequence): Int = value.compare(that.value)

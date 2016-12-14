@@ -22,7 +22,6 @@ prior deprecation.
    ../dev/multi-node-testing
    ../java/lambda-actors
    ../java/lambda-fsm
-   ../scala/persistence-query
    ../scala/typed
 
 Another reason for marking a module as experimental is that it's too early
