@@ -376,7 +376,7 @@ private[akka] object TcpIdleTimeout {
         Flow[ByteString]
       )
     val fromNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
-      fromNetTimeout.reversed // now the bottom flow transforms the exception, the top one doesn't (since that one is "fromNet") 
+      toNetTimeout.reversed // now the bottom flow transforms the exception, the top one doesn't (since that one is "fromNet") 
 
     fromNetTimeout atop BidiFlow.bidirectionalIdleTimeout[ByteString, ByteString](idleTimeout) atop toNetTimeout
   }
