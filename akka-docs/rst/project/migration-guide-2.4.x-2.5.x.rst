@@ -113,9 +113,6 @@ Instead of the previous ``Long`` offset you can now use the provided ``Offset`` 
 Journals are also free to provide their own specific ``Offset`` types. Consult your journal plugin's documentation for details.
 
 
------
-
-
 Cluster
 =======
 

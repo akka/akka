@@ -6,7 +6,7 @@ package akka.persistence.query.journal.leveldb
 import scala.concurrent.duration._
 import akka.persistence.journal.Tagged
 import akka.persistence.journal.WriteEventAdapter
-import akka.persistence.query.{ EventEnvelope, EventEnvelope, PersistenceQuery, Sequence }
+import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.ActorMaterializer
