@@ -209,7 +209,7 @@ object AkkaBuild extends Build {
   )
 
   lazy val persistenceQuery = Project(
-    id = "akka-persistence-query-experimental",
+    id = "akka-persistence-query",
     base = file("akka-persistence-query"),
     dependencies = Seq(
       stream,
