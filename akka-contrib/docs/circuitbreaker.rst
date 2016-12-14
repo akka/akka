@@ -30,7 +30,7 @@ returned by the service (a ``Left[String]`` in our case):
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreaker.scala#ask-sample
 
-If it is not possible to define define a specific error response, you can map the Open Circuit notification to a failure.
+If it is not possible to define a specific error response, you can map the Open Circuit notification to a failure.
 That also means that your ``CircuitBreakerActor`` will be useful to protect you from time out for extra workload or
 temporary failures in the target actor.
 You can decide to do that in two ways:
