@@ -355,6 +355,22 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     registerOnMemberRemoved(new Runnable { override def run(): Unit = code })
 
   /**
+   * The supplied thunk will be run, once, when current cluster member is `Removed`. Used w/ error exit.
+   * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
+   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
+   */
+  def registerOnMemberRemovedAfterDown[T](code: ⇒ T): Unit =
+    registerOnMemberRemovedAfterDown(new Runnable { override def run(): Unit = code })
+
+  /**
+   * The supplied thunk will be run, once, when current cluster member is `Removed`. Used w/ graceful exit.
+   * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
+   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
+   */
+  def registerOnMemberRemovedAfterLeaving[T](code: ⇒ T): Unit =
+    registerOnMemberRemovedAfterLeaving(new Runnable { override def run(): Unit = code })
+
+  /**
    * Java API: The supplied thunk will be run, once, when current cluster member is `Removed`.
    * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
    * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
@@ -364,6 +380,24 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       callback.run()
     else
       clusterDaemons ! InternalClusterAction.AddOnMemberRemovedListener(callback)
+  }
+
+  /**
+   * Java API: The supplied thunk will be run, once, when current cluster member is `Removed`. Used w/ error exit.
+   * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
+   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
+   */
+  def registerOnMemberRemovedAfterDown(callback: Runnable): Unit = {
+    registerOnMemberRemoved(callback)
+  }
+
+  /**
+   * Java API: The supplied thunk will be run, once, when current cluster member is `Removed`. Used w/ graceful exit.
+   * If the cluster has already been shutdown the thunk will run on the caller thread immediately.
+   * Typically used together `cluster.leave(cluster.selfAddress)` and then `system.terminate()`.
+   */
+  def registerOnMemberRemovedAfterLeaving(callback: Runnable): Unit = {
+    registerOnMemberRemoved(callback)
   }
 
   /**
