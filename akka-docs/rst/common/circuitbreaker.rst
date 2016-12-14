@@ -53,6 +53,7 @@ What do they do?
 
 .. image:: ../images/circuit-breaker-states.png
 
+
 ========
 Examples
 ========
@@ -66,37 +67,38 @@ Here's how a :class:`CircuitBreaker` would be configured for:
   * a call timeout of 10 seconds 
   * a reset timeout of 1 minute
 
-^^^^^^^
+~~~~~
 Scala
-^^^^^^^
+~~~~~
 
 .. includecode:: code/docs/circuitbreaker/CircuitBreakerDocSpec.scala
    :include: imports1,circuit-breaker-initialization
 
-^^^^^^^
+~~~~
 Java
-^^^^^^^
+~~~~
 
 .. includecode:: code/docs/circuitbreaker/DangerousJavaActor.java
    :include: imports1,circuit-breaker-initialization
 
----------------
-Call Protection
----------------
+------------------------------
+Future & Synchronous based API
+------------------------------
 
-Here's how the :class:`CircuitBreaker` would be used to protect an asynchronous
-call as well as a synchronous one:
+Once a circuit breaker actor has been intialized, interacting with that actor is done by either using the Future based API or the synchronous API. Both of these APIs are considered ``Call Protection`` because whether synchronously or asynchronously, the purpose of the circuit breaker is to protect your system from cascading failures while making a call to another service. In the future based API, we use the :meth:`withCircuitBreaker` which takes an asynchronous method (some method wrapped in a :class:`Future`), for instance a call to retrieve data from a database, and we pipe the result back to the sender. If for some reason the database in this example isn't responding, or there is another issue, the circuit breaker will open and stop trying to hit the database again and again until the timeout is over.
 
-^^^^^^^
+The Synchronous API would also wrap your call with the circuit breaker logic, however, it uses the :meth:`withSyncCircuitBreaker` and receives a method that is not wrapped in a :class:`Future`.
+
+~~~~~
 Scala
-^^^^^^^
+~~~~~
 
 .. includecode:: code/docs/circuitbreaker/CircuitBreakerDocSpec.scala
    :include: circuit-breaker-usage
 
-^^^^^^
+~~~~
 Java
-^^^^^^
+~~~~
 
 .. includecode:: code/docs/circuitbreaker/DangerousJavaActor.java
    :include: circuit-breaker-usage
@@ -108,34 +110,36 @@ Java
 	This can be useful if the asynchronous :class:`Future` behavior is unnecessary, for
 	example invoking a synchronous-only API.
 
+.. note::
+	
+	There is also a :class:`CircuitBreakerProxy` actor that you can use, which is an alternative implementation of the pattern.
+	The main difference is that it is intended to be used only for request-reply interactions with another actor. See :ref:`Circuit Breaker Actor <circuit-breaker-proxy>`
 
-------------
-Tell Pattern
-------------
+-------------
+Low level API
+-------------
 
-The above ``Call Protection`` pattern works well when the return from a remote call is wrapped in a ``Future``.
-However, when a remote call sends back a message or timeout to the caller ``Actor``, the ``Call Protection`` pattern
-is awkward. CircuitBreaker doesn't support it natively at the moment, so you need to use below low-level power-user APIs,
-``succeed``  and  ``fail`` methods, as well as ``isClose``, ``isOpen``, ``isHalfOpen``.
+The low-level API allows you to describe the behaviour of the CircuitBreaker in detail, including deciding what to return to the calling ``Actor`` in case of success or failure. This is especially useful when expecting the remote call to send a reply. CircuitBreaker doesn't support ``Tell Protection`` (protecting against calls that expect a reply) natively at the moment, so you need to use the low-level power-user APIs, ``succeed``  and  ``fail`` methods, as well as ``isClose``, ``isOpen``, ``isHalfOpen`` to implement it.	
+
+As can be seen in the examples below, a ``Tell Protection`` pattern could be implemented by using the ``succeed`` and ``fail`` methods, which would count towards the :class:`CircuitBreaker` counts. In the example, a call is made to the remote service if the ``breaker.isClosed``, and once a response is received, the ``succeed`` method is invoked, which tells the :class:`CircuitBreaker` to keep the breaker closed. If on the other hand an error or timeout is received, we trigger a ``fail`` and the breaker accrues this failure towards its count for opening the breaker.
 
 .. note::
 
-	The below examples doesn't make a remote call when the state is `HalfOpen`. Using the power-user APIs, it is
-	your responsibility to judge when to make remote calls in `HalfOpen`.
+	The below examples doesn't make a remote call when the state is `HalfOpen`. Using the power-user APIs, it is your responsibility to judge when to make remote calls in `HalfOpen`.
 
 
-^^^^^^^
+~~~~~~
 Scala
-^^^^^^^
+~~~~~~
 
 .. includecode:: code/docs/circuitbreaker/CircuitBreakerDocSpec.scala
    :include: circuit-breaker-tell-pattern
 
-^^^^^^^
+
+~~~~~
 Java
-^^^^^^^
+~~~~~
 
 .. includecode:: code/docs/circuitbreaker/TellPatternJavaActor.java
    :include: circuit-breaker-tell-pattern
-
 
