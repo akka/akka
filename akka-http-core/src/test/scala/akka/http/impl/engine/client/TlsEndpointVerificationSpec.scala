@@ -13,17 +13,15 @@ import akka.stream.testkit.AkkaSpec
 import akka.http.impl.util._
 import akka.http.scaladsl.{ HttpsContext, Http }
 import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpRequest }
-import akka.http.scaladsl.model.headers.Host
+import akka.http.scaladsl.model.headers.{ Host, `Tls-Session-Info` }
 import org.scalatest.time.{ Span, Seconds }
 import scala.concurrent.Future
-import akka.testkit.EventFilter
-import javax.net.ssl.SSLException
 
 class TlsEndpointVerificationSpec extends AkkaSpec("""
     akka.loglevel = INFO
     akka.io.tcp.trace-logging = off
+    akka.http.parsing.tls-session-info-header = on
   """) with ScalaFutures {
-
   implicit val materializer = ActorMaterializer()
 
   /*
@@ -47,6 +45,8 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
 
       whenReady(pipe(HttpRequest(uri = "https://akka.example.org:8080/")), timeout) { response ⇒
         response.status shouldEqual StatusCodes.OK
+        val tlsInfo = response.header[`Tls-Session-Info`].get
+        tlsInfo.peerPrincipal.get.getName shouldEqual "CN=akka.example.org,O=Internet Widgits Pty Ltd,ST=Some-State,C=AU"
       }
     }
     "not accept certificates for foreign hosts" in {
@@ -96,7 +96,12 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     Source.single(req).via(pipelineFlow(clientContext, hostname)).runWith(Sink.head)
 
   def pipelineFlow(clientContext: HttpsContext, hostname: String): Flow[HttpRequest, HttpResponse, Unit] = {
-    val handler: HttpRequest ⇒ HttpResponse = _ ⇒ HttpResponse()
+    val handler: HttpRequest ⇒ HttpResponse = { req ⇒
+      // verify Tls-Session-Info header information
+      val name = req.header[`Tls-Session-Info`].flatMap(_.localPrincipal).map(_.getName)
+      if (name.exists(_ == "CN=akka.example.org,O=Internet Widgits Pty Ltd,ST=Some-State,C=AU")) HttpResponse()
+      else HttpResponse(StatusCodes.BadRequest, entity = "Tls-Session-Info header verification failed")
+    }
 
     val serverSideTls = Http().sslTlsStage(Some(ExampleHttpContexts.exampleServerContext), Server)
     val clientSideTls = Http().sslTlsStage(Some(clientContext), Client, Some(hostname -> 8080))

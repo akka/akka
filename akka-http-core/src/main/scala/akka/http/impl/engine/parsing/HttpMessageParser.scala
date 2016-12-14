@@ -4,6 +4,10 @@
 
 package akka.http.impl.engine.parsing
 
+import javax.net.ssl.SSLSession
+
+import akka.stream.io.{ SessionBytes, SslTlsInbound }
+
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import akka.parboiled2.CharUtils
@@ -30,11 +34,17 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
   private[this] var completionHandling: CompletionHandling = CompletionOk
   private[this] var terminated = false
 
+  private[this] var lastSession: SSLSession = null // used to prevent having to recreate header on each message
+  private[this] var tlsSessionInfoHeader: `Tls-Session-Info` = null
+  def initialHeaderBuffer: ListBuffer[HttpHeader] =
+    if (settings.includeTlsSessionInfoHeader && tlsSessionInfoHeader != null) ListBuffer(tlsSessionInfoHeader)
+    else ListBuffer()
+
   def isTerminated = terminated
 
-  val stage: PushPullStage[ByteString, Output] =
-    new PushPullStage[ByteString, Output] {
-      def onPush(elem: ByteString, ctx: Context[Output]) = handleParserOutput(self.onPush(elem), ctx)
+  val stage: PushPullStage[SessionBytes, Output] =
+    new PushPullStage[SessionBytes, Output] {
+      def onPush(input: SessionBytes, ctx: Context[Output]) = handleParserOutput(self.parseSessionBytes(input), ctx)
       def onPull(ctx: Context[Output]) = handleParserOutput(self.onPull(), ctx)
       private def handleParserOutput(output: Output, ctx: Context[Output]): SyncDirective =
         output match {
@@ -46,7 +56,14 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
         if (self.onUpstreamFinish()) ctx.finish() else ctx.absorbTermination()
     }
 
-  final def onPush(input: ByteString): Output = {
+  final def parseSessionBytes(input: SessionBytes): Output = {
+    if (input.session ne lastSession) {
+      lastSession = input.session
+      tlsSessionInfoHeader = `Tls-Session-Info`(input.session)
+    }
+    parseBytes(input.bytes)
+  }
+  final def parseBytes(input: ByteString): Output = {
     @tailrec def run(next: ByteString ⇒ StateResult): StateResult =
       (try next(input)
       catch {
@@ -102,7 +119,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
 
   def badProtocol: Nothing
 
-  @tailrec final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = ListBuffer[HttpHeader](),
+  @tailrec final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
                                       headerCount: Int = 0, ch: Option[Connection] = None,
                                       clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
                                       teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,

@@ -27,6 +27,7 @@ final case class ParserSettings(
   illegalHeaderWarnings: Boolean,
   errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity,
   headerValueCacheLimits: Map[String, Int],
+  includeTlsSessionInfoHeader: Boolean,
   customMethods: String ⇒ Option[HttpMethod],
   customStatusCodes: Int ⇒ Option[StatusCode]) extends HttpHeaderParser.Settings {
 
@@ -75,6 +76,7 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
       c getBoolean "illegal-header-warnings",
       ErrorLoggingVerbosity(c getString "error-logging-verbosity"),
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey -> cacheConfig.getInt(kvp.getKey))(collection.breakOut),
+      c getBoolean "tls-session-info-header",
       _ ⇒ None,
       _ ⇒ None)
   }

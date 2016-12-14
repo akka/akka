@@ -8,8 +8,10 @@ import java.lang.Iterable
 import java.net.InetSocketAddress
 import java.security.MessageDigest
 import java.util
+import javax.net.ssl.SSLSession
 
 import akka.event.Logging
+import akka.stream.io.ScalaSessionAPI
 
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success, Try }
@@ -177,7 +179,6 @@ final case class `If-Range`(entityTagOrDateTime: Either[EntityTag, DateTime]) ex
   protected def companion = `If-Range`
 }
 
-// FIXME: resurrect SSL-Session-Info header once akka.io.SslTlsSupport supports it
 final case class RawHeader(name: String, value: String) extends jm.headers.RawHeader {
   val lowercaseName = name.toRootLowerCase
   def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
@@ -758,6 +759,29 @@ object `Set-Cookie` extends ModeledCompanion[`Set-Cookie`]
 final case class `Set-Cookie`(cookie: HttpCookie) extends jm.headers.SetCookie with ModeledHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ cookie
   protected def companion = `Set-Cookie`
+}
+
+/**
+ * Model for the synthetic `Tls-Session-Info` header which carries the SSLSession of the connection
+ * the message carrying this header was received with.
+ *
+ * This header will only be added if it enabled in the configuration by setting
+ *
+ * ```
+ * akka.http.[client|server].parsing.tls-session-info-header = on
+ * ```
+ */
+final case class `Tls-Session-Info`(session: SSLSession) extends jm.headers.TlsSessionInfo with ScalaSessionAPI {
+  override def suppressRendering: Boolean = true
+  override def toString = s"SSL-Session-Info($session)"
+  def name(): String = "SSL-Session-Info"
+  def value(): String = ""
+
+  /** Java API */
+  def getSession(): SSLSession = session
+
+  def lowercaseName: String = name.toRootLowerCase
+  def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
 }
 
 // http://tools.ietf.org/html/rfc7230#section-3.3.1
