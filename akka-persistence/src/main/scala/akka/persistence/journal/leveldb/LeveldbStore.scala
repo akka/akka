@@ -24,7 +24,9 @@ import com.typesafe.config.Config
  */
 private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with LeveldbIdMapping with LeveldbRecovery {
 
-  val config: Config
+  def prepareConfig: Config
+
+  val config: Config = prepareConfig
   val nativeLeveldb = config.getBoolean("native")
 
   val leveldbOptions = new Options().createIfMissing(true)
