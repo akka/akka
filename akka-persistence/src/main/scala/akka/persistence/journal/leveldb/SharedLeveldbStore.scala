@@ -25,7 +25,7 @@ class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
   def this() = this(null)
 
   override def prepareConfig: Config =
-    if (cfg ne null) cfg
+    if (cfg ne null) cfg.getConfig("store")
     else context.system.settings.config.getConfig("akka.persistence.journal.leveldb-shared.store")
 
   def receive = {
