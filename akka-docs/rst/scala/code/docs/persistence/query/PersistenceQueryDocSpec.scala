@@ -46,23 +46,23 @@ object PersistenceQueryDocSpec {
 
   class MyScaladslReadJournal(system: ExtendedActorSystem, config: Config)
     extends akka.persistence.query.scaladsl.ReadJournal
-    with akka.persistence.query.scaladsl.EventsByTagQuery2
+    with akka.persistence.query.scaladsl.EventsByTagQuery
     with akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
-    with akka.persistence.query.scaladsl.AllPersistenceIdsQuery
+    with akka.persistence.query.scaladsl.PersistenceIdsQuery
     with akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery {
 
     private val refreshInterval: FiniteDuration =
       config.getDuration("refresh-interval", MILLISECONDS).millis
 
     override def eventsByTag(
-      tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope2, NotUsed] = offset match {
+      tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] = offset match {
       case Sequence(offsetValue) ⇒
         val props = MyEventsByTagPublisher.props(tag, offsetValue, refreshInterval)
         Source.actorPublisher[EventEnvelope](props)
           .mapMaterializedValue(_ => NotUsed)
           .map {
             case EventEnvelope(offset, id, seqNr, event) =>
-              EventEnvelope2(Sequence(offset), id, seqNr, event)
+              EventEnvelope(Sequence(offset), id, seqNr, event)
           }
       case _ ⇒
         throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
@@ -75,7 +75,7 @@ object PersistenceQueryDocSpec {
       ???
     }
 
-    override def allPersistenceIds(): Source[String, NotUsed] = {
+    override def persistenceIds(): Source[String, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
@@ -98,13 +98,13 @@ object PersistenceQueryDocSpec {
 
   class MyJavadslReadJournal(scaladslReadJournal: MyScaladslReadJournal)
     extends akka.persistence.query.javadsl.ReadJournal
-    with akka.persistence.query.javadsl.EventsByTagQuery2
+    with akka.persistence.query.javadsl.EventsByTagQuery
     with akka.persistence.query.javadsl.EventsByPersistenceIdQuery
-    with akka.persistence.query.javadsl.AllPersistenceIdsQuery
+    with akka.persistence.query.javadsl.PersistenceIdsQuery
     with akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
 
     override def eventsByTag(
-      tag: String, offset: Offset = Sequence(0L)): javadsl.Source[EventEnvelope2, NotUsed] =
+      tag: String, offset: Offset = Sequence(0L)): javadsl.Source[EventEnvelope, NotUsed] =
       scaladslReadJournal.eventsByTag(tag, offset).asJava
 
     override def eventsByPersistenceId(
@@ -113,8 +113,8 @@ object PersistenceQueryDocSpec {
       scaladslReadJournal.eventsByPersistenceId(
         persistenceId, fromSequenceNr, toSequenceNr).asJava
 
-    override def allPersistenceIds(): javadsl.Source[String, NotUsed] =
-      scaladslReadJournal.allPersistenceIds().asJava
+    override def persistenceIds(): javadsl.Source[String, NotUsed] =
+      scaladslReadJournal.persistenceIds().asJava
 
     override def currentPersistenceIds(): javadsl.Source[String, NotUsed] =
       scaladslReadJournal.currentPersistenceIds().asJava
@@ -219,7 +219,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     //#basic-usage
 
     //#all-persistence-ids-live
-    readJournal.allPersistenceIds()
+    readJournal.persistenceIds()
     //#all-persistence-ids-live
 
     //#all-persistence-ids-snap
@@ -229,7 +229,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:
 
-    val blueThings: Source[EventEnvelope2, NotUsed] =
+    val blueThings: Source[EventEnvelope, NotUsed] =
       readJournal.eventsByTag("blue")
 
     // find top 10 blue things:

@@ -9,7 +9,7 @@ import akka.NotUsed
 
 import scala.concurrent.duration._
 import akka.actor.ExtendedActorSystem
-import akka.persistence.query.{ EventEnvelope, EventEnvelope2, Offset, Sequence }
+import akka.persistence.query.{ EventEnvelope, EventEnvelope, Offset, Sequence }
 import akka.persistence.query.journal.leveldb.AllPersistenceIdsPublisher
 import akka.persistence.query.journal.leveldb.EventsByPersistenceIdPublisher
 import akka.persistence.query.journal.leveldb.EventsByTagPublisher
@@ -35,14 +35,14 @@ import com.typesafe.config.Config
  * for the default [[LeveldbReadJournal#Identifier]]. See `reference.conf`.
  */
 class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends ReadJournal
-  with AllPersistenceIdsQuery
+  with PersistenceIdsQuery
   with CurrentPersistenceIdsQuery
   with EventsByPersistenceIdQuery
   with CurrentEventsByPersistenceIdQuery
   with EventsByTagQuery
-  with EventsByTagQuery2
+  with EventsByTagQuery
   with CurrentEventsByTagQuery
-  with CurrentEventsByTagQuery2 {
+  with CurrentEventsByTagQuery {
 
   private val serialization = SerializationExtension(system)
   private val refreshInterval = Some(config.getDuration("refresh-interval", MILLISECONDS).millis)
@@ -51,7 +51,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
 
   private val envelopetoEnvelope2 = Flow[EventEnvelope].map {
     case EventEnvelope(offset, persistenceId, sequenceNr, event) ⇒
-      EventEnvelope2(Sequence(offset), persistenceId, sequenceNr, event)
+      EventEnvelope(Sequence(offset), persistenceId, sequenceNr, event)
   }
 
   /**
@@ -72,7 +72,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def allPersistenceIds(): Source[String, NotUsed] = {
+  override def persistenceIds(): Source[String, NotUsed] = {
     // no polling for this query, the write journal will push all changes, i.e.
     // no refreshInterval
     Source.actorPublisher[String](AllPersistenceIdsPublisher.props(liveQuery = true, maxBufSize, writeJournalPluginId))
@@ -171,7 +171,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def eventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope2, NotUsed] =
+  override def eventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
     offset match {
       case Sequence(offsetValue) ⇒
         eventsByTag(tag, offsetValue).via(envelopetoEnvelope2)
@@ -191,7 +191,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * is completed immediately when it reaches the end of the "result set". Events that are
    * stored after the query is completed are not included in the event stream.
    */
-  override def currentEventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope2, NotUsed] =
+  override def currentEventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
     offset match {
       case Sequence(offsetValue) ⇒
         currentEventsByTag(tag, offsetValue).via(envelopetoEnvelope2)

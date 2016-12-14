@@ -9,7 +9,7 @@ import akka.stream.javadsl.Source
 /**
  * A plugin may optionally support this query by implementing this interface.
  */
-trait AllPersistenceIdsQuery extends ReadJournal {
+trait PersistenceIdsQuery extends ReadJournal {
 
   /**
    * Query all `PersistentActor` identifiers, i.e. as defined by the
@@ -20,6 +20,6 @@ trait AllPersistenceIdsQuery extends ReadJournal {
    * Corresponding query that is completed when it reaches the end of the currently
    * currently used `persistenceIds` is provided by [[CurrentPersistenceIdsQuery#currentPersistenceIds]].
    */
-  def allPersistenceIds(): Source[String, NotUsed]
+  def persistenceIds(): Source[String, NotUsed]
 
 }

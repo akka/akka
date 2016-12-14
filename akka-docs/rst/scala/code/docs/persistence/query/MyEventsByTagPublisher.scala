@@ -6,7 +6,7 @@ package docs.persistence.query
 
 import akka.actor.Props
 import akka.persistence.PersistentRepr
-import akka.persistence.query.{ EventEnvelope, EventEnvelope2, Sequence }
+import akka.persistence.query.{ EventEnvelope, EventEnvelope, Sequence }
 import akka.serialization.SerializationExtension
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
@@ -20,7 +20,7 @@ object MyEventsByTagPublisher {
 
 //#events-by-tag-publisher
 class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteDuration)
-  extends ActorPublisher[EventEnvelope2] {
+  extends ActorPublisher[EventEnvelope] {
 
   private case object Continue
 
@@ -28,7 +28,7 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
 
   private val Limit = 1000
   private var currentOffset = offset
-  var buf = Vector.empty[EventEnvelope2]
+  var buf = Vector.empty[EventEnvelope]
 
   import context.dispatcher
   val continueTask = context.system.scheduler.schedule(
@@ -81,7 +81,7 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
         buf = result.map {
           case (id, bytes) =>
             val p = serialization.deserialize(bytes, classOf[PersistentRepr]).get
-            EventEnvelope2(offset = Sequence(id), p.persistenceId, p.sequenceNr, p.payload)
+            EventEnvelope(offset = Sequence(id), p.persistenceId, p.sequenceNr, p.payload)
         }
       } catch {
         case e: Exception =>
