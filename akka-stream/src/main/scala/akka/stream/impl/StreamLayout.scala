@@ -739,7 +739,7 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
   object WrappedSubscription {
     sealed trait SubscriptionState { def demand: Long }
     case object PassThrough extends SubscriptionState { override def demand: Long = 0 }
-    final case class Buffering(demand: Long) extends SubscriptionState
+    case class Buffering(demand: Long) extends SubscriptionState
 
     val NoBufferedDemand = Buffering(0)
   }
