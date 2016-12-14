@@ -14,13 +14,6 @@ side of an application, however it can help to migrate data from the write side 
 simple scenarios Persistence Query may be powerful enough to fulfill the query needs of your app, however we highly
 recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arises.
 
-.. warning::
-
-  This module is marked as **“experimental”** as of its introduction in Akka 2.4.0. We will continue to
-  improve this API based on our users’ feedback, which implies that while we try to keep incompatible
-  changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
-  contents of the ``akka.persistence.query`` package.
-
 Dependencies
 ============
 
@@ -28,7 +21,7 @@ Akka persistence query is a separate jar file. Make sure that you have the follo
 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-persistence-query-experimental_@binVersion@</artifactId>
+    <artifactId>akka-persistence-query_@binVersion@</artifactId>
     <version>@version@</version>
   </dependency>
 
