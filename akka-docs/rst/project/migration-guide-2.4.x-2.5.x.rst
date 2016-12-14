@@ -80,6 +80,41 @@ non-sharable journal or snapshot store. The proxy is available by setting ``akka
 ``akka.persistence.snapshot-store.plugin`` to ``akka.persistence.journal.proxy`` or ``akka.persistence.snapshot-store.proxy``,
 respectively. The proxy supplants the :ref:`Shared LevelDB journal<shared-leveldb-journal>`.
 
+Akka Persistence Query
+======================
+
+Persistence Query has been promoted to a stable module.
+Only slight API changes were made since the module was introduced:
+
+Query naming consistency improved
+---------------------------------
+Queries always fall into one of the two categories: infinite or finite ("current").
+The naming convention for these categories of queries was solidified and is now as follows:
+
+- "infinite" - e.g. ``eventsByTag``, ``persistenceIds`` - which will keep emitting events as they are persisted and match the query.
+- "finite", also known as "current" - e.g. ``currentEventsByTag``, ``currentPersistenceIds`` - which will complete the stream once the query completed, 
+  for the journal's definition of "current". For example in an SQL store it would mean it only queries the database once.
+
+Only the ``AllPersistenceIdsQuery`` class and method name changed due to this. 
+The class is now called ``PersistenceIdsQuery``, and the method which used to be ``allPersistenceIds`` is now ``persistenceIds``. 
+
+Queries now use ``Offset`` instead of ``Long`` for offsets
+----------------------------------------------------------
+
+This change was made to better accomodate the various types of Journals and their understanding what an offset is.
+For example, in some journals an offset is always a time, while in others it is a numeric offset (like a sequence id).
+
+Instead of the previous ``Long`` offset you can now use the provided ``Offset`` factories (and types):
+
+- ``akka.persistence.query.Offset.sequence(value: Long)``, 
+- ``akka.persistence.query.Offset.timeBasedUUID(value: UUID)``
+- and finally ``NoOffset`` if not offset should be used. 
+
+Journals are also free to provide their own specific ``Offset`` types. Consult your journal plugin's documentation for details.
+
+
+-----
+
 
 Cluster
 =======
