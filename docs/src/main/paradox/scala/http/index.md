@@ -1,6 +1,8 @@
 <a id="http-scala"></a>
 # Akka HTTP
 
+Akka HTTP API - @scaladoc:[ScalaDoc](akka.http.scaladsl.index)
+
 @@toc { depth=3 }
 
 @@@ index
