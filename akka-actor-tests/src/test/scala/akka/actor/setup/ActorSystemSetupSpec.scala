@@ -1,8 +1,9 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.actor
+package akka.actor.setup
 
+import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.scalatest.{ Matchers, WordSpec }
 

@@ -6,9 +6,12 @@ package akka.actor
 import language.postfixOps
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.{ ExecutionContext, Await, Future }
+
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
-import java.util.concurrent.{ RejectedExecutionException, ConcurrentLinkedQueue }
+import java.util.concurrent.{ ConcurrentLinkedQueue, RejectedExecutionException }
+
+import akka.actor.setup.ActorSystemSetup
 import akka.util.Timeout
 import akka.japi.Util.immutableSeq
 import akka.pattern.ask

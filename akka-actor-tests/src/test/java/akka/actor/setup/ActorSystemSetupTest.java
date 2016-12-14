@@ -1,8 +1,10 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.actor;
+package akka.actor.setup;
 
+import akka.actor.setup.ActorSystemSetup;
+import akka.actor.setup.Setup;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 

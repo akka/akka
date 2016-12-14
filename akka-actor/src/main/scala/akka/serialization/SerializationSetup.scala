@@ -3,7 +3,8 @@
  */
 package akka.serialization
 
-import akka.actor.{ Setup, ExtendedActorSystem }
+import akka.actor.ExtendedActorSystem
+import akka.actor.setup.Setup
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._

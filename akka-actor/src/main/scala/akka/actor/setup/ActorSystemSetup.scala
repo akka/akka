@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.actor
+package akka.actor.setup
 
 import java.util.Optional
 
@@ -45,7 +45,7 @@ object ActorSystemSetup {
 /**
  * A set of setup settings for programmatic configuration of the actor system.
  *
- * Constructor is *Internal API*. Use the factory methods [[ActorSystemSetup#create]] and [[Actor#apply]] to create
+ * Constructor is *Internal API*. Use the factory methods [[ActorSystemSetup#create]] and [[akka.actor.Actor#apply]] to create
  * instances.
  */
 final class ActorSystemSetup private[akka] (setups: Map[Class[_], AnyRef]) {

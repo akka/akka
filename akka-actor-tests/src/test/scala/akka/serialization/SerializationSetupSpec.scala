@@ -3,7 +3,8 @@
  */
 package akka.serialization
 
-import akka.actor.{ ActorSystem, ActorSystemSetup, BootstrapSetup }
+import akka.actor.setup.ActorSystemSetup
+import akka.actor.{ ActorSystem, BootstrapSetup }
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 

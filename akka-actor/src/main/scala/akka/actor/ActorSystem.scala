@@ -23,6 +23,9 @@ import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Fut
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ ControlThrowable, NonFatal }
 import java.util.Optional
+
+import akka.actor.setup.{ ActorSystemSetup, Setup }
+
 import scala.compat.java8.OptionConverters._
 
 object BootstrapSetup {
