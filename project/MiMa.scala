@@ -118,7 +118,18 @@ object MiMa extends AutoPlugin {
       // object akka.stream.stage.StatefulStage#Stay does not have a correspondent in current version
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Stay$"),
       // object akka.stream.stage.StatefulStage#Finish does not have a correspondent in current version
-      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$")
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$"),
+      
+      // #21423 removal of deprecated `PersistentView` (in 2.5.x)
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$ScheduledUpdate"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.AbstractPersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.UntypedPersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$ScheduledUpdate$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$State")
     )
 
     Map(
