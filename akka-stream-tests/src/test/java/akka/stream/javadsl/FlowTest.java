@@ -385,12 +385,14 @@ public class FlowTest extends StreamTest {
   @Test
   public void mustBeAbleToUseAsyncMerge() throws Exception {
     final Flow<String, String, NotUsed> f1 =
-        Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f1");
+        Flow.of(String.class).via(FlowTest.this.<String> op()).named("f1");
+
     final Flow<String, String, NotUsed> f2 =
-        Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f2");
+        Flow.of(String.class).via(FlowTest.this.<String> op()).named("f2");
+
     @SuppressWarnings("unused")
     final Flow<String, String, NotUsed> f3 =
-        Flow.of(String.class).transform(FlowTest.this.<String> op()).named("f3");
+        Flow.of(String.class).via(FlowTest.this.<String> op()).named("f3");
 
     final Source<String, NotUsed> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String, NotUsed> in2 = Source.from(Arrays.asList("d", "e", "f"));
