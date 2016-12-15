@@ -85,7 +85,14 @@ We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
 
 
+Actor DSL
+=========
 
+Actor DSL deprecation
+---------------------
+
+Actor DSL is a rarely used feature and thus will be deprecated and removed.
+Use plain ``system.actorOf`` instead of the DSL to create Actors if you have been using it.
 
 Akka Persistence
 ================
