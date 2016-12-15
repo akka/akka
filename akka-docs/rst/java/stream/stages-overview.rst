@@ -743,6 +743,8 @@ recover
 ^^^^^^^
 Allow sending of one last element downstream when a failure has happened upstream.
 
+Throwing an exception inside ``recover`` _will_ be logged on ERROR level automatically.
+
 **emits** when the element is available from the upstream or upstream is failed and pf returns an element
 
 **backpressures** when downstream backpressures, not when failure happened
@@ -753,11 +755,44 @@ recoverWith
 ^^^^^^^^^^^
 Allow switching to alternative Source when a failure has happened upstream.
 
+Throwing an exception inside ``recoverWith`` _will_ be logged on ERROR level automatically.
+
 **emits** the element is available from the upstream or upstream is failed and pf returns alternative Source
 
 **backpressures** downstream backpressures, after failure happened it backprssures to alternative Source
 
 **completes** upstream completes or upstream failed with exception pf can handle
+
+recoverWithRetries
+^^^^^^^^^^^^^^^^^^
+RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
+a failure has been recovered up to `attempts` number of times so that each time there is a failure
+it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
+attempt to recover at all. Passing -1 will behave exactly the same as  `recoverWith`.
+
+Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+
+**emits** when element is available from the upstream or upstream is failed and element is available from alternative Source
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or upstream failed with exception pf can handle
+
+mapError
+^^^^^^^^
+While similar to ``recover`` this stage can be used to transform an error signal to a different one *without* logging
+it as an error in the process. So in that sense it is NOT exactly equivalent to ``recover(t -> throw t2)`` since recover
+would log the ``t2`` error.
+
+Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+
+Similarily to ``recover`` throwing an exception inside ``mapError`` _will_ be logged on ERROR level automatically.
+
+**emits** when element is available from the upstream or upstream is failed and pf returns an element
+**backpressures** when downstream backpressures
+**completes** when upstream completes or upstream failed with exception pf can handle
 
 detach
 ^^^^^^

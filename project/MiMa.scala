@@ -1033,7 +1033,18 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.write"),
 
         // #20737 aligned test sink and test source stage factory methods types
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.TestSinkStage.apply")
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.TestSinkStage.apply"),
+
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+        FilterAnyProblemStartingWith("akka.remote.artery"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.MessageSerializer.serializeForArtery"),
+
+        // https://github.com/akka/akka/pull/21688
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo"),
+        
+        // https://github.com/akka/akka/pull/21989 - add more information in tcp connection shutdown logs (add mapError)
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.mapError")
       )
     )
   }
