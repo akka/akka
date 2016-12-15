@@ -118,7 +118,10 @@ object MiMa extends AutoPlugin {
       // object akka.stream.stage.StatefulStage#Stay does not have a correspondent in current version
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Stay$"),
       // object akka.stream.stage.StatefulStage#Finish does not have a correspondent in current version
-      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$")
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$"),
+      // #22015 removal of deprecated AESCounterSecureInetRNGs
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES128CounterInetRNG"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES256CounterInetRNG")
     )
 
     Map(
