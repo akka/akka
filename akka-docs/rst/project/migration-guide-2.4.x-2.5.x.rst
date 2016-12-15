@@ -4,6 +4,24 @@
 Migration Guide 2.4.x to 2.5.x
 ##############################
 
+Akka Persistence
+================
+
+Removal of PersistentView
+-------------------------
+
+After being deprecated for a long time, and replaced by :ref:`Persistence Query Java <persistence-query-java>`
+(:ref:`Persistence Query Scala <persistence-query-scala>`) ``PersistentView`` has been removed now removed.
+
+The corresponding query type is ``EventsByPersistenceId``. There are several alternatives for connecting the ``Source``
+to an actor corresponding to a previous ``PersistentView``. There are several alternatives for connecting the ``Source``
+to an actor corresponding to a previous ``PersistentView`` actor which are documented in :ref:`stream-integrations-scala` 
+for Scala and :ref:`Java <stream-integrations-java>`.
+  
+The consuming actor may be a plain ``Actor`` or an ``PersistentActor`` if it needs to store its own state (e.g. ``fromSequenceNr`` offset).
+
+Please note that Persistence Query is not experimental anymore in Akka ``2.5.0``, so you can safely upgrade to it.
+
 Akka Streams
 ============
 
@@ -67,7 +85,14 @@ We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
 
 
+Actor DSL
+=========
 
+Actor DSL deprecation
+---------------------
+
+Actor DSL is a rarely used feature and thus will be deprecated and removed.
+Use plain ``system.actorOf`` instead of the DSL to create Actors if you have been using it.
 
 Akka Persistence
 ================

@@ -54,10 +54,6 @@ Architecture
   When a persistent actor is started or restarted, journaled messages are replayed to that actor so that it can
   recover internal state from these messages.
 
-* *AbstractPersistentView*: A view is a persistent, stateful actor that receives journaled messages that have been written by another
-  persistent actor. A view itself does not journal new messages, instead, it updates internal state only from a persistent actor's
-  replicated message stream.
-
 * *AbstractPersistentActorAtLeastOnceDelivery*: To send messages with at-least-once delivery semantics to destinations, also in
   case of sender and receiver JVM crashes.
 
@@ -456,90 +452,6 @@ mechanism when ``persist()`` is used. Notice the early stop behaviour that occur
 .. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#safe-shutdown
 .. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#safe-shutdown-example-bad
 .. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#safe-shutdown-example-good
-
-.. _persistent-views-java-lambda:
-
-Persistent Views
-================
-
-.. warning::
-
-  ``AbstractPersistentView`` is deprecated. Use :ref:`persistence-query-java` instead. The corresponding
-  query type is ``EventsByPersistenceId``. There are several alternatives for connecting the ``Source``
-  to an actor corresponding to a previous ``UntypedPersistentView`` actor:
-
-  * `Sink.actorRef`_ is simple, but has the disadvantage that there is no back-pressure signal from the
-    destination actor, i.e. if the actor is not consuming the messages fast enough the mailbox of the actor will grow
-  * `mapAsync`_ combined with :ref:`actors-ask-lambda` is almost as simple with the advantage of back-pressure
-    being propagated all the way
-  * `ActorSubscriber`_ in case you need more fine grained control
-
-  The consuming actor may be a plain ``AbstractActor`` or an ``AbstractPersistentActor`` if it needs to store its
-  own state (e.g. fromSequenceNr offset).
-
-.. _Sink.actorRef: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/java/stream-integrations.html#Sink_actorRef
-.. _mapAsync: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/stages-overview.html#Asynchronous_processing_stages
-.. _ActorSubscriber: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/java/stream-integrations.html#ActorSubscriber
-
-Persistent views can be implemented by extending the ``AbstractView`` abstract class, implement the ``persistenceId`` method
-and setting the “initial behavior” in the constructor by calling the :meth:`receive` method.
-
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#view
-
-The ``persistenceId`` identifies the persistent actor from which the view receives journaled messages. It is not necessary that
-the referenced persistent actor is actually running. Views read messages from a persistent actor's journal directly. When a
-persistent actor is started later and begins to write new messages, by default the corresponding view is updated automatically.
-
-It is possible to determine if a message was sent from the Journal or from another actor in user-land by calling the ``isPersistent``
-method. Having that said, very often you don't need this information at all and can simply apply the same logic to both cases
-(skip the ``if isPersistent`` check).
-
-Updates
--------
-
-The default update interval of all persistent views of an actor system is configurable:
-
-.. includecode:: ../scala/code/docs/persistence/PersistenceDocSpec.scala#auto-update-interval
-
-``AbstractPersistentView`` implementation classes may also override the ``autoUpdateInterval`` method to return a custom update
-interval for a specific view class or view instance. Applications may also trigger additional updates at
-any time by sending a view an ``Update`` message.
-
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#view-update
-
-If the ``await`` parameter is set to ``true``, messages that follow the ``Update`` request are processed when the
-incremental message replay, triggered by that update request, completed. If set to ``false`` (default), messages
-following the update request may interleave with the replayed message stream. Automated updates always run with
-``await = false``.
-
-Automated updates of all persistent views of an actor system can be turned off by configuration:
-
-.. includecode:: ../scala/code/docs/persistence/PersistenceDocSpec.scala#auto-update
-
-Implementation classes may override the configured default value by overriding the ``autoUpdate`` method. To
-limit the number of replayed messages per update request, applications can configure a custom
-``akka.persistence.view.auto-update-replay-max`` value or override the ``autoUpdateReplayMax`` method. The number
-of replayed messages for manual updates can be limited with the ``replayMax`` parameter of the ``Update`` message.
-
-Recovery
---------
-
-Initial recovery of persistent views works the very same way as for persistent actors (i.e. by sending a ``Recover`` message
-to self). The maximum number of replayed messages during initial recovery is determined by ``autoUpdateReplayMax``.
-Further possibilities to customize initial recovery are explained in section :ref:`recovery-java-lambda`.
-
-.. _persistence-identifiers-java-lambda:
-
-Identifiers
------------
-
-A persistent view must have an identifier that doesn't change across different actor incarnations.
-The identifier must be defined with the ``viewId`` method.
-
-The ``viewId`` must differ from the referenced ``persistenceId``, unless :ref:`snapshots-java-lambda` of a view and its
-persistent actor should be shared (which is what applications usually do not want).
-
-.. _snapshots-java-lambda:
 
 Snapshots
 =========

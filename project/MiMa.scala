@@ -119,6 +119,18 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Stay$"),
       // object akka.stream.stage.StatefulStage#Finish does not have a correspondent in current version
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$"),
+      
+      // #21423 removal of deprecated `PersistentView` (in 2.5.x)
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$ScheduledUpdate"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.AbstractPersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.UntypedPersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$ScheduledUpdate$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$State"),
+
       // #22015 removal of deprecated AESCounterSecureInetRNGs
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES128CounterInetRNG"),
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES256CounterInetRNG")
