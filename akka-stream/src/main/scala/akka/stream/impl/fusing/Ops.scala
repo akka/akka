@@ -270,6 +270,28 @@ final case class Recover[T](pf: PartialFunction[Throwable, T]) extends SimpleLin
 }
 
 /**
+ * Maps error with the provided function if it is defined for an error or, otherwise, passes it on unchanged.
+ *
+ * While similar to [[Recover]] this stage can be used to transform an error signal to a different one *without* logging
+ * it as an error in the process. So in that sense it is NOT exactly equivalent to `recover(t => throw t2)` since recover
+ * would log the `t2` error.
+ */
+final case class MapError[T](f: PartialFunction[Throwable, Throwable]) extends SimpleLinearGraphStage[T] {
+  override def createLogic(attr: Attributes) =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      override def onPush(): Unit = push(out, grab(in))
+
+      override def onUpstreamFailure(ex: Throwable): Unit =
+        if (f.isDefinedAt(ex)) super.onUpstreamFailure(f(ex))
+        else super.onUpstreamFailure(ex)
+
+      override def onPull(): Unit = pull(in)
+
+      setHandlers(in, out, this)
+    }
+}
+
+/**
  * INTERNAL API
  */
 final case class Take[T](count: Long) extends SimpleLinearGraphStage[T] {
