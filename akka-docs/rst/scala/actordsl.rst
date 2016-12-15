@@ -1,8 +1,11 @@
 .. _actordsl-scala:
 
-################
- Actor DSL
-################
+Actor DSL
+#########
+
+.. warning::
+  Actor DSL is deprecated and will be removed in the near future.
+  Use plain ``system.actorOf`` or ``context.actorOf`` instead.
 
 The Actor DSL
 =============
