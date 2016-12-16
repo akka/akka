@@ -120,6 +120,15 @@ abstract class SerializerWithStringManifest extends Serializer {
   /**
    * Produces an object from an array of bytes, with an optional type-hint;
    * the class should be loaded using ActorSystem.dynamicAccess.
+   *
+   * It's recommended to throw `java.io.NotSerializableException` in `fromBinary`
+   * if the manifest is unknown. This makes it possible to introduce new message
+   * types and send them to nodes that don't know about them. This is typically
+   * needed when performing rolling upgrades, i.e. running a cluster with mixed
+   * versions for while. `NotSerializableException` is treated as a transient
+   * problem in the TCP based remoting layer. The problem will be logged
+   * and message is dropped. Other exceptions will tear down the TCP connection
+   * because it can be an indication of corrupt bytes from the underlying transport.
    */
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef
 

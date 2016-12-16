@@ -984,7 +984,18 @@ private[remote] class EndpointReader(
           if (msg.reliableDeliveryEnabled) {
             ackedReceiveBuffer = ackedReceiveBuffer.receive(msg)
             deliverAndAck()
-          } else msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.senderOption)
+          } else try
+            msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.senderOption)
+          catch {
+            case e: NotSerializableException ⇒
+              val sm = msg.serializedMessage
+              log.warning(
+                "Serializer not defined for message with serializer id [{}] and manifest [{}]. " +
+                  "Transient association error (association remains live). {}",
+                sm.getSerializerId,
+                if (sm.hasMessageManifest) sm.getMessageManifest.toStringUtf8 else "",
+                e.getMessage)
+          }
 
         case None ⇒
       }
