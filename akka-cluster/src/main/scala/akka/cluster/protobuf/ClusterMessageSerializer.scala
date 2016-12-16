@@ -18,6 +18,7 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
+import java.io.NotSerializableException
 
 /**
  * Protobuf serializer of cluster messages.
@@ -107,7 +108,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = clazz match {
     case Some(c) ⇒ fromBinaryMap.get(c.asInstanceOf[Class[ClusterMessage]]) match {
       case Some(f) ⇒ f(bytes)
-      case None    ⇒ throw new IllegalArgumentException(s"Unimplemented deserialization of message class $c in ClusterSerializer")
+      case None    ⇒ throw new NotSerializableException(s"Unimplemented deserialization of message class $c in ClusterSerializer")
     }
     case _ ⇒ throw new IllegalArgumentException("Need a cluster message class to be able to deserialize bytes in ClusterSerializer")
   }
@@ -175,8 +176,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
       } else {
         // old remote node
         uniqueAddress.getUid.toLong
-      }
-    )
+      })
   }
 
   private val memberStatusToInt = scala.collection.immutable.HashMap[MemberStatus, Int](

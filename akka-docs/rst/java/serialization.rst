@@ -145,6 +145,16 @@ This is how a ``SerializerWithStringManifest`` looks like:
 You must also bind it to a name in your :ref:`configuration` and then list which classes
 that should be serialized using it.
 
+It's recommended to throw ``java.io.NotSerializableException`` in ``fromBinary``
+if the manifest is unknown. This makes it possible to introduce new message types and
+send them to nodes that don't know about them. This is typically needed when performing 
+rolling upgrades, i.e. running a cluster with mixed versions for while.
+``NotSerializableException`` is treated as a transient problem in the TCP based remoting 
+layer. The problem will be logged and message is dropped. Other exceptions will tear down
+the TCP connection because it can be an indication of corrupt bytes from the underlying 
+transport.
+
+
 Serializing ActorRefs
 ---------------------
 
