@@ -138,13 +138,14 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "write single line to a file from lazy sink" in assertAllStagesStopped {
+      //LazySink must wait for result of initialization even if got upstreamComplete
       targetFile { f ⇒
         val completion = Source(List(TestByteStrings.head))
           .runWith(Sink.lazyInit[ByteString, Future[IOResult]](
             _ ⇒ Future.successful(FileIO.toPath(f)), () ⇒ Future.successful(IOResult.createSuccessful(0)))
             .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext)))
 
-        val result = Await.result(completion, 3.seconds)
+        Await.result(completion, 3.seconds)
 
         checkFileContents(f, TestLines.head)
       }

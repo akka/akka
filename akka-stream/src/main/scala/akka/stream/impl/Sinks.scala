@@ -446,6 +446,7 @@ final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(stoppingDecider)
 
+    var completed = false
     val promise = Promise[M]()
     val stageLogic = new GraphStageLogic(shape) with InHandler {
       override def preStart(): Unit = pull(in)
@@ -453,11 +454,17 @@ final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]
       override def onPush(): Unit = {
         try {
           val element = grab(in)
-          val cb: AsyncCallback[Try[Sink[T, M]]] = getAsyncCallback {
-            case Success(sink) ⇒ initInternalSource(sink, element)
-            case Failure(e)    ⇒ failure(e)
-          }
+          val cb: AsyncCallback[Try[Sink[T, M]]] =
+            getAsyncCallback {
+              case Success(sink) ⇒ initInternalSource(sink, element)
+              case Failure(e)    ⇒ failure(e)
+            }
           sinkFactory(element).onComplete { cb.invoke }(ExecutionContexts.sameThreadExecutionContext)
+          setHandler(in, new InHandler {
+            override def onPush(): Unit = ()
+            override def onUpstreamFinish(): Unit = gotCompletionEvent()
+            override def onUpstreamFailure(ex: Throwable): Unit = failure(ex)
+          })
         } catch {
           case NonFatal(e) ⇒ decider(e) match {
             case Supervision.Stop ⇒ failure(e)
@@ -478,9 +485,13 @@ final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]
       override def onUpstreamFailure(ex: Throwable): Unit = failure(ex)
       setHandler(in, this)
 
+      private def gotCompletionEvent(): Unit = {
+        setKeepGoing(true)
+        completed = true
+      }
+
       private def initInternalSource(sink: Sink[T, M], firstElement: T): Unit = {
         val sourceOut = new SubSourceOutlet[T]("LazySink")
-        var completed = false
 
         def switchToFirstElementHandlers(): Unit = {
           sourceOut.setHandler(new OutHandler {
@@ -493,10 +504,7 @@ final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]
 
           setHandler(in, new InHandler {
             override def onPush(): Unit = sourceOut.push(grab(in))
-            override def onUpstreamFinish(): Unit = {
-              setKeepGoing(true)
-              completed = true
-            }
+            override def onUpstreamFinish(): Unit = gotCompletionEvent()
             override def onUpstreamFailure(ex: Throwable): Unit = internalSourceFailure(ex)
           })
         }
