@@ -16,6 +16,7 @@ import akka.protobuf.{ ByteString, MessageLite }
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.{ asJavaIterableConverter, asScalaBufferConverter, setAsJavaSetConverter }
 import akka.serialization.SerializerWithStringManifest
+import java.io.NotSerializableException
 
 /**
  * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.
@@ -66,7 +67,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
     case MetricsGossipEnvelopeManifest ⇒ metricsGossipEnvelopeFromBinary(bytes)
-    case _ ⇒ throw new IllegalArgumentException(
+    case _ ⇒ throw new NotSerializableException(
       s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}")
   }
 

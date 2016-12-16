@@ -12,6 +12,7 @@ import com.typesafe.config.ConfigFactory
 
 import scala.util.control.NoStackTrace
 import java.util.Optional
+import java.io.NotSerializableException
 
 object MiscMessageSerializerSpec {
   val serializationTestOverrides =
@@ -103,7 +104,7 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
     }
 
     "reject deserialization with invalid manifest" in {
-      intercept[IllegalArgumentException] {
+      intercept[NotSerializableException] {
         val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
         serializer.fromBinary(Array.empty[Byte], "INVALID")
       }
