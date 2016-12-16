@@ -752,7 +752,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @return the builder with the case statement added
    */
   final def matchEvent[ET, DT <: D](eventType: Class[ET], dataType: Class[DT], predicate: TypedPredicate2[ET, DT], apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D, E] =
-    new FSMStateFunctionBuilder[S, D, E]().event(eventType, dataType, apply)
+    new FSMStateFunctionBuilder[S, D, E]().event(eventType, dataType, predicate, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
