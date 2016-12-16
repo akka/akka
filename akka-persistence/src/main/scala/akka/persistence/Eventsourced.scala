@@ -184,6 +184,8 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
   /** INTERNAL API. */
   override protected[akka] def aroundPreStart(): Unit = {
+    require(persistenceId ne null, s"persistenceId is [null] for PersistentActor [${self.path}]")
+
     // Fail fast on missing plugins.
     val j = journal; val s = snapshotStore
     startRecovery(recovery)
