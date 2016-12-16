@@ -94,9 +94,7 @@ Dangerous Variants
 This method is not recommended to be used within another actor because it
 encourages to close over the enclosing scope, resulting in non-serializable
 :class:`Props` and possibly race conditions (breaking the actor encapsulation).
-We will provide a macro-based solution in a future release which allows similar
-syntax without the headaches, at which point this variant will be properly
-deprecated. On the other hand using this variant in a :class:`Props` factory in
+On the other hand using this variant in a :class:`Props` factory in
 the actor’s companion object as documented under “Recommended Practices” below
 is completely fine.
 
