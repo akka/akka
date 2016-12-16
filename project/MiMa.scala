@@ -1044,7 +1044,11 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo"),
         
         // https://github.com/akka/akka/pull/21989 - add more information in tcp connection shutdown logs (add mapError)
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.mapError")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.mapError"),
+
+        // #21894 Programmatic configuration of the ActorSystem
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")
+
       )
     )
   }
