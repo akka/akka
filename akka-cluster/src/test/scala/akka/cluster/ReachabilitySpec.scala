@@ -224,5 +224,16 @@ class ReachabilitySpec extends WordSpec with Matchers {
       r.status(nodeB, nodeE) should ===(Reachable)
     }
 
+    "remove correctly after pruning" in {
+      val r = Reachability.empty.
+        unreachable(nodeB, nodeA).unreachable(nodeB, nodeC).
+        unreachable(nodeD, nodeC).
+        reachable(nodeB, nodeA).reachable(nodeB, nodeC)
+      r.records should ===(Vector(Record(nodeD, nodeC, Unreachable, 1L)))
+      val r2 = r.remove(List(nodeB))
+      r2.allObservers should ===(Set(nodeD))
+      r2.versions.keySet should ===(Set(nodeD))
+    }
+
   }
 }
