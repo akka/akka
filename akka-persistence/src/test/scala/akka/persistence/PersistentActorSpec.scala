@@ -7,7 +7,7 @@ package akka.persistence
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor._
-import akka.testkit.{ ImplicitSender, TestLatch, TestProbe }
+import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
 import com.typesafe.config.Config
 
 import scala.collection.immutable.Seq
@@ -661,6 +661,20 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
   }
 
   "A persistent actor" must {
+    "fail fast if persistenceId is null" in {
+      import akka.testkit.filterEvents
+      filterEvents(EventFilter[ActorInitializationException]()) {
+        EventFilter.error(message = "requirement failed: persistenceId is [null] for PersistentActor") intercept {
+          val ref = system.actorOf(Props(new NamedPersistentActor(null) {
+            override def receiveRecover: Receive = Actor.emptyBehavior
+
+            override def receiveCommand: Receive = Actor.emptyBehavior
+          }))
+          watch(ref)
+          expectTerminated(ref)
+        }
+      }
+    }
     "recover from persisted events" in {
       val persistentActor = namedPersistentActor[Behavior1PersistentActor]
       persistentActor ! GetState
