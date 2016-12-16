@@ -250,6 +250,16 @@ And the ``eventsByTag`` could be backed by such an Actor for example:
 
 .. includecode:: code/docs/persistence/query/MyEventsByTagPublisher.scala#events-by-tag-publisher
 
+The ``ReadJournalProvider`` class must have a constructor with one of these signatures:
+
+* constructor with a ``ExtendedActorSystem`` parameter, a ``com.typesafe.config.Config`` parameter, and a ``String`` parameter for the config path
+* constructor with a ``ExtendedActorSystem`` parameter, and a ``com.typesafe.config.Config`` parameter
+* constructor with one ``ExtendedActorSystem`` parameter
+* constructor without parameters
+
+The plugin section of the actor system's config will be passed in the config constructor parameter. The config path
+of the plugin is passed in the ``String`` parameter.
+
 If the underlying datastore only supports queries that are completed when they reach the
 end of the "result set", the journal has to submit new queries after a while in order
 to support "infinite" event streams that include events stored after the initial query

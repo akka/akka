@@ -28,6 +28,10 @@ class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfte
     "be found by full config key" in {
       withActorSystem() { system ⇒
         PersistenceQuery.get(system).readJournalFor[DummyReadJournal](DummyReadJournal.Identifier)
+        // other combinations of constructor parameters
+        PersistenceQuery.get(system).readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "2")
+        PersistenceQuery.get(system).readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "3")
+        PersistenceQuery.get(system).readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "4")
       }
     }
 
