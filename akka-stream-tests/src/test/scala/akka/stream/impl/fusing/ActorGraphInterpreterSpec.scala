@@ -13,13 +13,12 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.testkit.EventFilter
 
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 class ActorGraphInterpreterSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
-  implicit def ec: ExecutionContext = materializer.executionContext
 
   "ActorGraphInterpreter" must {
 
@@ -254,16 +253,8 @@ class ActorGraphInterpreterSpec extends StreamSpec {
         }
       }
 
-      EventFilter[IllegalArgumentException](
-        pattern = "Error in stage.*", occurrences = 1).intercept {
-        Await.result(Source.fromGraph(failyStage).
-          runWith(Sink.ignore), 3.seconds)
-      }
-
-      EventFilter[IllegalArgumentException](
-        pattern = "Error in stage.*", occurrences = 1).intercept {
-        Await.result(Source.fromFutureGraph(Future(failyStage)).
-          runWith(Sink.ignore), 3.seconds)
+      EventFilter[IllegalArgumentException](pattern = "Error in stage.*", occurrences = 1).intercept {
+        Await.result(Source.fromGraph(failyStage).runWith(Sink.ignore), 3.seconds)
       }
     }
 

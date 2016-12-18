@@ -312,7 +312,7 @@ object GraphStages {
     val out = Outlet[T]("futureFlatten.out")
     val shape = SourceShape(out)
 
-    override def initialAttributes = DefaultAttributes.futureSource // TODO
+    override def initialAttributes = DefaultAttributes.futureSource
 
     def createLogicAndMaterializedValue(attr: Attributes): (GraphStageLogic, Future[M]) = {
       val materialized = Promise[M]()
@@ -332,7 +332,9 @@ object GraphStages {
                 done.map(_ ⇒ m)(ExecutionContexts.sameThreadExecutionContext))
             }
 
-            src.runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
+            interpreter.subFusingMaterializer.materialize(
+              src.to(sinkIn.sink),
+              initialAttributes = attr)
           }
 
           case scala.util.Failure(t) ⇒ failStage(t)

@@ -174,33 +174,6 @@ class StreamLayoutSpec extends StreamSpec {
         fut.futureValue(veryPatient) should ===(List(42))
       }
 
-      "starting from a future Source" in {
-        val g = Source.fromFutureGraph(Future {
-          Thread.sleep(2000)
-          Fusing.aggressive((1 to tooDeepForStack).
-            foldLeft(Source.single(42).mapMaterializedValue(_ ⇒ 1))(
-              (f, i) ⇒ f.map(identity)))
-        })
-
-        val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
-        mat.futureValue(veryPatient) should ===(1)
-        fut.futureValue(veryPatient) should ===(List(42))
-      }
-
-      "starting from a completion stage of Source" in {
-        val future: Future[Graph[SourceShape[Int], Int]] = Future {
-          Fusing.aggressive((1 to tooDeepForStack).
-            foldLeft(Source.single(43).mapMaterializedValue(_ ⇒ 1))(
-              (f, i) ⇒ f.map(identity)))
-        }
-        val stage: CompletionStage[Graph[SourceShape[Int], Int]] = future.toJava
-        val g = Source.fromGraphCompletionStage(stage)
-
-        val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
-        mat.toScala.futureValue(veryPatient) should ===(1)
-        fut.futureValue(veryPatient) should ===(List(43))
-      }
-
       "starting from a Flow" in {
         val g = Flow fromGraph Fusing.aggressive((1 to tooDeepForStack).foldLeft(Flow[Int])((f, i) ⇒ f.map(identity)))
         val (mat, fut) = g.runWith(Source.single(42).mapMaterializedValue(_ ⇒ 1), Sink.seq)
