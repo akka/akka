@@ -10,11 +10,8 @@ resolvers += Resolver.url("2m-sbt-plugin-releases", url("https://dl.bintray.com/
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.8")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.12")
-addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.6.0")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.2.7")
-addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.0")
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "1.1.1")
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.1")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
