@@ -86,7 +86,7 @@ object OSGi {
     exports(
       packages = Seq("akka.stream.*",
                      "com.typesafe.sslconfig.akka.*"),
-      imports = Seq(scalaJava8CompatImport())) ++
+      imports = Seq(scalaJava8CompatImport(), scalaParsingCombinatorImport())) ++
       Seq(OsgiKeys.requireBundle := Seq(s"""com.typesafe.sslconfig;bundle-version="${Dependencies.sslConfigVersion}""""))
 
   val streamTestkit = exports(Seq("akka.stream.testkit.*"))
@@ -121,6 +121,7 @@ object OSGi {
     versionedImport(packageName, s"$epoch.$major", s"$epoch.${major.toInt+1}")
   }
   def scalaJava8CompatImport(packageName: String = "scala.compat.java8.*") = versionedImport(packageName, "0.7.0", "1.0.0")
+  def scalaParsingCombinatorImport(packageName: String = "scala.util.parsing.combinator.*") = versionedImport(packageName, "1.0.4", "1.1.0")
   def kamonImport(packageName: String = "kamon.sigar.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def sigarImport(packageName: String = "org.hyperic.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
