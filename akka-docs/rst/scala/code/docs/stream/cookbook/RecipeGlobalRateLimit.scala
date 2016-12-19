@@ -5,6 +5,7 @@ import akka.actor.{ Props, ActorRef, Actor }
 import akka.stream.ClosedShape
 import akka.stream.scaladsl._
 import akka.stream.testkit._
+import akka.testkit._
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -94,8 +95,8 @@ class RecipeGlobalRateLimit extends RecipeSpec {
       // Use a large period and emulate the timer by hand instead
       val limiter = system.actorOf(Limiter.props(2, 100.days, 1), "limiter")
 
-      val source1 = Source.fromIterator(() => Iterator.continually("E1")).via(limitGlobal(limiter, 2.seconds))
-      val source2 = Source.fromIterator(() => Iterator.continually("E2")).via(limitGlobal(limiter, 2.seconds))
+      val source1 = Source.fromIterator(() => Iterator.continually("E1")).via(limitGlobal(limiter, 2.seconds.dilated))
+      val source2 = Source.fromIterator(() => Iterator.continually("E2")).via(limitGlobal(limiter, 2.seconds.dilated))
 
       val probe = TestSubscriber.manualProbe[String]()
 
