@@ -119,7 +119,7 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Stay$"),
       // object akka.stream.stage.StatefulStage#Finish does not have a correspondent in current version
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$"),
-      
+
       // #21423 removal of deprecated `PersistentView` (in 2.5.x)
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
