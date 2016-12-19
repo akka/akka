@@ -134,7 +134,8 @@ object MiMa extends AutoPlugin {
       // #22015 removal of deprecated AESCounterSecureInetRNGs
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES128CounterInetRNG"),
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES256CounterInetRNG"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator")
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator$")
     )
 
     Map(
