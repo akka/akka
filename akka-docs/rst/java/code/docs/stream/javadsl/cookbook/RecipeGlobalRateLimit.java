@@ -5,7 +5,6 @@ package docs.stream.javadsl.cookbook;
 
 import akka.NotUsed;
 import akka.actor.*;
-import akka.dispatch.Mapper;
 import akka.japi.pf.ReceiveBuilder;
 import akka.pattern.PatternsCS;
 import akka.stream.*;
@@ -18,7 +17,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.PartialFunction;
-import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
@@ -121,11 +119,12 @@ public class RecipeGlobalRateLimit extends RecipeTest {
 
     private void releaseWaiting() {
       final List<ActorRef> toBeReleased = new ArrayList<>(permitTokens);
-      for (int i = 0; i < permitTokens && i < waitQueue.size(); i++) {
-        toBeReleased.add(waitQueue.remove(i));
+      for (Iterator<ActorRef> it = waitQueue.iterator(); permitTokens > 0 && it.hasNext();) {
+          toBeReleased.add(it.next());
+          it.remove();
+          permitTokens --;
       }
 
-      permitTokens -= toBeReleased.size();
       toBeReleased.stream().forEach(ref -> ref.tell(MAY_PASS, self()));
       if (permitTokens > 0) {
         context().become(open());
@@ -186,7 +185,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
           }
         };
 
-        final FiniteDuration twoSeconds = Duration.create(2, TimeUnit.SECONDS);
+        final FiniteDuration twoSeconds = (FiniteDuration) dilated(Duration.create(2, TimeUnit.SECONDS));
 
         final Sink<String, TestSubscriber.Probe<String>> sink = TestSink.probe(system);
         final TestSubscriber.Probe<String> probe =
