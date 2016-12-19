@@ -16,7 +16,7 @@ To enable automatic support for (un)marshalling from and to JSON with [spray-jso
 
 @@@vars
 ```sbt
-"com.typesafe.akka" %% "akka-http-spray-json" % "$project.version$"`
+"com.typesafe.akka" %% "akka-http-spray-json" % "$project.version$"
 ```
 @@@
 
