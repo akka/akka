@@ -43,8 +43,14 @@ final class Source[+Out, +Mat](override val module: Module)
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
-    if (flow.module eq GraphStages.Identity.module) this.asInstanceOf[Source[T, Mat3]]
-    else {
+    if (flow.module eq GraphStages.Identity.module) {
+      if (combine eq Keep.left)
+        this.asInstanceOf[Source[T, Mat3]]
+      else if (combine eq Keep.right)
+        this.mapMaterializedValue((_) ⇒ NotUsed).asInstanceOf[Source[T, Mat3]]
+      else
+        this.mapMaterializedValue(combine(_, NotUsed.asInstanceOf[Mat2])).asInstanceOf[Source[T, Mat3]]
+    } else {
       val flowCopy = flow.module.carbonCopy
       new Source(
         module
