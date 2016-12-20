@@ -57,9 +57,11 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
            # for serious measurements when running this test on only one machine
            # it is recommended to use external media driver
-           # See akka-remote-tests/src/test/resources/aeron.properties
-           #advanced.embedded-media-driver = off
-           #advanced.aeron-dir = "target/aeron"
+           # See akka-remote/src/test/resources/aeron.properties
+           # advanced.embedded-media-driver = off
+           # advanced.aeron-dir = "target/aeron"
+           # on linux, use directory on ram disk, instead
+           # advanced.aeron-dir = "/dev/shm/aeron"
 
            advanced.compression {
              actor-refs.advertisement-interval = 2 second
