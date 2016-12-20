@@ -11,7 +11,6 @@ import akka.testkit.AkkaSpec
 import akka.actor.{ Actor, Address, Props, Deploy, OneForOneStrategy, SupervisorStrategy }
 import akka.remote.{ DaemonMsgCreate, RemoteScope }
 import akka.routing.{ RoundRobinPool, FromConfig }
-import akka.util.IgnoreForScala212
 import scala.concurrent.duration._
 
 object DaemonMsgCreateSerializerSpec {
@@ -20,6 +19,10 @@ object DaemonMsgCreateSerializerSpec {
   }
 
   class MyActorWithParam(ignore: String) extends Actor {
+    def receive = Actor.emptyBehavior
+  }
+
+  class MyActorWithFunParam(fun: Function1[Int, Int]) extends Actor {
     def receive = Actor.emptyBehavior
   }
 }
@@ -56,10 +59,20 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
       }
     }
 
-    "serialize and de-serialize DaemonMsgCreate with function creator" taggedAs IgnoreForScala212 in {
+    "serialize and de-serialize DaemonMsgCreate with function creator" in {
       verifySerialization {
         DaemonMsgCreate(
           props = Props(new MyActor),
+          deploy = Deploy(),
+          path = "foo",
+          supervisor = supervisor)
+      }
+    }
+
+    "serialize and de-serialize DaemonMsgCreate with FromClassCreator, with function parameters for Props" in {
+      verifySerialization {
+        DaemonMsgCreate(
+          props = Props(classOf[MyActorWithFunParam], (i: Int) ⇒ i + 1),
           deploy = Deploy(),
           path = "foo",
           supervisor = supervisor)
@@ -103,6 +116,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
       got.props.args zip expected.props.args foreach {
         case (g, e) ⇒
           if (e.isInstanceOf[Function0[_]]) ()
+          else if (e.isInstanceOf[Function1[_, _]]) ()
           else g should ===(e)
       }
       got.props.deploy should ===(expected.props.deploy)
