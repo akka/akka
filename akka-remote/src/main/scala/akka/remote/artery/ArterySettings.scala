@@ -20,7 +20,7 @@ import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 /** INTERNAL API */
-private[akka] final class ArterySettings private (config: Config) {
+private[akka] final class ArterySettings private (val config: Config) {
   import config._
   import ArterySettings._
 
@@ -151,7 +151,8 @@ private[akka] object ArterySettings {
   private[remote] final class Compression private[ArterySettings] (config: Config) {
     import config._
 
-    final val Enabled = true
+    // actually only used in MaxThroughputSpec:
+    private[akka] final val Enabled = ActorRefs.Max > 0 || Manifests.Max > 0
 
     object ActorRefs {
       val config = getConfig("actor-refs")

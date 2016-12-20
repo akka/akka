@@ -8,7 +8,7 @@ import akka.Done
 import akka.NotUsed
 import akka.remote._
 import akka.remote.artery.compress._
-import akka.serialization.{ BaseSerializer, ByteBufferSerializer, SerializationExtension }
+import akka.serialization.{BaseSerializer, ByteBufferSerializer, SerializationExtension}
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl._
@@ -19,7 +19,10 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+
+import akka.remote.artery.Decoder.InboundCompressionAccess
 import org.openjdk.jmh.annotations._
+
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -134,13 +137,13 @@ class CodecBenchmark {
     envelope.byteBuffer.flip()
 
     // Now build up the graphs
-    val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, Encoder.ChangeOutboundCompression] =
+    val encoder: Flow[OutboundEnvelope, EnvelopeBuffer, Encoder.OutboundCompressionAccess] =
       Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool, envelopePool, false))
     val encoderInput: Flow[String, OutboundEnvelope, NotUsed] =
       Flow[String].map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
-    val decoder: Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] =
+    val decoder: Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
-        uniqueLocalAddress, NoInboundCompressions, envelopePool, inboundEnvelopePool))
+        uniqueLocalAddress, ArterySettings(ConfigFactory.load().getConfig("akka.remote.artery")), envelopePool, inboundEnvelopePool))
     val deserializer: Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Deserializer(inboundContext, system.asInstanceOf[ExtendedActorSystem], envelopePool))
     val decoderInput: Flow[String, EnvelopeBuffer, NotUsed] = Flow[String]

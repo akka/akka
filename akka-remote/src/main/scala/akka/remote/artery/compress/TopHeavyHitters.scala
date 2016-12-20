@@ -27,7 +27,6 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
 
   require((max & (max - 1)) == 0, "Maximum numbers of heavy hitters should be in form of 2^k for any natural k")
 
-  // Size of Has
   val capacity = max * 2
   val mask = capacity - 1
 
@@ -107,8 +106,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
    * Returns the current heavy hitters, order is not of significance.
    * May contain gaps (null entries).
    */
-  // TODO: Workaround for races until we make this threadsafe by moving InboundCompression to the Codec
-  // to fully own it.
+  // TODO: Workaround for races until we make this threadsafe by moving InboundCompression to the Codec to fully own it.
   def snapshot: Array[T] = lastSnapshot.get()
 
   private def takeSnapshot(): Unit = {
@@ -186,7 +184,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
    * Checks the lowest weight entry in this structure and returns true if the given count is larger than that. In
    * other words this checks if a new entry can be added as it is larger than the known least weight.
    */
-  def isHeavy(count: Long): Boolean =
+  private def isHeavy(count: Long): Boolean =
     count > lowestHitterWeight
 
   /**
