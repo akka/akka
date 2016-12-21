@@ -1209,6 +1209,10 @@ private[cluster] final class FirstSeedNodeProcess(seedNodes: immutable.IndexedSe
         remainingSeedNodes foreach { a ⇒ context.actorSelection(context.parent.path.toStringWithAddress(a)) ! InitJoin }
       } else {
         // no InitJoinAck received, initialize new cluster by joining myself
+        if (log.isDebugEnabled)
+          log.debug(
+            "Couldn't join other seed nodes, will join myself. seed-nodes=[{}]",
+            seedNodes.mkString(", "))
         context.parent ! JoinTo(selfAddress)
         context.stop(self)
       }
@@ -1262,11 +1266,14 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq
 
   context.setReceiveTimeout(Cluster(context.system).settings.SeedNodeTimeout)
 
+  var attempt = 0
+
   override def preStart(): Unit = self ! JoinSeedNode
 
   def receive = {
     case JoinSeedNode ⇒
       // send InitJoin to all seed nodes (except myself)
+      attempt += 1
       seedNodes.collect {
         case a if a != selfAddress ⇒ context.actorSelection(context.parent.path.toStringWithAddress(a))
       } foreach { _ ! InitJoin }
@@ -1276,6 +1283,10 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq
       context.become(done)
     case InitJoinNack(_) ⇒ // that seed was uninitialized
     case ReceiveTimeout ⇒
+      if (attempt >= 2)
+        log.warning(
+          "Couldn't join seed nodes after [{}] attmpts, will try again. seed-nodes=[{}]",
+          attempt, seedNodes.filterNot(_ == selfAddress).mkString(", "))
       // no InitJoinAck received, try again
       self ! JoinSeedNode
   }
