@@ -16,7 +16,7 @@ import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API: Use `BalancingPool` instead of this dispatcher directly.
- * 
+ *
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
  * that all actors using the same instance of this dispatcher can process all messages that have been sent to one of the actors. I.e. the
  * actors belong to a pool of actors, and to the client there is no guarantee about which actor instance actually processes a given message.
