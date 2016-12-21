@@ -4,12 +4,12 @@
 
 package docs.http.scaladsl.server.directives
 
-import akka.event.{ LoggingAdapter, Logging }
+import akka.event.{Logging, LoggingAdapter}
 import akka.event.Logging.LogLevel
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.server.RouteResult
-import akka.http.scaladsl.server.RouteResult.{ Rejected, Complete }
-import akka.http.scaladsl.server.directives.{ DebuggingDirectives, LogEntry, LoggingMagnet }
+import akka.http.scaladsl.server.{RouteResult, ValidationRejection}
+import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
+import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
 import docs.http.scaladsl.server.RoutingSpec
 
 class DebuggingDirectivesExamplesSpec extends RoutingSpec {
@@ -59,6 +59,13 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
       case _                         => None // no log entries for rejections
     }
     DebuggingDirectives.logRequestResult(requestMethodAndResponseStatusAsInfo _)
+
+    // This one will only log rejections
+    val rejectionLogger: HttpRequest ⇒ RouteResult ⇒ Option[LogEntry] = req ⇒ {
+      case Rejected(rejections) ⇒ Some(LogEntry(s"Request: $req\nwas rejected with rejections:\n$rejections", Logging.DebugLevel))
+      case _                    ⇒ None
+    }
+    DebuggingDirectives.logRequestResult(rejectionLogger)
 
     // This one doesn't use the implicit LoggingContext but uses `println` for logging
     def printRequestMethodAndResponseStatus(req: HttpRequest)(res: RouteResult): Unit =
