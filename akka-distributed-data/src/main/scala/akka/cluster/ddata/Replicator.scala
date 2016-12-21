@@ -44,6 +44,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.SupervisorStrategy
 import akka.actor.OneForOneStrategy
 import akka.actor.ActorInitializationException
+import java.util.concurrent.TimeUnit
 
 object ReplicatorSettings {
 
@@ -894,30 +895,39 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     else normalReceive
 
   val load: Receive = {
-    case LoadData(data) ⇒
-      data.foreach {
-        case (key, d) ⇒
-          val envelope = DataEnvelope(d)
-          write(key, envelope) match {
-            case Some(newEnvelope) ⇒
-              if (newEnvelope.data ne envelope.data)
-                durableStore ! Store(key, newEnvelope.data, None)
-            case None ⇒
-          }
-      }
-    case LoadAllCompleted ⇒
-      context.become(normalReceive)
-      self ! FlushChanges
+    val startTime = System.nanoTime()
+    var count = 0
 
-    case GetReplicaCount ⇒
-      // 0 until durable data has been loaded, used by test
-      sender() ! ReplicaCount(0)
+    {
+      case LoadData(data) ⇒
+        count += data.size
+        data.foreach {
+          case (key, d) ⇒
+            val envelope = DataEnvelope(d)
+            write(key, envelope) match {
+              case Some(newEnvelope) ⇒
+                if (newEnvelope.data ne envelope.data)
+                  durableStore ! Store(key, newEnvelope.data, None)
+              case None ⇒
+            }
+        }
+      case LoadAllCompleted ⇒
+        log.debug(
+          "Loading {} entries from durable store took {} ms",
+          count, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime))
+        context.become(normalReceive)
+        self ! FlushChanges
 
-    case RemovedNodePruningTick | FlushChanges | GossipTick ⇒
-    // ignore scheduled ticks when loading durable data
-    case m @ (_: Read | _: Write | _: Status | _: Gossip) ⇒
-      // ignore gossip and replication when loading durable data
-      log.debug("ignoring message [{}] when loading durable data", m.getClass.getName)
+      case GetReplicaCount ⇒
+        // 0 until durable data has been loaded, used by test
+        sender() ! ReplicaCount(0)
+
+      case RemovedNodePruningTick | FlushChanges | GossipTick ⇒
+      // ignore scheduled ticks when loading durable data
+      case m @ (_: Read | _: Write | _: Status | _: Gossip) ⇒
+        // ignore gossip and replication when loading durable data
+        log.debug("ignoring message [{}] when loading durable data", m.getClass.getName)
+    }
   }
 
   val normalReceive: Receive = {
