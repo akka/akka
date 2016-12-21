@@ -119,3 +119,17 @@ all cases your handler doesn't handle itself) and used for all rejections that a
 itself.
 
 The second case allows you to restrict the applicability of your handler to certain branches of your route structure.
+
+### Customising rejection HTTP Responses
+
+It is also possible to customise just the responses that are returned by a defined rejection handler.
+This can be useful for example if you like the rejection messages and status codes of the default handler,
+however you'd like to wrap those responses in JSON or some other content type.
+
+Please note that since those are not 200 responses, a different content type than the one that was sent in
+a client's ``Accept`` header *is* legal. Thus the default handler renders such rejections as ``text/plain``.
+
+In order to customise the HTTP Responses of an existing handler you can call the 
+``mapRejectionResponse`` method on such handler as shown in the example below:
+
+@@snip [RejectionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #example-json }

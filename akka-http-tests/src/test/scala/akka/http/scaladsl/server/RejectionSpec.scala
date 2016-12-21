@@ -3,10 +3,9 @@
  */
 package akka.http.scaladsl.server
 
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 import scala.collection.JavaConverters._
 
-class RejectionSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
+class RejectionSpec extends RoutingSpec {
 
   "The Transformation Rejection" should {
 
@@ -21,4 +20,41 @@ class RejectionSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       result should ===(rejections)
     }
   }
+
+  "RejectionHandler" should {
+    import akka.http.scaladsl.model._
+
+    implicit def myRejectionHandler =
+      RejectionHandler.default
+        .mapRejectionResponse {
+          case res @ HttpResponse(_, _, ent: HttpEntity.Strict, _) ⇒
+            val message = ent.data.utf8String.replaceAll("\"", """\"""")
+            res.copy(entity = HttpEntity(ContentTypes.`application/json`, s"""{"rejection": "$message"}"""))
+
+          case x ⇒ x // pass through all other types of responses
+        }
+
+    val route =
+      Route.seal(
+        path("hello") {
+          complete("Hello there")
+        }
+      )
+
+    "mapRejectionResponse must not affect normal responses" in {
+      Get("/hello") ~> route ~> check {
+        status should ===(StatusCodes.OK)
+        contentType should ===(ContentTypes.`text/plain(UTF-8)`)
+        responseAs[String] should ===("""Hello there""")
+      }
+    }
+    "mapRejectionResponse should alter rejection response" in {
+      Get("/nope") ~> route ~> check {
+        status should ===(StatusCodes.NotFound)
+        contentType should ===(ContentTypes.`application/json`)
+        responseAs[String] should ===("""{"rejection": "The requested resource could not be found."}""")
+      }
+    }
+  }
+
 }
