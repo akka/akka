@@ -40,7 +40,7 @@ lazy val root = Project(
     base = file(".")
   )
   .enablePlugins(UnidocRoot, NoPublish, DeployRsync)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing),
@@ -71,7 +71,6 @@ lazy val httpCore = project("akka-http-core")
   .dependsOn(parsing)
   .addAkkaModuleDependency("akka-stream")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
-  //.disablePlugins(MimaPlugin)
 
 lazy val http = project("akka-http")
   .dependsOn(httpCore)
@@ -97,9 +96,8 @@ lazy val httpTests = project("akka-http-tests")
 
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
-  //.disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .aggregate(httpSprayJson, httpXml)
 
 lazy val httpXml =
@@ -109,9 +107,8 @@ lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
-  //.disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .aggregate(httpJackson)
 
 lazy val httpJackson =
@@ -126,7 +123,6 @@ def httpMarshallersScalaSubproject(name: String) =
     base = file(s"akka-http-marshallers-scala/akka-http-$name"),
     dependencies = Seq(http)
   )
-  //.disablePlugins(MimaPlugin)
 
 def httpMarshallersJavaSubproject(name: String) =
   Project(
@@ -134,11 +130,10 @@ def httpMarshallersJavaSubproject(name: String) =
     base = file(s"akka-http-marshallers-java/akka-http-$name"),
     dependencies = Seq(http)
   )
-  //.disablePlugins(MimaPlugin)
 
 lazy val docs = project("docs")
   .enablePlugins(ParadoxPlugin, NoPublish, DeployRsync)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(
     httpCore, http, httpXml, httpMarshallersJava, httpMarshallersScala,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
