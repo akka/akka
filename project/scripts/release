@@ -275,7 +275,11 @@ try ssh -t ${release_server} echo "Successfully contacted release server."
 
 echolog "Getting current project version from sbt..."
 declare -r current_version=$(get_current_version)
-echolog "Current version is ${current_version}"
+echolog "Current version is ${current_version} on branch $initial_branch"
+
+if [ "${current_version:0:3}" != "${version:0:3}" ]; then
+  fail "Releasing $version from wrong branch $initial_branch with version $current_version"
+fi
 
 # check out a release branch
 try git checkout -b ${release_branch}
