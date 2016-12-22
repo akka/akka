@@ -1,0 +1,4 @@
+# Mima filters needed to check newer versions against 10.0.0
+
+# Internal class change
+FilterAnyProblemStartingWith("akka.http.impl.util.One2OneBidiFlow")

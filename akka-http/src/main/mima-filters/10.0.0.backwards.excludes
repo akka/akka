@@ -1,0 +1,6 @@
+# Mima filters needed to check newer versions against 10.0.0
+
+# Issue #673, added extra methods to RejectionHandler trait. Would blow up if a third-party lib compiled against 10.0.0
+# would provide a RejectionHandler and someone would call `mapRejectionResponse` against it from 10.0.1
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.RejectionHandler#Handler.mapResponse")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.RejectionHandler.mapRejectionResponse")
