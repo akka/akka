@@ -149,7 +149,14 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES128CounterInetRNG"),
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES256CounterInetRNG"),
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator$")
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator$"),
+
+      // #22035 Make it possible to use anything as the key in a map
+      FilterAnyProblemStartingWith("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.ORMap"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.LWWMap"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.PNCounterMap"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.ORMultiMap")
     )
 
     Map(
@@ -683,6 +690,7 @@ object MiMa extends AutoPlugin {
 
         // #21894 Programmatic configuration of the ActorSystem
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")
+
       ) ++ bcIssuesBetween24and25)
       // Entries should be added to a section keyed with the latest released version before the change
     )
