@@ -3,11 +3,10 @@
  */
 package akka.http.javadsl.server.directives
 
-import akka.http.javadsl.model.HttpRequest
-import akka.http.javadsl.model.HttpEntity
+import akka.http.javadsl.marshalling.Marshaller
+import akka.http.javadsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 import akka.http.javadsl.server.Route
 import akka.http.javadsl.unmarshalling.Unmarshaller
-
 import akka.http.scaladsl.server.directives.{ MarshallingDirectives ⇒ D }
 
 abstract class MarshallingDirectives extends HostDirectives {
@@ -36,6 +35,33 @@ abstract class MarshallingDirectives extends HostDirectives {
       inner.apply(value).delegate
     }
   }
-
   // If you want the raw entity, use BasicDirectives.extractEntity
+
+  /**
+   * Uses the marshaller for the given type to produce a completion function that is passed to its inner function.
+   * You can use it do decouple marshaller resolution from request completion.
+   */
+  def completeWith[T](
+    marshaller: Marshaller[T, _ <: HttpResponse],
+    inner:      java.util.function.Consumer[java.util.function.Consumer[T]]): Route = RouteAdapter {
+    D.completeWith[T](marshaller) { f ⇒
+      inner.accept(new java.util.function.Consumer[T]() {
+        def accept(t: T): Unit = f(t)
+      })
+    }
+  }
+
+  /**
+   * Completes the request using the given function. The input to the function is produced with the in-scope
+   * entity unmarshaller and the result value of the function is marshalled with the in-scope marshaller.
+   */
+  def handleWith[T, R](
+    unmarshaller: Unmarshaller[_ >: HttpEntity, T],
+    marshaller:   Marshaller[R, _ <: HttpResponse],
+    inner:        java.util.function.Function[T, R]): Route = RouteAdapter {
+    D.handleWith[T, R] { entity ⇒
+      inner.apply(entity)
+    }(Unmarshaller.requestToEntity.flatMap(unmarshaller).asScala, marshaller)
+  }
+
 }
