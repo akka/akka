@@ -7716,20 +7716,20 @@ public final class ReplicatedDataMessages {
     public interface EntryOrBuilder
         extends akka.protobuf.MessageOrBuilder {
 
-      // required string key = 1;
+      // optional string stringKey = 1;
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      boolean hasKey();
+      boolean hasStringKey();
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      java.lang.String getKey();
+      java.lang.String getStringKey();
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
       akka.protobuf.ByteString
-          getKeyBytes();
+          getStringKeyBytes();
 
       // required .akka.cluster.ddata.OtherMessage value = 2;
       /**
@@ -7744,6 +7744,40 @@ public final class ReplicatedDataMessages {
        * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getValueOrBuilder();
+
+      // optional sint32 intKey = 3;
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      boolean hasIntKey();
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      int getIntKey();
+
+      // optional sint64 longKey = 4;
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      boolean hasLongKey();
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      long getLongKey();
+
+      // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      boolean hasOtherKey();
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey();
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder();
     }
     /**
      * Protobuf type {@code akka.cluster.ddata.ORMap.Entry}
@@ -7798,7 +7832,7 @@ public final class ReplicatedDataMessages {
               }
               case 10: {
                 bitField0_ |= 0x00000001;
-                key_ = input.readBytes();
+                stringKey_ = input.readBytes();
                 break;
               }
               case 18: {
@@ -7812,6 +7846,29 @@ public final class ReplicatedDataMessages {
                   value_ = subBuilder.buildPartial();
                 }
                 bitField0_ |= 0x00000002;
+                break;
+              }
+              case 24: {
+                bitField0_ |= 0x00000004;
+                intKey_ = input.readSInt32();
+                break;
+              }
+              case 32: {
+                bitField0_ |= 0x00000008;
+                longKey_ = input.readSInt64();
+                break;
+              }
+              case 42: {
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000010) == 0x00000010)) {
+                  subBuilder = otherKey_.toBuilder();
+                }
+                otherKey_ = input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(otherKey_);
+                  otherKey_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000010;
                 break;
               }
             }
@@ -7854,20 +7911,20 @@ public final class ReplicatedDataMessages {
       }
 
       private int bitField0_;
-      // required string key = 1;
-      public static final int KEY_FIELD_NUMBER = 1;
-      private java.lang.Object key_;
+      // optional string stringKey = 1;
+      public static final int STRINGKEY_FIELD_NUMBER = 1;
+      private java.lang.Object stringKey_;
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      public boolean hasKey() {
+      public boolean hasStringKey() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      public java.lang.String getKey() {
-        java.lang.Object ref = key_;
+      public java.lang.String getStringKey() {
+        java.lang.Object ref = stringKey_;
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
@@ -7875,22 +7932,22 @@ public final class ReplicatedDataMessages {
               (akka.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
-            key_ = s;
+            stringKey_ = s;
           }
           return s;
         }
       }
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
       public akka.protobuf.ByteString
-          getKeyBytes() {
-        java.lang.Object ref = key_;
+          getStringKeyBytes() {
+        java.lang.Object ref = stringKey_;
         if (ref instanceof java.lang.String) {
           akka.protobuf.ByteString b = 
               akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          key_ = b;
+          stringKey_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
@@ -7919,19 +7976,72 @@ public final class ReplicatedDataMessages {
         return value_;
       }
 
+      // optional sint32 intKey = 3;
+      public static final int INTKEY_FIELD_NUMBER = 3;
+      private int intKey_;
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      public boolean hasIntKey() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      public int getIntKey() {
+        return intKey_;
+      }
+
+      // optional sint64 longKey = 4;
+      public static final int LONGKEY_FIELD_NUMBER = 4;
+      private long longKey_;
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      public boolean hasLongKey() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      public long getLongKey() {
+        return longKey_;
+      }
+
+      // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+      public static final int OTHERKEY_FIELD_NUMBER = 5;
+      private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_;
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public boolean hasOtherKey() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
+        return otherKey_;
+      }
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder() {
+        return otherKey_;
+      }
+
       private void initFields() {
-        key_ = "";
+        stringKey_ = "";
         value_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+        intKey_ = 0;
+        longKey_ = 0L;
+        otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized != -1) return isInitialized == 1;
 
-        if (!hasKey()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
         if (!hasValue()) {
           memoizedIsInitialized = 0;
           return false;
@@ -7939,6 +8049,12 @@ public final class ReplicatedDataMessages {
         if (!getValue().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
+        }
+        if (hasOtherKey()) {
+          if (!getOtherKey().isInitialized()) {
+            memoizedIsInitialized = 0;
+            return false;
+          }
         }
         memoizedIsInitialized = 1;
         return true;
@@ -7948,10 +8064,19 @@ public final class ReplicatedDataMessages {
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeBytes(1, getKeyBytes());
+          output.writeBytes(1, getStringKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           output.writeMessage(2, value_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          output.writeSInt32(3, intKey_);
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          output.writeSInt64(4, longKey_);
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          output.writeMessage(5, otherKey_);
         }
         getUnknownFields().writeTo(output);
       }
@@ -7964,11 +8089,23 @@ public final class ReplicatedDataMessages {
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           size += akka.protobuf.CodedOutputStream
-            .computeBytesSize(1, getKeyBytes());
+            .computeBytesSize(1, getStringKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += akka.protobuf.CodedOutputStream
             .computeMessageSize(2, value_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeSInt32Size(3, intKey_);
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeSInt64Size(4, longKey_);
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeMessageSize(5, otherKey_);
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -8079,6 +8216,7 @@ public final class ReplicatedDataMessages {
         private void maybeForceBuilderInitialization() {
           if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
             getValueFieldBuilder();
+            getOtherKeyFieldBuilder();
           }
         }
         private static Builder create() {
@@ -8087,7 +8225,7 @@ public final class ReplicatedDataMessages {
 
         public Builder clear() {
           super.clear();
-          key_ = "";
+          stringKey_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
           if (valueBuilder_ == null) {
             value_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
@@ -8095,6 +8233,16 @@ public final class ReplicatedDataMessages {
             valueBuilder_.clear();
           }
           bitField0_ = (bitField0_ & ~0x00000002);
+          intKey_ = 0;
+          bitField0_ = (bitField0_ & ~0x00000004);
+          longKey_ = 0L;
+          bitField0_ = (bitField0_ & ~0x00000008);
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+          } else {
+            otherKeyBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000010);
           return this;
         }
 
@@ -8126,7 +8274,7 @@ public final class ReplicatedDataMessages {
           if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
             to_bitField0_ |= 0x00000001;
           }
-          result.key_ = key_;
+          result.stringKey_ = stringKey_;
           if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
             to_bitField0_ |= 0x00000002;
           }
@@ -8134,6 +8282,22 @@ public final class ReplicatedDataMessages {
             result.value_ = value_;
           } else {
             result.value_ = valueBuilder_.build();
+          }
+          if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+            to_bitField0_ |= 0x00000004;
+          }
+          result.intKey_ = intKey_;
+          if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+            to_bitField0_ |= 0x00000008;
+          }
+          result.longKey_ = longKey_;
+          if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+            to_bitField0_ |= 0x00000010;
+          }
+          if (otherKeyBuilder_ == null) {
+            result.otherKey_ = otherKey_;
+          } else {
+            result.otherKey_ = otherKeyBuilder_.build();
           }
           result.bitField0_ = to_bitField0_;
           onBuilt();
@@ -8151,23 +8315,28 @@ public final class ReplicatedDataMessages {
 
         public Builder mergeFrom(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMap.Entry other) {
           if (other == akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMap.Entry.getDefaultInstance()) return this;
-          if (other.hasKey()) {
+          if (other.hasStringKey()) {
             bitField0_ |= 0x00000001;
-            key_ = other.key_;
+            stringKey_ = other.stringKey_;
             onChanged();
           }
           if (other.hasValue()) {
             mergeValue(other.getValue());
+          }
+          if (other.hasIntKey()) {
+            setIntKey(other.getIntKey());
+          }
+          if (other.hasLongKey()) {
+            setLongKey(other.getLongKey());
+          }
+          if (other.hasOtherKey()) {
+            mergeOtherKey(other.getOtherKey());
           }
           this.mergeUnknownFields(other.getUnknownFields());
           return this;
         }
 
         public final boolean isInitialized() {
-          if (!hasKey()) {
-            
-            return false;
-          }
           if (!hasValue()) {
             
             return false;
@@ -8175,6 +8344,12 @@ public final class ReplicatedDataMessages {
           if (!getValue().isInitialized()) {
             
             return false;
+          }
+          if (hasOtherKey()) {
+            if (!getOtherKey().isInitialized()) {
+              
+              return false;
+            }
           }
           return true;
         }
@@ -8198,76 +8373,76 @@ public final class ReplicatedDataMessages {
         }
         private int bitField0_;
 
-        // required string key = 1;
-        private java.lang.Object key_ = "";
+        // optional string stringKey = 1;
+        private java.lang.Object stringKey_ = "";
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public boolean hasKey() {
+        public boolean hasStringKey() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public java.lang.String getKey() {
-          java.lang.Object ref = key_;
+        public java.lang.String getStringKey() {
+          java.lang.Object ref = stringKey_;
           if (!(ref instanceof java.lang.String)) {
             java.lang.String s = ((akka.protobuf.ByteString) ref)
                 .toStringUtf8();
-            key_ = s;
+            stringKey_ = s;
             return s;
           } else {
             return (java.lang.String) ref;
           }
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
         public akka.protobuf.ByteString
-            getKeyBytes() {
-          java.lang.Object ref = key_;
+            getStringKeyBytes() {
+          java.lang.Object ref = stringKey_;
           if (ref instanceof String) {
             akka.protobuf.ByteString b = 
                 akka.protobuf.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
-            key_ = b;
+            stringKey_ = b;
             return b;
           } else {
             return (akka.protobuf.ByteString) ref;
           }
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder setKey(
+        public Builder setStringKey(
             java.lang.String value) {
           if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-          key_ = value;
+          stringKey_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder clearKey() {
+        public Builder clearStringKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
-          key_ = getDefaultInstance().getKey();
+          stringKey_ = getDefaultInstance().getStringKey();
           onChanged();
           return this;
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder setKeyBytes(
+        public Builder setStringKeyBytes(
             akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-          key_ = value;
+          stringKey_ = value;
           onChanged();
           return this;
         }
@@ -8387,6 +8562,189 @@ public final class ReplicatedDataMessages {
             value_ = null;
           }
           return valueBuilder_;
+        }
+
+        // optional sint32 intKey = 3;
+        private int intKey_ ;
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public boolean hasIntKey() {
+          return ((bitField0_ & 0x00000004) == 0x00000004);
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public int getIntKey() {
+          return intKey_;
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public Builder setIntKey(int value) {
+          bitField0_ |= 0x00000004;
+          intKey_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public Builder clearIntKey() {
+          bitField0_ = (bitField0_ & ~0x00000004);
+          intKey_ = 0;
+          onChanged();
+          return this;
+        }
+
+        // optional sint64 longKey = 4;
+        private long longKey_ ;
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public boolean hasLongKey() {
+          return ((bitField0_ & 0x00000008) == 0x00000008);
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public long getLongKey() {
+          return longKey_;
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public Builder setLongKey(long value) {
+          bitField0_ |= 0x00000008;
+          longKey_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public Builder clearLongKey() {
+          bitField0_ = (bitField0_ & ~0x00000008);
+          longKey_ = 0L;
+          onChanged();
+          return this;
+        }
+
+        // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+        private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+        private akka.protobuf.SingleFieldBuilder<
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> otherKeyBuilder_;
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public boolean hasOtherKey() {
+          return ((bitField0_ & 0x00000010) == 0x00000010);
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
+          if (otherKeyBuilder_ == null) {
+            return otherKey_;
+          } else {
+            return otherKeyBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder setOtherKey(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+          if (otherKeyBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            otherKey_ = value;
+            onChanged();
+          } else {
+            otherKeyBuilder_.setMessage(value);
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder setOtherKey(
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder builderForValue) {
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = builderForValue.build();
+            onChanged();
+          } else {
+            otherKeyBuilder_.setMessage(builderForValue.build());
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder mergeOtherKey(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+          if (otherKeyBuilder_ == null) {
+            if (((bitField0_ & 0x00000010) == 0x00000010) &&
+                otherKey_ != akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance()) {
+              otherKey_ =
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.newBuilder(otherKey_).mergeFrom(value).buildPartial();
+            } else {
+              otherKey_ = value;
+            }
+            onChanged();
+          } else {
+            otherKeyBuilder_.mergeFrom(value);
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder clearOtherKey() {
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+            onChanged();
+          } else {
+            otherKeyBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000010);
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder getOtherKeyBuilder() {
+          bitField0_ |= 0x00000010;
+          onChanged();
+          return getOtherKeyFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder() {
+          if (otherKeyBuilder_ != null) {
+            return otherKeyBuilder_.getMessageOrBuilder();
+          } else {
+            return otherKey_;
+          }
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        private akka.protobuf.SingleFieldBuilder<
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
+            getOtherKeyFieldBuilder() {
+          if (otherKeyBuilder_ == null) {
+            otherKeyBuilder_ = new akka.protobuf.SingleFieldBuilder<
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
+                    otherKey_,
+                    getParentForChildren(),
+                    isClean());
+            otherKey_ = null;
+          }
+          return otherKeyBuilder_;
         }
 
         // @@protoc_insertion_point(builder_scope:akka.cluster.ddata.ORMap.Entry)
@@ -9300,20 +9658,20 @@ public final class ReplicatedDataMessages {
     public interface EntryOrBuilder
         extends akka.protobuf.MessageOrBuilder {
 
-      // required string key = 1;
+      // optional string stringKey = 1;
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      boolean hasKey();
+      boolean hasStringKey();
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      java.lang.String getKey();
+      java.lang.String getStringKey();
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
       akka.protobuf.ByteString
-          getKeyBytes();
+          getStringKeyBytes();
 
       // required .akka.cluster.ddata.LWWRegister value = 2;
       /**
@@ -9328,6 +9686,40 @@ public final class ReplicatedDataMessages {
        * <code>required .akka.cluster.ddata.LWWRegister value = 2;</code>
        */
       akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegisterOrBuilder getValueOrBuilder();
+
+      // optional sint32 intKey = 3;
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      boolean hasIntKey();
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      int getIntKey();
+
+      // optional sint64 longKey = 4;
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      boolean hasLongKey();
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      long getLongKey();
+
+      // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      boolean hasOtherKey();
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey();
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder();
     }
     /**
      * Protobuf type {@code akka.cluster.ddata.LWWMap.Entry}
@@ -9382,7 +9774,7 @@ public final class ReplicatedDataMessages {
               }
               case 10: {
                 bitField0_ |= 0x00000001;
-                key_ = input.readBytes();
+                stringKey_ = input.readBytes();
                 break;
               }
               case 18: {
@@ -9396,6 +9788,29 @@ public final class ReplicatedDataMessages {
                   value_ = subBuilder.buildPartial();
                 }
                 bitField0_ |= 0x00000002;
+                break;
+              }
+              case 24: {
+                bitField0_ |= 0x00000004;
+                intKey_ = input.readSInt32();
+                break;
+              }
+              case 32: {
+                bitField0_ |= 0x00000008;
+                longKey_ = input.readSInt64();
+                break;
+              }
+              case 42: {
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000010) == 0x00000010)) {
+                  subBuilder = otherKey_.toBuilder();
+                }
+                otherKey_ = input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(otherKey_);
+                  otherKey_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000010;
                 break;
               }
             }
@@ -9438,20 +9853,20 @@ public final class ReplicatedDataMessages {
       }
 
       private int bitField0_;
-      // required string key = 1;
-      public static final int KEY_FIELD_NUMBER = 1;
-      private java.lang.Object key_;
+      // optional string stringKey = 1;
+      public static final int STRINGKEY_FIELD_NUMBER = 1;
+      private java.lang.Object stringKey_;
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      public boolean hasKey() {
+      public boolean hasStringKey() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      public java.lang.String getKey() {
-        java.lang.Object ref = key_;
+      public java.lang.String getStringKey() {
+        java.lang.Object ref = stringKey_;
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
@@ -9459,22 +9874,22 @@ public final class ReplicatedDataMessages {
               (akka.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
-            key_ = s;
+            stringKey_ = s;
           }
           return s;
         }
       }
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
       public akka.protobuf.ByteString
-          getKeyBytes() {
-        java.lang.Object ref = key_;
+          getStringKeyBytes() {
+        java.lang.Object ref = stringKey_;
         if (ref instanceof java.lang.String) {
           akka.protobuf.ByteString b = 
               akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          key_ = b;
+          stringKey_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
@@ -9503,19 +9918,72 @@ public final class ReplicatedDataMessages {
         return value_;
       }
 
+      // optional sint32 intKey = 3;
+      public static final int INTKEY_FIELD_NUMBER = 3;
+      private int intKey_;
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      public boolean hasIntKey() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      public int getIntKey() {
+        return intKey_;
+      }
+
+      // optional sint64 longKey = 4;
+      public static final int LONGKEY_FIELD_NUMBER = 4;
+      private long longKey_;
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      public boolean hasLongKey() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      public long getLongKey() {
+        return longKey_;
+      }
+
+      // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+      public static final int OTHERKEY_FIELD_NUMBER = 5;
+      private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_;
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public boolean hasOtherKey() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
+        return otherKey_;
+      }
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder() {
+        return otherKey_;
+      }
+
       private void initFields() {
-        key_ = "";
+        stringKey_ = "";
         value_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegister.getDefaultInstance();
+        intKey_ = 0;
+        longKey_ = 0L;
+        otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized != -1) return isInitialized == 1;
 
-        if (!hasKey()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
         if (!hasValue()) {
           memoizedIsInitialized = 0;
           return false;
@@ -9523,6 +9991,12 @@ public final class ReplicatedDataMessages {
         if (!getValue().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
+        }
+        if (hasOtherKey()) {
+          if (!getOtherKey().isInitialized()) {
+            memoizedIsInitialized = 0;
+            return false;
+          }
         }
         memoizedIsInitialized = 1;
         return true;
@@ -9532,10 +10006,19 @@ public final class ReplicatedDataMessages {
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeBytes(1, getKeyBytes());
+          output.writeBytes(1, getStringKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           output.writeMessage(2, value_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          output.writeSInt32(3, intKey_);
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          output.writeSInt64(4, longKey_);
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          output.writeMessage(5, otherKey_);
         }
         getUnknownFields().writeTo(output);
       }
@@ -9548,11 +10031,23 @@ public final class ReplicatedDataMessages {
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           size += akka.protobuf.CodedOutputStream
-            .computeBytesSize(1, getKeyBytes());
+            .computeBytesSize(1, getStringKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += akka.protobuf.CodedOutputStream
             .computeMessageSize(2, value_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeSInt32Size(3, intKey_);
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeSInt64Size(4, longKey_);
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeMessageSize(5, otherKey_);
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -9663,6 +10158,7 @@ public final class ReplicatedDataMessages {
         private void maybeForceBuilderInitialization() {
           if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
             getValueFieldBuilder();
+            getOtherKeyFieldBuilder();
           }
         }
         private static Builder create() {
@@ -9671,7 +10167,7 @@ public final class ReplicatedDataMessages {
 
         public Builder clear() {
           super.clear();
-          key_ = "";
+          stringKey_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
           if (valueBuilder_ == null) {
             value_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegister.getDefaultInstance();
@@ -9679,6 +10175,16 @@ public final class ReplicatedDataMessages {
             valueBuilder_.clear();
           }
           bitField0_ = (bitField0_ & ~0x00000002);
+          intKey_ = 0;
+          bitField0_ = (bitField0_ & ~0x00000004);
+          longKey_ = 0L;
+          bitField0_ = (bitField0_ & ~0x00000008);
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+          } else {
+            otherKeyBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000010);
           return this;
         }
 
@@ -9710,7 +10216,7 @@ public final class ReplicatedDataMessages {
           if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
             to_bitField0_ |= 0x00000001;
           }
-          result.key_ = key_;
+          result.stringKey_ = stringKey_;
           if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
             to_bitField0_ |= 0x00000002;
           }
@@ -9718,6 +10224,22 @@ public final class ReplicatedDataMessages {
             result.value_ = value_;
           } else {
             result.value_ = valueBuilder_.build();
+          }
+          if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+            to_bitField0_ |= 0x00000004;
+          }
+          result.intKey_ = intKey_;
+          if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+            to_bitField0_ |= 0x00000008;
+          }
+          result.longKey_ = longKey_;
+          if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+            to_bitField0_ |= 0x00000010;
+          }
+          if (otherKeyBuilder_ == null) {
+            result.otherKey_ = otherKey_;
+          } else {
+            result.otherKey_ = otherKeyBuilder_.build();
           }
           result.bitField0_ = to_bitField0_;
           onBuilt();
@@ -9735,23 +10257,28 @@ public final class ReplicatedDataMessages {
 
         public Builder mergeFrom(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWMap.Entry other) {
           if (other == akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWMap.Entry.getDefaultInstance()) return this;
-          if (other.hasKey()) {
+          if (other.hasStringKey()) {
             bitField0_ |= 0x00000001;
-            key_ = other.key_;
+            stringKey_ = other.stringKey_;
             onChanged();
           }
           if (other.hasValue()) {
             mergeValue(other.getValue());
+          }
+          if (other.hasIntKey()) {
+            setIntKey(other.getIntKey());
+          }
+          if (other.hasLongKey()) {
+            setLongKey(other.getLongKey());
+          }
+          if (other.hasOtherKey()) {
+            mergeOtherKey(other.getOtherKey());
           }
           this.mergeUnknownFields(other.getUnknownFields());
           return this;
         }
 
         public final boolean isInitialized() {
-          if (!hasKey()) {
-            
-            return false;
-          }
           if (!hasValue()) {
             
             return false;
@@ -9759,6 +10286,12 @@ public final class ReplicatedDataMessages {
           if (!getValue().isInitialized()) {
             
             return false;
+          }
+          if (hasOtherKey()) {
+            if (!getOtherKey().isInitialized()) {
+              
+              return false;
+            }
           }
           return true;
         }
@@ -9782,76 +10315,76 @@ public final class ReplicatedDataMessages {
         }
         private int bitField0_;
 
-        // required string key = 1;
-        private java.lang.Object key_ = "";
+        // optional string stringKey = 1;
+        private java.lang.Object stringKey_ = "";
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public boolean hasKey() {
+        public boolean hasStringKey() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public java.lang.String getKey() {
-          java.lang.Object ref = key_;
+        public java.lang.String getStringKey() {
+          java.lang.Object ref = stringKey_;
           if (!(ref instanceof java.lang.String)) {
             java.lang.String s = ((akka.protobuf.ByteString) ref)
                 .toStringUtf8();
-            key_ = s;
+            stringKey_ = s;
             return s;
           } else {
             return (java.lang.String) ref;
           }
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
         public akka.protobuf.ByteString
-            getKeyBytes() {
-          java.lang.Object ref = key_;
+            getStringKeyBytes() {
+          java.lang.Object ref = stringKey_;
           if (ref instanceof String) {
             akka.protobuf.ByteString b = 
                 akka.protobuf.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
-            key_ = b;
+            stringKey_ = b;
             return b;
           } else {
             return (akka.protobuf.ByteString) ref;
           }
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder setKey(
+        public Builder setStringKey(
             java.lang.String value) {
           if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-          key_ = value;
+          stringKey_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder clearKey() {
+        public Builder clearStringKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
-          key_ = getDefaultInstance().getKey();
+          stringKey_ = getDefaultInstance().getStringKey();
           onChanged();
           return this;
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder setKeyBytes(
+        public Builder setStringKeyBytes(
             akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-          key_ = value;
+          stringKey_ = value;
           onChanged();
           return this;
         }
@@ -9971,6 +10504,189 @@ public final class ReplicatedDataMessages {
             value_ = null;
           }
           return valueBuilder_;
+        }
+
+        // optional sint32 intKey = 3;
+        private int intKey_ ;
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public boolean hasIntKey() {
+          return ((bitField0_ & 0x00000004) == 0x00000004);
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public int getIntKey() {
+          return intKey_;
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public Builder setIntKey(int value) {
+          bitField0_ |= 0x00000004;
+          intKey_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public Builder clearIntKey() {
+          bitField0_ = (bitField0_ & ~0x00000004);
+          intKey_ = 0;
+          onChanged();
+          return this;
+        }
+
+        // optional sint64 longKey = 4;
+        private long longKey_ ;
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public boolean hasLongKey() {
+          return ((bitField0_ & 0x00000008) == 0x00000008);
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public long getLongKey() {
+          return longKey_;
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public Builder setLongKey(long value) {
+          bitField0_ |= 0x00000008;
+          longKey_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public Builder clearLongKey() {
+          bitField0_ = (bitField0_ & ~0x00000008);
+          longKey_ = 0L;
+          onChanged();
+          return this;
+        }
+
+        // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+        private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+        private akka.protobuf.SingleFieldBuilder<
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> otherKeyBuilder_;
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public boolean hasOtherKey() {
+          return ((bitField0_ & 0x00000010) == 0x00000010);
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
+          if (otherKeyBuilder_ == null) {
+            return otherKey_;
+          } else {
+            return otherKeyBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder setOtherKey(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+          if (otherKeyBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            otherKey_ = value;
+            onChanged();
+          } else {
+            otherKeyBuilder_.setMessage(value);
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder setOtherKey(
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder builderForValue) {
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = builderForValue.build();
+            onChanged();
+          } else {
+            otherKeyBuilder_.setMessage(builderForValue.build());
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder mergeOtherKey(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+          if (otherKeyBuilder_ == null) {
+            if (((bitField0_ & 0x00000010) == 0x00000010) &&
+                otherKey_ != akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance()) {
+              otherKey_ =
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.newBuilder(otherKey_).mergeFrom(value).buildPartial();
+            } else {
+              otherKey_ = value;
+            }
+            onChanged();
+          } else {
+            otherKeyBuilder_.mergeFrom(value);
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder clearOtherKey() {
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+            onChanged();
+          } else {
+            otherKeyBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000010);
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder getOtherKeyBuilder() {
+          bitField0_ |= 0x00000010;
+          onChanged();
+          return getOtherKeyFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder() {
+          if (otherKeyBuilder_ != null) {
+            return otherKeyBuilder_.getMessageOrBuilder();
+          } else {
+            return otherKey_;
+          }
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        private akka.protobuf.SingleFieldBuilder<
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
+            getOtherKeyFieldBuilder() {
+          if (otherKeyBuilder_ == null) {
+            otherKeyBuilder_ = new akka.protobuf.SingleFieldBuilder<
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
+                    otherKey_,
+                    getParentForChildren(),
+                    isClean());
+            otherKey_ = null;
+          }
+          return otherKeyBuilder_;
         }
 
         // @@protoc_insertion_point(builder_scope:akka.cluster.ddata.LWWMap.Entry)
@@ -10884,20 +11600,20 @@ public final class ReplicatedDataMessages {
     public interface EntryOrBuilder
         extends akka.protobuf.MessageOrBuilder {
 
-      // required string key = 1;
+      // optional string stringKey = 1;
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      boolean hasKey();
+      boolean hasStringKey();
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      java.lang.String getKey();
+      java.lang.String getStringKey();
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
       akka.protobuf.ByteString
-          getKeyBytes();
+          getStringKeyBytes();
 
       // required .akka.cluster.ddata.PNCounter value = 2;
       /**
@@ -10912,6 +11628,40 @@ public final class ReplicatedDataMessages {
        * <code>required .akka.cluster.ddata.PNCounter value = 2;</code>
        */
       akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounterOrBuilder getValueOrBuilder();
+
+      // optional sint32 intKey = 3;
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      boolean hasIntKey();
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      int getIntKey();
+
+      // optional sint64 longKey = 4;
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      boolean hasLongKey();
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      long getLongKey();
+
+      // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      boolean hasOtherKey();
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey();
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder();
     }
     /**
      * Protobuf type {@code akka.cluster.ddata.PNCounterMap.Entry}
@@ -10966,7 +11716,7 @@ public final class ReplicatedDataMessages {
               }
               case 10: {
                 bitField0_ |= 0x00000001;
-                key_ = input.readBytes();
+                stringKey_ = input.readBytes();
                 break;
               }
               case 18: {
@@ -10980,6 +11730,29 @@ public final class ReplicatedDataMessages {
                   value_ = subBuilder.buildPartial();
                 }
                 bitField0_ |= 0x00000002;
+                break;
+              }
+              case 24: {
+                bitField0_ |= 0x00000004;
+                intKey_ = input.readSInt32();
+                break;
+              }
+              case 32: {
+                bitField0_ |= 0x00000008;
+                longKey_ = input.readSInt64();
+                break;
+              }
+              case 42: {
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000010) == 0x00000010)) {
+                  subBuilder = otherKey_.toBuilder();
+                }
+                otherKey_ = input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(otherKey_);
+                  otherKey_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000010;
                 break;
               }
             }
@@ -11022,20 +11795,20 @@ public final class ReplicatedDataMessages {
       }
 
       private int bitField0_;
-      // required string key = 1;
-      public static final int KEY_FIELD_NUMBER = 1;
-      private java.lang.Object key_;
+      // optional string stringKey = 1;
+      public static final int STRINGKEY_FIELD_NUMBER = 1;
+      private java.lang.Object stringKey_;
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      public boolean hasKey() {
+      public boolean hasStringKey() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      public java.lang.String getKey() {
-        java.lang.Object ref = key_;
+      public java.lang.String getStringKey() {
+        java.lang.Object ref = stringKey_;
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
@@ -11043,22 +11816,22 @@ public final class ReplicatedDataMessages {
               (akka.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
-            key_ = s;
+            stringKey_ = s;
           }
           return s;
         }
       }
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
       public akka.protobuf.ByteString
-          getKeyBytes() {
-        java.lang.Object ref = key_;
+          getStringKeyBytes() {
+        java.lang.Object ref = stringKey_;
         if (ref instanceof java.lang.String) {
           akka.protobuf.ByteString b = 
               akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          key_ = b;
+          stringKey_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
@@ -11087,19 +11860,72 @@ public final class ReplicatedDataMessages {
         return value_;
       }
 
+      // optional sint32 intKey = 3;
+      public static final int INTKEY_FIELD_NUMBER = 3;
+      private int intKey_;
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      public boolean hasIntKey() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      public int getIntKey() {
+        return intKey_;
+      }
+
+      // optional sint64 longKey = 4;
+      public static final int LONGKEY_FIELD_NUMBER = 4;
+      private long longKey_;
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      public boolean hasLongKey() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      public long getLongKey() {
+        return longKey_;
+      }
+
+      // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+      public static final int OTHERKEY_FIELD_NUMBER = 5;
+      private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_;
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public boolean hasOtherKey() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
+        return otherKey_;
+      }
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder() {
+        return otherKey_;
+      }
+
       private void initFields() {
-        key_ = "";
+        stringKey_ = "";
         value_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounter.getDefaultInstance();
+        intKey_ = 0;
+        longKey_ = 0L;
+        otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized != -1) return isInitialized == 1;
 
-        if (!hasKey()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
         if (!hasValue()) {
           memoizedIsInitialized = 0;
           return false;
@@ -11107,6 +11933,12 @@ public final class ReplicatedDataMessages {
         if (!getValue().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
+        }
+        if (hasOtherKey()) {
+          if (!getOtherKey().isInitialized()) {
+            memoizedIsInitialized = 0;
+            return false;
+          }
         }
         memoizedIsInitialized = 1;
         return true;
@@ -11116,10 +11948,19 @@ public final class ReplicatedDataMessages {
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeBytes(1, getKeyBytes());
+          output.writeBytes(1, getStringKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           output.writeMessage(2, value_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          output.writeSInt32(3, intKey_);
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          output.writeSInt64(4, longKey_);
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          output.writeMessage(5, otherKey_);
         }
         getUnknownFields().writeTo(output);
       }
@@ -11132,11 +11973,23 @@ public final class ReplicatedDataMessages {
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           size += akka.protobuf.CodedOutputStream
-            .computeBytesSize(1, getKeyBytes());
+            .computeBytesSize(1, getStringKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += akka.protobuf.CodedOutputStream
             .computeMessageSize(2, value_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeSInt32Size(3, intKey_);
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeSInt64Size(4, longKey_);
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeMessageSize(5, otherKey_);
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -11247,6 +12100,7 @@ public final class ReplicatedDataMessages {
         private void maybeForceBuilderInitialization() {
           if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
             getValueFieldBuilder();
+            getOtherKeyFieldBuilder();
           }
         }
         private static Builder create() {
@@ -11255,7 +12109,7 @@ public final class ReplicatedDataMessages {
 
         public Builder clear() {
           super.clear();
-          key_ = "";
+          stringKey_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
           if (valueBuilder_ == null) {
             value_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounter.getDefaultInstance();
@@ -11263,6 +12117,16 @@ public final class ReplicatedDataMessages {
             valueBuilder_.clear();
           }
           bitField0_ = (bitField0_ & ~0x00000002);
+          intKey_ = 0;
+          bitField0_ = (bitField0_ & ~0x00000004);
+          longKey_ = 0L;
+          bitField0_ = (bitField0_ & ~0x00000008);
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+          } else {
+            otherKeyBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000010);
           return this;
         }
 
@@ -11294,7 +12158,7 @@ public final class ReplicatedDataMessages {
           if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
             to_bitField0_ |= 0x00000001;
           }
-          result.key_ = key_;
+          result.stringKey_ = stringKey_;
           if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
             to_bitField0_ |= 0x00000002;
           }
@@ -11302,6 +12166,22 @@ public final class ReplicatedDataMessages {
             result.value_ = value_;
           } else {
             result.value_ = valueBuilder_.build();
+          }
+          if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+            to_bitField0_ |= 0x00000004;
+          }
+          result.intKey_ = intKey_;
+          if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+            to_bitField0_ |= 0x00000008;
+          }
+          result.longKey_ = longKey_;
+          if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+            to_bitField0_ |= 0x00000010;
+          }
+          if (otherKeyBuilder_ == null) {
+            result.otherKey_ = otherKey_;
+          } else {
+            result.otherKey_ = otherKeyBuilder_.build();
           }
           result.bitField0_ = to_bitField0_;
           onBuilt();
@@ -11319,23 +12199,28 @@ public final class ReplicatedDataMessages {
 
         public Builder mergeFrom(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounterMap.Entry other) {
           if (other == akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounterMap.Entry.getDefaultInstance()) return this;
-          if (other.hasKey()) {
+          if (other.hasStringKey()) {
             bitField0_ |= 0x00000001;
-            key_ = other.key_;
+            stringKey_ = other.stringKey_;
             onChanged();
           }
           if (other.hasValue()) {
             mergeValue(other.getValue());
+          }
+          if (other.hasIntKey()) {
+            setIntKey(other.getIntKey());
+          }
+          if (other.hasLongKey()) {
+            setLongKey(other.getLongKey());
+          }
+          if (other.hasOtherKey()) {
+            mergeOtherKey(other.getOtherKey());
           }
           this.mergeUnknownFields(other.getUnknownFields());
           return this;
         }
 
         public final boolean isInitialized() {
-          if (!hasKey()) {
-            
-            return false;
-          }
           if (!hasValue()) {
             
             return false;
@@ -11343,6 +12228,12 @@ public final class ReplicatedDataMessages {
           if (!getValue().isInitialized()) {
             
             return false;
+          }
+          if (hasOtherKey()) {
+            if (!getOtherKey().isInitialized()) {
+              
+              return false;
+            }
           }
           return true;
         }
@@ -11366,76 +12257,76 @@ public final class ReplicatedDataMessages {
         }
         private int bitField0_;
 
-        // required string key = 1;
-        private java.lang.Object key_ = "";
+        // optional string stringKey = 1;
+        private java.lang.Object stringKey_ = "";
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public boolean hasKey() {
+        public boolean hasStringKey() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public java.lang.String getKey() {
-          java.lang.Object ref = key_;
+        public java.lang.String getStringKey() {
+          java.lang.Object ref = stringKey_;
           if (!(ref instanceof java.lang.String)) {
             java.lang.String s = ((akka.protobuf.ByteString) ref)
                 .toStringUtf8();
-            key_ = s;
+            stringKey_ = s;
             return s;
           } else {
             return (java.lang.String) ref;
           }
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
         public akka.protobuf.ByteString
-            getKeyBytes() {
-          java.lang.Object ref = key_;
+            getStringKeyBytes() {
+          java.lang.Object ref = stringKey_;
           if (ref instanceof String) {
             akka.protobuf.ByteString b = 
                 akka.protobuf.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
-            key_ = b;
+            stringKey_ = b;
             return b;
           } else {
             return (akka.protobuf.ByteString) ref;
           }
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder setKey(
+        public Builder setStringKey(
             java.lang.String value) {
           if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-          key_ = value;
+          stringKey_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder clearKey() {
+        public Builder clearStringKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
-          key_ = getDefaultInstance().getKey();
+          stringKey_ = getDefaultInstance().getStringKey();
           onChanged();
           return this;
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder setKeyBytes(
+        public Builder setStringKeyBytes(
             akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-          key_ = value;
+          stringKey_ = value;
           onChanged();
           return this;
         }
@@ -11555,6 +12446,189 @@ public final class ReplicatedDataMessages {
             value_ = null;
           }
           return valueBuilder_;
+        }
+
+        // optional sint32 intKey = 3;
+        private int intKey_ ;
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public boolean hasIntKey() {
+          return ((bitField0_ & 0x00000004) == 0x00000004);
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public int getIntKey() {
+          return intKey_;
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public Builder setIntKey(int value) {
+          bitField0_ |= 0x00000004;
+          intKey_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public Builder clearIntKey() {
+          bitField0_ = (bitField0_ & ~0x00000004);
+          intKey_ = 0;
+          onChanged();
+          return this;
+        }
+
+        // optional sint64 longKey = 4;
+        private long longKey_ ;
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public boolean hasLongKey() {
+          return ((bitField0_ & 0x00000008) == 0x00000008);
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public long getLongKey() {
+          return longKey_;
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public Builder setLongKey(long value) {
+          bitField0_ |= 0x00000008;
+          longKey_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public Builder clearLongKey() {
+          bitField0_ = (bitField0_ & ~0x00000008);
+          longKey_ = 0L;
+          onChanged();
+          return this;
+        }
+
+        // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+        private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+        private akka.protobuf.SingleFieldBuilder<
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> otherKeyBuilder_;
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public boolean hasOtherKey() {
+          return ((bitField0_ & 0x00000010) == 0x00000010);
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
+          if (otherKeyBuilder_ == null) {
+            return otherKey_;
+          } else {
+            return otherKeyBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder setOtherKey(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+          if (otherKeyBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            otherKey_ = value;
+            onChanged();
+          } else {
+            otherKeyBuilder_.setMessage(value);
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder setOtherKey(
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder builderForValue) {
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = builderForValue.build();
+            onChanged();
+          } else {
+            otherKeyBuilder_.setMessage(builderForValue.build());
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder mergeOtherKey(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+          if (otherKeyBuilder_ == null) {
+            if (((bitField0_ & 0x00000010) == 0x00000010) &&
+                otherKey_ != akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance()) {
+              otherKey_ =
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.newBuilder(otherKey_).mergeFrom(value).buildPartial();
+            } else {
+              otherKey_ = value;
+            }
+            onChanged();
+          } else {
+            otherKeyBuilder_.mergeFrom(value);
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder clearOtherKey() {
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+            onChanged();
+          } else {
+            otherKeyBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000010);
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder getOtherKeyBuilder() {
+          bitField0_ |= 0x00000010;
+          onChanged();
+          return getOtherKeyFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder() {
+          if (otherKeyBuilder_ != null) {
+            return otherKeyBuilder_.getMessageOrBuilder();
+          } else {
+            return otherKey_;
+          }
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        private akka.protobuf.SingleFieldBuilder<
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
+            getOtherKeyFieldBuilder() {
+          if (otherKeyBuilder_ == null) {
+            otherKeyBuilder_ = new akka.protobuf.SingleFieldBuilder<
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
+                    otherKey_,
+                    getParentForChildren(),
+                    isClean());
+            otherKey_ = null;
+          }
+          return otherKeyBuilder_;
         }
 
         // @@protoc_insertion_point(builder_scope:akka.cluster.ddata.PNCounterMap.Entry)
@@ -12468,20 +13542,20 @@ public final class ReplicatedDataMessages {
     public interface EntryOrBuilder
         extends akka.protobuf.MessageOrBuilder {
 
-      // required string key = 1;
+      // optional string stringKey = 1;
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      boolean hasKey();
+      boolean hasStringKey();
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      java.lang.String getKey();
+      java.lang.String getStringKey();
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
       akka.protobuf.ByteString
-          getKeyBytes();
+          getStringKeyBytes();
 
       // required .akka.cluster.ddata.ORSet value = 2;
       /**
@@ -12496,6 +13570,40 @@ public final class ReplicatedDataMessages {
        * <code>required .akka.cluster.ddata.ORSet value = 2;</code>
        */
       akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetOrBuilder getValueOrBuilder();
+
+      // optional sint32 intKey = 3;
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      boolean hasIntKey();
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      int getIntKey();
+
+      // optional sint64 longKey = 4;
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      boolean hasLongKey();
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      long getLongKey();
+
+      // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      boolean hasOtherKey();
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey();
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder();
     }
     /**
      * Protobuf type {@code akka.cluster.ddata.ORMultiMap.Entry}
@@ -12550,7 +13658,7 @@ public final class ReplicatedDataMessages {
               }
               case 10: {
                 bitField0_ |= 0x00000001;
-                key_ = input.readBytes();
+                stringKey_ = input.readBytes();
                 break;
               }
               case 18: {
@@ -12564,6 +13672,29 @@ public final class ReplicatedDataMessages {
                   value_ = subBuilder.buildPartial();
                 }
                 bitField0_ |= 0x00000002;
+                break;
+              }
+              case 24: {
+                bitField0_ |= 0x00000004;
+                intKey_ = input.readSInt32();
+                break;
+              }
+              case 32: {
+                bitField0_ |= 0x00000008;
+                longKey_ = input.readSInt64();
+                break;
+              }
+              case 42: {
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000010) == 0x00000010)) {
+                  subBuilder = otherKey_.toBuilder();
+                }
+                otherKey_ = input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(otherKey_);
+                  otherKey_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000010;
                 break;
               }
             }
@@ -12606,20 +13737,20 @@ public final class ReplicatedDataMessages {
       }
 
       private int bitField0_;
-      // required string key = 1;
-      public static final int KEY_FIELD_NUMBER = 1;
-      private java.lang.Object key_;
+      // optional string stringKey = 1;
+      public static final int STRINGKEY_FIELD_NUMBER = 1;
+      private java.lang.Object stringKey_;
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      public boolean hasKey() {
+      public boolean hasStringKey() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
-      public java.lang.String getKey() {
-        java.lang.Object ref = key_;
+      public java.lang.String getStringKey() {
+        java.lang.Object ref = stringKey_;
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
@@ -12627,22 +13758,22 @@ public final class ReplicatedDataMessages {
               (akka.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
-            key_ = s;
+            stringKey_ = s;
           }
           return s;
         }
       }
       /**
-       * <code>required string key = 1;</code>
+       * <code>optional string stringKey = 1;</code>
        */
       public akka.protobuf.ByteString
-          getKeyBytes() {
-        java.lang.Object ref = key_;
+          getStringKeyBytes() {
+        java.lang.Object ref = stringKey_;
         if (ref instanceof java.lang.String) {
           akka.protobuf.ByteString b = 
               akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          key_ = b;
+          stringKey_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
@@ -12671,19 +13802,72 @@ public final class ReplicatedDataMessages {
         return value_;
       }
 
+      // optional sint32 intKey = 3;
+      public static final int INTKEY_FIELD_NUMBER = 3;
+      private int intKey_;
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      public boolean hasIntKey() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional sint32 intKey = 3;</code>
+       */
+      public int getIntKey() {
+        return intKey_;
+      }
+
+      // optional sint64 longKey = 4;
+      public static final int LONGKEY_FIELD_NUMBER = 4;
+      private long longKey_;
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      public boolean hasLongKey() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional sint64 longKey = 4;</code>
+       */
+      public long getLongKey() {
+        return longKey_;
+      }
+
+      // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+      public static final int OTHERKEY_FIELD_NUMBER = 5;
+      private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_;
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public boolean hasOtherKey() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
+        return otherKey_;
+      }
+      /**
+       * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder() {
+        return otherKey_;
+      }
+
       private void initFields() {
-        key_ = "";
+        stringKey_ = "";
         value_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.getDefaultInstance();
+        intKey_ = 0;
+        longKey_ = 0L;
+        otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized != -1) return isInitialized == 1;
 
-        if (!hasKey()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
         if (!hasValue()) {
           memoizedIsInitialized = 0;
           return false;
@@ -12691,6 +13875,12 @@ public final class ReplicatedDataMessages {
         if (!getValue().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
+        }
+        if (hasOtherKey()) {
+          if (!getOtherKey().isInitialized()) {
+            memoizedIsInitialized = 0;
+            return false;
+          }
         }
         memoizedIsInitialized = 1;
         return true;
@@ -12700,10 +13890,19 @@ public final class ReplicatedDataMessages {
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeBytes(1, getKeyBytes());
+          output.writeBytes(1, getStringKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           output.writeMessage(2, value_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          output.writeSInt32(3, intKey_);
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          output.writeSInt64(4, longKey_);
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          output.writeMessage(5, otherKey_);
         }
         getUnknownFields().writeTo(output);
       }
@@ -12716,11 +13915,23 @@ public final class ReplicatedDataMessages {
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
           size += akka.protobuf.CodedOutputStream
-            .computeBytesSize(1, getKeyBytes());
+            .computeBytesSize(1, getStringKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += akka.protobuf.CodedOutputStream
             .computeMessageSize(2, value_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeSInt32Size(3, intKey_);
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeSInt64Size(4, longKey_);
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeMessageSize(5, otherKey_);
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -12831,6 +14042,7 @@ public final class ReplicatedDataMessages {
         private void maybeForceBuilderInitialization() {
           if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
             getValueFieldBuilder();
+            getOtherKeyFieldBuilder();
           }
         }
         private static Builder create() {
@@ -12839,7 +14051,7 @@ public final class ReplicatedDataMessages {
 
         public Builder clear() {
           super.clear();
-          key_ = "";
+          stringKey_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
           if (valueBuilder_ == null) {
             value_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.getDefaultInstance();
@@ -12847,6 +14059,16 @@ public final class ReplicatedDataMessages {
             valueBuilder_.clear();
           }
           bitField0_ = (bitField0_ & ~0x00000002);
+          intKey_ = 0;
+          bitField0_ = (bitField0_ & ~0x00000004);
+          longKey_ = 0L;
+          bitField0_ = (bitField0_ & ~0x00000008);
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+          } else {
+            otherKeyBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000010);
           return this;
         }
 
@@ -12878,7 +14100,7 @@ public final class ReplicatedDataMessages {
           if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
             to_bitField0_ |= 0x00000001;
           }
-          result.key_ = key_;
+          result.stringKey_ = stringKey_;
           if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
             to_bitField0_ |= 0x00000002;
           }
@@ -12886,6 +14108,22 @@ public final class ReplicatedDataMessages {
             result.value_ = value_;
           } else {
             result.value_ = valueBuilder_.build();
+          }
+          if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+            to_bitField0_ |= 0x00000004;
+          }
+          result.intKey_ = intKey_;
+          if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+            to_bitField0_ |= 0x00000008;
+          }
+          result.longKey_ = longKey_;
+          if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+            to_bitField0_ |= 0x00000010;
+          }
+          if (otherKeyBuilder_ == null) {
+            result.otherKey_ = otherKey_;
+          } else {
+            result.otherKey_ = otherKeyBuilder_.build();
           }
           result.bitField0_ = to_bitField0_;
           onBuilt();
@@ -12903,23 +14141,28 @@ public final class ReplicatedDataMessages {
 
         public Builder mergeFrom(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMultiMap.Entry other) {
           if (other == akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMultiMap.Entry.getDefaultInstance()) return this;
-          if (other.hasKey()) {
+          if (other.hasStringKey()) {
             bitField0_ |= 0x00000001;
-            key_ = other.key_;
+            stringKey_ = other.stringKey_;
             onChanged();
           }
           if (other.hasValue()) {
             mergeValue(other.getValue());
+          }
+          if (other.hasIntKey()) {
+            setIntKey(other.getIntKey());
+          }
+          if (other.hasLongKey()) {
+            setLongKey(other.getLongKey());
+          }
+          if (other.hasOtherKey()) {
+            mergeOtherKey(other.getOtherKey());
           }
           this.mergeUnknownFields(other.getUnknownFields());
           return this;
         }
 
         public final boolean isInitialized() {
-          if (!hasKey()) {
-            
-            return false;
-          }
           if (!hasValue()) {
             
             return false;
@@ -12927,6 +14170,12 @@ public final class ReplicatedDataMessages {
           if (!getValue().isInitialized()) {
             
             return false;
+          }
+          if (hasOtherKey()) {
+            if (!getOtherKey().isInitialized()) {
+              
+              return false;
+            }
           }
           return true;
         }
@@ -12950,76 +14199,76 @@ public final class ReplicatedDataMessages {
         }
         private int bitField0_;
 
-        // required string key = 1;
-        private java.lang.Object key_ = "";
+        // optional string stringKey = 1;
+        private java.lang.Object stringKey_ = "";
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public boolean hasKey() {
+        public boolean hasStringKey() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public java.lang.String getKey() {
-          java.lang.Object ref = key_;
+        public java.lang.String getStringKey() {
+          java.lang.Object ref = stringKey_;
           if (!(ref instanceof java.lang.String)) {
             java.lang.String s = ((akka.protobuf.ByteString) ref)
                 .toStringUtf8();
-            key_ = s;
+            stringKey_ = s;
             return s;
           } else {
             return (java.lang.String) ref;
           }
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
         public akka.protobuf.ByteString
-            getKeyBytes() {
-          java.lang.Object ref = key_;
+            getStringKeyBytes() {
+          java.lang.Object ref = stringKey_;
           if (ref instanceof String) {
             akka.protobuf.ByteString b = 
                 akka.protobuf.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
-            key_ = b;
+            stringKey_ = b;
             return b;
           } else {
             return (akka.protobuf.ByteString) ref;
           }
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder setKey(
+        public Builder setStringKey(
             java.lang.String value) {
           if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-          key_ = value;
+          stringKey_ = value;
           onChanged();
           return this;
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder clearKey() {
+        public Builder clearStringKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
-          key_ = getDefaultInstance().getKey();
+          stringKey_ = getDefaultInstance().getStringKey();
           onChanged();
           return this;
         }
         /**
-         * <code>required string key = 1;</code>
+         * <code>optional string stringKey = 1;</code>
          */
-        public Builder setKeyBytes(
+        public Builder setStringKeyBytes(
             akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-          key_ = value;
+          stringKey_ = value;
           onChanged();
           return this;
         }
@@ -13139,6 +14388,189 @@ public final class ReplicatedDataMessages {
             value_ = null;
           }
           return valueBuilder_;
+        }
+
+        // optional sint32 intKey = 3;
+        private int intKey_ ;
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public boolean hasIntKey() {
+          return ((bitField0_ & 0x00000004) == 0x00000004);
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public int getIntKey() {
+          return intKey_;
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public Builder setIntKey(int value) {
+          bitField0_ |= 0x00000004;
+          intKey_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional sint32 intKey = 3;</code>
+         */
+        public Builder clearIntKey() {
+          bitField0_ = (bitField0_ & ~0x00000004);
+          intKey_ = 0;
+          onChanged();
+          return this;
+        }
+
+        // optional sint64 longKey = 4;
+        private long longKey_ ;
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public boolean hasLongKey() {
+          return ((bitField0_ & 0x00000008) == 0x00000008);
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public long getLongKey() {
+          return longKey_;
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public Builder setLongKey(long value) {
+          bitField0_ |= 0x00000008;
+          longKey_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional sint64 longKey = 4;</code>
+         */
+        public Builder clearLongKey() {
+          bitField0_ = (bitField0_ & ~0x00000008);
+          longKey_ = 0L;
+          onChanged();
+          return this;
+        }
+
+        // optional .akka.cluster.ddata.OtherMessage otherKey = 5;
+        private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+        private akka.protobuf.SingleFieldBuilder<
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> otherKeyBuilder_;
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public boolean hasOtherKey() {
+          return ((bitField0_ & 0x00000010) == 0x00000010);
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
+          if (otherKeyBuilder_ == null) {
+            return otherKey_;
+          } else {
+            return otherKeyBuilder_.getMessage();
+          }
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder setOtherKey(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+          if (otherKeyBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            otherKey_ = value;
+            onChanged();
+          } else {
+            otherKeyBuilder_.setMessage(value);
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder setOtherKey(
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder builderForValue) {
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = builderForValue.build();
+            onChanged();
+          } else {
+            otherKeyBuilder_.setMessage(builderForValue.build());
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder mergeOtherKey(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+          if (otherKeyBuilder_ == null) {
+            if (((bitField0_ & 0x00000010) == 0x00000010) &&
+                otherKey_ != akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance()) {
+              otherKey_ =
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.newBuilder(otherKey_).mergeFrom(value).buildPartial();
+            } else {
+              otherKey_ = value;
+            }
+            onChanged();
+          } else {
+            otherKeyBuilder_.mergeFrom(value);
+          }
+          bitField0_ |= 0x00000010;
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public Builder clearOtherKey() {
+          if (otherKeyBuilder_ == null) {
+            otherKey_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+            onChanged();
+          } else {
+            otherKeyBuilder_.clear();
+          }
+          bitField0_ = (bitField0_ & ~0x00000010);
+          return this;
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder getOtherKeyBuilder() {
+          bitField0_ |= 0x00000010;
+          onChanged();
+          return getOtherKeyFieldBuilder().getBuilder();
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherKeyOrBuilder() {
+          if (otherKeyBuilder_ != null) {
+            return otherKeyBuilder_.getMessageOrBuilder();
+          } else {
+            return otherKey_;
+          }
+        }
+        /**
+         * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         */
+        private akka.protobuf.SingleFieldBuilder<
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
+            getOtherKeyFieldBuilder() {
+          if (otherKeyBuilder_ == null) {
+            otherKeyBuilder_ = new akka.protobuf.SingleFieldBuilder<
+                akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
+                    otherKey_,
+                    getParentForChildren(),
+                    isClean());
+            otherKey_ = null;
+          }
+          return otherKeyBuilder_;
         }
 
         // @@protoc_insertion_point(builder_scope:akka.cluster.ddata.ORMultiMap.Entry)
@@ -14012,26 +15444,35 @@ public final class ReplicatedDataMessages {
       "onVector\0228\n\007entries\030\001 \003(\0132\'.akka.cluster" +
       ".ddata.VersionVector.Entry\032I\n\005Entry\022/\n\004n" +
       "ode\030\001 \002(\0132!.akka.cluster.ddata.UniqueAdd" +
-      "ress\022\017\n\007version\030\002 \002(\003\"\251\001\n\005ORMap\022\'\n\004keys\030" +
+      "ress\022\017\n\007version\030\002 \002(\003\"\205\002\n\005ORMap\022\'\n\004keys\030" +
       "\001 \002(\0132\031.akka.cluster.ddata.ORSet\0220\n\007entr" +
       "ies\030\002 \003(\0132\037.akka.cluster.ddata.ORMap.Ent" +
-      "ry\032E\n\005Entry\022\013\n\003key\030\001 \002(\t\022/\n\005value\030\002 \002(\0132" +
-      " .akka.cluster.ddata.OtherMessage\"\252\001\n\006LW",
-      "WMap\022\'\n\004keys\030\001 \002(\0132\031.akka.cluster.ddata." +
-      "ORSet\0221\n\007entries\030\002 \003(\0132 .akka.cluster.dd" +
-      "ata.LWWMap.Entry\032D\n\005Entry\022\013\n\003key\030\001 \002(\t\022." +
-      "\n\005value\030\002 \002(\0132\037.akka.cluster.ddata.LWWRe" +
-      "gister\"\264\001\n\014PNCounterMap\022\'\n\004keys\030\001 \002(\0132\031." +
-      "akka.cluster.ddata.ORSet\0227\n\007entries\030\002 \003(" +
-      "\0132&.akka.cluster.ddata.PNCounterMap.Entr" +
-      "y\032B\n\005Entry\022\013\n\003key\030\001 \002(\t\022,\n\005value\030\002 \002(\0132\035" +
-      ".akka.cluster.ddata.PNCounter\"\254\001\n\nORMult" +
-      "iMap\022\'\n\004keys\030\001 \002(\0132\031.akka.cluster.ddata.",
-      "ORSet\0225\n\007entries\030\002 \003(\0132$.akka.cluster.dd" +
-      "ata.ORMultiMap.Entry\032>\n\005Entry\022\013\n\003key\030\001 \002" +
-      "(\t\022(\n\005value\030\002 \002(\0132\031.akka.cluster.ddata.O" +
-      "RSetB#\n\037akka.cluster.ddata.protobuf.msgH" +
-      "\001"
+      "ry\032\240\001\n\005Entry\022\021\n\tstringKey\030\001 \001(\t\022/\n\005value" +
+      "\030\002 \002(\0132 .akka.cluster.ddata.OtherMessage",
+      "\022\016\n\006intKey\030\003 \001(\021\022\017\n\007longKey\030\004 \001(\022\0222\n\010oth" +
+      "erKey\030\005 \001(\0132 .akka.cluster.ddata.OtherMe" +
+      "ssage\"\206\002\n\006LWWMap\022\'\n\004keys\030\001 \002(\0132\031.akka.cl" +
+      "uster.ddata.ORSet\0221\n\007entries\030\002 \003(\0132 .akk" +
+      "a.cluster.ddata.LWWMap.Entry\032\237\001\n\005Entry\022\021" +
+      "\n\tstringKey\030\001 \001(\t\022.\n\005value\030\002 \002(\0132\037.akka." +
+      "cluster.ddata.LWWRegister\022\016\n\006intKey\030\003 \001(" +
+      "\021\022\017\n\007longKey\030\004 \001(\022\0222\n\010otherKey\030\005 \001(\0132 .a" +
+      "kka.cluster.ddata.OtherMessage\"\220\002\n\014PNCou" +
+      "nterMap\022\'\n\004keys\030\001 \002(\0132\031.akka.cluster.dda",
+      "ta.ORSet\0227\n\007entries\030\002 \003(\0132&.akka.cluster" +
+      ".ddata.PNCounterMap.Entry\032\235\001\n\005Entry\022\021\n\ts" +
+      "tringKey\030\001 \001(\t\022,\n\005value\030\002 \002(\0132\035.akka.clu" +
+      "ster.ddata.PNCounter\022\016\n\006intKey\030\003 \001(\021\022\017\n\007" +
+      "longKey\030\004 \001(\022\0222\n\010otherKey\030\005 \001(\0132 .akka.c" +
+      "luster.ddata.OtherMessage\"\210\002\n\nORMultiMap" +
+      "\022\'\n\004keys\030\001 \002(\0132\031.akka.cluster.ddata.ORSe" +
+      "t\0225\n\007entries\030\002 \003(\0132$.akka.cluster.ddata." +
+      "ORMultiMap.Entry\032\231\001\n\005Entry\022\021\n\tstringKey\030" +
+      "\001 \001(\t\022(\n\005value\030\002 \002(\0132\031.akka.cluster.ddat",
+      "a.ORSet\022\016\n\006intKey\030\003 \001(\021\022\017\n\007longKey\030\004 \001(\022" +
+      "\0222\n\010otherKey\030\005 \001(\0132 .akka.cluster.ddata." +
+      "OtherMessageB#\n\037akka.cluster.ddata.proto" +
+      "buf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -14103,7 +15544,7 @@ public final class ReplicatedDataMessages {
           internal_static_akka_cluster_ddata_ORMap_Entry_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_ORMap_Entry_descriptor,
-              new java.lang.String[] { "Key", "Value", });
+              new java.lang.String[] { "StringKey", "Value", "IntKey", "LongKey", "OtherKey", });
           internal_static_akka_cluster_ddata_LWWMap_descriptor =
             getDescriptor().getMessageTypes().get(8);
           internal_static_akka_cluster_ddata_LWWMap_fieldAccessorTable = new
@@ -14115,7 +15556,7 @@ public final class ReplicatedDataMessages {
           internal_static_akka_cluster_ddata_LWWMap_Entry_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_LWWMap_Entry_descriptor,
-              new java.lang.String[] { "Key", "Value", });
+              new java.lang.String[] { "StringKey", "Value", "IntKey", "LongKey", "OtherKey", });
           internal_static_akka_cluster_ddata_PNCounterMap_descriptor =
             getDescriptor().getMessageTypes().get(9);
           internal_static_akka_cluster_ddata_PNCounterMap_fieldAccessorTable = new
@@ -14127,7 +15568,7 @@ public final class ReplicatedDataMessages {
           internal_static_akka_cluster_ddata_PNCounterMap_Entry_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_PNCounterMap_Entry_descriptor,
-              new java.lang.String[] { "Key", "Value", });
+              new java.lang.String[] { "StringKey", "Value", "IntKey", "LongKey", "OtherKey", });
           internal_static_akka_cluster_ddata_ORMultiMap_descriptor =
             getDescriptor().getMessageTypes().get(10);
           internal_static_akka_cluster_ddata_ORMultiMap_fieldAccessorTable = new
@@ -14139,7 +15580,7 @@ public final class ReplicatedDataMessages {
           internal_static_akka_cluster_ddata_ORMultiMap_Entry_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_ORMultiMap_Entry_descriptor,
-              new java.lang.String[] { "Key", "Value", });
+              new java.lang.String[] { "StringKey", "Value", "IntKey", "LongKey", "OtherKey", });
           return null;
         }
       };

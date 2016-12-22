@@ -135,11 +135,11 @@ Queries always fall into one of the two categories: infinite or finite ("current
 The naming convention for these categories of queries was solidified and is now as follows:
 
 - "infinite" - e.g. ``eventsByTag``, ``persistenceIds`` - which will keep emitting events as they are persisted and match the query.
-- "finite", also known as "current" - e.g. ``currentEventsByTag``, ``currentPersistenceIds`` - which will complete the stream once the query completed, 
+- "finite", also known as "current" - e.g. ``currentEventsByTag``, ``currentPersistenceIds`` - which will complete the stream once the query completed,
   for the journal's definition of "current". For example in an SQL store it would mean it only queries the database once.
 
-Only the ``AllPersistenceIdsQuery`` class and method name changed due to this. 
-The class is now called ``PersistenceIdsQuery``, and the method which used to be ``allPersistenceIds`` is now ``persistenceIds``. 
+Only the ``AllPersistenceIdsQuery`` class and method name changed due to this.
+The class is now called ``PersistenceIdsQuery``, and the method which used to be ``allPersistenceIds`` is now ``persistenceIds``.
 
 Queries now use ``Offset`` instead of ``Long`` for offsets
 ----------------------------------------------------------
@@ -149,9 +149,9 @@ For example, in some journals an offset is always a time, while in others it is 
 
 Instead of the previous ``Long`` offset you can now use the provided ``Offset`` factories (and types):
 
-- ``akka.persistence.query.Offset.sequence(value: Long)``, 
+- ``akka.persistence.query.Offset.sequence(value: Long)``,
 - ``akka.persistence.query.Offset.timeBasedUUID(value: UUID)``
-- and finally ``NoOffset`` if not offset should be used. 
+- and finally ``NoOffset`` if not offset should be used.
 
 Journals are also free to provide their own specific ``Offset`` types. Consult your journal plugin's documentation for details.
 
@@ -169,3 +169,18 @@ the Agents, as they rarely are really enough and do not fit the Akka spirit of t
 We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so in preparation thereof the Agents have been deprecated in 2.5.
 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
+
+Distributed Data
+================
+
+Map allow generic type for the keys
+-----------------------------------
+
+In 2.4 the key of any Distributed Data map always needed to be of type String. In 2.5 you can use any type for the key. This means that
+every map (ORMap, LWWMap, PNCounterMap, ORMultiMap) now takes an extra type parameter to specify the key type. To migrate
+existing code from 2.4 to 2.5 you simple add String as key type, for example: `ORMultiMap[Foo]` becomes `ORMultiMap[String, Foo]`.
+`PNCounterMap` didn't take a type parameter in version 2.4, so `PNCounterMap` in 2.4 becomes `PNCounterMap[String]` in 2.5.
+Java developers should use `<>` instead of `[]`, e.g: `PNCounterMap<String>`.
+
+**NOTE: Even though the interface is not compatible between 2.4 and 2.5, the binary protocol over the wire is (as long
+as you use String as key type). This means that 2.4 nodes can synchronize with 2.5 nodes.**

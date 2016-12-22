@@ -301,7 +301,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     def println(o: Any): Unit = ()
     //#pncountermap
     implicit val node = Cluster(system)
-    val m0 = PNCounterMap.empty
+    val m0 = PNCounterMap.empty[String]
     val m1 = m0.increment("a", 7)
     val m2 = m1.decrement("a", 2)
     val m3 = m2.increment("b", 1)
@@ -337,7 +337,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
     def println(o: Any): Unit = ()
     //#ormultimap
     implicit val node = Cluster(system)
-    val m0 = ORMultiMap.empty[Int]
+    val m0 = ORMultiMap.empty[String, Int]
     val m1 = m0 + ("a" -> Set(1, 2, 3))
     val m2 = m1.addBinding("a", 4)
     val m3 = m2.removeBinding("a", 2)

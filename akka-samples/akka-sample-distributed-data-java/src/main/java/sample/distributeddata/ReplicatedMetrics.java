@@ -59,8 +59,8 @@ public class ReplicatedMetrics extends AbstractActor {
   private final MemoryMXBean memoryMBean = ManagementFactory.getMemoryMXBean();
   private final LoggingAdapter log = Logging.getLogger(context().system(), this);
 
-  private final Key<LWWMap<Long>> usedHeapKey = LWWMapKey.create("usedHeap");
-  private final Key<LWWMap<Long>> maxHeapKey = LWWMapKey.create("maxHeap");
+  private final Key<LWWMap<String, Long>> usedHeapKey = LWWMapKey.create("usedHeap");
+  private final Key<LWWMap<String, Long>> maxHeapKey = LWWMapKey.create("maxHeap");
 
   private final Cancellable tickTask;
   private final Cancellable cleanupTask;
@@ -92,8 +92,8 @@ public class ReplicatedMetrics extends AbstractActor {
 
     receive(ReceiveBuilder
       .matchEquals(TICK, t -> receiveTick())
-      .match(Changed.class, c -> c.key().equals(maxHeapKey), c -> receiveMaxHeapChanged((Changed<LWWMap<Long>>) c))
-      .match(Changed.class, c -> c.key().equals(usedHeapKey), c -> receiveUsedHeapChanged((Changed<LWWMap<Long>>) c))
+      .match(Changed.class, c -> c.key().equals(maxHeapKey), c -> receiveMaxHeapChanged((Changed<LWWMap<String, Long>>) c))
+      .match(Changed.class, c -> c.key().equals(usedHeapKey), c -> receiveUsedHeapChanged((Changed<LWWMap<String, Long>>) c))
       .match(UpdateResponse.class, u -> {})
       .match(MemberUp.class, m -> receiveMemberUp(m.member().address()))
       .match(MemberRemoved.class, m -> receiveMemberRemoved(m.member().address()))
@@ -106,11 +106,11 @@ public class ReplicatedMetrics extends AbstractActor {
     long used = heap.getUsed();
     long max = heap.getMax();
 
-    Update<LWWMap<Long>> update1 = new Update<>(usedHeapKey, LWWMap.create(), writeLocal(),
+    Update<LWWMap<String, Long>> update1 = new Update<>(usedHeapKey, LWWMap.create(), writeLocal(),
         curr -> curr.put(node, selfNodeKey, used));
     replicator.tell(update1, self());
 
-    Update<LWWMap<Long>> update2 = new Update<>(maxHeapKey, LWWMap.create(), writeLocal(), curr -> {
+    Update<LWWMap<String, Long>> update2 = new Update<>(maxHeapKey, LWWMap.create(), writeLocal(), curr -> {
       if (curr.contains(selfNodeKey) && curr.get(selfNodeKey).get().longValue() == max)
         return curr; // unchanged
       else
@@ -119,11 +119,11 @@ public class ReplicatedMetrics extends AbstractActor {
     replicator.tell(update2, self());
   }
 
-  private void receiveMaxHeapChanged(Changed<LWWMap<Long>> c) {
+  private void receiveMaxHeapChanged(Changed<LWWMap<String, Long>> c) {
     maxHeap = c.dataValue().getEntries();
   }
 
-  private void receiveUsedHeapChanged(Changed<LWWMap<Long>> c) {
+  private void receiveUsedHeapChanged(Changed<LWWMap<String, Long>> c) {
     Map<String, Double> percentPerNode = new HashMap<>();
     for (Map.Entry<String, Long> entry : c.dataValue().getEntries().entrySet()) {
       if (maxHeap.containsKey(entry.getKey())) {
@@ -147,14 +147,14 @@ public class ReplicatedMetrics extends AbstractActor {
   }
 
   private void receiveCleanup() {
-    Update<LWWMap<Long>> update1 = new Update<>(usedHeapKey, LWWMap.create(), writeLocal(), curr -> cleanup(curr));
+    Update<LWWMap<String, Long>> update1 = new Update<>(usedHeapKey, LWWMap.create(), writeLocal(), curr -> cleanup(curr));
     replicator.tell(update1, self());
-    Update<LWWMap<Long>> update2 = new Update<>(maxHeapKey, LWWMap.create(), writeLocal(), curr -> cleanup(curr));
+    Update<LWWMap<String, Long>> update2 = new Update<>(maxHeapKey, LWWMap.create(), writeLocal(), curr -> cleanup(curr));
     replicator.tell(update2, self());
   }
 
-  private LWWMap<Long> cleanup(LWWMap<Long> data) {
-    LWWMap<Long> result = data;
+  private LWWMap<String, Long> cleanup(LWWMap<String, Long> data) {
+    LWWMap<String, Long> result = data;
     log.info("Cleanup " + nodesInCluster + " -- " + data.getEntries().keySet());
     for (String k : data.getEntries().keySet()) {
       if (!nodesInCluster.contains(k)) {
