@@ -389,6 +389,10 @@ object Multipart {
     private[akka] def createStrict(fields: Map[String, akka.http.javadsl.model.HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
       fields.map { case (name, entity: akka.http.scaladsl.model.HttpEntity.Strict) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }(collection.breakOut)
     }
+    /** INTERNAL API */
+    private[akka] def createSource(parts: Source[akka.http.javadsl.model.Multipart.FormData.BodyPart, Any]): Multipart.FormData = {
+      apply(parts.asInstanceOf[Source[Multipart.FormData.BodyPart, Any]])
+    }
 
     def apply(fields: Map[String, HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
       fields.map { case (name, entity) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }(collection.breakOut)

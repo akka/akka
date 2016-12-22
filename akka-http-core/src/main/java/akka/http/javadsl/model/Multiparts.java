@@ -3,6 +3,7 @@
  */
 package akka.http.javadsl.model;
 
+import akka.stream.javadsl.Source;
 import scala.collection.immutable.List;
 import scala.collection.immutable.Nil$;
 
@@ -24,6 +25,13 @@ public final class Multiparts {
      */
     public static Multipart.FormData createFormDataFromParts(Multipart.FormData.BodyPart... parts) {
         return akka.http.scaladsl.model.Multipart.FormData$.MODULE$.createNonStrict(convertArray(parts));
+    }
+    /**
+     * Constructor for `multipart/form-data` content as defined in http://tools.ietf.org/html/rfc2388.
+     * All parts must have distinct names. (This is not verified!)
+     */
+    public static Multipart.FormData createFormDataFromSourceParts(Source<Multipart.FormData.BodyPart, Object> parts) {
+        return akka.http.scaladsl.model.Multipart.FormData$.MODULE$.createSource(parts.asScala());
     }
 
     /**

@@ -13,6 +13,7 @@ import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Inside, Matchers, WordSpec }
 import akka.stream.ActorMaterializer
 import akka.actor.ActorSystem
+import akka.stream.javadsl.Source
 import akka.testkit.TestKit
 
 import scala.compat.java8.FutureConverters
@@ -34,6 +35,16 @@ class MultipartsSpec extends WordSpec with Matchers with Inside with BeforeAndAf
       val strictCS = streamed.toStrict(1000, materializer)
       val strict = Await.result(FutureConverters.toScala(strictCS), 1.second)
 
+      strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
+        Map("foo" → akka.http.scaladsl.model.HttpEntity("FOO"), "bar" → akka.http.scaladsl.model.HttpEntity("BAR")))
+    }
+    "create a model from Multiparts.createFormDataFromSourceParts" in {
+      val streamed = Multiparts.createFormDataFromSourceParts(Source.from(util.Arrays.asList(
+        Multiparts.createFormDataBodyPart("foo", HttpEntities.create("FOO")),
+        Multiparts.createFormDataBodyPart("bar", HttpEntities.create("BAR"))
+      )))
+      val strictCS = streamed.toStrict(1000, materializer)
+      val strict = Await.result(FutureConverters.toScala(strictCS), 1.second)
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
         Map("foo" → akka.http.scaladsl.model.HttpEntity("FOO"), "bar" → akka.http.scaladsl.model.HttpEntity("BAR")))
     }
