@@ -10,7 +10,7 @@ It lives in the *akka-http-core* module and forms the basis for most of Akka HTT
 Since akka-http-core provides the central HTTP data structures you will find the following import in quite a
 few places around the code base (and probably your own code as well):
 
-@@snip [ModelDocTest.java](../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #import-model }
+@@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #import-model }
 
 This brings all of the most relevant types in scope, mainly:
 
@@ -38,14 +38,14 @@ For example:
 An `HttpRequest` consists of
 
  * a method (GET, POST, etc.)
- * a URI
+ * a URI (see @ref[URI model](uri-model.md) for more information)
  * a seq of headers
  * an entity (body data)
  * a protocol
 
 Here are some examples how to construct an `HttpRequest`:
 
-@@snip [ModelDocTest.java](../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #construct-request }
+@@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #construct-request }
 
 In its basic form `HttpRequest.create` creates an empty default GET request without headers which can then be
 transformed using one of the `withX` methods, `addHeader`, or `addHeaders`. Each of those will create a
@@ -64,7 +64,7 @@ An `HttpResponse` consists of
 
 Here are some examples how to construct an `HttpResponse`:
 
-@@snip [ModelDocTest.java](../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #construct-response }
+@@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #construct-response }
 
 In addition to the simple `HttpEntities.create` methods which create an entity from a fixed `String` or `ByteString`
 as shown here the Akka HTTP model defines a number of subclasses of `HttpEntity` which allow body data to be specified as a
@@ -176,7 +176,7 @@ as a `RawHeader` (which is essentially a String/String name/value pair).
 
 See these examples of how to deal with headers:
 
-@@snip [ModelDocTest.java](../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #headers }
+@@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #headers }
 
 ## HTTP Headers
 

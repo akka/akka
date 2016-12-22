@@ -6,3 +6,10 @@ FilterAnyProblemStartingWith("akka.http.impl.util.One2OneBidiFlow")
 # Removal of internal MapError since present as method on Flow in Akka 2.4.16
 ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.MapError")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.MapError$")
+
+# akka.http.javadsl.model.Uri should not be extended by third parties.
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.getPathString")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.getHost")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.getUserInfo")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.getPort")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.getScheme")

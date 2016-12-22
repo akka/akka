@@ -37,9 +37,8 @@ For example:
 
 An `HttpRequest` consists of
 
->
  * a method (GET, POST, etc.)
- * a URI
+ * a URI (see @ref[URI model](uri-model.md) for more information)
  * a seq of headers
  * an entity (body data)
  * a protocol
