@@ -68,6 +68,17 @@ All APIs are also available for Java. See everything under the `akka.http.javads
 
 ## Other changes
 
+
+### Changes in Route type
+
+Route type has changed from `Route = RequestContext ⇒ Unit` to `Route = RequestContext ⇒ Future[RouteResult]`.
+Which means that now we must complete the Request inside the controller and we can't simply pass the request to another Actor and complete it there. This has been done intentionally, because in Spray it was easy to forget to `complete` requests but the code would still compile.
+
+The following article mentions a few ways for us to complete the request based on processing outside the controller: 
+[CodeMonkey blog - Actor per Request with Akka HTTP](https://markatta.com/codemonkey/blog/2016/08/03/actor-per-request-with-akka-http/)
+
+This article was written by Johan Andrén, a member of the akka-http team.
+
 ### Changes in Marshalling
 
 Marshaller.of can be replaced with `Marshaller.withFixedContentType`.
