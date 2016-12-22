@@ -56,8 +56,8 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     //#headerValue-or-default-0
     val exampleHeaderValue = "exampleHeaderValue".toLowerCase
     def extractExampleHeader: HttpHeader => Option[String] = {
-      case HttpHeader(`exampleHeaderValue`, value)  => Some(value)
-      case _                                        => None
+      case HttpHeader(`exampleHeaderValue`, value) => Some(value)
+      case _                                       => None
     }
 
     val route =
@@ -74,7 +74,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
       responseAs[String] shouldEqual "headerValue newValue"
     }
     //#headerValue-or-default-0
-  }  
+  }
   "optionalHeaderValue-0" in {
     //#optionalHeaderValue-0
     def extractHostPort: HttpHeader => Option[Int] = {
