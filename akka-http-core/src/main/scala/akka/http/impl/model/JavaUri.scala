@@ -25,6 +25,12 @@ case class JavaUri(uri: sm.Uri) extends jm.Uri {
 
   def path(): String = uri.path.toString
 
+  override def getScheme(): String = scheme()
+  override def getHost(): jm.Host = host()
+  override def getPort(): Int = port()
+  override def getUserInfo(): String = userInfo()
+  override def getPathString(): String = path()
+
   def pathSegments(): jl.Iterable[String] = {
     import sm.Uri.Path._
     def gatherSegments(path: sm.Uri.Path): List[String] = path match {

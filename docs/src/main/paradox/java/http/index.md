@@ -34,7 +34,7 @@ Akka HTTP API - @javadoc:[Javadoc](akka.http.javadsl.package-summary)
 
 * [introduction](introduction.md)
 * [configuration](configuration.md)
-* [http-model](http-model.md)
+* [http-model](common/http-model.md)
 * [common/index](common/index.md)
 * [implications-of-streaming-http-entity](implications-of-streaming-http-entity.md)
 * [server-side/low-level-server-side-api](server-side/low-level-server-side-api.md)

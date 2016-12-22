@@ -45,7 +45,7 @@ source and, for each of them, provides a `Flow<HttpRequest, HttpResponse, ?>` to
 Apart from regarding a socket bound on the server-side as a `Source<IncomingConnection>` and each connection as a
 `Source<HttpRequest>` with a `Sink<HttpResponse>` the stream abstraction is also present inside a single HTTP
 message: The entities of HTTP requests and responses are generally modeled as a `Source<ByteString>`. See also
-the @ref[HTTP Model](../http-model.md#http-model-java) for more information on how HTTP messages are represented in Akka HTTP.
+the @ref[HTTP Model](../common/http-model.md#http-model-java) for more information on how HTTP messages are represented in Akka HTTP.
 
 ## Starting and Stopping
 
@@ -102,7 +102,7 @@ See @ref[Routing DSL Overview](../routing-dsl/overview.md#http-routing-java) for
 
 Streaming of HTTP message entities is supported through subclasses of `HttpEntity`. The application needs to be able
 to deal with streamed entities when receiving a request as well as, in many cases, when constructing responses.
-See @ref[HttpEntity](../http-model.md#httpentity-java) for a description of the alternatives.
+See @ref[HttpEntity](../common/http-model.md#httpentity-java) for a description of the alternatives.
 
 <a id="http-closing-connection-low-level-java"></a>
 ### Closing a connection

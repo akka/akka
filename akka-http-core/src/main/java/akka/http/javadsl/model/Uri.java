@@ -146,6 +146,31 @@ public abstract class Uri {
    */
   public abstract Uri fragment(Optional<String> fragment);
 
+  /**
+   * Returns the scheme of this instance
+   */
+  public abstract String getScheme();
+
+  /**
+   * Returns the host of this instance
+   */
+  public abstract Host getHost();
+
+  /**
+   * Returns the port of this instance
+   */
+  public abstract int getPort();
+
+  /**
+   * Returns the user info of this instance
+   */
+  public abstract String getUserInfo();
+
+  /**
+   * Returns the path of this instance
+   */
+  public abstract String getPathString();
+
   public static final akka.http.scaladsl.model.Uri.ParsingMode STRICT = UriJavaAccessor.pmStrict();
   public static final akka.http.scaladsl.model.Uri.ParsingMode RELAXED = UriJavaAccessor.pmRelaxed();
 
@@ -174,7 +199,6 @@ public abstract class Uri {
   public static Uri create(String uri, Charset charset, akka.http.scaladsl.model.Uri.ParsingMode parsingMode) {
     return new JavaUri(akka.http.scaladsl.model.Uri.apply(ParserInput$.MODULE$.apply(uri), charset, parsingMode));
   }
-
 
   public static interface ParsingMode {}
 }
