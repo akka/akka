@@ -4,9 +4,7 @@
 package akka.cluster.ddata
 
 import java.security.MessageDigest
-import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.collection.immutable.Queue
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
@@ -969,7 +967,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       }
       sender() ! reply
     } else
-      context.actorOf(ReadAggregator.props(key, consistency, req, nodes, localValue, sender())
+      context.actorOf(ReadAggregator.props(key, consistency, req, nodes, unreachable, localValue, sender())
         .withDispatcher(context.props.dispatcher))
   }
 
@@ -1010,7 +1008,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
             sender() ! UpdateSuccess(key, req)
         } else {
           val writeAggregator =
-            context.actorOf(WriteAggregator.props(key, envelope, writeConsistency, req, nodes, sender(), durable)
+            context.actorOf(WriteAggregator.props(key, envelope, writeConsistency, req, nodes, unreachable, sender(), durable)
               .withDispatcher(context.props.dispatcher))
           if (durable) {
             durableStore ! Store(key.id, envelope.data,
@@ -1100,7 +1098,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
             sender() ! DeleteSuccess(key)
         } else {
           val writeAggregator =
-            context.actorOf(WriteAggregator.props(key, DeletedEnvelope, consistency, None, nodes, sender(), durable)
+            context.actorOf(WriteAggregator.props(key, DeletedEnvelope, consistency, None, nodes, unreachable, sender(), durable)
               .withDispatcher(context.props.dispatcher))
           if (durable) {
             durableStore ! Store(key.id, DeletedData,
@@ -1473,6 +1471,8 @@ private[akka] abstract class ReadWriteAggregator extends Actor {
 
   def timeout: FiniteDuration
   def nodes: Set[Address]
+  def unreachable: Set[Address]
+  def reachableNodes: Set[Address] = nodes diff unreachable
 
   import context.dispatcher
   var sendToSecondarySchedule = context.system.scheduler.scheduleOnce(timeout / 5, self, SendToSecondary)
@@ -1487,7 +1487,9 @@ private[akka] abstract class ReadWriteAggregator extends Actor {
     if (primarySize >= nodes.size)
       (nodes, Set.empty[Address])
     else {
-      val (p, s) = scala.util.Random.shuffle(nodes.toVector).splitAt(primarySize)
+      // Prefer to use reachable nodes over the unreachable nodes first
+      val orderedNodes = scala.util.Random.shuffle(reachableNodes.toVector) ++ scala.util.Random.shuffle(unreachable.toVector)
+      val (p, s) = orderedNodes.splitAt(primarySize)
       (p, s.take(MaxSecondaryNodes))
     }
   }
@@ -1512,9 +1514,10 @@ private[akka] object WriteAggregator {
     consistency: Replicator.WriteConsistency,
     req:         Option[Any],
     nodes:       Set[Address],
+    unreachable: Set[Address],
     replyTo:     ActorRef,
     durable:     Boolean): Props =
-    Props(new WriteAggregator(key, envelope, consistency, req, nodes, replyTo, durable))
+    Props(new WriteAggregator(key, envelope, consistency, req, nodes, unreachable, replyTo, durable))
       .withDeploy(Deploy.local)
 }
 
@@ -1522,13 +1525,14 @@ private[akka] object WriteAggregator {
  * INTERNAL API
  */
 private[akka] class WriteAggregator(
-  key:                KeyR,
-  envelope:           Replicator.Internal.DataEnvelope,
-  consistency:        Replicator.WriteConsistency,
-  req:                Option[Any],
-  override val nodes: Set[Address],
-  replyTo:            ActorRef,
-  durable:            Boolean) extends ReadWriteAggregator {
+  key:                      KeyR,
+  envelope:                 Replicator.Internal.DataEnvelope,
+  consistency:              Replicator.WriteConsistency,
+  req:                      Option[Any],
+  override val nodes:       Set[Address],
+  override val unreachable: Set[Address],
+  replyTo:                  ActorRef,
+  durable:                  Boolean) extends ReadWriteAggregator {
 
   import Replicator._
   import Replicator.Internal._
@@ -1616,9 +1620,10 @@ private[akka] object ReadAggregator {
     consistency: Replicator.ReadConsistency,
     req:         Option[Any],
     nodes:       Set[Address],
+    unreachable: Set[Address],
     localValue:  Option[Replicator.Internal.DataEnvelope],
     replyTo:     ActorRef): Props =
-    Props(new ReadAggregator(key, consistency, req, nodes, localValue, replyTo))
+    Props(new ReadAggregator(key, consistency, req, nodes, unreachable, localValue, replyTo))
       .withDeploy(Deploy.local)
 
 }
@@ -1627,12 +1632,13 @@ private[akka] object ReadAggregator {
  * INTERNAL API
  */
 private[akka] class ReadAggregator(
-  key:                KeyR,
-  consistency:        Replicator.ReadConsistency,
-  req:                Option[Any],
-  override val nodes: Set[Address],
-  localValue:         Option[Replicator.Internal.DataEnvelope],
-  replyTo:            ActorRef) extends ReadWriteAggregator {
+  key:                      KeyR,
+  consistency:              Replicator.ReadConsistency,
+  req:                      Option[Any],
+  override val nodes:       Set[Address],
+  override val unreachable: Set[Address],
+  localValue:               Option[Replicator.Internal.DataEnvelope],
+  replyTo:                  ActorRef) extends ReadWriteAggregator {
 
   import Replicator._
   import Replicator.Internal._
