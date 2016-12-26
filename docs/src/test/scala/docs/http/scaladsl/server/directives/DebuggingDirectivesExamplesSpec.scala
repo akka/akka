@@ -4,12 +4,12 @@
 
 package docs.http.scaladsl.server.directives
 
-import akka.event.{Logging, LoggingAdapter}
+import akka.event.{ Logging, LoggingAdapter }
 import akka.event.Logging.LogLevel
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.server.{RouteResult, ValidationRejection}
-import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
-import akka.http.scaladsl.server.directives.{DebuggingDirectives, LogEntry, LoggingMagnet}
+import akka.http.scaladsl.server.{ RouteResult, ValidationRejection }
+import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
+import akka.http.scaladsl.server.directives.{ DebuggingDirectives, LogEntry, LoggingMagnet }
 import docs.http.scaladsl.server.RoutingSpec
 
 class DebuggingDirectivesExamplesSpec extends RoutingSpec {

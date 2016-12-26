@@ -156,6 +156,7 @@ object ValidatePullRequest extends AutoPlugin {
           .map(l => l.trim)
           .filter(l =>
             l.startsWith("akka-") ||
+              l.startsWith("docs") ||
               (l.startsWith("project") && l != "project/MiMa.scala")
           )
           .map(l ⇒ l.takeWhile(_ != '/'))
@@ -168,7 +169,7 @@ object ValidatePullRequest extends AutoPlugin {
           val dirtyDirectories = statusOutput
             .map(l ⇒ l.trim.dropWhile(_ != ' ').drop(1))
             .map(_.takeWhile(_ != '/'))
-            .filter(dir => dir.startsWith("akka-") || dir == "project")
+            .filter(dir => dir.startsWith("akka-") || dir.startsWith("docs") || dir == "project")
             .toSet
           log.info("Detected uncomitted changes in directories (including in dependency analysis): " + dirtyDirectories.mkString("[", ",", "]"))
           dirtyDirectories

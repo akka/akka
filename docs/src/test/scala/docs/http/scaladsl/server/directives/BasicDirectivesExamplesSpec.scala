@@ -736,7 +736,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     //#extractRequestContext-example
     val route =
       extractRequestContext { ctx =>
-        ctx.log.debug("Using access to additional context availablethings, like the logger.")
+        ctx.log.debug("Using access to additional context available, like the logger.")
         val request = ctx.request
         complete(s"Request method is ${request.method.name} and content-type is ${request.entity.contentType}")
       }
@@ -749,6 +749,19 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "Request method is GET and content-type is none/none"
     }
     //#extractRequestContext-example
+  }
+  "extractParserSettings-example" in {
+    //#extractParserSettings-example
+    val route =
+      extractParserSettings { parserSettings =>
+        complete(s"URI parsing mode is ${parserSettings.uriParsingMode}")
+      }
+
+    // tests:
+    Get("/") ~> route ~> check {
+      responseAs[String] shouldEqual "URI parsing mode is Strict"
+    }
+    //#extractParserSettings-example
   }
   "extractUri-example" in {
     //#extractUri-example
