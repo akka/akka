@@ -9,3 +9,7 @@ The core logic for this lives in the @github[akka.http.scaladsl.coding](/akka-ht
 
 The support is not enabled automatically, but must be explicitly requested.
 For enabling message encoding/decoding with @ref[Routing DSL](../routing-dsl/index.md#http-high-level-server-side-api) see the @ref[CodingDirectives](../routing-dsl/directives/coding-directives/index.md#codingdirectives).
+
+## Decoding Example
+
+@@snip [HttpClientDecodingExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientDecodingExampleSpec.scala) { #single-request-decoding-example }
