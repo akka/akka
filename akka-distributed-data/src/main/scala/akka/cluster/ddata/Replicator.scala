@@ -481,7 +481,13 @@ object Replicator {
    * or maintain local correlation data structures.
    */
   final case class Delete[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency, request: Option[Any] = None)
-    extends Command[A] with NoSerializationVerificationNeeded
+    extends Command[A] with NoSerializationVerificationNeeded {
+
+    def this(key: Key[A], consistency: WriteConsistency) = this(key, consistency, None)
+
+    def this(key: Key[A], consistency: WriteConsistency, request: Optional[Any]) =
+      this(key, consistency, Option(request.orElse(null)))
+  }
 
   sealed trait DeleteResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
     def key: Key[A]
