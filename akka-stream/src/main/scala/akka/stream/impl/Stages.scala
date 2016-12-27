@@ -103,7 +103,7 @@ object Stages {
     val queueSource = name("queueSource")
     val inputStreamSource = name("inputStreamSource") and IODispatcher
     val outputStreamSource = name("outputStreamSource") and IODispatcher
-    val fileSource = name("fileSource") and IODispatcher
+    val fileSource = name("fileSource")
     val unfoldResourceSource = name("unfoldResourceSource") and IODispatcher
     val unfoldResourceSourceAsync = name("unfoldResourceSourceAsync") and IODispatcher
     val asJavaStream = name("asJavaStream") and IODispatcher
