@@ -182,6 +182,14 @@ The ``Replicator`` writes and reads to a majority of replicas, i.e. **N / 2 + 1*
 in a 5 node cluster it writes to 3 nodes and reads from 3 nodes. In a 6 node cluster it writes 
 to 4 nodes and reads from 4 nodes.
 
+For small clusters it is useful to define a minimum number of nodes instead of using **N / 2 + 1**,
+this will prevent the risk of reading steal data. Minimum cap for ``WriteMajority`` and ``ReadMajority`` is
+provided by minCap property. minCap defines the required majority. If the minCap is higher then **N / 2 + 1**
+the minCap will be used.
+
+For example if the minCap is 5 the ``WriteMajority`` and ``ReadMajority`` for cluster of 3 nodes will be 3, for
+cluster of 6 nodes will be 5 and for cluster of 12 nodes will be 7(**N / 2 + 1**).
+
 Here is an example of using ``WriteMajority`` and ``ReadMajority``:
 
 .. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#read-write-majority
