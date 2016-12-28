@@ -35,7 +35,8 @@ Akka HTTP is provided in a separate jar file, to use it make sure to include the
 
 Mind that `akka-http` comes in two modules: `akka-http` and `akka-http-core`. Because `akka-http`
 depends on `akka-http-core` you don't need to bring the latter explicitly. Still you may need to this in case you rely
-solely on low-level API.
+solely on low-level API; make sure the scala version should be a recent release of version `2.11`.
+
 
 ## Routing DSL for HTTP servers
 
