@@ -42,7 +42,13 @@ object Scaladoc extends AutoPlugin {
 
   def scaladocOptions(ver: String, base: File): List[String] = {
     val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
-    val opts = List("-implicits", "-groups", "-doc-source-url", urlString, "-sourcepath", base.getAbsolutePath)
+    val opts = List(
+      "-implicits",
+      "-groups",
+      "-doc-source-url", urlString,
+      "-sourcepath", base.getAbsolutePath,
+      "-skip-packages", "akka.pattern"
+    )
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
