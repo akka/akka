@@ -87,6 +87,25 @@ Note that explicit call on the `akka.http.scaladsl.server.Route.seal` method is 
 As described in @ref[Sealing a Route](routes.md#sealing-a-route), your application code only needs to bring 
 implicit rejection and exception handlers in scope.
 
+## Testing Route fragments
+
+Since the testkit is request-based, you cannot test requests that are illegal or impossible in HTTP. One
+such instance is testing a route that begins with the `pathEnd` directive, such as `routeFragment` here:
+
+@@snip [TestKitFragmentSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #fragment }
+
+You might create a route such as this to be able to compose it into another route such as:
+
+@@snip [FragmentExample.scala](../../../../../test/scala/docs/http/scaladsl/server/FragmentExample.scala) { #source-quote }
+
+However, it is impossible to unit test this Route directly using testkit, since it is impossible to create an
+empty HTTP request. To test this type of route, embed it in a synthetic route in your test, such as `testRoute` in the example above.
+
+This is what the full working test looks like:
+
+@@snip [TestKitFragmentSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #source-quote }
+
+
 ## Examples
 
 A great pool of examples are the tests for all the predefined directives in Akka HTTP.

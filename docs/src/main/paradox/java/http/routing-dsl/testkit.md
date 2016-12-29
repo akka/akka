@@ -72,3 +72,15 @@ with HTTP response parts or rejections. Sometimes, however, you will want to ver
 You do this by calling the `seal()` method of the `Route` class. The `seal()` method applies the logic of @ref[ExceptionHandler](exception-handling.md#exception-handling-java) and
 @ref[RejectionHandler](rejections.md#the-rejectionhandler) passed as method arguments to all exceptions and rejections coming back from the route,
 and translates them to the respective `HttpResponse`.
+
+## Testing Route fragments
+
+Since the testkit is request-based, you cannot test requests that are illegal or impossible in HTTP. One
+such instance is testing a route that begins with the `pathEnd` directive, such as this:
+
+@@snip [MyAppFragment.java](../../../../../test/java/docs/http/javadsl/server/testkit/MyAppFragment.java) { #source-quote }
+
+However, it is impossible to unit test this Route directly using testkit, since it is impossible to create an
+empty HTTP request. To test this type of route, embed it in a synthetic route in your test, for example:
+
+@@snip [TestKitFragmentTest.java](../../../../../test/java/docs/http/javadsl/server/testkit/TestKitFragmentTest.java) { #source-quote }
