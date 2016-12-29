@@ -104,7 +104,16 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
   /** INTERNAL API */
   private[akka] def asScalaCastInput[I]: unmarshalling.Unmarshaller[I, B] = asScala.asInstanceOf[unmarshalling.Unmarshaller[I, B]]
 
-  def unmarshall(a: A, ec: ExecutionContext, mat: Materializer): CompletionStage[B] = asScala.apply(a)(ec, mat).toJava
+  /**
+   * Apply this Unmarshaller to the given value.
+   */
+  def unmarshal(value: A, ec: ExecutionContext, mat: Materializer): CompletionStage[B] = asScala.apply(value)(ec, mat).toJava
+
+  /**
+   * Deprecated in favor of [[unmarshal]].
+   */
+  @deprecated("Use unmarshal instead.", "10.0.2")
+  def unmarshall(a: A, ec: ExecutionContext, mat: Materializer): CompletionStage[B] = unmarshal(a, ec, mat)
 
   /**
    * Transform the result `B` of this unmarshaller to a `C` producing a marshaller that turns `A`s into `C`s
