@@ -25,7 +25,12 @@ object MiMa extends AutoPlugin {
       if (directory.exists) loadMimaIgnoredProblems(directory, ".backwards.excludes")
       else Map.empty
     },
-    mimaPreviousArtifacts := mimaBackwardIssueFilters.value.keys.map((version: String) => organization.value %% name.value % version).toSet
+    mimaPreviousArtifacts :=
+      // manually maintained list of previous versions to make sure all incompatibilities are found
+      // even if so far no files have been been created in this project's mima-filters directory
+      Set("10.0.0",
+          "10.0.1")
+        .map((version: String) => organization.value %% name.value % version)
   )
 
   case class FilterAnyProblem(name: String) extends com.typesafe.tools.mima.core.ProblemFilter {
