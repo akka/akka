@@ -177,7 +177,7 @@ abstract class AeronStreamMaxThroughputSpec
       var count = 0L
       val done = TestLatch(1)
       val killSwitch = KillSwitches.shared(testName)
-      Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink))
+      Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
         .via(killSwitch.flow)
         .runForeach { envelope ⇒
           val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
