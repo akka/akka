@@ -1,0 +1,5 @@
+# Mima filters needed to check newer versions against 10.0.1
+
+# Code compiled with 10.0.0 would have to be a class extending from SprayJsonSupport that is then used in 10.0.1 code
+# and would actually use the new implicit. Unlikely pattern.
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport.sprayJsValueByteStringUnmarshaller")

@@ -38,7 +38,7 @@ object Dependencies {
     val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.1"       // ApacheV2
 
     // For akka-http spray-json support
-    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.2"       // ApacheV2
+    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.3"       // ApacheV2
 
     // For akka-http-jackson support
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.7.6"       // ApacheV2
@@ -57,7 +57,7 @@ object Dependencies {
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
     object Docs {
-      val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
+      val sprayJson   = Compile.sprayJson                                                                    % "test"
       val gson        = "com.google.code.gson"        % "gson"                         % "2.3.1"             % "test"
     }
 
@@ -72,6 +72,7 @@ object Dependencies {
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.11"             % "test" // MIT
       val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.4"            % "test"
+      val sprayJson    = Compile.sprayJson                                                                   % "test" // ApacheV2
 
       // in-memory filesystem for file related tests
       val jimfs        = "com.google.jimfs"            % "jimfs"                        % "1.1"              % "test" // ApacheV2

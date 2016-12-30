@@ -23,23 +23,25 @@ import scala.language.implicitConversions
 trait SprayJsonSupport {
   implicit def sprayJsonUnmarshallerConverter[T](reader: RootJsonReader[T]): FromEntityUnmarshaller[T] =
     sprayJsonUnmarshaller(reader)
+
   implicit def sprayJsonUnmarshaller[T](implicit reader: RootJsonReader[T]): FromEntityUnmarshaller[T] =
     sprayJsValueUnmarshaller.map(jsonReader[T].read)
-  implicit def sprayJsonByteStringUnmarshaller[T](implicit reader: RootJsonReader[T]): FromByteStringUnmarshaller[T] =
+  implicit def sprayJsValueUnmarshaller: FromEntityUnmarshaller[JsValue] =
+    Unmarshaller.byteStringUnmarshaller
+      .forContentTypes(`application/json`)
+      .andThen(sprayJsValueByteStringUnmarshaller)
+
+  implicit def sprayJsValueByteStringUnmarshaller[T]: FromByteStringUnmarshaller[JsValue] =
     Unmarshaller.withMaterializer[ByteString, JsValue](_ ⇒ implicit mat ⇒ { bs ⇒
       // .compact so addressing into any address is very fast (also for large chunks)
       // TODO we could optimise ByteStrings to better handle linear access like this (or provide ByteStrings.linearAccessOptimised)
-      // TODO IF it's worth it. 
+      // TODO IF it's worth it.
       val parserInput = new SprayJsonByteStringParserInput(bs.compact)
       FastFuture.successful(JsonParser(parserInput))
-    }).map(jsonReader[T].read)
-  implicit def sprayJsValueUnmarshaller: FromEntityUnmarshaller[JsValue] =
-    Unmarshaller.byteStringUnmarshaller.forContentTypes(`application/json`).mapWithCharset { (data, charset) ⇒
-      val input =
-        if (charset == HttpCharsets.`UTF-8`) ParserInput(data.toArray)
-        else ParserInput(data.decodeString(charset.nioCharset))
-      JsonParser(input)
-    }
+    })
+  implicit def sprayJsonByteStringUnmarshaller[T](implicit reader: RootJsonReader[T]): FromByteStringUnmarshaller[T] =
+    sprayJsValueByteStringUnmarshaller[T].map(jsonReader[T].read)
+
   // support for as[Source[T, NotUsed]]
   implicit def sprayJsonSourceReader[T](implicit reader: RootJsonReader[T], support: EntityStreamingSupport): FromEntityUnmarshaller[Source[T, NotUsed]] =
     Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ e ⇒
