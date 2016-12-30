@@ -3,13 +3,16 @@
  */
 package akka.remote.artery
 
+import java.io.FileOutputStream
 import java.nio.ByteBuffer
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import scala.concurrent.duration._
 import akka.actor._
-import akka.remote.{ RemotingMultiNodeSpec, RARP, RemoteActorRefProvider }
+import akka.remote.{ RARP, RemoteActorRefProvider, RemotingMultiNodeSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -108,10 +111,10 @@ object MaxThroughputSpec extends MultiNodeConfig {
   }
 
   def senderProps(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef,
-                  printTaskRunnerMetrics: Boolean): Props =
-    Props(new Sender(target, testSettings, plotRef, printTaskRunnerMetrics))
+                  printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter): Props =
+    Props(new Sender(target, testSettings, plotRef, printTaskRunnerMetrics, reporter))
 
-  class Sender(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef, printTaskRunnerMetrics: Boolean)
+  class Sender(target: ActorRef, testSettings: TestSettings, plotRef: ActorRef, printTaskRunnerMetrics: Boolean, reporter: BenchmarkFileReporter)
     extends Actor {
     import testSettings._
     val payload = ("0" * testSettings.payloadSize).getBytes("utf-8")
@@ -176,7 +179,8 @@ object MaxThroughputSpec extends MultiNodeConfig {
       case EndResult(totalReceived) ⇒
         val took = NANOSECONDS.toMillis(System.nanoTime - startTime)
         val throughput = (totalReceived * 1000.0 / took)
-        println(
+
+        reporter.reportResults(
           s"=== MaxThroughput ${self.path.name}: " +
             f"throughput ${throughput * testSettings.senderReceiverPairs}%,.0f msg/s, " +
             f"${throughput * payloadSize * testSettings.senderReceiverPairs}%,.0f bytes/s (payload), " +
@@ -351,7 +355,7 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
       senderReceiverPairs = 5,
       realMessage))
 
-  def test(testSettings: TestSettings): Unit = {
+  def test(testSettings: TestSettings, resultReporter: BenchmarkFileReporter): Unit = {
     import testSettings._
     val receiverName = testName + "-rcv"
 
@@ -376,7 +380,7 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
         val receiver = identifyReceiver(receiverName + n)
         val plotProbe = TestProbe()
         val snd = system.actorOf(
-          senderProps(receiver, testSettings, plotProbe.ref, printTaskRunnerMetrics = n == 1),
+          senderProps(receiver, testSettings, plotProbe.ref, printTaskRunnerMetrics = n == 1, resultReporter),
           testName + "-snd" + n)
         val terminationProbe = TestProbe()
         terminationProbe.watch(snd)
@@ -399,10 +403,9 @@ abstract class MaxThroughputSpec extends RemotingMultiNodeSpec(MaxThroughputSpec
   }
 
   "Max throughput of Artery" must {
-
+    val reporter = BenchmarkFileReporter("MaxThroughputSpec", system)
     for (s ← scenarios) {
-      s"be great for ${s.testName}, burstSize = ${s.burstSize}, payloadSize = ${s.payloadSize}" in test(s)
+      s"be great for ${s.testName}, burstSize = ${s.burstSize}, payloadSize = ${s.payloadSize}" in test(s, reporter)
     }
-
   }
 }
