@@ -71,6 +71,8 @@ private[remote] object AeronSource {
 /**
  * INTERNAL API
  * @param channel eg. "aeron:udp?endpoint=localhost:40123"
+ * @param spinning the amount of busy spinning to be done synchronously before deferring to the TaskRunner
+ *                 when waiting for data
  */
 private[remote] class AeronSource(
   channel:        String,
@@ -78,7 +80,8 @@ private[remote] class AeronSource(
   aeron:          Aeron,
   taskRunner:     TaskRunner,
   pool:           EnvelopeBufferPool,
-  flightRecorder: EventSink)
+  flightRecorder: EventSink,
+  spinning:       Int)
   extends GraphStageWithMaterializedValue[SourceShape[EnvelopeBuffer], AeronSource.ResourceLifecycle] {
   import AeronSource._
   import TaskRunner._
@@ -91,8 +94,6 @@ private[remote] class AeronSource(
     val logic = new GraphStageLogic(shape) with OutHandler with ResourceLifecycle with StageLogging {
 
       private val sub = aeron.addSubscription(channel, streamId)
-      // spin between 100 to 10000 depending on idleCpuLevel
-      private val spinning = 1100 * taskRunner.idleCpuLevel - 1000
       private var backoffCount = spinning
       private var delegateTaskStartTime = 0L
       private var countBeforeDelegate = 0L
