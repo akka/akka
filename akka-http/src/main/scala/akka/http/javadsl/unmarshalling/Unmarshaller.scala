@@ -10,10 +10,11 @@ import akka.http.impl.model.JavaQuery
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model._
-import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes }
+import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, FormData => SFormData }
+import akka.http.scaladsl.model.{ Multipart => SMultipart }
 import akka.http.scaladsl.unmarshalling
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, UnsupportedContentTypeException }
+import akka.http.scaladsl.unmarshalling.Unmarshaller.{EnhancedFromEntityUnmarshaller, UnsupportedContentTypeException}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.util.ByteString
@@ -50,13 +51,19 @@ object Unmarshaller {
     }
 
   // format: OFF
-  def entityToByteString: Unmarshaller[HttpEntity, ByteString]       = unmarshalling.Unmarshaller.byteStringUnmarshaller
-  def entityToByteArray: Unmarshaller[HttpEntity, Array[Byte]]       = unmarshalling.Unmarshaller.byteArrayUnmarshaller
-  def entityToCharArray: Unmarshaller[HttpEntity, Array[Char]]       = unmarshalling.Unmarshaller.charArrayUnmarshaller
-  def entityToString: Unmarshaller[HttpEntity, String]               = unmarshalling.Unmarshaller.stringUnmarshaller
-  def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller.map(scalaFormData => new FormData(JavaQuery(scalaFormData.fields)))
-  def entityToMultipartByteRanges: Unmarshaller[HttpEntity, Multipart.ByteRanges] = downcast(unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller, classOf[Multipart.ByteRanges])
-  def entityToMultipartFormData: Unmarshaller[HttpEntity, Multipart.FormData] = downcast(unmarshalling.MultipartUnmarshallers.multipartFormDataUnmarshaller, classOf[Multipart.FormData])
+  def entityToByteString: Unmarshaller[HttpEntity, ByteString] = unmarshalling.Unmarshaller.byteStringUnmarshaller
+  def entityToByteArray: Unmarshaller[HttpEntity, Array[Byte]] = unmarshalling.Unmarshaller.byteArrayUnmarshaller
+  def entityToCharArray: Unmarshaller[HttpEntity, Array[Char]] = unmarshalling.Unmarshaller.charArrayUnmarshaller
+  def entityToString: Unmarshaller[HttpEntity, String]         = unmarshalling.Unmarshaller.stringUnmarshaller
+
+  @deprecated("Use `entityToWwwUrlEncodedFormData` instead. This method leaks a Scala DSL class", "10.0.1")
+  def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, SFormData]   = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller
+  def entityToWwwUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller.map(scalaFormData => new FormData(JavaQuery(scalaFormData.fields)))
+
+  @deprecated("Use `entityToMultipartByteRangesUnmarshaller` instead. This method leaks a Scala DSL class", "10.0.1")
+  def entityToMultipartByteRanges: Unmarshaller[HttpEntity, SMultipart.ByteRanges]            = unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller
+  def entityToMultipartByteRangesUnmarshaller: Unmarshaller[HttpEntity, Multipart.ByteRanges] = downcast(unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller, classOf[Multipart.ByteRanges])
+  def entityToMultipartFormData: Unmarshaller[HttpEntity, Multipart.FormData]                 = downcast(unmarshalling.MultipartUnmarshallers.multipartFormDataUnmarshaller, classOf[Multipart.FormData])
   // format: ON
 
   val requestToEntity: Unmarshaller[HttpRequest, RequestEntity] =
