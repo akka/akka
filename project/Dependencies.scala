@@ -38,7 +38,7 @@ object Dependencies {
     val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.1"       // ApacheV2
 
     // For akka-http spray-json support
-    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.2"       // ApacheV2
+    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.3"       // ApacheV2
 
     // For akka-http-jackson support
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.7.6"       // ApacheV2
@@ -57,7 +57,7 @@ object Dependencies {
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
     object Docs {
-      val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
+      val sprayJson   = Compile.sprayJson                                                                    % "test"
       val gson        = "com.google.code.gson"        % "gson"                         % "2.3.1"             % "test"
     }
 
@@ -72,25 +72,24 @@ object Dependencies {
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.11"             % "test" // MIT
       val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.4"            % "test"
+      val sprayJson    = Compile.sprayJson                                                                   % "test" // ApacheV2
 
       // in-memory filesystem for file related tests
       val jimfs        = "com.google.jimfs"            % "jimfs"                        % "1.1"              % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
-      val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
-      val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
-      val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
-      val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
+      val metrics      = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
+      val metricsJvm   = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
+      val latencyUtils = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
+      val hdrHistogram = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
+      val metricsAll   = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // sigar logging
-      val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"    % "test"    // MIT
-      val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"    % "test"    // MIT
-
-      lazy val sprayJson = Compile.sprayJson % "test"
+      val slf4jJul     = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"           % "test" // MIT
+      val slf4jLog4j   = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"           % "test" // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.0" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams"   % "reactive-streams-tck"         % "1.0.0"            % "test" // CC0
     }
 
     object Provided {
