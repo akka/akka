@@ -10,6 +10,7 @@ import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.cluster.client.ClusterReceptionist
 import akka.cluster.client.protobuf.msg.{ ClusterClientMessages ⇒ cm }
+import java.io.NotSerializableException
 
 /**
  * INTERNAL API: Serializer of ClusterClient messages.
@@ -54,7 +55,7 @@ private[akka] class ClusterClientMessageSerializer(val system: ExtendedActorSyst
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     fromBinaryMap.get(manifest) match {
       case Some(f) ⇒ f(bytes)
-      case None ⇒ throw new IllegalArgumentException(
+      case None ⇒ throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
 
