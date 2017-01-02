@@ -16,7 +16,7 @@ import scala.collection.immutable
 import scala.language.higherKinds
 
 trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImplicits {
-  import PredefinedToResponseMarshallers.statusCodeResponse
+  import PredefinedToResponseMarshallers._
 
   private type TRM[T] = ToResponseMarshaller[T] // brevity alias
 
@@ -55,8 +55,7 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
 
   implicit def fromStatusCodeAndHeadersAndValue[T](implicit mt: ToEntityMarshaller[T]): TRM[(StatusCode, immutable.Seq[HttpHeader], T)] =
     Marshaller(implicit ec ⇒ {
-      case (status, headers, value) if status.allowsEntity ⇒ mt(value).fast map (_ map (_ map (HttpResponse(status, headers, _))))
-      case (status, headers, _)                            ⇒ fromStatusCodeAndHeaders((status, headers))
+      case (status, headers, value) ⇒ mt(value).fast map (_ map (_ map (statusCodeAndEntityResponse(status, headers, _))))
     })
 
   implicit def fromEntityStreamingSupportAndByteStringMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] = {
@@ -140,5 +139,10 @@ object PredefinedToResponseMarshallers extends PredefinedToResponseMarshallers {
       else HttpEntity.Empty
 
     HttpResponse(status = statusCode, headers = headers, entity = entity)
+  }
+
+  private def statusCodeAndEntityResponse(statusCode: StatusCode, headers: immutable.Seq[HttpHeader] = Nil, entity: ResponseEntity = HttpEntity.Empty): HttpResponse = {
+    if (statusCode.allowsEntity) HttpResponse(statusCode, headers, entity)
+    else HttpResponse(statusCode, headers, HttpEntity.Empty)
   }
 }
