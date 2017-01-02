@@ -4,23 +4,14 @@
 Migration Guide 2.4.x to 2.5.x
 ##############################
 
-Akka Persistence
-================
+Akka Actor
+==========
 
-Removal of PersistentView
--------------------------
+Actor DSL deprecation
+---------------------
 
-After being deprecated for a long time, and replaced by :ref:`Persistence Query Java <persistence-query-java>`
-(:ref:`Persistence Query Scala <persistence-query-scala>`) ``PersistentView`` has been removed now removed.
-
-The corresponding query type is ``EventsByPersistenceId``. There are several alternatives for connecting the ``Source``
-to an actor corresponding to a previous ``PersistentView``. There are several alternatives for connecting the ``Source``
-to an actor corresponding to a previous ``PersistentView`` actor which are documented in :ref:`stream-integrations-scala` 
-for Scala and :ref:`Java <stream-integrations-java>`.
-  
-The consuming actor may be a plain ``Actor`` or an ``PersistentActor`` if it needs to store its own state (e.g. ``fromSequenceNr`` offset).
-
-Please note that Persistence Query is not experimental anymore in Akka ``2.5.0``, so you can safely upgrade to it.
+Actor DSL is a rarely used feature and thus will be deprecated and removed.
+Use plain ``system.actorOf`` instead of the DSL to create Actors if you have been using it.
 
 Akka Streams
 ============
@@ -69,6 +60,47 @@ which explains using and implementing GraphStages in more practical terms than t
 
 .. _Mastering GraphStages, part I: http://blog.akka.io/streams/2016/07/30/mastering-graph-stage-part-1
 
+Cluster
+=======
+
+Cluster Management Command Line Tool
+------------------------------------
+
+There is a new cluster management tool with HTTP API that has the same functionality as the command line tool.
+The HTTP API gives you access to cluster membership information as JSON including full reachability status between the nodes.
+It supports the ordinary cluster operations such as join, leave, and down.
+
+See documentation of `akka/akka-cluster-management <https://github.com/akka/akka-cluster-management>`_.
+
+The command line script for cluster management has been deprecated and is scheduled for removal
+in the next major version. Use the HTTP API with `curl <https://curl.haxx.se/>`_ or similar instead.
+
+Akka Persistence
+================
+
+Removal of PersistentView
+-------------------------
+
+After being deprecated for a long time, and replaced by :ref:`Persistence Query Java <persistence-query-java>`
+(:ref:`Persistence Query Scala <persistence-query-scala>`) ``PersistentView`` has been removed now removed.
+
+The corresponding query type is ``EventsByPersistenceId``. There are several alternatives for connecting the ``Source``
+to an actor corresponding to a previous ``PersistentView``. There are several alternatives for connecting the ``Source``
+to an actor corresponding to a previous ``PersistentView`` actor which are documented in :ref:`stream-integrations-scala`
+for Scala and :ref:`Java <stream-integrations-java>`.
+
+The consuming actor may be a plain ``Actor`` or an ``PersistentActor`` if it needs to store its own state (e.g. ``fromSequenceNr`` offset).
+
+Please note that Persistence Query is not experimental anymore in Akka ``2.5.0``, so you can safely upgrade to it.
+
+Persistence Plugin Proxy
+------------------------
+
+A new :ref:`persistence plugin proxy<persistence-plugin-proxy>` was added, that allows sharing of an otherwise
+non-sharable journal or snapshot store. The proxy is available by setting ``akka.persistence.journal.plugin`` or
+``akka.persistence.snapshot-store.plugin`` to ``akka.persistence.journal.proxy`` or ``akka.persistence.snapshot-store.proxy``,
+respectively. The proxy supplants the :ref:`Shared LevelDB journal<shared-leveldb-journal>`.
+
 Agents
 ======
 
@@ -83,40 +115,3 @@ the Agents, as they rarely are really enough and do not fit the Akka spirit of t
 We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so in preparation thereof the Agents have been deprecated in 2.5.
 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
-
-
-Actor DSL
-=========
-
-Actor DSL deprecation
----------------------
-
-Actor DSL is a rarely used feature and thus will be deprecated and removed.
-Use plain ``system.actorOf`` instead of the DSL to create Actors if you have been using it.
-
-Akka Persistence
-================
-
-Persistence Plugin Proxy
-------------------------
-
-A new :ref:`persistence plugin proxy<persistence-plugin-proxy>` was added, that allows sharing of an otherwise
-non-sharable journal or snapshot store. The proxy is available by setting ``akka.persistence.journal.plugin`` or
-``akka.persistence.snapshot-store.plugin`` to ``akka.persistence.journal.proxy`` or ``akka.persistence.snapshot-store.proxy``,
-respectively. The proxy supplants the :ref:`Shared LevelDB journal<shared-leveldb-journal>`.
-
-
-Cluster
-=======
-
-Cluster Management Command Line Tool
-------------------------------------
-
-There is a new cluster management tool with HTTP API that has the same functionality as the command line tool.
-The HTTP API gives you access to cluster membership information as JSON including full reachability status between the nodes.
-It supports the ordinary cluster operations such as join, leave, and down.
-
-See documentation of `akka/akka-cluster-management <https://github.com/akka/akka-cluster-management>`_.
-
-The command line script for cluster management has been deprecated and is scheduled for removal 
-in the next major version. Use the HTTP API with `curl <https://curl.haxx.se/>`_ or similar instead.
