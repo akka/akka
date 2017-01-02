@@ -114,6 +114,16 @@ object FrameRenderer {
           streamId,
           new ByteStringBuilder().putInt(errorCode.id).result
         )
+
+      case PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒ {
+        val exclusiveBit: Int = if (exclusiveFlag) 0x80000000 else 0
+        renderFrame(
+          Http2Protocol.FrameType.PRIORITY,
+          Http2Protocol.Flags.NO_FLAGS,
+          streamId,
+          new ByteStringBuilder().putInt(exclusiveBit | streamDependency).putByte(weight.toByte).result
+        )
+      }
     }
 
   def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString = {
