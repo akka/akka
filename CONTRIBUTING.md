@@ -109,6 +109,14 @@ target PR branch you can do so by setting the PR_TARGET_BRANCH environment varia
 PR_TARGET_BRANCH=origin/example sbt validatePullRequest
 ```
 
+## Developing against Akka `master`
+
+Since Akka HTTP is released separately to Akka "core" yet some features require changes in Akka itself, it is sometimes very useful
+to be able to develop Akka HTTP with Akka's sources used directly instead of the binary dependency. You can check out the Akka 
+repository and run sbt with `-Dakka.sources=$HOME/akka` to develop Akka HTTP with Akka as a source dependency instead of a binary one.
+
+This allows simple and fast iterations on changes that would need to be intoduced in Akka to develop a feature in HTTP that would require those.
+
 ## Binary compatibility
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
