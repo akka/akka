@@ -78,20 +78,18 @@ object Dependencies {
       val jimfs        = "com.google.jimfs"            % "jimfs"                        % "1.1"              % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
-      val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
-      val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
-      val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
-      val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
+      val metrics      = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
+      val metricsJvm   = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
+      val latencyUtils = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
+      val hdrHistogram = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
+      val metricsAll   = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // sigar logging
-      val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"    % "test"    // MIT
-      val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"    % "test"    // MIT
-
-      lazy val sprayJson = Compile.sprayJson % "test"
+      val slf4jJul     = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"           % "test" // MIT
+      val slf4jLog4j   = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"           % "test" // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.0" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams"   % "reactive-streams-tck"         % "1.0.0"            % "test" // CC0
     }
 
     object Provided {
