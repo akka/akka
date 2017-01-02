@@ -18,6 +18,7 @@ import HttpCharsets._
 import headers._
 import org.xml.sax.SAXParseException
 
+import scala.concurrent.Future
 import scala.util.{ Failure, Try }
 
 class MarshallingDirectivesSpec extends RoutingSpec with Inside {
@@ -134,6 +135,37 @@ class MarshallingDirectivesSpec extends RoutingSpec with Inside {
       }
       Put("/", HttpEntity(ContentTypes.`text/plain(UTF-8)`, """name = Sir Text }""")) ~> route ~> check {
         rejection shouldEqual UnsupportedRequestContentTypeRejection(Set(`application/json`, `text/xml`))
+      }
+    }
+  }
+
+  "The 'complete' directive" should {
+    "properly marshal failed Futures even in a NoContent context (#589)" in {
+      def doSomethingWhichReturnsAFailedFuture(): Future[String] =
+        Future.failed(new Exception("oops"))
+
+      val route =
+        path("589") {
+          complete(StatusCodes.NoContent, doSomethingWhichReturnsAFailedFuture())
+        }
+
+      Get("/589") ~> route ~> check {
+        response.status shouldEqual StatusCodes.InternalServerError
+        responseAs[String] shouldEqual "There was an internal server error."
+      }
+    }
+    "properly marshal successful Futures even in a NoContent context (#589)" in {
+      def doSomethingWhichReturnsASuccessfulFuture(): Future[String] =
+        Future.successful("hello!")
+
+      val route =
+        path("589") {
+          complete(StatusCodes.NoContent, doSomethingWhichReturnsASuccessfulFuture())
+        }
+
+      Get("/589") ~> route ~> check {
+        response.status shouldEqual StatusCodes.NoContent
+        responseAs[String] shouldEqual "" // please note that this would be "hello!" for StatusCodes.OK case
       }
     }
   }
