@@ -60,6 +60,28 @@ which explains using and implementing GraphStages in more practical terms than t
 
 .. _Mastering GraphStages, part I: http://blog.akka.io/streams/2016/07/30/mastering-graph-stage-part-1
 
+Remote
+======
+
+Mutual TLS authentication now required by default for netty-based SSL transport
+-------------------------------------------------------------------------------
+
+Mutual TLS authentication is now required by default for the netty-based SSL transport.
+
+Nodes that are configured with this setting to ``on`` might not be able to receive messages from nodes that run on older
+versions of akka-remote. This is because in versions of Akka < 2.4.12 the active side of the remoting
+connection will not send over certificates even if asked to.
+
+It is still possible to make a rolling upgrade from a version < 2.4.12 by doing the upgrade stepwise:
+ * first, upgrade Akka to the latest version but keep ``akka.remote.netty.ssl.require-mutual-authentication`` at ``off``
+   and do a first rolling upgrade
+ * second, turn the setting to ``on`` and do another rolling upgrade
+
+For more information see the documentation for the ``akka.remote.netty.ssl.require-mutual-authentication` configuration setting
+in akka-remote's `reference.conf`_.
+
+.. _reference.conf: https://github.com/akka/akka/blob/master/akka-remote/src/main/resources/reference.conf
+
 Cluster
 =======
 
