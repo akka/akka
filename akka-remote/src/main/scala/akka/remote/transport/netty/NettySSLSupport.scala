@@ -85,10 +85,6 @@ private[akka] class SSLSettings(config: Config) {
       case r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG") ⇒
         log.debug("SSL random number generator set to: {}", r)
         SecureRandom.getInstance(r, AkkaProvider)
-      case r @ ("AES128CounterInetRNG" | "AES256CounterInetRNG") ⇒
-        log.warning(LogMarker.Security, "SSL random number generator {} is deprecated, " +
-          "use AES128CounterSecureRNG or AES256CounterSecureRNG instead", r)
-        SecureRandom.getInstance(r, AkkaProvider)
       case s @ ("SHA1PRNG" | "NativePRNG") ⇒
         log.debug("SSL random number generator set to: {}", s)
         // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking

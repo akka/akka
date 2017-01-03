@@ -7,7 +7,7 @@ package akka.persistence
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor._
-import akka.testkit.{ ImplicitSender, TestLatch, TestProbe }
+import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
 import com.typesafe.config.Config
 
 import scala.collection.immutable.Seq
@@ -646,6 +646,23 @@ object PersistentActorSpec {
     }
   }
 
+  class PersistInRecovery(name: String) extends ExamplePersistentActor(name) {
+    override def receiveRecover = {
+      case Evt("invalid") ⇒
+        persist(Evt("invalid-recovery"))(updateState)
+      case e: Evt ⇒ updateState(e)
+      case RecoveryCompleted ⇒
+        persistAsync(Evt("rc-1"))(updateState)
+        persist(Evt("rc-2"))(updateState)
+        persistAsync(Evt("rc-3"))(updateState)
+    }
+
+    override def onRecoveryFailure(cause: scala.Throwable, event: Option[Any]): Unit = ()
+
+    def receiveCommand = commonBehavior orElse {
+      case Cmd(d) ⇒ persist(Evt(d))(updateState)
+    }
+  }
 }
 
 abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
@@ -661,6 +678,20 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
   }
 
   "A persistent actor" must {
+    "fail fast if persistenceId is null" in {
+      import akka.testkit.filterEvents
+      filterEvents(EventFilter[ActorInitializationException]()) {
+        EventFilter.error(message = "requirement failed: persistenceId is [null] for PersistentActor") intercept {
+          val ref = system.actorOf(Props(new NamedPersistentActor(null) {
+            override def receiveRecover: Receive = Actor.emptyBehavior
+
+            override def receiveCommand: Receive = Actor.emptyBehavior
+          }))
+          watch(ref)
+          expectTerminated(ref)
+        }
+      }
+    }
     "recover from persisted events" in {
       val persistentActor = namedPersistentActor[Behavior1PersistentActor]
       persistentActor ! GetState
@@ -1118,6 +1149,20 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       val persistentActor = namedPersistentActor[RecoverMessageCausedRestart]
       persistentActor ! "Boom"
       expectMsg("failed with TestException while processing Boom")
+    }
+
+    "be able to persist events that happen during recovery" in {
+      val persistentActor = namedPersistentActor[PersistInRecovery]
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "rc-1", "rc-2"))
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "rc-1", "rc-2", "rc-3"))
+      persistentActor ! Cmd("invalid")
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "rc-1", "rc-2", "rc-3", "invalid"))
+      watch(persistentActor)
+      persistentActor ! "boom"
+      expectTerminated(persistentActor)
     }
   }
 

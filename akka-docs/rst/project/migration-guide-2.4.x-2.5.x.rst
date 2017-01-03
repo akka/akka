@@ -4,6 +4,15 @@
 Migration Guide 2.4.x to 2.5.x
 ##############################
 
+Akka Actor
+==========
+
+Actor DSL deprecation
+---------------------
+
+Actor DSL is a rarely used feature and thus will be deprecated and removed.
+Use plain ``system.actorOf`` instead of the DSL to create Actors if you have been using it.
+
 Akka Streams
 ============
 
@@ -51,26 +60,60 @@ which explains using and implementing GraphStages in more practical terms than t
 
 .. _Mastering GraphStages, part I: http://blog.akka.io/streams/2016/07/30/mastering-graph-stage-part-1
 
-Agents
+Remote
 ======
 
-Agents are now deprecated
--------------------------
+Mutual TLS authentication now required by default for netty-based SSL transport
+-------------------------------------------------------------------------------
 
-Akka Agents are a very simple way of containing mutable state and allowing to access it safely from
-multiple threads. The abstraction is leaky though, as Agents do not work over the network (unlike Akka Actors).
+Mutual TLS authentication is now required by default for the netty-based SSL transport.
 
-As users were often confused by "when to use an Actor vs. when to use an Agent?" a decision was made to deprecate
-the Agents, as they rarely are really enough and do not fit the Akka spirit of thinking about distribution.
-We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so in preparation thereof the Agents have been deprecated in 2.5.
+Nodes that are configured with this setting to ``on`` might not be able to receive messages from nodes that run on older
+versions of akka-remote. This is because in versions of Akka < 2.4.12 the active side of the remoting
+connection will not send over certificates even if asked to.
 
-If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
+It is still possible to make a rolling upgrade from a version < 2.4.12 by doing the upgrade stepwise:
+ * first, upgrade Akka to the latest version but keep ``akka.remote.netty.ssl.require-mutual-authentication`` at ``off``
+   and do a first rolling upgrade
+ * second, turn the setting to ``on`` and do another rolling upgrade
 
+For more information see the documentation for the ``akka.remote.netty.ssl.require-mutual-authentication` configuration setting
+in akka-remote's `reference.conf`_.
 
+.. _reference.conf: https://github.com/akka/akka/blob/master/akka-remote/src/main/resources/reference.conf
 
+Cluster
+=======
+
+Cluster Management Command Line Tool
+------------------------------------
+
+There is a new cluster management tool with HTTP API that has the same functionality as the command line tool.
+The HTTP API gives you access to cluster membership information as JSON including full reachability status between the nodes.
+It supports the ordinary cluster operations such as join, leave, and down.
+
+See documentation of `akka/akka-cluster-management <https://github.com/akka/akka-cluster-management>`_.
+
+The command line script for cluster management has been deprecated and is scheduled for removal
+in the next major version. Use the HTTP API with `curl <https://curl.haxx.se/>`_ or similar instead.
 
 Akka Persistence
 ================
+
+Removal of PersistentView
+-------------------------
+
+After being deprecated for a long time, and replaced by :ref:`Persistence Query Java <persistence-query-java>`
+(:ref:`Persistence Query Scala <persistence-query-scala>`) ``PersistentView`` has been removed now removed.
+
+The corresponding query type is ``EventsByPersistenceId``. There are several alternatives for connecting the ``Source``
+to an actor corresponding to a previous ``PersistentView``. There are several alternatives for connecting the ``Source``
+to an actor corresponding to a previous ``PersistentView`` actor which are documented in :ref:`stream-integrations-scala`
+for Scala and :ref:`Java <stream-integrations-java>`.
+
+The consuming actor may be a plain ``Actor`` or an ``PersistentActor`` if it needs to store its own state (e.g. ``fromSequenceNr`` offset).
+
+Please note that Persistence Query is not experimental anymore in Akka ``2.5.0``, so you can safely upgrade to it.
 
 Persistence Plugin Proxy
 ------------------------
@@ -112,18 +155,17 @@ Instead of the previous ``Long`` offset you can now use the provided ``Offset`` 
 
 Journals are also free to provide their own specific ``Offset`` types. Consult your journal plugin's documentation for details.
 
+Agents
+======
 
-Cluster
-=======
+Agents are now deprecated
+-------------------------
 
-Cluster Management Command Line Tool
-------------------------------------
+Akka Agents are a very simple way of containing mutable state and allowing to access it safely from
+multiple threads. The abstraction is leaky though, as Agents do not work over the network (unlike Akka Actors).
 
-There is a new cluster management tool with HTTP API that has the same functionality as the command line tool.
-The HTTP API gives you access to cluster membership information as JSON including full reachability status between the nodes.
-It supports the ordinary cluster operations such as join, leave, and down.
+As users were often confused by "when to use an Actor vs. when to use an Agent?" a decision was made to deprecate
+the Agents, as they rarely are really enough and do not fit the Akka spirit of thinking about distribution.
+We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so in preparation thereof the Agents have been deprecated in 2.5.
 
-See documentation of `akka/akka-cluster-management <https://github.com/akka/akka-cluster-management>`_.
-
-The command line script for cluster management has been deprecated and is scheduled for removal 
-in the next major version. Use the HTTP API with `curl <https://curl.haxx.se/>`_ or similar instead.
+If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.

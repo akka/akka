@@ -7,6 +7,7 @@ package akka.persistence.query
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.ExtendedActorSystem
 
 /**
  * Use for tests only!
@@ -29,10 +30,19 @@ class DummyReadJournalForJava(readJournal: DummyReadJournal) extends javadsl.Rea
 object DummyReadJournalProvider {
   final val config: Config = ConfigFactory.parseString(
     s"""
-      |${DummyReadJournal.Identifier} {
-      |  class = "${classOf[DummyReadJournalProvider].getCanonicalName}"
-      |}
-    """.stripMargin)
+      ${DummyReadJournal.Identifier} {
+        class = "${classOf[DummyReadJournalProvider].getCanonicalName}"
+      }
+      ${DummyReadJournal.Identifier}2 {
+        class = "${classOf[DummyReadJournalProvider2].getCanonicalName}"
+      }
+      ${DummyReadJournal.Identifier}3 {
+        class = "${classOf[DummyReadJournalProvider3].getCanonicalName}"
+      }
+      ${DummyReadJournal.Identifier}4 {
+        class = "${classOf[DummyReadJournalProvider4].getCanonicalName}"
+      }
+    """)
 }
 
 class DummyReadJournalProvider extends ReadJournalProvider {
@@ -43,3 +53,10 @@ class DummyReadJournalProvider extends ReadJournalProvider {
   override val javadslReadJournal: DummyReadJournalForJava =
     new DummyReadJournalForJava(scaladslReadJournal)
 }
+
+class DummyReadJournalProvider2(sys: ExtendedActorSystem) extends DummyReadJournalProvider
+
+class DummyReadJournalProvider3(sys: ExtendedActorSystem, conf: Config) extends DummyReadJournalProvider
+
+class DummyReadJournalProvider4(sys: ExtendedActorSystem, conf: Config, confPath: String) extends DummyReadJournalProvider
+
