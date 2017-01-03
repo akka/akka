@@ -195,7 +195,17 @@ object Replicator {
     Props(new Replicator(settings)).withDeploy(Deploy.local).withDispatcher(settings.dispatcher)
   }
 
-  val DefaultMajorityMinCap: Int = 2
+  val DefaultMajorityMinCap: Int = 0
+
+  def calculateMajorityWithMinCap(minCap: Int, numberOfNodes: Int): Int = {
+    if (numberOfNodes <= minCap) {
+      numberOfNodes
+    } else {
+      val majority = numberOfNodes / 2 + 1
+      if (majority <= minCap) minCap
+      else majority
+    }
+  }
 
   sealed trait ReadConsistency {
     def timeout: FiniteDuration
@@ -1547,21 +1557,10 @@ private[akka] class WriteAggregator(
     case _: WriteAll   ⇒ 0
     case WriteMajority(_, minCap) ⇒
       val N = nodes.size + 1
-      val w = calculateWriteMajorityWithMinCap(minCap, N)
+      val w = calculateMajorityWithMinCap(minCap, N)
       N - w
     case WriteLocal ⇒
       throw new IllegalArgumentException("WriteLocal not supported by WriteAggregator")
-  }
-
-  // returns minCap or number of nodes if (Nodes/2+1) are less then minCap else (Nodes/2+1)
-  def calculateWriteMajorityWithMinCap(minCap: Int, numberOfNodes: Int): Int = {
-    if (numberOfNodes <= minCap) {
-      numberOfNodes
-    } else {
-      val writeMajority = numberOfNodes / 2 + 1
-      if (writeMajority <= minCap) minCap
-      else writeMajority
-    }
   }
 
   val writeMsg = Write(key.id, envelope)
@@ -1663,21 +1662,10 @@ private[akka] class ReadAggregator(
     case _: ReadAll     ⇒ 0
     case ReadMajority(_, minCap) ⇒
       val N = nodes.size + 1
-      val r = calculateReadMajorityWithMinCap(minCap, N)
+      val r = calculateMajorityWithMinCap(minCap, N)
       N - r
     case ReadLocal ⇒
       throw new IllegalArgumentException("ReadLocal not supported by ReadAggregator")
-  }
-
-  // returns minCap or number of nodes if (Nodes/2+1) are less then minCap else (Nodes/2+1)
-  def calculateReadMajorityWithMinCap(minCap: Int, numberOfNodes: Int): Int = {
-    if (numberOfNodes <= minCap) {
-      numberOfNodes
-    } else {
-      val readMajority = numberOfNodes / 2 + 1
-      if (readMajority <= minCap) minCap
-      else readMajority
-    }
   }
 
   val readMsg = Read(key.id)
