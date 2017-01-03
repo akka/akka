@@ -125,8 +125,8 @@ in the next major version. Use the HTTP API with `curl <https://curl.haxx.se/>`_
 Distributed Data
 ================
 
-Replicator Subscribers API changed
-----------------------------------
+Subscribers
+-----------
 
 When an entity is removed subscribers will not receive ``Replicator.DataDeleted`` any more.
 They will receive ``Replicator.Deleted`` instead.
