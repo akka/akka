@@ -17,6 +17,7 @@ import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
+import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
@@ -105,6 +106,19 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
         halfClose = false,
         idleTimeout = Duration.Inf // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
       )
+      .map { incoming ⇒
+        val newFlow =
+          incoming.flow
+            // Prevent cancellation from the Http implementation to reach the TCP streams to prevent
+            // completion / cancellation race towards TCP streams. See #459.
+            //
+            // This could create a potential resource leak, if, e.g. because of a bug, the HTTP implementation doesn't
+            // close the write-side of the connection at the same time as it cancels the read side and if the client
+            // never closes the connection after or while reading the response. Fortunately, this will be handled by
+            // the idle-timeout which will forcibly close the connection after a defined amount of inactivity.
+            .via(StreamUtils.absorbCancellation)
+        incoming.copy(flow = newFlow)
+      }
   }
 
   private def choosePort(port: Int, connectionContext: ConnectionContext) = if (port >= 0) port else connectionContext.defaultPort

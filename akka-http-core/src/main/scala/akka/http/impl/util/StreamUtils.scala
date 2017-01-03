@@ -233,6 +233,29 @@ private[http] object StreamUtils {
       def open(): Unit = promise.success(())
     }
   }
+
+  /**
+   * INTERNAL API
+   *
+   * Returns a flow that is almost identity but doesn't propagate cancellation from downstream to upstream.
+   *
+   * Note: This might create a resource leak if the upstream never completes. External measures
+   * need to be taken to ensure that the upstream will always complete.
+   */
+  def absorbCancellation[T]: Flow[T, T, NotUsed] = Flow.fromGraph(new AbsorbCancellationStage)
+  final class AbsorbCancellationStage[T] extends SimpleLinearGraphStage[T] {
+    def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+      setHandlers(in, out, this)
+
+      def onPush(): Unit = push(out, grab(in)) // using `passAlong` was considered but it seems to need some boilerplate to make it work
+      def onPull(): Unit = pull(in)
+
+      override def onDownstreamFinish(): Unit = {
+        // don't pass cancellation to upstream, and ignore eventually outstanding future element
+        setHandler(in, new InHandler { def onPush(): Unit = log.debug("Ignoring unexpected data received after cancellation was ignored.") })
+      }
+    }
+  }
 }
 
 /**
