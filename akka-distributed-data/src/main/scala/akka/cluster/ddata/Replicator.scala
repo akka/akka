@@ -196,16 +196,6 @@ object Replicator {
 
   val DefaultMajorityMinCap: Int = 0
 
-  def calculateMajorityWithMinCap(minCap: Int, numberOfNodes: Int): Int = {
-    if (numberOfNodes <= minCap) {
-      numberOfNodes
-    } else {
-      val majority = numberOfNodes / 2 + 1
-      if (majority <= minCap) minCap
-      else majority
-    }
-  }
-
   sealed trait ReadConsistency {
     def timeout: FiniteDuration
   }
@@ -1469,6 +1459,16 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 private[akka] object ReadWriteAggregator {
   case object SendToSecondary
   val MaxSecondaryNodes = 10
+
+  def calculateMajorityWithMinCap(minCap: Int, numberOfNodes: Int): Int = {
+    if (numberOfNodes <= minCap) {
+      numberOfNodes
+    } else {
+      val majority = numberOfNodes / 2 + 1
+      if (majority <= minCap) minCap
+      else majority
+    }
+  }
 }
 
 /**
