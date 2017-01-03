@@ -173,8 +173,8 @@ If you use Agents and would like to take over the maintanance thereof, please co
 Distributed Data
 ================
 
-Replicator Subscribers API changed
-----------------------------------
+Subscribers
+-----------
 
 When an entity is removed subscribers will not receive ``Replicator.DataDeleted`` any more.
 They will receive ``Replicator.Deleted`` instead.
