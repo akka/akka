@@ -19,8 +19,8 @@ Akka Streams
 Removal of StatefulStage, PushPullStage
 ---------------------------------------
 
-``StatefulStage`` and ``PushPullStage`` were first introduced in Akka Streams 1.0, and later deprecated 
-and replaced by ``GraphStage`` in 2.0-M2. The ``GraphStage`` API has all features (and even more) as the 
+``StatefulStage`` and ``PushPullStage`` were first introduced in Akka Streams 1.0, and later deprecated
+and replaced by ``GraphStage`` in 2.0-M2. The ``GraphStage`` API has all features (and even more) as the
 previous APIs and is even nicer to use.
 
 Please refer to the GraphStage documentation :ref:` for Scala <graphstage-scala>` or
@@ -36,7 +36,7 @@ Along with the removal of ``Stage`` (as described above), the ``transform`` meth
 from ``Stage`` have been removed. They are replaced by using ``GraphStage`` instances with ``via``, e.g.::
 
    exampleFlow.transform(() => new MyStage())
-   
+
 would now be::
 
    myFlow.via(new MyGraphStage)
@@ -51,9 +51,9 @@ API that we provided for end-users. Akka Streams APIs have evolved and improved 
 there is no need to use these low-level abstractions anymore. It is easy to get things wrong when implementing them,
 and one would have to validate each implementation of such Actor using the Reactive Streams Technology Compatibility Kit.
 
-The replacement API is the powerful ``GraphStage``. It has all features that raw Actors provided for implementing Stream 
-stages and adds additional protocol and type-safety. You can learn all about it in the documentation: 
-:ref:`stream-customize-scala`and :ref:`Custom stream processing in JavaDSL <stream-customize-java>`. 
+The replacement API is the powerful ``GraphStage``. It has all features that raw Actors provided for implementing Stream
+stages and adds additional protocol and type-safety. You can learn all about it in the documentation:
+:ref:`stream-customize-scala`and :ref:`Custom stream processing in JavaDSL <stream-customize-java>`.
 
 You should also read the blog post series on the official team blog, starting with `Mastering GraphStages, part I`_,
 which explains using and implementing GraphStages in more practical terms than the reference documentation.
@@ -135,11 +135,11 @@ Queries always fall into one of the two categories: infinite or finite ("current
 The naming convention for these categories of queries was solidified and is now as follows:
 
 - "infinite" - e.g. ``eventsByTag``, ``persistenceIds`` - which will keep emitting events as they are persisted and match the query.
-- "finite", also known as "current" - e.g. ``currentEventsByTag``, ``currentPersistenceIds`` - which will complete the stream once the query completed, 
+- "finite", also known as "current" - e.g. ``currentEventsByTag``, ``currentPersistenceIds`` - which will complete the stream once the query completed,
   for the journal's definition of "current". For example in an SQL store it would mean it only queries the database once.
 
-Only the ``AllPersistenceIdsQuery`` class and method name changed due to this. 
-The class is now called ``PersistenceIdsQuery``, and the method which used to be ``allPersistenceIds`` is now ``persistenceIds``. 
+Only the ``AllPersistenceIdsQuery`` class and method name changed due to this.
+The class is now called ``PersistenceIdsQuery``, and the method which used to be ``allPersistenceIds`` is now ``persistenceIds``.
 
 Queries now use ``Offset`` instead of ``Long`` for offsets
 ----------------------------------------------------------
@@ -149,9 +149,9 @@ For example, in some journals an offset is always a time, while in others it is 
 
 Instead of the previous ``Long`` offset you can now use the provided ``Offset`` factories (and types):
 
-- ``akka.persistence.query.Offset.sequence(value: Long)``, 
+- ``akka.persistence.query.Offset.sequence(value: Long)``,
 - ``akka.persistence.query.Offset.timeBasedUUID(value: UUID)``
-- and finally ``NoOffset`` if not offset should be used. 
+- and finally ``NoOffset`` if not offset should be used.
 
 Journals are also free to provide their own specific ``Offset`` types. Consult your journal plugin's documentation for details.
 
@@ -169,3 +169,12 @@ the Agents, as they rarely are really enough and do not fit the Akka spirit of t
 We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so in preparation thereof the Agents have been deprecated in 2.5.
 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
+
+Distributed Data
+================
+
+Replicator Subscribers API changed
+----------------------------------
+
+When an entity is removed subscribers will not receive ``Replicator.DataDeleted`` any more.
+They will receive ``Replicator.Deleted`` instead.
