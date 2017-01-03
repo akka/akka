@@ -294,7 +294,6 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
         // discard duplicates with awaitAssert until we receive next version
         receivedActorRefCompressionTableProbe.awaitAssert {
           val a1 = receivedActorRefCompressionTableProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
-          // println(s"    ====== receivedActorRefCompressionTableProbe = ${a1.table.version}")
           currentTableVersion = a1.table.version.toInt
           // until we get next version, discard duplicates
           currentTableVersion should !==(lastTableVersion)

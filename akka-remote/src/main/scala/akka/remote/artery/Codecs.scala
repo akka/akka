@@ -9,9 +9,10 @@ import akka.Done
 import akka.actor.{ EmptyLocalActorRef, _ }
 import akka.event.Logging
 import akka.remote.artery.Decoder.{ AdvertiseActorRefsCompressionTable, AdvertiseClassManifestsCompressionTable, InboundCompressionAccess, InboundCompressionAccessImpl }
+import akka.remote.artery.FlightRecorderEvents.AeronSource_Started
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.artery.compress.CompressionProtocol._
-import akka.remote.artery.compress.{ CompressionTable, InboundCompressions, InboundCompressionsImpl, NoInboundCompressions }
+import akka.remote.artery.compress._
 import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRefProvider, UniqueAddress }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream._
@@ -336,12 +337,15 @@ private[remote] final class ActorRefResolveCacheWithAddress(provider: RemoteActo
  * INTERNAL API
  */
 private[remote] class Decoder(
-  inboundContext:     InboundContext,
-  system:             ExtendedActorSystem,
-  uniqueLocalAddress: UniqueAddress,
-  settings:           ArterySettings,
-  bufferPool:         EnvelopeBufferPool,
-  inEnvelopePool:     ObjectPool[ReusableInboundEnvelope]) extends GraphStageWithMaterializedValue[FlowShape[EnvelopeBuffer, InboundEnvelope], InboundCompressionAccess] {
+  inboundContext:      InboundContext,
+  system:              ExtendedActorSystem,
+  uniqueLocalAddress:  UniqueAddress,
+  settings:            ArterySettings,
+  bufferPool:          EnvelopeBufferPool,
+  inboundCompressions: InboundCompressions,
+  inEnvelopePool:      ObjectPool[ReusableInboundEnvelope])
+  extends GraphStageWithMaterializedValue[FlowShape[EnvelopeBuffer, InboundEnvelope], InboundCompressionAccess] {
+
   import Decoder.Tick
   val in: Inlet[EnvelopeBuffer] = Inlet("Artery.Decoder.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Decoder.out")
@@ -351,11 +355,7 @@ private[remote] class Decoder(
     val logic = new TimerGraphStageLogic(shape) with InboundCompressionAccessImpl with InHandler with OutHandler with StageLogging {
       import Decoder.RetryResolveRemoteDeployedRecipient
 
-      override val compressions: InboundCompressions = {
-        if (settings.Advanced.Compression.Enabled) {
-          new InboundCompressionsImpl(system, inboundContext, settings.Advanced.Compression)
-        } else NoInboundCompressions
-      }
+      override val compressions = inboundCompressions
 
       private val localAddress = inboundContext.localAddress.address
       private val headerBuilder = HeaderBuilder.in(compressions)

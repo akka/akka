@@ -9,7 +9,7 @@ import java.util.function.{ Consumer, LongFunction }
 
 import akka.actor.{ ActorRef, ActorSystem, Address }
 import akka.event.{ Logging, LoggingAdapter }
-import akka.remote.artery.{ ArterySettings, InboundContext, OutboundContext }
+import akka.remote.artery._
 import akka.util.OptionVal
 import org.agrona.collections.Long2ObjectHashMap
 
@@ -51,17 +51,18 @@ private[remote] trait InboundCompressions {
 private[remote] final class InboundCompressionsImpl(
   system:         ActorSystem,
   inboundContext: InboundContext,
-  settings:       ArterySettings.Compression) extends InboundCompressions {
+  settings:       ArterySettings.Compression,
+  eventSink:      EventSink                  = IgnoreEventSink) extends InboundCompressions {
 
   // None is used as tombstone value after closed
   // TODO would be nice if we can cleanup the tombstones
   // FIXME we should be able to remove the tombstones easily now
   private[this] val _actorRefsIns = new Long2ObjectHashMap[Option[InboundActorRefCompression]]()
+  private[this] val _inboundActorRefsLog = Logging(system, classOf[InboundManifestCompression])
   private val createInboundActorRefsForOrigin = new LongFunction[Option[InboundActorRefCompression]] {
     override def apply(originUid: Long): Option[InboundActorRefCompression] = {
       val actorRefHitters = new TopHeavyHitters[ActorRef](settings.ActorRefs.Max)
-      val log = Logging(system, classOf[InboundActorRefCompression])
-      Some(new InboundActorRefCompression(log, settings, originUid, inboundContext, actorRefHitters))
+      Some(new InboundActorRefCompression(_inboundActorRefsLog, settings, originUid, inboundContext, actorRefHitters))
     }
   }
   private def actorRefsIn(originUid: Long): Option[InboundActorRefCompression] =
@@ -69,11 +70,12 @@ private[remote] final class InboundCompressionsImpl(
 
   // None is used as tombstone value after closed
   private[this] val _classManifestsIns = new Long2ObjectHashMap[Option[InboundManifestCompression]]()
+
+  private[this] val _inboundManifestLog = Logging(system, classOf[InboundManifestCompression])
   private val createInboundManifestsForOrigin = new LongFunction[Option[InboundManifestCompression]] {
     override def apply(originUid: Long): Option[InboundManifestCompression] = {
       val manifestHitters = new TopHeavyHitters[String](settings.Manifests.Max)
-      val log = Logging(system, classOf[InboundManifestCompression])
-      Some(new InboundManifestCompression(log, settings, originUid, inboundContext, manifestHitters))
+      Some(new InboundManifestCompression(_inboundManifestLog, settings, originUid, inboundContext, manifestHitters))
     }
   }
   private def classManifestsIn(originUid: Long): Option[InboundManifestCompression] =
@@ -101,11 +103,13 @@ private[remote] final class InboundCompressionsImpl(
     }
   }
   /** Send compression table advertisement over control stream. Should be called from Decoder. */
-  override def runNextClassManifestAdvertisement(): Unit = {
-    val vs = _classManifestsIns.values.iterator()
+  override def runNextActorRefAdvertisement(): Unit = {
+    val vs = _actorRefsIns.values.iterator()
     while (vs.hasNext) vs.next() match {
-      case Some(inbound) ⇒ inbound.runNextTableAdvertisement()
-      case None          ⇒ // do nothing...
+      case Some(inbound) ⇒
+        eventSink.hiFreq(FlightRecorderEvents.Compression_Inbound_RunActorRefAdvertisement, 1)
+        inbound.runNextTableAdvertisement()
+      case None ⇒ // do nothing...
     }
   }
 
@@ -132,26 +136,19 @@ private[remote] final class InboundCompressionsImpl(
     }
   }
   /** Send compression table advertisement over control stream. Should be called from Decoder. */
-  override def runNextActorRefAdvertisement(): Unit = {
-    val vs = _actorRefsIns.values.iterator()
+  override def runNextClassManifestAdvertisement(): Unit = {
+    val vs = _classManifestsIns.values.iterator()
     while (vs.hasNext) vs.next() match {
-      case Some(inbound) ⇒ inbound.runNextTableAdvertisement()
-      case None          ⇒ // do nothing...
+      case Some(inbound) ⇒
+        eventSink.hiFreq(FlightRecorderEvents.Compression_Inbound_RunClassManifestAdvertisement, 1)
+        inbound.runNextTableAdvertisement()
+      case None ⇒ // do nothing...
     }
   }
 
   override def close(originUid: Long): Unit = {
-    // TODO sanity heck if this is all needed
-    _actorRefsIns.get(originUid) match {
-      case null if _actorRefsIns.putIfAbsent(originUid, None) != null ⇒ close(originUid)
-      case oldValue @ Some(a) if _actorRefsIns.replace(originUid, oldValue, None) ⇒ a.close()
-      case _ ⇒ // already closed
-    }
-    _classManifestsIns.get(originUid) match {
-      case null if _classManifestsIns.putIfAbsent(originUid, None) != null ⇒ close(originUid)
-      case oldValue @ Some(a) if _classManifestsIns.replace(originUid, oldValue, None) ⇒ a.close()
-      case _ ⇒ // already closed
-    }
+    _actorRefsIns.putIfAbsent(originUid, None)
+    _classManifestsIns.putIfAbsent(originUid, None)
   }
 }
 
@@ -249,17 +246,15 @@ private[remote] abstract class InboundCompression[T >: Null](
   inboundContext:   InboundContext,
   val heavyHitters: TopHeavyHitters[T]) {
 
-  //  // FIXME InboundCompressions should be owned by the Decoder stage, and then doesn't have to be thread-safe
-  //  private[this] val state: AtomicReference[InboundCompression.State[T]] = new AtomicReference(InboundCompression.State.empty)
   private[this] var state: InboundCompression.State[T] = InboundCompression.State.empty
 
   // We should not continue sending advertisements to an association that might be dead (not quarantined yet)
   @volatile private[this] var alive = true
-  private[this] val resendCount = new AtomicInteger
+  private[this] var resendCount = 0
 
   private[this] val cms = new CountMinSketch(16, 1024, System.currentTimeMillis().toInt)
 
-  log.debug("Initializing inbound compression for originUid [{}]", originUid)
+  log.debug("Initializing {} for originUid [{}]", Logging.simpleName(getClass), originUid)
 
   /* ==== COMPRESSION ==== */
 
@@ -277,7 +272,7 @@ private[remote] abstract class InboundCompression[T >: Null](
     // effectively should never loop more than once, to avoid infinite recursion blow up eagerly
     if (attemptCounter > 2) throw new IllegalStateException(s"Unable to decompress $idx from table $incomingTableVersion. Internal state: ${state}")
 
-    val current = state // .get // FIXME remove .get
+    val current = state
     val oldVersion = current.oldTable.version
     val activeVersion = current.activeTable.version
 
@@ -339,11 +334,6 @@ private[remote] abstract class InboundCompression[T >: Null](
     heavyHitters.update(value, count)
   }
 
-  /** Prevent further compression advertisements unless the state is updated again */
-  def close(): Unit = {
-    alive = false // TODO not quite sure if we really need this, but keeping for now
-  }
-
   /* ==== TABLE ADVERTISEMENT ==== */
 
   /**
@@ -368,7 +358,7 @@ private[remote] abstract class InboundCompression[T >: Null](
               val nextState = state.copy(nextTable = table.invert, advertisementInProgress = Some(table))
               state = nextState
               alive = false // will be set to true on first incoming message
-              resendCount.set(0)
+              resendCount = 0
               advertiseCompressionTable(association, table)
             } else
               log.debug("Inbound compression table for originUid [{}] not changed, no need to advertise same.", originUid)
@@ -380,7 +370,8 @@ private[remote] abstract class InboundCompression[T >: Null](
         }
 
       case Some(inProgress) ⇒
-        if (resendCount.incrementAndGet() <= 5) {
+        resendCount += 1
+        if (resendCount <= 5) {
           // The ActorRefCompressionAdvertisement message is resent because it can be lost
           log.debug(
             "Advertisment in progress for originUid [{}] version {}, resending",

@@ -193,8 +193,8 @@ private[remote] class Association(
 
   private def clearInboundCompression(originUid: Long): Unit =
     transport.inboundCompressionAccess match {
-      case OptionVal.Some(access) ⇒ access.closeCompressionFor(originUid) // TODO returned Future is ignored here
-      case _                      ⇒ // do nothing, 
+      case OptionVal.Some(access) ⇒ access.closeCompressionFor(originUid)
+      case _                      ⇒ // do nothing
     }
 
   private def timeoutAfter[T](f: Future[T], timeout: FiniteDuration, e: ⇒ Throwable): Future[T] = {

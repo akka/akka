@@ -8,7 +8,7 @@ import akka.Done
 import akka.NotUsed
 import akka.remote._
 import akka.remote.artery.compress._
-import akka.serialization.{BaseSerializer, ByteBufferSerializer, SerializationExtension}
+import akka.serialization.{ BaseSerializer, ByteBufferSerializer, SerializationExtension }
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl._
@@ -141,9 +141,10 @@ class CodecBenchmark {
       Flow.fromGraph(new Encoder(uniqueLocalAddress, system.asInstanceOf[ExtendedActorSystem], outboundEnvelopePool, envelopePool, false))
     val encoderInput: Flow[String, OutboundEnvelope, NotUsed] =
       Flow[String].map(msg ⇒ outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
+    val compressions = new InboundCompressionsImpl(system, inboundContext, inboundContext.settings.Advanced.Compression)
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
       Flow.fromGraph(new Decoder(inboundContext, system.asInstanceOf[ExtendedActorSystem],
-        uniqueLocalAddress, ArterySettings(ConfigFactory.load().getConfig("akka.remote.artery")), envelopePool, inboundEnvelopePool))
+        uniqueLocalAddress, inboundContext.settings, envelopePool, compressions, inboundEnvelopePool))
     val deserializer: Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
       Flow.fromGraph(new Deserializer(inboundContext, system.asInstanceOf[ExtendedActorSystem], envelopePool))
     val decoderInput: Flow[String, EnvelopeBuffer, NotUsed] = Flow[String]
