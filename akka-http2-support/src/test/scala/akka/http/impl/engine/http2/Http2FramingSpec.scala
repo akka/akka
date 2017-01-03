@@ -270,8 +270,26 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
           xxxxxxxx
           xxxxxxxx
           xxxxxxxx=100 # stream dependency
-          xxxxxxxx=55  # weight
-         """ should parseTo(PriorityFrame(0x23, exclusiveFlag = true, streamDependency = 0x100, weight = 0x55), checkRendering = false)
+          xxxxxxxx=fa  # weight
+         """ should parseTo(PriorityFrame(0x23, exclusiveFlag = true, streamDependency = 0x100, weight = 0xfa))
+    }
+    "PRIORITY_FRAME2" in {
+      b"""xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=5   # length
+          00000010     # type = 0x2 = PRIORITY
+          00000000     # no flags
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=dead  # stream ID = dead
+          0              # E flag not set
+           xxxxxxx
+          xxxxxxxx
+          xxxxxxxx
+          xxxxxxxx=beef # stream dependency
+          xxxxxxxx=15   # weight
+         """ should parseTo(PriorityFrame(0xdead, exclusiveFlag = false, streamDependency = 0xbeef, weight = 0x15))
     }
     "WINDOW_UPDATE" in {
       b"""xxxxxxxx

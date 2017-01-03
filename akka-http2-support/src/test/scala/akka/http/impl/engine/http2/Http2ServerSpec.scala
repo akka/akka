@@ -250,6 +250,13 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         entityDataOut.sendComplete()
         expectDATA(TheStreamId, endStream = true, ByteString.empty)
       }
+
+      "parse priority frames" in new WaitingForResponseDataSetup {
+        sendPRIORITY(TheStreamId, true, 0, 5)
+        entityDataOut.sendComplete()
+        expectDATA(TheStreamId, endStream = true, ByteString.empty)
+      }
+
       "cancel entity data source when peer sends RST_STREAM" in new WaitingForResponseDataSetup {
         val data1 = ByteString("abcd")
         entityDataOut.sendNext(data1)
@@ -611,6 +618,9 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment)))
     def sendCONTINUATION(streamId: Int, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(ContinuationFrame(streamId, endHeaders, headerBlockFragment)))
+
+    def sendPRIORITY(streamId: Int,  exclusiveFlag: Boolean, streamDependency: Int, weight: Int): Unit =
+      sendBytes(FrameRenderer.render(PriorityFrame(streamId, exclusiveFlag, streamDependency, weight)))
 
     def sendRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit = {
       implicit val bigEndian = ByteOrder.BIG_ENDIAN
