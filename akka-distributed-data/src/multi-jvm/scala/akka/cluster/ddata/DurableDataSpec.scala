@@ -112,7 +112,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
       runOn(first) {
 
         val r = newReplicator()
-        within(5.seconds) {
+        within(10.seconds) {
           awaitAssert {
             r ! GetReplicaCount
             expectMsg(ReplicaCount(1))
@@ -158,7 +158,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
     join(second, first)
 
     val r = newReplicator()
-    within(5.seconds) {
+    within(10.seconds) {
       awaitAssert {
         r ! GetReplicaCount
         expectMsg(ReplicaCount(2))
@@ -247,7 +247,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         new TestKit(sys1) with ImplicitSender {
 
           val r = newReplicator(sys1)
-          within(5.seconds) {
+          within(10.seconds) {
             awaitAssert {
               r ! GetReplicaCount
               expectMsg(ReplicaCount(1))

@@ -782,15 +782,21 @@ A journal plugin can be activated with the following minimal configuration:
 
 .. includecode:: ../scala/code/docs/persistence/PersistencePluginDocSpec.scala#journal-plugin-config
 
-The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
-used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
-
 The journal plugin instance is an actor so the methods corresponding to requests from persistent actors
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
 actors to achive parallelism.
 
-The journal plugin class must have a constructor without parameters or a constructor with one ``com.typesafe.config.Config``
-parameter. The plugin section of the actor system's config will be passed in the config constructor parameter.
+The journal plugin class must have a constructor with one of these signatures:
+
+* constructor with one ``com.typesafe.config.Config`` parameter and a ``String`` parameter for the config path
+* constructor with one ``com.typesafe.config.Config`` parameter
+* constructor without parameters
+
+The plugin section of the actor system's config will be passed in the config constructor parameter. The config path
+of the plugin is passed in the ``String`` parameter.
+
+The ``plugin-dispatcher`` is the dispatcher used for the plugin actor. If not specified, it defaults to 
+``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
 Don't run journal tasks/futures on the system default dispatcher, since that might starve other tasks.
 
@@ -805,15 +811,21 @@ A snapshot store plugin can be activated with the following minimal configuratio
 
 .. includecode:: ../scala/code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-store-plugin-config
 
-The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
-used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
-
 The snapshot store instance is an actor so the methods corresponding to requests from persistent actors
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
 actors to achive parallelism.
 
-The snapshot store plugin class must have a constructor without parameters or constructor with one ``com.typesafe.config.Config``
-parameter. The plugin section of the actor system's config will be passed in the config constructor parameter.
+The snapshot store plugin class must have a constructor with one of these signatures:
+
+* constructor with one ``com.typesafe.config.Config`` parameter and a ``String`` parameter for the config path
+* constructor with one ``com.typesafe.config.Config`` parameter
+* constructor without parameters
+
+The plugin section of the actor system's config will be passed in the config constructor parameter. The config path
+of the plugin is passed in the ``String`` parameter.
+
+The ``plugin-dispatcher`` is the dispatcher used for the plugin actor. If not specified, it defaults to 
+``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
 Don't run snapshot store tasks/futures on the system default dispatcher, since that might starve other tasks.
 

@@ -16,6 +16,7 @@ import scala.concurrent.duration
 import akka.actor.Actor
 import scala.concurrent.duration.Duration
 import scala.language.existentials
+import java.io.NotSerializableException
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.
@@ -71,7 +72,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       case AtLeastOnceDeliverySnapshotClass ⇒ atLeastOnceDeliverySnapshot(mf.AtLeastOnceDeliverySnapshot.parseFrom(bytes))
       case PersistentStateChangeEventClass  ⇒ stateChange(mf.PersistentStateChangeEvent.parseFrom(bytes))
       case PersistentFSMSnapshotClass       ⇒ persistentFSMSnapshot(mf.PersistentFSMSnapshot.parseFrom(bytes))
-      case _                                ⇒ throw new IllegalArgumentException(s"Can't deserialize object of type ${c}")
+      case _                                ⇒ throw new NotSerializableException(s"Can't deserialize object of type ${c}")
     }
   }
 
