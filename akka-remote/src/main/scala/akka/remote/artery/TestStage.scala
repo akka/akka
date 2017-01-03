@@ -56,15 +56,13 @@ private[remote] class SharedTestState {
     if (state.compareAndSet(current, current.copy(failInboundStream = Some(ex)))) ()
     else failInboundStreamOnce(ex)
   }
-  def shouldFailInbound: Boolean =
-    state.get().failInboundStream.isDefined
   /**
    * Get the exception to fail the inbound stream with and immediately reset the state to not-failed.
    * This is used to simulate a single failure on the stream, where a successful restart recovers operations.
    */
-  @tailrec final def getInboundFailureOnce: Throwable = {
+  @tailrec final def getInboundFailureOnce: Option[Throwable] = {
     val current = state.get()
-    if (state.compareAndSet(current, current.copy(failInboundStream = None))) current.failInboundStream.get
+    if (state.compareAndSet(current, current.copy(failInboundStream = None))) current.failInboundStream
     else getInboundFailureOnce
   }
 
@@ -162,22 +160,23 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
 
         // InHandler
         override def onPush(): Unit = {
-          if (state.shouldFailInbound) failStage(state.getInboundFailureOnce)
-          else {
-            val env = grab(in)
-            env.association match {
-              case OptionVal.None ⇒
-                // unknown, handshake not completed
-                push(out, env)
-              case OptionVal.Some(association) ⇒
-                if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
-                  log.debug(
-                    "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
-                    Logging.messageClassName(env.message), association.remoteAddress, env.originUid)
-                  pull(in) // drop message
-                } else
+          state.getInboundFailureOnce match {
+            case Some(shouldFailEx) ⇒ failStage(shouldFailEx)
+            case _ ⇒
+              val env = grab(in)
+              env.association match {
+                case OptionVal.None ⇒
+                  // unknown, handshake not completed
                   push(out, env)
-            }
+                case OptionVal.Some(association) ⇒
+                  if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
+                    log.debug(
+                      "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
+                      Logging.messageClassName(env.message), association.remoteAddress, env.originUid)
+                    pull(in) // drop message
+                  } else
+                    push(out, env)
+              }
           }
         }
 

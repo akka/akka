@@ -23,7 +23,7 @@ import scala.reflect.ClassTag
  * This class is a hybrid data structure containing a hashmap and a heap pointing to slots in the hashmap. The capacity
  * of the hashmap is twice that of the heap to reduce clumping of entries on collisions.
  */
-private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit classTag: ClassTag[T]) {
+private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit classTag: ClassTag[T]) { self ⇒
 
   require((max & (max - 1)) == 0, "Maximum numbers of heavy hitters should be in form of 2^k for any natural k")
 
@@ -96,32 +96,29 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
    *    we just swap heap entries around here, so no entry will be evicted.
    */
 
-  // TODO: Workaround for races. This location gets a snapshot automatically after certain amount of changes
-  // in this table. This is a workaround until we make this threadsafe by moving InboundCompression to the Codec
-  // to fully own it.
-  private[this] val lastSnapshot: AtomicReference[Array[T]] = new AtomicReference[Array[T]](Array.empty)
-
-  // TODO think if we could get away without copy
   /**
-   * Returns the current heavy hitters, order is not of significance.
-   * May contain gaps (null entries).
+   * Iterates over the current heavy hitters, order is not of significance.
+   * Not thread safe, accesses internal heap directly (to avoid copying of data). Access must be synchronised externally.
    */
-  // TODO: Workaround for races until we make this threadsafe by moving InboundCompression to the Codec to fully own it.
-  def snapshot: Array[T] = lastSnapshot.get()
+  def iterator: Iterator[T] =
+    new Iterator[T] {
+      var i = 0
 
-  private def takeSnapshot(): Unit = {
-    val snap = Array.ofDim(max).asInstanceOf[Array[T]]
-    var i = 0
-    while (i < max) {
-      val index = heap(i)
-      val value =
-        if (index < 0) null
-        else items(index)
-      snap(i) = value
-      i += 1
+      @tailrec override final def hasNext: Boolean =
+        (i < self.max) && ((value != null) || { next(); hasNext })
+
+      override final def next(): T = {
+        val v = value
+        i += 1
+        v
+      }
+
+      @inline private final def index: Int = heap(i)
+      @inline private final def value: T = {
+        val idx = index
+        if (idx < 0) null else items(idx)
+      }
     }
-    lastSnapshot.set(snap)
-  }
 
   def toDebugString =
     s"""TopHeavyHitters(
@@ -331,7 +328,6 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
     heap(0) = hashTableIndex
     heapIndex(hashTableIndex) = 0
     fixHeap(0)
-    takeSnapshot()
   }
 
   /**

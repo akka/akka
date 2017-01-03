@@ -398,8 +398,13 @@ private[remote] abstract class InboundCompression[T >: Null](
   protected def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[T]): Unit
 
   private def prepareCompressionAdvertisement(nextTableVersion: Byte): CompressionTable[T] = {
-    // TODO surely we can do better than that, optimise
-    CompressionTable(originUid, nextTableVersion, Map(heavyHitters.snapshot.filterNot(_ == null).zipWithIndex: _*))
+    // TODO optimised somewhat, check if still to heavy; could be encoded into simple array
+    val mappings: Map[T, Int] = {
+      val mb = Map.newBuilder[T, Int]
+      mb ++= heavyHitters.iterator.zipWithIndex
+      mb.result()
+    }
+    CompressionTable(originUid, nextTableVersion, mappings)
   }
 
   override def toString =

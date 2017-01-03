@@ -22,9 +22,6 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.util.Try
 import scala.util.control.NoStackTrace
 
-/**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
- */
 object SurviveInboundStreamRestartWithCompressionInFlightSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
@@ -93,8 +90,6 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends Re
       info("receivers-started")
       enterBarrier("receivers-started")
 
-      Thread.sleep(1000)
-
       // we'll be sending to first from second, but easier to obtain the refs up-front like this
       system.actorSelection(node(first) / "user" / "receiver-a") ! Identify("a")
       val sendToA = expectMsgType[ActorIdentity].ref.get
@@ -124,13 +119,12 @@ abstract class SurviveInboundStreamRestartWithCompressionInFlightSpec extends Re
       enterBarrier("inbound-failure-restart-first")
 
       // we poke the remote system, awaiting its inbound stream recovery, when it should reply
-      awaitCond(
+      awaitAssert(
         {
           sendToB ! "alive-again"
-          Try(expectMsg(s"${sendToB.path.name}-alive-again")).map(_ ⇒ true).getOrElse(false)
+          expectMsg(300.millis, s"${sendToB.path.name}-alive-again")
         },
-        max = 5.seconds, interval = 500.millis,
-        message = "Poking remote system awaiting for its inbound stream to restart/recover.")
+        max = 5.seconds, interval = 500.millis)
 
       runOn(second) {
         // we continue sending messages using the "old table".

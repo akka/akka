@@ -309,28 +309,27 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var aeronErrorLogTask: Cancellable = _
   @volatile private[this] var areonErrorLog: AeronErrorLog = _
 
-  // Compression 
+  override val log: LoggingAdapter = Logging(system, getClass.getName)
+
+  val (afrFileChannel, afrFile, flightRecorder) = initializeFlightRecorder() match {
+    case None            ⇒ (None, None, None)
+    case Some((c, f, r)) ⇒ (Some(c), Some(f), Some(r))
+  }
+
   /**
    * Compression tables must be created once, such that inbound lane restarts don't cause dropping of the tables.
    * However are the InboundCompressions are owned by the Decoder stage, and any call into them must be looped through the Decoder!
    *
    * Use `inboundCompressionAccess` (provided by the materialized `Decoder`) to call into the compression infrastructure.
    */
-  private[this] val _inboundCompressions = new AtomicReference[InboundCompressions] // atomic since restarts come from Futures
-  @tailrec private final def initInboundCompressions: InboundCompressions = _inboundCompressions.get() match {
-    case null ⇒
-      // first time initializing
-      val c =
-        if (settings.Advanced.Compression.Enabled) {
-          val eventSink = createFlightRecorderEventSink(false)
-          new InboundCompressionsImpl(system, this, settings.Advanced.Compression, eventSink)
-        } else NoInboundCompressions
-
-      if (_inboundCompressions.compareAndSet(null, c)) c
-      else initInboundCompressions // other thread initialized first, retry
-
-    case c ⇒ c
+  private[this] val _inboundCompressions = {
+    if (settings.Advanced.Compression.Enabled) {
+      println(s"settings.Advanced.Compression.Enabled = ${settings.Advanced.Compression.Enabled}")
+      val eventSink = createFlightRecorderEventSink(synchr = false)
+      new InboundCompressionsImpl(system, this, settings.Advanced.Compression, eventSink)
+    } else NoInboundCompressions
   }
+
   @volatile private[this] var _inboundCompressionAccess: OptionVal[InboundCompressionAccess] = OptionVal.None
   /** Only access compression tables via the CompressionAccess */
   def inboundCompressionAccess: OptionVal[InboundCompressionAccess] = _inboundCompressionAccess
@@ -340,7 +339,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def defaultAddress: Address = localAddress.address
   override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
-  override val log: LoggingAdapter = Logging(system, getClass.getName)
 
   private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
 
@@ -385,10 +383,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity =
     settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
-  val (afrFileChannel, afrFile, flightRecorder) = initializeFlightRecorder() match {
-    case None            ⇒ (None, None, None)
-    case Some((c, f, r)) ⇒ (Some(c), Some(f), Some(r))
-  }
+  private val topLevelFREvents =
+    createFlightRecorderEventSink(synchr = true)
 
   def createFlightRecorderEventSink(synchr: Boolean = false): EventSink = {
     flightRecorder match {
@@ -400,9 +396,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         IgnoreEventSink
     }
   }
-
-  private val topLevelFREvents =
-    createFlightRecorderEventSink(synchr = true)
 
   private val associationRegistry = new AssociationRegistry(
     remoteAddress ⇒ new Association(
@@ -721,7 +714,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     val (resourceLife, inboundCompressionAccesses, completed) =
       if (inboundLanes == 1) {
         aeronSource(ordinaryStreamId, envelopeBufferPool)
-          .viaMat(inboundFlow(settings, initInboundCompressions))(Keep.both)
+          .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
           .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) ⇒ (a, b, c) })
           .run()(materializer)
 
@@ -730,8 +723,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
         val source: Source[(OptionVal[InternalActorRef], InboundEnvelope), (ResourceLifecycle, InboundCompressionAccess)] =
           aeronSource(ordinaryStreamId, envelopeBufferPool)
             .via(hubKillSwitch.flow)
-            .viaMat(inboundFlow(settings, initInboundCompressions))(Keep.both)
+            .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
             .map(env ⇒ (env.recipient, env))
+
         val (resourceLife, compressionAccess, broadcastHub) =
           source
             .toMat(BroadcastHub.sink(bufferSize = settings.Advanced.InboundBroadcastHubBufferSize))({ case ((a, b), c) ⇒ (a, b, c) })
