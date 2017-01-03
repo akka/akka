@@ -12,9 +12,7 @@ import akka.actor.ActorSystem;
 import akka.persistence.journal.WriteEventAdapter;
 import akka.persistence.journal.Tagged;
 import akka.persistence.query.EventEnvelope;
-import akka.persistence.query.EventEnvelope2;
 import akka.persistence.query.Sequence;
-import akka.persistence.query.javadsl.*;
 import akka.persistence.query.PersistenceQuery;
 import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
 import akka.stream.ActorMaterializer;
@@ -51,7 +49,7 @@ public class LeveldbPersistenceQueryDocTest {
         PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, 
             LeveldbReadJournal.Identifier());
     
-    Source<String, NotUsed> source = queries.allPersistenceIds();
+    Source<String, NotUsed> source = queries.persistenceIds();
     //#AllPersistenceIds
   }
   
@@ -61,7 +59,7 @@ public class LeveldbPersistenceQueryDocTest {
         PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, 
             LeveldbReadJournal.Identifier());
     
-    Source<EventEnvelope2, NotUsed> source =
+    Source<EventEnvelope, NotUsed> source =
         queries.eventsByTag("green", new Sequence(0L));
     //#EventsByTag
   }

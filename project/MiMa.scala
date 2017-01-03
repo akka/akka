@@ -9,6 +9,8 @@ import sbt.Keys._
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
+import scala.util.Try
+
 object MiMa extends AutoPlugin {
 
   override def requires = MimaPlugin
@@ -20,7 +22,7 @@ object MiMa extends AutoPlugin {
   )
 
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
-    val versions = {
+    val versions: Seq[String] = {
       def latestMinorVersionOf(major: String) = mimaIgnoredProblems.keys
         .map(_.stripPrefix(major))
         .map(minor => scala.util.Try(minor.toInt))
@@ -30,6 +32,7 @@ object MiMa extends AutoPlugin {
         .max
 
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
+      val akka25Versions = Seq.empty[String] // FIXME enable once 2.5.0 is out (0 to latestMinorVersionOf("2.5.")).map(patch => s"2.5.$patch")
       val akka24StreamVersions = (2 to 12) map ("2.4." + _)
       val akka24WithScala212 = (13 to latestMinorVersionOf("2.4.")) map ("2.4." + _)
       val akka242NewArtifacts = Seq(
@@ -38,9 +41,20 @@ object MiMa extends AutoPlugin {
         "akka-http-testkit",
         "akka-stream-testkit"
       )
+      val akka250NewArtifacts = Seq(
+        "akka-persistence-query"
+      )
+
       scalaBinaryVersion match {
-        case "2.11" => (if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions else Seq.empty) ++ akka24StreamVersions ++ akka24WithScala212
-        case "2.12" => akka24WithScala212
+        case "2.11" =>
+          if (akka250NewArtifacts.contains(projectName)) akka25Versions
+          else {
+            if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions
+            else Seq.empty
+          } ++ akka24StreamVersions ++ akka24WithScala212
+          
+        case "2.12" => 
+          akka24WithScala212
       }
     }
 
@@ -64,7 +78,7 @@ object MiMa extends AutoPlugin {
     }
   }
 
-  val mimaIgnoredProblems = {
+  def mimaIgnoredProblems = {
     import com.typesafe.tools.mima.core._
 
     val bcIssuesBetween24and25 = Seq(

@@ -22,7 +22,6 @@ prior deprecation.
    ../dev/multi-node-testing
    ../java/lambda-actors
    ../java/lambda-fsm
-   ../java/persistence-query
 
 Another reason for marking a module as experimental is that it's too early
 to tell if the module has a maintainer that can take the responsibility
