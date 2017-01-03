@@ -6,9 +6,12 @@ package akka.actor
 import language.postfixOps
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.{ ExecutionContext, Await, Future }
+
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
-import java.util.concurrent.{ RejectedExecutionException, ConcurrentLinkedQueue }
+import java.util.concurrent.{ ConcurrentLinkedQueue, RejectedExecutionException }
+
+import akka.actor.setup.ActorSystemSetup
 import akka.util.Timeout
 import akka.japi.Util.immutableSeq
 import akka.pattern.ask
@@ -353,7 +356,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
     "not allow top-level actor creation with custom guardian" in {
       val sys = new ActorSystemImpl("custom", ConfigFactory.defaultReference(),
-        getClass.getClassLoader, None, Some(Props.empty))
+        getClass.getClassLoader, None, Some(Props.empty), ActorSystemSetup.empty)
       sys.start()
       try {
         intercept[UnsupportedOperationException] {

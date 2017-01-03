@@ -21,6 +21,7 @@ import akka.protobuf.ByteString
 import akka.util.ByteString.UTF_8
 import scala.collection.immutable.TreeMap
 import akka.cluster.UniqueAddress
+import java.io.NotSerializableException
 
 /**
  * Protobuf serializer of ReplicatedData.
@@ -126,7 +127,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     fromBinaryMap.get(manifest) match {
       case Some(f) ⇒ f(bytes)
-      case None ⇒ throw new IllegalArgumentException(
+      case None ⇒ throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
 

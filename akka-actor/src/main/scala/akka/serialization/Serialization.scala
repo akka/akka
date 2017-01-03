@@ -254,19 +254,39 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     }
 
   /**
+   * Programmatically defined serializers
+   */
+  private val serializerDetails =
+    system.settings.setup.get[SerializationSetup] match {
+      case None          ⇒ Vector.empty
+      case Some(setting) ⇒ setting.createSerializers(system)
+    }
+
+  /**
    * A Map of serializer from alias to implementation (class implementing akka.serialization.Serializer)
    * By default always contains the following mapping: "java" -> akka.serialization.JavaSerializer
    */
-  private val serializers: Map[String, Serializer] =
-    for ((k: String, v: String) ← settings.Serializers) yield k → serializerOf(v).get
+  private val serializers: Map[String, Serializer] = {
+    val fromConfig = for ((k: String, v: String) ← settings.Serializers) yield k → serializerOf(v).get
+    fromConfig ++ serializerDetails.map(d ⇒ d.alias → d.serializer)
+  }
 
   /**
    *  bindings is a Seq of tuple representing the mapping from Class to Serializer.
    *  It is primarily ordered by the most specific classes first, and secondly in the configured order.
    */
-  private[akka] val bindings: immutable.Seq[ClassSerializer] =
-    sort(for ((k: String, v: String) ← settings.SerializationBindings if v != "none" && checkGoogleProtobuf(k))
-      yield (system.dynamicAccess.getClassFor[Any](k).get, serializers(v))).to[immutable.Seq]
+  private[akka] val bindings: immutable.Seq[ClassSerializer] = {
+    val fromConfig = for {
+      (className: String, alias: String) ← settings.SerializationBindings
+      if alias != "none" && checkGoogleProtobuf(className)
+    } yield (system.dynamicAccess.getClassFor[Any](className).get, serializers(alias))
+
+    val fromSettings = serializerDetails.flatMap { detail ⇒
+      detail.useFor.map(clazz ⇒ clazz → detail.serializer)
+    }
+
+    sort(fromConfig ++ fromSettings)
+  }
 
   // com.google.protobuf serialization binding is only used if the class can be loaded,
   // i.e. com.google.protobuf dependency has been added in the application project.

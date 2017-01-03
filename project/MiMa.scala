@@ -132,7 +132,24 @@ object MiMa extends AutoPlugin {
       // object akka.stream.stage.StatefulStage#Stay does not have a correspondent in current version
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Stay$"),
       // object akka.stream.stage.StatefulStage#Finish does not have a correspondent in current version
-      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$")
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$"),
+
+      // #21423 removal of deprecated `PersistentView` (in 2.5.x)
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$ScheduledUpdate"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.AbstractPersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.UntypedPersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$ScheduledUpdate$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$State"),
+
+      // #22015 removal of deprecated AESCounterSecureInetRNGs
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES128CounterInetRNG"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES256CounterInetRNG"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator$")
     )
 
     Map(
@@ -647,9 +664,8 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.snapshot.local.LocalSnapshotStore.this"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.configPath"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.configPath"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.this"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.SharedLeveldbStore.configPath"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.SharedLeveldbStore.this"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.prepareConfig"),
 
         // #20737 aligned test sink and test source stage factory methods types
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.TestSinkStage.apply"),
@@ -661,10 +677,14 @@ object MiMa extends AutoPlugin {
         // https://github.com/akka/akka/pull/21688
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo"),
-        
+
         // https://github.com/akka/akka/pull/21989 - add more information in tcp connection shutdown logs (add mapError)
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.mapError")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.mapError"),
+
+        // #21894 Programmatic configuration of the ActorSystem
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")
       ) ++ bcIssuesBetween24and25)
+      // Entries should be added to a section keyed with the latest released version before the change
     )
   }
 }

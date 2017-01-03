@@ -27,6 +27,7 @@ import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 import akka.cluster.ddata.DurableStore.DurableDataEnvelope
 import akka.cluster.ddata.DurableStore.DurableDataEnvelope
+import java.io.NotSerializableException
 
 /**
  * INTERNAL API
@@ -235,7 +236,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     fromBinaryMap.get(manifest) match {
       case Some(f) ⇒ f(bytes)
-      case None ⇒ throw new IllegalArgumentException(
+      case None ⇒ throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
 

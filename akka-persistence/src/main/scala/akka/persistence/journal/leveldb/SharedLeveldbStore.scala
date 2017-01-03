@@ -18,9 +18,15 @@ import scala.concurrent.Future
  * set for each actor system that uses the store via `SharedLeveldbJournal.setStore`. The
  * shared LevelDB store is for testing only.
  */
-class SharedLeveldbStore(cfg: Config) extends { override val config = cfg.getConfig("store") } with LeveldbStore {
+class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
   import AsyncWriteTarget._
   import context.dispatcher
+
+  def this() = this(LeveldbStore.emptyConfig)
+
+  override def prepareConfig: Config =
+    if (cfg ne LeveldbStore.emptyConfig) cfg.getConfig("store")
+    else context.system.settings.config.getConfig("akka.persistence.journal.leveldb-shared.store")
 
   def receive = {
     case WriteMessages(messages) ⇒

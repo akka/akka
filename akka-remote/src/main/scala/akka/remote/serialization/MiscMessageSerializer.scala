@@ -8,6 +8,7 @@ import akka.protobuf.ByteString
 import akka.remote.{ ContainerFormats, RemoteWatcher }
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
 import java.util.Optional
+import java.io.NotSerializableException
 
 class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
 
@@ -152,7 +153,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     fromBinaryMap.get(manifest) match {
       case Some(deserializer) ⇒ deserializer(bytes)
-      case None ⇒ throw new IllegalArgumentException(
+      case None ⇒ throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
 

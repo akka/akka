@@ -20,8 +20,14 @@ import com.typesafe.config.Config
  *
  * Journal backed by a local LevelDB store. For production use.
  */
-private[persistence] class LeveldbJournal(val config: Config) extends AsyncWriteJournal with LeveldbStore {
+private[persistence] class LeveldbJournal(cfg: Config) extends AsyncWriteJournal with LeveldbStore {
   import LeveldbJournal._
+
+  def this() = this(LeveldbStore.emptyConfig)
+
+  override def prepareConfig: Config =
+    if (cfg ne LeveldbStore.emptyConfig) cfg
+    else context.system.settings.config.getConfig("akka.persistence.journal.leveldb")
 
   override def receivePluginInternal: Receive = {
     case r @ ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) ⇒
