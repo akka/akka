@@ -664,7 +664,7 @@ object MiMa extends AutoPlugin {
         // #21894 Programmatic configuration of the ActorSystem
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")
       ) ++ bcIssuesBetween24and25),
-      "2.4.15" -> Seq(
+      "2.4.16" -> Seq(
         // #20140 durable distributed data
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#ReplicationDeleteFailure.apply"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#DeleteSuccess.apply"),

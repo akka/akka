@@ -120,3 +120,13 @@ See documentation of `akka/akka-cluster-management <https://github.com/akka/akka
 
 The command line script for cluster management has been deprecated and is scheduled for removal 
 in the next major version. Use the HTTP API with `curl <https://curl.haxx.se/>`_ or similar instead.
+
+
+Distributed Data
+================
+
+Replicator Subscribers API changed
+----------------------------------
+
+When an entity is removed subscribers will not receive ``Replicator.DataDeleted`` any more.
+They will receive ``Replicator.Deleted`` instead.
