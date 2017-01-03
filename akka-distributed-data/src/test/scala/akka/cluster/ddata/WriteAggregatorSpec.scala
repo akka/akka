@@ -137,6 +137,8 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
     "calculate majority with minCap" in {
       val minCap = 5
 
+      import ReadWriteAggregator._
+
       calculateMajorityWithMinCap(minCap, 3) should be (3)
       calculateMajorityWithMinCap(minCap, 4) should be (4)
       calculateMajorityWithMinCap(minCap, 5) should be (5)
