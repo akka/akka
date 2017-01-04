@@ -111,7 +111,9 @@ object Behavior {
   @SerialVersionUID(1L)
   private[akka] object stoppedBehavior extends Behavior[Nothing] {
     override def management(ctx: ActorContext[Nothing], msg: Signal): Behavior[Nothing] = {
-      assert(msg == PostStop, s"stoppedBehavior received $msg (only PostStop is expected)")
+      assert(
+        msg == PostStop || msg.isInstanceOf[Terminated],
+        s"stoppedBehavior received $msg (only PostStop or Terminated expected)")
       this
     }
     override def message(ctx: ActorContext[Nothing], msg: Nothing): Behavior[Nothing] = throw new UnsupportedOperationException("Not Implemented")

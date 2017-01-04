@@ -144,12 +144,13 @@ private[typed] class ActorCell[T](
   override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Cancellable =
     system.scheduler.scheduleOnce(delay)(target ! msg)(ExecutionContexts.sameThreadExecutionContext)
 
-  override def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = {
-    val name = Helpers.base64(nextName, new java.lang.StringBuilder("$!"))
+  override def spawnAdapter[U](f: U ⇒ T, _name: String = ""): ActorRef[U] = {
+    val baseName = Helpers.base64(nextName, new java.lang.StringBuilder("$!"))
     nextName += 1
+    val name = if (_name != "") s"$baseName-${_name}" else baseName
     val ref = new FunctionRef[U](
       self.path / name,
-      (msg, _) ⇒ send(f(msg)),
+      (msg, _) ⇒ { val m = f(msg); if (m != null) send(m) },
       (self) ⇒ sendSystem(DeathWatchNotification(self, null)))
     childrenMap = childrenMap.updated(name, ref)
     ref

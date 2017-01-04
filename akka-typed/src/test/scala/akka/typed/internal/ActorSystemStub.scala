@@ -54,6 +54,9 @@ private[typed] class ActorSystemStub(val name: String)
 
   override def printTree: String = "no tree for ActorSystemStub"
 
+  val receptionistInbox = Inbox[patterns.Receptionist.Command]("receptionist")
+  override def receptionist: ActorRef[patterns.Receptionist.Command] = receptionistInbox.ref
+
   def systemActorOf[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig)(implicit timeout: Timeout): Future[ActorRef[U]] = {
     Future.failed(new UnsupportedOperationException("ActorSystemStub cannot create system actors"))
   }

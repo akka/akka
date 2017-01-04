@@ -18,6 +18,7 @@ import scala.concurrent.Future
  * (i.e. this delivery is not reliable).
  */
 abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[ActorRef[Nothing]] { this: internal.ActorRefImpl[T] ⇒
+
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
    * messaging semantics.

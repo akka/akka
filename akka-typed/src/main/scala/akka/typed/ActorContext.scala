@@ -124,7 +124,7 @@ trait ActorContext[T] {
    * protocols can be ingested by this Actor. You are strongly advised to cache
    * these ActorRefs or to stop them when no longer needed.
    */
-  def spawnAdapter[U](f: U ⇒ T): ActorRef[U]
+  def spawnAdapter[U](f: U ⇒ T, name: String = ""): ActorRef[U]
 }
 
 /**
@@ -139,8 +139,8 @@ class StubbedActorContext[T](
   override val mailboxCapacity: Int,
   override val system:          ActorSystem[Nothing]) extends ActorContext[T] {
 
-  val inbox = Inbox[T](name)
-  override val self = inbox.ref
+  val selfInbox = Inbox[T](name)
+  override val self = selfInbox.ref
 
   private var _children = TreeMap.empty[String, Inbox[_]]
   private val childName = Iterator from 1 map (Helpers.base64(_))
@@ -172,37 +172,48 @@ class StubbedActorContext[T](
       case Some(inbox) ⇒ inbox.ref == child
     }
   }
-  def watch[U](other: ActorRef[U]): ActorRef[U] = other
-  def watch(other: akka.actor.ActorRef): other.type = other
-  def unwatch[U](other: ActorRef[U]): ActorRef[U] = other
-  def unwatch(other: akka.actor.ActorRef): other.type = other
-  def setReceiveTimeout(d: FiniteDuration, msg: T): Unit = ()
-  def cancelReceiveTimeout(): Unit = ()
+  override def watch[U](other: ActorRef[U]): ActorRef[U] = other
+  override def unwatch[U](other: ActorRef[U]): ActorRef[U] = other
+  override def setReceiveTimeout(d: FiniteDuration, msg: T): Unit = ()
+  override def cancelReceiveTimeout(): Unit = ()
 
-  def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): untyped.Cancellable = new untyped.Cancellable {
-    def cancel() = false
-    def isCancelled = true
+  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): untyped.Cancellable = new untyped.Cancellable {
+    override def cancel() = false
+    override def isCancelled = true
   }
 
-  def executionContext: ExecutionContextExecutor = system.executionContext
+  override def executionContext: ExecutionContextExecutor = system.executionContext
 
-  def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = spawnAnonymous[Any](Behavior.emptyBehavior)
+  override def spawnAdapter[U](f: U ⇒ T, name: String = ""): ActorRef[U] = {
+    val n = if (name != "") s"${childName.next()}-$name" else childName.next()
+    val i = Inbox[U](n)
+    _children += i.ref.path.name → i
+    new internal.FunctionRef[U](
+      self.path / i.ref.path.name,
+      (msg, _) ⇒ { val m = f(msg); if (m != null) { selfInbox.ref ! m; i.ref ! msg } },
+      (self) ⇒ selfInbox.ref.sorry.sendSystem(internal.DeathWatchNotification(self, null)))
+  }
 
   /**
-   * Retrieve the named inbox. The passed ActorRef must be one that was returned
+   * Retrieve the inbox representing the given child actor. The passed ActorRef must be one that was returned
    * by one of the spawn methods earlier.
    */
-  def getInbox[U](child: ActorRef[U]): Inbox[U] = {
+  def childInbox[U](child: ActorRef[U]): Inbox[U] = {
     val inbox = _children(child.path.name).asInstanceOf[Inbox[U]]
     if (inbox.ref != child) throw new IllegalArgumentException(s"$child is not a child of $this")
     inbox
   }
 
   /**
+   * Retrieve the inbox representing the child actor with the given name.
+   */
+  def childInbox[U](name: String): Inbox[U] = _children(name).asInstanceOf[Inbox[U]]
+
+  /**
    * Remove the given inbox from the list of children, for example after
    * having simulated its termination.
    */
-  def removeInbox(child: ActorRef[Nothing]): Unit = _children -= child.path.name
+  def removeChildInbox(child: ActorRef[Nothing]): Unit = _children -= child.path.name
 
   override def toString: String = s"Inbox($self)"
 }
