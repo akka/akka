@@ -24,6 +24,7 @@ import akka.cluster.UniqueAddress
 import akka.remote.RARP
 import com.typesafe.config.ConfigFactory
 import akka.cluster.ddata.DurableStore.DurableDataEnvelope
+import akka.cluster.ddata.GCounter
 
 class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
   "ReplicatorMessageSerializerSpec",
@@ -58,6 +59,8 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
     "serialize Replicator messages" in {
       val ref1 = system.actorOf(Props.empty, "ref1")
       val data1 = GSet.empty[String] + "a"
+      val delta1 = GCounter.empty.increment(address1, 17).increment(address2, 2)
+      val delta2 = delta1.increment(address2, 1)
 
       checkSerialization(Get(keyA, ReadLocal))
       checkSerialization(Get(keyA, ReadMajority(2.seconds), Some("x")))
@@ -84,6 +87,9 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(Gossip(Map(
         "A" → DataEnvelope(data1),
         "B" → DataEnvelope(GSet() + "b" + "c")), sendBack = true))
+      checkSerialization(DeltaPropagation(Map(
+        "A" → DataEnvelope(delta1),
+        "B" → DataEnvelope(delta2))))
       checkSerialization(new DurableDataEnvelope(data1))
       checkSerialization(new DurableDataEnvelope(DataEnvelope(data1, pruning = Map(
         address1 → PruningPerformed(System.currentTimeMillis()),

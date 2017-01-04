@@ -174,6 +174,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   val GossipManifest = "N"
   val WriteNackManifest = "O"
   val DurableDataEnvelopeManifest = "P"
+  val DeltaPropagationManifest = "Q"
 
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
     GetManifest → getFromBinary,
@@ -190,6 +191,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     ReadResultManifest → readResultFromBinary,
     StatusManifest → statusFromBinary,
     GossipManifest → gossipFromBinary,
+    DeltaPropagationManifest → deltaPropagationFromBinary,
     WriteNackManifest → (_ ⇒ WriteNack),
     DurableDataEnvelopeManifest → durableDataEnvelopeFromBinary)
 
@@ -199,6 +201,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     case WriteAck               ⇒ WriteAckManifest
     case _: Read                ⇒ ReadManifest
     case _: ReadResult          ⇒ ReadResultManifest
+    case _: DeltaPropagation    ⇒ DeltaPropagationManifest
     case _: Status              ⇒ StatusManifest
     case _: Get[_]              ⇒ GetManifest
     case _: GetSuccess[_]       ⇒ GetSuccessManifest
@@ -221,6 +224,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     case m: Read                ⇒ readCache.getOrAdd(m)
     case m: ReadResult          ⇒ readResultToProto(m).toByteArray
     case m: Status              ⇒ statusToProto(m).toByteArray
+    case m: DeltaPropagation    ⇒ deltaPropagationToProto(m).toByteArray
     case m: Get[_]              ⇒ getToProto(m).toByteArray
     case m: GetSuccess[_]       ⇒ getSuccessToProto(m).toByteArray
     case m: DurableDataEnvelope ⇒ durableDataEnvelopeToProto(m).toByteArray
@@ -279,6 +283,24 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       gossip.getEntriesList.asScala.map(e ⇒
         e.getKey → dataEnvelopeFromProto(e.getEnvelope))(breakOut),
       sendBack = gossip.getSendBack)
+  }
+
+  private def deltaPropagationToProto(deltaPropagation: DeltaPropagation): dm.DeltaPropagation = {
+    val b = dm.DeltaPropagation.newBuilder()
+    val entries = deltaPropagation.deltas.foreach {
+      case (key, data) ⇒
+        b.addEntries(dm.DeltaPropagation.Entry.newBuilder().
+          setKey(key).
+          setEnvelope(dataEnvelopeToProto(data)))
+    }
+    b.build()
+  }
+
+  private def deltaPropagationFromBinary(bytes: Array[Byte]): DeltaPropagation = {
+    val deltaPropagation = dm.DeltaPropagation.parseFrom(bytes)
+    DeltaPropagation(
+      deltaPropagation.getEntriesList.asScala.map(e ⇒
+        e.getKey → dataEnvelopeFromProto(e.getEnvelope))(breakOut))
   }
 
   private def getToProto(get: Get[_]): dm.Get = {

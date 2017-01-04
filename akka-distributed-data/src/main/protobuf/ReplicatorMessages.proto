@@ -96,6 +96,15 @@ message Gossip {
   repeated Entry entries = 2;
 }
 
+message DeltaPropagation {
+  message Entry {
+    required string key = 1;
+    required DataEnvelope envelope = 2;
+  }
+  
+  repeated Entry entries = 1;
+}
+
 message UniqueAddress {
   required Address address = 1;
   required sfixed32 uid = 2;

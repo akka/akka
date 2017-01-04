@@ -11,9 +11,9 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
 class GCounterSpec extends WordSpec with Matchers {
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
-  val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
+  val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
 
   "A GCounter" must {
 
@@ -25,10 +25,14 @@ class GCounterSpec extends WordSpec with Matchers {
 
       val c4 = c3 increment node2
       val c5 = c4 increment node2
-      val c6 = c5 increment node2
+      val c6 = c5.resetDelta increment node2
 
       c6.state(node1) should be(2)
       c6.state(node2) should be(3)
+
+      c2.delta.state(node1) should be(1)
+      c3.delta.state(node1) should be(2)
+      c6.delta.state(node2) should be(3)
     }
 
     "be able to increment each node's record by arbitrary delta" in {
@@ -74,7 +78,7 @@ class GCounterSpec extends WordSpec with Matchers {
       c16.state(node2) should be(10)
       c16.value should be(17)
 
-      // counter 1
+      // counter 2
       val c21 = GCounter()
       val c22 = c21 increment (node1, 2)
       val c23 = c22 increment (node1, 2)
@@ -91,11 +95,13 @@ class GCounterSpec extends WordSpec with Matchers {
       merged1.state(node1) should be(7)
       merged1.state(node2) should be(10)
       merged1.value should be(17)
+      merged1.delta should be(GCounter.empty)
 
       val merged2 = c26 merge c16
       merged2.state(node1) should be(7)
       merged2.state(node2) should be(10)
       merged2.value should be(17)
+      merged2.delta should be(GCounter.empty)
     }
 
     "be able to have its history correctly merged with another GCounter 2" in {

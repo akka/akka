@@ -39,8 +39,9 @@ object GCounter {
  */
 @SerialVersionUID(1L)
 final class GCounter private[akka] (
-  private[akka] val state: Map[UniqueAddress, BigInt] = Map.empty)
-  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
+  private[akka] val state:  Map[UniqueAddress, BigInt] = Map.empty,
+  private[akka] val _delta: Option[GCounter]           = None)
+  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
 
   import GCounter.Zero
 
@@ -57,17 +58,17 @@ final class GCounter private[akka] (
   def getValue: BigInteger = value.bigInteger
 
   /**
-   * Increment the counter with the delta specified.
+   * Increment the counter with the delta `n` specified.
    * The delta must be zero or positive.
    */
-  def +(delta: Long)(implicit node: Cluster): GCounter = increment(node, delta)
+  def +(n: Long)(implicit node: Cluster): GCounter = increment(node, n)
 
   /**
-   * Increment the counter with the delta specified.
-   * The delta must be zero or positive.
+   * Increment the counter with the delta `n` specified.
+   * The delta `n` must be zero or positive.
    */
-  def increment(node: Cluster, delta: Long = 1): GCounter =
-    increment(node.selfUniqueAddress, delta)
+  def increment(node: Cluster, n: Long = 1): GCounter =
+    increment(node.selfUniqueAddress, n)
 
   /**
    * INTERNAL API
@@ -77,14 +78,19 @@ final class GCounter private[akka] (
   /**
    * INTERNAL API
    */
-  private[akka] def increment(key: UniqueAddress, delta: BigInt): GCounter = {
-    require(delta >= 0, "Can't decrement a GCounter")
-    if (delta == 0) this
-    else state.get(key) match {
-      case Some(v) ⇒
-        val tot = v + delta
-        assignAncestor(new GCounter(state + (key → tot)))
-      case None ⇒ assignAncestor(new GCounter(state + (key → delta)))
+  private[akka] def increment(key: UniqueAddress, n: BigInt): GCounter = {
+    require(n >= 0, "Can't decrement a GCounter")
+    if (n == 0) this
+    else {
+      val nextValue = state.get(key) match {
+        case Some(v) ⇒ v + n
+        case None    ⇒ n
+      }
+      val newDelta = _delta match {
+        case Some(d) ⇒ Some(new GCounter(d.state + (key → nextValue)))
+        case None    ⇒ Some(new GCounter(Map(key → nextValue)))
+      }
+      assignAncestor(new GCounter(state + (key → nextValue), newDelta))
     }
   }
 
@@ -101,6 +107,13 @@ final class GCounter private[akka] (
       clearAncestor()
       new GCounter(merged)
     }
+
+  override def delta: GCounter = _delta match {
+    case Some(d) ⇒ d
+    case None    ⇒ GCounter.empty
+  }
+
+  override def resetDelta: GCounter = new GCounter(state)
 
   override def modifiedByNodes: Set[UniqueAddress] = state.keySet
 
