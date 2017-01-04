@@ -11,12 +11,16 @@ import scala.PartialFunction;
  * Version of {@link scala.PartialFunction} that can be built during
  * runtime from Java.
  *
- * @param <I> the input type, that this PartialFunction will be applied to
- * @param <R> the return type, that the results of the application will have
+ * @param <A> the input type, that this PartialFunction will be applied to
+ * @param <B> the return type, that the results of the application will have
  *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
-public class Match<I, R> extends AbstractMatch<I, R> {
+public class Match<A, B> extends AbstractMatch<A, B> {
+  public static <A,B> PFBuilder<A,B> newBuilder() {
+      return new PFBuilder<>();
+  }
+    
 
   /**
    * Convenience function to create a {@link PFBuilder} with the first
@@ -27,11 +31,35 @@ public class Match<I, R> extends AbstractMatch<I, R> {
    * @return a builder with the case statement added
    * @see PFBuilder#match(Class, FI.Apply)
    */
-  public static <F, T, P> PFBuilder<F, T> match(final Class<? extends P> type,
-                                                final FI.Apply<? extends P, T> apply) {
-    return new PFBuilder<F, T>().match(type, apply);
+  public static <A, B, P extends A> PFBuilder<A, B> match(
+          Class<P> type, 
+          FI.Apply<? super P, ? extends B> apply) {
+    return new PFBuilder<A, B>().match(type, apply);
   }
-
+  
+  /**
+   * Convenience function to create a {@link PFBuilder} with the first
+   * case statement added.
+   *
+   * This variant will at runtime check the type of [apply], using reflection to infer the actual
+   * type argument, and only allow instances of that type to reach the predicate. This only works one-level,
+   * e.g. for a TypedPredicate<List<String>> we can only filter that instances of List go in, not what's
+   * in the list. This is because although generics are preserved for the method's type signature, they're
+   * not available for actual object instances passed into the method.
+   * 
+   * @param apply     an action to apply to the argument if the type matches and the predicate returns true
+   * @return a builder with the case statement added
+   * @see PFBuilder#match(FI.Apply)
+   */
+  public static <A, B, P extends A> PFBuilder<A, B> match(
+          FI.Apply<? super P, ? extends B> apply) {
+    
+    @SuppressWarnings("unchecked")
+    Class<P> type = (Class<P>) Reflect.resolveLambdaArgumentType(apply, 0);
+      
+    return new PFBuilder<A, B>().match(type, apply);
+  }
+  
   /**
    * Convenience function to create a {@link PFBuilder} with the first
    * case statement added.
@@ -42,12 +70,28 @@ public class Match<I, R> extends AbstractMatch<I, R> {
    * @return a builder with the case statement added
    * @see PFBuilder#match(Class, FI.TypedPredicate, FI.Apply)
    */
-  public static <F, T, P> PFBuilder<F, T> match(final Class<? extends P> type,
-                                                final FI.TypedPredicate<? extends P> predicate,
-                                                final FI.Apply<? extends P, T> apply) {
-    return new PFBuilder<F, T>().match(type, predicate, apply);
+  public static <A, B, P extends A> PFBuilder<A, B> match(
+          Class<P> type,
+          FI.TypedPredicate<? super P> predicate,
+          FI.Apply<? super P, ? extends B> apply) {
+    return new PFBuilder<A, B>().match(type, predicate, apply);
   }
 
+  /**
+   * Convenience function to create a {@link PFBuilder} with the first
+   * case statement added.
+   *
+   * @param predicate a predicate that will be evaluated on the argument if the type matches
+   * @param apply     an action to apply to the argument if the type matches
+   * @return a builder with the case statement added
+   * @see PFBuilder#match(FI.TypedPredicate, FI.Apply)
+   */
+  public static <A, B> PFBuilder<A, B> match(
+          FI.TypedPredicate<A> predicate,
+          FI.Apply<A, ? extends B> apply) {
+      return new PFBuilder<A, B>().match(predicate, apply);
+  }
+  
   /**
    * Convenience function to create a {@link PFBuilder} with the first
    * case statement added.
@@ -57,9 +101,8 @@ public class Match<I, R> extends AbstractMatch<I, R> {
    * @return a builder with the case statement added
    * @see PFBuilder#matchEquals(Object, FI.Apply)
    */
-  public static <F, T, P> PFBuilder<F, T> matchEquals(final P object,
-                                                      final FI.Apply<P, T> apply) {
-    return new PFBuilder<F, T>().matchEquals(object, apply);
+  public static <A, B> PFBuilder<A, B> matchEquals(A object, FI.Apply<? super A, ? extends B> apply) {
+    return new PFBuilder<A, B>().matchEquals(object, apply);
   }
 
   /**
@@ -70,8 +113,8 @@ public class Match<I, R> extends AbstractMatch<I, R> {
    * @return a builder with the case statement added
    * @see PFBuilder#matchAny(FI.Apply)
    */
-  public static <F, T> PFBuilder<F, T> matchAny(final FI.Apply<F, T> apply) {
-    return new PFBuilder<F, T>().matchAny(apply);
+  public static <A, B> PFBuilder<A,B> matchAny(final FI.Apply<? super A, ? extends  B> apply) {
+    return new PFBuilder<A, B>().matchAny(apply);
   }
 
   /**
@@ -84,7 +127,7 @@ public class Match<I, R> extends AbstractMatch<I, R> {
     return new Match<F, T>(builder.build());
   }
 
-  Match(PartialFunction<I, R> statements) {
+  Match(PartialFunction<A, B> statements) {
     super(statements);
   }
 
@@ -102,7 +145,7 @@ public class Match<I, R> extends AbstractMatch<I, R> {
    * @return the result of the application
    * @throws MatchError if there is no match
    */
-  public R match(I i) throws MatchError {
+  public B match(A i) throws MatchError {
     return statements.apply(i);
   }
 }

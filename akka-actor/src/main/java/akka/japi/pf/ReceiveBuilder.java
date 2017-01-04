@@ -53,7 +53,8 @@ public class ReceiveBuilder {
    * @param apply an action to apply to the argument if the type matches
    * @return a builder with the case statement added
    */
-  public static <P> UnitPFBuilder<Object> match(final Class<? extends P> type, FI.UnitApply<? extends P> apply) {
+  public static <P> UnitPFBuilder<Object> match(Class<P> type,
+                                                FI.UnitApply<? super P> apply) {
     return UnitMatch.match(type, apply);
   }
 
@@ -65,34 +66,56 @@ public class ReceiveBuilder {
    * @param apply     an action to apply to the argument if the type matches and the predicate returns true
    * @return a builder with the case statement added
    */
-  public static <P> UnitPFBuilder<Object> match(final Class<? extends P> type,
-                                                FI.TypedPredicate<? extends P> predicate,
-                                                FI.UnitApply<? extends P> apply) {
+  public static <P> UnitPFBuilder<Object> match(Class<P> type,
+                                                FI.TypedPredicate<? super P> predicate,
+                                                FI.UnitApply<? super P> apply) {
     return UnitMatch.match(type, predicate, apply);
   }
 
   /**
    * Return a new {@link UnitPFBuilder} with a case statement added.
    *
+   * @param predicate a predicate that will be evaluated on the argument if the type matches
+   * @param apply     an action to apply to the argument if the type matches and the predicate returns true
+   * @return a builder with the case statement added
+   */
+  public static UnitPFBuilder<Object> match(FI.TypedPredicate<Object> predicate,
+                                            FI.UnitApply<Object> apply) {
+    return UnitMatch.match(predicate, apply);
+  }
+  
+  /**
+   * Return a new {@link UnitPFBuilder} with a case statement added.
+   *
+   * Note: This can't be safely generic in P, since some object.equals(a) does not imply that [a] is an instance of
+   * the same type that [object] was compile-time.
+   * If you want that safety, use UnitMatch.matchEquals directly (to get a UnitPFBuilder<T>), or use 
+   * the matchEquals variant that takes a Class argument as well.
+   * 
    * @param object the object to compare equals with
    * @param apply  an action to apply to the argument if the object compares equal
    * @return a builder with the case statement added
    */
-  public static <P> UnitPFBuilder<Object> matchEquals(P object, FI.UnitApply<P> apply) {
+  public static UnitPFBuilder<Object> matchEquals(Object object, FI.UnitApply<Object> apply) {
     return UnitMatch.matchEquals(object, apply);
   }
 
   /**
    * Return a new {@link UnitPFBuilder} with a case statement added.
    *
+   * Note: This can't be safely generic in P, since some object.equals(a) does not imply that [a] is an instance of
+   * the same type that [object] was compile-time.
+   * If you want that safety, use UnitMatch.matchEquals directly (to get a UnitPFBuilder<T>), or use 
+   * the matchEquals variant that takes a Class argument as well.
+   * 
    * @param object    the object to compare equals with
    * @param predicate a predicate that will be evaluated on the argument if the object compares equal
    * @param apply     an action to apply to the argument if the object compares equal
    * @return a builder with the case statement added
    */
-  public static <P> UnitPFBuilder<Object> matchEquals(P object,
-                                                      FI.TypedPredicate<P> predicate,
-                                                      FI.UnitApply<P> apply) {
+  public static UnitPFBuilder<Object> matchEquals(Object object, 
+                                                  FI.TypedPredicate<Object> predicate, 
+                                                  FI.UnitApply<Object> apply) {
     return UnitMatch.matchEquals(object, predicate, apply);
   }
 
