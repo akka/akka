@@ -16,7 +16,7 @@ import static akka.pattern.Patterns.pipe;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 public class PatternsTest extends JUnitSuite {
 
