@@ -106,4 +106,64 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
       }
     //#handle-multiple-protocols
   }
+
+  "extractUpgradeToWebSocket" in {
+    //#extractUpgradeToWebSocket
+    def echoService: Flow[Message, Message, Any] =
+      Flow[Message]
+        // needed because a noop flow hasn't any buffer that would start processing in tests
+        .buffer(1, OverflowStrategy.backpressure)
+
+    def route =
+      path("services") {
+        extractUpgradeToWebSocket { upgrade ⇒
+          complete(upgrade.handleMessages(echoService, Some("echo")))
+        }
+      }
+
+    // tests:
+    val wsClient = WSProbe()
+
+    // WS creates a WebSocket request for testing
+    WS("/services", wsClient.flow, Nil) ~> route ~> check {
+      expectWebSocketUpgradeWithProtocol { protocol =>
+        protocol shouldEqual "echo"
+        wsClient.sendMessage("ping")
+        wsClient.expectMessage("ping")
+        wsClient.sendCompletion()
+        wsClient.expectCompletion()
+      }
+    }
+    //#extractUpgradeToWebSocket
+  }
+
+  "extractOfferedWsProtocols" in {
+    //#extractOfferedWsProtocols
+    def echoService: Flow[Message, Message, Any] =
+      Flow[Message]
+        // needed because a noop flow hasn't any buffer that would start processing in tests
+        .buffer(1, OverflowStrategy.backpressure)
+
+    def route =
+      path("services") {
+        extractOfferedWsProtocols { protocols =>
+          handleWebSocketMessagesForOptionalProtocol(echoService, protocols.headOption)
+        }
+      }
+
+    // tests:
+    val wsClient = WSProbe()
+
+    // WS creates a WebSocket request for testing
+    WS("/services", wsClient.flow, List("echo", "alfa", "kilo")) ~> route ~> check {
+      expectWebSocketUpgradeWithProtocol { protocol =>
+        protocol shouldEqual "echo"
+        wsClient.sendMessage("ping")
+        wsClient.expectMessage("ping")
+        wsClient.sendCompletion()
+        wsClient.expectCompletion()
+      }
+    }
+    //#extractOfferedWsProtocols
+  }
 }

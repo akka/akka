@@ -65,7 +65,7 @@ trait WebSocketDirectives {
    * announced in the WebSocket request) contains `protocol`. If the client did not offer the protocol in question
    * the request is rejected with an [[UnsupportedWebSocketSubprotocolRejection]] rejection.
    *
-   * To support several subprotocols you may chain several `handleWebSocketMessage` Routes.
+   * To support several subprotocols you may chain several `handleWebSocketMessagesForOptionalProtocol` routes.
    *
    * @group websocket
    */
