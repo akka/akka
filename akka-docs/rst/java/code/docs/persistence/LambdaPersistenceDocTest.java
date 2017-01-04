@@ -527,31 +527,6 @@ public class LambdaPersistenceDocTest {
     }
   };
 
-  static Object o12 = new Object() {
-    //#view
-    class MyView extends AbstractPersistentView {
-      @Override public String persistenceId() { return "some-persistence-id"; }
-      @Override public String viewId() { return "some-persistence-id-view"; }
-
-      public MyView() {
-        receive(ReceiveBuilder.
-          match(Object.class, p -> isPersistent(),  persistent -> {
-            // ...
-          }).build()
-        );
-      }
-    }
-    //#view
-
-    public void usage() {
-      final ActorSystem system = ActorSystem.create("example");
-      //#view-update
-      final ActorRef view = system.actorOf(Props.create(MyView.class));
-      view.tell(Update.create(true), null);
-      //#view-update
-    }
-  };
-
   static Object o14 = new Object() {
     //#safe-shutdown
     final class Shutdown {

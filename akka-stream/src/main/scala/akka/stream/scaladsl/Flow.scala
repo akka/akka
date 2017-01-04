@@ -9,7 +9,6 @@ import akka.Done
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing._
-import akka.stream.stage.AbstractStage.{ PushPullGraphStage, PushPullGraphStageWithMaterializedValue }
 import akka.stream.stage._
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import scala.annotation.unchecked.uncheckedVariance
@@ -406,6 +405,8 @@ trait FlowOps[+Out, +Mat] {
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
    *
+   * Throwing an exception inside `recover` _will_ be logged on ERROR level automatically.
+   *
    * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
    *
    * '''Backpressures when''' downstream backpressures
@@ -424,6 +425,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * Throwing an exception inside `recoverWith` _will_ be logged on ERROR level automatically.
    *
    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
    * from alternative Source
@@ -448,6 +451,8 @@ trait FlowOps[+Out, +Mat] {
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
    *
+   * Throwing an exception inside `recoverWithRetries` _will_ be logged on ERROR level automatically.
+   *
    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
    * from alternative Source
    *
@@ -464,6 +469,27 @@ trait FlowOps[+Out, +Mat] {
    */
   def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, Graph[SourceShape[T], NotUsed]]): Repr[T] =
     via(new RecoverWith(attempts, pf))
+
+  /**
+   * While similar to [[recover]] this stage can be used to transform an error signal to a different one *without* logging
+   * it as an error in the process. So in that sense it is NOT exactly equivalent to `recover(t => throw t2)` since recover
+   * would log the `t2` error.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * Similarily to [[recover]] throwing an exception inside `mapError` _will_ be logged.
+   *
+   * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
+  def mapError(pf: PartialFunction[Throwable, Throwable]): Repr[Out] = via(MapError(pf))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -1211,15 +1237,6 @@ trait FlowOps[+Out, +Mat] {
   def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out] = via(fusing.Buffer(size, overflowStrategy))
 
   /**
-   * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
-   * This operator makes it possible to extend the `Flow` API when there is no specialized
-   * operator that performs the transformation.
-   */
-  @deprecated("Use via(GraphStage) instead.", "2.4.3")
-  def transform[T](mkStage: () ⇒ Stage[Out, T]): Repr[T] =
-    via(new PushPullGraphStage((attr) ⇒ mkStage(), Attributes.none))
-
-  /**
    * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements)
    * and returns a pair containing a strict sequence of the taken element
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
@@ -1965,9 +1982,6 @@ trait FlowOps[+Out, +Mat] {
    */
   def async: Repr[Out]
 
-  /** INTERNAL API */
-  private[scaladsl] def andThen[T](op: SymbolicStage[Out, T]): Repr[T] =
-    via(SymbolicGraphStage(op))
 }
 
 /**
@@ -2192,18 +2206,12 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2]
 
   /**
-   * Materializes to `FlowMonitor[Out]` that allows monitoring of the the current flow. All events are propagated
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
    */
   def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) ⇒ Mat2): ReprMat[Out, Mat2] =
     viaMat(GraphStages.monitor)(combine)
-
-  /**
-   * INTERNAL API.
-   */
-  private[akka] def transformMaterializing[T, M](mkStageAndMaterialized: () ⇒ (Stage[Out, T], M)): ReprMat[T, M] =
-    viaMat(new PushPullGraphStageWithMaterializedValue[Out, T, NotUsed, M]((attr) ⇒ mkStageAndMaterialized(), Attributes.none))(Keep.right)
 
 }

@@ -4,6 +4,8 @@
 Migration Guide 2.3.x to 2.4.x
 ##############################
 
+Migration from 2.3.x to 2.4.x is described in the 
+`documentation of 2.4 <http://doc.akka.io/docs/akka/2.4/project/migration-guide-2.3.x-2.4.x.html>`_.
 The 2.4 release contains some structural changes that require some
 simple, mechanical source-level changes in client code.
 
@@ -489,13 +491,8 @@ PersistentView is deprecated
 
 ``PersistentView`` is deprecated. Use :ref:`persistence-query-scala` instead. The corresponding
 query type is ``EventsByPersistenceId``. There are several alternatives for connecting the ``Source``
-to an actor corresponding to a previous ``PersistentView`` actor:
-
-* `Sink.actorRef`_ is simple, but has the disadvantage that there is no back-pressure signal from the 
-  destination actor, i.e. if the actor is not consuming the messages fast enough the mailbox of the actor will grow
-* `mapAsync`_ combined with :ref:`actors-ask-lambda` is almost as simple with the advantage of back-pressure
-  being propagated all the way
-* `ActorSubscriber`_ in case you need more fine grained control
+to an actor corresponding to a previous ``PersistentView`` actor which are documented in :ref:`stream-integrations-scala` 
+for Scala and :ref:`Java <stream-integrations-java>`.
   
 The consuming actor may be a plain ``Actor`` or a ``PersistentActor`` if it needs to store its
 own state (e.g. fromSequenceNr offset).

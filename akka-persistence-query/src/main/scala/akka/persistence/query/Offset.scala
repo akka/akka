@@ -15,13 +15,13 @@ object Offset {
 
 }
 
-trait Offset
+abstract class Offset
 
-final case class Sequence(val value: Long) extends Offset with Ordered[Sequence] {
+final case class Sequence(value: Long) extends Offset with Ordered[Sequence] {
   override def compare(that: Sequence): Int = value.compare(that.value)
 }
 
-final case class TimeBasedUUID(val value: UUID) extends Offset with Ordered[TimeBasedUUID] {
+final case class TimeBasedUUID(value: UUID) extends Offset with Ordered[TimeBasedUUID] {
   if (value == null || value.version != 1) {
     throw new IllegalArgumentException("UUID " + value + " is not a time-based UUID")
   }

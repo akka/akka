@@ -21,7 +21,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
 
   "An actor with receive timeout" must {
 
-    "get timeout" in {
+    "get timeout" taggedAs TimingTest in {
       val timeoutLatch = TestLatch()
 
       val timeoutActor = system.actorOf(Props(new Actor {
@@ -36,7 +36,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       system.stop(timeoutActor)
     }
 
-    "reschedule timeout after regular receive" in {
+    "reschedule timeout after regular receive" taggedAs TimingTest in {
       val timeoutLatch = TestLatch()
 
       val timeoutActor = system.actorOf(Props(new Actor {
@@ -54,7 +54,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       system.stop(timeoutActor)
     }
 
-    "be able to turn off timeout if desired" in {
+    "be able to turn off timeout if desired" taggedAs TimingTest in {
       val count = new AtomicInteger(0)
       val timeoutLatch = TestLatch()
 
@@ -77,7 +77,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       system.stop(timeoutActor)
     }
 
-    "not receive timeout message when not specified" in {
+    "not receive timeout message when not specified" taggedAs TimingTest in {
       val timeoutLatch = TestLatch()
 
       val timeoutActor = system.actorOf(Props(new Actor {
@@ -90,7 +90,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       system.stop(timeoutActor)
     }
 
-    "get timeout while receiving NotInfluenceReceiveTimeout messages" in {
+    "get timeout while receiving NotInfluenceReceiveTimeout messages" taggedAs TimingTest in {
       val timeoutLatch = TestLatch()
 
       val timeoutActor = system.actorOf(Props(new Actor {

@@ -10,14 +10,14 @@ import akka.stream.impl.io.ByteStringParser.{ ParseResult, ParseStep }
 import akka.util.ByteString
 
 /** INTERNAL API */
-private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = DeflateDecompressorBase.MaxBytesPerChunkDefault)
+private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int)
   extends ByteStringParser[ByteString] {
 
   abstract class DecompressorParsingLogic extends ParsingLogic {
     val inflater: Inflater
     def afterInflate: ParseStep[ByteString]
     def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
-    val inflateState: Inflate
+    def inflating: Inflate
 
     abstract class Inflate(noPostProcessing: Boolean) extends ParseStep[ByteString] {
       override def canWorkWithPartialData = true
@@ -45,6 +45,4 @@ private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Def
 }
 
 /** INTERNAL API */
-private[akka] object DeflateDecompressorBase {
-  final val MaxBytesPerChunkDefault = 64 * 1024
-}
+private[akka] object DeflateDecompressorBase

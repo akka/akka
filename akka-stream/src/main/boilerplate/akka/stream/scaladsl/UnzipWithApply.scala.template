@@ -42,7 +42,7 @@ trait UnzipWithApply {
 }
 
 [2..20#/** `UnzipWith` specialized for 1 outputs */
-class UnzipWith1[In, [#A1#]](unzipper: In ⇒ ([#A1#])) extends GraphStage[FanOutShape1[In, [#A1#]]] {
+class UnzipWith1[In, [#A1#]](val unzipper: In ⇒ ([#A1#])) extends GraphStage[FanOutShape1[In, [#A1#]]] {
   override def initialAttributes = Attributes.name("UnzipWith1")
   override val shape: FanOutShape1[In, [#A1#]] = new FanOutShape1[In, [#A1#]]("UnzipWith1")
   def in: Inlet[In] = shape.in

@@ -91,59 +91,6 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals("Done");
   }
 
-  @Ignore("StatefulStage to be converted to GraphStage when Java Api is available (#18817)") @Test
-  public void mustBeAbleToUseTransform() {
-    final JavaTestKit probe = new JavaTestKit(system);
-    final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
-    // duplicate each element, stop after 4 elements, and emit sum to the end
-    Source.from(input).transform(new Creator<Stage<Integer, Integer>>() {
-      @Override
-      public PushPullStage<Integer, Integer> create() throws Exception {
-        return new StatefulStage<Integer, Integer>() {
-          int sum = 0;
-          int count = 0;
-
-          @Override
-          public StageState<Integer, Integer> initial() {
-            return new StageState<Integer, Integer>() {
-              @Override
-              public SyncDirective onPush(Integer element, Context<Integer> ctx) {
-                sum += element;
-                count += 1;
-                if (count == 4) {
-                  return emitAndFinish(Arrays.asList(element, element, sum).iterator(), ctx);
-                } else {
-                  return emit(Arrays.asList(element, element).iterator(), ctx);
-                }
-              }
-
-            };
-          }
-
-          @Override
-          public TerminationDirective onUpstreamFinish(Context<Integer> ctx) {
-            return terminationEmit(Collections.singletonList(sum).iterator(), ctx);
-          }
-
-        };
-      }
-    }).runForeach(new Procedure<Integer>() {
-      public void apply(Integer elem) {
-        probe.getRef().tell(elem, ActorRef.noSender());
-      }
-    }, materializer);
-
-    probe.expectMsgEquals(0);
-    probe.expectMsgEquals(0);
-    probe.expectMsgEquals(1);
-    probe.expectMsgEquals(1);
-    probe.expectMsgEquals(2);
-    probe.expectMsgEquals(2);
-    probe.expectMsgEquals(3);
-    probe.expectMsgEquals(3);
-    probe.expectMsgEquals(6);
-  }
-
   @SuppressWarnings("unchecked")
   @Test
   public void mustBeAbleToUseGroupBy() throws Exception {

@@ -21,6 +21,7 @@ import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.protobuf.MessageLite
+import java.io.NotSerializableException
 
 /**
  * INTERNAL API: Protobuf serializer of ClusterSharding messages.
@@ -159,7 +160,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     fromBinaryMap.get(manifest) match {
       case Some(f) ⇒ f(bytes)
-      case None ⇒ throw new IllegalArgumentException(
+      case None ⇒ throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
 

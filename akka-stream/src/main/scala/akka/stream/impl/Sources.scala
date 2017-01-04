@@ -9,11 +9,13 @@ import akka.stream.OverflowStrategies._
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
-import akka.stream.scaladsl.SourceQueueWithComplete
+import akka.stream.scaladsl.{ Keep, Source, SourceQueueWithComplete }
+
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import akka.Done
 import java.util.concurrent.CompletionStage
+
 import scala.compat.java8.FutureConverters._
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -333,3 +335,64 @@ final class UnfoldResourceSourceAsync[T, S](
   override def toString = "UnfoldResourceSourceAsync"
 
 }
+
+object LazySource {
+  def apply[T, M](sourceFactory: () ⇒ Source[T, M]) = new LazySource[T, M](sourceFactory)
+}
+
+final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+  val out = Outlet[T]("LazySource.out")
+  override val shape = SourceShape(out)
+
+  override protected def initialAttributes = DefaultAttributes.lazySource
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
+    val matPromise = Promise[M]()
+    val logic = new GraphStageLogic(shape) with OutHandler {
+
+      override def onDownstreamFinish(): Unit = {
+        matPromise.failure(new RuntimeException("Downstream canceled without triggering lazy source materialization"))
+        completeStage()
+      }
+
+      override def onPull(): Unit = {
+        val source = sourceFactory()
+        val subSink = new SubSinkInlet[T]("LazySource")
+        subSink.pull()
+
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            subSink.pull()
+          }
+
+          override def onDownstreamFinish(): Unit = {
+            subSink.cancel()
+            completeStage()
+          }
+        })
+
+        subSink.setHandler(new InHandler {
+          override def onPush(): Unit = {
+            push(out, subSink.grab())
+          }
+        })
+
+        matPromise.tryComplete(
+          Try {
+            subFusingMaterializer.materialize(source.toMat(subSink.sink)(Keep.left), inheritedAttributes)
+          })
+      }
+
+      setHandler(out, this)
+
+      override def postStop() = {
+        matPromise.tryFailure(new RuntimeException("LazySource stopped without completing the materialized future"))
+      }
+    }
+
+    (logic, matPromise.future)
+  }
+
+  override def toString = "LazySource"
+}
+

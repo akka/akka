@@ -10,7 +10,8 @@ import akka.actor.Address
 class ReachabilityPerfSpec extends WordSpec with Matchers {
 
   val nodesSize = sys.props.get("akka.cluster.ReachabilityPerfSpec.nodesSize").getOrElse("250").toInt
-  val iterations = sys.props.get("akka.cluster.ReachabilityPerfSpec.iterations").getOrElse("10000").toInt
+  // increase for serious measurements
+  val iterations = sys.props.get("akka.cluster.ReachabilityPerfSpec.iterations").getOrElse("100").toInt
 
   val address = Address("akka.tcp", "sys", "a", 2552)
   val node = Address("akka.tcp", "sys", "a", 2552)

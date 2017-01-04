@@ -152,7 +152,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       ticks.get should ===(1)
     }
 
-    "be canceled if cancel is performed before execution" in {
+    "be canceled if cancel is performed before execution" taggedAs TimingTest in {
       val task = collectCancellable(system.scheduler.scheduleOnce(10 seconds)(()))
       task.cancel() should ===(true)
       task.isCancelled should ===(true)
@@ -160,7 +160,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
       task.isCancelled should ===(true)
     }
 
-    "not be canceled if cancel is performed after execution" in {
+    "not be canceled if cancel is performed after execution" taggedAs TimingTest in {
       val latch = TestLatch(1)
       val task = collectCancellable(system.scheduler.scheduleOnce(10 millis)(latch.countDown()))
       Await.ready(latch, remainingOrDefault)
@@ -312,7 +312,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
   "A LightArrayRevolverScheduler" must {
 
-    "reject tasks scheduled too far into the future" in {
+    "reject tasks scheduled too far into the future" taggedAs TimingTest in {
       val maxDelay = tickDuration * Int.MaxValue
       import system.dispatcher
       system.scheduler.scheduleOnce(maxDelay, testActor, "OK")
@@ -321,7 +321,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
     }
 
-    "reject periodic tasks scheduled too far into the future" in {
+    "reject periodic tasks scheduled too far into the future" taggedAs TimingTest in {
       val maxDelay = tickDuration * Int.MaxValue
       import system.dispatcher
       system.scheduler.schedule(maxDelay, 1.second, testActor, "OK")
@@ -330,7 +330,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
     }
 
-    "reject periodic tasks scheduled with too long interval" in {
+    "reject periodic tasks scheduled with too long interval" taggedAs TimingTest in {
       val maxDelay = tickDuration * Int.MaxValue
       import system.dispatcher
       system.scheduler.schedule(100.millis, maxDelay, testActor, "OK")
@@ -373,7 +373,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       expectNoMsg(1.second)
     }
 
-    "survive vicious enqueueing" in {
+    "survive vicious enqueueing" taggedAs TimingTest in {
       withScheduler(config = ConfigFactory.parseString("akka.scheduler.ticks-per-wheel=2")) { (sched, driver) ⇒
         import driver._
         import system.dispatcher
@@ -396,7 +396,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
     }
 
-    "execute multiple jobs at once when expiring multiple buckets" in {
+    "execute multiple jobs at once when expiring multiple buckets" taggedAs TimingTest in {
       withScheduler() { (sched, driver) ⇒
         implicit def ec = localEC
         import driver._
@@ -411,7 +411,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
     }
 
-    "properly defer jobs even when the timer thread oversleeps" in {
+    "properly defer jobs even when the timer thread oversleeps" taggedAs TimingTest in {
       withScheduler() { (sched, driver) ⇒
         implicit def ec = localEC
         import driver._
@@ -426,7 +426,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
     }
 
-    "correctly wrap around wheel rounds" in {
+    "correctly wrap around wheel rounds" taggedAs TimingTest in {
       withScheduler(config = ConfigFactory.parseString("akka.scheduler.ticks-per-wheel=2")) { (sched, driver) ⇒
         implicit def ec = localEC
         import driver._
@@ -453,7 +453,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
     }
 
-    "correctly execute jobs when clock wraps around" in {
+    "correctly execute jobs when clock wraps around" taggedAs TimingTest in {
       withScheduler(Long.MaxValue - 200000000L) { (sched, driver) ⇒
         implicit def ec = localEC
         import driver._
@@ -480,7 +480,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
     }
 
-    "correctly wrap around ticks" in {
+    "correctly wrap around ticks" taggedAs TimingTest in {
       val numEvents = 40
       val targetTicks = Int.MaxValue - numEvents + 20
 
@@ -507,7 +507,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       }
     }
 
-    "reliably reject jobs when shutting down" in {
+    "reliably reject jobs when shutting down" taggedAs TimingTest in {
       withScheduler() { (sched, driver) ⇒
         import system.dispatcher
         val counter = new AtomicInteger

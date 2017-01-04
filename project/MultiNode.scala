@@ -12,6 +12,11 @@ import sbt._
 import sbt.Keys._
 
 object MultiNode extends AutoPlugin {
+  
+  // MultiJvm tests can be excluded from normal test target an validatePullRequest
+  // with -Dakka.test.multi-in-test=false
+  val multiNodeTestInTest: Boolean =
+    System.getProperty("akka.test.multi-in-test", "true") == "true"
 
   object CliOptions {
     val multiNode = CliOption("akka.test.multi-node", false)
@@ -60,19 +65,21 @@ object MultiNode extends AutoPlugin {
     CliOptions.hostsFileName.map(multiNodeHostsFileName in MultiJvm := _) ++
     CliOptions.javaName.map(multiNodeJavaName in MultiJvm := _) ++
     CliOptions.targetDirName.map(multiNodeTargetDirName in MultiJvm := _) ++
-    // make sure that MultiJvm tests are executed by the default test target,
-    // and combine the results from ordinary test and multi-jvm tests
-    (executeTests in Test <<= (executeTests in Test, multiExecuteTests) map {
-      case (testResults, multiNodeResults)  =>
-        val overall =
-          if (testResults.overall.id < multiNodeResults.overall.id)
-            multiNodeResults.overall
-          else
-            testResults.overall
-        Tests.Output(overall,
-          testResults.events ++ multiNodeResults.events,
-          testResults.summaries ++ multiNodeResults.summaries)
-    })
+    (if (multiNodeTestInTest) {
+      // make sure that MultiJvm tests are executed by the default test target,
+      // and combine the results from ordinary test and multi-jvm tests
+      (executeTests in Test <<= (executeTests in Test, multiExecuteTests) map {
+        case (testResults, multiNodeResults)  =>
+          val overall =
+            if (testResults.overall.id < multiNodeResults.overall.id)
+              multiNodeResults.overall
+            else
+              testResults.overall
+          Tests.Output(overall,
+            testResults.events ++ multiNodeResults.events,
+            testResults.summaries ++ multiNodeResults.summaries)
+      })
+    } else Nil)
 }
 
 /**

@@ -260,3 +260,88 @@ After
 
 .. includecode:: code/docs/future/FutureDocTest.java
    :include: after
+
+Java 8, CompletionStage and CompletableFuture
+---------------------------------------------
+
+Starting with Akka 2.4.2 we have begun to introduce Java 8 ``java.util.concurrent.CompletionStage`` in Java APIs.
+It's a ``scala.concurrent.Future`` counterpart in Java; conversion from ``scala.concurrent.Future`` is done using
+``scala-java8-compat`` library.
+
+Unlike ``scala.concurrent.Future`` which has async methods only, ``CompletionStage`` has *async* and *non-async* methods.
+
+The ``scala-java8-compat`` library returns its own implementation of ``CompletionStage`` which delegates all *non-async*
+methods to their *async* counterparts. The implementation extends standard Java ``CompletableFuture``.
+Java 8 ``CompletableFuture`` creates a new instance of ``CompletableFuture`` for any new stage,
+which means ``scala-java8-compat`` implementation is not used after the first mapping method.
+
+.. note::
+   After adding any additional computation stage to ``CompletionStage`` returned by ``scala-java8-compat``
+   (e.g. ``CompletionStage`` instances returned by Akka) it falls back to standard behaviour of Java ``CompletableFuture``.
+
+Actions supplied for dependent completions of *non-async* methods may be performed by the thread
+that completes the current ``CompletableFuture``, or by any other caller of a completion method.
+
+All *async* methods without an explicit Executor are performed using the ``ForkJoinPool.commonPool()`` executor.
+
+Non-async methods
+^^^^^^^^^^^^^^^^^
+
+When non-async methods are applied on a not yet completed ``CompletionStage``, they are completed by
+the thread which completes initial ``CompletionStage``:
+
+.. includecode:: code/docs/future/FutureDocTest.java
+   :include: apply-completion-thread
+
+In this example Scala ``Future`` is converted to ``CompletionStage`` just like Akka does.
+The completion is delayed: we are calling ``thenApply`` multiple times on a not yet complete ``CompletionStage``, then
+complete the ``Future``.
+
+First ``thenApply`` is actually performed on ``scala-java8-compat`` instance and computational stage (lambda) execution
+is delegated to default Java ``thenApplyAsync`` which is executed on ``ForkJoinPool.commonPool()``.
+
+Second and third ``thenApply`` methods are executed on Java 8 ``CompletableFuture`` instance which executes computational
+stages on the thread which completed the first stage. It is never executed on a thread of Scala ``Future`` because
+default ``thenApply`` breaks the chain and executes on ``ForkJoinPool.commonPool()``.
+
+
+In the next example ``thenApply`` methods are executed on an already completed ``Future``/``CompletionStage``:
+
+.. includecode:: code/docs/future/FutureDocTest.java
+   :include: apply-main-thread
+
+First ``thenApply`` is still executed on ``ForkJoinPool.commonPool()`` (because it is actually ``thenApplyAsync``
+which is always executed on global Java pool).
+
+Then we wait for stages to complete so second and third ``thenApply`` are executed on completed ``CompletionStage``,
+and stages are executed on the current thread - the thread which called second and third ``thenApply``.
+
+
+Async methods
+^^^^^^^^^^^^^
+
+As mentioned above, default *async* methods are always executed on ``ForkJoinPool.commonPool()``:
+
+.. includecode:: code/docs/future/FutureDocTest.java
+   :include: apply-async-default
+
+
+``CompletionStage`` also has *async* methods which take ``Executor`` as a second parameter, just like ``Future``:
+
+.. includecode:: code/docs/future/FutureDocTest.java
+   :include: apply-async-executor
+
+This example is behaving like ``Future``: every stage is executed on an explicitly specified ``Executor``.
+
+.. note::
+   When in doubt, async methods with explicit executor should be used. Always async methods with a dedicated
+   executor/dispatcher for long-running or blocking computations, such as IO operations.
+
+See also:
+
+- `CompletionStage <https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html>`_
+
+- `CompletableFuture <https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html>`_
+
+- `scala-java8-compat <https://github.com/scala/scala-java8-compat>`_
+

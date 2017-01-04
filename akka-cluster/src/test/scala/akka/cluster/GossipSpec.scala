@@ -132,6 +132,10 @@ class GossipSpec extends WordSpec with Matchers {
       g1.leader(c2.uniqueAddress) should ===(Some(c2.uniqueAddress))
     }
 
+    "not have Down member as leader" in {
+      Gossip(members = SortedSet(e3)).leader(e3.uniqueAddress) should ===(None)
+    }
+
     "merge seen table correctly" in {
       val vclockNode = VectorClock.Node("something")
       val g1 = (Gossip(members = SortedSet(a1, b1, c1, d1)) :+ vclockNode).seen(a1.uniqueAddress).seen(b1.uniqueAddress)

@@ -12,7 +12,7 @@ import akka.stream.javadsl.Source
 trait CurrentPersistenceIdsQuery extends ReadJournal {
 
   /**
-   * Same type of query as [[AllPersistenceIdsQuery#allPersistenceIds]] but the stream
+   * Same type of query as [[PersistenceIdsQuery#allPersistenceIds]] but the stream
    * is completed immediately when it reaches the end of the "result set". Persistent
    * actors that are created after the query is completed are not included in the stream.
    */

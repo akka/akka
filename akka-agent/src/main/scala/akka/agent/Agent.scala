@@ -6,17 +6,22 @@ package akka.agent
 
 import scala.concurrent.stm._
 import scala.concurrent.{ ExecutionContext, Future, Promise }
-import akka.util.{ SerializedSuspendableExecutionContext }
+import akka.util.SerializedSuspendableExecutionContext
 
+@deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
 object Agent {
   /**
    * Factory method for creating an Agent.
    */
+  @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
   def apply[T](initialValue: T)(implicit context: ExecutionContext): Agent[T] = new SecretAgent(initialValue, context)
 
   /**
    * Java API: Factory method for creating an Agent.
+   * @deprecated Agents are deprecated and scheduled for removal in the next major version, use Actors instead.i
    */
+  @Deprecated
+  @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
   def create[T](initialValue: T, context: ExecutionContext): Agent[T] = Agent(initialValue)(context)
 
   /**
@@ -151,7 +156,10 @@ object Agent {
  * participate in that transaction. Agents are integrated with the STM -
  * any dispatches made in a transaction are held until that transaction
  * commits, and are discarded if it is retried or aborted.
+ *
+ * @deprecated Agents are deprecated and scheduled for removal in the next major version, use Actors instead.
  */
+@deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
 abstract class Agent[T] {
 
   /**

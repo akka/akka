@@ -61,15 +61,17 @@ object Dependencies {
 
     // ssl-config
     val sslConfigCore = "com.typesafe"                %% "ssl-config-core"             % sslConfigVersion // ApacheV2
-
+    
+    val lmdb          = "org.lmdbjava"                % "lmdbjava"                     % "0.0.4" // ApacheV2, OpenLDAP Public License
+    
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
     // For Java 8 Conversions
     val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
     
-    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.4"       // ApacheV2
-    val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.4"       // ApacheV2
+    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.5"       // ApacheV2
+    val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.5"       // ApacheV2
 
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
@@ -142,7 +144,7 @@ object Dependencies {
 
   val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
 
-  val distributedData = l ++= Seq(Test.junit, Test.scalatest.value)
+  val distributedData = l ++= Seq(lmdb, Test.junit, Test.scalatest.value)
 
   val slf4j = l ++= Seq(slf4jApi, Test.logback)
 

@@ -512,37 +512,6 @@ public class PersistenceDocTest {
         }
     };
 
-    static Object o14 = new Object() {
-        //#view
-        class MyView extends UntypedPersistentView {
-            @Override
-            public String persistenceId() { return "some-persistence-id"; }
-            
-            @Override
-            public String viewId() { return "my-stable-persistence-view-id"; }
-
-            @Override
-            public void onReceive(Object message) throws Exception {
-                if (isPersistent()) {
-                    // handle message from Journal...
-                } else if (message instanceof String) {
-                    // handle message from user...
-                } else {
-                  unhandled(message);
-                }
-            }
-        }
-        //#view
-
-        public void usage() {
-            final ActorSystem system = ActorSystem.create("example");
-            //#view-update
-            final ActorRef view = system.actorOf(Props.create(MyView.class));
-            view.tell(Update.create(true), null);
-            //#view-update
-        }
-    };
-
     static Object o13 = new Object() {
         //#safe-shutdown
         final class Shutdown {}

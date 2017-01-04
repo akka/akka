@@ -289,9 +289,15 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     val pluginClass = system.dynamicAccess.getClassFor[Any](pluginClassName).get
     val pluginDispatcherId = pluginConfig.getString("plugin-dispatcher")
     val pluginActorArgs = try {
-      Reflect.findConstructor(pluginClass, List(pluginConfig)) // will throw if not found
-      List(pluginConfig)
-    } catch { case NonFatal(_) ⇒ Nil } // otherwise use empty constructor
+      Reflect.findConstructor(pluginClass, List(pluginConfig, configPath)) // will throw if not found
+      List(pluginConfig, configPath)
+    } catch {
+      case NonFatal(_) ⇒
+        try {
+          Reflect.findConstructor(pluginClass, List(pluginConfig)) // will throw if not found
+          List(pluginConfig)
+        } catch { case NonFatal(_) ⇒ Nil } // otherwise use empty constructor
+    }
     val pluginActorProps = Props(Deploy(dispatcher = pluginDispatcherId), pluginClass, pluginActorArgs)
     system.systemActorOf(pluginActorProps, pluginActorName)
   }

@@ -62,7 +62,7 @@ object PersistenceDocSpec {
 
     trait MyPersistentActor5 extends PersistentActor {
       //#recovery-no-snap
-      override def recovery = 
+      override def recovery =
         Recovery(fromSnapshot = SnapshotSelectionCriteria.None)
       //#recovery-no-snap
     }
@@ -421,31 +421,6 @@ object PersistenceDocSpec {
     // Shutdown
     // -- stop --
     //#safe-shutdown-example-good
-  }
-
-  object View {
-    import akka.actor.Props
-
-    val system: ActorSystem = ???
-
-    //#view
-    class MyView extends PersistentView {
-      override def persistenceId: String = "some-persistence-id"
-      override def viewId: String = "some-persistence-id-view"
-
-      def receive: Receive = {
-        case payload if isPersistent =>
-        // handle message from journal...
-        case payload                 =>
-        // handle message from user-land...
-      }
-    }
-    //#view
-
-    //#view-update
-    val view = system.actorOf(Props[MyView])
-    view ! Update(await = true)
-    //#view-update
   }
 
 }

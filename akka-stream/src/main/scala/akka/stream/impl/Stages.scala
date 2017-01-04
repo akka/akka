@@ -7,8 +7,6 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes._
 import akka.stream.Supervision.Decider
 import akka.stream._
-import akka.stream.stage.AbstractStage.PushPullGraphStage
-import akka.stream.stage.Stage
 
 /**
  * INTERNAL API
@@ -16,7 +14,7 @@ import akka.stream.stage.Stage
 object Stages {
 
   object DefaultAttributes {
-    val IODispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+    val IODispatcher = ActorAttributes.IODispatcher
     val inputBufferOne = inputBuffer(initial = 1, max = 1)
 
     val fused = name("fused")
@@ -127,6 +125,7 @@ object Stages {
     val actorSubscriberSink = name("actorSubscriberSink")
     val queueSink = name("queueSink")
     val lazySink = name("lazySink")
+    val lazySource = name("lazySource")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher
     val fileSink = name("fileSink") and IODispatcher
@@ -134,25 +133,5 @@ object Stages {
   }
 
   import DefaultAttributes._
-
-  /*
-   * Stage that is backed by a GraphStage but can be symbolically introspected
-   */
-  case class SymbolicGraphStage[-In, +Out, Ext](symbolicStage: SymbolicStage[In, Out])
-    extends PushPullGraphStage[In, Out, Ext](
-      symbolicStage.create,
-      symbolicStage.attributes) {
-  }
-
-  sealed trait SymbolicStage[-In, +Out] {
-    def attributes: Attributes
-    def create(effectiveAttributes: Attributes): Stage[In, Out]
-
-    // FIXME: No supervision hooked in yet.
-
-    protected def supervision(attributes: Attributes): Decider =
-      attributes.get[SupervisionStrategy](SupervisionStrategy(Supervision.stoppingDecider)).decider
-
-  }
 
 }

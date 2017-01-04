@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.stream.ActorMaterializer
 import akka.stream.Attributes.inputBuffer
@@ -100,7 +101,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(initMessage)
 
       publisher.sendNext(1)
-      expectNoMsg()
+      expectNoMsg(200.millis)
       fw ! TriggerAckMessage
       expectMsg(1)
 
@@ -150,7 +151,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(1)
 
       fw ! TriggerAckMessage
-      expectNoMsg() // Ack received but buffer empty
+      expectNoMsg(200.millis) // Ack received but buffer empty
 
       publisher.sendNext(2) // Buffer this value
       fw ! TriggerAckMessage

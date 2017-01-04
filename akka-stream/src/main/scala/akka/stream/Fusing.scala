@@ -34,6 +34,12 @@ object Fusing {
   def aggressive[S <: Shape, M](g: Graph[S, M]): FusedGraph[S, M] = Impl.aggressive(g)
 
   /**
+   * Return the StructuralInfo for this Graph without any fusing
+   */
+  def structuralInfo[S <: Shape, M](g: Graph[S, M], attributes: Attributes): StructuralInfoModule =
+    Impl.structuralInfo(g, attributes)
+
+  /**
    * A fused graph of the right shape, containing a [[FusedModule]] which
    * holds more information on the operation structure of the contained stream
    * topology for convenient graph traversal.
@@ -52,19 +58,5 @@ object Fusing {
         case _              ⇒ None
       }
   }
-
-  /**
-   * When fusing a [[Graph]] a part of the internal stage wirings are hidden within
-   * [[akka.stream.impl.fusing.GraphInterpreter#GraphAssembly]] objects that are
-   * optimized for high-speed execution. This structural information bundle contains
-   * the wirings in a more accessible form, allowing traversal from port to upstream
-   * or downstream port and from there to the owning module (or graph vertex).
-   */
-  final case class StructuralInfo(
-    upstreams:   immutable.Map[InPort, OutPort],
-    downstreams: immutable.Map[OutPort, InPort],
-    inOwners:    immutable.Map[InPort, Module],
-    outOwners:   immutable.Map[OutPort, Module],
-    allModules:  Set[Module])
 
 }
