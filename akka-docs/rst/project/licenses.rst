@@ -12,7 +12,7 @@ Akka License
 
   This software is licensed under the Apache 2 license, quoted below.
 
-  Copyright 2009-2015 Lightbend Inc. <http://www.lightbend.com>
+  Copyright 2009-2017 Lightbend Inc. <http://www.lightbend.com>
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy of
