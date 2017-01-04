@@ -22,6 +22,9 @@ import akka.cluster.UniqueAddress
  *
  * ReplicatedData types should be immutable, i.e. "modifying" methods should return
  * a new instance.
+ *
+ * Implement the additional methods of [[DeltaReplicatedData]] if
+ * it has support for delta-CRDT replication.
  */
 trait ReplicatedData {
   /**
@@ -34,6 +37,42 @@ trait ReplicatedData {
    * Monotonic merge function.
    */
   def merge(that: T): T
+
+}
+
+/**
+ * [[ReplicatedData]] with additional support for delta-CRDT replication.
+ * delta-CRDT is a way to reduce the need for sending the full state
+ * for updates. For example adding element 'c' and 'd' to set {'a', 'b'} would
+ * result in sending the delta {'c', 'd'} and merge that with the state on the
+ * receiving side, resulting in set {'a', 'b', 'c', 'd'}.
+ *
+ * Learn more about this in the paper
+ * <a href="paper http://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>.
+ */
+trait DeltaReplicatedData extends ReplicatedData {
+
+  /**
+   * The accumulated delta of mutator operations since previous
+   * [[#resetDelta]]. When the `Replicator` invokes the `modify` function
+   * of the `Update` message and the user code is invoking one or more mutator
+   * operations the data is collecting the delta of the operations and makes
+   * it available for the `Replicator` with the [[#delta]] accessor. The
+   * `modify` function shall still return the full state in the same way as
+   * `ReplicatedData` without support for deltas.
+   */
+  def delta: T
+
+  /**
+   * Reset collection of deltas from mutator operations. When the `Replicator`
+   * invokes the `modify` function of the `Update` message the delta is always
+   * "reset" and when the user code is invoking one or more mutator operations the
+   * data is collecting the delta of the operations and makes it available for
+   * the `Replicator` with the [[#delta]] accessor. When the `Replicator` has
+   * grabbed the `delta` it will invoke this method to get a clean data instance
+   * without the delta.
+   */
+  def resetDelta: T
 
 }
 
@@ -59,6 +98,17 @@ abstract class AbstractReplicatedData[D <: AbstractReplicatedData[D]] extends Re
    */
   def mergeData(that: D): D
 
+}
+
+/**
+ * Java API: Interface for implementing a [[DeltaReplicatedData]] in Java.
+ *
+ * The type parameter `D` is a self-recursive type to be defined by the
+ * concrete implementation.
+ * E.g. `class TwoPhaseSet extends AbstractDeltaReplicatedData&lt;TwoPhaseSet&gt;`
+ */
+abstract class AbstractDeltaReplicatedData[D <: AbstractDeltaReplicatedData[D]]
+  extends AbstractReplicatedData[D] with DeltaReplicatedData {
 }
 
 /**

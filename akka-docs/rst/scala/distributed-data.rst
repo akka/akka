@@ -38,7 +38,9 @@ The ``akka.cluster.ddata.Replicator`` actor provides the API for interacting wit
 The ``Replicator`` actor must be started on each node in the cluster, or group of nodes tagged 
 with a specific role. It communicates with other ``Replicator`` instances with the same path 
 (without address) that are running on other nodes . For convenience it can be used with the
-``akka.cluster.ddata.DistributedData`` extension.
+``akka.cluster.ddata.DistributedData`` extension but it can also be started as an ordinary
+actor using the ``Replicator.props``. If it is started as an ordinary actor it is important
+that it is given the same name, started on same path, on all nodes.
 
 Cluster members with status :ref:`WeaklyUp <weakly_up_scala>`, if that feature is enabled,
 will participate in Distributed Data. This means that the data will be replicated to the
@@ -268,13 +270,37 @@ to after receiving and transforming `DeleteSuccess`.
   where frequent adds and removes are required, you should use a fixed number of top-level data 
   types that support both updates and removals, for example ``ORMap`` or ``ORSet``.
 
+.. _delta_crdt_scala:
+
+delta-CRDT
+----------
+
+`Delta State Replicated Data Types <http://arxiv.org/abs/1603.01529>`_
+are supported. delta-CRDT is a way to reduce the need for sending the full state
+for updates. For example adding element ``'c'`` and ``'d'`` to set ``{'a', 'b'}`` would
+result in sending the delta ``{'c', 'd'}`` and merge that with the state on the
+receiving side, resulting in set ``{'a', 'b', 'c', 'd'}``.
+
+Current protocol for replicating the deltas does not support causal consistency.
+It is only eventually consistent. This means that if elements ``'c'`` and ``'d'`` are
+added in two separate `Update` operations these deltas may occasionally be propagated
+to nodes in different order than the causal order of the updates. For this example it
+can result in that set ``{'a', 'b', 'd'}`` can be seen before element 'c' is seen. Eventually
+it will be ``{'a', 'b', 'c', 'd'}``. If causal consistency is needed the delta propagation
+should be disabled with configuration property
+``akka.cluster.distributed-data.delta-crdt.enabled=off``.
+
+Note that the full state is occasionally also replicated for delta-CRDTs, for example when 
+new nodes are added to the cluster or when deltas could not be propagated because
+of network partitions or similar problems.
+
 Data Types
 ==========
 
 The data types must be convergent (stateful) CRDTs and implement the ``ReplicatedData`` trait,
 i.e. they provide a monotonic merge function and the state changes always converge.
 
-You can use your own custom ``ReplicatedData`` types, and several types are provided
+You can use your own custom ``ReplicatedData`` or ``DeltaReplicatedData`` types, and several types are provided
 by this package, such as:
 
 * Counters: ``GCounter``, ``PNCounter``
@@ -298,6 +324,8 @@ as two internal ``GCounter``. Merge is handled by merging the internal P and N c
 The value of the counter is the value of the P counter minus the value of the N counter.
 
 .. includecode:: code/docs/ddata/DistributedDataDocSpec.scala#pncounter
+
+``GCounter`` and ``PNCounter`` have support for :ref:`delta_crdt_scala`.
 
 Several related counters can be managed in a map with the ``PNCounterMap`` data type.
 When the counters are placed in a ``PNCounterMap`` as opposed to placing them as separate top level
@@ -417,6 +445,8 @@ removed, but never added again thereafter.
 .. includecode:: code/docs/ddata/TwoPhaseSet.scala#twophaseset
 
 Data types should be immutable, i.e. "modifying" methods should return a new instance.
+
+Implement the additional methods of ``DeltaReplicatedData`` if it has support for delta-CRDT replication.
 
 Serialization
 ^^^^^^^^^^^^^
@@ -575,11 +605,11 @@ be able to improve this if needed, but the design is still not intended for bill
 
 All data is held in memory, which is another reason why it is not intended for *Big Data*.
 
-When a data entry is changed the full state of that entry is replicated to other nodes. For example,
-if you add one element to a Set with 100 existing elements, all 101 elements are transferred to
-other nodes. This means that you cannot have too large data entries, because then the remote message
-size will be too large. We might be able to make this more efficient by implementing
-`Efficient State-based CRDTs by Delta-Mutation <http://gsd.di.uminho.pt/members/cbm/ps/delta-crdt-draft16may2014.pdf>`_.
+When a data entry is changed the full state of that entry may be replicated to other nodes
+if it doesn't support :ref:`delta_crdt_scala`. The full state is also replicated for delta-CRDTs,
+for example when new nodes are added to the cluster or when deltas could not be propagated because
+of network partitions or similar problems. This means that you cannot have too large 
+data entries, because then the remote message size will be too large.
 
 Learn More about CRDTs
 ======================
