@@ -6,9 +6,10 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.coding._
 import docs.http.scaladsl.server.RoutingSpec
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.{ HttpResponse, HttpEntity }
 import akka.http.scaladsl.model.headers.{ HttpEncodings, HttpEncoding, `Accept-Encoding`, `Content-Encoding` }
 import akka.http.scaladsl.model.headers.HttpEncodings._
+import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.server._
 import akka.util.ByteString
 import org.scalatest.matchers.Matcher
@@ -127,6 +128,22 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "Request content: 'hello uncompressed'"
     }
     //#decodeRequestWith
+  }
+
+  "withPrecompressedMediaTypeSupport" in {
+    //#withPrecompressedMediaTypeSupport
+    val svgz = compress("<svg/>", Gzip)
+    val route =
+      withPrecompressedMediaTypeSupport {
+        complete(HttpResponse(entity = HttpEntity(`image/svgz`, svgz)))
+      }
+
+    // tests:
+    Get("/") ~> route ~> check {
+      header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(gzip))
+      mediaType shouldEqual `image/svg+xml`
+    }
+    //#withPrecompressedMediaTypeSupport
   }
 
   def haveContentEncoding(encoding: HttpEncoding): Matcher[HttpResponse] =
