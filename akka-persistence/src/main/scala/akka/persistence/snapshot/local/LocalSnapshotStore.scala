@@ -164,7 +164,7 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
   }
 
   private def extractMetadata(filename: String): Option[(String, Long, Long)] = {
-    Try {
+    try {
       val sequenceNumberEndIdx = filename.lastIndexOf('-')
       val persistenceIdEndIdx = filename.lastIndexOf('-', sequenceNumberEndIdx - 1)
       val timestampString = filename.substring(sequenceNumberEndIdx + 1)
@@ -175,7 +175,11 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
         val timestamp = filename.substring(sequenceNumberEndIdx + 1).toLong
         Some((persistenceId, sequenceNumber, timestamp))
       }
-    }.toOption
+    } catch {
+      case ex: Exception =>
+        log.warning("Got {} while trying to extract metadata from filename: [{}]! Ignoring metadata.", ex.getClass.getName, filename)
+        None
+    }
   }
 }
 
