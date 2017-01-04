@@ -27,7 +27,7 @@ import scala.util.matching.Regex
  * Local filesystem backed snapshot store.
  */
 private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotStore with ActorLogging {
-
+  import LocalSnapshotStore._
   import akka.util.Helpers._
   private val maxLoadAttempts = config.getInt("max-load-attempts")
     .requiring(_ > 1, "max-load-attempts must be >= 1")
