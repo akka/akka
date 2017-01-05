@@ -67,7 +67,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     settings:          ServerSettings,
     connectionContext: ConnectionContext,
     log:               LoggingAdapter)(implicit mat: Materializer): ServerLayerBidiFlow = {
-    val httpLayer = serverLayer(settings, None, log)
+    val httpLayer = serverLayer(settings, None, log, connectionContext.isSecure)
     val tlsStage = sslTlsStage(connectionContext, Server)
 
     val serverBidiFlow =
@@ -264,10 +264,18 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
   def serverLayer(
+    settings:           ServerSettings,
+    remoteAddress:      Option[InetSocketAddress] = None,
+    log:                LoggingAdapter            = system.log,
+    isSecureConnection: Boolean                   = false)(implicit mat: Materializer): ServerLayer =
+    HttpServerBluePrint(settings, log, isSecureConnection)
+
+  // for binary-compatibility, since 10.0.0
+  def serverLayer(
     settings:      ServerSettings,
-    remoteAddress: Option[InetSocketAddress] = None,
-    log:           LoggingAdapter            = system.log)(implicit mat: Materializer): ServerLayer =
-    HttpServerBluePrint(settings, log)
+    remoteAddress: Option[InetSocketAddress],
+    log:           LoggingAdapter)(implicit mat: Materializer): ServerLayer =
+    HttpServerBluePrint(settings, log, false)
 
   // ** CLIENT ** //
 
