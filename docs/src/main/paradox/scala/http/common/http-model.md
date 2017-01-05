@@ -52,6 +52,7 @@ All parameters of `HttpRequest.apply` have default values set, so `headers` for 
 if there are none. Many of the parameters types (like `HttpEntity` and `Uri`) define implicit conversions
 for common use cases to simplify the creation of request and response instances.
 
+<a id="synthetic-headers-scala"></a>
 ### Synthetic Headers
 
 In some cases it may be necessary to deviate from fully RFC-Compliant behavior. For instance, Amazon S3 treats 
