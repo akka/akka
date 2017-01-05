@@ -179,7 +179,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               bufferedFrameOut.tryFlush()
 
             case PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
-              debug(s"Received PriorityFrame for stream $streamId with ${if(exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
+              debug(s"Received PriorityFrame for stream $streamId with ${if (exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
 
             case e: StreamFrameEvent ⇒
               incomingStreams(e.streamId).push(e)

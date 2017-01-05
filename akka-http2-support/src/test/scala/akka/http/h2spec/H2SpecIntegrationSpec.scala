@@ -36,6 +36,8 @@ class H2SpecIntegrationSpec extends AkkaSpec(
   import system.dispatcher
   implicit val mat = ActorMaterializer()
 
+  override def expectedTestDuration = 5.minutes // because slow jenkins, generally finishes below 1 or 2 minutes
+
   val echo = (req: HttpRequest) ⇒ {
     req.entity.toStrict(1.second).map { entity ⇒
       HttpResponse().withEntity(HttpEntity(entity.data))
@@ -85,24 +87,37 @@ class H2SpecIntegrationSpec extends AkkaSpec(
         8.2. Server Push
       """.split("\n").map(_.trim).filterNot(_.isEmpty)
 
-    val testNamesWithSectionNumbers =
-      testCases.zip(testCases.map(_.trim).filterNot(_.isEmpty)
-        .map(l ⇒ l.take(l.lastIndexOf('.'))))
+    // execution of tests ------------------------------------------------------------------ 
+    val runningOnJenkins = sys.env.get("BUILD_NUMBER").isDefined
 
-    testNamesWithSectionNumbers foreach {
-      case (name, sectionNr) ⇒
-        s"pass rule: $name" in {
-          runSpec(sectionNr)
-        }
+    if (runningOnJenkins) {
+      "pass the entire h2spec, producing junit test report" in {
+        runSpec(junitOutput = new File("target/test-reports/h2spec-junit.xml"))
+      }
+    } else {
+      val testNamesWithSectionNumbers =
+        testCases.zip(testCases.map(_.trim).filterNot(_.isEmpty)
+          .map(l ⇒ l.take(l.lastIndexOf('.'))))
+
+      testNamesWithSectionNumbers foreach {
+        case (name, sectionNr) ⇒
+          s"pass rule: $name" in {
+            runSpec(specSectionNumber = sectionNr)
+          }
+      }
     }
+    // end of execution of tests ----------------------------------------------------------- 
 
-    def runSpec(n: String): Unit = {
+    def runSpec(specSectionNumber: String = null, junitOutput: File = null): Unit = {
+      require(specSectionNumber != null ^ junitOutput != null, "Only one of the parameters must be not null, selecting the mode we run in.")
       val TestFailureMarker = "×" // that special character is next to test failures, so we detect them by it 
 
       val keepAccumulating = new AtomicBoolean(true)
       val sb = new StringBuffer()
 
-      val command = s"""$executable -k -t -p $port -s $n"""
+      val command =
+        if (specSectionNumber != null) s"""$executable -k -t -p $port -s $specSectionNumber"""
+        else s"""$executable -k -t -p $port -j $junitOutput""" // include junit report
       println(s"exec: $command")
       val aggregateTckLogs = ProcessLogger(
         out ⇒ {
