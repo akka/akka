@@ -6,13 +6,15 @@ package akka.http.javadsl.unmarshalling
 
 import java.util.concurrent.CompletionStage
 
+import akka.http.impl.model.JavaQuery
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.model.{ HttpEntity, HttpRequest, MediaType, RequestEntity }
-import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, FormData, Multipart }
+import akka.http.javadsl.model._
+import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, FormData => SFormData }
+import akka.http.scaladsl.model.{ Multipart => SMultipart }
 import akka.http.scaladsl.unmarshalling
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, UnsupportedContentTypeException }
+import akka.http.scaladsl.unmarshalling.Unmarshaller.{EnhancedFromEntityUnmarshaller, UnsupportedContentTypeException}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.util.ByteString
@@ -25,6 +27,14 @@ import scala.language.implicitConversions
 object Unmarshaller {
   implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]): Unmarshaller[A, B] =
     scalaUnmarshaller
+
+  /**
+   * Safe downcasting of the output type of the unmarshaller to a superclass.
+   *
+   * Unmarshaller is covariant in B, i.e. if B2 is a subclass of B1,
+   * then Unmarshaller[X,B2] is OK to use where Unmarshaller[X,B1] is expected.
+   */
+  private def downcast[A, B1, B2 <: B1](m: Unmarshaller[A, B2], target: Class[B1]): Unmarshaller[A, B1] = m.asInstanceOf[Unmarshaller[A, B1]]
 
   /**
    * Creates an unmarshaller from an asynchronous Java function.
@@ -41,12 +51,19 @@ object Unmarshaller {
     }
 
   // format: OFF
-  def entityToByteString: Unmarshaller[HttpEntity, ByteString]       = unmarshalling.Unmarshaller.byteStringUnmarshaller
-  def entityToByteArray: Unmarshaller[HttpEntity, Array[Byte]]       = unmarshalling.Unmarshaller.byteArrayUnmarshaller
-  def entityToCharArray: Unmarshaller[HttpEntity, Array[Char]]       = unmarshalling.Unmarshaller.charArrayUnmarshaller
-  def entityToString: Unmarshaller[HttpEntity, String]               = unmarshalling.Unmarshaller.stringUnmarshaller
-  def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller
-  def entityToMultipartByteRanges: Unmarshaller[HttpEntity, Multipart.ByteRanges] = unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller
+  def entityToByteString: Unmarshaller[HttpEntity, ByteString] = unmarshalling.Unmarshaller.byteStringUnmarshaller
+  def entityToByteArray: Unmarshaller[HttpEntity, Array[Byte]] = unmarshalling.Unmarshaller.byteArrayUnmarshaller
+  def entityToCharArray: Unmarshaller[HttpEntity, Array[Char]] = unmarshalling.Unmarshaller.charArrayUnmarshaller
+  def entityToString: Unmarshaller[HttpEntity, String]         = unmarshalling.Unmarshaller.stringUnmarshaller
+
+  @deprecated("Use `entityToWwwUrlEncodedFormData` instead. This method leaks a Scala DSL class", "10.0.1")
+  def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, SFormData]   = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller
+  def entityToWwwUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller.map(scalaFormData => new FormData(JavaQuery(scalaFormData.fields)))
+
+  @deprecated("Use `entityToMultipartByteRangesUnmarshaller` instead. This method leaks a Scala DSL class", "10.0.1")
+  def entityToMultipartByteRanges: Unmarshaller[HttpEntity, SMultipart.ByteRanges]            = unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller
+  def entityToMultipartByteRangesUnmarshaller: Unmarshaller[HttpEntity, Multipart.ByteRanges] = downcast(unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller, classOf[Multipart.ByteRanges])
+  def entityToMultipartFormData: Unmarshaller[HttpEntity, Multipart.FormData]                 = downcast(unmarshalling.MultipartUnmarshallers.multipartFormDataUnmarshaller, classOf[Multipart.FormData])
   // format: ON
 
   val requestToEntity: Unmarshaller[HttpRequest, RequestEntity] =
