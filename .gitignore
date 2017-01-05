@@ -3,5 +3,5 @@ target
 
 *.orig
 
-# ignore as one can download it anew using the provided scripts
-/akka-http2-support/jetty-alpn-agent-2.0.5.jar
+# we can't really lazily download it since the tests fork and need the agent to be present already
+#/akka-http2-support/jetty-alpn-agent-2.0.5.jar
