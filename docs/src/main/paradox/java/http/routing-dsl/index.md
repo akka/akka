@@ -61,10 +61,10 @@ those streams both for the file and for the form fields.
 Here is a simple example which just dumps the uploaded file into a temporary file on disk, collects
 some form fields and saves an entry to a fictive database:
 
-TODO missing example 1
+@@snip [FileUploadExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/FileUploadExamplesTest.java) { #simple-upload }
 
 You can transform the uploaded files as they arrive rather than storing then in a temporary file as
 in the previous example. In this example we accept any number of `.csv` files, parse those into lines
 and split each line before we send it to an actor for further processing:
 
-TODO missing example 2
+@@snip [FileUploadExamplesTest.java](../../../../../test/java/docs/http/javadsl/server/FileUploadExamplesTest.java) { #stream-csv-upload }
