@@ -50,7 +50,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
     val dependenciesExist = jettyExists && h2SpecExists
     if (!dependenciesExist) {
       info("Dependencies not found, running: prepare-h2spec.sh")
-      """prepare-h2spec.sh""".!!
+      Process("./prepare-h2spec.sh").!!
     } else {
       info("Dependencies present, NOT running prepare-h2spec.sh")
     }
