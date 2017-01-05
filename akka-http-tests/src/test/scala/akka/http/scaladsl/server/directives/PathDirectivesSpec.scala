@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.server.directives
 
+import scala.collection.immutable.ListMap
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import org.scalatest.Inside
@@ -60,6 +61,73 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     val test = testFor(path("") { echoUnmatchedPath })
     "reject [/foo]" inThe test()
     "accept [/] and clear the unmatchedPath" in test("")
+  }
+
+  """path(Map("a" → 1, "aa" → 2))""" should {
+    val test = testFor(path(Map("a" → 1, "aa" → 2)) { echoCaptureAndUnmatchedPath })
+    "accept [/a]" inThe test("1:")
+    "accept [/aa]" inThe test("2:")
+    "reject [/aaa]" inThe test()
+  }
+
+  """path(Map("sv_SE" → 3, "sv" → 1, "sv_FI" → 2))""" should {
+    val test = testFor(path(Map("sv_SE" → 3, "sv" → 1, "sv_FI" → 2)) { echoCaptureAndUnmatchedPath })
+    "accept [/sv]" inThe test("1:")
+    "accept [/sv_FI]" inThe test("2:")
+    "accept [/sv_SE]" inThe test("3:")
+    "reject [/sv_DK]" inThe test()
+  }
+
+  """path(Map("a" -> 1, "ab" -> 2, "ba" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "da" -> 7))""" should {
+    val test = testFor(path(Map("a" → 1, "ab" → 2, "ba" → 3, "b" → 4, "c" → 5, "d" → 6, "da" → 7)) { echoCaptureAndUnmatchedPath })
+    "accept [/a]" inThe test("1:")
+    "accept [/ab]" inThe test("2:") // FAIL
+    "accept [/ba]" inThe test("3:")
+    "accept [/b]" inThe test("4:")
+    "accept [/c]" inThe test("5:")
+    "accept [/d]" inThe test("6:")
+    "accept [/da]" inThe test("7:")
+    "reject [/e]" inThe test()
+    "reject [/ac]" inThe test()
+  }
+
+  """path(ListMap("a" -> 1, "ab" -> 2, "ba" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "da" -> 7))""" should {
+    val test = testFor(path(ListMap("a" → 1, "ab" → 2, "ba" → 3, "b" → 4, "c" → 5, "d" → 6, "da" → 7)) { echoCaptureAndUnmatchedPath })
+    "accept [/a]" inThe test("1:")
+    "accept [/ab]" inThe test("2:")
+    "accept [/ba]" inThe test("3:")
+    "accept [/b]" inThe test("4:")
+    "accept [/c]" inThe test("5:")
+    "accept [/d]" inThe test("6:")
+    "accept [/da]" inThe test("7:")
+    "reject [/e]" inThe test()
+    "reject [/ac]" inThe test()
+  }
+
+  """path(ListMap("a" -> 1, "aa" -> 2, "bb" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "dd" -> 7))""" should {
+    val test = testFor(path(ListMap("a" → 1, "aa" → 2, "bb" → 3, "b" → 4, "c" → 5, "d" → 6, "dd" → 7)) { echoCaptureAndUnmatchedPath })
+    "accept [/a]" inThe test("1:")
+    "accept [/aa]" inThe test("2:")
+    "accept [/bb]" inThe test("3:")
+    "accept [/b]" inThe test("4:")
+    "accept [/c]" inThe test("5:")
+    "accept [/d]" inThe test("6:")
+    "accept [/dd]" inThe test("7:")
+    "reject [/e]" inThe test()
+    "reject [/ac]" inThe test()
+  }
+
+  """path(Map("a" -> 1, "aa" -> 2, "bb" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "dd" -> 7))""" should {
+    val test = testFor(path(Map("a" → 1, "aa" → 2, "bb" → 3, "b" → 4, "c" → 5, "d" → 6, "dd" → 7)) { echoCaptureAndUnmatchedPath })
+    "accept [/a]" inThe test("1:")
+    "accept [/aa]" inThe test("2:")
+    "accept [/bb]" inThe test("3:")
+    "accept [/b]" inThe test("4:")
+    "accept [/c]" inThe test("5:")
+    "accept [/d]" inThe test("6:")
+    "accept [/dd]" inThe test("7:")
+    "reject [/e]" inThe test()
+    "reject [/ac]" inThe test()
   }
 
   """pathPrefix("foo")""" should {
