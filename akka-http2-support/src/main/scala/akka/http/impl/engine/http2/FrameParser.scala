@@ -118,7 +118,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         PingFrame(ack, payload.remainingData)
 
       case RST_STREAM ⇒
-        // FIXME: ensure data size
+        Http2Compliance.requireFrameSize(payload.remainingSize, 4)
         RstStreamFrame(streamId, ErrorCode.byId(payload.readIntBE()))
 
       case PRIORITY ⇒

@@ -2,3 +2,6 @@
 target
 
 *.orig
+
+# ignore as one can download it anew using the provided scripts
+/akka-http2-support/jetty-alpn-agent-2.0.5.jar

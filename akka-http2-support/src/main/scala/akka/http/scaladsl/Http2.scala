@@ -15,6 +15,7 @@ import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ AlpnSwitch, Http2Blueprint, WrappedSslContextSPI }
 import akka.http.impl.engine.server.HttpAttributes
+import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -65,7 +66,8 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
 
     def http2Layer(): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
       Http2Blueprint.serverStack() atop
-        unwrapTls
+        unwrapTls atop
+        logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
 
     // Flow is not reusable because we need a side-channel to transport the protocol
     // chosen by ALPN from the SSLEngine to the switching stage
