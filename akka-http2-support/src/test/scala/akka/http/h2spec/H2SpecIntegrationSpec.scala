@@ -44,10 +44,9 @@ class H2SpecIntegrationSpec extends AkkaSpec(
   val port = TestUtils.temporaryServerAddress().getPort
 
   val binding = {
-    val jettyExists = new File("jetty-alpn-agent-2.0.5.jar").exists
     val h2SpecExists = new File("target/h2spec").exists
 
-    val dependenciesExist = jettyExists && h2SpecExists
+    val dependenciesExist = h2SpecExists
     if (!dependenciesExist) {
       info("Dependencies not found, running: prepare-h2spec.sh")
       Process("./prepare-h2spec.sh").!!

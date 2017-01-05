@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-alpn_version='2.0.5'
 h2spec_version='1.5.0'
 
 mkdir -p target
@@ -22,10 +21,3 @@ wget https://github.com/summerwind/h2spec/releases/download/v${h2spec_version}/h
 unzip h2spec_linux_amd64.zip
 wget https://github.com/summerwind/h2spec/releases/download/v${h2spec_version}/h2spec_windows_amd64.zip
 unzip h2spec_windows_amd64.zip
-
-# since the tests need to start with the agent already present, downloading it lazily would result in much headache for people,
-# thus it is currently comitted and available as file. we should eventually find a cleaner solution for this.
-#cd ../..
-#echo "Downloading jetty-alpn-agent..."
-#rm -f jetty-alpn-agent-${alpn_version}.jar
-#wget http://central.maven.org/maven2/org/mortbay/jetty/alpn/jetty-alpn-agent/${alpn_version}/jetty-alpn-agent-${alpn_version}.jar

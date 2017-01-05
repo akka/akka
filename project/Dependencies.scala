@@ -84,6 +84,9 @@ object Dependencies {
       val hdrHistogram = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
       val metricsAll   = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
+      // HTTP/2
+      val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % "2.0.5"            % "test" // ApacheV2
+
       // sigar logging
       val slf4jJul     = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"           % "test" // MIT
       val slf4jLog4j   = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"           % "test" // MIT
