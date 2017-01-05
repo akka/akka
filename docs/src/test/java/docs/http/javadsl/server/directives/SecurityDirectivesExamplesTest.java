@@ -45,7 +45,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/secured"))
       .assertStatusCode(StatusCodes.UNAUTHORIZED)
       .assertEntity("The resource requires authentication, which was not supplied with the request")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\"");
+      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
 
     final HttpCredentials validCredentials =
       BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
@@ -57,7 +57,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
       .assertStatusCode(StatusCodes.UNAUTHORIZED)
       .assertEntity("The supplied authentication is invalid")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\"");
+      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
     //#authenticateBasic
   }
 
@@ -91,7 +91,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/secured"))
       .assertStatusCode(StatusCodes.UNAUTHORIZED)
       .assertEntity("The resource requires authentication, which was not supplied with the request")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\"");
+      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
 
     final HttpCredentials validCredentials =
       BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
@@ -108,7 +108,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
       .assertStatusCode(StatusCodes.UNAUTHORIZED)
       .assertEntity("The supplied authentication is invalid")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\"");
+      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
     //#authenticateBasicPF
   }
 
@@ -147,7 +147,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/secured"))
       .assertStatusCode(StatusCodes.UNAUTHORIZED)
       .assertEntity("The resource requires authentication, which was not supplied with the request")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\"");
+      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
 
     final HttpCredentials validCredentials =
       BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
@@ -159,7 +159,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
       .assertStatusCode(StatusCodes.UNAUTHORIZED)
       .assertEntity("The supplied authentication is invalid")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\"");
+      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
     //#authenticateBasicPFAsync
   }
 
@@ -184,7 +184,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/secured"))
       .assertStatusCode(StatusCodes.UNAUTHORIZED)
       .assertEntity("The resource requires authentication, which was not supplied with the request")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\"");
+      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
 
     final HttpCredentials validCredentials =
       BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
@@ -196,7 +196,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
       .assertStatusCode(StatusCodes.UNAUTHORIZED)
       .assertEntity("The supplied authentication is invalid")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\"");
+      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
     //#authenticateBasicAsync
   }
 

@@ -8,6 +8,7 @@ import akka.http.impl.util.Util;
 import akka.japi.Option;
 
 
+import java.util.HashMap;
 import java.util.Map;
 
 public abstract class HttpChallenge {
@@ -41,7 +42,9 @@ public abstract class HttpChallenge {
     }
 
     public static HttpChallenge createBasic(String realm) {
-        return create("Basic", realm);
+        Map<String, String> params = new HashMap<String, String>();
+        params.put("charset", "UTF-8");
+        return create("Basic", realm, params);
     }
 
     public static HttpChallenge createOAuth2(String realm) {

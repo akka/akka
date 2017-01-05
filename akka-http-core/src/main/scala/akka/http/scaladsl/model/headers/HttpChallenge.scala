@@ -35,7 +35,7 @@ object HttpChallenge extends scala.runtime.AbstractFunction3[String, String, Map
 
 object HttpChallenges {
 
-  def basic(realm: String): HttpChallenge = HttpChallenge("Basic", realm)
+  def basic(realm: String): HttpChallenge = HttpChallenge("Basic", realm, Map("charset" → "UTF-8"))
 
   def oAuth2(realm: String): HttpChallenge = HttpChallenge("Bearer", realm)
 }
