@@ -44,16 +44,6 @@ class H2SpecIntegrationSpec extends AkkaSpec(
   val port = TestUtils.temporaryServerAddress().getPort
 
   val binding = {
-    val h2SpecExists = new File("target/h2spec").exists
-
-    val dependenciesExist = h2SpecExists
-    if (!dependenciesExist) {
-      info("Dependencies not found, running: prepare-h2spec.sh")
-      Process("./prepare-h2spec.sh").!!
-    } else {
-      info("Dependencies present, NOT running prepare-h2spec.sh")
-    }
-
     Http2().bindAndHandleAsync(echo, "127.0.0.1", port, ExampleHttpContexts.exampleServerContext).futureValue
   }
 
@@ -135,20 +125,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       } else if (output.contains("0 failed")) ()
     }
 
-    def executable =
-      s"target/h2spec/h2spec_${osName}_amd64/h2spec${exeIfWindows}"
-
-    def osName = {
-      val os = System.getProperty("os.name").toLowerCase()
-      if (os startsWith "mac") "darwin"
-      else if (os startsWith "win") "windows"
-      else "linux"
-    }
-    def exeIfWindows = {
-      val os = System.getProperty("os.name").toLowerCase()
-      if (os startsWith "win") ".exe"
-      else ""
-    }
+    def executable = sys.props("h2spec.path")
   }
 
   override protected def afterTermination(): Unit = {
