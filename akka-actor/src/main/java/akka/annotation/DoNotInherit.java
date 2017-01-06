@@ -23,5 +23,4 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.CLASS) // to be accessible by MiMa
 @Target({ElementType.TYPE})
 public @interface DoNotInherit {
-  String description();
 }

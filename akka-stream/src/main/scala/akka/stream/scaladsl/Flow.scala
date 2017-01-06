@@ -10,15 +10,16 @@ import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage._
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+import org.reactivestreams.{Processor, Publisher, Subscriber, Subscription}
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
-
 import akka.NotUsed
+import akka.annotation.DoNotInherit
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -369,6 +370,7 @@ final case class RunnableGraph[+Mat](val module: StreamLayout.Module) extends Gr
  *
  * Binary compatibility is only maintained for callers of this trait’s interface.
  */
+@DoNotInherit
 trait FlowOps[+Out, +Mat] {
   import akka.stream.impl.Stages._
   import GraphDSL.Implicits._
