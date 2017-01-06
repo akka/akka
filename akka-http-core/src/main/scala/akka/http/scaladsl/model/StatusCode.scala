@@ -89,7 +89,8 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
     else if (300 to 399 contains intValue) Redirection(intValue)(reason, defaultMessage, defaultMessage)
     else if (400 to 499 contains intValue) ClientError(intValue)(reason, defaultMessage)
     else if (500 to 599 contains intValue) ServerError(intValue)(reason, defaultMessage)
-    else throw new IllegalArgumentException("Can't register status code in non-standard region")
+    else throw new IllegalArgumentException("Can't register status code in non-standard region, " +
+      "please use the 5-parameter version of custom(...) to provide the additional required information to register this status code.")
 
   import Informational.{apply => i}
   import Success      .{apply => s}

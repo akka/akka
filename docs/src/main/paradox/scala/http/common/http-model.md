@@ -350,3 +350,26 @@ need to register the custom media type in the server's settings by configuring `
 
 You may also want to read about MediaType [Registration trees](https://en.wikipedia.org/wiki/Media_type#Registration_trees), in order to register your vendor specific media types
 in the right style / place.
+
+<a id="registeringcustomstatuscodes"></a>
+## Registering Custom Status Codes
+
+Similarily to media types, Akka HTTP @scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)
+well-known status codes, however sometimes you may need to use a custom one (or are forced to use an API which returns custom status codes).
+Similarily to the media types registration, you can register custom status codes by configuring `ParserSettings` like this:
+
+@@snip [CustomHttpMethodSpec.scala](../../../../../../../docs/http/scaladsl/server/directives/CustomHttpStatusCodeSpec.scala) { #application-custom }
+
+## The URI model
+
+Akka HTTP offers its own specialised URI model class which is tuned for both performance and idiomatic usage within
+other types of the HTTP model. For example, an `HTTPRequest`'s target URI is parsed into this type, where all character
+escaping and other URI specific semantics are applied.
+
+### Obtaining the Raw Request URI
+
+Sometimes it may be needed to obtain the "raw" value of an incoming URI, without applying any escaping or parsing to it.
+While this use-case is rare, it comes up every once in a while. It is possible to obtain the "raw" request URI in Akka
+HTTP Server side by turning on the `akka.http.server.raw-request-uri-header` flag.
+When enabled, a `Raw-Request-URI` header will be added to each request. This header will hold the original raw request's
+URI that was used. For an example check the reference configuration.

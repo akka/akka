@@ -67,18 +67,19 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
   override final def onBadProtocol() = throw new ParsingException("The server-side HTTP version is not supported")
 
   private def parseStatus(input: ByteString, cursor: Int): Int = {
-    def badStatusCode = throw new ParsingException("Illegal response status code")
+    def badStatusCode() = throw new ParsingException("Illegal response status code")
+    def badStatusCodeSpecific(code: Int) = throw new ParsingException("Illegal response status code: " + code)
     def parseStatusCode() = {
       def intValue(offset: Int): Int = {
         val c = byteChar(input, cursor + offset)
-        if (CharacterClasses.DIGIT(c)) c - '0' else badStatusCode
+        if (CharacterClasses.DIGIT(c)) c - '0' else badStatusCode()
       }
       val code = intValue(0) * 100 + intValue(1) * 10 + intValue(2)
       statusCode = code match {
         case 200 ⇒ StatusCodes.OK
-        case _ ⇒ StatusCodes.getForKey(code) match {
+        case code ⇒ StatusCodes.getForKey(code) match {
           case Some(x) ⇒ x
-          case None    ⇒ customStatusCodes(code) getOrElse badStatusCode
+          case None    ⇒ customStatusCodes(code) getOrElse badStatusCodeSpecific(code)
         }
       }
     }
