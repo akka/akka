@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -17,7 +17,7 @@ import scala.util.Try
  *
  * which is licensed under this license:
  *
- * Copyright (C) 2008-2016 Bjoern Hoehrmann <bjoern@hoehrmann.de>
+ * Copyright (C) 2008-2017 Bjoern Hoehrmann <bjoern@hoehrmann.de>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),

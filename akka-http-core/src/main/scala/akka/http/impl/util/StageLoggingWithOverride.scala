@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  *
  * Copied and adapted from akka-remote
  * https://github.com/akka/akka/blob/c90121485fcfc44a3cee62a0c638e1982d13d812/akka-remote/src/main/scala/akka/remote/artery/StageLogging.scala
