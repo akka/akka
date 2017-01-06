@@ -9,10 +9,10 @@ object Dependencies {
 
   val akkaVersion = "2.4.16"
   val junitVersion = "4.12"
-  val h2SpecVersion = "1.5.0"
-  val h2SpecOsName = DependencyHelpers.osName
-  val h2SpecPackageName = s"h2spec_${h2SpecOsName}_amd64"
-  val h2SpecUrl = url(s"https://github.com/summerwind/h2spec/releases/download/v${h2SpecVersion}/${h2SpecPackageName}.zip")
+  val h2specVersion = "1.5.0"
+  val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
+  val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
+  val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
 
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
@@ -90,9 +90,7 @@ object Dependencies {
 
       // HTTP/2
       val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % "2.0.5"            % "test" // ApacheV2
-      val h2Spec       = "io.github.summerwind"        % "h2spec"                       % h2SpecVersion      % "test" artifacts( // MIT
-        Artifact(name = "h2spec", `type` = "zip", extension = "zip", classifier = Some(h2SpecOsName), Nil, Some(h2SpecUrl))
-      )
+      val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
 
       // sigar logging
       val slf4jJul     = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"           % "test" // MIT
@@ -131,7 +129,7 @@ object Dependencies {
 
   lazy val http2 = l ++= Seq(hpack, alpnApi)
 
-  lazy val http2Support = l ++= Seq(Test.h2Spec)
+  lazy val http2Support = l ++= Seq(Test.h2spec)
 
   lazy val httpTestkit = l ++= Seq(
     Test.junit, Test.junitIntf, Compile.junit % "provided",
@@ -190,5 +188,11 @@ object DependencyHelpers {
     if (os startsWith "mac") "darwin"
     else if (os startsWith "win") "windows"
     else "linux"
+  }
+
+  def exeIfWindows = {
+    val os = System.getProperty("os.name").toLowerCase()
+    if (os startsWith "win") ".exe"
+    else ""
   }
 }
