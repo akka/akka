@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import akka.annotation.ApiMayChange
+
 /**
  * Java API: compatible with lambda expressions
  *
@@ -44,6 +46,7 @@ object AbstractActor {
  *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
+@ApiMayChange
 abstract class AbstractActor extends Actor {
 
   private var _receive: Receive = null
