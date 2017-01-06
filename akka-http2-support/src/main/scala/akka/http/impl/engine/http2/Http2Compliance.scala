@@ -22,4 +22,10 @@ private[akka] object Http2Compliance {
   /** checks if the stream id was client initiated, by checking if the stream id was odd-numbered */
   final def isClientInitiatedStreamId(id: Int): Boolean = id % 2 != 0
 
+  final class IllegalHttp2FrameSize(size: Int, expected: String)
+    extends IllegalArgumentException(s"Illegal HTTP/2 frame size: [$size]. $expected!")
+
+  final def requireFrameSize(size: Int, max: Int): Unit =
+    if (size != max) throw new IllegalHttp2FrameSize(size, s"MUST BE == $max.")
+
 }

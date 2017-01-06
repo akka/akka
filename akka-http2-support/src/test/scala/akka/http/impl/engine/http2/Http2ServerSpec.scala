@@ -619,7 +619,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     def sendCONTINUATION(streamId: Int, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(ContinuationFrame(streamId, endHeaders, headerBlockFragment)))
 
-    def sendPRIORITY(streamId: Int,  exclusiveFlag: Boolean, streamDependency: Int, weight: Int): Unit =
+    def sendPRIORITY(streamId: Int, exclusiveFlag: Boolean, streamDependency: Int, weight: Int): Unit =
       sendBytes(FrameRenderer.render(PriorityFrame(streamId, exclusiveFlag, streamDependency, weight)))
 
     def sendRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit = {

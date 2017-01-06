@@ -2,3 +2,6 @@
 target
 
 *.orig
+
+# we can't really lazily download it since the tests fork and need the agent to be present already
+#/akka-http2-support/jetty-alpn-agent-2.0.5.jar

@@ -79,6 +79,8 @@ lazy val http = project("akka-http")
   .dependsOn(httpCore)
 
 lazy val http2Support = project("akka-http2-support")
+  .enablePlugins(JavaAgent)
+  .settings(javaAgents += Dependencies.Compile.Test.alpnAgent)
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
 

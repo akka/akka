@@ -5,12 +5,14 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
-import akka.event.Logging
+import akka.event.{ Logging, LoggingAdapter }
 import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
 import akka.http.impl.engine.http2.rendering.HttpResponseHeaderHpackCompression
+import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
+import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
