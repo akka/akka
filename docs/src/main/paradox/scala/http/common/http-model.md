@@ -358,7 +358,7 @@ Similarily to media types, Akka HTTP @scaladoc:[predefines](akka.http.scaladsl.m
 well-known status codes, however sometimes you may need to use a custom one (or are forced to use an API which returns custom status codes).
 Similarily to the media types registration, you can register custom status codes by configuring `ParserSettings` like this:
 
-@@snip [CustomHttpMethodSpec.scala](../../../../../../../docs/http/scaladsl/server/directives/CustomHttpStatusCodeSpec.scala) { #application-custom }
+@@snip [CustomMediaTypesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
 
 ## The URI model
 

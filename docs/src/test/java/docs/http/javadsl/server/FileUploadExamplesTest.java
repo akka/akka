@@ -36,13 +36,11 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
     // just making sure for it to be really compiled / run even if empty
   }
 
-  //#simple-upload
   Route uploadVideo() {
+    final Materializer materializer = null;
+    return 
     //#simple-upload
-    final Materializer materializer = materializer();
-    final ActorRef metadataActor = system().deadLetters();
-    //#simple-upload
-    return path("video", () ->
+      path("video", () ->
       entity(Unmarshaller.entityToMultipartFormData(), formData -> {
         // collect all parts of the multipart as it arrives into a map
         final CompletionStage<Map<String, Object>> allParts =
@@ -81,6 +79,7 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
         return onSuccess(() -> allParts, x -> complete("ok!"));
       })
     );
+    //#simple-upload
 
   }
 

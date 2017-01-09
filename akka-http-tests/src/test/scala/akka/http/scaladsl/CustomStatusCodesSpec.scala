@@ -51,11 +51,12 @@ class CustomStatusCodesSpec extends AkkaSpec with ScalaFutures
 
       // use clientSettings in client:
       val request = HttpRequest(uri = s"http://$host:$port/")
-      val response = Http().singleRequest(request, settings = clientSettings).futureValue
+      val response = Http().singleRequest(request, settings = clientSettings)
 
-      response.status should ===(LeetCode)
-      binding.foreach(_.unbind())
+      // futureValue is a ScalaTest helper:
+      response.futureValue.status should ===(LeetCode)
       //#application-custom
+      binding.foreach(_.unbind())
     }
   }
 
