@@ -72,7 +72,11 @@
             <div class="page-content row">
               <div class="small-12 large-9 column" id="docs">
                 $page.content$
-                <!-- FIXME copy the template again once paradox 0.2.8 is out, it has source inclusion here.-->
+                
+                <div>
+                  $source()$  
+                </div>
+                
                 $if(page.next.html)$
                 <div class="nav-next">
                   <p><strong>Next:</strong> $page.next.html$</p>
