@@ -12,6 +12,7 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
   trait GenericOutlet[T] {
     def setHandler(handler: OutHandler): Unit
     def push(elem: T): Unit
+    def complete(): Unit
     def canBePushed: Boolean
   }
   object GenericOutlet {
@@ -19,17 +20,20 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
       new GenericOutlet[T] {
         def setHandler(handler: OutHandler): Unit = subSourceOutlet.setHandler(handler)
         def push(elem: T): Unit = subSourceOutlet.push(elem)
+        def complete(): Unit = subSourceOutlet.complete()
         def canBePushed: Boolean = subSourceOutlet.isAvailable
       }
     implicit def fromOutlet[T](outlet: Outlet[T]): GenericOutlet[T] =
       new GenericOutlet[T] {
         def setHandler(handler: OutHandler): Unit = logic.setHandler(outlet, handler)
         def push(elem: T): Unit = logic.emit(outlet, elem)
+        def complete(): Unit = logic.complete(outlet)
         def canBePushed: Boolean = logic.isAvailable(outlet)
       }
   }
   class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHandler {
     val buffer: java.util.ArrayDeque[T] = new java.util.ArrayDeque[T]
+    var completed = false
 
     /**
      * override to hook into actually pushing, e.g. to keep track how much
@@ -37,21 +41,24 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
      */
     protected def doPush(elem: T): Unit = outlet.push(elem)
 
-    override def onPull(): Unit = {
-      if (!buffer.isEmpty) {
-        val popped = buffer.pop()
-        doPush(popped)
-      }
-    }
     outlet.setHandler(this)
 
+    def onPull(): Unit = tryFlush()
     def push(elem: T): Unit =
       if (outlet.canBePushed && buffer.isEmpty) doPush(elem)
       else buffer.addLast(elem)
 
+    def complete(): Unit = {
+      require(!completed, "Can only complete once.")
+      completed = true
+      if (buffer.isEmpty) outlet.complete()
+    }
+
     def tryFlush(): Unit = {
       if (outlet.canBePushed && !buffer.isEmpty)
         doPush(buffer.pop())
+
+      if (buffer.isEmpty && completed) outlet.complete()
     }
   }
 
