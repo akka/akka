@@ -10,7 +10,7 @@ This directive filters incoming requests based on the part of their URI that has
 potentially existing @ref[pathPrefix](pathPrefix.md#pathprefix-java) directives on higher levels of the routing structure.
 Its one parameter is usually an expression evaluating to a `PathMatcher` instance (see also: @ref[The PathMatcher DSL](../../../../../scala/http/routing-dsl/path-matchers.md#pathmatcher-dsl)).
 
-As opposed to the @ref[rawPathPrefix](rawPathPrefix.md#rawpathprefix-java) or @ref[rawPathPrefixTest-java](rawPathPrefixTest.md#rawpathprefixtest-java) directives `path` automatically adds a leading
+As opposed to the @ref[rawPathPrefix](rawPathPrefix.md#rawpathprefix-java) or @ref[rawPathPrefixTest](rawPathPrefixTest.md#rawpathprefixtest-java) directives `path` automatically adds a leading
 slash to its `PathMatcher` argument, you therefore don't have to start your matching expression with an explicit slash.
 
 The `path` directive attempts to match the **complete** remaining path, not just a prefix. If you only want to match

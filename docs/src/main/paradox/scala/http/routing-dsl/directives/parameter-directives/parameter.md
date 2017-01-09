@@ -9,7 +9,7 @@
 
 Extracts a *query* parameter value from the request.
 
-See @ref[parameters-scala](parameters.md#parameters-scala) for a detailed description of this directive.
+See @ref[parameters](parameters.md#parameters-scala) for a detailed description of this directive.
 
 See @ref[When to use which parameter directive?](index.md#which-parameter-directive) to understand when to use which directive.
 
