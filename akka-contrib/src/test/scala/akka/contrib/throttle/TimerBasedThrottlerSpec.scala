@@ -122,5 +122,6 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
       1 to 9 foreach { throttler ! _ }
       1 to 9 foreach { expectMsg(_) }
     }
+
   }
 }

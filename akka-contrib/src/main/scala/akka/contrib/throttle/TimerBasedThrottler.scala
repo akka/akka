@@ -6,10 +6,14 @@ package akka.contrib.throttle
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.collection.immutable.{ Queue ⇒ Q }
-import akka.actor.{ ActorRef, Actor, FSM }
+import akka.actor.{ ActorRef, Actor, FSM, Props }
 import Throttler._
 import TimerBasedThrottler._
 import java.util.concurrent.TimeUnit
+import scala.util.{ Try, Success, Failure }
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import akka.util.Timeout
 
 /**
  * @see [[akka.contrib.throttle.TimerBasedThrottler]]
@@ -216,8 +220,9 @@ private[throttle] object TimerBasedThrottler {
  */
 class TimerBasedThrottler(var rate: Rate) extends Actor with FSM[State, Data] {
   import FSM.`→`
-
   startWith(Idle, Data(None, rate.numberOfCalls, Q()))
+
+  val stopwatch = context.actorOf(Props[StopWatch], "timer-based-throttler-stopwatch")
 
   // Idle: no messages, or target not set
   when(Idle) {
@@ -295,10 +300,30 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with FSM[State, Data] {
    */
   private def deliverMessages(data: Data): Data = {
     val queue = data.queue
-    val nrOfMsgToSend = scala.math.min(queue.length, data.callsLeftInThisPeriod)
 
-    queue.take(nrOfMsgToSend).foreach(x ⇒ data.target.get.tell(x.message, x.sender))
+    import akka.pattern.ask
+    implicit val timeout = Timeout(61.seconds)
+    val callsInThisPeriod =
+      Try(Await.result((stopwatch ? LastPeriodCount(rate.duration)).mapTo[LastPeriodCountResponse], 60.seconds)) match {
+        case Success(s) ⇒
+          s.count
+        case Failure(f) ⇒
+          0
+      }
+
+    val callsLeftInThisPeriod = rate.numberOfCalls - callsInThisPeriod
+
+    val nrOfMsgToSend = scala.math.min(queue.length, callsLeftInThisPeriod)
+
+    queue.take(nrOfMsgToSend).foreach {
+      x ⇒
+        data.target.get.tell(x.message, x.sender)
+        stopwatch ! Click
+    }
+
+    stopwatch ! Purge(rate.duration) //purge stopwatch queue to prevent unbounded growth
 
     data.copy(queue = queue.drop(nrOfMsgToSend), callsLeftInThisPeriod = data.callsLeftInThisPeriod - nrOfMsgToSend)
+
   }
 }
