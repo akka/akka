@@ -5,9 +5,8 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.event.{ Logging, LoggingAdapter }
-import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
-import akka.http.impl.engine.http2.rendering.HttpResponseHeaderHpackCompression
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -23,13 +22,9 @@ import scala.concurrent.Future
 
 /**
  * Represents one direction of an Http2 substream.
- *
- * Note that the [[Http2ServerDemux]] takes care of assembling multiple HEADER + CONTINUATION frames together,
- * and passes the combined frame as `initialFrame` here. Following frames MUST be data frames (as per spec) -
- * and are directly related to the [[akka.http.scaladsl.model.HttpEntity]] offered by this stream.
  */
-private[http2] final case class Http2SubStream(initialFrame: HeadersFrame, frames: Source[DataFrame, _]) {
-  def streamId: Int = initialFrame.streamId
+private[http2] final case class Http2SubStream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any]) {
+  def streamId: Int = initialHeaders.streamId
 }
 
 object Http2Blueprint {
@@ -37,6 +32,7 @@ object Http2Blueprint {
   def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
     httpLayer() atop
     demux() atop
+    hpackCoding() atop
     framing()
   }
   // format: ON
@@ -45,6 +41,20 @@ object Http2Blueprint {
     BidiFlow.fromFlows(
       Flow[FrameEvent].map(FrameRenderer.render),
       Flow[ByteString].via(new FrameParser(shouldReadPreface = true)))
+
+  /**
+   * Runs hpack encoding and decoding. Incoming frames that are processed are HEADERS and CONTINUATION.
+   * Outgoing frame is ParsedHeadersFrame.
+   * Other frames are propagated unchanged.
+   *
+   * TODO: introduce another FrameEvent type that exclude HeadersFrame and ContinuationFrame from
+   * reaching the higher-level.
+   */
+  def hpackCoding(): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
+    BidiFlow.fromFlows(
+      Flow[FrameEvent].via(HeaderCompression),
+      Flow[FrameEvent].via(HeaderDecompression)
+    )
 
   /**
    * Creates substreams for every stream and manages stream state machines
@@ -61,12 +71,10 @@ object Http2Blueprint {
    * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
    * bindAndHandle the user needs to take of this manually.
    */
-  def httpLayer(): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
-    val incomingRequests = Flow[Http2SubStream].via(new HttpRequestHeaderHpackDecompression)
-      .log(Logging.simpleName(getClass)) //FIXME replace with a proper `atop logging()`
-    val outgoingResponses = Flow[HttpResponse].via(new HttpResponseHeaderHpackCompression)
-    BidiFlow.fromFlows(outgoingResponses, incomingRequests)
-  }
+  def httpLayer(): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] =
+    BidiFlow.fromFlows(
+      Flow[HttpResponse].map(ResponseRendering.renderResponse),
+      Flow[Http2SubStream].map(RequestParsing.parseRequest))
 
   /**
    * Returns a flow that handles `parallelism` requests in parallel, automatically keeping track of the

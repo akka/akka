@@ -27,6 +27,25 @@ object Http2Protocol {
   final val InitialWindowSize = 65535
 
   /**
+   * The initial frame size for both incoming and outgoing frames as defined by the
+   * specification.
+   *
+   * The frame size can be changed by changing SETTINGS_MAX_FRAME_SIZE.
+   *
+   * See https://tools.ietf.org/html/rfc7540#section-6.5.2:
+   *
+   * SETTINGS_MAX_FRAME_SIZE (0x5):  Indicates the size of the largest
+   *  frame payload that the sender is willing to receive, in octets.
+   *
+   *  The initial value is 2^14 (16,384) octets.  The value advertised
+   *  by an endpoint MUST be between this initial value and the maximum
+   *  allowed frame size (2^24-1 or 16,777,215 octets), inclusive.
+   *  Values outside this range MUST be treated as a connection error
+   *  (Section 5.4.1) of type PROTOCOL_ERROR.
+   */
+  final val InitialMaxFrameSize = 16384
+
+  /**
    * The stream id to be used for frames not associated with any individual stream
    * as defined by the specification.
    *

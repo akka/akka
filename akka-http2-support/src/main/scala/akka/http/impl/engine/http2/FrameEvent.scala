@@ -27,6 +27,10 @@ final case class HeadersFrame(
   endStream:           Boolean,
   endHeaders:          Boolean,
   headerBlockFragment: ByteString) extends StreamFrameEvent
+final case class ContinuationFrame(
+  streamId:   Int,
+  endHeaders: Boolean,
+  payload:    ByteString) extends StreamFrameEvent
 
 final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends StreamFrameEvent
 final case class SettingsFrame(settings: Seq[Setting]) extends FrameEvent
@@ -36,10 +40,6 @@ case class PingFrame(ack: Boolean, data: ByteString) extends FrameEvent
 final case class WindowUpdateFrame(
   streamId:            Int,
   windowSizeIncrement: Int) extends StreamFrameEvent
-final case class ContinuationFrame(
-  streamId:   Int,
-  endHeaders: Boolean,
-  payload:    ByteString) extends StreamFrameEvent
 
 final case class PriorityFrame(
   streamId:         Int,
@@ -62,3 +62,9 @@ final case class UnknownFrameEvent(
   flags:    ByteFlag,
   streamId: Int,
   payload:  ByteString) extends StreamFrameEvent
+
+final case class ParsedHeadersFrame(
+  streamId:      Int,
+  endStream:     Boolean,
+  keyValuePairs: Seq[(String, String)]
+) extends FrameEvent

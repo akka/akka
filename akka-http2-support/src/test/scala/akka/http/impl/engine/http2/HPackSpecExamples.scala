@@ -1,10 +1,10 @@
 package akka.http.impl.engine.http2
 
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers
+import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, HttpResponse, headers }
 import akka.http.scaladsl.model.headers.CacheDirectives
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.model.headers.RawHeader
+import akka.stream.scaladsl.Source
 
 /**
  * Examples from the HPACK specification. See https://tools.ietf.org/html/rfc7541#appendix-C
@@ -160,7 +160,8 @@ object HPackSpecExamples {
       headers = Vector(
         headers.`Cache-Control`(CacheDirectives.`private`()),
         headers.Date.parseFromValueString("Mon, 21 Oct 2013 20:13:21 GMT").right.get,
-        headers.Location("https://www.example.com")))
+        headers.Location("https://www.example.com")),
+      entity = HttpEntity.CloseDelimited(ContentTypes.NoContentType, Source.empty))
 
   /**
    * akka-http model representation of second request (as encoded in C.5.2 and C.6.2)
@@ -171,7 +172,8 @@ object HPackSpecExamples {
       headers = Vector(
         headers.`Cache-Control`(CacheDirectives.`private`()),
         headers.Date.parseFromValueString("Mon, 21 Oct 2013 20:13:21 GMT").right.get,
-        headers.Location("https://www.example.com")))
+        headers.Location("https://www.example.com")),
+      entity = HttpEntity.CloseDelimited(ContentTypes.NoContentType, Source.empty))
 
   /**
    * akka-http model representation of second request (as encoded in C.5.3 and C.6.3)
@@ -185,5 +187,6 @@ object HPackSpecExamples {
         headers.Location("https://www.example.com"),
         headers.`Content-Encoding`(HttpEncodings.gzip),
         // `Set-Cookie` modeled header doesn't support extra params like "version=1"
-        RawHeader("Set-Cookie", "foo=ASDJKHQKBZXOQWEOPIUAXQWEOIU; max-age=3600; version=1")))
+        RawHeader("Set-Cookie", "foo=ASDJKHQKBZXOQWEOPIUAXQWEOIU; max-age=3600; version=1")),
+      entity = HttpEntity.CloseDelimited(ContentTypes.NoContentType, Source.empty))
 }

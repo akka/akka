@@ -8,16 +8,10 @@ import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
-import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
+import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.StringRendering
-import akka.http.scaladsl.model.ContentTypes
-import akka.http.scaladsl.model.HttpEntity
-import akka.http.scaladsl.model.HttpMethods
-import akka.http.scaladsl.model.HttpProtocols
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.stream.{ ActorMaterializer, Materializer }
@@ -38,6 +32,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.Eventually
 
 import scala.annotation.tailrec
+import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
@@ -153,7 +148,6 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         protected def sendRequest(): Unit =
           sendRequestHEADERS(TheStreamId, request, endStream = false)
       }
-
       "send data frames to entity stream" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
         sendDATA(TheStreamId, endStream = false, data1)
@@ -226,16 +220,27 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     }
 
     "support stream support for sending response entity data" should {
-      class WaitingForResponseDataSetup extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      abstract class WaitingForResponseSetup extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val TheStreamId = 1
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(TheStreamId, theRequest)
         expectRequest() shouldBe theRequest
-
+      }
+      abstract class WaitingForResponseDataSetup extends WaitingForResponseSetup {
         val entityDataOut = TestPublisher.probe[ByteString]()
+
         val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
         emitResponse(TheStreamId, response)
-        expectResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty)
+        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+      }
+
+      "properly encode Content-Length and Content-Type headers" in new WaitingForResponseSetup {
+        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, ByteString("abcde")))
+        emitResponse(TheStreamId, response)
+        val pairs = expectDecodedResponseHEADERSPairs(streamId = TheStreamId, endStream = false).toMap
+        pairs should contain(":status" → "200")
+        pairs should contain("content-length" → "5")
+        pairs should contain("content-type" → "application/octet-stream")
       }
 
       "send entity data as data frames" in new WaitingForResponseDataSetup {
@@ -396,7 +401,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         val entity1DataOut = TestPublisher.probe[ByteString]()
         val response1 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entity1DataOut)))
         emitResponse(1, response1)
-        expectResponseHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty)
+        expectDecodedResponseHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
 
         def sendDataAndExpectOnNet(outStream: TestPublisher.Probe[ByteString], streamId: Int, dataString: String, endStream: Boolean = false): Unit = {
           val data = ByteString(dataString)
@@ -414,7 +419,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         val entity2DataOut = TestPublisher.probe[ByteString]()
         val response2 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entity2DataOut)))
         emitResponse(3, response2)
-        expectResponseHEADERS(streamId = 3, endStream = false) shouldBe response2.withEntity(HttpEntity.Empty)
+        expectDecodedResponseHEADERS(streamId = 3, endStream = false) shouldBe response2.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
 
         // send again on stream 1
         sendDataAndExpectOnNet(entity1DataOut, 1, "zyx")
@@ -690,12 +695,16 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         sendDATA(streamId, endStream = true, request.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue)
     }
 
-    def expectResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
+    def expectDecodedResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
+      val headerBlockBytes = expectHeaderBlock(streamId, endStream)
+      decodeHeadersToResponse(headerBlockBytes)
+    }
+    def expectDecodedResponseHEADERSPairs(streamId: Int, endStream: Boolean = true): Seq[(String, String)] = {
       val headerBlockBytes = expectHeaderBlock(streamId, endStream)
       decodeHeaders(headerBlockBytes)
     }
 
-    val encoder = new Encoder(HttpRequestHeaderHpackDecompression.maxHeaderTableSize)
+    val encoder = new Encoder(HeaderDecompression.maxHeaderTableSize)
     def encodeHeaders(request: HttpRequest): ByteString = {
       val bos = new ByteArrayOutputStream()
       def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
@@ -716,20 +725,24 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       ByteString(bos.toByteArray)
     }
 
-    val decoder = new Decoder(HttpRequestHeaderHpackDecompression.maxHeaderSize, HttpRequestHeaderHpackDecompression.maxHeaderTableSize)
-    def decodeHeaders(bytes: ByteString): HttpResponse = {
+    val decoder = new Decoder(HeaderDecompression.maxHeaderSize, HeaderDecompression.maxHeaderTableSize)
+    def decodeHeaders(bytes: ByteString): Seq[(String, String)] = {
       val bis = new ByteArrayInputStream(bytes.toArray)
-      var response = HttpResponse()
-      def update(f: HttpResponse ⇒ HttpResponse): Unit = response = f(response)
+      val hs = new VectorBuilder[(String, String)]()
+
       decoder.decode(bis, new HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
-          new String(name) match {
-            case ":status" ⇒ update(_.copy(status = new String(value).toInt))
-            case x         ⇒ update(_.addHeader(RawHeader(x, new String(value)))) // FIXME: decode to modeled headers
-          }
+          hs += new String(name) → new String(value)
       })
-      response
+      hs.result()
     }
+    def decodeHeadersToResponse(bytes: ByteString): HttpResponse =
+      decodeHeaders(bytes).foldLeft(HttpResponse())((old, header) ⇒ header match {
+        case (":status", value)        ⇒ old.copy(status = value.toInt)
+        case ("content-length", value) ⇒ old.copy(entity = HttpEntity.Default(old.entity.contentType, value.toLong, Source.empty))
+        case ("content-type", value)   ⇒ old.copy(entity = old.entity.withContentType(ContentType.parse(value).right.get))
+        case (name, value)             ⇒ old.addHeader(RawHeader(name, value)) // FIXME: decode to modeled headers
+      })
   }
 
   /** Provides the user handler flow as `requestIn` and `responseOut` probes for manual stream interaction */
