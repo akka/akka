@@ -157,7 +157,8 @@ object ValidatePullRequest extends AutoPlugin {
           .filter(l =>
             l.startsWith("akka-") ||
               l.startsWith("docs") ||
-              (l.startsWith("project") && l != "project/MiMa.scala")
+              (l.startsWith("project") && l != "project/MiMa.scala") || 
+              (l == "build.sbt")
           )
           .map(l ⇒ l.takeWhile(_ != '/'))
           .toSet
