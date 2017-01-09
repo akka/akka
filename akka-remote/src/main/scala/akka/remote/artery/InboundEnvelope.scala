@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -127,6 +127,11 @@ private[remote] final class ReusableInboundEnvelope extends InboundEnvelope {
     _flags = flags
     _envelopeBuffer = envelopeBuffer
     _association = association
+    this
+  }
+
+  def withEnvelopeBuffer(envelopeBuffer: EnvelopeBuffer): InboundEnvelope = {
+    _envelopeBuffer = envelopeBuffer
     this
   }
 

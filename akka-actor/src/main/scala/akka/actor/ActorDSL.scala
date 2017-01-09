@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.actor
@@ -65,7 +65,10 @@ import akka.util.Helpers.ConfigOps
  * <b>Note:</b> If you want to use an `Act with Stash`, you should use the
  * `ActWithStash` trait in order to have the actor get the necessary deque-based
  * mailbox setting.
+ *
+ * @deprecated Use the normal `actorOf` methods defined on `ActorSystem` and `ActorContext` to create Actors instead.
  */
+@deprecated("deprecated Use the normal `actorOf` methods defined on `ActorSystem` and `ActorContext` to create Actors instead.", since = "2.5.0")
 object ActorDSL extends dsl.Inbox with dsl.Creators {
 
   protected object Extension extends ExtensionId[Extension] with ExtensionIdProvider {

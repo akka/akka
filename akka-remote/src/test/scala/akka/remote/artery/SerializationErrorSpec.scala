@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -13,38 +13,24 @@ import akka.testkit.EventFilter
 
 object SerializationErrorSpec {
 
-  val config = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-       actor {
-         serialize-creators = false
-         serialize-messages = false
-       }
-     }
-  """)
-
   object NotSerializableMsg
 
 }
 
-class SerializationErrorSpec extends AkkaSpec(SerializationErrorSpec.config) with ImplicitSender {
+class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
   import SerializationErrorSpec._
 
-  val configB = ConfigFactory.parseString("""
-     akka.actor.serialization-identifiers {
-       # this will cause deserialization error
-       "akka.serialization.ByteArraySerializer" = -4
-     }
-     """).withFallback(system.settings.config)
-  val systemB = ActorSystem("systemB", configB)
+  val systemB = newRemoteSystem(
+    name = Some("systemB"),
+    extraConfig = Some("""
+       akka.actor.serialization-identifiers {
+         # this will cause deserialization error
+         "akka.serialization.ByteArraySerializer" = -4
+       }
+       """))
   systemB.actorOf(TestActors.echoActorProps, "echo")
-  val addressB = RARP(systemB).provider.getDefaultAddress
+  val addressB = address(systemB)
   val rootB = RootActorPath(addressB)
-
-  override def afterTermination(): Unit = shutdown(systemB)
 
   "Serialization error" must {
 

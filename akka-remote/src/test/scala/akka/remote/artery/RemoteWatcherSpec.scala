@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -63,23 +63,15 @@ object RemoteWatcherSpec {
 
 }
 
-class RemoteWatcherSpec extends AkkaSpec(
-  """akka {
-       loglevel = INFO
-       log-dead-letters-during-shutdown = false
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-     }""") with ImplicitSender {
+class RemoteWatcherSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
 
   import RemoteWatcherSpec._
   import RemoteWatcher._
 
   override def expectedTestDuration = 2.minutes
 
-  val remoteSystem = ActorSystem("RemoteSystem", system.settings.config)
-  val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
+  val remoteSystem = newRemoteSystem(name = Some("RemoteSystem"))
+  val remoteAddress = address(remoteSystem)
   def remoteAddressUid = AddressUidExtension(remoteSystem).longAddressUid
 
   Seq(system, remoteSystem).foreach(muteDeadLetters(
@@ -88,6 +80,7 @@ class RemoteWatcherSpec extends AkkaSpec(
 
   override def afterTermination() {
     shutdown(remoteSystem)
+    super.afterTermination()
   }
 
   val heartbeatRspB = ArteryHeartbeatRsp(remoteAddressUid)
@@ -161,7 +154,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       expectNoMsg(2 seconds)
     }
 
-    "generate AddressTerminated when missing heartbeats" in {
+    "generate AddressTerminated when missing heartbeats" taggedAs LongRunningTest in {
       val p = TestProbe()
       val q = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[TestRemoteWatcher.AddressTerm])
@@ -198,7 +191,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       expectNoMsg(2 seconds)
     }
 
-    "generate AddressTerminated when missing first heartbeat" in {
+    "generate AddressTerminated when missing first heartbeat" taggedAs LongRunningTest in {
       val p = TestProbe()
       val q = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[TestRemoteWatcher.AddressTerm])
@@ -234,7 +227,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       expectNoMsg(2 seconds)
     }
 
-    "generate AddressTerminated for new watch after broken connection that was re-established and broken again" in {
+    "generate AddressTerminated for new watch after broken connection that was re-established and broken again" taggedAs LongRunningTest in {
       val p = TestProbe()
       val q = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[TestRemoteWatcher.AddressTerm])

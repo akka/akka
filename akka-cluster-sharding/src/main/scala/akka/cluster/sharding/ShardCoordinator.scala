@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster.sharding
 
@@ -437,15 +437,15 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       if (isMember(region)) {
         log.debug("ShardRegion registered: [{}]", region)
         aliveRegions += region
-        if (state.regions.contains(region))
+        if (state.regions.contains(region)) {
           region ! RegisterAck(self)
-        else {
+          allocateShardHomesForRememberEntities()
+        } else {
           gracefulShutdownInProgress -= region
           update(ShardRegionRegistered(region)) { evt ⇒
             state = state.updated(evt)
             context.watch(region)
             region ! RegisterAck(self)
-
             allocateShardHomesForRememberEntities()
           }
         }
@@ -693,7 +693,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
   }
 
   def allocateShardHomesForRememberEntities(): Unit = {
-    if (settings.rememberEntities)
+    if (settings.rememberEntities && state.unallocatedShards.nonEmpty)
       state.unallocatedShards.foreach { self ! GetShardHome(_) }
   }
 

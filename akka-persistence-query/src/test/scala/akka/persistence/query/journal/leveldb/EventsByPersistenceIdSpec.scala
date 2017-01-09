@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.persistence.query.journal.leveldb
 
@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import akka.actor.ActorRef
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.query.scaladsl.EventsByTagQuery2
+import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
@@ -49,7 +49,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
   "Leveldb query EventsByPersistenceId" must {
 
     "implement standard EventsByTagQuery" in {
-      queries.isInstanceOf[EventsByTagQuery2] should ===(true)
+      queries.isInstanceOf[EventsByTagQuery] should ===(true)
     }
 
     "find existing events" in {

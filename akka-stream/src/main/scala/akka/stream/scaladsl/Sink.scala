@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -350,7 +350,10 @@ object Sink {
    * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
    * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` must
    * be [[akka.stream.actor.ActorSubscriber]].
+   *
+   * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
    */
+  @deprecated("Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
   def actorSubscriber[T](props: Props): Sink[T, ActorRef] = {
     require(classOf[ActorSubscriber].isAssignableFrom(props.actorClass()), "Actor must be ActorSubscriber")
     new Sink(new ActorSubscriberSink(props, DefaultAttributes.actorSubscriberSink, shape("ActorSubscriberSink")))

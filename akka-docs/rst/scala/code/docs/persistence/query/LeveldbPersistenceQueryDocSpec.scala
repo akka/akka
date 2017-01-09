@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package docs.persistence.query
 
 import akka.NotUsed
 import akka.persistence.journal.{ EventAdapter, EventSeq }
 import akka.testkit.AkkaSpec
-import akka.persistence.query.{ EventEnvelope, EventEnvelope2, PersistenceQuery, Sequence }
+import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
 import akka.persistence.query.scaladsl._
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.journal.Tagged
@@ -71,7 +71,7 @@ class LeveldbPersistenceQueryDocSpec(config: String) extends AkkaSpec(config) {
       val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](
         LeveldbReadJournal.Identifier)
 
-      val src: Source[String, NotUsed] = queries.allPersistenceIds()
+      val src: Source[String, NotUsed] = queries.persistenceIds()
       //#AllPersistenceIds
     }
 
@@ -81,7 +81,7 @@ class LeveldbPersistenceQueryDocSpec(config: String) extends AkkaSpec(config) {
       val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](
         LeveldbReadJournal.Identifier)
 
-      val src: Source[EventEnvelope2, NotUsed] =
+      val src: Source[EventEnvelope, NotUsed] =
         queries.eventsByTag(tag = "green", offset = Sequence(0L))
       //#EventsByTag
     }

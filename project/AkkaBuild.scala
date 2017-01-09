@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka
@@ -34,7 +34,7 @@ object AkkaBuild extends Build {
 
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization        := "com.typesafe.akka",
-    version             := "2.4-SNAPSHOT"
+    version             := "2.5-SNAPSHOT"
   )
 
   lazy val rootSettings = parentSettings ++ Release.settings ++
@@ -209,7 +209,7 @@ object AkkaBuild extends Build {
   )
 
   lazy val persistenceQuery = Project(
-    id = "akka-persistence-query-experimental",
+    id = "akka-persistence-query",
     base = file("akka-persistence-query"),
     dependencies = Seq(
       stream,

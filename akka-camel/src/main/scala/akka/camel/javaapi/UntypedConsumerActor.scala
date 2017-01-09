@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.camel.javaapi
@@ -12,7 +12,10 @@ import org.apache.camel.impl.DefaultCamelContext
 /**
  * Subclass this abstract class to create an MDB-style untyped consumer actor. This
  * class is meant to be used from Java.
+ *
+ * @deprecated Akka Camel is deprecated since 2.5.0 in favour of 'Alpakka', the Akka Streams based collection of integrations to various endpoints (including Camel).
  */
+@Deprecated
 abstract class UntypedConsumerActor extends UntypedActor with Consumer {
   final def endpointUri: String = getEndpointUri
 

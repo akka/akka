@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl.io
 
@@ -146,6 +146,9 @@ private[stream] class TLSActor(
   private val transportInChoppingBlock = new ChoppingBlock(TransportIn, "TransportIn")
   transportInChoppingBlock.prepare(transportInBuffer)
 
+  var lastHandshakeStatus: HandshakeStatus = null
+  var corkUser = true
+
   // The engine could also be instantiated in ActorMaterializerImpl but if creation fails
   // during materialization it would be worse than failing later on.
   val engine =
@@ -188,9 +191,6 @@ private[stream] class TLSActor(
    * These conditions lead to the introduction of a synthetic TransferState
    * representing the Engine.
    */
-
-  var lastHandshakeStatus: HandshakeStatus = _
-  var corkUser = true
 
   val engineNeedsWrap = new TransferState {
     def isReady = lastHandshakeStatus == NEED_WRAP

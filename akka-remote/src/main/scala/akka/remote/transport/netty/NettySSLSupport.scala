@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.remote.transport.netty
@@ -84,10 +84,6 @@ private[akka] class SSLSettings(config: Config) {
     val rng = SSLRandomNumberGenerator match {
       case r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG") ⇒
         log.debug("SSL random number generator set to: {}", r)
-        SecureRandom.getInstance(r, AkkaProvider)
-      case r @ ("AES128CounterInetRNG" | "AES256CounterInetRNG") ⇒
-        log.warning(LogMarker.Security, "SSL random number generator {} is deprecated, " +
-          "use AES128CounterSecureRNG or AES256CounterSecureRNG instead", r)
         SecureRandom.getInstance(r, AkkaProvider)
       case s @ ("SHA1PRNG" | "NativePRNG") ⇒
         log.debug("SSL random number generator set to: {}", s)

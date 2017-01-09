@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -16,6 +16,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
+import akka.testkit.LongRunningTest
 
 class FlowFoldAsyncSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
@@ -43,7 +44,7 @@ class FlowFoldAsyncSpec extends StreamSpec {
       inputSource.runWith(foldSink).futureValue(timeout) should ===(expected)
     }
 
-    "work when using Flow.foldAsync" in assertAllStagesStopped {
+    "work when using Flow.foldAsync" taggedAs LongRunningTest in assertAllStagesStopped {
       val flowTimeout =
         Timeout((flowDelayMS * input.size).milliseconds + 3.seconds)
 

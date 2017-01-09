@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.persistence.query.javadsl
 
@@ -12,7 +12,7 @@ package akka.persistence.query.javadsl
  * The interface is very open so that different journals may implement specific queries.
  *
  * There are a few pre-defined queries that a query implementation may implement,
- * such as [[EventsByPersistenceIdQuery]], [[AllPersistenceIdsQuery]] and [[EventsByTagQuery]]
+ * such as [[EventsByPersistenceIdQuery]], [[PersistenceIdsQuery]] and [[EventsByTagQuery]]
  * Implementation of these queries are optional and query (journal) plugins may define
  * their own specialized queries by implementing other methods.
  *

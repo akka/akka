@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -32,30 +32,20 @@ object RemoteDeploymentSpec {
   }
 }
 
-class RemoteDeploymentSpec extends AkkaSpec("""
-    #akka.loglevel=DEBUG
-    akka.actor.provider = remote
-    akka.remote.artery.enabled = on
-    akka.remote.artery.canonical.hostname = localhost
-    akka.remote.artery.canonical.port = 0
-    """) {
+class RemoteDeploymentSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) {
 
   import RemoteDeploymentSpec._
 
   val port = RARP(system).provider.getDefaultAddress.port.get
-  val conf = ConfigFactory.parseString(
+  val conf =
     s"""
     akka.actor.deployment {
       /blub.remote = "akka://${system.name}@localhost:$port"
     }
-    """).withFallback(system.settings.config)
+    """
 
-  val masterSystem = ActorSystem("Master" + system.name, conf)
-  val masterPort = RARP(masterSystem).provider.getDefaultAddress.port.get
-
-  override def afterTermination(): Unit = {
-    shutdown(masterSystem)
-  }
+  val masterSystem = newRemoteSystem(name = Some("Master" + system.name), extraConfig = Some(conf))
+  val masterPort = address(masterSystem).port.get
 
   "Remoting" must {
 

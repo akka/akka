@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote
 
@@ -90,31 +90,6 @@ class Ticket1978SHA1PRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig
 class Ticket1978AES128CounterSecureRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterSecureRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
 
 class Ticket1978AES256CounterSecureRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES256CounterSecureRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
-
-/**
- * Both of the `Inet` variants require access to the Internet to access random.org.
- */
-class Ticket1978AES128CounterInetRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterInetRNG", "TLS_RSA_WITH_AES_128_CBC_SHA"))
-  with InetRNGSpec
-
-/**
- * Both of the `Inet` variants require access to the Internet to access random.org.
- */
-class Ticket1978AES256CounterInetRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES256CounterInetRNG", "TLS_RSA_WITH_AES_256_CBC_SHA"))
-  with InetRNGSpec
-
-trait InetRNGSpec { this: Ticket1978CommunicationSpec ⇒
-  override def preCondition = try {
-    (new RandomDotOrgSeedGenerator).generateSeed(128)
-    true
-  } catch {
-    case NonFatal(e) ⇒
-      log.warning("random.org not available: {}", e.getMessage())
-      false
-  }
-
-  override implicit val timeout: Timeout = Timeout(90.seconds)
-}
 
 class Ticket1978DefaultRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA"))
 

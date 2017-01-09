@@ -1,20 +1,22 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.dispatch
 
-import akka.actor.{ ActorCell }
+import akka.actor.ActorCell
 import akka.dispatch.sysmsg._
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import akka.util.Helpers
 import java.util.{ Comparator, Iterator }
-import java.util.concurrent.{ ConcurrentSkipListSet }
+import java.util.concurrent.ConcurrentSkipListSet
 import akka.actor.ActorSystemImpl
 import scala.concurrent.duration.FiniteDuration
 
 /**
+ * INTERNAL API: Use `BalancingPool` instead of this dispatcher directly.
+ *
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
  * that all actors using the same instance of this dispatcher can process all messages that have been sent to one of the actors. I.e. the
  * actors belong to a pool of actors, and to the client there is no guarantee about which actor instance actually processes a given message.
@@ -29,7 +31,7 @@ import scala.concurrent.duration.FiniteDuration
  * @see akka.dispatch.Dispatchers
  */
 @deprecated("Use BalancingPool instead of BalancingDispatcher", "2.3")
-class BalancingDispatcher(
+private[akka] class BalancingDispatcher(
   _configurator:                   MessageDispatcherConfigurator,
   _id:                             String,
   throughput:                      Int,

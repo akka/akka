@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.actor
@@ -12,6 +12,7 @@ import akka.event.Logging.Warning
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import java.util.concurrent.TimeoutException
+import akka.testkit.TimingTest
 
 class ActorDSLDummy {
   //#import
@@ -79,7 +80,7 @@ class ActorDSLSpec extends AkkaSpec {
       i.receive() should ===("hello")
     }
 
-    "have a maximum queue size" in {
+    "have a maximum queue size" taggedAs TimingTest in {
       val i = inbox()
       system.eventStream.subscribe(testActor, classOf[Warning])
       try {
@@ -101,7 +102,7 @@ class ActorDSLSpec extends AkkaSpec {
       }
     }
 
-    "have a default and custom timeouts" in {
+    "have a default and custom timeouts" taggedAs TimingTest in {
       val i = inbox()
       within(5 seconds, 6 seconds) {
         intercept[TimeoutException](i.receive())

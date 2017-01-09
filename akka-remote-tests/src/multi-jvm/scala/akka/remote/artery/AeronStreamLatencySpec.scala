@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -218,7 +218,7 @@ abstract class AeronStreamLatencySpec
       val killSwitch = KillSwitches.shared(testName)
       val started = TestProbe()
       val startMsg = "0".getBytes("utf-8")
-      Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, IgnoreEventSink))
+      Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
         .via(killSwitch.flow)
         .runForeach { envelope ⇒
           val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
@@ -315,7 +315,7 @@ abstract class AeronStreamLatencySpec
     "start echo" in {
       runOn(second) {
         // just echo back
-        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink))
+        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
           .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
       }
       enterBarrier("echo-started")

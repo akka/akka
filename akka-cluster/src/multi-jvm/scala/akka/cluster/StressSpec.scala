@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster
 
@@ -1153,8 +1153,6 @@ abstract class StressSpec
 
   "A cluster under stress" must {
 
-    if (isArteryEnabled) pending
-
     "log settings" taggedAs LongRunningTest in {
       if (infolog) {
         log.info("StressSpec JVM:\n{}", jvmInfo)
@@ -1164,6 +1162,10 @@ abstract class StressSpec
       }
       enterBarrier("after-" + step)
     }
+
+    // FIXME issue #21810
+    // note: there must be one test step before pending, otherwise afterTermination will not run
+    if (isArteryEnabled) pending
 
     "join seed nodes" taggedAs LongRunningTest in within(30 seconds) {
 
@@ -1349,5 +1351,4 @@ abstract class StressSpec
       enterBarrier("after-" + step)
     }
   }
-
 }

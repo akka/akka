@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.cluster
@@ -130,6 +130,10 @@ class GossipSpec extends WordSpec with Matchers {
       g1.leader(e2.uniqueAddress) should ===(Some(e2.uniqueAddress))
       // but when c2 is selfUniqueAddress
       g1.leader(c2.uniqueAddress) should ===(Some(c2.uniqueAddress))
+    }
+
+    "not have Down member as leader" in {
+      Gossip(members = SortedSet(e3)).leader(e3.uniqueAddress) should ===(None)
     }
 
     "merge seen table correctly" in {

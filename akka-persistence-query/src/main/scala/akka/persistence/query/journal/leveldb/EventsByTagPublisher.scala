@@ -1,19 +1,17 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.persistence.query.journal.leveldb
 
 import scala.concurrent.duration._
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.Props
+import akka.actor.{ ActorLogging, ActorRef, Cancellable, Props }
 import akka.persistence.JournalProtocol._
 import akka.persistence.Persistence
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.Cancel
 import akka.stream.actor.ActorPublisherMessage.Request
 import akka.persistence.journal.leveldb.LeveldbJournal
-import akka.persistence.query.EventEnvelope
+import akka.persistence.query.{ EventEnvelope, Sequence }
 import akka.persistence.journal.leveldb.LeveldbJournal.ReplayTaggedMessages
 import akka.persistence.journal.leveldb.LeveldbJournal.ReplayedTaggedMessage
 
@@ -42,6 +40,7 @@ private[akka] object EventsByTagPublisher {
 /**
  * INTERNAL API
  */
+// FIXME needs a be rewritten as a GraphStage
 private[akka] abstract class AbstractEventsByTagPublisher(
   val tag: String, val fromOffset: Long,
   val maxBufSize: Int, val writeJournalPluginId: String)
@@ -91,7 +90,7 @@ private[akka] abstract class AbstractEventsByTagPublisher(
   def replaying(limit: Int): Receive = {
     case ReplayedTaggedMessage(p, _, offset) ⇒
       buf :+= EventEnvelope(
-        offset = offset,
+        offset = Sequence(offset),
         persistenceId = p.persistenceId,
         sequenceNr = p.sequenceNr,
         event = p.payload)
@@ -122,6 +121,7 @@ private[akka] abstract class AbstractEventsByTagPublisher(
 /**
  * INTERNAL API
  */
+// FIXME needs a be rewritten as a GraphStage (since 2.5.0)
 private[akka] class LiveEventsByTagPublisher(
   tag: String, fromOffset: Long, override val toOffset: Long,
   refreshInterval: FiniteDuration,
@@ -130,7 +130,7 @@ private[akka] class LiveEventsByTagPublisher(
     tag, fromOffset, maxBufSize, writeJournalPluginId) {
   import EventsByTagPublisher._
 
-  val tickTask =
+  val tickTask: Cancellable =
     context.system.scheduler.schedule(refreshInterval, refreshInterval, self, Continue)(context.dispatcher)
 
   override def postStop(): Unit =
@@ -159,6 +159,7 @@ private[akka] class LiveEventsByTagPublisher(
 /**
  * INTERNAL API
  */
+// FIXME needs a be rewritten as a GraphStage (since 2.5.0)
 private[akka] class CurrentEventsByTagPublisher(
   tag: String, fromOffset: Long, var _toOffset: Long,
   maxBufSize: Int, writeJournalPluginId: String)

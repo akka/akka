@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -14,15 +14,9 @@ object HandshakeDenySpec {
 
   val commonConfig = ConfigFactory.parseString(s"""
      akka.loglevel = WARNING
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-       remote.artery.advanced.handshake-timeout = 2s
-       remote.artery.advanced.image-liveness-timeout = 1.9s
-     }
-  """)
+     akka.remote.artery.advanced.handshake-timeout = 2s
+     akka.remote.artery.advanced.image-liveness-timeout = 1.9s
+  """).withFallback(ArterySpecSupport.defaultConfig)
 
 }
 

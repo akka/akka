@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -31,39 +31,25 @@ import akka.util.OptionVal
 
 object SystemMessageDeliverySpec {
 
-  val config = ConfigFactory.parseString(s"""
-     akka.loglevel=INFO
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-     }
-     akka.actor.serialize-creators = off
-     akka.actor.serialize-messages = off
-  """)
-
   case class TestSysMsg(s: String) extends SystemMessageDelivery.AckedDeliveryMessage
 
 }
 
-class SystemMessageDeliverySpec extends AkkaSpec(SystemMessageDeliverySpec.config) with ImplicitSender {
+class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) with ImplicitSender {
   import SystemMessageDeliverySpec._
 
   val addressA = UniqueAddress(
-    RARP(system).provider.getDefaultAddress,
+    address(system),
     AddressUidExtension(system).longAddressUid)
-  val systemB = ActorSystem("systemB", system.settings.config)
+  val systemB = newRemoteSystem(name = Some("systemB"))
   val addressB = UniqueAddress(
-    RARP(systemB).provider.getDefaultAddress,
+    address(systemB),
     AddressUidExtension(systemB).longAddressUid)
   val rootB = RootActorPath(addressB.address)
   val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
   implicit val mat = ActorMaterializer(matSettings)(system)
 
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
-
-  override def afterTermination(): Unit = shutdown(systemB)
 
   private def send(sendCount: Int, resendInterval: FiniteDuration, outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
     val deadLetters = TestProbe().ref

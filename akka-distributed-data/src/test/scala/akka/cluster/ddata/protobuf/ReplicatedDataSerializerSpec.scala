@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster.ddata.protobuf
 
@@ -31,15 +31,16 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
   ConfigFactory.parseString("""
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
+    akka.remote.artery.canonical.port = 0
     """))) with WordSpecLike with Matchers with BeforeAndAfterAll {
 
   val serializer = new ReplicatedDataSerializer(system.asInstanceOf[ExtendedActorSystem])
 
   val Protocol = if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka" else "akka.tcp"
 
-  val address1 = UniqueAddress(Address(Protocol, system.name, "some.host.org", 4711), 1)
-  val address2 = UniqueAddress(Address(Protocol, system.name, "other.host.org", 4711), 2)
-  val address3 = UniqueAddress(Address(Protocol, system.name, "some.host.org", 4712), 3)
+  val address1 = UniqueAddress(Address(Protocol, system.name, "some.host.org", 4711), 1L)
+  val address2 = UniqueAddress(Address(Protocol, system.name, "other.host.org", 4711), 2L)
+  val address3 = UniqueAddress(Address(Protocol, system.name, "some.host.org", 4712), 3L)
 
   override def afterAll {
     shutdown()

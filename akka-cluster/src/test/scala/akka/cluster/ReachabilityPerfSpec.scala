@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster
 
@@ -10,7 +10,8 @@ import akka.actor.Address
 class ReachabilityPerfSpec extends WordSpec with Matchers {
 
   val nodesSize = sys.props.get("akka.cluster.ReachabilityPerfSpec.nodesSize").getOrElse("250").toInt
-  val iterations = sys.props.get("akka.cluster.ReachabilityPerfSpec.iterations").getOrElse("10000").toInt
+  // increase for serious measurements
+  val iterations = sys.props.get("akka.cluster.ReachabilityPerfSpec.iterations").getOrElse("100").toInt
 
   val address = Address("akka.tcp", "sys", "a", 2552)
   val node = Address("akka.tcp", "sys", "a", 2552)

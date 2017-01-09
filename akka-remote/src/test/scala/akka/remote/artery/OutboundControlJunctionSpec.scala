@@ -1,21 +1,14 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
-import scala.concurrent.duration._
 import akka.actor.Address
-import akka.remote.EndpointManager.Send
-import akka.remote.RemoteActorRef
 import akka.remote.UniqueAddress
-import akka.remote.artery.SystemMessageDelivery._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.scaladsl.Keep
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.scaladsl.TestSource
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
+import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.OptionVal
 
 object OutboundControlJunctionSpec {

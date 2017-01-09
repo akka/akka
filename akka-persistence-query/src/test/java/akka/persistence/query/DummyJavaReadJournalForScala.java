@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.persistence.query;
@@ -11,7 +11,7 @@ import akka.NotUsed;
  * Emits infinite stream of strings (representing queried for events).
  */
 public class DummyJavaReadJournalForScala implements akka.persistence.query.scaladsl.ReadJournal,
-    akka.persistence.query.scaladsl.AllPersistenceIdsQuery {
+    akka.persistence.query.scaladsl.PersistenceIdsQuery {
 
   public static final String Identifier = DummyJavaReadJournal.Identifier;
 
@@ -22,8 +22,8 @@ public class DummyJavaReadJournalForScala implements akka.persistence.query.scal
   }
 
   @Override
-  public akka.stream.scaladsl.Source<String, NotUsed> allPersistenceIds() {
-    return readJournal.allPersistenceIds().asScala();
+  public akka.stream.scaladsl.Source<String, NotUsed> persistenceIds() {
+    return readJournal.persistenceIds().asScala();
   }
 
 }

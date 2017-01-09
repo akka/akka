@@ -1,7 +1,7 @@
 import com.typesafe.sbt.SbtMultiJvm
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 
-val akkaVersion = "2.4-SNAPSHOT"
+val akkaVersion = "2.5-SNAPSHOT"
 
 val project = Project(
     id = "akka-sample-cluster-java",
@@ -10,8 +10,8 @@ val project = Project(
   .settings(SbtMultiJvm.multiJvmSettings: _*)
   .settings(
     name := "akka-sample-cluster-java",
-    version := "2.4-SNAPSHOT",
-    scalaVersion := "2.11.7",
+    version := "2.5-SNAPSHOT",
+    scalaVersion := "2.11.8",
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in Compile ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-Xlint:deprecation"),
     javacOptions in doc in Compile := Seq("-source", "1.8", "-Xdoclint:none"),

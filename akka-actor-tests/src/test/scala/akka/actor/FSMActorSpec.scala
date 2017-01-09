@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.actor
@@ -337,7 +337,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" → true)) with I
       expectMsg(Transition(fsmref, 0, 1))
     }
 
-    "allow cancelling stateTimeout by issuing forMax(Duration.Inf)" in {
+    "allow cancelling stateTimeout by issuing forMax(Duration.Inf)" taggedAs TimingTest in {
       val sys = ActorSystem("fsmEvent")
       val p = TestProbe()(sys)
 

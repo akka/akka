@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.persistence.journal.leveldb
@@ -83,7 +83,8 @@ class SharedLeveldbJournalSpec extends AkkaSpec(SharedLeveldbJournalSpec.config)
       val probeA = new TestProbe(systemA)
       val probeB = new TestProbe(systemB)
 
-      system.actorOf(Props[SharedLeveldbStore], "store")
+      val storeConfig = system.settings.config.getConfig("akka.persistence.journal.leveldb-shared")
+      system.actorOf(Props(classOf[SharedLeveldbStore], storeConfig), "store")
       val storePath = RootActorPath(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress) / "user" / "store"
 
       val appA = systemA.actorOf(Props(classOf[ExampleApp], probeA.ref, storePath))

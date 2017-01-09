@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.testkit.metrics
 
@@ -83,13 +83,16 @@ private[akka] trait MetricsKit extends MetricsKitOps {
     clearMetrics()
   }
 
+  def reportMetricsEnabled: Boolean = true
+
   /**
    * Causes immediate flush of metrics, using all registered reporters.
    *
    * HINT: this operation can be costy, run outside of your tested code, or rely on scheduled reporting.
    */
   def reportMetrics() {
-    reporters foreach { _.report() }
+    if (reportMetricsEnabled)
+      reporters foreach { _.report() }
   }
 
   /**

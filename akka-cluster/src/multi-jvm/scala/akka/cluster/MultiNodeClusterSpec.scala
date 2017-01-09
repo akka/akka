@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster
 
@@ -39,6 +39,7 @@ object MultiNodeClusterSpec {
 
   def clusterConfig: Config = ConfigFactory.parseString(s"""
     akka.actor.provider = cluster
+    akka.actor.warn-about-java-serializer-usage = off
     akka.cluster {
       jmx.enabled                         = off
       gossip-interval                     = 200 ms

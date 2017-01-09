@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.stage
 
@@ -455,7 +455,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
       // Detailed error information should not add overhead to the hot path
       ReactiveStreamsCompliance.requireNonNullElement(elem)
-      require(!isClosed(out), s"Cannot pull closed port ($out)")
+      require(!isClosed(out), s"Cannot push closed port ($out)")
       require(isAvailable(out), s"Cannot push port ($out) twice")
 
       // No error, just InClosed caused the actual pull to be ignored, but the status flag still needs to be flipped

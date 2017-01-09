@@ -7,20 +7,13 @@ Persistence Query for LevelDB
 This is documentation for the LevelDB implementation of the :ref:`persistence-query-scala` API.
 Note that implementations for other journals may have different semantics.
  
-.. warning::
-
-  This module is marked as **“experimental”** as of its introduction in Akka 2.4.0. We will continue to
-  improve this API based on our users’ feedback, which implies that while we try to keep incompatible
-  changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
-  contents of the ``akka.persistence.query`` package.
-
 Dependencies
 ============
 
-Akka persistence LevelDB query implementation is bundled in the ``akka-persistence-query-experimental`` artifact.
+Akka persistence LevelDB query implementation is bundled in the ``akka-persistence-query`` artifact.
 Make sure that you have the following dependency in your project::
 
-  "com.typesafe.akka" %% "akka-persistence-query-experimental" % "@version@" @crossString@
+  "com.typesafe.akka" %% "akka-persistence-query" % "@version@" @crossString@
 
 How to get the ReadJournal
 ==========================

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.persistence.query.journal.leveldb
 
@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.query.scaladsl.AllPersistenceIdsQuery
+import akka.persistence.query.scaladsl.PersistenceIdsQuery
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
@@ -32,7 +32,7 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
   "Leveldb query AllPersistenceIds" must {
 
     "implement standard AllPersistenceIdsQuery" in {
-      queries.isInstanceOf[AllPersistenceIdsQuery] should ===(true)
+      queries.isInstanceOf[PersistenceIdsQuery] should ===(true)
     }
 
     "find existing persistenceIds" in {
@@ -57,7 +57,7 @@ class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
       system.actorOf(TestActor.props("d")) ! "d1"
       expectMsg("d1-done")
 
-      val src = queries.allPersistenceIds()
+      val src = queries.persistenceIds()
       val probe = src.runWith(TestSink.probe[String])
       probe.within(10.seconds) {
         probe.request(5)

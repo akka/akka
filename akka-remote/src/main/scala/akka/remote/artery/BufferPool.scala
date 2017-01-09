@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -137,9 +137,6 @@ private[remote] sealed trait HeaderBuilder {
   def setUid(u: Long): Unit
   def uid: Long
 
-  /** Metadata SPI, internally multiple metadata sections can be represented. */
-  def metadataContainer: ByteString
-
   def setSenderActorRef(ref: ActorRef): Unit
   /**
    * Retrive the compressed ActorRef by the compressionId carried by this header.
@@ -170,21 +167,19 @@ private[remote] sealed trait HeaderBuilder {
    */
   def recipientActorRefPath: OptionVal[String]
 
-  def setMetadataContainer(container: ByteString): Unit
-  def clearMetadataContainer(): Unit
-
   def setSerializer(serializer: Int): Unit
   def serializer: Int
 
   def setManifest(manifest: String): Unit
   def manifest(originUid: Long): OptionVal[String]
 
+  def setRemoteInstruments(instruments: RemoteInstruments): Unit
+
   /**
    * Reset all fields that are related to an outbound message,
    * i.e. Encoder calls this as the first thing in onPush.
    */
   def resetMessageFields(): Unit
-
 }
 
 /**
@@ -230,7 +225,7 @@ private[remote] final class HeaderBuilderImpl(
   var _manifest: String = null
   var _manifestIdx: Int = -1
 
-  var _metadataContainer: ByteString = null
+  var _remoteInstruments: OptionVal[RemoteInstruments] = OptionVal.None
 
   override def resetMessageFields(): Unit = {
     _flags = 0
@@ -242,6 +237,8 @@ private[remote] final class HeaderBuilderImpl(
     _serializer = 0
     _manifest = null
     _manifestIdx = -1
+
+    _remoteInstruments = OptionVal.None
   }
 
   override def setVersion(v: Byte) = _version = v
@@ -342,17 +339,8 @@ private[remote] final class HeaderBuilderImpl(
     }
   }
 
-  /** Make sure to prefix the data with an Int-length */
-  def setMetadataContainer(container: ByteString): Unit = {
-    setFlag(EnvelopeBuffer.MetadataPresentFlag, value = container != null)
-    _metadataContainer = container
-  }
-  /** Rendered metadata already contains int-length prefix, no need to add it manually */
-  def metadataContainer: ByteString =
-    _metadataContainer
-  def clearMetadataContainer(): Unit = {
-    setFlag(EnvelopeBuffer.MetadataPresentFlag, value = false)
-    _metadataContainer = null
+  override def setRemoteInstruments(instruments: RemoteInstruments): Unit = {
+    _remoteInstruments = OptionVal(instruments)
   }
 
   override def toString =
@@ -366,8 +354,7 @@ private[remote] final class HeaderBuilderImpl(
       "_recipientActorRefIdx:" + _recipientActorRefIdx + ", " +
       "_serializer:" + _serializer + ", " +
       "_manifest:" + _manifest + ", " +
-      "_manifestIdx:" + _manifestIdx + ", " +
-      "_metadataContainer:" + _metadataContainer + ")"
+      "_manifestIdx:" + _manifestIdx + ")"
 
 }
 
@@ -381,7 +368,9 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
   private var literalChars = Array.ofDim[Char](64)
   private var literalBytes = Array.ofDim[Byte](64)
 
-  def writeHeader(h: HeaderBuilder): Unit = {
+  def writeHeader(h: HeaderBuilder): Unit = writeHeader(h, null)
+
+  def writeHeader(h: HeaderBuilder, oe: OutboundEnvelope): Unit = {
     val header = h.asInstanceOf[HeaderBuilderImpl]
     byteBuffer.clear()
 
@@ -395,11 +384,16 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     byteBuffer.put(ActorRefCompressionTableVersionOffset, header.outboundActorRefCompression.version)
     byteBuffer.put(ClassManifestCompressionTableVersionOffset, header.outboundClassManifestCompression.version)
 
+    // maybe write some metadata
+    // after metadata is written (or not), buffer is at correct position to continue writing literals
     byteBuffer.position(MetadataContainerAndLiteralSectionOffset)
-    if (header.flag(MetadataPresentFlag)) {
-      // tag if we have metadata or not, as the layout next follows different patterns depending on that
-      header.metadataContainer.copyToBuffer(byteBuffer)
-      // after metadata is written, buffer is at correct position to continue writing literals (they "moved forward")
+    if (header._remoteInstruments.isDefined) {
+      header._remoteInstruments.get.serialize(OptionVal(oe), byteBuffer)
+      if (byteBuffer.position() != MetadataContainerAndLiteralSectionOffset) {
+        // we actually wrote some metadata so update the flag field to reflect that
+        header.setFlag(MetadataPresentFlag, true)
+        byteBuffer.put(FlagsOffset, header.flags)
+      }
     }
 
     // Serialize sender
@@ -419,7 +413,6 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
       byteBuffer.putInt(ClassManifestTagOffset, header._manifestIdx | TagTypeMask)
     else
       writeLiteral(ClassManifestTagOffset, header._manifest)
-
   }
 
   def parseHeader(h: HeaderBuilder): Unit = {
@@ -435,20 +428,11 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     header._inboundActorRefCompressionTableVersion = byteBuffer.get(ActorRefCompressionTableVersionOffset)
     header._inboundClassManifestCompressionTableVersion = byteBuffer.get(ClassManifestCompressionTableVersionOffset)
 
+    byteBuffer.position(MetadataContainerAndLiteralSectionOffset)
     if (header.flag(MetadataPresentFlag)) {
-      byteBuffer.position(MetadataContainerAndLiteralSectionOffset)
+      // metadata present, so we need to fast forward to the literals that start right after
       val totalMetadataLength = byteBuffer.getInt()
-
-      ensureLiteralCharsLength(totalMetadataLength)
-      val bytes = literalBytes
-
-      byteBuffer.get(bytes, 0, totalMetadataLength)
-      header._metadataContainer = ByteString(bytes).take(totalMetadataLength)
-      // the literals section starts here, right after the metadata has ended
-      // thus, no need to move position the buffer again
-    } else {
-      // No metadata present, we position the buffer on the place where literals start
-      byteBuffer.position(MetadataContainerAndLiteralSectionOffset)
+      byteBuffer.position(byteBuffer.position() + totalMetadataLength)
     }
 
     // Deserialize sender

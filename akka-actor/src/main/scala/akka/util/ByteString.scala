@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.util
@@ -487,20 +487,28 @@ object ByteString {
     }
 
     override def dropRight(n: Int): ByteString =
-      if (n <= 0) this
-      else {
-        val last = bytestrings.last
-        if (n < last.length) new ByteStrings(bytestrings.init :+ last.dropRight1(n), length - n)
-        else {
-          val remaining = bytestrings.init
-          if (remaining.isEmpty) ByteString.empty
-          else {
-            val s = new ByteStrings(remaining, length - last.length)
-            val remainingToBeDropped = n - last.length
-            s.dropRight(remainingToBeDropped)
-          }
+      if (0 < n && n < length) dropRight0(n)
+      else if (n >= length) ByteString.empty
+      else this
+
+    private def dropRight0(n: Int): ByteString = {
+      val byteStringsSize = bytestrings.length
+      @tailrec def dropRightWithFullDropsAndRemainig(fullDrops: Int, remainingToDrop: Int): ByteString = {
+        val bs = bytestrings(byteStringsSize - fullDrops - 1)
+        if (bs.length > remainingToDrop) {
+          if (fullDrops == byteStringsSize - 1)
+            bytestrings(0).dropRight(remainingToDrop)
+          else if (remainingToDrop == 0)
+            new ByteStrings(bytestrings.dropRight(fullDrops), length - n)
+          else
+            new ByteStrings(bytestrings.dropRight(fullDrops + 1) :+ bytestrings(byteStringsSize - fullDrops - 1).dropRight1(remainingToDrop), length - n)
+        } else {
+          dropRightWithFullDropsAndRemainig(fullDrops + 1, remainingToDrop - bs.length)
         }
       }
+
+      dropRightWithFullDropsAndRemainig(0, n)
+    }
 
     override def slice(from: Int, until: Int): ByteString =
       if (from <= 0 && until >= length) this

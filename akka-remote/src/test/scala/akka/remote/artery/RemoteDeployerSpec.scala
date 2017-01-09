@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -12,7 +12,6 @@ import akka.remote.RemoteScope
 
 object RemoteDeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
-      akka.actor.provider = remote
       akka.actor.deployment {
         /service2 {
           router = round-robin-pool
@@ -21,10 +20,7 @@ object RemoteDeployerSpec {
           dispatcher = mydispatcher
         }
       }
-      akka.remote.artery.enabled = on
-      akka.remote.artery.canonical.hostname = localhost
-      akka.remote.artery.canonical.port = 0
-      """, ConfigParseOptions.defaults)
+      """).withFallback(ArterySpecSupport.defaultConfig)
 
   class RecipeActor extends Actor {
     def receive = { case _ ⇒ }
@@ -32,7 +28,7 @@ object RemoteDeployerSpec {
 
 }
 
-class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
+class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) with FlightRecorderSpecIntegration {
 
   "A RemoteDeployer" must {
 

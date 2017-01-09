@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -11,21 +11,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-object FlushOnShutdownSpec {
-
-  val config = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       actor.serialize-creators = off
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-     }
-  """)
-
-}
-
-class FlushOnShutdownSpec extends ArteryMultiNodeSpec(FlushOnShutdownSpec.config) {
+class FlushOnShutdownSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) {
 
   val remoteSystem = newRemoteSystem()
 

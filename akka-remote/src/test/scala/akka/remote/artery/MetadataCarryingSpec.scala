@@ -1,33 +1,26 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
 import java.util.concurrent.atomic.AtomicReference
-
-import scala.concurrent.duration._
-
-import akka.actor.ActorRef
-import akka.actor.ActorSelectionMessage
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.remote.artery.MetadataCarryingSpy.{ RemoteMessageReceived, RemoteMessageSent }
+import akka.actor._
 import akka.testkit.ImplicitSender
-import akka.testkit.SocketUtil._
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
 import akka.util.ByteString
+import java.nio.{ ByteBuffer, CharBuffer }
+import java.nio.charset.Charset
 
 object MetadataCarryingSpy extends ExtensionId[MetadataCarryingSpy] with ExtensionIdProvider {
   override def get(system: ActorSystem): MetadataCarryingSpy = super.get(system)
   override def lookup = MetadataCarryingSpy
   override def createExtension(system: ExtendedActorSystem): MetadataCarryingSpy = new MetadataCarryingSpy
 
-  final case class RemoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef)
-  final case class RemoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, metadata: ByteString)
+  final case class RemoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long)
+  final case class RemoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long)
+  final case class RemoteWriteMetadata(recipient: ActorRef, message: Object, sender: ActorRef)
+  final case class RemoteReadMetadata(recipient: ActorRef, message: Object, sender: ActorRef, metadata: String)
 }
 
 class MetadataCarryingSpy extends Extension {
@@ -37,29 +30,66 @@ class MetadataCarryingSpy extends Extension {
 }
 
 class TestInstrument(system: ExtendedActorSystem) extends RemoteInstrument {
+  import akka.remote.artery.MetadataCarryingSpy._
+
+  private val charset = Charset.forName("UTF-8")
+  private val encoder = charset.newEncoder()
+  private val decoder = charset.newDecoder()
 
   override val identifier: Byte = 1
 
-  override def remoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef): ByteString =
+  override def serializationTimingEnabled: Boolean = true
+
+  override def remoteWriteMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit =
     message match {
       case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) ⇒
-        val metadata = ByteString("!!!")
-        MetadataCarryingSpy(system).ref.foreach(_ ! RemoteMessageSent(recipient, message, sender))
-        metadata // this data will be attached to the remote message
+        val metadata = "!!!"
+        buffer.putInt(metadata.length)
+        encoder.encode(CharBuffer.wrap(metadata), buffer, true)
+        encoder.flush(buffer)
+        encoder.reset()
+        MetadataCarryingSpy(system).ref.foreach(_ ! RemoteWriteMetadata(recipient, message, sender))
       case _ ⇒
-        null
     }
 
-  override def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, metadata: ByteString): Unit =
+  override def remoteReadMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit =
     message match {
       case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) ⇒
-        MetadataCarryingSpy(system).ref.foreach(_ ! RemoteMessageReceived(recipient, message, sender, metadata))
+        val size = buffer.getInt
+        val charBuffer = CharBuffer.allocate(size)
+        decoder.decode(buffer, charBuffer, false)
+        decoder.reset()
+        charBuffer.flip()
+        val metadata = charBuffer.toString
+        MetadataCarryingSpy(system).ref.foreach(_ ! RemoteReadMetadata(recipient, message, sender, metadata))
+      case _ ⇒
+    }
+
+  override def remoteMessageSent(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit =
+    message match {
+      case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) ⇒
+        MetadataCarryingSpy(system).ref.foreach(_ ! RemoteMessageSent(recipient, message, sender, size, time))
+      case _ ⇒
+    }
+
+  override def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit =
+    message match {
+      case _: MetadataCarryingSpec.Ping | ActorSelectionMessage(_: MetadataCarryingSpec.Ping, _, _) ⇒
+        MetadataCarryingSpy(system).ref.foreach(_ ! RemoteMessageReceived(recipient, message, sender, size, time))
       case _ ⇒
     }
 }
 
 object MetadataCarryingSpec {
   final case class Ping(payload: ByteString = ByteString.empty)
+
+  class ProxyActor(local: ActorRef, remotePath: ActorPath) extends Actor {
+    val remote = context.system.actorSelection(remotePath)
+    override def receive = {
+      case message if sender() == local ⇒ remote ! message
+      case message                      ⇒ local ! message
+    }
+  }
 }
 
 class MetadataCarryingSpec extends ArteryMultiNodeSpec(
@@ -72,6 +102,7 @@ class MetadataCarryingSpec extends ArteryMultiNodeSpec(
   """) with ImplicitSender {
 
   import MetadataCarryingSpec._
+  import MetadataCarryingSpy._
 
   "Metadata" should {
 
@@ -85,17 +116,30 @@ class MetadataCarryingSpec extends ArteryMultiNodeSpec(
       MetadataCarryingSpy(systemB).setProbe(instrumentProbeB.ref)
 
       systemB.actorOf(TestActors.echoActorProps, "reply")
-      systemA.actorSelection(rootActorPath(systemB) / "user" / "reply") ! Ping()
+      val proxyA = systemA.actorOf(Props(classOf[ProxyActor], testActor, rootActorPath(systemB) / "user" / "reply"))
+      proxyA ! Ping()
       expectMsgType[Ping]
 
+      val writeA = instrumentProbeA.expectMsgType[RemoteWriteMetadata]
       val sentA = instrumentProbeA.expectMsgType[RemoteMessageSent]
+      val readB = instrumentProbeB.expectMsgType[RemoteReadMetadata]
       val recvdB = instrumentProbeB.expectMsgType[RemoteMessageReceived]
-      recvdB.metadata should ===(ByteString("!!!"))
+      readB.metadata should ===("!!!")
+      sentA.size should be > 0
+      sentA.time should be > 0L
+      recvdB.size should ===(sentA.size)
+      recvdB.time should be > 0L
 
       // for the reply
+      val writeB = instrumentProbeB.expectMsgType[RemoteWriteMetadata]
       val sentB = instrumentProbeB.expectMsgType[RemoteMessageSent]
+      val readA = instrumentProbeA.expectMsgType[RemoteReadMetadata]
       val recvdA = instrumentProbeA.expectMsgType[RemoteMessageReceived]
-      recvdA.metadata should ===(ByteString("!!!"))
+      readA.metadata should ===("!!!")
+      sentB.size should be > 0
+      sentB.time should be > 0L
+      recvdA.size should ===(sentB.size)
+      recvdA.time should be > 0L
     }
   }
 

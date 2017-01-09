@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -18,25 +18,14 @@ object HandshakeFailureSpec {
   val portB = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
 
   val commonConfig = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-       remote.artery.advanced.handshake-timeout = 2s
-       remote.artery.advanced.image-liveness-timeout = 1.9s
-     }
-  """)
-
-  val configB = ConfigFactory.parseString(s"akka.remote.artery.canonical.port = $portB")
-    .withFallback(commonConfig)
+     akka.remote.artery.advanced.handshake-timeout = 2s
+     akka.remote.artery.advanced.image-liveness-timeout = 1.9s
+  """).withFallback(ArterySpecSupport.defaultConfig)
 
 }
 
-class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) with ImplicitSender {
+class HandshakeFailureSpec extends ArteryMultiNodeSpec(HandshakeFailureSpec.commonConfig) with ImplicitSender {
   import HandshakeFailureSpec._
-
-  var systemB: ActorSystem = null
 
   "Artery handshake" must {
 
@@ -45,7 +34,9 @@ class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) w
       sel ! "hello"
       expectNoMsg(3.seconds) // longer than handshake-timeout
 
-      systemB = ActorSystem("systemB", HandshakeFailureSpec.configB)
+      val systemB = newRemoteSystem(
+        name = Some("systemB"),
+        extraConfig = Some(s"akka.remote.artery.canonical.port = $portB"))
       systemB.actorOf(TestActors.echoActorProps, "echo")
 
       within(10.seconds) {
@@ -64,8 +55,5 @@ class HandshakeFailureSpec extends AkkaSpec(HandshakeFailureSpec.commonConfig) w
     }
 
   }
-
-  override def afterTermination(): Unit =
-    if (systemB != null) shutdown(systemB)
 
 }

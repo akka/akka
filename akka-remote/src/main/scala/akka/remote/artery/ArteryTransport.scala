@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -443,7 +443,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     override def run(): Unit = {
       if (hasBeenShutdown.compareAndSet(false, true)) {
         log.debug("Shutting down [{}] via shutdownHook", localAddress)
-        Await.result(internalShutdown(), 20.seconds)
+        Await.result(internalShutdown(), settings.Advanced.DriverTimeout + 3.seconds)
       }
     }
   }
@@ -693,35 +693,31 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
       } else {
         val hubKillSwitch = KillSwitches.shared("hubKillSwitch")
-        val source = aeronSource(ordinaryStreamId, envelopeBufferPool)
-          .via(hubKillSwitch.flow)
-          .via(inboundFlow(compression))
-          .map(env ⇒ (env.recipient, env))
-
         val (resourceLife, broadcastHub) =
-          source
+          aeronSource(ordinaryStreamId, envelopeBufferPool)
+            .via(hubKillSwitch.flow)
+            .via(inboundFlow(compression))
+            .map(env ⇒ (env.recipient, env))
             .toMat(BroadcastHub.sink(bufferSize = settings.Advanced.InboundBroadcastHubBufferSize))(Keep.both)
             .run()(materializer)
 
-        val lane = inboundSink(envelopeBufferPool)
-
         // select lane based on destination, to preserve message order
-        val partitionFun: OptionVal[ActorRef] ⇒ Int = {
-          _ match {
-            case OptionVal.Some(r) ⇒ math.abs(r.path.uid) % inboundLanes
-            case OptionVal.None    ⇒ 0
+        def shouldUseLane(recipient: OptionVal[ActorRef], targetLane: Int): Boolean =
+          recipient match {
+            case OptionVal.Some(r) ⇒ math.abs(r.path.uid) % inboundLanes == targetLane
+            case OptionVal.None    ⇒ 0 == targetLane
           }
-        }
 
+        val lane = inboundSink(envelopeBufferPool)
         val completedValues: Vector[Future[Done]] =
-          (0 until inboundLanes).map { i ⇒
-            broadcastHub.runWith(
+          (0 until inboundLanes).map { laneId ⇒
+            broadcastHub
               // TODO replace filter with "PartitionHub" when that is implemented
-              // must use a tuple here because envelope is pooled and must only be touched in the selected lane
-              Flow[(OptionVal[ActorRef], InboundEnvelope)].collect {
-                case (recipient, env) if partitionFun(recipient) == i ⇒ env
-              }
-                .toMat(lane)(Keep.right))(materializer)
+              // must use a tuple here because envelope is pooled and must only be read in the selected lane
+              // otherwise, the lane that actually processes it might have already released it.
+              .collect { case (recipient, env) if shouldUseLane(recipient, laneId) ⇒ env }
+              .toMat(lane)(Keep.right)
+              .run()(materializer)
           }(collection.breakOut)
 
         import system.dispatcher
@@ -981,14 +977,15 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   def aeronSource(streamId: Int, pool: EnvelopeBufferPool): Source[EnvelopeBuffer, AeronSource.ResourceLifecycle] =
     Source.fromGraph(new AeronSource(inboundChannel, streamId, aeron, taskRunner, pool,
-      createFlightRecorderEventSink()))
+      createFlightRecorderEventSink(), aeronSourceSpinningStrategy))
+
+  private def aeronSourceSpinningStrategy: Int =
+    if (settings.Advanced.InboundLanes > 1 || // spinning was identified to be the cause of massive slowdowns with multiple lanes, see #21365
+      settings.Advanced.IdleCpuLevel < 5) 0 // also don't spin for small IdleCpuLevels
+    else 50 * settings.Advanced.IdleCpuLevel - 240
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
-    val originAddress = m.association match {
-      case OptionVal.Some(a) ⇒ OptionVal.Some(a.remoteAddress)
-      case OptionVal.None    ⇒ OptionVal.None
-    }
-    messageDispatcher.dispatch(m.recipient.get, m.message, m.sender, originAddress)
+    messageDispatcher.dispatch(m)
     m match {
       case r: ReusableInboundEnvelope ⇒ inboundEnvelopePool.release(r)
       case _                          ⇒

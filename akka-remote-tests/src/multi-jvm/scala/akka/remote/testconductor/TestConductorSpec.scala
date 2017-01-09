@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.testconductor
 
@@ -20,7 +20,7 @@ import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
-  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
+  commonConfig(debugConfig(on = false).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   val master = role("master")
   val slave = role("slave")

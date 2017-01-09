@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-	<!-- Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com> -->
+	<!-- Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com> -->
 
 	<variable name="pattern" value="%date{ISO8601} %-5level %logger %X{akkaSource} %X{sourceThread} - %msg%n" />
 

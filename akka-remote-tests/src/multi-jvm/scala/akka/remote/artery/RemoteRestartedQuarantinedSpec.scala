@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -31,7 +31,7 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
       akka.loglevel = WARNING
       akka.remote.log-remote-lifecycle-events = WARNING
       akka.remote.artery.enabled = on
-      """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
+      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   class Subject extends Actor {
     def receive = {

@@ -1,9 +1,10 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
 import java.net.InetSocketAddress
+import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
 import akka.actor._
@@ -11,7 +12,7 @@ import akka.io.Inet.SocketOption
 import akka.io.{ IO, Tcp ⇒ IoTcp }
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.detacher
-import akka.stream.impl.io.{ ConnectionSourceStage, OutgoingConnectionStage }
+import akka.stream.impl.io.{ ConnectionSourceStage, OutgoingConnectionStage, TcpIdleTimeout }
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -172,7 +173,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       connectTimeout)).via(detacher[ByteString]) // must read ahead for proper completions
 
     idleTimeout match {
-      case d: FiniteDuration ⇒ tcpFlow.join(BidiFlow.bidirectionalIdleTimeout[ByteString, ByteString](d))
+      case d: FiniteDuration ⇒ tcpFlow.join(TcpIdleTimeout(d, Some(remoteAddress)))
       case _                 ⇒ tcpFlow
     }
 
@@ -185,3 +186,5 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
     outgoingConnection(InetSocketAddress.createUnresolved(host, port))
 }
+
+final class TcpIdleTimeoutException(msg: String, timeout: Duration) extends TimeoutException(msg: String)

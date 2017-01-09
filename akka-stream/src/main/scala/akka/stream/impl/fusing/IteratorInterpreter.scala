@@ -1,12 +1,11 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl.fusing
 
-import akka.event.{ NoLogging }
+import akka.event.NoLogging
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter.{ GraphAssembly, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
-import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.stage._
 import java.{ util ⇒ ju }
 

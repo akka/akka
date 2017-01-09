@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -21,11 +21,7 @@ object RemoteRouterSpec {
   }
 }
 
-class RemoteRouterSpec extends AkkaSpec("""
-    akka.actor.provider = remote
-    akka.remote.artery.enabled = on
-    akka.remote.artery.canonical.hostname = localhost
-    akka.remote.artery.canonical.port = 0
+class RemoteRouterSpec extends AkkaSpec(ConfigFactory.parseString("""
     akka.actor.deployment {
       /remote-override {
         router = round-robin-pool
@@ -39,7 +35,7 @@ class RemoteRouterSpec extends AkkaSpec("""
         router = round-robin-pool
         nr-of-instances = 6
       }
-    }""") {
+    }""").withFallback(ArterySpecSupport.defaultConfig)) with FlightRecorderSpecIntegration {
 
   import RemoteRouterSpec._
 
@@ -79,12 +75,16 @@ class RemoteRouterSpec extends AkkaSpec("""
           target.nodes = ["akka://${sysName}@localhost:${port}"]
         }
       }
-    }""").withFallback(system.settings.config)
+    }"""
+  ).withFallback(ArterySpecSupport.newFlightRecorderConfig)
+    .withFallback(system.settings.config)
 
   val masterSystem = ActorSystem("Master" + sysName, conf)
 
   override def afterTermination(): Unit = {
     shutdown(masterSystem)
+    handleFlightRecorderFile(system)
+    handleFlightRecorderFile(masterSystem)
   }
 
   def collectRouteePaths(probe: TestProbe, router: ActorRef, n: Int): immutable.Seq[ActorPath] = {

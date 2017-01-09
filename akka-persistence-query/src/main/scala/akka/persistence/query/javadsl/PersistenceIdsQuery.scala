@@ -1,15 +1,15 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.persistence.query.scaladsl
+package akka.persistence.query.javadsl
 
 import akka.NotUsed
-import akka.stream.scaladsl.Source
+import akka.stream.javadsl.Source
 
 /**
- * A plugin may optionally support this query by implementing this trait.
+ * A plugin may optionally support this query by implementing this interface.
  */
-trait AllPersistenceIdsQuery extends ReadJournal {
+trait PersistenceIdsQuery extends ReadJournal {
 
   /**
    * Query all `PersistentActor` identifiers, i.e. as defined by the
@@ -20,6 +20,6 @@ trait AllPersistenceIdsQuery extends ReadJournal {
    * Corresponding query that is completed when it reaches the end of the currently
    * currently used `persistenceIds` is provided by [[CurrentPersistenceIdsQuery#currentPersistenceIds]].
    */
-  def allPersistenceIds(): Source[String, NotUsed]
+  def persistenceIds(): Source[String, NotUsed]
 
 }
