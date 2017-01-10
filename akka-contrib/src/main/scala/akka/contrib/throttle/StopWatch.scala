@@ -3,6 +3,7 @@ package akka.contrib.throttle
 import akka.actor.Actor
 
 import scala.concurrent.duration.{ FiniteDuration, _ }
+import language.postfixOps
 
 /**
  * Created by vikas on 8/18/16.
