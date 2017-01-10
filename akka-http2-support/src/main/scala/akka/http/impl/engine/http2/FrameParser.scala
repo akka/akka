@@ -113,8 +113,9 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         ContinuationFrame(streamId, endHeaders, payload.remainingData)
 
       case PING ⇒
+        Http2Compliance.requireFrameSize(payload.remainingSize, 8)
+        Http2Compliance.requireZeroStreamId(streamId)
         val ack = Flags.ACK.isSet(flags)
-        // FIXME: ensure data size is 8
         PingFrame(ack, payload.remainingData)
 
       case RST_STREAM ⇒
