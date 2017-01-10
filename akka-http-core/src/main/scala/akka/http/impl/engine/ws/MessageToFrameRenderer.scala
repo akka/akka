@@ -6,9 +6,9 @@ package akka.http.impl.engine.ws
 
 import akka.NotUsed
 import akka.util.ByteString
-import akka.stream.scaladsl.{ Source, Flow }
-
+import akka.stream.scaladsl.{ Flow, Source }
 import Protocol.Opcode
+import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model.ws._
 
 /**
@@ -22,9 +22,20 @@ private[http] object MessageToFrameRenderer {
       // FIXME: fragment?
       Source.single(FrameEvent.fullFrame(opcode, None, data, fin = true))
 
-    def streamedFrames[M](opcode: Opcode, data: Source[ByteString, M]): Source[FrameStart, NotUsed] =
-      Source.single(FrameEvent.empty(opcode, fin = false)) ++
-        data.map(FrameEvent.fullFrame(Opcode.Continuation, None, _, fin = false)) ++
+    def streamedFrames[M](opcode: Opcode, data: Source[ByteString, M]): Source[FrameStart, Any] =
+      data.via(StreamUtils.statefulMap(() ⇒ {
+        var isFirst = true
+
+        { data ⇒
+          val frameOpcode =
+            if (isFirst) {
+              isFirst = false
+              opcode
+            } else Opcode.Continuation
+
+          FrameEvent.fullFrame(frameOpcode, None, data, fin = false)
+        }
+      })) ++
         Source.single(FrameEvent.emptyLastContinuationFrame)
 
     Flow[Message]
