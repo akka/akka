@@ -121,3 +121,14 @@ all cases your handler doesn't handle itself) and used for all rejections that a
 itself.
 
 The second case allows you to restrict the applicability of your handler to certain branches of your route structure.
+
+
+#### Adding the unmatched route in handleNotFound
+
+Since rejection handlers are routes themselves, it is possible to do anything you could possibly want inside such handler.
+For example you may want to include the path which was not found in the response to the client, this is as simple as 
+using the `extractUnmatchedPath` and completing the route with it.
+
+@@snip [RejectionHandlerExamplesSpec.scala](../../../../../test/java/docs/http/javadsl/server/directives/ExecutionDirectivesExamplesTest.java) { #handleNotFoundWithDefails }
+
+If you want to add even more information you can obtain the full request by using `extractRequest` as well.

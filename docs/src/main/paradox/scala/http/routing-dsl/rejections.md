@@ -133,3 +133,13 @@ In order to customise the HTTP Responses of an existing handler you can call the
 ``mapRejectionResponse`` method on such handler as shown in the example below:
 
 @@snip [RejectionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #example-json }
+
+#### Adding the unmatched route in handleNotFound
+
+Since rejection handlers are routes themselves, it is possible to do anything you could possibly want inside such handler.
+For example you may want to include the path which was not found in the response to the client, this is as simple as 
+using the `extractUnmatchedPath` and completing the route with it.
+
+@@snip [RejectionHandlerExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #not-found-with-path }
+
+If you want to add even more information you can obtain the full request by using `extractRequest` as well.

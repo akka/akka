@@ -52,6 +52,25 @@ object MyRejectionHandler {
   //#custom-handler-example
 }
 
+object HandleNotFoundWithThePath {
+
+  //#not-found-with-path
+  import akka.http.scaladsl.model._
+  import akka.http.scaladsl.model.StatusCodes._
+  import akka.http.scaladsl.server._
+  import Directives._
+  
+  implicit def myRejectionHandler =
+    RejectionHandler.newBuilder()
+      .handleNotFound { 
+        extractUnmatchedPath { p =>
+          complete((NotFound, s"The path you requested [${p}] does not exist."))
+        }
+      }
+      .result()
+  //#not-found-with-path
+}
+
 class RejectionHandlerExamplesSpec extends RoutingSpec {
   import MyRejectionHandler._
 
