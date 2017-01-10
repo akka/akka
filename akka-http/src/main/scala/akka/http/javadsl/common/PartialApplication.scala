@@ -3,11 +3,11 @@
  */
 package akka.http.javadsl.common
 
-import java.util.function.{BiFunction, Function}
+import java.util.function.{ BiFunction, Function }
 
 /**
-  * Contains helpful methods to partially apply Functions for Java
-  */
+ * Contains helpful methods to partially apply Functions for Java
+ */
 object PartialApplication {
 
   /**
