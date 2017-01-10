@@ -17,16 +17,25 @@ private[akka] object LogByteStringTools {
   def logByteStringBidi(name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
     BidiFlow.fromFlows(
       logByteString(s"$name DOWN", maxBytes),
-      logByteString(s"$name UP", maxBytes)
+      logByteString(s"$name UP  ", maxBytes)
+    )
+
+  def logToStringBidi[A](name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[A, A, A, A, NotUsed] =
+    BidiFlow.fromFlows(
+      logToString(s"$name DOWN", maxBytes),
+      logToString(s"$name UP  ", maxBytes)
     )
 
   def logByteString(name: String, maxBytes: Int = MaxBytesPrinted): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].log(name, printByteString(_, maxBytes))
 
+  def logToString[A](name: String, maxBytes: Int = MaxBytesPrinted): Flow[A, A, NotUsed] =
+    Flow[A].log(name, _.toString().take(maxBytes))
+
   def logTLSBidi(name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
     BidiFlow.fromFlows(
       logTlsOutbound(s"$name DOWN", maxBytes),
-      logTlsInbound(s"$name UP", maxBytes))
+      logTlsInbound(s"$name UP  ", maxBytes))
 
   def logTlsOutbound(name: String, maxBytes: Int = MaxBytesPrinted): Flow[SslTlsOutbound, SslTlsOutbound, NotUsed] =
     Flow[SslTlsOutbound].log(name, {

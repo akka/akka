@@ -64,7 +64,7 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
 
   class BufferedOutletExtended[T](outlet: GenericOutlet[T]) extends OutHandler {
     case class ElementAndTrigger(element: T, trigger: () ⇒ Unit)
-    val buffer: java.util.ArrayDeque[ElementAndTrigger] = new java.util.ArrayDeque[ElementAndTrigger]
+    final val buffer: java.util.ArrayDeque[ElementAndTrigger] = new java.util.ArrayDeque[ElementAndTrigger]
 
     /**
      * override to hook into actually pushing, e.g. to keep track how much

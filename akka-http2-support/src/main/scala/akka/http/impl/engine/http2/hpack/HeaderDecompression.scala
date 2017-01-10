@@ -4,9 +4,11 @@
 
 package akka.http.impl.engine.http2.hpack
 
+import java.io.IOException
 import java.nio.charset.Charset
 
-import akka.http.impl.engine.http2.{ ContinuationFrame, FrameEvent, HeadersFrame, ParsedHeadersFrame }
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2._
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.ByteString
@@ -42,13 +44,19 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
       var headers = new VectorBuilder[(String, String)]
       object Receiver extends HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
-          // TODO: optimization: use preallocated strings for well-known names, similar to
-          // what happens in HeaderParser
+          // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
           headers += new String(name, UTF8) → new String(value, UTF8)
       }
-      decoder.decode(ByteStringInputStream(payload), Receiver)
-      decoder.endHeaderBlock() // TODO: do we have to check the result here?
-      push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result()))
+      try {
+        decoder.decode(ByteStringInputStream(payload), Receiver)
+        decoder.endHeaderBlock() // TODO: do we have to check the result here?
+
+        push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result()))
+      } catch {
+        case ex: IOException ⇒
+          // this is signalled by the decoder when it failed, we want to react to this by rendering a GOAWAY frame
+          fail(eventsOut, new Http2Compliance.HeaderDecompressionFailed("Decompression failed."))
+      }
     }
 
     object Idle extends State {

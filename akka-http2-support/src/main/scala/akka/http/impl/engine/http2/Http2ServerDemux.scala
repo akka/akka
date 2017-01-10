@@ -6,14 +6,13 @@ package akka.http.impl.engine.http2
 
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.COMPRESSION_ERROR
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.scaladsl.Source
-import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.GraphStage
-import akka.stream.stage.InHandler
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
 import akka.util.ByteString
 
 import scala.collection.mutable
@@ -80,7 +79,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with BufferedOutletSupport {
+    new GraphStageLogic(shape) with BufferedOutletSupport with StageLogging {
       logic ⇒
 
       final case class SubStream(
@@ -106,18 +105,25 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       private var totalOutboundWindowLeft = Http2Protocol.InitialWindowSize
       private var streamLevelWindow = Http2Protocol.InitialWindowSize
 
-      def lastStreamId: Int =
-        incomingStreams.lastOption.map(_._1).getOrElse(0) // FIXME: this is a Map which has no order, so lastStreamId will be an arbitrary value
+      /**
+       * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
+       * @see http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
+       */
+      def lastStreamId: Int = {
+        incomingStreams.keys.toList.sortBy(-_).headOption.getOrElse(0) // FIXME should be optimised
+      }
 
       def pushGOAWAY(errorCode: ErrorCode = Http2Protocol.ErrorCode.PROTOCOL_ERROR): Unit = {
         // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
         val last = lastStreamId
         closedAfter = Some(last)
-        bufferedFrameOut.push(GoAwayFrame(last, errorCode))
+        val frame = GoAwayFrame(last, errorCode)
+        bufferedFrameOut.push(frame)
         // FIXME: handle the connection closing according to the specification
       }
 
       setHandler(frameIn, new InHandler {
+
         def onPush(): Unit = {
           val in = grab(frameIn)
           in match {
@@ -130,7 +136,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               pushGOAWAY()
 
             case e: StreamFrameEvent if e.streamId > closedAfter.getOrElse(Int.MaxValue) ⇒
-            // streams that will have a greater stream id than the one we sent with GO_AWAY will be ignored
+            // streams that will have a greater stream id than the one we sent with GOAWAY will be ignored
 
             case frame @ ParsedHeadersFrame(streamId, endStream, headers) if lastStreamId < streamId ⇒
               val (data: Source[ByteString, NotUsed], outlet: Option[BufferedOutlet[ByteString]]) =
@@ -153,7 +159,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               // if a stream is invalid we will GO_AWAY
               pushGOAWAY()
 
-            case h: ParsedHeadersFrame ⇒ pushGOAWAY()
+            case h: ParsedHeadersFrame ⇒
+              pushGOAWAY()
 
             case DataFrame(streamId, endStream, payload) ⇒
               // technically this case is the same as StreamFrameEvent, however we're handling it earlier in the match here for efficiency
@@ -206,6 +213,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
             case e: Http2Compliance.IllegalHttp2StreamIdException ⇒
               pushGOAWAY()
+
+            case e: Http2Compliance.HeaderDecompressionFailed ⇒
+              pushGOAWAY(COMPRESSION_ERROR)
 
             // handle every unhandled exception
             case NonFatal(e) ⇒

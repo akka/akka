@@ -10,7 +10,7 @@ import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.StringRendering
+import akka.http.impl.util.{ LogByteStringTools, StringRendering }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
@@ -67,6 +67,34 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
           response = HPackSpecExamples.FirstResponse,
           expectedResponseHeaderBlock = HPackSpecExamples.C61FirstResponseWithHuffman
         )
+      }
+      "GOAWAY when invalid headers frame" in new TestSetup with RequestResponseProbes {
+        override def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
+          Flow[HttpRequest].map { req ⇒
+            HttpResponse(entity = req.entity).addHeader(req.header[Http2StreamIdHeader].get)
+          }
+
+        val headerBlock = hex"00 00 01 01 05 00 00 00 01 40"
+        sendHEADERS(1, endStream = false, endHeaders = true, headerBlockFragment = headerBlock)
+
+        val (lastStreamId, errorCode) = expectGOAWAY(0) // since we have not processed any stream
+        errorCode should ===(ErrorCode.COMPRESSION_ERROR)
+      }
+      "GOAWAY when second request on different stream has invalid headers frame" in new SimpleRequestResponseRoundtripSetup {
+        requestResponseRoundtrip(
+          streamId = 1,
+          requestHeaderBlock = HPackSpecExamples.C41FirstRequestWithHuffman,
+          expectedRequest = HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`),
+          response = HPackSpecExamples.FirstResponse,
+          expectedResponseHeaderBlock = HPackSpecExamples.C61FirstResponseWithHuffman
+        )
+
+        // example from: https://github.com/summerwind/h2spec/blob/master/4_3.go#L18
+        val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
+        sendHEADERS(3, endStream = false, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
+
+        val (lastStreamId, errorCode) = expectGOAWAY(1) // since we have sucessfully started processing stream `1`
+        errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
         requestResponseRoundtrip(
@@ -333,7 +361,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
 
             try expectRequest(10.millis)
             catch {
-              case ex ⇒ // ignore error here
+              case ex: Throwable ⇒ // ignore error here
             }
             publisherProbe.pending shouldBe 0 // fail here if there's still demand after the timeout
           }
@@ -472,7 +500,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
 
       "reject other frame than HEADERS/PUSH_PROMISE in idle state with connection-level PROTOCOL_ERROR (5.1)" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
         sendDATA(9, endStream = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        expectGOAWAY(0)
+        expectGOAWAY()
         // after GOAWAY we expect graceful completion after x amount of time
         // TODO: completion logic, wait?!
         expectGracefulCompletion()
@@ -481,7 +509,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
 
       "reject even-numbered client-initiated substreams" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
         sendHEADERS(2, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        expectGOAWAY(0)
+        expectGOAWAY()
         // after GOAWAY we expect graceful completion after x amount of time
         // TODO: completion logic, wait?!
         expectGracefulCompletion()
@@ -492,7 +520,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       "reject double sub-streams creation" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
         sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        expectGOAWAY(0)
+        expectGOAWAY()
         // after GOAWAY we expect graceful completion after x amount of time
         // TODO: completion logic, wait?!
         expectGracefulCompletion()
@@ -500,7 +528,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       "reject substream creation for streams invalidated by skipped substream IDs" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
         sendHEADERS(9, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        expectGOAWAY(0)
+        expectGOAWAY()
         // after GOAWAY we expect graceful completion after x amount of time
         // TODO: completion logic, wait?!
         expectGracefulCompletion()
@@ -571,10 +599,20 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         else updateToServerWindows(streamId, _ + windowSizeIncrement)
     }
 
-    def expectGOAWAY(streamId: Int): (Int, ErrorCode) = {
-      val payload = expectFramePayload(FrameType.GOAWAY, ByteFlag.Zero, streamId)
+    /**
+     * If the lastStreamId should not be asserted keep it as a negative value (which is never a real stream id)
+     * @return pair of `lastStreamId` and the [[ErrorCode]]
+     */
+    def expectGOAWAY(lastStreamId: Int = -1): (Int, ErrorCode) = {
+      // GOAWAY is always written to stream zero:
+      //   The GOAWAY frame applies to the connection, not a specific stream. 
+      //   An endpoint MUST treat a GOAWAY frame with a stream identifier other than 0x0 
+      //   as a connection error (Section 5.4.1) of type PROTOCOL_ERROR.
+      val payload = expectFramePayload(FrameType.GOAWAY, ByteFlag.Zero, streamId = 0)
       val reader = new ByteReader(payload)
-      (reader.readIntBE(), ErrorCode.byId(reader.readIntBE()))
+      val incomingLastStreamId = reader.readIntBE()
+      if (lastStreamId > 0) incomingLastStreamId should ===(lastStreamId)
+      (lastStreamId, ErrorCode.byId(reader.readIntBE()))
     }
 
     @tailrec
@@ -599,6 +637,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
 
     def expectFrameHeader(): FrameHeader = {
       val headerBytes = expectBytes(9)
+
       val reader = new ByteReader(headerBytes)
       val length = reader.readShortBE() << 8 | reader.readByte()
       val tpe = Http2Protocol.FrameType.byId(reader.readByte())
