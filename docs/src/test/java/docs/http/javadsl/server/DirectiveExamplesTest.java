@@ -3,7 +3,7 @@
  */
 package docs.http.javadsl.server;
 
-import akka.http.javadsl.model.HttpMethod;
+import akka.http.javadsl.model.RemoteAddress;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import org.junit.Test;
@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
+import static akka.http.javadsl.server.Directives.*;
 
 public class DirectiveExamplesTest extends JUnitRouteTest {
 
@@ -51,12 +52,10 @@ public class DirectiveExamplesTest extends JUnitRouteTest {
   //#usingRouteBig
 
   //#getOrPut
-  //#composeNesting
   Route getOrPut(Supplier<Route> inner) {
     return get(inner)
       .orElse(put(inner));
   }
-  //#composeNesting
 
   Route customDirective() {
     return path(segment("order").slash(integerSegment()), id ->
@@ -66,18 +65,36 @@ public class DirectiveExamplesTest extends JUnitRouteTest {
   }
   //#getOrPut
 
-  //#composeNesting
+  //#getOrPutUsingAnyOf
+  Route usingAnyOf() {
+    return path(segment("order").slash(integerSegment()), id ->
+      anyOf(this::get, this::put, () ->
+        extractMethod(method -> complete("Received " + method + " for order " + id)))
+    );
+  }
+  //#getOrPutUsingAnyOf
 
-  Route getOrPutWithMethod(Function<HttpMethod, Route> inner) {
-    return getOrPut(() ->
-        extractMethod(method -> inner.apply(method))
+  //#composeNesting
+  Route getWithIP(Function<RemoteAddress, Route> inner) {
+    return get(() ->
+        extractClientIP(address -> inner.apply(address))
     );
   }
 
   Route complexRoute() {
     return path(segment("order").slash(integerSegment()), id ->
-      getOrPutWithMethod(method -> complete("Received " + method + " for order " + id))
+      getWithIP(address ->
+        complete("Received request for order " + id + " from IP " + address))
     );
   }
   //#composeNesting
+
+  //#composeNestingAllOf
+  Route complexRouteUsingAllOf() {
+    return path(segment("order").slash(integerSegment()), id ->
+      allOf(this::get, this::extractClientIP, address ->
+        complete("Received request for order " + id + " from IP " + address))
+    );
+  }
+  //#composeNestingAllOf
 }
