@@ -68,6 +68,7 @@ message DataEnvelope {
     required UniqueAddress ownerAddress = 2;
     required bool performed = 3;
     repeated Address seen = 4;
+    optional sint64 obsoleteTime = 5;
   } 
   
   required OtherMessage data = 1;
@@ -119,4 +120,5 @@ message StringGSet {
 
 message DurableDataEnvelope {
   required OtherMessage data = 1;
+  repeated DataEnvelope.PruningEntry pruning = 2;
 }

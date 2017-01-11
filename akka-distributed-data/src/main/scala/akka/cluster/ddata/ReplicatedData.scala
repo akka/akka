@@ -67,8 +67,18 @@ abstract class AbstractReplicatedData[D <: AbstractReplicatedData[D]] extends Re
  * When a node is removed from the cluster these methods will be
  * used by the [[Replicator]] to collapse data from the removed node
  * into some other node in the cluster.
+ *
+ * See process description in the 'CRDT Garbage' section of the [[Replicator]]
+ * documentation.
  */
 trait RemovedNodePruning extends ReplicatedData {
+
+  /**
+   * The nodes that have changed the state for this data
+   * and would need pruning when such node is no longer part
+   * of the cluster.
+   */
+  def modifiedByNodes: Set[UniqueAddress]
 
   /**
    * Does it have any state changes from a specific node,

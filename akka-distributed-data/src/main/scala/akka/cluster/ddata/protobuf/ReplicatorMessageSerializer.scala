@@ -28,6 +28,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.cluster.ddata.DurableStore.DurableDataEnvelope
 import akka.cluster.ddata.DurableStore.DurableDataEnvelope
 import java.io.NotSerializableException
+import akka.actor.Address
 
 /**
  * INTERNAL API
@@ -155,6 +156,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   }(system.dispatcher)
 
   private val writeAckBytes = dm.Empty.getDefaultInstance.toByteArray
+  private val dummyAddress = UniqueAddress(Address("a", "b", "c", 2552), 1L)
 
   val GetManifest = "A"
   val GetSuccessManifest = "B"
@@ -396,14 +398,17 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     dataEnvelope.pruning.foreach {
       case (removedAddress, state) ⇒
         val b = dm.DataEnvelope.PruningEntry.newBuilder().
-          setRemovedAddress(uniqueAddressToProto(removedAddress)).
-          setOwnerAddress(uniqueAddressToProto(state.owner))
-        state.phase match {
-          case PruningState.PruningInitialized(seen) ⇒
+          setRemovedAddress(uniqueAddressToProto(removedAddress))
+        state match {
+          case PruningState.PruningInitialized(owner, seen) ⇒
             seen.toVector.sorted(Member.addressOrdering).map(addressToProto).foreach { a ⇒ b.addSeen(a) }
+            b.setOwnerAddress(uniqueAddressToProto(owner))
             b.setPerformed(false)
-          case PruningState.PruningPerformed ⇒
-            b.setPerformed(true)
+          case PruningState.PruningPerformed(obsoleteTime) ⇒
+            b.setPerformed(true).setObsoleteTime(obsoleteTime)
+            // TODO ownerAddress is only needed for PruningInitialized, but kept here for
+            // wire backwards compatibility with 2.4.16 (required field)
+            b.setOwnerAddress(uniqueAddressToProto(dummyAddress))
         }
         dataEnvelopeBuilder.addPruning(b)
     }
@@ -414,17 +419,28 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     dataEnvelopeFromProto(dm.DataEnvelope.parseFrom(bytes))
 
   private def dataEnvelopeFromProto(dataEnvelope: dm.DataEnvelope): DataEnvelope = {
-    val pruning: Map[UniqueAddress, PruningState] =
-      dataEnvelope.getPruningList.asScala.map { pruningEntry ⇒
-        val phase =
-          if (pruningEntry.getPerformed) PruningState.PruningPerformed
-          else PruningState.PruningInitialized(pruningEntry.getSeenList.asScala.map(addressFromProto)(breakOut))
-        val state = PruningState(uniqueAddressFromProto(pruningEntry.getOwnerAddress), phase)
+    val data = otherMessageFromProto(dataEnvelope.getData).asInstanceOf[ReplicatedData]
+    val pruning = pruningFromProto(dataEnvelope.getPruningList)
+    DataEnvelope(data, pruning)
+  }
+
+  private def pruningFromProto(pruningEntries: java.util.List[dm.DataEnvelope.PruningEntry]): Map[UniqueAddress, PruningState] = {
+    if (pruningEntries.isEmpty)
+      Map.empty
+    else
+      pruningEntries.asScala.map { pruningEntry ⇒
+        val state =
+          if (pruningEntry.getPerformed) {
+            // for wire compatibility with Akka 2.4.x
+            val obsoleteTime = if (pruningEntry.hasObsoleteTime) pruningEntry.getObsoleteTime else Long.MaxValue
+            PruningState.PruningPerformed(obsoleteTime)
+          } else
+            PruningState.PruningInitialized(
+              uniqueAddressFromProto(pruningEntry.getOwnerAddress),
+              pruningEntry.getSeenList.asScala.map(addressFromProto)(breakOut))
         val removed = uniqueAddressFromProto(pruningEntry.getRemovedAddress)
         removed → state
       }(breakOut)
-    val data = otherMessageFromProto(dataEnvelope.getData).asInstanceOf[ReplicatedData]
-    DataEnvelope(data, pruning)
   }
 
   private def writeToProto(write: Write): dm.Write =
@@ -472,6 +488,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def durableDataEnvelopeFromProto(durableDataEnvelope: dm.DurableDataEnvelope): DurableDataEnvelope = {
     val data = otherMessageFromProto(durableDataEnvelope.getData).asInstanceOf[ReplicatedData]
+    val pruning = pruningFromProto(durableDataEnvelope.getPruningList)
+
     new DurableDataEnvelope(data)
   }
 

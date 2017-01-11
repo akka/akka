@@ -19,6 +19,7 @@ import akka.actor.DeadLetterSuppression
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.ddata.Replicator.ReplicatorMessage
+import akka.cluster.ddata.Replicator.Internal.DataEnvelope
 import akka.io.DirectByteBufferPool
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
@@ -52,7 +53,7 @@ object DurableStore {
    * should be used to signal success or failure of the operation to the contained
    * `replyTo` actor.
    */
-  final case class Store(key: String, data: ReplicatedData, reply: Option[StoreReply])
+  final case class Store(key: String, data: DurableDataEnvelope, reply: Option[StoreReply])
   final case class StoreReply(successMsg: Any, failureMsg: Any, replyTo: ActorRef)
 
   /**
@@ -65,7 +66,7 @@ object DurableStore {
    * will stop itself and the durable store.
    */
   case object LoadAll
-  final case class LoadData(data: Map[String, ReplicatedData])
+  final case class LoadData(data: Map[String, DurableDataEnvelope])
   case object LoadAllCompleted
   class LoadFailed(message: String, cause: Throwable) extends RuntimeException(message, cause) {
     def this(message: String) = this(message, null)
@@ -77,7 +78,13 @@ object DurableStore {
    * the wrapped `ReplicatedData` including its serializerId and
    * manifest.
    */
-  final class DurableDataEnvelope(val data: ReplicatedData) extends ReplicatorMessage {
+  final class DurableDataEnvelope private[akka] (
+    private[akka] val dataEnvelope: DataEnvelope) extends ReplicatorMessage {
+
+    def this(data: ReplicatedData) = this(DataEnvelope(data))
+
+    def data: ReplicatedData = dataEnvelope.data
+
     override def toString(): String = s"DurableDataEnvelope($data)"
     override def hashCode(): Int = data.hashCode
     override def equals(o: Any): Boolean = o match {
@@ -136,7 +143,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   }
 
   // pending write behind
-  val pending = new java.util.HashMap[String, ReplicatedData]
+  val pending = new java.util.HashMap[String, DurableDataEnvelope]
 
   override def postRestart(reason: Throwable): Unit = {
     super.postRestart(reason)
@@ -171,7 +178,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
             val valArray = Array.ofDim[Byte](entry.`val`.remaining)
             entry.`val`.get(valArray)
             val envelope = serializer.fromBinary(valArray, manifest).asInstanceOf[DurableDataEnvelope]
-            key → envelope.data
+            key → envelope
           }.toMap)
           if (loadData.data.nonEmpty)
             sender() ! loadData
@@ -220,10 +227,10 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       writeBehind()
   }
 
-  def dbPut(tx: OptionVal[Txn[ByteBuffer]], key: String, data: ReplicatedData): Unit = {
+  def dbPut(tx: OptionVal[Txn[ByteBuffer]], key: String, data: DurableDataEnvelope): Unit = {
     try {
       keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
-      val value = serializer.toBinary(new DurableDataEnvelope(data))
+      val value = serializer.toBinary(data)
       ensureValueBufferSize(value.length)
       valueBuffer.put(value).flip()
       tx match {

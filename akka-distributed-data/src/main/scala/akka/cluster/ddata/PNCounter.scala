@@ -94,6 +94,9 @@ final class PNCounter private[akka] (
       increments = that.increments.merge(this.increments),
       decrements = that.decrements.merge(this.decrements))
 
+  override def modifiedByNodes: Set[UniqueAddress] =
+    increments.modifiedByNodes union decrements.modifiedByNodes
+
   override def needPruningFrom(removedNode: UniqueAddress): Boolean =
     increments.needPruningFrom(removedNode) || decrements.needPruningFrom(removedNode)
 

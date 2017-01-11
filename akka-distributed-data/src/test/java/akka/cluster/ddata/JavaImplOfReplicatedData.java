@@ -14,6 +14,11 @@ public class JavaImplOfReplicatedData extends AbstractReplicatedData<JavaImplOfR
   }
 
   @Override
+  public scala.collection.immutable.Set<UniqueAddress> modifiedByNodes() {
+    return akka.japi.Util.immutableSeq(new java.util.ArrayList<UniqueAddress>()).toSet();
+  }
+
+  @Override
   public boolean needPruningFrom(UniqueAddress removedNode) {
     return false;
   }
