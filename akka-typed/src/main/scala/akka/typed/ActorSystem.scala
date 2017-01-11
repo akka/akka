@@ -139,6 +139,11 @@ trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
    * method.
    */
   def systemActorOf[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig)(implicit timeout: Timeout): Future[ActorRef[U]]
+
+  /**
+   * Return a reference to this system’s [[akka.typed.patterns.Receptionist$]].
+   */
+  def receptionist: ActorRef[patterns.Receptionist.Command]
 }
 
 object ActorSystem {

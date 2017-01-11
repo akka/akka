@@ -184,6 +184,7 @@ object Dependencies {
 
   lazy val streamTestsTck = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit, Test.reactiveStreamsTck)
 
+  val typed = l ++= Seq(Test.scalacheck.value)
 }
 
 object DependencyHelpers {

@@ -1,4 +1,6 @@
-import akka.{ AkkaBuild, Formatting }
+import akka.{ AkkaBuild, Dependencies, Formatting }
+
+Dependencies.typed
 
 AkkaBuild.defaultSettings
 AkkaBuild.experimentalSettings
