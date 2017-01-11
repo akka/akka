@@ -136,17 +136,17 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
         replicator ! Update(KeyX, GCounter(), WriteLocal)(_ + 9)
         expectMsg(UpdateSuccess(KeyX, None))
         changedProbe.expectMsg(Changed(KeyX)(c9)).dataValue should be(c9)
-        replicator ! Delete(KeyX, WriteLocal)
-        expectMsg(DeleteSuccess(KeyX))
-        changedProbe.expectMsg(DataDeleted(KeyX))
-        replicator ! Get(KeyX, ReadLocal)
-        expectMsg(DataDeleted(KeyX))
-        replicator ! Get(KeyX, readAll)
-        expectMsg(DataDeleted(KeyX))
-        replicator ! Update(KeyX, GCounter(), WriteLocal)(_ + 1)
-        expectMsg(DataDeleted(KeyX))
-        replicator ! Delete(KeyX, WriteLocal)
-        expectMsg(DataDeleted(KeyX))
+        replicator ! Delete(KeyX, WriteLocal, Some(777))
+        expectMsg(DeleteSuccess(KeyX, Some(777)))
+        changedProbe.expectMsg(Deleted(KeyX))
+        replicator ! Get(KeyX, ReadLocal, Some(789))
+        expectMsg(DataDeleted(KeyX, Some(789)))
+        replicator ! Get(KeyX, readAll, Some(456))
+        expectMsg(DataDeleted(KeyX, Some(456)))
+        replicator ! Update(KeyX, GCounter(), WriteLocal, Some(123))(_ + 1)
+        expectMsg(DataDeleted(KeyX, Some(123)))
+        replicator ! Delete(KeyX, WriteLocal, Some(555))
+        expectMsg(DataDeleted(KeyX, Some(555)))
 
         replicator ! GetKeyIds
         expectMsg(GetKeyIdsResult(Set("A")))
@@ -288,8 +288,8 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       expectMsg(UpdateSuccess(KeyC, None))
       changedProbe.expectMsgPF() { case c @ Changed(KeyC) ⇒ c.get(KeyC).value } should be(31)
 
-      replicator ! Delete(KeyY, WriteLocal)
-      expectMsg(DeleteSuccess(KeyY))
+      replicator ! Delete(KeyY, WriteLocal, Some(777))
+      expectMsg(DeleteSuccess(KeyY, Some(777)))
 
       replicator ! Get(KeyZ, readMajority)
       expectMsgPF() { case g @ GetSuccess(KeyZ, _) ⇒ g.get(KeyZ).value } should be(30)
@@ -304,8 +304,8 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
           val c = expectMsgPF() { case g @ GetSuccess(KeyC, _) ⇒ g.get(KeyC) }
           c.value should be(31)
 
-          replicator ! Get(KeyY, ReadLocal)
-          expectMsg(DataDeleted(KeyY))
+          replicator ! Get(KeyY, ReadLocal, Some(777))
+          expectMsg(DataDeleted(KeyY, Some(777)))
         }
       }
       changedProbe.expectMsgPF() { case c @ Changed(KeyC) ⇒ c.get(KeyC).value } should be(31)
