@@ -6,11 +6,12 @@ package akka.http.impl.engine.http2
 
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.COMPRESSION_ERROR
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FRAME_SIZE_ERROR }
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
+import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
 import akka.util.ByteString
@@ -216,6 +217,15 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
             case e: Http2Compliance.HeaderDecompressionFailed ⇒
               pushGOAWAY(COMPRESSION_ERROR)
+
+            case e: Http2Compliance.IllegalHttp2FrameSize ⇒
+              pushGOAWAY(FRAME_SIZE_ERROR)
+
+            case e: ParsingException ⇒
+              e.getCause match {
+                case null  ⇒ super.onUpstreamFailure(e) // fail with the raw parsing exception
+                case cause ⇒ onUpstreamFailure(cause) // unwrap the cause, which should carry ComplianceException and recurse 
+              }
 
             // handle every unhandled exception
             case NonFatal(e) ⇒

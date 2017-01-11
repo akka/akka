@@ -465,6 +465,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         sendDataAndExpectOnNet(entity1DataOut, 1, "", endStream = true)
       }
     }
+
     "respect flow-control" should {
       "not exceed connection-level window while sending" in pending
       "not exceed stream-level window while sending" in pending
@@ -476,6 +477,29 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
 
     "respect settings" should {
       "initial MAX_FRAME_SIZE" in pending
+
+      "received non-zero length payload Settings with ACK flag (invalid 6.5)" in new TestSetup with RequestResponseProbes {
+        /*
+         Receipt of a SETTINGS frame with the ACK flag set and a length field value other than 0
+         MUST be treated as a connection error (Section 5.4.1) of type FRAME_SIZE_ERROR.
+         */
+        // we ACK the settings with an incorrect ACK (it must not have a payload)
+        val ackFlag = new ByteFlag(0x1)
+        val illegalPayload = hex"cafe babe"
+        sendFrame(FrameType.SETTINGS, ackFlag, 0, illegalPayload)
+
+        val (lastStreamId, error) = expectGOAWAY()
+        error should ===(ErrorCode.FRAME_SIZE_ERROR)
+      }
+      "received SETTINGs frame frame with a length other than a multiple of 6 octets (invalid 6.5)" in new TestSetup with RequestResponseProbes {
+        val data = hex"00 00 02 04 00 00 00 00 00"
+
+        sendFrame(FrameType.SETTINGS, ByteFlag.Zero, 0, data)
+
+        val (lastStreamId, error) = expectGOAWAY()
+        error should ===(ErrorCode.FRAME_SIZE_ERROR)
+      }
+
       "received SETTINGS_MAX_FRAME_SIZE" in pending
 
       "received SETTINGS_MAX_CONCURRENT_STREAMS" in pending

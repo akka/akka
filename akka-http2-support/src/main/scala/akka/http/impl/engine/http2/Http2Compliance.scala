@@ -17,7 +17,15 @@ private[akka] object Http2Compliance {
 
   final class HeaderDecompressionFailed(msg: String) extends IllegalStateException(msg)
 
+  final class IllegalPayloadInSettingsAckFrame(size: Int, expected: String) extends IllegalHttp2FrameSize(size, expected)
+
+  final class IllegalPayloadLengthInSettingsFrame(size: Int, expected: String) extends IllegalHttp2FrameSize(size, expected)
+
   final def missingHttpIdHeaderException = throw new MissingHttpIdHeaderException
+
+  // @DoNotInherit
+  private[akka] sealed class IllegalHttp2FrameSize(size: Int, expected: String)
+    extends IllegalArgumentException(s"Illegal HTTP/2 frame size: [$size]. $expected!")
 
   // require methods use `if` because `require` allocates
 
@@ -26,9 +34,6 @@ private[akka] object Http2Compliance {
 
   /** checks if the stream id was client initiated, by checking if the stream id was odd-numbered */
   final def isClientInitiatedStreamId(id: Int): Boolean = id % 2 != 0
-
-  final class IllegalHttp2FrameSize(size: Int, expected: String)
-    extends IllegalArgumentException(s"Illegal HTTP/2 frame size: [$size]. $expected!")
 
   final def requireFrameSize(size: Int, max: Int): Unit =
     if (size != max) throw new IllegalHttp2FrameSize(size, s"MUST BE == $max.")
