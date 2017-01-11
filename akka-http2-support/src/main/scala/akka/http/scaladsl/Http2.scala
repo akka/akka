@@ -4,38 +4,26 @@
 
 package akka.http.scaladsl
 
-import akka.Done
-import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
+import javax.net.ssl.SSLEngine
+
+import akka.{Done, NotUsed}
+import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.http2.{ AlpnSwitch, Http2Blueprint, WrappedSslContextSPI }
+import akka.http.impl.engine.http2.{AlpnSwitch, Http2AlpnSupport, Http2Blueprint}
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.Fusing
-import akka.stream.Materializer
-import akka.stream.TLSProtocol.SendBytes
-import akka.stream.TLSProtocol.SessionBytes
-import akka.stream.TLSProtocol.SslTlsInbound
-import akka.stream.TLSProtocol.SslTlsOutbound
-import akka.stream.TLSRole
-import akka.stream.scaladsl.BidiFlow
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Tcp
+import akka.stream.TLSProtocol.{SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound}
+import akka.stream.scaladsl.{BidiFlow, Flow, Keep, Sink, TLS, Tcp}
+import akka.stream.{Fusing, IgnoreComplete, Materializer}
 import akka.util.ByteString
 import com.typesafe.config.Config
 
 import scala.concurrent.Future
+import scala.util.Success
 import scala.util.control.NonFatal
 
 /** Entry point for Http/2 server */
@@ -83,8 +71,13 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
         else throw new IllegalStateException("ChosenProtocol was set twice. Http2.serverLayer is not reusable.")
       def getChosenProtocol(): String = chosenProtocol.getOrElse("h1") // default to http/1, e.g. when ALPN jar is missing
 
-      val wrappedContext = WrappedSslContextSPI.wrapContext(httpsContext, setChosenProtocol)
-      val tls = http.sslTlsStage(wrappedContext, TLSRole.server)
+      def createEngine(): SSLEngine = {
+        val engine = httpsContext.sslContext.createSSLEngine()
+        engine.setUseClientMode(false)
+        Http2AlpnSupport.applySessionParameters(engine, httpsContext.firstSession)
+        Http2AlpnSupport.enableForServer(engine, setChosenProtocol)
+      }
+      val tls = TLS(createEngine, _ ⇒ Success(()), IgnoreComplete)
 
       AlpnSwitch(getChosenProtocol, Http().serverLayer(), http2Layer()) atop
         tls
