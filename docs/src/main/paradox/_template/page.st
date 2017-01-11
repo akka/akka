@@ -71,10 +71,15 @@
 
             <div class="page-content row">
               <div class="small-12 large-9 column" id="docs">
-                $page.content$
-                
+
+$!
+   Must not be indented, will otherwise ST4 will otherwise indent <pre> blocks in the
+   content as well, leading to extra indentation in the generated output.
+!$
+$page.content$
+
                 <div>
-                  $source()$  
+                  $source()$
                 </div>
                 
                 $if(page.next.html)$
