@@ -12,6 +12,9 @@ private[akka] object Http2Compliance {
 
   final class MissingHttpIdHeaderException extends IllegalArgumentException("Expected `Http2StreamIdHeader` header to be present but was missing!")
 
+  final class IllegalHttp2StreamDependency(id: Int)
+    extends IllegalArgumentException(s"Illegal self dependency of stream for id: [$id]!")
+
   final class HeaderDecompressionFailed(msg: String) extends IllegalStateException(msg)
 
   final def missingHttpIdHeaderException = throw new MissingHttpIdHeaderException
@@ -30,4 +33,6 @@ private[akka] object Http2Compliance {
   final def requireFrameSize(size: Int, max: Int): Unit =
     if (size != max) throw new IllegalHttp2FrameSize(size, s"MUST BE == $max.")
 
+  final def requireNoSelfDependency(id: Int, dependency: Int): Unit =
+    if (id == dependency) throw new IllegalHttp2StreamDependency(id)
 }

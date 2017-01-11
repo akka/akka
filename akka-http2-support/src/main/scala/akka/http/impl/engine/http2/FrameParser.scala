@@ -69,6 +69,11 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
           if (priority) payload.readByte() & 0xff
           else 0
 
+        val exclusiveFlag = (dependencyAndE >>> 31) == 1 // most significant bit for exclusive flag
+        val dependencyId = dependencyAndE & 0x7fffffff // remaining 31 bits for the dependency part
+
+        Http2Compliance.requireNoSelfDependency(streamId, dependencyId)
+
         // TODO: also write out Priority frame if priority was set
         HeadersFrame(streamId, endStream, endHeaders, payload.take(payload.remainingSize - paddingLength))
 
@@ -123,11 +128,13 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         RstStreamFrame(streamId, ErrorCode.byId(payload.readIntBE()))
 
       case PRIORITY ⇒
+        Http2Compliance.requireFrameSize(payload.remainingSize, 5)
         val streamDependency = payload.readIntBE() // whole word
         val exclusiveFlag = (streamDependency >>> 31) == 1 // most significant bit for exclusive flag
-        val dependencyPart = streamDependency & 0x7fffffff // remaining 31 bits for the dependency part
+        val dependencyId = streamDependency & 0x7fffffff // remaining 31 bits for the dependency part
         val priority = payload.readByte() & 0xff
-        PriorityFrame(streamId, exclusiveFlag, dependencyPart, priority)
+        Http2Compliance.requireNoSelfDependency(streamId, dependencyId)
+        PriorityFrame(streamId, exclusiveFlag, dependencyId, priority)
 
       case tpe ⇒ // TODO: remove once all stream types are defined
         UnknownFrameEvent(tpe, flags, streamId, payload.remainingData)
