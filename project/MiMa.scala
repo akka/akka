@@ -162,10 +162,16 @@ object MiMa extends AutoPlugin {
       FilterAnyProblemStartingWith("akka.cluster.sharding.ClusterShardingGuardian"),
       FilterAnyProblemStartingWith("akka.cluster.sharding.ShardRegion"),
         
+      // #21647 pruning
+      FilterAnyProblemStartingWith("akka.cluster.ddata.PruningState"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.RemovedNodePruning.modifiedByNodes"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.Replicator"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.protobuf.msg"),
+
       // #21537 coordinated shutdown
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterCoreDaemon.removed"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.convergence"),  
-        
+
       // #21423 removal of deprecated stages (in 2.5.x)
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.transform"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SubSource.transform"),

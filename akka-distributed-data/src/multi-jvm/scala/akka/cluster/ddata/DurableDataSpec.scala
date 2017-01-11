@@ -23,7 +23,7 @@ final case class DurableDataSpecConfig(writeBehind: Boolean) extends MultiNodeCo
   val second = role("second")
 
   commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.log-dead-letters-during-shutdown = off
     akka.cluster.distributed-data.durable.keys = ["durable*"]

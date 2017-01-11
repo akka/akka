@@ -523,6 +523,18 @@ Note that you should be prepared to receive ``WriteFailure`` as reply to an ``Up
 durable entry if the data could not be stored for some reason. When enabling ``write-behind-interval``
 such errors will only be logged and ``UpdateSuccess`` will still be the reply to the ``Update``.
 
+There is one important caveat when it comes pruning of :ref:`crdt_garbage_scala` for durable data.
+If and old data entry that was never pruned is injected and merged with existing data after 
+that the pruning markers have been removed the value will not be correct. The time-to-live
+of the markers is defined by configuration 
+``akka.cluster.distributed-data.durable.remove-pruning-marker-after`` and is in the magnitude of days.
+This would be possible if a node with durable data didn't participate in the pruning
+(e.g. it was shutdown) and later started after this time. A node with durable data should not 
+be stopped for longer time than this duration and if it is joining again after this
+duration its data should first be manually removed (from the lmdb directory).
+
+.. _crdt_garbage_scala:
+
 CRDT Garbage
 ------------
 
@@ -531,7 +543,8 @@ For example a ``GCounter`` keeps track of one counter per node. If a ``GCounter`
 from one node it will associate the identifier of that node forever. That can become a problem
 for long running systems with many cluster nodes being added and removed. To solve this problem
 the ``Replicator`` performs pruning of data associated with nodes that have been removed from the
-cluster. Data types that need pruning have to implement the ``RemovedNodePruning`` trait. 
+cluster. Data types that need pruning have to implement the ``RemovedNodePruning`` trait. See the
+API documentation of the ``Replicator`` for details. 
 
 Samples
 =======

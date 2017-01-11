@@ -292,6 +292,9 @@ final case class OneVersionVector private[akka] (node: UniqueAddress, version: L
     }
   }
 
+  override def modifiedByNodes: Set[UniqueAddress] =
+    Set(node)
+
   override def needPruningFrom(removedNode: UniqueAddress): Boolean =
     node == removedNode
 
@@ -352,6 +355,9 @@ final case class ManyVersionVector(versions: TreeMap[UniqueAddress, Long]) exten
         VersionVector(mergedVersions)
     }
   }
+
+  override def modifiedByNodes: Set[UniqueAddress] =
+    versions.keySet
 
   override def needPruningFrom(removedNode: UniqueAddress): Boolean =
     versions.contains(removedNode)

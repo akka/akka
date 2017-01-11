@@ -177,6 +177,13 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
     new ORMap(mergedKeys, mergedValues)
   }
 
+  override def modifiedByNodes: Set[UniqueAddress] = {
+    keys.modifiedByNodes union values.foldLeft(Set.empty[UniqueAddress]) {
+      case (acc, (_, data: RemovedNodePruning)) ⇒ acc union data.modifiedByNodes
+      case (acc, _)                             ⇒ acc
+    }
+  }
+
   override def needPruningFrom(removedNode: UniqueAddress): Boolean = {
     keys.needPruningFrom(removedNode) || values.exists {
       case (_, data: RemovedNodePruning) ⇒ data.needPruningFrom(removedNode)

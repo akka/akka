@@ -143,16 +143,20 @@ class PNCounterSpec extends WordSpec with Matchers {
       val c1 = PNCounter()
       val c2 = c1 increment node1
       val c3 = c2 decrement node2
+      c2.modifiedByNodes should ===(Set(node1))
       c2.needPruningFrom(node1) should be(true)
       c2.needPruningFrom(node2) should be(false)
+      c3.modifiedByNodes should ===(Set(node1, node2))
       c3.needPruningFrom(node1) should be(true)
       c3.needPruningFrom(node2) should be(true)
 
       val c4 = c3.prune(node1, node2)
+      c4.modifiedByNodes should ===(Set(node2))
       c4.needPruningFrom(node2) should be(true)
       c4.needPruningFrom(node1) should be(false)
 
       val c5 = (c4 increment node1).pruningCleanup(node1)
+      c5.modifiedByNodes should ===(Set(node2))
       c5.needPruningFrom(node1) should be(false)
     }
 

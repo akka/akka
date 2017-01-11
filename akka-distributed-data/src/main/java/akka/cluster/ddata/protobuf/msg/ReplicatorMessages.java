@@ -7622,6 +7622,16 @@ public final class ReplicatorMessages {
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.AddressOrBuilder getSeenOrBuilder(
           int index);
+
+      // optional sint64 obsoleteTime = 5;
+      /**
+       * <code>optional sint64 obsoleteTime = 5;</code>
+       */
+      boolean hasObsoleteTime();
+      /**
+       * <code>optional sint64 obsoleteTime = 5;</code>
+       */
+      long getObsoleteTime();
     }
     /**
      * Protobuf type {@code akka.cluster.ddata.DataEnvelope.PruningEntry}
@@ -7711,6 +7721,11 @@ public final class ReplicatorMessages {
                   mutable_bitField0_ |= 0x00000008;
                 }
                 seen_.add(input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.PARSER, extensionRegistry));
+                break;
+              }
+              case 40: {
+                bitField0_ |= 0x00000008;
+                obsoleteTime_ = input.readSInt64();
                 break;
               }
             }
@@ -7852,11 +7867,28 @@ public final class ReplicatorMessages {
         return seen_.get(index);
       }
 
+      // optional sint64 obsoleteTime = 5;
+      public static final int OBSOLETETIME_FIELD_NUMBER = 5;
+      private long obsoleteTime_;
+      /**
+       * <code>optional sint64 obsoleteTime = 5;</code>
+       */
+      public boolean hasObsoleteTime() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional sint64 obsoleteTime = 5;</code>
+       */
+      public long getObsoleteTime() {
+        return obsoleteTime_;
+      }
+
       private void initFields() {
         removedAddress_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance();
         ownerAddress_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance();
         performed_ = false;
         seen_ = java.util.Collections.emptyList();
+        obsoleteTime_ = 0L;
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
@@ -7908,6 +7940,9 @@ public final class ReplicatorMessages {
         for (int i = 0; i < seen_.size(); i++) {
           output.writeMessage(4, seen_.get(i));
         }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          output.writeSInt64(5, obsoleteTime_);
+        }
         getUnknownFields().writeTo(output);
       }
 
@@ -7932,6 +7967,10 @@ public final class ReplicatorMessages {
         for (int i = 0; i < seen_.size(); i++) {
           size += akka.protobuf.CodedOutputStream
             .computeMessageSize(4, seen_.get(i));
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          size += akka.protobuf.CodedOutputStream
+            .computeSInt64Size(5, obsoleteTime_);
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -8072,6 +8111,8 @@ public final class ReplicatorMessages {
           } else {
             seenBuilder_.clear();
           }
+          obsoleteTime_ = 0L;
+          bitField0_ = (bitField0_ & ~0x00000010);
           return this;
         }
 
@@ -8129,6 +8170,10 @@ public final class ReplicatorMessages {
           } else {
             result.seen_ = seenBuilder_.build();
           }
+          if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+            to_bitField0_ |= 0x00000008;
+          }
+          result.obsoleteTime_ = obsoleteTime_;
           result.bitField0_ = to_bitField0_;
           onBuilt();
           return result;
@@ -8179,6 +8224,9 @@ public final class ReplicatorMessages {
                 seenBuilder_.addAllMessages(other.seen_);
               }
             }
+          }
+          if (other.hasObsoleteTime()) {
+            setObsoleteTime(other.getObsoleteTime());
           }
           this.mergeUnknownFields(other.getUnknownFields());
           return this;
@@ -8738,6 +8786,39 @@ public final class ReplicatorMessages {
             seen_ = null;
           }
           return seenBuilder_;
+        }
+
+        // optional sint64 obsoleteTime = 5;
+        private long obsoleteTime_ ;
+        /**
+         * <code>optional sint64 obsoleteTime = 5;</code>
+         */
+        public boolean hasObsoleteTime() {
+          return ((bitField0_ & 0x00000010) == 0x00000010);
+        }
+        /**
+         * <code>optional sint64 obsoleteTime = 5;</code>
+         */
+        public long getObsoleteTime() {
+          return obsoleteTime_;
+        }
+        /**
+         * <code>optional sint64 obsoleteTime = 5;</code>
+         */
+        public Builder setObsoleteTime(long value) {
+          bitField0_ |= 0x00000010;
+          obsoleteTime_ = value;
+          onChanged();
+          return this;
+        }
+        /**
+         * <code>optional sint64 obsoleteTime = 5;</code>
+         */
+        public Builder clearObsoleteTime() {
+          bitField0_ = (bitField0_ & ~0x00000010);
+          obsoleteTime_ = 0L;
+          onChanged();
+          return this;
         }
 
         // @@protoc_insertion_point(builder_scope:akka.cluster.ddata.DataEnvelope.PruningEntry)
@@ -14781,6 +14862,31 @@ public final class ReplicatorMessages {
      * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getDataOrBuilder();
+
+    // repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;
+    /**
+     * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+     */
+    java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry> 
+        getPruningList();
+    /**
+     * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+     */
+    akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry getPruning(int index);
+    /**
+     * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+     */
+    int getPruningCount();
+    /**
+     * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+     */
+    java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder> 
+        getPruningOrBuilderList();
+    /**
+     * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+     */
+    akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder getPruningOrBuilder(
+        int index);
   }
   /**
    * Protobuf type {@code akka.cluster.ddata.DurableDataEnvelope}
@@ -14846,6 +14952,14 @@ public final class ReplicatorMessages {
               bitField0_ |= 0x00000001;
               break;
             }
+            case 18: {
+              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                pruning_ = new java.util.ArrayList<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry>();
+                mutable_bitField0_ |= 0x00000002;
+              }
+              pruning_.add(input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.PARSER, extensionRegistry));
+              break;
+            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
@@ -14854,6 +14968,9 @@ public final class ReplicatorMessages {
         throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
+        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+          pruning_ = java.util.Collections.unmodifiableList(pruning_);
+        }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
@@ -14908,8 +15025,45 @@ public final class ReplicatorMessages {
       return data_;
     }
 
+    // repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;
+    public static final int PRUNING_FIELD_NUMBER = 2;
+    private java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry> pruning_;
+    /**
+     * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+     */
+    public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry> getPruningList() {
+      return pruning_;
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+     */
+    public java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder> 
+        getPruningOrBuilderList() {
+      return pruning_;
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+     */
+    public int getPruningCount() {
+      return pruning_.size();
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+     */
+    public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry getPruning(int index) {
+      return pruning_.get(index);
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+     */
+    public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder getPruningOrBuilder(
+        int index) {
+      return pruning_.get(index);
+    }
+
     private void initFields() {
       data_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
+      pruning_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -14924,6 +15078,12 @@ public final class ReplicatorMessages {
         memoizedIsInitialized = 0;
         return false;
       }
+      for (int i = 0; i < getPruningCount(); i++) {
+        if (!getPruning(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -14933,6 +15093,9 @@ public final class ReplicatorMessages {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, data_);
+      }
+      for (int i = 0; i < pruning_.size(); i++) {
+        output.writeMessage(2, pruning_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -14946,6 +15109,10 @@ public final class ReplicatorMessages {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, data_);
+      }
+      for (int i = 0; i < pruning_.size(); i++) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(2, pruning_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -15056,6 +15223,7 @@ public final class ReplicatorMessages {
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getDataFieldBuilder();
+          getPruningFieldBuilder();
         }
       }
       private static Builder create() {
@@ -15070,6 +15238,12 @@ public final class ReplicatorMessages {
           dataBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
+        if (pruningBuilder_ == null) {
+          pruning_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000002);
+        } else {
+          pruningBuilder_.clear();
+        }
         return this;
       }
 
@@ -15106,6 +15280,15 @@ public final class ReplicatorMessages {
         } else {
           result.data_ = dataBuilder_.build();
         }
+        if (pruningBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002)) {
+            pruning_ = java.util.Collections.unmodifiableList(pruning_);
+            bitField0_ = (bitField0_ & ~0x00000002);
+          }
+          result.pruning_ = pruning_;
+        } else {
+          result.pruning_ = pruningBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -15125,6 +15308,32 @@ public final class ReplicatorMessages {
         if (other.hasData()) {
           mergeData(other.getData());
         }
+        if (pruningBuilder_ == null) {
+          if (!other.pruning_.isEmpty()) {
+            if (pruning_.isEmpty()) {
+              pruning_ = other.pruning_;
+              bitField0_ = (bitField0_ & ~0x00000002);
+            } else {
+              ensurePruningIsMutable();
+              pruning_.addAll(other.pruning_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.pruning_.isEmpty()) {
+            if (pruningBuilder_.isEmpty()) {
+              pruningBuilder_.dispose();
+              pruningBuilder_ = null;
+              pruning_ = other.pruning_;
+              bitField0_ = (bitField0_ & ~0x00000002);
+              pruningBuilder_ = 
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getPruningFieldBuilder() : null;
+            } else {
+              pruningBuilder_.addAllMessages(other.pruning_);
+            }
+          }
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -15137,6 +15346,12 @@ public final class ReplicatorMessages {
         if (!getData().isInitialized()) {
           
           return false;
+        }
+        for (int i = 0; i < getPruningCount(); i++) {
+          if (!getPruning(i).isInitialized()) {
+            
+            return false;
+          }
         }
         return true;
       }
@@ -15275,6 +15490,246 @@ public final class ReplicatorMessages {
           data_ = null;
         }
         return dataBuilder_;
+      }
+
+      // repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;
+      private java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry> pruning_ =
+        java.util.Collections.emptyList();
+      private void ensurePruningIsMutable() {
+        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+          pruning_ = new java.util.ArrayList<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry>(pruning_);
+          bitField0_ |= 0x00000002;
+         }
+      }
+
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder> pruningBuilder_;
+
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry> getPruningList() {
+        if (pruningBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(pruning_);
+        } else {
+          return pruningBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public int getPruningCount() {
+        if (pruningBuilder_ == null) {
+          return pruning_.size();
+        } else {
+          return pruningBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry getPruning(int index) {
+        if (pruningBuilder_ == null) {
+          return pruning_.get(index);
+        } else {
+          return pruningBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public Builder setPruning(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry value) {
+        if (pruningBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensurePruningIsMutable();
+          pruning_.set(index, value);
+          onChanged();
+        } else {
+          pruningBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public Builder setPruning(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder builderForValue) {
+        if (pruningBuilder_ == null) {
+          ensurePruningIsMutable();
+          pruning_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          pruningBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public Builder addPruning(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry value) {
+        if (pruningBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensurePruningIsMutable();
+          pruning_.add(value);
+          onChanged();
+        } else {
+          pruningBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public Builder addPruning(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry value) {
+        if (pruningBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensurePruningIsMutable();
+          pruning_.add(index, value);
+          onChanged();
+        } else {
+          pruningBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public Builder addPruning(
+          akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder builderForValue) {
+        if (pruningBuilder_ == null) {
+          ensurePruningIsMutable();
+          pruning_.add(builderForValue.build());
+          onChanged();
+        } else {
+          pruningBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public Builder addPruning(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder builderForValue) {
+        if (pruningBuilder_ == null) {
+          ensurePruningIsMutable();
+          pruning_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          pruningBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public Builder addAllPruning(
+          java.lang.Iterable<? extends akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry> values) {
+        if (pruningBuilder_ == null) {
+          ensurePruningIsMutable();
+          super.addAll(values, pruning_);
+          onChanged();
+        } else {
+          pruningBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public Builder clearPruning() {
+        if (pruningBuilder_ == null) {
+          pruning_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000002);
+          onChanged();
+        } else {
+          pruningBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public Builder removePruning(int index) {
+        if (pruningBuilder_ == null) {
+          ensurePruningIsMutable();
+          pruning_.remove(index);
+          onChanged();
+        } else {
+          pruningBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder getPruningBuilder(
+          int index) {
+        return getPruningFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder getPruningOrBuilder(
+          int index) {
+        if (pruningBuilder_ == null) {
+          return pruning_.get(index);  } else {
+          return pruningBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder> 
+           getPruningOrBuilderList() {
+        if (pruningBuilder_ != null) {
+          return pruningBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(pruning_);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder addPruningBuilder() {
+        return getPruningFieldBuilder().addBuilder(
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder addPruningBuilder(
+          int index) {
+        return getPruningFieldBuilder().addBuilder(
+            index, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.DataEnvelope.PruningEntry pruning = 2;</code>
+       */
+      public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder> 
+           getPruningBuilderList() {
+        return getPruningFieldBuilder().getBuilderList();
+      }
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder> 
+          getPruningFieldBuilder() {
+        if (pruningBuilder_ == null) {
+          pruningBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
+              akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder>(
+                  pruning_,
+                  ((bitField0_ & 0x00000002) == 0x00000002),
+                  getParentForChildren(),
+                  isClean());
+          pruning_ = null;
+        }
+        return pruningBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:akka.cluster.ddata.DurableDataEnvelope)
@@ -15431,32 +15886,34 @@ public final class ReplicatorMessages {
       "key\030\001 \002(\t\0222\n\010envelope\030\002 \002(\0132 .akka.clust" +
       "er.ddata.DataEnvelope\"\007\n\005Empty\"\023\n\004Read\022\013" +
       "\n\003key\030\001 \002(\t\"@\n\nReadResult\0222\n\010envelope\030\001 " +
-      "\001(\0132 .akka.cluster.ddata.DataEnvelope\"\301\002" +
+      "\001(\0132 .akka.cluster.ddata.DataEnvelope\"\327\002" +
       "\n\014DataEnvelope\022.\n\004data\030\001 \002(\0132 .akka.clus" +
       "ter.ddata.OtherMessage\022>\n\007pruning\030\002 \003(\0132" +
       "-.akka.cluster.ddata.DataEnvelope.Prunin" +
-      "gEntry\032\300\001\n\014PruningEntry\0229\n\016removedAddres" +
+      "gEntry\032\326\001\n\014PruningEntry\0229\n\016removedAddres" +
       "s\030\001 \002(\0132!.akka.cluster.ddata.UniqueAddre",
       "ss\0227\n\014ownerAddress\030\002 \002(\0132!.akka.cluster." +
       "ddata.UniqueAddress\022\021\n\tperformed\030\003 \002(\010\022)" +
       "\n\004seen\030\004 \003(\0132\033.akka.cluster.ddata.Addres" +
-      "s\"\203\001\n\006Status\022\r\n\005chunk\030\001 \002(\r\022\021\n\ttotChunks" +
-      "\030\002 \002(\r\0221\n\007entries\030\003 \003(\0132 .akka.cluster.d" +
-      "data.Status.Entry\032$\n\005Entry\022\013\n\003key\030\001 \002(\t\022" +
-      "\016\n\006digest\030\002 \002(\014\"\227\001\n\006Gossip\022\020\n\010sendBack\030\001" +
-      " \002(\010\0221\n\007entries\030\002 \003(\0132 .akka.cluster.dda" +
-      "ta.Gossip.Entry\032H\n\005Entry\022\013\n\003key\030\001 \002(\t\0222\n" +
-      "\010envelope\030\002 \002(\0132 .akka.cluster.ddata.Dat",
-      "aEnvelope\"X\n\rUniqueAddress\022,\n\007address\030\001 " +
-      "\002(\0132\033.akka.cluster.ddata.Address\022\013\n\003uid\030" +
-      "\002 \002(\017\022\014\n\004uid2\030\003 \001(\017\")\n\007Address\022\020\n\010hostna" +
-      "me\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"V\n\014OtherMessage\022\027" +
-      "\n\017enclosedMessage\030\001 \002(\014\022\024\n\014serializerId\030" +
-      "\002 \002(\005\022\027\n\017messageManifest\030\004 \001(\014\"\036\n\nString" +
-      "GSet\022\020\n\010elements\030\001 \003(\t\"E\n\023DurableDataEnv" +
-      "elope\022.\n\004data\030\001 \002(\0132 .akka.cluster.ddata" +
-      ".OtherMessageB#\n\037akka.cluster.ddata.prot" +
-      "obuf.msgH\001"
+      "s\022\024\n\014obsoleteTime\030\005 \001(\022\"\203\001\n\006Status\022\r\n\005ch" +
+      "unk\030\001 \002(\r\022\021\n\ttotChunks\030\002 \002(\r\0221\n\007entries\030" +
+      "\003 \003(\0132 .akka.cluster.ddata.Status.Entry\032" +
+      "$\n\005Entry\022\013\n\003key\030\001 \002(\t\022\016\n\006digest\030\002 \002(\014\"\227\001" +
+      "\n\006Gossip\022\020\n\010sendBack\030\001 \002(\010\0221\n\007entries\030\002 " +
+      "\003(\0132 .akka.cluster.ddata.Gossip.Entry\032H\n" +
+      "\005Entry\022\013\n\003key\030\001 \002(\t\0222\n\010envelope\030\002 \002(\0132 .",
+      "akka.cluster.ddata.DataEnvelope\"X\n\rUniqu" +
+      "eAddress\022,\n\007address\030\001 \002(\0132\033.akka.cluster" +
+      ".ddata.Address\022\013\n\003uid\030\002 \002(\017\022\014\n\004uid2\030\003 \001(" +
+      "\017\")\n\007Address\022\020\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002" +
+      " \002(\r\"V\n\014OtherMessage\022\027\n\017enclosedMessage\030" +
+      "\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageMa" +
+      "nifest\030\004 \001(\014\"\036\n\nStringGSet\022\020\n\010elements\030\001" +
+      " \003(\t\"\205\001\n\023DurableDataEnvelope\022.\n\004data\030\001 \002" +
+      "(\0132 .akka.cluster.ddata.OtherMessage\022>\n\007" +
+      "pruning\030\002 \003(\0132-.akka.cluster.ddata.DataE",
+      "nvelope.PruningEntryB#\n\037akka.cluster.dda" +
+      "ta.protobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -15540,7 +15997,7 @@ public final class ReplicatorMessages {
           internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_descriptor,
-              new java.lang.String[] { "RemovedAddress", "OwnerAddress", "Performed", "Seen", });
+              new java.lang.String[] { "RemovedAddress", "OwnerAddress", "Performed", "Seen", "ObsoleteTime", });
           internal_static_akka_cluster_ddata_Status_descriptor =
             getDescriptor().getMessageTypes().get(12);
           internal_static_akka_cluster_ddata_Status_fieldAccessorTable = new
@@ -15594,7 +16051,7 @@ public final class ReplicatorMessages {
           internal_static_akka_cluster_ddata_DurableDataEnvelope_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_DurableDataEnvelope_descriptor,
-              new java.lang.String[] { "Data", });
+              new java.lang.String[] { "Data", "Pruning", });
           return null;
         }
       };
