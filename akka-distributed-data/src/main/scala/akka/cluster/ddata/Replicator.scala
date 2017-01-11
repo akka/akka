@@ -195,6 +195,8 @@ object Replicator {
     Props(new Replicator(settings)).withDeploy(Deploy.local).withDispatcher(settings.dispatcher)
   }
 
+  val DefaultMajorityMinCap: Int = 0
+
   sealed trait ReadConsistency {
     def timeout: FiniteDuration
   }
@@ -204,7 +206,9 @@ object Replicator {
   final case class ReadFrom(n: Int, timeout: FiniteDuration) extends ReadConsistency {
     require(n >= 2, "ReadFrom n must be >= 2, use ReadLocal for n=1")
   }
-  final case class ReadMajority(timeout: FiniteDuration) extends ReadConsistency
+  final case class ReadMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends ReadConsistency {
+    def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
+  }
   final case class ReadAll(timeout: FiniteDuration) extends ReadConsistency
 
   sealed trait WriteConsistency {
@@ -216,7 +220,9 @@ object Replicator {
   final case class WriteTo(n: Int, timeout: FiniteDuration) extends WriteConsistency {
     require(n >= 2, "WriteTo n must be >= 2, use WriteLocal for n=1")
   }
-  final case class WriteMajority(timeout: FiniteDuration) extends WriteConsistency
+  final case class WriteMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends WriteConsistency {
+    def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
+  }
   final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency
 
   /**
@@ -1463,6 +1469,16 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 private[akka] object ReadWriteAggregator {
   case object SendToSecondary
   val MaxSecondaryNodes = 10
+
+  def calculateMajorityWithMinCap(minCap: Int, numberOfNodes: Int): Int = {
+    if (numberOfNodes <= minCap) {
+      numberOfNodes
+    } else {
+      val majority = numberOfNodes / 2 + 1
+      if (majority <= minCap) minCap
+      else majority
+    }
+  }
 }
 
 /**
@@ -1539,9 +1555,9 @@ private[akka] class WriteAggregator(
   override val doneWhenRemainingSize = consistency match {
     case WriteTo(n, _) ⇒ nodes.size - (n - 1)
     case _: WriteAll   ⇒ 0
-    case _: WriteMajority ⇒
+    case WriteMajority(_, minCap) ⇒
       val N = nodes.size + 1
-      val w = N / 2 + 1 // write to at least (N/2+1) nodes
+      val w = calculateMajorityWithMinCap(minCap, N)
       N - w
     case WriteLocal ⇒
       throw new IllegalArgumentException("WriteLocal not supported by WriteAggregator")
@@ -1644,9 +1660,9 @@ private[akka] class ReadAggregator(
   override val doneWhenRemainingSize = consistency match {
     case ReadFrom(n, _) ⇒ nodes.size - (n - 1)
     case _: ReadAll     ⇒ 0
-    case _: ReadMajority ⇒
+    case ReadMajority(_, minCap) ⇒
       val N = nodes.size + 1
-      val r = N / 2 + 1 // read from at least (N/2+1) nodes
+      val r = calculateMajorityWithMinCap(minCap, N)
       N - r
     case ReadLocal ⇒
       throw new IllegalArgumentException("ReadLocal not supported by ReadAggregator")
