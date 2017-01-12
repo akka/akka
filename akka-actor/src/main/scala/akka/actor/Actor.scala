@@ -592,7 +592,7 @@ trait Actor {
    */
   def unhandled(message: Any): Unit = {
     message match {
-      case Terminated(dead) ⇒ throw new DeathPactException(dead)
+      case Terminated(dead) ⇒ throw DeathPactException(dead)
       case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender(), self))
     }
   }
