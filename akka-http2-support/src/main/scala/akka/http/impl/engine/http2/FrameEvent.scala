@@ -26,7 +26,8 @@ final case class HeadersFrame(
   streamId:            Int,
   endStream:           Boolean,
   endHeaders:          Boolean,
-  headerBlockFragment: ByteString) extends StreamFrameEvent
+  headerBlockFragment: ByteString,
+  priorityInfo:        Option[PriorityFrame]) extends StreamFrameEvent
 final case class ContinuationFrame(
   streamId:   Int,
   endHeaders: Boolean,
@@ -66,5 +67,6 @@ final case class UnknownFrameEvent(
 final case class ParsedHeadersFrame(
   streamId:      Int,
   endStream:     Boolean,
-  keyValuePairs: Seq[(String, String)]
+  keyValuePairs: Seq[(String, String)],
+  priorityInfo:  Option[PriorityFrame]
 ) extends FrameEvent

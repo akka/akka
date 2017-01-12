@@ -139,7 +139,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case e: StreamFrameEvent if e.streamId > closedAfter.getOrElse(Int.MaxValue) ⇒
             // streams that will have a greater stream id than the one we sent with GOAWAY will be ignored
 
-            case frame @ ParsedHeadersFrame(streamId, endStream, headers) if lastStreamId < streamId ⇒
+            case frame @ ParsedHeadersFrame(streamId, endStream, headers, prioInfo) if lastStreamId < streamId ⇒
+              // TODO: process priority information
               val (data: Source[ByteString, NotUsed], outlet: Option[BufferedOutlet[ByteString]]) =
                 if (endStream) (Source.empty, None)
                 else {

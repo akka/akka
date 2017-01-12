@@ -34,7 +34,7 @@ private[http2] object ResponseRendering {
         case header: HttpHeader if header.renderInResponses ⇒ header.lowercaseName → header.value
       }
 
-    val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result())
+    val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result(), None)
 
     Http2SubStream(
       headers,

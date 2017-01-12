@@ -29,16 +29,16 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
 
     object Idle extends State {
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
-        case fr @ ParsedHeadersFrame(streamId, endStream, kvs) ⇒
+        case fr @ ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) ⇒
           os.reset()
           kvs.foreach {
             case (key, value) ⇒
               encoder.encodeHeader(os, key.getBytes(HeaderDecompression.UTF8), value.getBytes(HeaderDecompression.UTF8), false)
           }
           val result = ByteString(os.toByteArray)
-          if (result.size <= currentMaxFrameSize) push(eventsOut, HeadersFrame(streamId, endStream, endHeaders = true, result))
+          if (result.size <= currentMaxFrameSize) push(eventsOut, HeadersFrame(streamId, endStream, endHeaders = true, result, prioInfo))
           else {
-            val first = HeadersFrame(streamId, endStream, endHeaders = false, result.take(currentMaxFrameSize))
+            val first = HeadersFrame(streamId, endStream, endHeaders = false, result.take(currentMaxFrameSize), prioInfo)
 
             emit(eventsOut, first)
             setHandler(eventsOut, new OutHandler {

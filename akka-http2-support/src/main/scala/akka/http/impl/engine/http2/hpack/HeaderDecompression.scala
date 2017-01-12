@@ -40,7 +40,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
     // Idle: no ongoing HEADERS parsing
     // Receiving headers: waiting for CONTINUATION frame
 
-    def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString): Unit = {
+    def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
       var headers = new VectorBuilder[(String, String)]
       object Receiver extends HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
@@ -51,7 +51,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
         decoder.decode(ByteStringInputStream(payload), Receiver)
         decoder.endHeaderBlock() // TODO: do we have to check the result here?
 
-        push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result()))
+        push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result(), prioInfo))
       } catch {
         case ex: IOException ⇒
           // this is signalled by the decoder when it failed, we want to react to this by rendering a GOAWAY frame
@@ -61,10 +61,10 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
 
     object Idle extends State {
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
-        case HeadersFrame(streamId, endStream, endHeaders, fragment) ⇒
-          if (endHeaders) parseAndEmit(streamId, endStream, fragment)
+        case HeadersFrame(streamId, endStream, endHeaders, fragment, prioInfo) ⇒
+          if (endHeaders) parseAndEmit(streamId, endStream, fragment, prioInfo)
           else {
-            become(new ReceivingHeaders(streamId, endStream, fragment))
+            become(new ReceivingHeaders(streamId, endStream, fragment, prioInfo))
             pull(eventsIn)
           }
         case c: ContinuationFrame ⇒
@@ -73,13 +73,13 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
         // FIXME: handle SETTINGS frames that change decompression parameters
       }
     }
-    class ReceivingHeaders(streamId: Int, endStream: Boolean, initiallyReceivedData: ByteString) extends State {
+    class ReceivingHeaders(streamId: Int, endStream: Boolean, initiallyReceivedData: ByteString, priorityInfo: Option[PriorityFrame]) extends State {
       var receivedData = initiallyReceivedData
 
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
         case ContinuationFrame(`streamId`, endHeaders, payload) ⇒
           if (endHeaders) {
-            parseAndEmit(streamId, endStream, receivedData ++ payload)
+            parseAndEmit(streamId, endStream, receivedData ++ payload, priorityInfo)
             become(Idle)
           } else receivedData ++= payload
         case x ⇒ protocolError(s"While waiting for CONTINUATION frame on stream $streamId received unexpected frame $x")

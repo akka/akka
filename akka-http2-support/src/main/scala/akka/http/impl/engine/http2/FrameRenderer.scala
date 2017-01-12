@@ -41,15 +41,16 @@ object FrameRenderer {
           streamId,
           payload
         )
-      case HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment) ⇒
-        // TODO: will we ever emit priority stuff? will need other representation otherwise
+      case HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment, prioInfo) ⇒
+        val renderedPrioInfo = prioInfo.map(renderPriorityInfo).getOrElse(ByteString.empty)
 
         renderFrame(
           Http2Protocol.FrameType.HEADERS,
           Http2Protocol.Flags.END_STREAM.ifSet(endStream) |
-            Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
+            Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders) |
+            Http2Protocol.Flags.PRIORITY.ifSet(prioInfo.isDefined),
           streamId,
-          headerBlockFragment
+          renderedPrioInfo ++ headerBlockFragment
         )
 
       case WindowUpdateFrame(streamId, windowSizeIncrement) ⇒
@@ -115,15 +116,13 @@ object FrameRenderer {
           new ByteStringBuilder().putInt(errorCode.id).result
         )
 
-      case PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒ {
-        val exclusiveBit: Int = if (exclusiveFlag) 0x80000000 else 0
+      case frame @ PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
         renderFrame(
           Http2Protocol.FrameType.PRIORITY,
           Http2Protocol.Flags.NO_FLAGS,
           streamId,
-          new ByteStringBuilder().putInt(exclusiveBit | streamDependency).putByte(weight.toByte).result
+          renderPriorityInfo(frame)
         )
-      }
     }
 
   def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString = {
@@ -140,5 +139,9 @@ object FrameRenderer {
     headerBytes(8) = (streamId >> 0).toByte
 
     ByteString1C(headerBytes) ++ payload
+  }
+  def renderPriorityInfo(priorityFrame: PriorityFrame): ByteString = {
+    val exclusiveBit: Int = if (priorityFrame.exclusiveFlag) 0x80000000 else 0
+    new ByteStringBuilder().putInt(exclusiveBit | priorityFrame.streamDependency).putByte(priorityFrame.weight.toByte).result
   }
 }

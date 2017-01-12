@@ -62,20 +62,20 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         val paddingLength =
           if (pad) payload.readByte() & 0xff
           else 0
-        val dependencyAndE =
-          if (priority) payload.readIntBE()
-          else 0
-        val weight =
-          if (priority) payload.readByte() & 0xff
-          else 0
 
-        val exclusiveFlag = (dependencyAndE >>> 31) == 1 // most significant bit for exclusive flag
-        val dependencyId = dependencyAndE & 0x7fffffff // remaining 31 bits for the dependency part
+        val priorityInfo =
+          if (priority) {
+            val dependencyAndE = payload.readIntBE()
+            val weight = payload.readByte() & 0xff
 
-        Http2Compliance.requireNoSelfDependency(streamId, dependencyId)
+            val exclusiveFlag = (dependencyAndE >>> 31) == 1 // most significant bit for exclusive flag
+            val dependencyId = dependencyAndE & 0x7fffffff // remaining 31 bits for the dependency part
+            Http2Compliance.requireNoSelfDependency(streamId, dependencyId)
+            Some(PriorityFrame(streamId, exclusiveFlag, dependencyId, weight))
+          } else
+            None
 
-        // TODO: also write out Priority frame if priority was set
-        HeadersFrame(streamId, endStream, endHeaders, payload.take(payload.remainingSize - paddingLength))
+        HeadersFrame(streamId, endStream, endHeaders, payload.take(payload.remainingSize - paddingLength), priorityInfo)
 
       case DATA ⇒
         val pad = Flags.PADDED.isSet(flags)
