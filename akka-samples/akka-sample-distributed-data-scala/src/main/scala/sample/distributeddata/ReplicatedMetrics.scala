@@ -53,8 +53,8 @@ class ReplicatedMetrics(measureInterval: FiniteDuration, cleanupInterval: Finite
     self, Cleanup)(context.dispatcher)
   val memoryMBean: MemoryMXBean = ManagementFactory.getMemoryMXBean
 
-  val UsedHeapKey = LWWMapKey[Long]("usedHeap")
-  val MaxHeapKey = LWWMapKey[Long]("maxHeap")
+  val UsedHeapKey = LWWMapKey[String, Long]("usedHeap")
+  val MaxHeapKey = LWWMapKey[String, Long]("maxHeap")
 
   replicator ! Subscribe(UsedHeapKey, self)
   replicator ! Subscribe(MaxHeapKey, self)
@@ -75,8 +75,8 @@ class ReplicatedMetrics(measureInterval: FiniteDuration, cleanupInterval: Finite
       val heap = memoryMBean.getHeapMemoryUsage
       val used = heap.getUsed
       val max = heap.getMax
-      replicator ! Update(UsedHeapKey, LWWMap.empty[Long], WriteLocal)(_ + (node -> used))
-      replicator ! Update(MaxHeapKey, LWWMap.empty[Long], WriteLocal) { data =>
+      replicator ! Update(UsedHeapKey, LWWMap.empty[String, Long], WriteLocal)(_ + (node -> used))
+      replicator ! Update(MaxHeapKey, LWWMap.empty[String, Long], WriteLocal) { data =>
         data.get(node) match {
           case Some(`max`) => data // unchanged
           case _           => data + (node -> max)
@@ -105,11 +105,11 @@ class ReplicatedMetrics(measureInterval: FiniteDuration, cleanupInterval: Finite
         context.stop(self)
 
     case Cleanup =>
-      def cleanupRemoved(data: LWWMap[Long]): LWWMap[Long] =
+      def cleanupRemoved(data: LWWMap[String, Long]): LWWMap[String, Long] =
         (data.entries.keySet -- nodesInCluster).foldLeft(data) { case (d, key) => d - key }
 
-      replicator ! Update(UsedHeapKey, LWWMap.empty[Long], WriteLocal)(cleanupRemoved)
-      replicator ! Update(MaxHeapKey, LWWMap.empty[Long], WriteLocal)(cleanupRemoved)
+      replicator ! Update(UsedHeapKey, LWWMap.empty[String, Long], WriteLocal)(cleanupRemoved)
+      replicator ! Update(MaxHeapKey, LWWMap.empty[String, Long], WriteLocal)(cleanupRemoved)
   }
 
 }
