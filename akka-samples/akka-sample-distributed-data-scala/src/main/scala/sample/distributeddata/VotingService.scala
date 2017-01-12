@@ -30,7 +30,7 @@ class VotingService extends Actor {
   implicit val cluster = Cluster(context.system)
   val OpenedKey = FlagKey("contestOpened")
   val ClosedKey = FlagKey("contestClosed")
-  val CountersKey = PNCounterMapKey("contestCounters")
+  val CountersKey = PNCounterMapKey[String]("contestCounters")
 
   replicator ! Subscribe(OpenedKey, self)
 
@@ -54,7 +54,7 @@ class VotingService extends Actor {
 
   def open: Receive = {
     case v @ Vote(participant) =>
-      val update = Update(CountersKey, PNCounterMap(), WriteLocal, request = Some(v)) {
+      val update = Update(CountersKey, PNCounterMap[String](), WriteLocal, request = Some(v)) {
         _.increment(participant, 1)
       }
       replicator ! update
