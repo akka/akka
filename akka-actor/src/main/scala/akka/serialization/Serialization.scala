@@ -1,21 +1,24 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.serialization
 
 import com.typesafe.config.Config
 import akka.actor._
-import akka.event.Logging
+import akka.event.{ LogMarker, Logging, LoggingAdapter }
 import java.util.concurrent.ConcurrentHashMap
+
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
-import scala.util.{ Try, DynamicVariable, Failure }
+
+import scala.util.{ DynamicVariable, Failure, Try }
 import scala.collection.immutable
 import scala.util.control.NonFatal
 import scala.util.Success
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
 import java.util.NoSuchElementException
 
@@ -94,7 +97,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   import Serialization._
 
   val settings = new Settings(system.settings.config)
-  val log = Logging(system, getClass.getName)
+  private[this] val _log = Logging.withMarker(system, getClass.getName)
+  val log: LoggingAdapter = _log
   private val manifestCache = new AtomicReference[Map[String, Option[Class[_]]]](Map.empty[String, Option[Class[_]]])
 
   /**
@@ -223,13 +227,13 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
             throw new NotSerializableException("No configured serialization-bindings for class [%s]" format clazz.getName)
           case possibilities ⇒
             if (!unique(possibilities))
-              log.warning("Multiple serializers found for " + clazz + ", choosing first: " + possibilities)
+              _log.warning(LogMarker.Security, "Multiple serializers found for " + clazz + ", choosing first: " + possibilities)
             possibilities(0)._2
         }
         serializerMap.putIfAbsent(clazz, ser) match {
           case null ⇒
             if (shouldWarnAboutJavaSerializer(clazz, ser)) {
-              log.warning("Using the default Java serializer for class [{}] which is not recommended because of " +
+              _log.warning(LogMarker.Security, "Using the default Java serializer for class [{}] which is not recommended because of " +
                 "performance implications. Use another serializer or disable this warning using the setting " +
                 "'akka.actor.warn-about-java-serializer-usage'", clazz.getName)
             }
@@ -250,19 +254,39 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     }
 
   /**
+   * Programmatically defined serializers
+   */
+  private val serializerDetails =
+    system.settings.setup.get[SerializationSetup] match {
+      case None          ⇒ Vector.empty
+      case Some(setting) ⇒ setting.createSerializers(system)
+    }
+
+  /**
    * A Map of serializer from alias to implementation (class implementing akka.serialization.Serializer)
    * By default always contains the following mapping: "java" -> akka.serialization.JavaSerializer
    */
-  private val serializers: Map[String, Serializer] =
-    for ((k: String, v: String) ← settings.Serializers) yield k → serializerOf(v).get
+  private val serializers: Map[String, Serializer] = {
+    val fromConfig = for ((k: String, v: String) ← settings.Serializers) yield k → serializerOf(v).get
+    fromConfig ++ serializerDetails.map(d ⇒ d.alias → d.serializer)
+  }
 
   /**
    *  bindings is a Seq of tuple representing the mapping from Class to Serializer.
    *  It is primarily ordered by the most specific classes first, and secondly in the configured order.
    */
-  private[akka] val bindings: immutable.Seq[ClassSerializer] =
-    sort(for ((k: String, v: String) ← settings.SerializationBindings if v != "none" && checkGoogleProtobuf(k))
-      yield (system.dynamicAccess.getClassFor[Any](k).get, serializers(v))).to[immutable.Seq]
+  private[akka] val bindings: immutable.Seq[ClassSerializer] = {
+    val fromConfig = for {
+      (className: String, alias: String) ← settings.SerializationBindings
+      if alias != "none" && checkGoogleProtobuf(className)
+    } yield (system.dynamicAccess.getClassFor[Any](className).get, serializers(alias))
+
+    val fromSettings = serializerDetails.flatMap { detail ⇒
+      detail.useFor.map(clazz ⇒ clazz → detail.serializer)
+    }
+
+    sort(fromConfig ++ fromSettings)
+  }
 
   // com.google.protobuf serialization binding is only used if the class can be loaded,
   // i.e. com.google.protobuf dependency has been added in the application project.

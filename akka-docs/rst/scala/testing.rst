@@ -576,7 +576,7 @@ Create the child using TestProbe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``TestProbe`` class can in fact create actors that will run with the test probe as parent.
-This will cause any messages the the child actor sends to `context.parent` to
+This will cause any messages the child actor sends to `context.parent` to
 end up in the test probe.
 
 .. includecode:: code/docs/testkit/ParentChildSpec.scala#test-TestProbe-parent

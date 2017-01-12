@@ -12,7 +12,6 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
-
 import akka.actor.ActorSystem
 import akka.pattern.{ after ⇒ later }
 import akka.stream._
@@ -24,6 +23,8 @@ import akka.stream.testkit.Utils._
 import akka.testkit.EventFilter
 import akka.util.ByteString
 import javax.net.ssl._
+
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 
 object TlsSpec {
 
@@ -351,12 +352,17 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
         val f =
           Source(scenario.inputs)
             .via(commPattern.decorateFlow(scenario.leftClosing, scenario.rightClosing, onRHS))
-            .transform(() ⇒ new PushStage[SslTlsInbound, SslTlsInbound] {
-              override def onPush(elem: SslTlsInbound, ctx: Context[SslTlsInbound]) =
-                ctx.push(elem)
-              override def onDownstreamFinish(ctx: Context[SslTlsInbound]) = {
-                system.log.debug("me cancelled")
-                ctx.finish()
+            .via(new SimpleLinearGraphStage[SslTlsInbound] {
+              override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+                setHandlers(in, out, this)
+
+                override def onPush() = push(out, grab(in))
+                override def onPull() = pull(in)
+
+                override def onDownstreamFinish() = {
+                  system.log.debug("me cancelled")
+                  completeStage()
+                }
               }
             })
             .via(debug)
@@ -434,6 +440,35 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
       val pub = TestPublisher.probe()
       pub.subscribe(sub)
       pub.expectSubscription().expectCancellation()
+    }
+
+    "complete if TLS connection is truncated" in assertAllStagesStopped {
+
+      val ks = KillSwitches.shared("ks")
+
+      val scenario = SingleBytes
+
+      val outFlow = {
+        val terminator = BidiFlow.fromFlows(Flow[ByteString], ks.flow[ByteString])
+        clientTls(scenario.leftClosing) atop terminator atop serverTls(scenario.rightClosing).reversed join debug.via(scenario.flow) via debug
+      }
+
+      val inFlow = Flow[SslTlsInbound]
+        .collect { case SessionBytes(_, b) ⇒ b }
+        .scan(ByteString.empty)(_ ++ _)
+        .via(new Timeout(6.seconds))
+        .dropWhile(_.size < scenario.output.size)
+
+      val f =
+        Source(scenario.inputs)
+          .via(outFlow)
+          .via(inFlow)
+          .map(result ⇒ {
+            ks.shutdown(); result
+          })
+          .runWith(Sink.last)
+
+      Await.result(f, 8.second).utf8String should be(scenario.output.utf8String)
     }
 
   }

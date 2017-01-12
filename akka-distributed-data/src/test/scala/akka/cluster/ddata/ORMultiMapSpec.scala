@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster.ddata
 
@@ -109,10 +109,10 @@ class ORMultiMapSpec extends WordSpec with Matchers {
 
   "have unapply extractor" in {
     val m1 = ORMultiMap.empty.put(node1, "a", Set(1L, 2L)).put(node2, "b", Set(3L))
-    val m2: ORMultiMap[Long] = m1
+    val m2: ORMultiMap[String, Long] = m1
     val ORMultiMap(entries1) = m1
     val entries2: Map[String, Set[Long]] = entries1
-    Changed(ORMultiMapKey[Long]("key"))(m1) match {
+    Changed(ORMultiMapKey[String, Long]("key"))(m1) match {
       case c @ Changed(ORMultiMapKey("key")) ⇒
         val ORMultiMap(entries3) = c.dataValue
         val entries4: Map[String, Set[Long]] = entries3

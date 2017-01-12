@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream
 
@@ -167,7 +167,7 @@ private[akka] object ActorMaterializerHelper {
  * steps are split up into asynchronous regions is implementation
  * dependent.
  */
-abstract class ActorMaterializer extends Materializer {
+abstract class ActorMaterializer extends Materializer with MaterializerLoggingProvider {
 
   def settings: ActorMaterializerSettings
 

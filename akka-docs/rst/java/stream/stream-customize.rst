@@ -50,7 +50,7 @@ override ``onPull()`` which indicates that we are free to emit a single element.
 ``onDownstreamFinish()`` which is called if the downstream cancelled. Since the default behavior of that callback is
 to stop the stage, we don't need to override it. In the ``onPull`` callback we simply emit the next number.
 
-Instances of the above :class:`GraphStage` are subclasses of ``Graph<SourceShape<Int>,Unit>`` which means
+Instances of the above :class:`GraphStage` are subclasses of ``Graph<SourceShape<Integer>,NotUsed>`` which means
 that they are already usable in many situations, but do not provide the DSL methods we usually have for other
 :class:`Source` s. In order to convert this :class:`Graph` to a proper :class:`Source` we need to wrap it using
 ``Source.fromGraph`` (see :ref:`composition-java` for more details about graphs and DSLs). Now we can use the
@@ -296,6 +296,29 @@ constructor and usually done in ``preStart``). In this case the stage **must** b
 or ``failStage(exception)``. This feature carries the risk of leaking streams and actors, therefore it should be used
 with care.
 
+Logging inside GraphStages
+--------------------------
+
+Logging debug or other important information in your stages is often a very good idea, especially when developing
+more advances stages which may need to be debugged at some point.
+
+You can extend the ``akka.stream.stage.GraphStageWithLogging`` or ``akka.strea.stage.TimerGraphStageWithLogging`` classes
+instead of the usual ``GraphStage`` to enable you to easily obtain a ``LoggingAdapter`` inside your stage as long as 
+the ``Materializer`` you're using is able to provide you with a logger.
+
+.. note:: 
+  Please note that you can always simply use a logging library directly inside a Stage.
+  Make sure to use an asynchronous appender however, to not accidentally block the stage when writing to files etc.
+  See :ref:`slf4j-directly-java` for more details on setting up async appenders in SLF4J.
+
+The stage then gets access to the ``log`` field which it can safely use from any ``GraphStage`` callbacks:
+
+.. includecode:: ../code/docs/stream/GraphStageLoggingDocTest.java#stage-with-logging
+
+.. note::
+  **SPI Note:** If you're implementing a Materializer, you can add this ability to your materializer by implementing 
+  ``MaterializerLoggingProvider`` in your ``Materializer``.
+
 Using timers
 ------------
 
@@ -356,7 +379,7 @@ or ``unwatch(ref)`` methods. The reference can be also watched by external actor
 Custom materialized values
 --------------------------
 
-Custom stages can return materialized values instead of ``Unit`` by inheriting from :class:`GraphStageWithMaterializedValue`
+Custom stages can return materialized values instead of ``NotUsed`` by inheriting from :class:`GraphStageWithMaterializedValue`
 instead of the simpler :class:`GraphStage`. The difference is that in this case the method
 ``createLogicAndMaterializedValue(inheritedAttributes)`` needs to be overridden, and in addition to the
 stage logic the materialized value must be provided

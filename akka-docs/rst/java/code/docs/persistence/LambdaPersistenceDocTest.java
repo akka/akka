@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package docs.persistence;
 
@@ -107,6 +107,15 @@ public class LambdaPersistenceDocTest {
 
     }
     //#recovery-completed
+
+    abstract class MyPersistentActor6 extends AbstractPersistentActor {
+      //#recovery-no-snap
+      @Override
+      public Recovery recovery() {
+        return Recovery.create(SnapshotSelectionCriteria.none());
+      }
+      //#recovery-no-snap
+    }
 
     abstract class MyActor extends AbstractPersistentActor {
       //#backoff
@@ -515,31 +524,6 @@ public class LambdaPersistenceDocTest {
 
         //#nested-persistAsync-persistAsync-caller
       }
-    }
-  };
-
-  static Object o12 = new Object() {
-    //#view
-    class MyView extends AbstractPersistentView {
-      @Override public String persistenceId() { return "some-persistence-id"; }
-      @Override public String viewId() { return "some-persistence-id-view"; }
-
-      public MyView() {
-        receive(ReceiveBuilder.
-          match(Object.class, p -> isPersistent(),  persistent -> {
-            // ...
-          }).build()
-        );
-      }
-    }
-    //#view
-
-    public void usage() {
-      final ActorSystem system = ActorSystem.create("example");
-      //#view-update
-      final ActorRef view = system.actorOf(Props.create(MyView.class));
-      view.tell(Update.create(true), null);
-      //#view-update
     }
   };
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.camel
@@ -146,6 +146,7 @@ trait ProducerSupport extends Actor with CamelSupport {
 /**
  * Mixed in by Actor implementations to produce messages to Camel endpoints.
  */
+@deprecated("Akka Camel is deprecated in favour of 'Alpakka', the Akka Streams based collection of integrations to various endpoints (including Camel).", since = "2.5.0")
 trait Producer extends ProducerSupport { this: Actor ⇒
 
   /**
@@ -170,6 +171,7 @@ private final case class FailureResult(cause: Throwable, headers: Map[String, An
  *
  *
  */
+@deprecated("Akka Camel is deprecated in favour of 'Alpakka', the Akka Streams based collection of integrations to various endpoints (including Camel).", since = "2.5.0")
 trait Oneway extends Producer { this: Actor ⇒
   override def oneway: Boolean = true
 }

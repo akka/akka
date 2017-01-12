@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.cluster.singleton
@@ -24,6 +24,7 @@ import akka.cluster.MemberStatus
 import akka.AkkaException
 import akka.actor.NoSerializationVerificationNeeded
 import akka.cluster.UniqueAddress
+import akka.cluster.ClusterEvent
 
 object ClusterSingletonManagerSettings {
 
@@ -182,6 +183,7 @@ object ClusterSingletonManager {
     case object WasOldest extends State
     case object HandingOver extends State
     case object TakeOver extends State
+    case object Stopping extends State
     case object End extends State
 
     case object Uninitialized extends Data
@@ -191,6 +193,7 @@ object ClusterSingletonManager {
     final case class WasOldestData(singleton: ActorRef, singletonTerminated: Boolean,
                                    newOldestOption: Option[UniqueAddress]) extends Data
     final case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef]) extends Data
+    final case class StoppingData(singleton: ActorRef) extends Data
     case object EndData extends Data
     final case class DelayedMemberRemoved(member: Member)
 
@@ -260,14 +263,17 @@ object ClusterSingletonManager {
       def add(m: Member): Unit = {
         if (matchingRole(m))
           trackChange { () ⇒
-            membersByAge -= m // replace
+            // replace, it's possible that the upNumber is changed
+            membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
             membersByAge += m
           }
       }
 
       def remove(m: Member): Unit = {
         if (matchingRole(m))
-          trackChange { () ⇒ membersByAge -= m }
+          trackChange { () ⇒
+            membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
+          }
       }
 
       def sendFirstChange(): Unit = {
@@ -430,7 +436,7 @@ class ClusterSingletonManager(
     require(!cluster.isTerminated, "Cluster node must not be terminated")
 
     // subscribe to cluster changes, re-subscribe when restart
-    cluster.subscribe(self, classOf[MemberExited], classOf[MemberRemoved])
+    cluster.subscribe(self, ClusterEvent.InitialStateAsEvents, classOf[MemberExited], classOf[MemberRemoved])
 
     setTimer(CleanupTimer, Cleanup, 1.minute, repeat = true)
 
@@ -631,15 +637,16 @@ class ClusterSingletonManager(
   }
 
   when(WasOldest) {
-    case Event(TakeOverRetry(count), WasOldestData(_, _, newOldestOption)) ⇒
-      if (count <= maxTakeOverRetries) {
+    case Event(TakeOverRetry(count), WasOldestData(singleton, singletonTerminated, newOldestOption)) ⇒
+      if (cluster.isTerminated && (newOldestOption.isEmpty || count > maxTakeOverRetries)) {
+        if (singletonTerminated) stop()
+        else gotoStopping(singleton)
+      } else if (count <= maxTakeOverRetries) {
         logInfo("Retry [{}], sending TakeOverFromMe to [{}]", count, newOldestOption.map(_.address))
         newOldestOption.foreach(node ⇒ peer(node.address) ! TakeOverFromMe)
         setTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), handOverRetryInterval, repeat = false)
         stay
-      } else if (cluster.isTerminated)
-        stop()
-      else
+      } else
         throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newOldestOption}] never occured")
 
     case Event(HandOverToMe, WasOldestData(singleton, singletonTerminated, _)) ⇒
@@ -692,6 +699,16 @@ class ClusterSingletonManager(
       goto(End) using EndData
   }
 
+  def gotoStopping(singleton: ActorRef): State = {
+    singleton ! terminationMessage
+    goto(Stopping) using StoppingData(singleton)
+  }
+
+  when(Stopping) {
+    case (Event(Terminated(ref), StoppingData(singleton))) if ref == singleton ⇒
+      stop()
+  }
+
   when(End) {
     case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
@@ -699,7 +716,6 @@ class ClusterSingletonManager(
   }
 
   whenUnhandled {
-    case Event(_: CurrentClusterState, _) ⇒ stay
     case Event(MemberExited(m), _) ⇒
       if (m.uniqueAddress == cluster.selfUniqueAddress) {
         selfExited = true

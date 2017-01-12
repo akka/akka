@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster.ddata
 
@@ -46,7 +46,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
 
   val KeyA = GCounterKey("A")
   val KeyB = ORSetKey[String]("B")
-  val KeyC = PNCounterMapKey("C")
+  val KeyC = PNCounterMapKey[String]("C")
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
@@ -86,7 +86,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       replicator ! Update(KeyB, ORSet(), WriteAll(timeout))(_ + "a" + "b" + "c")
       expectMsg(UpdateSuccess(KeyB, None))
 
-      replicator ! Update(KeyC, PNCounterMap(), WriteAll(timeout))(_ increment "x" increment "y")
+      replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) { _ increment "x" increment "y" }
       expectMsg(UpdateSuccess(KeyC, None))
 
       enterBarrier("updates-done")
@@ -100,7 +100,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       oldSet.elements should be(Set("a", "b", "c"))
 
       replicator ! Get(KeyC, ReadLocal)
-      val oldMap = expectMsgType[GetSuccess[PNCounterMap]].dataValue
+      val oldMap = expectMsgType[GetSuccess[PNCounterMap[String]]].dataValue
       oldMap.get("x") should be(Some(3))
       oldMap.get("y") should be(Some(3))
 

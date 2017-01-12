@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -7,9 +7,9 @@ import akka.stream.testkit.StreamSpec
 
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
-
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.testkit.Utils._
+
 import scala.concurrent.duration._
 
 class FlowReduceSpec extends StreamSpec {
@@ -49,10 +49,24 @@ class FlowReduceSpec extends StreamSpec {
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
-    "complete future with failure when reducing function throws" in assertAllStagesStopped {
+    "complete future with failure when reducing function throws and the supervisor strategy decides to stop" in assertAllStagesStopped {
       val error = new Exception with NoStackTrace
       val future = inputSource.runReduce[Int]((x, y) ⇒ if (x > 50) throw error else x + y)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
+    }
+
+    "resume with the accumulated state when the folding function throws and the supervisor strategy decides to resume" in assertAllStagesStopped {
+      val error = new Exception with NoStackTrace
+      val reduce = Sink.reduce[Int]((x, y) ⇒ if (y == 50) throw error else x + y)
+      val future = inputSource.runWith(reduce.withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider)))
+      Await.result(future, 3.seconds) should be(expected - 50)
+    }
+
+    "resume and reset the state when the folding function throws when the supervisor strategy decides to restart" in assertAllStagesStopped {
+      val error = new Exception with NoStackTrace
+      val reduce = Sink.reduce[Int]((x, y) ⇒ if (y == 50) throw error else x + y)
+      val future = inputSource.runWith(reduce.withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider)))
+      Await.result(future, 3.seconds) should be((51 to 100).sum)
     }
 
     "fail on empty stream using Source.runReduce" in assertAllStagesStopped {

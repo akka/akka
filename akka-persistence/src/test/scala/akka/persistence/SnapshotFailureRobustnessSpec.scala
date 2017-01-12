@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.persistence
@@ -10,6 +10,7 @@ import akka.actor.{ ActorRef, Props }
 import akka.event.Logging
 import akka.persistence.snapshot.local.LocalSnapshotStore
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
+import com.typesafe.config.Config
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -71,16 +72,17 @@ object SnapshotFailureRobustnessSpec {
     }
   }
 
-  class FailingLocalSnapshotStore extends LocalSnapshotStore {
+  class FailingLocalSnapshotStore(config: Config) extends LocalSnapshotStore(config) {
     override def save(metadata: SnapshotMetadata, snapshot: Any): Unit = {
-      if (metadata.sequenceNr == 2) {
+      if (metadata.sequenceNr == 2 || snapshot == "boom") {
         val bytes = "b0rk".getBytes("UTF-8")
-        withOutputStream(metadata)(_.write(bytes))
+        val tmpFile = withOutputStream(metadata)(_.write(bytes))
+        tmpFile.renameTo(snapshotFileForWrite(metadata))
       } else super.save(metadata, snapshot)
     }
   }
 
-  class DeleteFailingLocalSnapshotStore extends LocalSnapshotStore {
+  class DeleteFailingLocalSnapshotStore(config: Config) extends LocalSnapshotStore(config) {
     override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = {
       super.deleteAsync(metadata) // we actually delete it properly, but act as if it failed
       Future.failed(new IOException("Failed to delete snapshot for some reason!"))
@@ -96,6 +98,7 @@ object SnapshotFailureRobustnessSpec {
 class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "SnapshotFailureRobustnessSpec", serialization = "off", extraConfig = Some(
   """
   akka.persistence.snapshot-store.local.class = "akka.persistence.SnapshotFailureRobustnessSpec$FailingLocalSnapshotStore"
+  akka.persistence.snapshot-store.local-delete-fail = ${akka.persistence.snapshot-store.local}
   akka.persistence.snapshot-store.local-delete-fail.class = "akka.persistence.SnapshotFailureRobustnessSpec$DeleteFailingLocalSnapshotStore"
   """))) with ImplicitSender {
 
@@ -112,10 +115,11 @@ class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.conf
       sPersistentActor ! Cmd("kablama")
       expectMsg(2)
       system.eventStream.publish(TestEvent.Mute(
-        EventFilter.error(start = "Error loading snapshot [")))
+        EventFilter[java.io.NotSerializableException](start = "Error loading snapshot")))
       system.eventStream.subscribe(testActor, classOf[Logging.Error])
       try {
         val lPersistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
+        expectMsgType[Logging.Error].message.toString should startWith("Error loading snapshot")
         expectMsgPF() {
           case (SnapshotMetadata(`persistenceId`, 1, timestamp), state) ⇒
             state should ===("blahonga")
@@ -124,6 +128,40 @@ class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.conf
         expectMsg("kablama-2")
         expectMsg(RecoveryCompleted)
         expectNoMsg(1 second)
+      } finally {
+        system.eventStream.unsubscribe(testActor, classOf[Logging.Error])
+        system.eventStream.publish(TestEvent.UnMute(
+          EventFilter.error(start = "Error loading snapshot [")))
+      }
+    }
+
+    "fail recovery and stop actor when no snapshot could be loaded" in {
+      val sPersistentActor = system.actorOf(Props(classOf[SaveSnapshotTestPersistentActor], name, testActor))
+      val persistenceId = name
+
+      expectMsg(RecoveryCompleted)
+      sPersistentActor ! Cmd("ok")
+      expectMsg(1)
+      // max-attempts = 3
+      sPersistentActor ! Cmd("boom")
+      expectMsg(2)
+      sPersistentActor ! Cmd("boom")
+      expectMsg(3)
+      sPersistentActor ! Cmd("boom")
+      expectMsg(4)
+      system.eventStream.publish(TestEvent.Mute(
+        EventFilter[java.io.NotSerializableException](start = "Error loading snapshot")))
+      system.eventStream.publish(TestEvent.Mute(
+        EventFilter[java.io.NotSerializableException](start = "Persistence failure")))
+      system.eventStream.subscribe(testActor, classOf[Logging.Error])
+      try {
+        val lPersistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
+        (1 to 3).foreach { _ ⇒
+          expectMsgType[Logging.Error].message.toString should startWith("Error loading snapshot")
+        }
+        expectMsgType[Logging.Error].message.toString should startWith("Persistence failure")
+        watch(lPersistentActor)
+        expectTerminated(lPersistentActor)
       } finally {
         system.eventStream.unsubscribe(testActor, classOf[Logging.Error])
         system.eventStream.publish(TestEvent.UnMute(

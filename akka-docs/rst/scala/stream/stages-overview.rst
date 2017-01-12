@@ -134,6 +134,14 @@ Fail directly with a user specified exception.
 
 **completes** fails the stream directly with the given exception
 
+lazily
+~~~~~~
+Defers creation and materialization of a ``Source`` until there is demand.
+
+**emits** depends on the wrapped ``Source``
+
+**completes** depends on the wrapped ``Source``
+
 actorPublisher
 ^^^^^^^^^^^^^^
 Wrap an actor extending ``ActorPublisher`` as a source.
@@ -499,14 +507,14 @@ File IO Sinks and Sources
 -------------------------
 Sources and sinks for reading and writing files can be found on ``FileIO``.
 
-fromFile
+fromPath
 ^^^^^^^^
 Emit the contents of a file, as ``ByteString`` s, materializes into a ``Future`` which will be completed with
 a ``IOResult`` upon reaching the end of the file or if there is a failure.
 
-toFile
+toPath
 ^^^^^^
-Create a sink which will write incoming ``ByteString`` s to a given file.
+Create a sink which will write incoming ``ByteString`` s to a given file path.
 
 
 
@@ -636,6 +644,16 @@ the second element is required from downstream.
 
 **completes** when upstream completes
 
+scanAsync
+^^^^^^^^^
+Just like ``scan`` but receiving a function that results in a ``Future`` to the next value.
+
+**emits** when the ``Future`` resulting from the function scanning the element resolves to the next value
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes and the last ``Future`` is resolved
+
 fold
 ^^^^
 Start with current value ``zero`` and then apply the current and next value to the given function, when upstream
@@ -646,6 +664,16 @@ complete the current value is emitted downstream.
 **backpressures** when downstream backpressures
 
 **completes** when upstream completes
+
+foldAsync
+^^^^^^^^^
+Just like ``fold`` but receiving a function that results in a ``Future`` to the next value.
+
+**emits** when upstream completes and the last ``Future`` is resolved
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes and the last ``Future`` is resolved
 
 reduce
 ^^^^^^
@@ -704,6 +732,8 @@ recover
 ^^^^^^^
 Allow sending of one last element downstream when a failure has happened upstream.
 
+Throwing an exception inside ``recover`` _will_ be logged on ERROR level automatically.
+
 **emits** when the element is available from the upstream or upstream is failed and pf returns an element
 
 **backpressures** when downstream backpressures, not when failure happened
@@ -714,11 +744,44 @@ recoverWith
 ^^^^^^^^^^^
 Allow switching to alternative Source when a failure has happened upstream.
 
+Throwing an exception inside ``recoverWith`` _will_ be logged on ERROR level automatically.
+
 **emits** the element is available from the upstream or upstream is failed and pf returns alternative Source
 
 **backpressures** downstream backpressures, after failure happened it backprssures to alternative Source
 
 **completes** upstream completes or upstream failed with exception pf can handle
+
+recoverWithRetries
+^^^^^^^^^^^^^^^^^^
+RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
+a failure has been recovered up to `attempts` number of times so that each time there is a failure
+it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
+attempt to recover at all. Passing -1 will behave exactly the same as  `recoverWith`.
+
+Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+
+**emits** when element is available from the upstream or upstream is failed and element is available from alternative Source
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes or upstream failed with exception pf can handle
+
+mapError
+^^^^^^^^
+While similar to ``recover`` this stage can be used to transform an error signal to a different one *without* logging
+it as an error in the process. So in that sense it is NOT exactly equivalent to ``recover(t => throw t2)`` since recover
+would log the ``t2`` error.
+
+Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+
+Similarily to ``recover`` throwing an exception inside ``mapError`` _will_ be logged on ERROR level automatically.
+
+**emits** when element is available from the upstream or upstream is failed and pf returns an element
+**backpressures** when downstream backpressures
+**completes** when upstream completes or upstream failed with exception pf can handle
 
 detach
 ^^^^^^

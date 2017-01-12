@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka
 
@@ -8,6 +8,8 @@ import sbt._
 import sbt.Keys._
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
+
+import scala.util.Try
 
 object MiMa extends AutoPlugin {
 
@@ -20,35 +22,39 @@ object MiMa extends AutoPlugin {
   )
 
   def akkaPreviousArtifacts(projectName: String, organization: String, scalaBinaryVersion: String): Set[sbt.ModuleID] = {
-    val versions = {
-      val akka23Versions = Seq("2.3.11", "2.3.12", "2.3.13", "2.3.14", "2.3.15")
+    val versions: Seq[String] = {
+      def latestMinorVersionOf(major: String) = mimaIgnoredProblems.keys
+        .map(_.stripPrefix(major))
+        .map(minor => scala.util.Try(minor.toInt))
+        .collect {
+          case scala.util.Success(m) => m
+        }
+        .max
+
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka24StreamVersions = Seq("2.4.2", "2.4.3", "2.4.4", "2.4.6")
-      val akka24NewArtifacts = Seq(
-        "akka-cluster-sharding",
-        "akka-cluster-tools",
-        "akka-cluster-metrics",
-        "akka-persistence",
-        "akka-distributed-data-experimental",
-        "akka-persistence-query-experimental"
-      )
+      val akka25Versions = Seq.empty[String] // FIXME enable once 2.5.0 is out (0 to latestMinorVersionOf("2.5.")).map(patch => s"2.5.$patch")
+      val akka24StreamVersions = (2 to 12) map ("2.4." + _)
+      val akka24WithScala212 = (13 to latestMinorVersionOf("2.4.")) map ("2.4." + _)
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
-        
         "akka-http-testkit",
         "akka-stream-testkit"
-        
-        // TODO enable once not experimental anymore
-        // "akka-http-experimental",
-        // "akka-http-jackson-experimental",
-        // "akka-http-spray-json-experimental",
-        // "akka-http-xml-experimental"
       )
+      val akka250NewArtifacts = Seq(
+        "akka-persistence-query"
+      )
+
       scalaBinaryVersion match {
-        case "2.11" if !(akka24NewArtifacts ++ akka242NewArtifacts).contains(projectName) => akka23Versions ++ akka24NoStreamVersions ++ akka24StreamVersions
-        case _ if akka242NewArtifacts.contains(projectName) => akka24StreamVersions
-        case _ => akka24NoStreamVersions ++ akka24StreamVersions // Only Akka 2.4.x for scala > than 2.11
+        case "2.11" =>
+          if (akka250NewArtifacts.contains(projectName)) akka25Versions
+          else {
+            if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions
+            else Seq.empty
+          } ++ akka24StreamVersions ++ akka24WithScala212
+          
+        case "2.12" => 
+          akka24WithScala212
       }
     }
 
@@ -72,543 +78,88 @@ object MiMa extends AutoPlugin {
     }
   }
 
-  val mimaIgnoredProblems = {
+  def mimaIgnoredProblems = {
     import com.typesafe.tools.mima.core._
 
-    val bcIssuesBetween23and24 = Seq(
-      FilterAnyProblem("akka.remote.testconductor.Terminate"),
-      FilterAnyProblem("akka.remote.testconductor.TerminateMsg"),
+    val bcIssuesBetween24and25 = Seq(
+      // #21423 removal of deprecated stages (in 2.5.x)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SubSource.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Flow.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SubFlow.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.transformMaterializing"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.transformMaterializing"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.andThen"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.transformMaterializing"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.andThen"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.andThen"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.Directive"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AsyncDirective"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.TerminationDirective"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Become$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$PushPullGraphStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$EmittingState$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$PushPullGraphLogic"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.Context"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.Stage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.DetachedStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Become"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StageState"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.AbstractStage$PushPullGraphStageWithMaterializedValue"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.DownstreamDirective"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.PushPullStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.LifecycleContext"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$EmittingState"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.PushStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.DetachedContext"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$State"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.UpstreamDirective"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.FreeDirective"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$AndThen"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.SyncDirective"),
 
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testconductor.Conductor.shutdown"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testkit.MultiNodeSpec.akka$remote$testkit$MultiNodeSpec$$deployer"),
-      FilterAnyProblem("akka.remote.EndpointManager$Pass"),
-      FilterAnyProblem("akka.remote.EndpointManager$EndpointRegistry"),
-      FilterAnyProblem("akka.remote.EndpointWriter"),
-      FilterAnyProblem("akka.remote.EndpointWriter$StopReading"),
-      FilterAnyProblem("akka.remote.EndpointWriter$State"),
-      FilterAnyProblem("akka.remote.EndpointWriter$TakeOver"),
+      // deprecated method transform(scala.Function0)akka.stream.scaladsl.FlowOps in class akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl does not have a correspondent in current version
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.transform"),
+      // method andThen(akka.stream.impl.Stages#SymbolicStage)akka.stream.scaladsl.FlowOps in class akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl does not have a correspondent in current version
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.andThen"),
+      // object akka.stream.stage.StatefulStage#Stay does not have a correspondent in current version
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Stay$"),
+      // object akka.stream.stage.StatefulStage#Finish does not have a correspondent in current version
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$"),
 
-      // Change of internal message by #15109
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor#GotUid.copy"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor#GotUid.this"),
-      ProblemFilters.exclude[MissingTypesProblem]("akka.remote.ReliableDeliverySupervisor$GotUid$"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor#GotUid.apply"),
+      // #21423 removal of deprecated `PersistentView` (in 2.5.x)
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$ScheduledUpdate"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.AbstractPersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.UntypedPersistentView"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$ScheduledUpdate$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistentView$State"),
 
-      // Change of private method to protected by #15212
-      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.snapshot.local.LocalSnapshotStore.akka$persistence$snapshot$local$LocalSnapshotStore$$save"),
+      // #22015 removal of deprecated AESCounterSecureInetRNGs
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES128CounterInetRNG"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES256CounterInetRNG"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator$"),
 
-      // Changes in akka-stream-experimental are not binary compatible - still source compatible (2.3.3 -> 2.3.4)
-      // Adding `PersistentActor.persistAsync`
-      // Adding `PersistentActor.defer`
-      // Changes in akka-persistence in #13944
-      // Changes in private LevelDB Store by #13962
-      // Renamed `processorId` to `persistenceId`
-      ProblemFilters.excludePackage("akka.persistence"),
-
-      // Adding wildcardFanOut to internal message ActorSelectionMessage by #13992
-      FilterAnyProblem("akka.actor.ActorSelectionMessage$"),
-      FilterAnyProblem("akka.actor.ActorSelectionMessage"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ContainerFormats#SelectionEnvelopeOrBuilder.hasWildcardFanOut"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ContainerFormats#SelectionEnvelopeOrBuilder.getWildcardFanOut"),
-
-      // Adding expectMsg overload to testkit #15425
-      ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.TestKitBase.expectMsg"),
-
-      // Adding akka.japi.Option.getOrElse #15383
-      ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Option.getOrElse"),
-
-      // Change to internal API to fix #15991
-      ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$UpdatePendingWrite$"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$UpdatePendingWrite"),
-
-      // Change to optimize use of ForkJoin with Akka's Mailbox
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.Mailbox.status"),
-
-      // Changes introduced to internal remoting actors by #16623
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.unstashAcks"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.pendingAcks_="),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.pendingAcks"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.scheduleAutoResend"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.autoResendTimer_="),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.rescheduleAutoResend"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.ReliableDeliverySupervisor.autoResendTimer"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.lastCumulativeAck"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.ReliableDeliverySupervisor.bailoutAt"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.lastCumulativeAck_="),
-
-      // Change to improve cluster heartbeat sender, #16638
-      FilterAnyProblem("akka.cluster.HeartbeatNodeRing"),
-      FilterAnyProblem("akka.cluster.ClusterHeartbeatSenderState"),
-
-      //Changes to improve BatchingExecutor, bugfix #16327
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor.resubmitOnBlock"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.BatchingExecutor$Batch"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.initial"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.blockOn"),
-      ProblemFilters.exclude[FinalMethodProblem]("akka.dispatch.BatchingExecutor#Batch.run"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.akka$dispatch$BatchingExecutor$Batch$$parentBlockContext_="),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.this"),
-
-      // Exclude observations from downed, #13875
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffReachable"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffSeen"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffUnreachable"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffRolesLeader"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffLeader"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.convergence"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.akka$cluster$Gossip$$convergenceMemberStatus"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.isLeader"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.leader"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.roleLeader"),
-
-      // copied everything above from release-2.3 branch
-
-      // final case classes
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.ThreadPoolConfig"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.UnboundedDequeBasedMailbox"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.CachingConfig$ValuePathEntry"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.MonitorableThreadFactory"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.ThreadPoolConfigBuilder"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.DefaultDispatcherPrerequisites"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.BoundedMailbox"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.UnboundedMailbox"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.SingleConsumerOnlyUnboundedMailbox"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.CachingConfig$StringPathEntry"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.Supervise"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.Recreate"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.Resume"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.Failed"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.DeathWatchNotification"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.Create"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.Suspend"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.Unwatch"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.Terminate"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.AddressTerminated"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.FSM$Event"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.SuppressedDeadLetter"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.FSM$LogEntry"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.FSM$CurrentState"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.StopChild"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.ContextualTypedActorFactory"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.Status$Failure"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.FSM$Transition"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.FSM$SubscribeTransitionCallBack"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.SelectChildPattern"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.SerializedActorRef"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.TypedActor$SerializedMethodCall"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.Status$Success"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.FSM$UnsubscribeTransitionCallBack"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.PostRestartException"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.FSM$StopEvent"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.ActorKilledException"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.ChildRestartStats"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.ActorNotFound"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.TypedProps"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.SchedulerException"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.DeathPactException"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.FSM$Timer"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.Identify"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.InvalidMessageException"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.Terminated"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.PreRestartException"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.ActorIdentity"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.TypedActor$MethodCall"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.TypedActor$SerializedTypedActorInvocationHandler"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.IllegalActorStateException"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.InvalidActorNameException"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.SelectChildName"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.FSM$Failure"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.UnhandledMessage"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.DeadLetter"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.FSM$TimeoutMarker"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.dungeon.ChildrenContainer$Recreation"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.dungeon.ChildrenContainer$TerminatingChildrenContainer"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.dungeon.ChildrenContainer$Creation"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.dsl.Inbox$Select"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.dsl.Inbox$StartWatch"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.actor.dsl.Inbox$Get"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$Received"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Udp$Send"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.TcpConnection$UpdatePendingWriteAndThen"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$Write"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$CommandFailed"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Udp$Bound"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.TcpConnection$ConnectionInfo"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$ErrorClosed"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.UdpConnected$Send"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.UdpConnected$Received"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Udp$CommandFailed"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.SelectionHandler$Retry"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$WriteFile"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$Bound"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.UdpConnected$CommandFailed"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$Register"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$ResumeAccepting"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.SelectionHandler$WorkerForCommand"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.TcpConnection$CloseInformation"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.TcpConnection$WriteFileFailed"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.TcpListener$RegisterIncoming"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$Connect"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$Bind"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Udp$Received"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$Connected"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.UdpConnected$Connect"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Udp$Bind"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.Tcp$CompoundWrite"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.io.TcpListener$FailedRegisterIncoming"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.event.Logging$InitializeLogger"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.pattern.PromiseActorRef$StoppedWithPath"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.serialization.Serialization$Information"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.util.WildcardTree"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.AddRoutee"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.ConsistentRoutee"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.SeveralRoutees"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.ScatterGatherFirstCompletedRoutees"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.Deafen"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.Listen"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.AdjustPoolSize"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.ActorSelectionRoutee"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.Broadcast"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.RemoveRoutee"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.ActorRefRoutee"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.Routees"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.routing.WithListeners"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.TestEvent$Mute"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.TestActor$UnWatch"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.ErrorFilter"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.InfoFilter"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.TestActor$Watch"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.WarningFilter"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.DebugFilter"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.DeadLettersFilter"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.TestActor$RealMessage"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.TestEvent$UnMute"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.TestActor$SetIgnore"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.TestActor$SetAutoPilot"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.testkit.CustomEventFilter"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$ListensFailure"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.InvalidAssociation"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.RemoteScope"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.AckedReceiveBuffer"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.RemoteWatcher$WatchRemote"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$Gated"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.AckedSendBuffer"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$Link"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.QuarantinedEvent"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$ManagementCommand"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$Send"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.Ack"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.RemoteWatcher$Stats"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$Quarantined"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.RARP"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$ResendState"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.RemoteWatcher$RewatchRemote"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.Remoting$RegisterTransportActor"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.ShutDownAssociation"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$Quarantine"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.RemoteWatcher$UnwatchRemote"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointWriter$Handle"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.RemoteActorRefProvider$Internals"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$ListensResult"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.RemoteWatcher$ExpectedFirstHeartbeat"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.RemoteDeploymentWatcher$WatchRemote"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.DaemonMsgCreate"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.RemoteWatcher$HeartbeatRsp"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointWriter$StoppedReading"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$Listen"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointWriter$OutboundAck"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.HeartbeatHistory"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.HopelessAssociation"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointWriter$TookOver"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.SeqNo"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.ReliableDeliverySupervisor$GotUid"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.EndpointManager$ManagementCommandAck"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.FailureInjectorTransportAdapter$Drop"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottlerManager$AssociateResult"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottlerManager$Listener"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ProtocolStateActor$OutboundUnassociated"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ProtocolStateActor$Handle"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottlerTransportAdapter$SetThrottle"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ProtocolStateActor$ListenerReady"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ActorTransportAdapter$ListenUnderlying"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ActorTransportAdapter$AssociateUnderlying"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.FailureInjectorTransportAdapter$One"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.TestTransport$DisassociateAttempt"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ProtocolStateActor$HandleListenerRegistered"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ProtocolStateActor$OutboundUnderlyingAssociated"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ProtocolStateActor$InboundUnassociated"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.AkkaProtocolTransport$AssociateUnderlyingRefuseUid"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.TestTransport$AssociateAttempt"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.TestTransport$ListenAttempt"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.AkkaPduCodec$Disassociate"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.AkkaPduCodec$Message"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.Transport$InboundAssociation"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.Transport$InvalidAssociationException"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ProtocolStateActor$AssociatedWaitHandler"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.TestAssociationHandle"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottlerManager$ListenerAndMode"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.AssociationHandle$Disassociated"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.AssociationHandle$InboundPayload"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottledAssociation$FailWith"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.Transport$ActorAssociationEventListener"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.FailureInjectorHandle"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.AkkaPduCodec$Payload"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottledAssociation$ExposedHandle"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.FailureInjectorTransportAdapter$All"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.TestTransport$WriteAttempt"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottlerManager$Handle"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottlerTransportAdapter$TokenBucket"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottlerManager$Checkin"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.HandshakeInfo"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottlerTransportAdapter$ForceDisassociate"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ActorTransportAdapter$DisassociateUnderlying"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.FailureInjectorException"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottlerHandle"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.TestTransport$ShutdownAttempt"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ActorTransportAdapter$ListenerRegistered"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.AkkaPduCodec$Associate"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.ThrottlerTransportAdapter$ForceDisassociateExplicitly"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.transport.AssociationHandle$ActorHandleEventListener"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.camel.FailureResult"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.camel.MessageResult"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.camel.internal.CamelSupervisor$AddWatch"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.camel.internal.AwaitDeActivation"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.camel.internal.CamelSupervisor$CamelProducerObjects"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.camel.internal.CamelSupervisor$DeRegister"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.camel.internal.AwaitActivation"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.camel.internal.CamelSupervisor$Register"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.ClientFSM$Data"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.ToClient"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.BarrierCoordinator$ClientLost"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.EnterBarrier"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.Remove"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.ToServer"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.DisconnectMsg"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.BarrierCoordinator$BarrierEmpty"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.Disconnect"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.ClientFSM$ConnectionFailure"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.RoleName"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.Hello"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.Controller$NodeInfo"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.Controller$CreateServerFSM"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.GetAddress"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.BarrierCoordinator$WrongBarrier"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.AddressReply"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.ClientFSM$Connected"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.BarrierCoordinator$RemoveClient"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.BarrierCoordinator$FailedBarrier"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.ThrottleMsg"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.BarrierCoordinator$Data"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.BarrierResult"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.BarrierCoordinator$BarrierTimeout"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.Controller$ClientDisconnected"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.FailBarrier"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.BarrierCoordinator$DuplicateNode"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testconductor.Throttle"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.testkit.MultiNodeSpec$Replacement"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$Subscribe"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$SeenChanged"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.VectorClock"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$PublishChanges"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.Metric"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$ReachableMember"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterUserAction$Down"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterHeartbeatSender$ExpectedFirstHeartbeat"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$PublishEvent"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$RoleLeaderChanged"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterHeartbeatSender$HeartbeatRsp"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$ClusterMetricsChanged"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.AutoDown$UnreachableTimeout"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$CurrentInternalStats"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$MemberUp"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$CurrentClusterState"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.GossipOverview"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.GossipStatus"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.GossipStats"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.MetricsGossip"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$Join"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.UniqueAddress"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$SendGossipTo"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$PublisherCreated"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterUserAction$Leave"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.Gossip"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$ReachabilityChanged"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$UnreachableMember"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$AddOnMemberUpListener"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$LeaderChanged"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$JoinSeedNodes"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.StandardMetrics$HeapMemory"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.VectorClockStats"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.NodeMetrics"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.Reachability$Record"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$InitJoinAck"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.StandardMetrics$Cpu"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$InitJoinNack"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.EWMA"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$Unsubscribe"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterHeartbeatSender$Heartbeat"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.MetricsGossipEnvelope"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$MemberRemoved"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterUserAction$JoinTo"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.ClusterEvent$MemberExited"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.InternalClusterAction$Welcome"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.routing.ClusterRouterPoolSettings"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.routing.MixMetricsSelector"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.cluster.routing.ClusterRouterGroupSettings"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.sysmsg.Watch"),
-
-      // changed to static method, source compatible is enough
-      ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.JavaTestKit.shutdownActorSystem"),
-      // testActorName()java.lang.String in trait akka.testkit.TestKitBase does not have a correspondent in old version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.TestKitBase.testActorName"),
-      // method remainingOrDefault()scala.concurrent.duration.FiniteDuration in trait akka.testkit.TestKitBase does not have a correspondent in old version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.TestKitBase.remainingOrDefault"),
-      // synthetic method akka$remote$testkit$MultiNodeSpec$Replacement$$$outer()akka.remote.testkit.MultiNodeSpec in class akka.remote.testkit.MultiNodeSpec#Replacement does not have a correspondent in new version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testkit.MultiNodeSpec#Replacement.akka$remote$testkit$MultiNodeSpec$Replacement$$$outer"),
-
-
-      // method nrOfInstances(akka.actor.ActorSystem) in trait akka.routing.Pool does not have a correspondent in old version
-      // ok to exclude, since we don't call nrOfInstances(sys) for old implementations
-      ProblemFilters.exclude[MissingMethodProblem]("akka.routing.Pool.nrOfInstances"),
-
-      // method paths(akka.actor.ActorSystem) in trait akka.routing.Group does not have a correspondent in old version
-      // ok to exclude, since we don't call paths(sys) for old implementations
-      ProblemFilters.exclude[MissingMethodProblem]("akka.routing.Group.paths"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.routing.GroupBase.getPaths"),
-
-      // removed deprecated
-      ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorFactory"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.util.Timeout.longToTimeout"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.util.Timeout.intToTimeout"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.util.Timeout.apply"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.util.Timeout.this"),
-      FilterAnyProblem("akka.routing.ConsistentHashingRouter"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.SmallestMailboxRouter$"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.RouterRoutees$"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.ScatterGatherFirstCompletedRouter"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.CurrentRoutees$"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.CurrentRoutees"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.RouterRoutees"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.RandomRouter"),
-      // class akka.routing.CollectRouteeRefs does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.CollectRouteeRefs"),
-      // class akka.routing.ConsistentActorRef does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.ConsistentActorRef"),
-      // object akka.routing.ConsistentActorRef does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.ConsistentActorRef$"),
-      // object akka.routing.RandomRouter does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.RandomRouter$"),
-      // object akka.routing.BroadcastRouter does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.BroadcastRouter$"),
-      // class akka.routing.RoundRobinRouter does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.RoundRobinRouter"),
-      // class akka.routing.BroadcastRouter does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.BroadcastRouter"),
-      // class akka.routing.SmallestMailboxRouter does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.SmallestMailboxRouter"),
-      // object akka.routing.ScatterGatherFirstCompletedRouter does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.ScatterGatherFirstCompletedRouter$"),
-      // interface akka.routing.DeprecatedRouterConfig does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.DeprecatedRouterConfig"),
-      // object akka.routing.RoundRobinRouter does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.routing.RoundRobinRouter$"),
-      // method toString()java.lang.String in object akka.routing.BalancingPool does not have a correspondent in new version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.routing.BalancingPool.toString"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.RemoteSettings.LogRemoteLifecycleEvents"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Cluster.publishCurrentClusterState"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.InternalClusterAction$PublishCurrentClusterState$"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterSettings.AutoDown"),
-      // class akka.cluster.routing.ClusterRouterSettings does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.routing.ClusterRouterSettings"),
-      // object akka.cluster.routing.ClusterRouterConfig does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.routing.ClusterRouterConfig$"),
-      // object akka.cluster.routing.AdaptiveLoadBalancingRouter does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.routing.AdaptiveLoadBalancingRouter$"),
-      // object akka.cluster.routing.ClusterRouterSettings does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.routing.ClusterRouterSettings$"),
-      // class akka.cluster.routing.AdaptiveLoadBalancingRouter does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.routing.AdaptiveLoadBalancingRouter"),
-      // class akka.cluster.routing.ClusterRouterConfig does not have a correspondent in new version
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.routing.ClusterRouterConfig"),
-      // deprecated method this(Int,java.lang.String,Boolean,java.lang.String)Unit in class akka.cluster.routing.ClusterRouterGroupSettings does not have a correspondent with same parameter signature among (Int,java.lang.Iterable,Boolean,java.lang.String)Unit, (Int,scala.collection.immutable.Seq,Boolean,scala.Option)Unit
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.routing.ClusterRouterGroupSettings.this"),
-      // deprecated method this(Int,java.lang.String,Boolean,scala.Option)Unit in class akka.cluster.routing.ClusterRouterGroupSettings does not have a correspondent with same parameter signature among (Int,java.lang.Iterable,Boolean,java.lang.String)Unit, (Int,scala.collection.immutable.Seq,Boolean,scala.Option)Unit
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.routing.ClusterRouterGroupSettings.this"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.TestKit.dilated"),
-
-
-      // changed internals
-      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorSystem.terminate"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorSystem.whenTerminated"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ExtendedActorSystem.logFilter"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorPath.ValidSymbols"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.LocalActorRefProvider.terminationPromise"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.actor.UntypedActorFactoryConsumer"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorSystemImpl.terminationFuture"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.IndirectActorProducer.UntypedActorFactoryConsumerClass"),
-      FilterAnyProblem("akka.actor.ActorSystemImpl"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.AskSupport.ask"),
-      FilterAnyProblem("akka.actor.ActorSystemImpl$TerminationCallbacks"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.event.Logging#LogEvent.getMDC"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.util.ByteString.byteStringCompanion"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.util.ByteString.writeToOutputStream"),
-      //method boss()akka.actor.RepointableActorRef in class akka.actor.ActorDSL#Extension does not have a correspondent in new version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorDSL#Extension.boss"),
-      // method hasSubscriptions(java.lang.Object)Boolean in trait akka.event.SubchannelClassification does not have a correspondent in old version
-      // ok to exclude since it is only invoked from new EventStreamUnsubscriber
-      ProblemFilters.exclude[MissingMethodProblem]("akka.event.SubchannelClassification.hasSubscriptions"),
-      FilterAnyProblem("akka.remote.EndpointManager"),
-      FilterAnyProblem("akka.remote.RemoteTransport"),
-      FilterAnyProblem("akka.remote.Remoting"),
-      FilterAnyProblem("akka.remote.PhiAccrualFailureDetector$State"),
-      FilterAnyProblem("akka.cluster.ClusterDomainEventPublisher"),
-      FilterAnyProblem("akka.cluster.InternalClusterAction"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.InternalClusterAction$PublishCurrentClusterState"),
-      // issue #16327 compared to 2.3.10
-      // synthetic method akka$dispatch$BatchingExecutor$BlockableBatch$$parentBlockContext_=(scala.concurrent.BlockContext)Unit in class akka.dispatch.BatchingExecutor#BlockableBatch does not have a correspondent in new version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#BlockableBatch.akka$dispatch$BatchingExecutor$BlockableBatch$$parentBlockContext_="),
-      // synthetic method akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_=(java.lang.ThreadLocal)Unit in trait akka.dispatch.BatchingExecutor does not have a correspondent in old version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor.akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_="),
-      // synthetic method akka$dispatch$BatchingExecutor$$_blockContext()java.lang.ThreadLocal in trait akka.dispatch.BatchingExecutor does not have a correspondent in old version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor.akka$dispatch$BatchingExecutor$$_blockContext"),
-      // issue #16327 compared to 2.3.11
-      // synthetic method akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_=(java.lang.ThreadLocal)Unit in class akka.dispatch.MessageDispatcher does not have a correspondent in new version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.MessageDispatcher.akka$dispatch$BatchingExecutor$_setter_$akka$dispatch$BatchingExecutor$$_blockContext_="),
-      // synthetic method akka$dispatch$BatchingExecutor$$_blockContext()java.lang.ThreadLocal in class akka.dispatch.MessageDispatcher does not have a correspondent in new version
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.MessageDispatcher.akka$dispatch$BatchingExecutor$$_blockContext"),
-      // issue #16736
-      ProblemFilters.exclude[MissingClassProblem]("akka.cluster.OnMemberUpListener"),
-      // issue #17554
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.maxResendRate"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.resendLimit"),
-      //changes introduced by #16911
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.RemoteActorRefProvider.afterSendSystemMessage"),
-      FilterAnyProblem("akka.remote.RemoteWatcher"),
-      FilterAnyProblem("akka.remote.RemoteWatcher$WatchRemote"),
-      FilterAnyProblem("akka.remote.RemoteWatcher$UnwatchRemote"),
-      FilterAnyProblem("akka.remote.RemoteWatcher$Rewatch"),
-      FilterAnyProblem("akka.remote.RemoteWatcher$RewatchRemote"),
-      FilterAnyProblem("akka.remote.RemoteWatcher$Stats"),
-      // internal changes introduced by #17253
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ClusterDaemon.coreSupervisor"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterCoreSupervisor.publisher"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ClusterCoreSupervisor.coreDaemon"),
-      // protofbuf embedding #13783
-      FilterAnyProblemStartingWith("akka.remote.WireFormats"),
-      FilterAnyProblemStartingWith("akka.remote.ContainerFormats"),
-      FilterAnyProblemStartingWith("akka.remote.serialization.DaemonMsgCreateSerializer"),
-      FilterAnyProblemStartingWith("akka.remote.testconductor.TestConductorProtocol"),
-      FilterAnyProblemStartingWith("akka.cluster.protobuf.msg.ClusterMessages"),
-      FilterAnyProblemStartingWith("akka.cluster.protobuf.ClusterMessageSerializer"),
-      // #13584 change in internal actor
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ClusterCoreDaemon.akka$cluster$ClusterCoreDaemon$$isJoiningToUp$1")
+      // #22035 Make it possible to use anything as the key in a map
+      FilterAnyProblemStartingWith("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.ORMap"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.LWWMap"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.PNCounterMap"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.ORMultiMap")
     )
 
     Map(
-      "2.3.11" -> Seq(
-        ProblemFilters.exclude[MissingMethodProblem]("akka.actor.ActorCell.clearActorFields") // #17805, incompatibility with 2.4.x fixed in 2.3.12
-      ),
-      "2.3.15" -> bcIssuesBetween23and24,
       "2.4.0" -> Seq(
         FilterAnyProblem("akka.remote.transport.ProtocolStateActor"),
 
@@ -620,7 +171,13 @@ object MiMa extends AutoPlugin {
         FilterAnyProblem("akka.cluster.sharding.DDataShardCoordinator"),
 
         // #18328 optimize VersionVector for size 1
-        FilterAnyProblem("akka.cluster.ddata.VersionVector")
+        FilterAnyProblem("akka.cluster.ddata.VersionVector"),
+
+        ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.sharding.ShardRegion$GetCurrentRegions$"),
+        //FilterAnyProblemStartingWith("akka.cluster.sharding.ShardCoordinator#Internal")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator#Internal#State.apply"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator#Internal#State.copy"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator#Internal#State.this")
       ),
       "2.4.1" -> Seq(
         // #19008
@@ -647,12 +204,13 @@ object MiMa extends AutoPlugin {
 
         // #19440
         ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.PipeToSupport.pipeCompletionStage"),
-        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.FutureTimeoutSupport.afterCompletionStage")
+        ProblemFilters.exclude[MissingMethodProblem]("akka.pattern.FutureTimeoutSupport.afterCompletionStage"),
+
+        ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.PersistenceStash.internalStashOverflowStrategy")
       ),
       "2.4.2" -> Seq(
         //internal API
         FilterAnyProblemStartingWith("akka.http.impl"),
-        FilterAnyProblemStartingWith("akka.stream.impl"),
 
         ProblemFilters.exclude[FinalClassProblem]("akka.stream.stage.GraphStageLogic$Reading"), // this class is private
 
@@ -740,7 +298,7 @@ object MiMa extends AutoPlugin {
         // #19390 Add flow monitor
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitor"),
         ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GraphStages$TickSource$"),
-        
+
         FilterAnyProblemStartingWith("akka.http.impl"),
 
         // #20214
@@ -779,7 +337,7 @@ object MiMa extends AutoPlugin {
         // #20293 Use JDK7 NIO Path instead of File
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.withEntity"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.withEntity"),
-        
+
         // #20401 custom media types registering
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.CommonActions.customMediaTypes"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.model.parser.HeaderParser.Settings"),
@@ -788,7 +346,7 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.apply"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.copy"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.this"),
-        
+
         // #20123
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.recoverWithRetries"),
 
@@ -816,11 +374,11 @@ object MiMa extends AutoPlugin {
 
         // #20131 - flow combinator
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.backpressureTimeout"),
-        
+
         // #20470 - new JavaDSL for Akka HTTP
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.plus"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.DateTime.minus"),
-        
+
         // #20214
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.createClientHttpsContext"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.DefaultSSLContextCreation.validateAndWarnAboutLooseSettings"),
@@ -845,18 +403,26 @@ object MiMa extends AutoPlugin {
         // #20462 - now uses a Set instead of a Seq within the private API of the cluster client
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.client.ClusterClient.contacts_="),
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.contacts"),
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.initialContactsSel")
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.initialContactsSel"),
+
+        // * field EMPTY in class akka.http.javadsl.model.HttpEntities's type is different in current version, where it is: akka.http.javadsl.model.HttpEntity#Strict rather than: akka.http.scaladsl.model.HttpEntity#Strict
+        ProblemFilters.exclude[IncompatibleFieldTypeProblem]("akka.http.javadsl.model.HttpEntities.EMPTY"),
+        //  method createIndefiniteLength(akka.http.javadsl.model.ContentType,akka.stream.javadsl.Source)akka.http.scaladsl.model.HttpEntity#IndefiniteLength in class akka.http.javadsl.model.HttpEntities has a different result type in current version, where it is akka.http.javadsl.model.HttpEntity#IndefiniteLength rather than akka.http.scaladsl.model.HttpEntity#IndefiniteLength
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.model.HttpEntities.createIndefiniteLength"),
+        // method createCloseDelimited(akka.http.javadsl.model.ContentType,akka.stream.javadsl.Source)akka.http.scaladsl.model.HttpEntity#CloseDelimited in class akka.http.javadsl.model.HttpEntities has a different result type in current version, where it is akka.http.javadsl.model.HttpEntity#CloseDelimited rather than akka.http.scaladsl.model.HttpEntity#CloseDelimited
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.model.HttpEntities.createCloseDelimited"),
+        // method createChunked(akka.http.javadsl.model.ContentType,akka.stream.javadsl.Source)akka.http.scaladsl.model.HttpEntity#Chunked in class akka.http.javadsl.model.HttpEntities has a different result type in current version, where it is akka.http.javadsl.model.HttpEntity#Chunked rather than akka.http.scaladsl.model.HttpEntity#Chunked
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.model.HttpEntities.createChunked"),
+        // method create(akka.http.javadsl.model.ContentType,akka.stream.javadsl.Source)akka.http.scaladsl.model.HttpEntity#Chunked in class akka.http.javadsl.model.HttpEntities has a different result type in current version, where it is akka.http.javadsl.model.HttpEntity#Chunked rather than akka.http.scaladsl.model.HttpEntity#Chunked
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.model.HttpEntities.create")
       ),
       "2.4.6" -> Seq(
         // internal api
         FilterAnyProblemStartingWith("akka.stream.impl"),
 
-        // #20888 new FoldAsync op for Flow
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync"),
-
         // #20214 SNI disabling for single connections (AkkaSSLConfig being passed around)
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.sslConfig"), // class meant only for internal extension 
-        
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.sslConfig"), // class meant only for internal extension
+
         //#20229 migrate GroupBy to GraphStage
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Builder.deprecatedAndThen"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.deprecatedAndThen"),
@@ -880,7 +446,7 @@ object MiMa extends AutoPlugin {
 
         // #20414 Allow different ActorMaterializer subtypes
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializer.downcast"),
-        
+
         // #20531 adding refuseUid to Gated
         FilterAnyProblem("akka.remote.EndpointManager$Gated"),
 
@@ -889,7 +455,20 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.discardEntityBytes"),
 
         // #20288 migrate BodyPartRenderer to GraphStage
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.BodyPartRenderer.streamed")
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.BodyPartRenderer.streamed"),
+
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.scaladsl.TLS.apply$default$5"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.TLS.apply$default$4"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.deprecatedAndThen")
+      ),
+      "2.4.7" -> Seq(
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializer.downcast"),
+        FilterAnyProblemStartingWith("akka.cluster.pubsub.DistributedPubSubMediator$Internal"),
+
+        // abstract method discardEntityBytes(akka.stream.Materializer)akka.http.javadsl.model.HttpMessage#DiscardedEntity in interface akka.http.javadsl.model.HttpMessage is present only in current version
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage.discardEntityBytes"),
+        // method discardEntityBytes(akka.stream.Materializer)akka.http.scaladsl.model.HttpMessage#DiscardedEntity in trait akka.http.scaladsl.model.HttpMessage is present only in current version
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.discardEntityBytes")
       ),
       "2.4.8" -> Seq(
         // #20717 example snippet for akka http java dsl: SecurityDirectives
@@ -900,7 +479,7 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.getMinConnections"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.minConnections"),
         FilterAnyProblemStartingWith("akka.http.impl"),
-        
+
         // #20846 change of internal Status message
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages#StatusOrBuilder.getReplyToStatus"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages#StatusOrBuilder.hasReplyToStatus"),
@@ -964,8 +543,15 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ws.BinaryMessage.asScala"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ws.BinaryMessage.getStreamedData"),
 
-        // #21131 new implementation for Akka Typed
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.isWatching")
+        // #21273 minor cleanup of WildcardIndex
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.WildcardIndex.empty"),
+
+        // #20888 new FoldAsync op for Flow
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync"),
+
+        // method ChaseLimit()Int in object akka.stream.impl.fusing.GraphInterpreter does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.ChaseLimit"),
+        FilterAnyProblemStartingWith("akka.http.impl.engine")
       ),
       "2.4.10" -> Seq(
         // #21290 new zipWithIndex flow op
@@ -974,26 +560,139 @@ object MiMa extends AutoPlugin {
         // Remove useUntrustedMode which is an internal API and not used anywhere anymore
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.Remoting.useUntrustedMode"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteTransport.useUntrustedMode"),
-        
+
         // Use OptionVal in remote Send envelope
         FilterAnyProblemStartingWith("akka.remote.EndpointManager"),
         FilterAnyProblemStartingWith("akka.remote.Remoting"),
         FilterAnyProblemStartingWith("akka.remote.RemoteTransport"),
         FilterAnyProblemStartingWith("akka.remote.InboundMessageDispatcher"),
         FilterAnyProblemStartingWith("akka.remote.DefaultMessageDispatcher"),
-        FilterAnyProblemStartingWith("akka.remote.transport"),  
+        FilterAnyProblemStartingWith("akka.remote.transport"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteActorRefProvider.quarantine"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteWatcher.quarantine"),
-        
+
         // #20644 long uids
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#UniqueAddressOrBuilder.hasUid2"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.protobuf.msg.ClusterMessages#UniqueAddressOrBuilder.getUid2"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatorMessages#UniqueAddressOrBuilder.hasUid2"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatorMessages#UniqueAddressOrBuilder.getUid2"),
         ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteWatcher.receiveHeartbeatRsp"),
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.RemoteWatcher.selfHeartbeatRspMsg")
-        
-      )
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.RemoteWatcher.selfHeartbeatRspMsg"),
+
+        // #21131 new implementation for Akka Typed
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.isWatching"),
+
+        // class akka.stream.impl.fusing.Map is declared final in current version
+        ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.fusing.Map")
+      ),
+      "2.4.11" -> Seq(
+        // #20795  IOResult construction exposed
+        ProblemFilters.exclude[MissingTypesProblem]("akka.stream.IOResult$"),
+
+        // #21727 moved all of Unfold.scala in package akka.stream.impl
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.UnfoldAsync"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.Unfold"),
+
+        // #21194 renamed internal actor method
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.allocateShardHomes"),
+
+        // MarkerLoggingAdapter introduced (all internal classes)
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.LocalActorRefProvider.log"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.VirtualPathContainer.log"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.VirtualPathContainer.this"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.RemoteSystemDaemon.this"),
+
+        //  method this(akka.actor.ExtendedActorSystem,akka.remote.RemoteActorRefProvider,akka.event.LoggingAdapter)Unit in class akka.remote.DefaultMessageDispatcher's type is different in current version, where it is (akka.actor.ExtendedActorSystem,akka.remote.RemoteActorRefProvider,akka.event.MarkerLoggingAdapter)Unit instead of (akka.actor.ExtendedActorSystem,akka.remote.RemoteActorRefProvider,akka.event.LoggingAdapter)Unit
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.DefaultMessageDispatcher.this"),
+        // trait akka.remote.artery.StageLogging does not have a correspondent in current version
+        ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.StageLogging"),
+        // method SSLProtocol()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLProtocol"),
+        // method SSLTrustStorePassword()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLTrustStorePassword"),
+        // method SSLKeyStorePassword()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLKeyStorePassword"),
+        // method SSLRandomNumberGenerator()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLRandomNumberGenerator"),
+        // method SSLKeyPassword()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLKeyPassword"),
+        // method SSLKeyStore()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLKeyStore"),
+        //  method SSLTrustStore()scala.Option in class akka.remote.transport.netty.SSLSettings has a different result type in current version, where it is java.lang.String rather than scala.Option
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.transport.netty.SSLSettings.SSLTrustStore"),
+        // method initializeClientSSL(akka.remote.transport.netty.SSLSettings,akka.event.LoggingAdapter)org.jboss.netty.handler.ssl.SslHandler in object akka.remote.transport.netty.NettySSLSupport does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.NettySSLSupport.initializeClientSSL"),
+        // method apply(akka.remote.transport.netty.SSLSettings,akka.event.LoggingAdapter,Boolean)org.jboss.netty.handler.ssl.SslHandler in object akka.remote.transport.netty.NettySSLSupport's type is different in current version, where it is (akka.remote.transport.netty.SSLSettings,akka.event.MarkerLoggingAdapter,Boolean)org.jboss.netty.handler.ssl.SslHandler instead of (akka.remote.transport.netty.SSLSettings,akka.event.LoggingAdapter,Boolean)org.jboss.netty.handler.ssl.SslHandler
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.transport.netty.NettySSLSupport.apply"),
+        // initializeCustomSecureRandom(scala.Option,akka.event.LoggingAdapter)java.security.SecureRandom in object akka.remote.transport.netty.NettySSLSupport does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.NettySSLSupport.initializeCustomSecureRandom"),
+        // method initializeServerSSL(akka.remote.transport.netty.SSLSettings,akka.event.LoggingAdapter)org.jboss.netty.handler.ssl.SslHandler in object akka.remote.transport.netty.NettySSLSupport does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.NettySSLSupport.initializeServerSSL"),
+        // abstract method makeLogger(java.lang.Class)akka.event.LoggingAdapter in interface akka.stream.MaterializerLoggingProvider is inherited by class ActorMaterializer in current version.
+        ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.MaterializerLoggingProvider.makeLogger"),
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+        // synthetic method currentEventsByTag$default$2()Long in class akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal has a different result type in current version, where it is akka.persistence.query.Offset rather than Long
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal.currentEventsByTag$default$2"),
+        // synthetic method eventsByTag$default$2()Long in class akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal has a different result type in current version, where it is akka.persistence.query.Offset rather than Long
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal.eventsByTag$default$2"),
+
+        // #21330 takeWhile inclusive flag
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.takeWhile"),
+
+        // #21541 new ScanAsync flow op
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.scanAsync")
+      ),
+      "2.4.12" -> Seq(
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.materialize"),
+
+        // #21775 - overrode ByteString.stringPrefix and made it final
+        ProblemFilters.exclude[FinalMethodProblem]("akka.util.ByteString.stringPrefix"),
+
+        // #20553 Tree flattening should be separate from Fusing
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$")
+      ),
+      "2.4.13" -> Seq(
+        // extension method isEmpty$extension(Int)Boolean in object akka.remote.artery.compress.TopHeavyHitters#HashCodeVal does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.TopHeavyHitters#HashCodeVal.isEmpty$extension"),
+        // isEmpty()Boolean in class akka.remote.artery.compress.TopHeavyHitters#HashCodeVal does not have a correspondent in current version
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.TopHeavyHitters#HashCodeVal.isEmpty")
+      ),
+      "2.4.14" -> (Seq(
+        // # 21944
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ClusterEvent#ReachabilityEvent.member"),
+
+        // #21645 durable distributed data
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.WriteAggregator.props"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.WriteAggregator.this"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.Replicator.write"),
+
+        // #21394 remove static config path of levelDBJournal and localSnapshotStore
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.snapshot.local.LocalSnapshotStore.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.configPath"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.configPath"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.SharedLeveldbStore.configPath"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.prepareConfig"),
+
+        // #20737 aligned test sink and test source stage factory methods types
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.TestSinkStage.apply"),
+
+        FilterAnyProblemStartingWith("akka.stream.impl"),
+        FilterAnyProblemStartingWith("akka.remote.artery"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.MessageSerializer.serializeForArtery"),
+
+        // https://github.com/akka/akka/pull/21688
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo$"),
+        ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$StructuralInfo"),
+
+        // https://github.com/akka/akka/pull/21989 - add more information in tcp connection shutdown logs (add mapError)
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.mapError"),
+
+        // #21894 Programmatic configuration of the ActorSystem
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")
+
+      ) ++ bcIssuesBetween24and25)
+      // Entries should be added to a section keyed with the latest released version before the change
     )
   }
 }

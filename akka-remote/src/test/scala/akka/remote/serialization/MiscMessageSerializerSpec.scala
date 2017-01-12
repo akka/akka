@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.remote.serialization
@@ -11,6 +11,8 @@ import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 
 import scala.util.control.NoStackTrace
+import java.util.Optional
+import java.io.NotSerializableException
 
 object MiscMessageSerializerSpec {
   val serializationTestOverrides =
@@ -77,11 +79,12 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "ActorRef" → ref,
       "Some" → Some("value"),
       "None" → None,
+      "Optional.present" → Optional.of("value2"),
+      "Optional.empty" → Optional.empty(),
       "Kill" → Kill,
       "PoisonPill" → PoisonPill,
       "RemoteWatcher.Heartbeat" → RemoteWatcher.Heartbeat,
-      "RemoteWatcher.HertbeatRsp" → RemoteWatcher.HeartbeatRsp(65537)
-    ).foreach {
+      "RemoteWatcher.HertbeatRsp" → RemoteWatcher.HeartbeatRsp(65537)).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for $scenario" in {
             val serializer = SerializationExtension(system)
@@ -101,7 +104,7 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
     }
 
     "reject deserialization with invalid manifest" in {
-      intercept[IllegalArgumentException] {
+      intercept[NotSerializableException] {
         val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
         serializer.fromBinary(Array.empty[Byte], "INVALID")
       }

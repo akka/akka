@@ -36,7 +36,7 @@ class ShoppingCart(userId: String) extends Actor {
   val replicator = DistributedData(context.system).replicator
   implicit val cluster = Cluster(context.system)
 
-  val DataKey = LWWMapKey[LineItem]("cart-" + userId)
+  val DataKey = LWWMapKey[String, LineItem]("cart-" + userId)
 
   def receive = receiveGetCart
     .orElse[Any, Unit](receiveAddItem)
@@ -65,14 +65,14 @@ class ShoppingCart(userId: String) extends Actor {
   //#add-item
   def receiveAddItem: Receive = {
     case cmd @ AddItem(item) =>
-      val update = Update(DataKey, LWWMap.empty[LineItem], writeMajority, Some(cmd)) {
+      val update = Update(DataKey, LWWMap.empty[String, LineItem], writeMajority, Some(cmd)) {
         cart => updateCart(cart, item)
       }
       replicator ! update
   }
   //#add-item
 
-  def updateCart(data: LWWMap[LineItem], item: LineItem): LWWMap[LineItem] =
+  def updateCart(data: LWWMap[String, LineItem], item: LineItem): LWWMap[String, LineItem] =
     data.get(item.productId) match {
       case Some(LineItem(_, _, existingQuantity)) =>
         data + (item.productId -> item.copy(quantity = existingQuantity + item.quantity))

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster
 
@@ -15,6 +15,8 @@ import akka.cluster.ClusterEvent._
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 import scala.collection.breakOut
 import akka.remote.QuarantinedEvent
+import java.util.ArrayList
+import java.util.Collections
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -247,7 +249,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
-  val NumberOfGossipsBeforeShutdownWhenLeaderExits = 3
+  val NumberOfGossipsBeforeShutdownWhenLeaderExits = 5
   val MaxGossipsBeforeShuttingDownMyself = 5
 
   def vclockName(node: UniqueAddress): String = s"${node.address}-${node.longUid}"
@@ -573,6 +575,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
       logInfo("Marked address [{}] as [{}]", address, Leaving)
       publish(latestGossip)
+      // immediate gossip to speed up the leaving process
+      gossip()
     }
   }
 
@@ -776,6 +780,32 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     (latestGossip.overview.seen.size < latestGossip.members.size / 2)
 
   /**
+   * Sends full gossip to `n` other random members.
+   */
+  def gossipRandomN(n: Int): Unit = {
+    if (!isSingletonCluster && n > 0) {
+      val localGossip = latestGossip
+      // using ArrayList to be able to shuffle
+      val possibleTargets = new ArrayList[UniqueAddress](localGossip.members.size)
+      localGossip.members.foreach { m ⇒
+        if (validNodeForGossip(m.uniqueAddress))
+          possibleTargets.add(m.uniqueAddress)
+      }
+      val randomTargets =
+        if (possibleTargets.size <= n)
+          possibleTargets
+        else {
+          Collections.shuffle(possibleTargets, ThreadLocalRandom.current())
+          possibleTargets.subList(0, n)
+        }
+
+      val iter = randomTargets.iterator
+      while (iter.hasNext)
+        gossipTo(iter.next())
+    }
+  }
+
+  /**
    * Initiates a new round of gossip.
    */
   def gossip(): Unit = {
@@ -878,8 +908,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         logInfo("Shutting down myself")
         // not crucial to send gossip, but may speedup removal since fallback to failure detection is not needed
         // if other downed know that this node has seen the version
-        downed.filterNot(n ⇒ unreachable(n) || n == selfUniqueAddress).take(MaxGossipsBeforeShuttingDownMyself)
-          .foreach(gossipTo)
+        gossipRandomN(MaxGossipsBeforeShuttingDownMyself)
         shutdown()
       }
     }
@@ -988,7 +1017,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         // for downing. However, if those final gossip messages never arrive it is
         // alright to require the downing, because that is probably caused by a
         // network failure anyway.
-        for (_ ← 1 to NumberOfGossipsBeforeShutdownWhenLeaderExits) gossip()
+        gossipRandomN(NumberOfGossipsBeforeShutdownWhenLeaderExits)
         shutdown()
       }
 
@@ -1180,6 +1209,10 @@ private[cluster] final class FirstSeedNodeProcess(seedNodes: immutable.IndexedSe
         remainingSeedNodes foreach { a ⇒ context.actorSelection(context.parent.path.toStringWithAddress(a)) ! InitJoin }
       } else {
         // no InitJoinAck received, initialize new cluster by joining myself
+        if (log.isDebugEnabled)
+          log.debug(
+            "Couldn't join other seed nodes, will join myself. seed-nodes=[{}]",
+            seedNodes.mkString(", "))
         context.parent ! JoinTo(selfAddress)
         context.stop(self)
       }
@@ -1233,11 +1266,14 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq
 
   context.setReceiveTimeout(Cluster(context.system).settings.SeedNodeTimeout)
 
+  var attempt = 0
+
   override def preStart(): Unit = self ! JoinSeedNode
 
   def receive = {
     case JoinSeedNode ⇒
       // send InitJoin to all seed nodes (except myself)
+      attempt += 1
       seedNodes.collect {
         case a if a != selfAddress ⇒ context.actorSelection(context.parent.path.toStringWithAddress(a))
       } foreach { _ ! InitJoin }
@@ -1247,6 +1283,10 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq
       context.become(done)
     case InitJoinNack(_) ⇒ // that seed was uninitialized
     case ReceiveTimeout ⇒
+      if (attempt >= 2)
+        log.warning(
+          "Couldn't join seed nodes after [{}] attmpts, will try again. seed-nodes=[{}]",
+          attempt, seedNodes.filterNot(_ == selfAddress).mkString(", "))
       // no InitJoinAck received, try again
       self ! JoinSeedNode
   }

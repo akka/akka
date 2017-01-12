@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -45,7 +45,15 @@ object LatencySpec extends MultiNodeConfig {
          }
          remote.artery {
            enabled = on
-           advanced.idle-cpu-level=7
+           advanced.idle-cpu-level = 7
+
+           # for serious measurements when running this test on only one machine
+           # it is recommended to use external media driver
+           # See akka-remote/src/test/resources/aeron.properties
+           # advanced.embedded-media-driver = off
+           # advanced.aeron-dir = "target/aeron"
+           # on linux, use directory on ram disk, instead
+           # advanced.aeron-dir = "/dev/shm/aeron"
 
            advanced.compression {
              actor-refs.advertisement-interval = 2 second
@@ -53,7 +61,7 @@ object LatencySpec extends MultiNodeConfig {
            }
          }
        }
-       """)).withFallback(RemotingMultiNodeSpec.arteryFlightRecordingConf))
+       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   final case object Reset
 
@@ -75,11 +83,11 @@ object LatencySpec extends MultiNodeConfig {
   }
 
   def receiverProps(reporter: RateReporter, settings: TestSettings, totalMessages: Int,
-                    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef): Props =
-    Props(new Receiver(reporter, settings, totalMessages, sendTimes, histogram, plotsRef))
+                    sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef, BenchmarkFileReporter: BenchmarkFileReporter): Props =
+    Props(new Receiver(reporter, settings, totalMessages, sendTimes, histogram, plotsRef, BenchmarkFileReporter))
 
   class Receiver(reporter: RateReporter, settings: TestSettings, totalMessages: Int,
-                 sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef) extends Actor {
+                 sendTimes: AtomicLongArray, histogram: Histogram, plotsRef: ActorRef, BenchmarkFileReporter: BenchmarkFileReporter) extends Actor {
     import settings._
 
     var count = 0
@@ -114,12 +122,12 @@ object LatencySpec extends MultiNodeConfig {
           }
       }
       if (count == totalMessages) {
-        printTotal(testName, size, histogram, System.nanoTime() - startTime)
+        printTotal(testName, size, histogram, System.nanoTime() - startTime, BenchmarkFileReporter)
         context.stop(self)
       }
     }
 
-    def printTotal(testName: String, payloadSize: Long, histogram: Histogram, totalDurationNanos: Long): Unit = {
+    def printTotal(testName: String, payloadSize: Long, histogram: Histogram, totalDurationNanos: Long, reporter: BenchmarkFileReporter): Unit = {
       import scala.collection.JavaConverters._
       val percentiles = histogram.percentiles(5)
       def percentile(p: Double): Double =
@@ -130,7 +138,7 @@ object LatencySpec extends MultiNodeConfig {
 
       val throughput = 1000.0 * histogram.getTotalCount / math.max(1, totalDurationNanos.nanos.toMillis)
 
-      println(s"=== Latency $testName: RTT " +
+      reporter.reportResults(s"=== Latency $testName: RTT " +
         f"50%%ile: ${percentile(50.0)}%.0f µs, " +
         f"90%%ile: ${percentile(90.0)}%.0f µs, " +
         f"99%%ile: ${percentile(99.0)}%.0f µs, " +
@@ -236,7 +244,7 @@ abstract class LatencySpec
       repeat = repeatCount,
       realMessage))
 
-  def test(testSettings: TestSettings): Unit = {
+  def test(testSettings: TestSettings, BenchmarkFileReporter: BenchmarkFileReporter): Unit = {
     import testSettings._
 
     runOn(first) {
@@ -263,7 +271,7 @@ abstract class LatencySpec
         echo ! Reset
         expectMsg(Reset)
         histogram.reset()
-        val receiver = system.actorOf(receiverProps(rep, testSettings, totalMessages, sendTimes, histogram, plotProbe.ref))
+        val receiver = system.actorOf(receiverProps(rep, testSettings, totalMessages, sendTimes, histogram, plotProbe.ref, BenchmarkFileReporter))
 
         // warmup for 3 seconds to init compression
         val warmup = Source(1 to 30)
@@ -327,6 +335,7 @@ abstract class LatencySpec
   }
 
   "Latency of Artery" must {
+    val reporter = BenchmarkFileReporter("LatencySpec", system)
 
     "start echo" in {
       runOn(second) {
@@ -337,7 +346,7 @@ abstract class LatencySpec
     }
 
     for (s ← scenarios) {
-      s"be low for ${s.testName}, at ${s.messageRate} msg/s, payloadSize = ${s.payloadSize}" in test(s)
+      s"be low for ${s.testName}, at ${s.messageRate} msg/s, payloadSize = ${s.payloadSize}" in test(s, reporter)
     }
 
     // TODO add more tests

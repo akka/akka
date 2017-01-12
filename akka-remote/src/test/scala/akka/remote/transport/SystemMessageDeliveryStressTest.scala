@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.transport
 
@@ -177,7 +177,7 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
 
   override def beforeTermination() {
     system.eventStream.publish(TestEvent.Mute(
-      EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
+      EventFilter.warning(source = s"akka://AkkaProtocolStressTest/user/$$a", start = "received dead letter"),
       EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
     systemB.eventStream.publish(TestEvent.Mute(
       EventFilter[EndpointException](),

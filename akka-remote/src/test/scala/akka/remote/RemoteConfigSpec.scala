@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote
 
@@ -122,14 +122,14 @@ class RemoteConfigSpec extends AkkaSpec(
 
     "contain correct ssl configuration values in reference.conf" in {
       val sslSettings = new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
-      sslSettings.SSLKeyStore should ===(Some("keystore"))
-      sslSettings.SSLKeyStorePassword should ===(Some("changeme"))
-      sslSettings.SSLKeyPassword should ===(Some("changeme"))
-      sslSettings.SSLTrustStore should ===(Some("truststore"))
-      sslSettings.SSLTrustStorePassword should ===(Some("changeme"))
-      sslSettings.SSLProtocol should ===(Some("TLSv1.2"))
+      sslSettings.SSLKeyStore should ===("keystore")
+      sslSettings.SSLKeyStorePassword should ===("changeme")
+      sslSettings.SSLKeyPassword should ===("changeme")
+      sslSettings.SSLTrustStore should ===("truststore")
+      sslSettings.SSLTrustStorePassword should ===("changeme")
+      sslSettings.SSLProtocol should ===("TLSv1.2")
       sslSettings.SSLEnabledAlgorithms should ===(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
-      sslSettings.SSLRandomNumberGenerator should ===(None)
+      sslSettings.SSLRandomNumberGenerator should ===("")
     }
 
     "have debug logging of the failure injector turned off in reference.conf" in {

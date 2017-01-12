@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl
 
@@ -55,6 +55,7 @@ private[akka] class JsonObjectParser(maximumObjectLength: Int = Int.MaxValue) {
   private var completedObject = false
   private var inStringExpression = false
   private var isStartOfEscapeSequence = false
+  private var lastInput = 0.toByte
 
   /**
    * Appends input ByteString to internal byte string buffer.
@@ -105,7 +106,7 @@ private[akka] class JsonObjectParser(maximumObjectLength: Int = Int.MaxValue) {
     completedObject
   }
 
-  private def proceed(input: Byte): Unit =
+  private def proceed(input: Byte): Unit = {
     if (input == SquareBraceStart && outsideObject) {
       // outer object is an array
       pos += 1
@@ -118,7 +119,8 @@ private[akka] class JsonObjectParser(maximumObjectLength: Int = Int.MaxValue) {
       pos += 1
       trimFront += 1
     } else if (input == Backslash) {
-      isStartOfEscapeSequence = true
+      if (lastInput == Backslash) isStartOfEscapeSequence = false
+      else isStartOfEscapeSequence = true
       pos += 1
     } else if (input == DoubleQuote) {
       if (!isStartOfEscapeSequence) inStringExpression = !inStringExpression
@@ -145,6 +147,9 @@ private[akka] class JsonObjectParser(maximumObjectLength: Int = Int.MaxValue) {
     } else {
       throw new FramingException(s"Invalid JSON encountered at position [$pos] of [$buffer]")
     }
+
+    lastInput = input
+  }
 
   @inline private final def insideObject: Boolean =
     !outsideObject

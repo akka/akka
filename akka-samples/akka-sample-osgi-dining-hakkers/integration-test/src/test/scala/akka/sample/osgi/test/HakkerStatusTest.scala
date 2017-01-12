@@ -5,13 +5,12 @@ import akka.sample.osgi.api._
 import akka.sample.osgi.test.TestOptions._
 import akka.testkit.TestProbe
 import javax.inject.Inject
+import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.{ Before, Test }
 import org.ops4j.pax.exam.junit.{ Configuration, JUnit4TestRunner }
 import org.ops4j.pax.exam.util.Filter
 import org.ops4j.pax.exam.{ Option => PaxOption }
-import org.scalatest.junit.{AssertionsForJUnit, JUnitSuite}
-import org.scalatest.Matchers
 import scala.concurrent.duration._
 import org.apache.karaf.tooling.exam.options.LogLevelOption
 
@@ -30,7 +29,7 @@ import org.apache.karaf.tooling.exam.options.LogLevelOption
  * TODO attempt to use the Akka test probe
  */
 @RunWith(classOf[JUnit4TestRunner])
-class HakkerStatusTest extends JUnitSuite with Matchers with AssertionsForJUnit {
+class HakkerStatusTest {
 
   @Inject @Filter(timeout = 30000)
   var actorSystem: ActorSystem = _
@@ -66,8 +65,8 @@ class HakkerStatusTest extends JUnitSuite with Matchers with AssertionsForJUnit 
       val Identification(fromHakker, busyWith) = testProbe.expectMsgType[Identification]
 
       println("---------------> %s is busy with %s.".format(fromHakker, busyWith))
-      fromHakker should be("TestHakker")
-      busyWith should not be (null)
+      assertEquals(fromHakker, "TestHakker")
+      assertNotNull(busyWith)
     }
 
   }
@@ -84,8 +83,8 @@ class HakkerStatusTest extends JUnitSuite with Matchers with AssertionsForJUnit 
         testProbe.within(1.second) {
           tracker.tell(GetEatingCount(name), testProbe.ref)
           val reply = testProbe.expectMsgType[EatingCount]
-          reply.hakkerName should be(name)
-          reply.count should be > (0)
+          assertEquals(reply.hakkerName, name)
+          assertTrue(reply.count > 0)
         }
       }
     }

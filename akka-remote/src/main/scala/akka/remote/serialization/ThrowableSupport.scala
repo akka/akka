@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.serialization
 
@@ -39,11 +39,12 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
   }
 
   def stackTraceElementBuilder(elem: StackTraceElement): ContainerFormats.StackTraceElement.Builder = {
-    ContainerFormats.StackTraceElement.newBuilder()
+    val builder = ContainerFormats.StackTraceElement.newBuilder()
       .setClassName(elem.getClassName)
       .setMethodName(elem.getMethodName)
-      .setFileName(elem.getFileName)
       .setLineNumber(elem.getLineNumber)
+    val fileName = elem.getFileName
+    if (fileName ne null) builder.setFileName(fileName) else builder.setFileName("")
   }
 
   def deserializeThrowable(bytes: Array[Byte]): Throwable = {
@@ -71,7 +72,9 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
     import scala.collection.JavaConverters._
     val stackTrace =
       protoT.getStackTraceList.asScala.map { elem ⇒
-        new StackTraceElement(elem.getClassName, elem.getMethodName, elem.getFileName, elem.getLineNumber)
+        val fileName = elem.getFileName
+        new StackTraceElement(elem.getClassName, elem.getMethodName,
+          if (fileName.length > 0) fileName else null, elem.getLineNumber)
       }.toArray
     t.setStackTrace(stackTrace)
     t

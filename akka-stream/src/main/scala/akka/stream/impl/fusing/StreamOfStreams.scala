@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl.fusing
 
@@ -31,7 +31,7 @@ final class FlattenMerge[T, M](val breadth: Int) extends GraphStage[FlowShape[Gr
   override def initialAttributes = DefaultAttributes.flattenMerge
   override val shape = FlowShape(in, out)
 
-  override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
+  override def createLogic(enclosingAttributes: Attributes) = new GraphStageLogic(shape) {
     var sources = Set.empty[SubSinkInlet[T]]
     def activeSources = sources.size
 
@@ -82,7 +82,8 @@ final class FlattenMerge[T, M](val breadth: Int) extends GraphStage[FlowShape[Gr
       })
       sinkIn.pull()
       sources += sinkIn
-      Source.fromGraph(source).runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
+      val graph = Source.fromGraph(source).to(sinkIn.sink)
+      interpreter.subFusingMaterializer.materialize(graph, initialAttributes = enclosingAttributes)
     }
 
     def removeSource(src: SubSinkInlet[T]): Unit = {
@@ -428,22 +429,19 @@ final class Split[T](val decision: Split.SplitDecision, val p: T ⇒ Boolean, va
 
     setHandler(out, new OutHandler {
       override def onPull(): Unit = {
-        if (substreamSource eq null) pull(in)
-        else if (!substreamWaitingToBePushed) {
-          push(out, Source.fromGraph(substreamSource.source))
-          scheduleOnce(SubscriptionTimer, timeout)
-          substreamWaitingToBePushed = true
-        }
+        if (substreamSource eq null) {
+          //can be already pulled from substream in case split after
+          if (!hasBeenPulled(in)) pull(in)
+        } else if (substreamWaitingToBePushed) pushSubstreamSource()
       }
 
       override def onDownstreamFinish(): Unit = {
         // If the substream is already cancelled or it has not been handed out, we can go away
-        if (!substreamWaitingToBePushed || substreamCancelled) completeStage()
+        if ((substreamSource eq null) || substreamWaitingToBePushed || substreamCancelled) completeStage()
       }
     })
 
-    // initial input handler
-    setHandler(in, new InHandler {
+    val initInHandler = new InHandler {
       override def onPush(): Unit = {
         val handler = new SubstreamHandler
         val elem = grab(in)
@@ -459,7 +457,10 @@ final class Split[T](val decision: Split.SplitDecision, val p: T ⇒ Boolean, va
         handOver(handler)
       }
       override def onUpstreamFinish(): Unit = completeStage()
-    })
+    }
+
+    // initial input handler
+    setHandler(in, initInHandler)
 
     private def handOver(handler: SubstreamHandler): Unit = {
       if (isClosed(out)) completeStage()
@@ -471,11 +472,15 @@ final class Split[T](val decision: Split.SplitDecision, val p: T ⇒ Boolean, va
         setKeepGoing(enabled = handler.hasInitialElement)
 
         if (isAvailable(out)) {
-          push(out, Source.fromGraph(substreamSource.source))
-          scheduleOnce(SubscriptionTimer, timeout)
-          substreamWaitingToBePushed = true
-        } else substreamWaitingToBePushed = false
+          if (decision == SplitBefore || handler.hasInitialElement) pushSubstreamSource() else pull(in)
+        } else substreamWaitingToBePushed = true
       }
+    }
+
+    private def pushSubstreamSource(): Unit = {
+      push(out, Source.fromGraph(substreamSource.source))
+      scheduleOnce(SubscriptionTimer, timeout)
+      substreamWaitingToBePushed = false
     }
 
     override protected def onTimer(timerKey: Any): Unit = substreamSource.timeout(timeout)
@@ -502,6 +507,7 @@ final class Split[T](val decision: Split.SplitDecision, val p: T ⇒ Boolean, va
       }
 
       override def onPull(): Unit = {
+        cancelTimer(SubscriptionTimer)
         if (hasInitialElement) {
           substreamSource.push(firstElem)
           firstElem = null.asInstanceOf[T]
@@ -529,7 +535,12 @@ final class Split[T](val decision: Split.SplitDecision, val p: T ⇒ Boolean, va
           if (p(elem)) {
             val handler = new SubstreamHandler
             closeThis(handler, elem)
-            handOver(handler)
+            if (decision == SplitBefore) handOver(handler)
+            else {
+              substreamSource = null
+              setHandler(in, initInHandler)
+              pull(in)
+            }
           } else {
             // Drain into the void
             if (substreamCancelled) pull(in)

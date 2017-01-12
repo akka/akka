@@ -1,20 +1,5 @@
-.. _http-scala:
+Akka HTTP Documentation (Scala) moved!
+======================================
 
-Akka HTTP
-=========
-
-.. toctree::
-   :maxdepth: 2
-
-   introduction
-   configuration
-   common/index
-   implications-of-streaming-http-entity
-   low-level-server-side-api
-   routing-dsl/index
-   client-side/index
-   server-side-https-support
-   handling-blocking-operations-in-akka-http-routes
-   migration-from-spray
-   migration-from-old-http-javadsl
-   migration-guide-2.4.x-experimental
+Akka HTTP has been released as independent stable module (from Akka HTTP 3.x onwards).
+The documentation is available under `doc.akka.io/akka-http/current/ <http://doc.akka.io/docs/akka-http/current/scala.html>`_.

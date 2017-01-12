@@ -1,9 +1,10 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.actor
 
-import language.implicitConversions
+import java.util.concurrent.CompletionStage
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -11,11 +12,14 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Success
 import java.util.regex.Pattern
+
 import akka.pattern.ask
 import akka.routing.MurmurHash
 import akka.util.Helpers
 import akka.util.Timeout
 import akka.dispatch.ExecutionContexts
+
+import scala.compat.java8.FutureConverters
 
 /**
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,
@@ -77,6 +81,19 @@ abstract class ActorSelection extends Serializable {
    * [[ActorRef]].
    */
   def resolveOne(timeout: FiniteDuration): Future[ActorRef] = resolveOne()(timeout)
+
+  /**
+   * Java API for [[#resolveOne]]
+   *
+   * Resolve the [[ActorRef]] matching this selection.
+   * The result is returned as a CompletionStage that is completed with the [[ActorRef]]
+   * if such an actor exists. It is completed with failure [[ActorNotFound]] if
+   * no such actor exists or the identification didn't complete within the
+   * supplied `timeout`.
+   *
+   */
+  def resolveOneCS(timeout: FiniteDuration): CompletionStage[ActorRef] =
+    FutureConverters.toJava[ActorRef](resolveOne(timeout))
 
   override def toString: String = {
     val builder = new java.lang.StringBuilder()

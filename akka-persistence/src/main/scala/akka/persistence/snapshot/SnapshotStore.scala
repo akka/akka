@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  * Copyright (C) 2012-2016 Eligotech BV.
  */
 
@@ -37,7 +37,7 @@ trait SnapshotStore extends Actor with ActorLogging {
       breaker.withCircuitBreaker(loadAsync(persistenceId, criteria.limit(toSequenceNr))) map {
         sso ⇒ LoadSnapshotResult(sso, toSequenceNr)
       } recover {
-        case e ⇒ LoadSnapshotResult(None, toSequenceNr)
+        case e ⇒ LoadSnapshotFailed(e)
       } pipeTo senderPersistentActor()
 
     case SaveSnapshot(metadata, snapshot) ⇒
@@ -95,6 +95,12 @@ trait SnapshotStore extends Actor with ActorLogging {
 
   /**
    * Plugin API: asynchronously loads a snapshot.
+   *
+   * If the future `Option` is `None` then all events will be replayed,
+   * i.e. there was no snapshot. If snapshot could not be loaded the `Future`
+   * should be completed with failure. That is important because events may
+   * have been deleted and just replaying the events might not result in a valid
+   * state.
    *
    * This call is protected with a circuit-breaker.
    *

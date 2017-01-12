@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.io
@@ -26,6 +26,7 @@ import akka.testkit.{ AkkaSpec, EventFilter, SocketUtil, TestActorRef, TestProbe
 import akka.util.{ ByteString, Helpers }
 import akka.testkit.SocketUtil._
 import java.util.Random
+import java.net.SocketTimeoutException
 
 object TcpConnectionSpec {
   case class Ack(i: Int) extends Event
@@ -836,13 +837,21 @@ class TcpConnectionSpec extends AkkaSpec("""
 
       IO(Tcp) ! Connect(bindAddress)
 
-      val socket = serverSocket.accept()
-      connectionProbe.expectMsgType[Tcp.Connected]
-      val connectionActor = connectionProbe.sender()
-      connectionActor ! PoisonPill
-      watch(connectionActor)
-      expectTerminated(connectionActor)
-      an[IOException] should be thrownBy { socket.getInputStream.read() }
+      try {
+        serverSocket.setSoTimeout(remainingOrDefault.toMillis.toInt)
+        val socket = serverSocket.accept()
+        connectionProbe.expectMsgType[Tcp.Connected]
+        val connectionActor = connectionProbe.sender()
+        connectionActor ! PoisonPill
+        watch(connectionActor)
+        expectTerminated(connectionActor)
+        an[IOException] should be thrownBy { socket.getInputStream.read() }
+      } catch {
+        case e: SocketTimeoutException ⇒
+          // thrown by serverSocket.accept, this may happen if network is offline
+          info(e.getMessage)
+          pending
+      }
     }
   }
 

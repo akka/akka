@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.actor
@@ -54,13 +54,11 @@ class LightArrayRevolverScheduler(
 
   import LightArrayRevolverScheduler._
 
-  private val oneNs = Duration.fromNanos(1l)
-  private def roundUp(d: FiniteDuration): FiniteDuration =
-    try {
-      ((d + TickDuration - oneNs) / TickDuration).toLong * TickDuration
-    } catch {
-      case _: IllegalArgumentException ⇒ d // rounding up Long.MaxValue.nanos overflows
-    }
+  private def roundUp(d: FiniteDuration): FiniteDuration = {
+    val dn = d.toNanos
+    val r = ((dn - 1) / tickNanos + 1) * tickNanos
+    if (r != dn && r > 0 && dn > 0) r.nanos else d
+  }
 
   /**
    * Clock implementation is replaceable (for testing); the implementation must

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -50,7 +50,7 @@ class PNCounterMapSpec extends WordSpec with Matchers {
       val m1 = PNCounterMap.empty.increment(node1, "a", 1).increment(node2, "b", 2)
       val PNCounterMap(entries1) = m1
       val entries2: Map[String, BigInt] = entries1
-      Changed(PNCounterMapKey("key"))(m1) match {
+      Changed(PNCounterMapKey[String]("key"))(m1) match {
         case c @ Changed(PNCounterMapKey("key")) ⇒
           val PNCounterMap(entries3) = c.dataValue
           val entries4: Map[String, BigInt] = entries3

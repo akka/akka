@@ -20,7 +20,6 @@ Reference Documentation
 The reference documentation is available at [doc.akka.io](http://doc.akka.io),
 for [Scala](http://doc.akka.io/docs/akka/current/scala.html) and [Java](http://doc.akka.io/docs/akka/current/java.html).
 
-
 Community
 ---------
 You can join these groups and chats to discuss and ask Akka related questions:
@@ -41,15 +40,14 @@ Contributing
 ------------
 Contributions are *very* welcome!
 
-If you see an issue that you'd like to see fixed, the best way to make it happen is to help out by submitting a PullRequest implementing it.
+If you see an issue that you'd like to see fixed, the best way to make it happen is to help out by submitting a pull request implementing it.
 
 Refer to the [CONTRIBUTING.md](https://github.com/akka/akka/blob/master/CONTRIBUTING.md) file for more details about the workflow,
-and general hints how to prepare your pull request. You can also chat ask for clarifications or guidance in GitHub issues directly,
+and general hints on how to prepare your pull request. You can also ask for clarifications or guidance in GitHub issues directly,
 or in the akka/dev chat if a more real time communication would be of benefit.
 
 A chat room is available for all questions related to *developing and contributing* to Akka:
 [![gitter: akka/dev](https://img.shields.io/badge/gitter%3A-akka%2Fdev-blue.svg?style=flat-square)](https://gitter.im/akka/dev)
-
 
 License
 -------

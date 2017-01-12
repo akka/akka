@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.io
 
@@ -215,6 +215,13 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       readN(inputStream, byteString.size * 2) should ===((byteString.size, byteString))
       inputStream.read() should ===(-1)
 
+      inputStream.close()
+    }
+
+    "read next byte as an int from InputStream" in assertAllStagesStopped {
+      val bytes = ByteString(0, 100, 200, 255)
+      val inputStream = Source.single(bytes).runWith(StreamConverters.asInputStream())
+      List.fill(5)(inputStream.read()) should ===(List(0, 100, 200, 255, -1))
       inputStream.close()
     }
   }

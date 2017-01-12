@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster.pubsub.protobuf
 
@@ -21,6 +21,7 @@ import akka.actor.ActorRef
 import akka.serialization.SerializationExtension
 import scala.collection.immutable.TreeMap
 import akka.serialization.SerializerWithStringManifest
+import java.io.NotSerializableException
 
 /**
  * INTERNAL API: Protobuf serializer of DistributedPubSubMediator messages.
@@ -72,7 +73,7 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     fromBinaryMap.get(manifest) match {
       case Some(f) ⇒ f(bytes)
-      case None ⇒ throw new IllegalArgumentException(
+      case None ⇒ throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
 

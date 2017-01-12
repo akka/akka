@@ -1,20 +1,21 @@
 /*
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.persistence.query
 
 import akka.NotUsed
 import akka.actor._
-import akka.persistence.{ Recovery, PersistentActor }
+import akka.persistence.{ PersistentActor, Recovery }
 import akka.persistence.query._
-import akka.stream.{ FlowShape, ActorMaterializer }
+import akka.stream.{ ActorMaterializer, FlowShape }
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.javadsl
 import akka.testkit.AkkaSpec
 import akka.util.Timeout
-import docs.persistence.query.PersistenceQueryDocSpec.{ TheOneWhoWritesToQueryJournal }
+import docs.persistence.query.PersistenceQueryDocSpec.TheOneWhoWritesToQueryJournal
 import org.reactivestreams.Subscriber
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -47,17 +48,20 @@ object PersistenceQueryDocSpec {
     extends akka.persistence.query.scaladsl.ReadJournal
     with akka.persistence.query.scaladsl.EventsByTagQuery
     with akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
-    with akka.persistence.query.scaladsl.AllPersistenceIdsQuery
+    with akka.persistence.query.scaladsl.PersistenceIdsQuery
     with akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery {
 
     private val refreshInterval: FiniteDuration =
       config.getDuration("refresh-interval", MILLISECONDS).millis
 
     override def eventsByTag(
-      tag: String, offset: Long = 0L): Source[EventEnvelope, NotUsed] = {
-      val props = MyEventsByTagPublisher.props(tag, offset, refreshInterval)
-      Source.actorPublisher[EventEnvelope](props)
-        .mapMaterializedValue(_ => NotUsed)
+      tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] = offset match {
+      case Sequence(offsetValue) ⇒
+        val props = MyEventsByTagPublisher.props(tag, offsetValue, refreshInterval)
+        Source.actorPublisher[EventEnvelope](props)
+          .mapMaterializedValue(_ => NotUsed)
+      case _ ⇒
+        throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
     }
 
     override def eventsByPersistenceId(
@@ -67,7 +71,7 @@ object PersistenceQueryDocSpec {
       ???
     }
 
-    override def allPersistenceIds(): Source[String, NotUsed] = {
+    override def persistenceIds(): Source[String, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
@@ -92,11 +96,11 @@ object PersistenceQueryDocSpec {
     extends akka.persistence.query.javadsl.ReadJournal
     with akka.persistence.query.javadsl.EventsByTagQuery
     with akka.persistence.query.javadsl.EventsByPersistenceIdQuery
-    with akka.persistence.query.javadsl.AllPersistenceIdsQuery
+    with akka.persistence.query.javadsl.PersistenceIdsQuery
     with akka.persistence.query.javadsl.CurrentPersistenceIdsQuery {
 
     override def eventsByTag(
-      tag: String, offset: Long = 0L): javadsl.Source[EventEnvelope, NotUsed] =
+      tag: String, offset: Offset = Sequence(0L)): javadsl.Source[EventEnvelope, NotUsed] =
       scaladslReadJournal.eventsByTag(tag, offset).asJava
 
     override def eventsByPersistenceId(
@@ -105,8 +109,8 @@ object PersistenceQueryDocSpec {
       scaladslReadJournal.eventsByPersistenceId(
         persistenceId, fromSequenceNr, toSequenceNr).asJava
 
-    override def allPersistenceIds(): javadsl.Source[String, NotUsed] =
-      scaladslReadJournal.allPersistenceIds().asJava
+    override def persistenceIds(): javadsl.Source[String, NotUsed] =
+      scaladslReadJournal.persistenceIds().asJava
 
     override def currentPersistenceIds(): javadsl.Source[String, NotUsed] =
       scaladslReadJournal.currentPersistenceIds().asJava
@@ -211,7 +215,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     //#basic-usage
 
     //#all-persistence-ids-live
-    readJournal.allPersistenceIds()
+    readJournal.persistenceIds()
     //#all-persistence-ids-live
 
     //#all-persistence-ids-snap
@@ -232,7 +236,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
         .runFold(Vector.empty[Any])(_ :+ _)
 
     // start another query, from the known offset
-    val furtherBlueThings = readJournal.eventsByTag("blue", offset = 10)
+    val furtherBlueThings = readJournal.eventsByTag("blue", offset = Sequence(10))
     //#events-by-tag
 
     //#events-by-persistent-id
@@ -258,7 +262,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
 
   //#projection-into-different-store
   class MyResumableProjection(name: String) {
-    def saveProgress(offset: Long): Future[Long] = ???
+    def saveProgress(offset: Offset): Future[Long] = ???
     def latestOffset: Future[Long] = ???
   }
   //#projection-into-different-store
@@ -279,7 +283,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
 
     bidProjection.latestOffset.foreach { startFromOffset =>
       readJournal
-        .eventsByTag("bid", startFromOffset)
+        .eventsByTag("bid", Sequence(startFromOffset))
         .mapAsync(8) { envelope => (writer ? envelope.event).map(_ => envelope.offset) }
         .mapAsync(1) { offset => bidProjection.saveProgress(offset) }
         .runWith(Sink.ignore)

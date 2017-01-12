@@ -174,6 +174,26 @@ you can advise the system to create a child on that remote node like so:
 
 .. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
 
+.. _remote-deployment-whitelist-scala:
+
+Remote deployment whitelist
+---------------------------
+
+As remote deployment can potentially be abused by both users and even attackers a whitelist feature
+is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
+is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
+remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
+only a specific set of known actors by enabling the whitelist feature.
+
+To enable remote deployment whitelisting set the ``akka.remote.deployment.enable-whitelist`` value to ``on``.
+The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which 
+others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or 
+should not allow others to remote deploy onto it. The full settings section may for example look like this:
+
+.. includecode:: ../../../akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala#whitelist-config
+
+Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
+
 Lifecycle and Failure Recovery Model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -273,6 +293,29 @@ serialization for internal messages by default. For compatibility reasons, the c
 serialization for some classes, however you can disable it in this remoting implementation as well by following 
 the steps below.
 
+The first step is to enable some additional serializers that replace previous Java serialization of some internal
+messages. This is recommended also when you can't disable Java serialization completely. Those serializers are
+enabled with this configuration:
+
+.. code-block:: ruby
+
+  akka.actor {
+    # Set this to on to enable serialization-bindings define in
+    # additional-serialization-bindings. Those are by default not included
+    # for backwards compatibility reasons. They are enabled by default if
+    # akka.remote.artery.enabled=on. 
+    enable-additional-serialization-bindings = on
+  }
+
+The reason these are not enabled by default is wire-level compatibility between any 2.4.x Actor Systems.
+If you roll out a new cluster, all on the same Akka version that can enable these serializers it is recommended to 
+enable this setting. When using :ref:`remoting-artery-scala` these serializers are enabled by default.
+
+.. warning:: 
+  Please note that when enabling the additional-serialization-bindings when using the old remoting, 
+  you must do so on all nodes participating in a cluster, otherwise the mis-aligned serialization
+  configurations will cause deserialization errors on the receiving nodes.
+
 Java serialization is known to be slow and prone to attacks of various kinds - it never was designed for high 
 throughput messaging after all. However it is very convenient to use, thus it remained the default serialization 
 mechanism that Akka used to serialize user messages as well as some of its internal messages in previous versions.
@@ -305,26 +348,6 @@ your ``application.conf``:
 
 Please note that this means that you will have to configure different serializers which will able to handle all of your
 remote messages. Please refer to the :ref:`serialization-scala` documentation as well as :ref:`ByteBuffer based serialization <remote-bytebuffer-serialization-scala>` to learn how to do this.
-
-.. warning:: 
-  Please note that when enabling the additional-serialization-bindings when using the old remoting, 
-  you must do so on all nodes participating in a cluster, otherwise the mis-aligned serialization
-  configurations will cause deserialization errors on the receiving nodes.
-
-You can also easily enable additional serialization bindings that are provided by Akka that are not using Java serialization:
-
-.. code-block: ruby
-  akka.actor {
-    # Set this to on to enable serialization-bindings define in
-    # additional-serialization-bindings. Those are by default not included
-    # for backwards compatibility reasons. They are enabled by default if
-    # akka.remote.artery.enabled=on. 
-    enable-additional-serialization-bindings = on
-  }
-
-The reason these are not enabled by default is wire-level compatibility between any 2.4.x Actor Systems.
-If you roll out a new cluster, all on the same Akka version that can enable these serializers it is recommended to 
-enable this setting. When using :ref:`remoting-artery-scala` these serializers are enabled by default.
 
 .. _Kryo: https://github.com/EsotericSoftware/kryo
 .. _akka-kryo-serialization: https://github.com/romix/akka-kryo-serialization
@@ -413,11 +436,6 @@ To intercept generic remoting related errors, listen to ``RemotingErrorEvent`` w
 Remote Security
 ^^^^^^^^^^^^^^^
 
-Akka provides a couple of ways to enhance security between remote nodes (client/server):
-
-* Untrusted Mode
-* Security Cookie Handshake
-
 Untrusted Mode
 --------------
 
@@ -468,42 +486,66 @@ untrusted mode when incoming via the remoting layer:
   within the same JVM), you can restrict the messages on this interface by
   marking them :class:`PossiblyHarmful` so that a client cannot forge them.
 
-SSL
----
+Configuring SSL/TLS for Akka Remoting
+-------------------------------------
 
-SSL can be used as the remote transport by adding ``akka.remote.netty.ssl``
-to the ``enabled-transport`` configuration section. See a description of the settings
-in the :ref:`remote-configuration-scala` section.
-
+SSL can be used as the remote transport by adding ``akka.remote.netty.ssl`` to the ``enabled-transport`` configuration section.
 An example of setting up the default Netty based SSL driver as default::
 
   akka {
     remote {
       enabled-transports = [akka.remote.netty.ssl]
+    }
+  }
 
+Next the actual SSL/TLS parameters have to be configured::
+
+  akka {
+    remote {
       netty.ssl.security {
-        key-store = "mykeystore"
-        trust-store = "mytruststore"
+        key-store = "/example/path/to/mykeystore.jks"
+        trust-store = "/example/path/to/mytruststore.jks"
+        
         key-store-password = "changeme"
         key-password = "changeme"
         trust-store-password = "changeme"
+        
         protocol = "TLSv1.2"
+        
+        enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
+        
         random-number-generator = "AES128CounterSecureRNG"
-        enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
       }
     }
   }
 
-The SSL support is implemented with Java Secure Socket Extension, please consult the official
-`Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
-and related resources for troubleshooting.
+According to `RFC 7525 <https://tools.ietf.org/html/rfc7525>`_ the recommended algorithms to use with TLS 1.2 (as of writing this document) are:
+
+- TLS_DHE_RSA_WITH_AES_128_GCM_SHA256
+- TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+- TLS_DHE_RSA_WITH_AES_256_GCM_SHA384
+- TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+
+You should always check the latest information about security and algorithm recommendations though before you configure your system.
+
+Creating and working with keystores and certificates is well documented in the 
+`Generating X.509 Certificates <http://typesafehub.github.io/ssl-config/CertificateGeneration.html#using-keytool>`_
+section of Lightbend's SSL-Config library. 
+
+Since an Akka remoting is inherently :ref:`peer-to-peer <symmetric-communication>` both the key-store as well as trust-store 
+need to be configured on each remoting node participating in the cluster.
+
+The official `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
+as well as the `Oracle documentation on creating KeyStore and TrustStores <https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html>`_
+are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
+and configuring SSL.
+
+See also a description of the settings in the :ref:`remote-configuration-scala` section.
 
 .. note::
 
-  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/./urandom`` as argument
+  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/urandom`` as argument
   to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
-  Use '/dev/./urandom', not '/dev/urandom' as that doesn't work according to
-  `Bug ID: 6202721 <http://bugs.sun.com/view_bug.do?bug_id=6202721>`_.
 
 .. _remote-configuration-scala:
 

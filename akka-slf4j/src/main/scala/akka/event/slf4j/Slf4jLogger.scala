@@ -1,11 +1,10 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.event.slf4j
 
-import org.slf4j.{ Logger ⇒ SLFLogger, LoggerFactory ⇒ SLFLoggerFactory }
-import org.slf4j.MDC
+import org.slf4j.{ MDC, Marker, MarkerFactory, Logger ⇒ SLFLogger, LoggerFactory ⇒ SLFLoggerFactory }
 import akka.event.Logging._
 import akka.actor._
 import akka.event.DummyClassForStringSources
@@ -67,19 +66,27 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
     case event @ Error(cause, logSource, logClass, message) ⇒
       withMdc(logSource, event) {
         cause match {
-          case Error.NoCause | null ⇒ Logger(logClass, logSource).error(if (message != null) message.toString else null)
-          case _                    ⇒ Logger(logClass, logSource).error(if (message != null) message.toString else cause.getLocalizedMessage, cause)
+          case Error.NoCause | null ⇒
+            Logger(logClass, logSource).error(markerIfPresent(event), if (message != null) message.toString else null)
+          case _ ⇒
+            Logger(logClass, logSource).error(markerIfPresent(event), if (message != null) message.toString else cause.getLocalizedMessage, cause)
         }
       }
 
     case event @ Warning(logSource, logClass, message) ⇒
-      withMdc(logSource, event) { Logger(logClass, logSource).warn("{}", message.asInstanceOf[AnyRef]) }
+      withMdc(logSource, event) {
+        Logger(logClass, logSource).warn(markerIfPresent(event), "{}", message.asInstanceOf[AnyRef])
+      }
 
     case event @ Info(logSource, logClass, message) ⇒
-      withMdc(logSource, event) { Logger(logClass, logSource).info("{}", message.asInstanceOf[AnyRef]) }
+      withMdc(logSource, event) {
+        Logger(logClass, logSource).info(markerIfPresent(event), "{}", message.asInstanceOf[AnyRef])
+      }
 
     case event @ Debug(logSource, logClass, message) ⇒
-      withMdc(logSource, event) { Logger(logClass, logSource).debug("{}", message.asInstanceOf[AnyRef]) }
+      withMdc(logSource, event) {
+        Logger(logClass, logSource).debug(markerIfPresent(event), "{}", message.asInstanceOf[AnyRef])
+      }
 
     case InitializeLogger(_) ⇒
       log.info("Slf4jLogger started")
@@ -101,6 +108,12 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
       logEvent.mdc.keys.foreach(k ⇒ MDC.remove(k))
     }
   }
+
+  private final def markerIfPresent(event: LogEvent): Marker =
+    event match {
+      case m: LogEventWithMarker ⇒ MarkerFactory.getMarker(m.marker.name)
+      case _                     ⇒ null
+    }
 
   /**
    * Override this method to provide a differently formatted timestamp

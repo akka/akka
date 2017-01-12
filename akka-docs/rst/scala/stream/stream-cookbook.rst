@@ -72,7 +72,7 @@ Rather, use ``limit`` or ``take`` to ensure that the resulting ``Seq`` will cont
 Calculating the digest of a ByteString stream
 ---------------------------------------------
 
-**Situation:** A stream of bytes is given as a stream of ``ByteStrings`` and we want to calculate the cryptographic digest
+**Situation:** A stream of bytes is given as a stream of ``ByteString`` s and we want to calculate the cryptographic digest
 of the stream.
 
 This recipe uses a :class:`GraphStage` to host a mutable :class:`MessageDigest` class (part of the Java Cryptography
@@ -80,7 +80,7 @@ API) and update it with the bytes arriving from the stream. When the stream star
 stage is called, which just bubbles up the ``pull`` event to its upstream. As a response to this pull, a ByteString
 chunk will arrive (``onPush``) which we use to update the digest, then it will pull for the next chunk.
 
-Eventually the stream of ``ByteStrings`` depletes and we get a notification about this event via ``onUpstreamFinish``.
+Eventually the stream of ``ByteString`` s depletes and we get a notification about this event via ``onUpstreamFinish``.
 At this point we want to emit the digest value, but we cannot do it with ``push`` in this handler directly since there may
 be no downstream demand. Instead we call ``emit`` which will temporarily replace the handlers, emit the provided value when
 demand comes in and then reset the stage state. It will then complete the stage.
@@ -92,13 +92,23 @@ demand comes in and then reset the stage state. It will then complete the stage.
 Parsing lines from a stream of ByteStrings
 ------------------------------------------
 
-**Situation:** A stream of bytes is given as a stream of ``ByteStrings`` containing lines terminated by line ending
+**Situation:** A stream of bytes is given as a stream of ``ByteString`` s containing lines terminated by line ending
 characters (or, alternatively, containing binary frames delimited by a special delimiter byte sequence) which
 needs to be parsed.
 
-The :class:`Framing` helper object contains a convenience method to parse messages from a stream of ``ByteStrings``:
+The :class:`Framing` helper object contains a convenience method to parse messages from a stream of ``ByteString`` s:
 
 .. includecode:: ../code/docs/stream/cookbook/RecipeParseLines.scala#parse-lines
+
+Dealing with compressed data streams
+------------------------------------
+
+**Situation:** A gzipped stream of bytes is given as a stream of ``ByteString`` s, for example from a ``FileIO`` source.
+
+The :class:`Compression` helper object contains convenience methods for decompressing data streams compressed with
+Gzip or Deflate.
+
+.. includecode:: ../code/docs/stream/cookbook/RecipeDecompress.scala#decompress-gzip
 
 Implementing reduce-by-key
 --------------------------
@@ -329,8 +339,8 @@ Working with IO
 Chunking up a stream of ByteStrings into limited size ByteStrings
 -----------------------------------------------------------------
 
-**Situation:** Given a stream of ByteStrings we want to produce a stream of ByteStrings containing the same bytes in
-the same sequence, but capping the size of ByteStrings. In other words we want to slice up ByteStrings into smaller
+**Situation:** Given a stream of ``ByteString`` s we want to produce a stream of ``ByteString`` s containing the same bytes in
+the same sequence, but capping the size of ``ByteString`` s. In other words we want to slice up ``ByteString`` s into smaller
 chunks if they exceed a size threshold.
 
 This can be achieved with a single :class:`GraphStage`. The main logic of our stage is in ``emitChunk()``
@@ -348,7 +358,7 @@ the incoming chunk by appending to the end of the buffer.
 Limit the number of bytes passing through a stream of ByteStrings
 -----------------------------------------------------------------
 
-**Situation:** Given a stream of ByteStrings we want to fail the stream if more than a given maximum of bytes has been
+**Situation:** Given a stream of ``ByteString`` s we want to fail the stream if more than a given maximum of bytes has been
 consumed.
 
 This recipe uses a :class:`GraphStage` to implement the desired feature. In the only handler we override,
@@ -360,9 +370,9 @@ we signal failure, otherwise we forward the chunk we have received.
 Compact ByteStrings in a stream of ByteStrings
 ----------------------------------------------
 
-**Situation:** After a long stream of transformations, due to their immutable, structural sharing nature ByteStrings may
+**Situation:** After a long stream of transformations, due to their immutable, structural sharing nature ``ByteString`` s may
 refer to multiple original ByteString instances unnecessarily retaining memory. As the final step of a transformation
-chain we want to have clean copies that are no longer referencing the original ByteStrings.
+chain we want to have clean copies that are no longer referencing the original ``ByteString`` s.
 
 The recipe is a simple use of map, calling the ``compact()`` method of the :class:`ByteString` elements. This does
 copying of the underlying arrays, so this should be the last element of a long chain if used.
@@ -372,7 +382,7 @@ copying of the underlying arrays, so this should be the last element of a long c
 Injecting keep-alive messages into a stream of ByteStrings
 ----------------------------------------------------------
 
-**Situation:** Given a communication channel expressed as a stream of ByteStrings we want to inject keep-alive messages
+**Situation:** Given a communication channel expressed as a stream of ``ByteString`` s we want to inject keep-alive messages
 but only if this does not interfere with normal traffic.
 
 There is a built-in operation that allows to do this directly:

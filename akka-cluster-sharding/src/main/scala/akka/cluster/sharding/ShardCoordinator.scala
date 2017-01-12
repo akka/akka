@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster.sharding
 
@@ -21,6 +21,7 @@ import akka.cluster.ddata.Replicator._
 import akka.dispatch.ExecutionContexts
 import akka.pattern.{ AskTimeoutException, pipe }
 import akka.persistence._
+import akka.cluster.ClusterEvent
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -398,6 +399,13 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
 
   val cluster = Cluster(context.system)
   val removalMargin = cluster.downingProvider.downRemovalMargin
+  val minMembers = settings.role match {
+    case None ⇒
+      cluster.settings.MinNrOfMembers
+    case Some(r) ⇒
+      cluster.settings.MinNrOfMembersOfRole.getOrElse(r, cluster.settings.MinNrOfMembers)
+  }
+  var allRegionsRegistered = false
 
   var state = State.empty.withRememberEntities(settings.rememberEntities)
   var rebalanceInProgress = Set.empty[ShardId]
@@ -429,18 +437,16 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       if (isMember(region)) {
         log.debug("ShardRegion registered: [{}]", region)
         aliveRegions += region
-        if (state.regions.contains(region))
+        if (state.regions.contains(region)) {
           region ! RegisterAck(self)
-        else {
+          allocateShardHomesForRememberEntities()
+        } else {
           gracefulShutdownInProgress -= region
           update(ShardRegionRegistered(region)) { evt ⇒
-            val firstRegion = state.regions.isEmpty
             state = state.updated(evt)
             context.watch(region)
             region ! RegisterAck(self)
-
-            if (firstRegion)
-              allocateShardHomes()
+            allocateShardHomesForRememberEntities()
           }
         }
       } else {
@@ -460,7 +466,11 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       }
 
     case GetShardHome(shard) ⇒
-      if (!rebalanceInProgress.contains(shard)) {
+      if (rebalanceInProgress.contains(shard)) {
+        log.debug("GetShardHome [{}] request ignored, because rebalance is in progress for this shard.", shard)
+      } else if (!hasAllRegionsRegistered()) {
+        log.debug("GetShardHome [{}] request ignored, because not all regions have registered yet.", shard)
+      } else {
         state.shards.get(shard) match {
           case Some(ref) ⇒
             if (regionTerminationInProgress(ref))
@@ -534,7 +544,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
           update(ShardHomeDeallocated(shard)) { evt ⇒
             state = state.updated(evt)
             log.debug("Shard [{}] deallocated", evt.shard)
-            allocateShardHomes()
+            allocateShardHomesForRememberEntities()
           }
         } else // rebalance not completed, graceful shutdown will be retried
           gracefulShutdownInProgress -= state.shards(shard)
@@ -638,7 +648,16 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
 
   def stateInitialized(): Unit = {
     state.shards.foreach { case (a, r) ⇒ sendHostShardMsg(a, r) }
-    allocateShardHomes()
+    allocateShardHomesForRememberEntities()
+  }
+
+  def hasAllRegionsRegistered(): Boolean = {
+    // the check is only for startup, i.e. once all have registered we don't check more
+    if (allRegionsRegistered) true
+    else {
+      allRegionsRegistered = aliveRegions.size >= minMembers
+      allRegionsRegistered
+    }
   }
 
   def regionTerminated(ref: ActorRef): Unit =
@@ -651,7 +670,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
         gracefulShutdownInProgress -= ref
         regionTerminationInProgress -= ref
         aliveRegions -= ref
-        allocateShardHomes()
+        allocateShardHomesForRememberEntities()
       }
     }
 
@@ -673,8 +692,8 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
     unAckedHostShards = unAckedHostShards.updated(shard, cancel)
   }
 
-  def allocateShardHomes(): Unit = {
-    if (settings.rememberEntities)
+  def allocateShardHomesForRememberEntities(): Unit = {
+    if (settings.rememberEntities && state.unallocatedShards.nonEmpty)
       state.unallocatedShards.foreach { self ! GetShardHome(_) }
   }
 
@@ -822,7 +841,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
   val initEmptyState = State.empty.withRememberEntities(settings.rememberEntities)
 
-  node.subscribe(self, ClusterShuttingDown.getClass)
+  node.subscribe(self, ClusterEvent.InitialStateAsEvents, ClusterShuttingDown.getClass)
 
   // get state from ddata replicator, repeat until GetSuccess
   getState()

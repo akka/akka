@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.stream._
 import akka.stream.Supervision.resumingDecider
+import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.Utils._
 import org.reactivestreams.Publisher
@@ -257,6 +258,40 @@ class FlowSplitAfterSpec extends StreamSpec {
         val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
         s1.cancel()
         masterSubscriber.expectComplete()
+      }
+    }
+
+    "work when last element is split-by" in assertAllStagesStopped {
+      new SubstreamsSupport(splitAfter = 3, elementCount = 3) {
+        val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
+        masterSubscriber.expectNoMsg(100.millis)
+
+        s1.request(3)
+        s1.expectNext(1)
+        s1.expectNext(2)
+        s1.expectNext(3)
+        s1.expectComplete()
+
+        masterSubscription.request(1)
+        masterSubscriber.expectComplete()
+      }
+    }
+
+    "fail stream if substream not materialized in time" in assertAllStagesStopped {
+      val tightTimeoutMaterializer =
+        ActorMaterializer(ActorMaterializerSettings(system)
+          .withSubscriptionTimeoutSettings(
+            StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 500.millisecond)))
+
+      val testSource = Source.single(1).concat(Source.maybe).splitAfter(_ ⇒ true)
+
+      a[SubscriptionTimeoutException] mustBe thrownBy {
+        Await.result(
+          testSource.lift
+            .delay(1.second)
+            .flatMapConcat(identity)
+            .runWith(Sink.ignore)(tightTimeoutMaterializer),
+          3.seconds)
       }
     }
 

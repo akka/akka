@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com/>
  */
 package akka.typed
 package internal
@@ -139,6 +139,7 @@ private[typed] object WatchableRef {
 private[typed] class FutureRef[-T](_p: a.ActorPath, bufferSize: Int, f: Future[ActorRef[T]]) extends WatchableRef[T](_p) {
   import FutureRef._
 
+  // Keep in synch with `targetOffset` in companion (could also change on mixing in a trait).
   @volatile private[this] var _target: Either[ArrayList[T], ActorRef[T]] = Left(new ArrayList[T])
 
   f.onComplete {
@@ -190,5 +191,12 @@ private[typed] class FutureRef[-T](_p: a.ActorPath, bufferSize: Int, f: Future[A
 }
 
 private[typed] object FutureRef {
-  val targetOffset = unsafe.objectFieldOffset(classOf[FutureRef[_]].getDeclaredField("akka$typed$internal$FutureRef$$_target"))
+  val targetOffset = {
+    val fields = classOf[FutureRef[_]].getDeclaredFields.toList
+    // On Scala 2.12, the field's name is exactly "_target" (and it's private), earlier Scala versions compile the val to a public field that's name mangled to "akka$typed$internal$FutureRef$$_target"
+    val targetField = fields.find(_.getName.endsWith("_target"))
+    assert(targetField.nonEmpty, s"Could not find _target field in FutureRef class among fields $fields.")
+
+    unsafe.objectFieldOffset(targetField.get)
+  }
 }

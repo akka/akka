@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster.ddata;
 
@@ -58,8 +58,11 @@ message VersionVector {
 
 message ORMap {
   message Entry {
-    required string key = 1;
+    optional string stringKey = 1;
     required OtherMessage value = 2;
+    optional sint32 intKey = 3;
+    optional sint64 longKey = 4;
+    optional OtherMessage otherKey = 5;
   }
   
   required ORSet keys = 1;
@@ -68,8 +71,11 @@ message ORMap {
 
 message LWWMap {
   message Entry {
-    required string key = 1;
+    optional string stringKey = 1;
     required LWWRegister value = 2;
+    optional sint32 intKey = 3;
+    optional sint64 longKey = 4;
+    optional OtherMessage otherKey = 5;
   }
   
   required ORSet keys = 1;
@@ -78,8 +84,11 @@ message LWWMap {
 
 message PNCounterMap {
   message Entry {
-    required string key = 1;
+    optional string stringKey = 1;
     required PNCounter value = 2;
+    optional sint32 intKey = 3;
+    optional sint64 longKey = 4;
+    optional OtherMessage otherKey = 5;
   }
   
   required ORSet keys = 1;
@@ -88,8 +97,11 @@ message PNCounterMap {
 
 message ORMultiMap {
   message Entry {
-    required string key = 1;
+    optional string stringKey = 1;
     required ORSet value = 2;
+    optional sint32 intKey = 3;
+    optional sint64 longKey = 4;
+    optional OtherMessage otherKey = 5;
   }
   
   required ORSet keys = 1;

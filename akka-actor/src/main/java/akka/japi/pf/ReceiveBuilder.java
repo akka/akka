@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.japi.pf;
@@ -34,6 +34,16 @@ package akka.japi.pf;
  */
 public class ReceiveBuilder {
   private ReceiveBuilder() {
+  }
+
+  /**
+   * Return a new {@link UnitPFBuilder} with no case statements. They can be added later as the returned {@link
+   * UnitPFBuilder} is a mutable object.
+   *
+   * @return a builder with no case statements
+   */
+  public static UnitPFBuilder<Object> create() {
+    return new UnitPFBuilder<>();
   }
 
   /**

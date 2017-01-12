@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.util
@@ -309,6 +309,23 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteString1.fromString("0123456789").drop(1).take(2) should ===(ByteString("12"))
       ByteString1.fromString("0123456789").drop(5).take(4).drop(1).take(2) should ===(ByteString("67"))
     }
+    "dropRight" in {
+      ByteString1.empty.dropRight(-1) should ===(ByteString(""))
+      ByteString1.empty.dropRight(0) should ===(ByteString(""))
+      ByteString1.empty.dropRight(1) should ===(ByteString(""))
+      ByteString1.fromString("a").dropRight(-1) should ===(ByteString("a"))
+      ByteString1.fromString("a").dropRight(0) should ===(ByteString("a"))
+      ByteString1.fromString("a").dropRight(1) should ===(ByteString(""))
+      ByteString1.fromString("a").dropRight(2) should ===(ByteString(""))
+      ByteString1.fromString("abc").dropRight(-1) should ===(ByteString("abc"))
+      ByteString1.fromString("abc").dropRight(0) should ===(ByteString("abc"))
+      ByteString1.fromString("abc").dropRight(1) should ===(ByteString("ab"))
+      ByteString1.fromString("abc").dropRight(2) should ===(ByteString("a"))
+      ByteString1.fromString("abc").dropRight(3) should ===(ByteString(""))
+      ByteString1.fromString("abc").dropRight(4) should ===(ByteString(""))
+      ByteString1.fromString("0123456789").dropRight(1).take(2) should ===(ByteString("01"))
+      ByteString1.fromString("0123456789").dropRight(5).take(4).drop(1).take(2) should ===(ByteString("12"))
+    }
     "take" in {
       ByteString1.empty.take(-1) should ===(ByteString(""))
       ByteString1.empty.take(0) should ===(ByteString(""))
@@ -340,6 +357,23 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteString1C.fromString("abc").drop(4) should ===(ByteString(""))
       ByteString1C.fromString("0123456789").drop(1).take(2) should ===(ByteString("12"))
       ByteString1C.fromString("0123456789").drop(5).take(4).drop(1).take(2) should ===(ByteString("67"))
+    }
+    "dropRight" in {
+      ByteString1C.fromString("").dropRight(-1) should ===(ByteString(""))
+      ByteString1C.fromString("").dropRight(0) should ===(ByteString(""))
+      ByteString1C.fromString("").dropRight(1) should ===(ByteString(""))
+      ByteString1C.fromString("a").dropRight(-1) should ===(ByteString("a"))
+      ByteString1C.fromString("a").dropRight(0) should ===(ByteString("a"))
+      ByteString1C.fromString("a").dropRight(1) should ===(ByteString(""))
+      ByteString1C.fromString("a").dropRight(2) should ===(ByteString(""))
+      ByteString1C.fromString("abc").dropRight(-1) should ===(ByteString("abc"))
+      ByteString1C.fromString("abc").dropRight(0) should ===(ByteString("abc"))
+      ByteString1C.fromString("abc").dropRight(1) should ===(ByteString("ab"))
+      ByteString1C.fromString("abc").dropRight(2) should ===(ByteString("a"))
+      ByteString1C.fromString("abc").dropRight(3) should ===(ByteString(""))
+      ByteString1C.fromString("abc").dropRight(4) should ===(ByteString(""))
+      ByteString1C.fromString("0123456789").dropRight(1).take(2) should ===(ByteString("01"))
+      ByteString1C.fromString("0123456789").dropRight(5).take(4).drop(1).take(2) should ===(ByteString("12"))
     }
     "take" in {
       ByteString1.fromString("abcdefg").drop(1).take(0) should ===(ByteString(""))
@@ -392,6 +426,48 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteString("0123456789").drop(5).drop(3).take(1) should ===(ByteString("8"))
       (ByteString1C.fromString("a") ++ ByteString1.fromString("bc")).drop(2) should ===(ByteString("c"))
     }
+    "dropRight" in {
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(Int.MinValue) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(-1) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(0) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(1) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("")).dropRight(Int.MaxValue) should ===(ByteString(""))
+
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(Int.MinValue) should ===(ByteString("a"))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(-1) should ===(ByteString("a"))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(0) should ===(ByteString("a"))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(1) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(2) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(Int.MaxValue) should ===(ByteString(""))
+
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(Int.MinValue) should ===(ByteString("a"))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(-1) should ===(ByteString("a"))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(0) should ===(ByteString("a"))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(1) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(2) should ===(ByteString(""))
+      ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).dropRight(Int.MaxValue) should ===(ByteString(""))
+
+      val bss = ByteStrings(Vector(
+        ByteString1.fromString("a"),
+        ByteString1.fromString("bc"),
+        ByteString1.fromString("def")))
+
+      bss.dropRight(Int.MinValue) should ===(ByteString("abcdef"))
+      bss.dropRight(-1) should ===(ByteString("abcdef"))
+      bss.dropRight(0) should ===(ByteString("abcdef"))
+      bss.dropRight(1) should ===(ByteString("abcde"))
+      bss.dropRight(2) should ===(ByteString("abcd"))
+      bss.dropRight(3) should ===(ByteString("abc"))
+      bss.dropRight(4) should ===(ByteString("ab"))
+      bss.dropRight(5) should ===(ByteString("a"))
+      bss.dropRight(6) should ===(ByteString(""))
+      bss.dropRight(7) should ===(ByteString(""))
+      bss.dropRight(Int.MaxValue) should ===(ByteString(""))
+
+      ByteString("0123456789").dropRight(5).take(2) should ===(ByteString("01"))
+      ByteString("0123456789").dropRight(5).drop(3).take(1) should ===(ByteString("3"))
+      (ByteString1C.fromString("a") ++ ByteString1.fromString("bc")).dropRight(2) should ===(ByteString("a"))
+    }
     "slice" in {
       ByteStrings(ByteString1.fromString(""), ByteString1.fromString("a")).slice(1, 1) should ===(ByteString(""))
       // We explicitly test all edge cases to always test them, refs bug #21237
@@ -436,16 +512,6 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       // Get an empty if `from` is greater than `until`
       ByteStrings(ByteString1.fromString("ab"), ByteString1.fromString("cd")).slice(4, 0) should ===(ByteString(""))
     }
-    "dropRight" in {
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(0) should ===(ByteString("a"))
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(-1) should ===(ByteString("a"))
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(Int.MinValue) should ===(ByteString("a"))
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(1) should ===(ByteString(""))
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("")).dropRight(Int.MaxValue) should ===(ByteString(""))
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).dropRight(1) should ===(ByteString("ab"))
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).dropRight(2) should ===(ByteString("a"))
-      ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).dropRight(3) should ===(ByteString(""))
-    }
     "take" in {
       ByteString.empty.take(-1) should ===(ByteString(""))
       ByteString.empty.take(0) should ===(ByteString(""))
@@ -457,6 +523,82 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(2).take(1) should ===(ByteString("c"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).take(100) should ===(ByteString("abc"))
       ByteStrings(ByteString1.fromString("a"), ByteString1.fromString("bc")).drop(1).take(100) should ===(ByteString("bc"))
+    }
+    "indexOf" in {
+      ByteString.empty.indexOf(5) should ===(-1)
+      val byteString1 = ByteString1.fromString("abc")
+      byteString1.indexOf('a') should ===(0)
+      byteString1.indexOf('b') should ===(1)
+      byteString1.indexOf('c') should ===(2)
+      byteString1.indexOf('d') should ===(-1)
+
+      val byteStrings = ByteStrings(ByteString1.fromString("abc"), ByteString1.fromString("efg"))
+      byteStrings.indexOf('a') should ===(0)
+      byteStrings.indexOf('c') should ===(2)
+      byteStrings.indexOf('d') should ===(-1)
+      byteStrings.indexOf('e') should ===(3)
+      byteStrings.indexOf('f') should ===(4)
+      byteStrings.indexOf('g') should ===(5)
+
+      val compact = byteStrings.compact
+      compact.indexOf('a') should ===(0)
+      compact.indexOf('c') should ===(2)
+      compact.indexOf('d') should ===(-1)
+      compact.indexOf('e') should ===(3)
+      compact.indexOf('f') should ===(4)
+      compact.indexOf('g') should ===(5)
+
+    }
+    "indexOf from offset" in {
+      ByteString.empty.indexOf(5, -1) should ===(-1)
+      ByteString.empty.indexOf(5, 0) should ===(-1)
+      ByteString.empty.indexOf(5, 1) should ===(-1)
+      val byteString1 = ByteString1.fromString("abc")
+      byteString1.indexOf('d', -1) should ===(-1)
+      byteString1.indexOf('d', 0) should ===(-1)
+      byteString1.indexOf('d', 1) should ===(-1)
+      byteString1.indexOf('d', 4) should ===(-1)
+      byteString1.indexOf('a', -1) should ===(0)
+      byteString1.indexOf('a', 0) should ===(0)
+      byteString1.indexOf('a', 1) should ===(-1)
+
+      val byteStrings = ByteStrings(ByteString1.fromString("abc"), ByteString1.fromString("efg"))
+      byteStrings.indexOf('c', -1) should ===(2)
+      byteStrings.indexOf('c', 0) should ===(2)
+      byteStrings.indexOf('c', 2) should ===(2)
+      byteStrings.indexOf('c', 3) should ===(-1)
+
+      byteStrings.indexOf('e', -1) should ===(3)
+      byteStrings.indexOf('e', 0) should ===(3)
+      byteStrings.indexOf('e', 1) should ===(3)
+      byteStrings.indexOf('e', 4) should ===(-1)
+      byteStrings.indexOf('e', 6) should ===(-1)
+
+      byteStrings.indexOf('g', -1) should ===(5)
+      byteStrings.indexOf('g', 0) should ===(5)
+      byteStrings.indexOf('g', 1) should ===(5)
+      byteStrings.indexOf('g', 4) should ===(5)
+      byteStrings.indexOf('g', 5) should ===(5)
+      byteStrings.indexOf('g', 6) should ===(-1)
+
+      val compact = byteStrings.compact
+      compact.indexOf('c', -1) should ===(2)
+      compact.indexOf('c', 0) should ===(2)
+      compact.indexOf('c', 2) should ===(2)
+      compact.indexOf('c', 3) should ===(-1)
+
+      compact.indexOf('e', -1) should ===(3)
+      compact.indexOf('e', 0) should ===(3)
+      compact.indexOf('e', 1) should ===(3)
+      compact.indexOf('e', 4) should ===(-1)
+      compact.indexOf('e', 6) should ===(-1)
+
+      compact.indexOf('g', -1) should ===(5)
+      compact.indexOf('g', 0) should ===(5)
+      compact.indexOf('g', 1) should ===(5)
+      compact.indexOf('g', 4) should ===(5)
+      compact.indexOf('g', 5) should ===(5)
+      compact.indexOf('g', 6) should ===(-1)
     }
   }
 
@@ -524,6 +666,12 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           a.asByteBuffers.zip(a.getByteBuffers().asScala).forall(x ⇒ x._1 == x._2)
         }
       }
+
+      "toString should start with ByteString(" in {
+        check { (bs: ByteString) ⇒
+          bs.toString.startsWith("ByteString(")
+        }
+      }
     }
     "behave like a Vector" when {
       "concatenating" in { check { (a: ByteString, b: ByteString) ⇒ likeVectors(a, b) { _ ++ _ } } }
@@ -551,6 +699,10 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "calling dropWhile" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.dropWhile(_ != b) } } }
       "calling indexWhere" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.indexWhere(_ == b) } } }
       "calling indexOf" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.indexOf(b) } } }
+      // this actually behave weird for Vector and negative indexes - SI9936, fixed in Scala 2.12
+      // so let's just skip negative indexes (doesn't make much sense anyway)
+      "calling indexOf(elem, idx)" in { check { (a: ByteString, b: Byte, idx: Int) ⇒ likeVector(a) { _.indexOf(b, math.max(0, idx)) } } }
+
       "calling foreach" in { check { a: ByteString ⇒ likeVector(a) { it ⇒ var acc = 0; it foreach { acc += _ }; acc } } }
       "calling foldLeft" in { check { a: ByteString ⇒ likeVector(a) { _.foldLeft(0) { _ + _ } } } }
       "calling toArray" in { check { a: ByteString ⇒ likeVector(a) { _.toArray.toSeq } } }

@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.persistence.query.javadsl
 
 import akka.NotUsed
+import akka.persistence.query.{ EventEnvelope, Offset }
 import akka.stream.javadsl.Source
-import akka.persistence.query.EventEnvelope
 
 /**
  * A plugin may optionally support this query by implementing this interface.
@@ -35,6 +35,6 @@ trait EventsByTagQuery extends ReadJournal {
    * Corresponding query that is completed when it reaches the end of the currently
    * stored events is provided by [[CurrentEventsByTagQuery#currentEventsByTag]].
    */
-  def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed]
+  def eventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed]
 
 }

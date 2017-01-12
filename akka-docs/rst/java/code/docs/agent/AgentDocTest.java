@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package docs.agent;
 
 import static org.junit.Assert.*;
 
+import docs.AbstractJavaTest;
 import org.junit.Test;
 
 import scala.concurrent.Await;
@@ -24,7 +25,7 @@ import scala.concurrent.duration.Duration;
     import scala.concurrent.Future;
 //#import-future
 
-public class AgentDocTest {
+public class AgentDocTest extends docs.AbstractJavaTest {
 
   private static ExecutionContext ec = ExecutionContexts.global();
 

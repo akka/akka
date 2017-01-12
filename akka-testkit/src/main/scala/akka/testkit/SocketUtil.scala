@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.testkit
 
@@ -8,6 +8,8 @@ import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.nio.channels.DatagramChannel
 import java.nio.channels.ServerSocketChannel
+import java.net.NetworkInterface
+import java.net.StandardProtocolFamily
 
 /**
  * Utilities to get free socket address.
@@ -35,6 +37,19 @@ object SocketUtil {
       serverSocket.bind(new InetSocketAddress(hostname, 0))
       (serverSocket, new InetSocketAddress(hostname, serverSocket.getLocalPort))
     } collect { case (socket, address) ⇒ socket.close(); address }
+  }
+
+  def temporaryServerHostnameAndPort(interface: String = "127.0.0.1"): (String, Int) = {
+    val socketAddress = temporaryServerAddress(interface)
+    socketAddress.getHostString → socketAddress.getPort
+  }
+
+  def temporaryUdpIpv6Port(iface: NetworkInterface) = {
+    val serverSocket = DatagramChannel.open(StandardProtocolFamily.INET6).socket()
+    serverSocket.bind(new InetSocketAddress(iface.getInetAddresses.nextElement(), 0))
+    val port = serverSocket.getLocalPort
+    serverSocket.close()
+    port
   }
 
 }

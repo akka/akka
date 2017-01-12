@@ -1,46 +1,27 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
-import scala.concurrent.duration._
-import akka.actor.{ Actor, ActorIdentity, ActorSystem, Deploy, ExtendedActorSystem, Identify, Props, RootActorPath }
-import akka.testkit.{ AkkaSpec, ImplicitSender }
-import com.typesafe.config.ConfigFactory
-import akka.actor.Actor.Receive
+import akka.actor.{ Actor, ActorIdentity, ActorRef, ActorSystem, Deploy, Identify, PoisonPill, Props, RootActorPath }
 import akka.remote.RARP
-import akka.testkit.TestActors
-import akka.actor.PoisonPill
-import akka.testkit.TestProbe
-import akka.actor.ActorRef
-import com.typesafe.config.Config
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestActors, TestProbe }
+import com.typesafe.config.{ Config, ConfigFactory }
 
-object RemoteSendConsistencySpec {
+import scala.concurrent.duration._
 
-  val config = ConfigFactory.parseString(s"""
-     akka {
-       actor.provider = remote
-       remote.artery.enabled = on
-       remote.artery.canonical.hostname = localhost
-       remote.artery.canonical.port = 0
-     }
-  """)
-
-}
-
-class RemoteSendConsistencySpec extends AbstractRemoteSendConsistencySpec(RemoteSendConsistencySpec.config)
+class RemoteSendConsistencySpec extends AbstractRemoteSendConsistencySpec(ArterySpecSupport.defaultConfig)
 
 class RemoteSendConsistencyWithThreeLanesSpec extends AbstractRemoteSendConsistencySpec(
   ConfigFactory.parseString("""
       akka.remote.artery.advanced.outbound-lanes = 3
       akka.remote.artery.advanced.inbound-lanes = 3
-    """).withFallback(RemoteSendConsistencySpec.config))
+    """).withFallback(ArterySpecSupport.defaultConfig))
 
-abstract class AbstractRemoteSendConsistencySpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
+abstract class AbstractRemoteSendConsistencySpec(config: Config) extends ArteryMultiNodeSpec(config) with ImplicitSender {
 
-  val systemB = ActorSystem("systemB", system.settings.config)
-  val addressB = RARP(systemB).provider.getDefaultAddress
-  println(addressB)
+  val systemB = newRemoteSystem(name = Some("systemB"))
+  val addressB = address(systemB)
   val rootB = RootActorPath(addressB)
 
   "Artery" must {
@@ -136,7 +117,5 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config) extends AkkaSpe
     }
 
   }
-
-  override def afterTermination(): Unit = shutdown(systemB)
 
 }

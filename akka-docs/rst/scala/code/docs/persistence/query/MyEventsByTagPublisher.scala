@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.persistence.query
 
 import akka.actor.Props
 import akka.persistence.PersistentRepr
-import akka.persistence.query.EventEnvelope
+import akka.persistence.query.{ EventEnvelope, Sequence }
 import akka.serialization.SerializationExtension
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
@@ -81,7 +81,7 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
         buf = result.map {
           case (id, bytes) =>
             val p = serialization.deserialize(bytes, classOf[PersistentRepr]).get
-            EventEnvelope(offset = id, p.persistenceId, p.sequenceNr, p.payload)
+            EventEnvelope(offset = Sequence(id), p.persistenceId, p.sequenceNr, p.payload)
         }
       } catch {
         case e: Exception =>

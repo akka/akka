@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream
 
@@ -9,6 +9,18 @@ import scala.concurrent.ExecutionContextExecutor
 
 import scala.concurrent.duration.FiniteDuration
 
+/**
+ * Materializer SPI (Service Provider Interface)
+ *
+ * Binary compatibility is NOT guaranteed on materializer internals.
+ *
+ * Custom materializer implementations should be aware that the materializer SPI
+ * is not yet final and may change in patch releases of Akka. Please note that this
+ * does not impact end-users of Akka streams, only implementors of custom materializers,
+ * with whom the Akka team co-ordinates such changes.
+ *
+ * Once the SPI is final this notice will be removed.
+ */
 abstract class Materializer {
 
   /**
@@ -25,6 +37,13 @@ abstract class Materializer {
    * local actor chains to remote-deployed processing networks.
    */
   def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat
+
+  /**
+   * This method interprets the given Flow description and creates the running
+   * stream using an explicitly provided [[Attributes]] as top level attributes. The result can be highly
+   * implementation specific, ranging from local actor chains to remote-deployed processing networks.
+   */
+  def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat
 
   /**
    * Running a flow graph will require execution resources, as will computations
@@ -62,6 +81,9 @@ private[akka] object NoMaterializer extends Materializer {
     throw new UnsupportedOperationException("NoMaterializer cannot be named")
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
     throw new UnsupportedOperationException("NoMaterializer cannot materialize")
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat =
+    throw new UnsupportedOperationException("NoMaterializer cannot materialize")
+
   override def executionContext: ExecutionContextExecutor =
     throw new UnsupportedOperationException("NoMaterializer does not provide an ExecutionContext")
 

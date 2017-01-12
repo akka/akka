@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
 import akka.stream.{ ActorMaterializer, KillSwitches, ThrottleMode }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
+import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.testkit.EventFilter
 
 import scala.collection.immutable
@@ -170,7 +171,7 @@ class HubSpec extends StreamSpec {
     "keep working even if one of the producers fail" in assertAllStagesStopped {
       val (sink, result) = MergeHub.source[Int](16).take(10).toMat(Sink.seq)(Keep.both).run()
       EventFilter.error("Upstream producer failed with exception").intercept {
-        Source.failed(TE("faling")).runWith(sink)
+        Source.failed(TE("failing")).runWith(sink)
         Source(1 to 10).runWith(sink)
       }
 
@@ -333,6 +334,24 @@ class HubSpec extends StreamSpec {
       Thread.sleep(10)
 
       source.runWith(Sink.seq).futureValue should ===(Nil)
+    }
+
+    "remember completion for materialisations after completion" in {
+
+      val (sourceProbe, source) = TestSource.probe[Unit].toMat(BroadcastHub.sink)(Keep.both).run()
+      val sinkProbe = source.runWith(TestSink.probe[Unit])
+
+      sourceProbe.sendComplete()
+
+      sinkProbe.request(1)
+      sinkProbe.expectComplete()
+
+      // Materialize a second time. There was a race here, where we managed to enqueue our Source registration just
+      // immediately before the Hub shut down.
+      val sink2Probe = source.runWith(TestSink.probe[Unit])
+
+      sink2Probe.request(1)
+      sink2Probe.expectComplete()
     }
 
     "properly singal error to consumers arriving after producer finished" in assertAllStagesStopped {

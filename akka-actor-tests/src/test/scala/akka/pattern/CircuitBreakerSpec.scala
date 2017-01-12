@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.pattern
@@ -82,7 +82,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.openLatch)
       breaker().succeed()
-      checkLatch(breaker.openLatch)
+      breaker().isOpen should ===(true)
     }
 
     "still be in open state after calling fail method" in {
@@ -90,7 +90,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.openLatch)
       breaker().fail()
-      checkLatch(breaker.openLatch)
+      breaker().isOpen should ===(true)
     }
   }
 
@@ -107,6 +107,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       val breaker = CircuitBreakerSpec.shortResetTimeoutCb()
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.halfOpenLatch)
+      breaker.openLatch.reset
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.openLatch)
     }
@@ -115,6 +116,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       val breaker = CircuitBreakerSpec.shortResetTimeoutCb()
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.halfOpenLatch)
+      breaker.openLatch.reset
       breaker().fail()
       checkLatch(breaker.openLatch)
     }
@@ -225,6 +227,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       checkLatch(breaker.halfOpenLatch)
 
       // transit to open again
+      breaker.openLatch.reset
       breaker().withCircuitBreaker(Future(throwException))
       checkLatch(breaker.openLatch)
 
@@ -249,6 +252,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       val breaker = CircuitBreakerSpec.shortResetTimeoutCb()
       breaker().withCircuitBreaker(Future(throwException))
       checkLatch(breaker.halfOpenLatch)
+      breaker.openLatch.reset
       intercept[TestException] { Await.result(breaker().withCircuitBreaker(Future(throwException)), awaitTimeout) }
       checkLatch(breaker.openLatch)
     }
@@ -258,6 +262,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       breaker().withCircuitBreaker(Future(throwException))
       checkLatch(breaker.halfOpenLatch)
 
+      breaker.openLatch.reset
       breaker().withCircuitBreaker(Future(throwException))
       checkLatch(breaker.openLatch)
     }

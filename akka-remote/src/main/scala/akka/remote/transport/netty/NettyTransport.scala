@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.transport.netty
 
@@ -280,7 +280,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   @volatile private var boundTo: Address = _
   @volatile private var serverChannel: Channel = _
 
-  private val log = Logging(system, this.getClass)
+  private val log = Logging.withMarker(system, this.getClass)
 
   /**
    * INTERNAL API

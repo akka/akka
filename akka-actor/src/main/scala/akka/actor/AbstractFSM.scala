@@ -1,8 +1,10 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.actor
+
+import akka.annotation.ApiMayChange
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -11,6 +13,7 @@ import scala.concurrent.duration.FiniteDuration
  *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
+@ApiMayChange
 object AbstractFSM {
   /**
    * A partial function value which does not match anything and can be used to

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.persistence.query
 
@@ -8,7 +8,7 @@ package akka.persistence.query
  * [[akka.persistence.query.scaladsl.EventsByTagQuery]] query, or similar queries.
  */
 final case class EventEnvelope(
-  offset:        Long,
+  offset:        Offset,
   persistenceId: String,
   sequenceNr:    Long,
   event:         Any)

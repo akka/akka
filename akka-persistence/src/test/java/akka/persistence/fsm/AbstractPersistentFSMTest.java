@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.persistence.fsm;
@@ -126,7 +126,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
-            new Within(duration("0.9 seconds"), duration("1.9 seconds")) {
+            new Within(duration("0.9 seconds"), remainingOrDefault()) {
                 @Override
                 protected void run() {
                     PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
@@ -134,7 +134,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 }
             };
 
-            new Within(duration("1.9 seconds"), duration("2.9 seconds")) {
+            new Within(duration("1.9 seconds"), remainingOrDefault()) {
                 @Override
                 protected void run() {
                     expectTerminated(fsmRef);
@@ -312,7 +312,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.SHOPPING);
 
-            new Within(duration("0.9 seconds"), duration("1.9 seconds")) {
+            new Within(duration("0.9 seconds"), remainingOrDefault()) {
                 @Override
                 protected void run() {
                     PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
@@ -331,7 +331,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.INACTIVE);
 
-            new Within(duration("1.9 seconds"), duration("2.9 seconds")) {
+            new Within(duration("1.9 seconds"), remainingOrDefault()) {
                 @Override
                 protected void run() {
                     expectTerminated(recoveredFsmRef2);

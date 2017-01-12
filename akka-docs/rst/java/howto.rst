@@ -85,19 +85,3 @@ Finally we are able to execute an actor and receive the results or exceptions.
 
 .. includecode:: code/docs/pattern/SupervisedAskSpec.java
 
-Template Pattern
-================
-
-*Contributed by: N. N.*
-
-This is an especially nice pattern, since it does even come with some empty example code:
-
-.. includecode:: code/docs/pattern/JavaTemplate.java
-   :include: all-of-it
-   :exclude: uninteresting-stuff
-
-.. note::
-
-   Spread the word: this is the easiest way to get famous!
-
-Please keep this pattern at the end of this file.

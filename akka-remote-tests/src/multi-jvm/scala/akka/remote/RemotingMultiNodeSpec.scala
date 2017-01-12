@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote
 
@@ -12,9 +12,10 @@ import org.scalatest.{ Outcome, Suite }
 
 object RemotingMultiNodeSpec {
 
-  def arteryFlightRecordingConf =
+  def commonConfig =
     ConfigFactory.parseString(
       s"""
+        akka.actor.warn-about-java-serializer-usage = off
         akka.remote.artery.advanced.flight-recorder {
           enabled=on
           destination=target/flight-recorder-${UUID.randomUUID().toString}.afr

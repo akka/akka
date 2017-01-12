@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.routing
 
@@ -27,7 +27,7 @@ final class RoundRobinRoutingLogic extends RoutingLogic {
     if (routees.nonEmpty) {
       val size = routees.size
       val index = (next.getAndIncrement % size).asInstanceOf[Int]
-      routees(if (index < 0) size + index - 1 else index)
+      routees(if (index < 0) size + index else index)
     } else NoRoutee
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -153,7 +153,7 @@ class QueueSinkSpec extends StreamSpec {
       expectMsg(Some(1))
 
       queue.pull().pipeTo(testActor)
-      expectNoMsg() // element requested but buffer empty
+      expectNoMsg(200.millis) // element requested but buffer empty
       sub.sendNext(2)
       expectMsg(Some(2))
 

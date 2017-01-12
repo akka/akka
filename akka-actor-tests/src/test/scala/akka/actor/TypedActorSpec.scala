@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.actor
 
@@ -31,6 +31,7 @@ object TypedActorSpec {
         fixed-pool-size = 60
       }
     }
+    akka.actor.serialize-messages = off
     """
 
   class CyclicIterator[T](val items: immutable.Seq[T]) extends Iterator[T] {

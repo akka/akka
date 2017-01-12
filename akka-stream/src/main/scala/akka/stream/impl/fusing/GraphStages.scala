@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl.fusing
 
@@ -75,11 +75,8 @@ object GraphStages {
   /**
    * INTERNAL API
    */
-  final class Detacher[T] extends GraphStage[FlowShape[T, T]] {
-    val in = Inlet[T]("Detacher.in")
-    val out = Outlet[T]("Detacher.out")
+  final class Detacher[T] extends SimpleLinearGraphStage[T] {
     override def initialAttributes = DefaultAttributes.detacher
-    override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
 
@@ -326,6 +323,42 @@ object GraphStages {
       }
 
     override def toString: String = "FutureSource"
+  }
+
+  /**
+   * INTERNAL API
+   * Discards all received elements.
+   */
+  object IgnoreSink extends GraphStageWithMaterializedValue[SinkShape[Any], Future[Done]] {
+
+    val in = Inlet[Any]("Ignore.in")
+    val shape = SinkShape(in)
+
+    override def initialAttributes = DefaultAttributes.ignoreSink
+
+    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+      val promise = Promise[Done]()
+      val logic = new GraphStageLogic(shape) with InHandler {
+
+        override def preStart(): Unit = pull(in)
+        override def onPush(): Unit = pull(in)
+
+        override def onUpstreamFinish(): Unit = {
+          super.onUpstreamFinish()
+          promise.trySuccess(Done)
+        }
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          super.onUpstreamFailure(ex)
+          promise.tryFailure(ex)
+        }
+
+        setHandler(in, this)
+      }
+
+      (logic, promise.future)
+    }
+
   }
 
   /**

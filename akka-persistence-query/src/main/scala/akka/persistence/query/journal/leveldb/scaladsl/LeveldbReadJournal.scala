@@ -1,25 +1,21 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.persistence.query.journal.leveldb.scaladsl
 
 import java.net.URLEncoder
 
 import akka.NotUsed
-
-import scala.concurrent.duration._
-
 import akka.actor.ExtendedActorSystem
-import akka.persistence.query.EventEnvelope
-import akka.persistence.query.journal.leveldb.AllPersistenceIdsPublisher
-import akka.persistence.query.journal.leveldb.EventsByPersistenceIdPublisher
-import akka.persistence.query.journal.leveldb.EventsByTagPublisher
-import akka.persistence.query.scaladsl._
-import akka.persistence.query.scaladsl.ReadJournal
-import akka.serialization.SerializationExtension
+import akka.event.Logging
+import akka.persistence.query.journal.leveldb.{ AllPersistenceIdsPublisher, EventsByPersistenceIdPublisher, EventsByTagPublisher }
+import akka.persistence.query.scaladsl.{ ReadJournal, _ }
+import akka.persistence.query.{ EventEnvelope, Offset, Sequence }
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.config.Config
+
+import scala.concurrent.duration._
 
 /**
  * Scala API [[akka.persistence.query.scaladsl.ReadJournal]] implementation for LevelDB.
@@ -36,14 +32,10 @@ import com.typesafe.config.Config
  * for the default [[LeveldbReadJournal#Identifier]]. See `reference.conf`.
  */
 class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends ReadJournal
-  with AllPersistenceIdsQuery
-  with CurrentPersistenceIdsQuery
-  with EventsByPersistenceIdQuery
-  with CurrentEventsByPersistenceIdQuery
-  with EventsByTagQuery
-  with CurrentEventsByTagQuery {
+  with PersistenceIdsQuery with CurrentPersistenceIdsQuery
+  with EventsByPersistenceIdQuery with CurrentEventsByPersistenceIdQuery
+  with EventsByTagQuery with CurrentEventsByTagQuery {
 
-  private val serialization = SerializationExtension(system)
   private val refreshInterval = Some(config.getDuration("refresh-interval", MILLISECONDS).millis)
   private val writeJournalPluginId: String = config.getString("write-plugin")
   private val maxBufSize: Int = config.getInt("max-buffer-size")
@@ -66,9 +58,8 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def allPersistenceIds(): Source[String, NotUsed] = {
-    // no polling for this query, the write journal will push all changes, i.e.
-    // no refreshInterval
+  override def persistenceIds(): Source[String, NotUsed] = {
+    // no polling for this query, the write journal will push all changes, i.e. no refreshInterval
     Source.actorPublisher[String](AllPersistenceIdsPublisher.props(liveQuery = true, maxBufSize, writeJournalPluginId))
       .mapMaterializedValue(_ ⇒ NotUsed)
       .named("allPersistenceIds")
@@ -97,7 +88,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    *
    * The returned event stream is ordered by sequence number, i.e. the same order as the
    * `PersistentActor` persisted the events. The same prefix of stream elements (in same order)
-   *  are returned for multiple executions of the query, except for when events have been deleted.
+   * are returned for multiple executions of the query, except for when events have been deleted.
    *
    * The stream is not completed when it reaches the end of the currently stored events,
    * but it continues to push new events when new events are persisted.
@@ -165,22 +156,33 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * The stream is completed with failure if there is a failure in executing the query in the
    * backend journal.
    */
-  override def eventsByTag(tag: String, offset: Long = 0L): Source[EventEnvelope, NotUsed] = {
-    Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offset, Long.MaxValue,
-      refreshInterval, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
-      .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
-  }
+  override def eventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
+    offset match {
+      case seq: Sequence ⇒
+        Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, seq.value, Long.MaxValue,
+          refreshInterval, maxBufSize, writeJournalPluginId))
+          .mapMaterializedValue(_ ⇒ NotUsed)
+          .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+
+      case _ ⇒
+        throw new IllegalArgumentException("LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")
+    }
 
   /**
    * Same type of query as [[#eventsByTag]] but the event stream
    * is completed immediately when it reaches the end of the "result set". Events that are
    * stored after the query is completed are not included in the event stream.
    */
-  override def currentEventsByTag(tag: String, offset: Long = 0L): Source[EventEnvelope, NotUsed] = {
-    Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, offset, Long.MaxValue,
-      None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
-      .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
-  }
+  override def currentEventsByTag(tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] =
+    offset match {
+      case seq: Sequence ⇒
+        Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, seq.value, Long.MaxValue,
+          None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
+          .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
+
+      case _ ⇒
+        throw new IllegalArgumentException("LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")
+    }
 
 }
 

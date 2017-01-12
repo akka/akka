@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -13,11 +13,10 @@ import akka.actor.LocalRef
 import akka.actor.PossiblyHarmful
 import akka.actor.RepointableRef
 import akka.dispatch.sysmsg.SystemMessage
-import akka.event.Logging
+import akka.event.{ LogMarker, Logging, LoggingReceive }
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteRef
 import akka.util.OptionVal
-import akka.event.LoggingReceive
 
 /**
  * INTERNAL API
@@ -27,17 +26,20 @@ private[remote] class MessageDispatcher(
   provider: RemoteActorRefProvider) {
 
   private val remoteDaemon = provider.remoteDaemon
-  private val log = Logging(system, getClass.getName)
+  private val log = Logging.withMarker(system, getClass.getName)
   private val debugLogEnabled = log.isDebugEnabled
 
-  def dispatch(
-    recipient:     InternalActorRef,
-    message:       AnyRef,
-    senderOption:  OptionVal[ActorRef],
-    originAddress: OptionVal[Address]): Unit = {
-
+  def dispatch(inboundEnvelope: InboundEnvelope): Unit = {
     import provider.remoteSettings.Artery._
     import Logging.messageClassName
+
+    val recipient = inboundEnvelope.recipient.get
+    val message = inboundEnvelope.message
+    val senderOption = inboundEnvelope.sender
+    val originAddress = inboundEnvelope.association match {
+      case OptionVal.Some(a) ⇒ OptionVal.Some(a.remoteAddress)
+      case OptionVal.None    ⇒ OptionVal.None
+    }
 
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
     val originalReceiver = recipient.path
@@ -47,6 +49,7 @@ private[remote] class MessageDispatcher(
       case `remoteDaemon` ⇒
         if (UntrustedMode) {
           if (debugLogEnabled) log.debug(
+            LogMarker.Security,
             "dropping daemon message [{}] in untrusted mode",
             messageClassName(message))
         } else {
@@ -65,6 +68,7 @@ private[remote] class MessageDispatcher(
             if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
               sel.msg.isInstanceOf[PossiblyHarmful] || l != provider.rootGuardian)) {
               if (debugLogEnabled) log.debug(
+                LogMarker.Security,
                 "operating in UntrustedMode, dropping inbound actor selection to [{}], " +
                   "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
                 sel.elements.mkString("/", "/", ""))
@@ -73,6 +77,7 @@ private[remote] class MessageDispatcher(
               ActorSelection.deliverSelection(l, sender, sel)
           case msg: PossiblyHarmful if UntrustedMode ⇒
             if (debugLogEnabled) log.debug(
+              LogMarker.Security,
               "operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}] to [{}] from [{}]",
               messageClassName(msg), recipient, senderOption.getOrElse(originAddress.getOrElse("")))
           case msg: SystemMessage ⇒ l.sendSystemMessage(msg)

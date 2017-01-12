@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.actorlambda;
@@ -357,6 +357,22 @@ public class ActorDocTest extends AbstractJavaTest {
       new JavaTestKit(system) {
         {
           myActor.tell("hello", getRef());
+          expectMsgEquals("hello");
+        }
+      };
+    } finally {
+      JavaTestKit.shutdownActorSystem(system);
+    }
+  }
+
+  @Test
+  public void creatingGraduallyBuiltActorWithSystemActorOf() {
+    final ActorSystem system = ActorSystem.create("MySystem", config);
+    final ActorRef actor = system.actorOf(Props.create(GraduallyBuiltActor.class), "graduallyBuiltActor");
+    try {
+      new JavaTestKit(system) {
+        {
+          actor.tell("hello", getRef());
           expectMsgEquals("hello");
         }
       };

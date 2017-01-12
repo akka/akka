@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.serialization
@@ -339,8 +339,12 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
   val ser = SerializationExtension(system)
 
   "Cross-version serialization compatibility" must {
-    def verify(obj: SystemMessage, asExpected: String): Unit =
-      String.valueOf(ser.serialize(obj).map(encodeHex).get) should ===(asExpected)
+    def verify(obj: SystemMessage, asExpected: String): Unit = {
+      val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(asExpected)
+      val stream = new ObjectInputStream(new ByteArrayInputStream(bytes))
+      val read = stream.readObject()
+      read should ===(obj)
+    }
 
     "be preserved for the Create SystemMessage" in {
       // Using null as the cause to avoid a large serialized message and JDK differences

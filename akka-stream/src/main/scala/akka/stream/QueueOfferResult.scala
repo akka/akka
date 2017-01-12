@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream
 
@@ -16,9 +16,19 @@ object QueueOfferResult {
   final case object Enqueued extends QueueOfferResult
 
   /**
+   * Java API: The `Enqueued` singleton instance
+   */
+  def enqueued: QueueOfferResult = Enqueued
+
+  /**
    * Type is used to indicate that stream is dropped an element
    */
   final case object Dropped extends QueueOfferResult
+
+  /**
+   * Java API: The `Enqueued` singleton instance
+   */
+  def dropped: QueueOfferResult = Dropped
 
   /**
    * Type is used to indicate that stream is failed before or during call to the stream

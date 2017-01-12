@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka
 
@@ -14,21 +14,20 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
+  val sslConfigVersion = "0.2.1"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.8"), // "2.12.0-RC1"
+    crossScalaVersions := Seq("2.11.8"), // "2.12.0"
     scalaVersion := crossScalaVersions.value.head,
-    scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7"),
-    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.2"),
-    scalaTestVersion := {
-      scalaVersion.value match {
-        case "2.12.0-M5" => "3.0.0"
-        case _ => "3.0.0"
-      }
-    },
+    scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
+    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
+      if (scalaVersion.value.startsWith("2.12")) "1.13.4" // does not work for 2.11
+      else "1.13.2"
+    ),
+    scalaTestVersion := "3.0.0",
     java8CompatVersion := {
       scalaVersion.value match {
-        case x if x.startsWith("2.12.0-RC1") => "0.8.0-RC7"
+        case x if x.startsWith("2.12") => "0.8.0"
         case _ => "0.7.0"
       }
     }
@@ -61,22 +60,18 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "1.0.0" // CC0
 
     // ssl-config
-    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.1"       // ApacheV2
-
-    // For akka-http spray-json support
-    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.2"       // ApacheV2
-
-    // For akka-http-jackson support
-    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.7.6"       // ApacheV2
-
+    val sslConfigCore = "com.typesafe"                %% "ssl-config-core"             % sslConfigVersion // ApacheV2
+    
+    val lmdb          = "org.lmdbjava"                % "lmdbjava"                     % "0.0.4" // ApacheV2, OpenLDAP Public License
+    
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
     // For Java 8 Conversions
     val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
     
-    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.1"       // ApacheV2
-    val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.1"       // ApacheV2
+    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.5"       // ApacheV2
+    val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.5"       // ApacheV2
 
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
@@ -112,8 +107,6 @@ object Dependencies {
       // sigar logging
       val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"    % "test"    // MIT
       val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"    % "test"    // MIT
-
-      lazy val sprayJson = Compile.sprayJson % "test"
 
       // reactive streams tck
       val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.0" % "test" // CC0
@@ -151,7 +144,7 @@ object Dependencies {
 
   val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
 
-  val distributedData = l ++= Seq(Test.junit, Test.scalatest.value)
+  val distributedData = l ++= Seq(lmdb, Test.junit, Test.scalatest.value)
 
   val slf4j = l ++= Seq(slf4jApi, Test.logback)
 
@@ -177,38 +170,11 @@ object Dependencies {
 
   val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
-  // akka stream & http
-
-  lazy val httpCore = l ++= Seq(
-    Test.sprayJson, // for WS Autobahn test metadata
-    Test.junitIntf, Test.junit, Test.scalatest.value)
-
-  lazy val http = l ++= Nil
-
-  // special, since it also includes a compiler plugin
-  lazy val parsing = Seq(
-    DependencyHelpers.versionDependentDeps(
-      Dependencies.Compile.scalaReflect % "provided"
-    ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
-  )
-
-  lazy val httpTestkit = l ++= Seq(
-    Test.junit, Test.junitIntf, Compile.junit % "provided", Test.scalatest.value.copy(configurations = Some("provided; test")))
-
-  // TODO collapse those
-  lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
-  lazy val httpTestsJava8 = l ++= Seq(Test.junit, Test.junitIntf)
-
-  lazy val httpXml = versionDependentDeps(scalaXml)
-
-  lazy val httpSprayJson = versionDependentDeps(sprayJson)
-
-  lazy val httpJackson = l ++= Seq(jackson)
+  // akka stream
 
   lazy val stream = l ++= Seq[sbt.ModuleID](
-    sslConfigAkka,
     reactiveStreams,
+    sslConfigCore,
     Test.junitIntf,
     Test.scalatest.value)
 

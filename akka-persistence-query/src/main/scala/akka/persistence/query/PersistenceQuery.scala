@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.persistence.query
 
@@ -82,11 +82,18 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
     def instantiate(args: collection.immutable.Seq[(Class[_], AnyRef)]) =
       system.dynamicAccess.createInstanceFor[ReadJournalProvider](pluginClass, args)
 
-    instantiate((classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
+    instantiate((classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) ::
+      (classOf[String], configPath) :: Nil)
+      .recoverWith {
+        case x: NoSuchMethodException ⇒ instantiate(
+          (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
+      }
       .recoverWith { case x: NoSuchMethodException ⇒ instantiate((classOf[ExtendedActorSystem], system) :: Nil) }
       .recoverWith { case x: NoSuchMethodException ⇒ instantiate(Nil) }
       .recoverWith {
-        case ex: Exception ⇒ Failure.apply(new IllegalArgumentException(s"Unable to create read journal plugin instance for path [$configPath], class [$pluginClassName]!", ex))
+        case ex: Exception ⇒ Failure.apply(
+          new IllegalArgumentException("Unable to create read journal plugin instance for path " +
+            s"[$configPath], class [$pluginClassName]!", ex))
       }.get
   }
 

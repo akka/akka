@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  * Copyright (C) 2012-2016 Eligotech BV.
  */
 
@@ -207,6 +207,12 @@ private[persistence] object SnapshotProtocol {
    */
   final case class LoadSnapshotResult(snapshot: Option[SelectedSnapshot], toSequenceNr: Long)
     extends Response
+
+  /**
+   * Reply message to a failed [[LoadSnapshot]] request.
+   * @param cause failure cause.
+   */
+  final case class LoadSnapshotFailed(cause: Throwable) extends Response
 
   /**
    * Instructs snapshot store to save a snapshot.

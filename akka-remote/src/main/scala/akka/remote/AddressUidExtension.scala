@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote
 
@@ -39,11 +39,14 @@ class AddressUidExtension(val system: ExtendedActorSystem) extends Extension {
     else tlr.nextInt().toLong
   }
 
-  // used by old remoting and part of public api
-  @deprecated("Use longAddressUid instead", "2.4.x")
-  lazy val addressUid: Int = {
+  // private because GenJavaDoc fails on deprecated annotated lazy val
+  private lazy val _addressUid: Int = {
     if (arteryEnabled) {
       throw new IllegalStateException("Int UID must never be used with Artery")
     } else longAddressUid.toInt
   }
+
+  // used by old remoting and part of public api
+  @deprecated("Use longAddressUid instead", "2.4.x")
+  def addressUid: Int = _addressUid
 }

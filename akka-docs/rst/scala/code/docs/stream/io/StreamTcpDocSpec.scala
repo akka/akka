@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package docs.stream.io
 
@@ -11,9 +11,9 @@ import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.ByteString
-import docs.utils.TestUtils
 
 import scala.concurrent.Future
+import akka.testkit.SocketUtil
 
 class StreamTcpDocSpec extends AkkaSpec {
 
@@ -37,7 +37,7 @@ class StreamTcpDocSpec extends AkkaSpec {
       //#echo-server-simple-bind
     }
     {
-      val (host, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
       //#echo-server-simple-handle
       import akka.stream.scaladsl.Framing
 
@@ -62,7 +62,7 @@ class StreamTcpDocSpec extends AkkaSpec {
   }
 
   "initial server banner echo server" in {
-    val localhost = TestUtils.temporaryServerAddress()
+    val localhost = SocketUtil.temporaryServerAddress()
     val connections = Tcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
     val serverProbe = TestProbe()
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl
 
@@ -7,8 +7,6 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes._
 import akka.stream.Supervision.Decider
 import akka.stream._
-import akka.stream.stage.AbstractStage.PushPullGraphStage
-import akka.stream.stage.Stage
 
 /**
  * INTERNAL API
@@ -16,7 +14,7 @@ import akka.stream.stage.Stage
 object Stages {
 
   object DefaultAttributes {
-    val IODispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+    val IODispatcher = ActorAttributes.IODispatcher
     val inputBufferOne = inputBuffer(initial = 1, max = 1)
 
     val fused = name("fused")
@@ -39,6 +37,7 @@ object Stages {
     val takeWhile = name("takeWhile")
     val dropWhile = name("dropWhile")
     val scan = name("scan")
+    val scanAsync = name("scanAsync")
     val fold = name("fold")
     val foldAsync = name("foldAsync")
     val reduce = name("reduce")
@@ -126,6 +125,7 @@ object Stages {
     val actorSubscriberSink = name("actorSubscriberSink")
     val queueSink = name("queueSink")
     val lazySink = name("lazySink")
+    val lazySource = name("lazySource")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher
     val fileSink = name("fileSink") and IODispatcher
@@ -133,30 +133,5 @@ object Stages {
   }
 
   import DefaultAttributes._
-
-  /*
-   * Stage that is backed by a GraphStage but can be symbolically introspected
-   */
-  case class SymbolicGraphStage[-In, +Out, Ext](symbolicStage: SymbolicStage[In, Out])
-    extends PushPullGraphStage[In, Out, Ext](
-      symbolicStage.create,
-      symbolicStage.attributes) {
-  }
-
-  sealed trait SymbolicStage[-In, +Out] {
-    def attributes: Attributes
-    def create(effectiveAttributes: Attributes): Stage[In, Out]
-
-    // FIXME: No supervision hooked in yet.
-
-    protected def supervision(attributes: Attributes): Decider =
-      attributes.get[SupervisionStrategy](SupervisionStrategy(Supervision.stoppingDecider)).decider
-
-  }
-
-  final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy, attributes: Attributes = buffer) extends SymbolicStage[T, T] {
-    require(size > 0, s"Buffer size must be larger than zero but was [$size]")
-    override def create(attr: Attributes): Stage[T, T] = fusing.Buffer(size, overflowStrategy)
-  }
 
 }

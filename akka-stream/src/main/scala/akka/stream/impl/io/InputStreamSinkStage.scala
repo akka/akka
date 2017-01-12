@@ -1,18 +1,20 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl.io
 
 import java.io.{ IOException, InputStream }
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingDeque, TimeUnit }
+
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.InputStreamSinkStage._
 import akka.stream.stage._
+import akka.stream.{ Attributes, Inlet, SinkShape }
 import akka.util.ByteString
+
 import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
-import akka.stream.{ Inlet, SinkShape, Attributes }
 
 private[stream] object InputStreamSinkStage {
 
@@ -115,7 +117,7 @@ private[akka] class InputStreamAdapter(
   @scala.throws(classOf[IOException])
   override def read(): Int = {
     val a = Array[Byte](1)
-    if (read(a, 0, 1) != -1) a(0)
+    if (read(a, 0, 1) != -1) a(0) & 0xff
     else -1
   }
 
@@ -199,7 +201,8 @@ private[akka] class InputStreamAdapter(
     if (!isInitialized) {
       sharedBuffer.poll(readTimeout.toMillis, TimeUnit.MILLISECONDS) match {
         case Initialized ⇒ isInitialized = true
-        case _           ⇒ require(false, "First message must be Initialized notification")
+        case null        ⇒ throw new IOException(s"Timeout after $readTimeout waiting for Initialized message from stage")
+        case entry       ⇒ require(false, s"First message must be Initialized notification, got $entry")
       }
     }
   }

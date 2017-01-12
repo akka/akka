@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster.ddata
 
@@ -57,7 +57,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
   val KeyE2 = GCounterKey("E2")
   val KeyF = GCounterKey("F")
   val KeyG = ORSetKey[String]("G")
-  val KeyH = ORMapKey[Flag]("H")
+  val KeyH = ORMapKey[String, Flag]("H")
   val KeyI = GSetKey[String]("I")
   val KeyJ = GSetKey[String]("J")
   val KeyX = GCounterKey("X")
@@ -526,20 +526,20 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
 
     runOn(second) {
       replicator ! Subscribe(KeyH, changedProbe.ref)
-      replicator ! Update(KeyH, ORMap.empty[Flag], writeTwo)(_ + ("a" → Flag(enabled = false)))
+      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ + ("a" → Flag(enabled = false)))
       changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(Map("a" → Flag(enabled = false)))
     }
 
     enterBarrier("update-h1")
 
     runOn(first) {
-      replicator ! Update(KeyH, ORMap.empty[Flag], writeTwo)(_ + ("a" → Flag(enabled = true)))
+      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ + ("a" → Flag(enabled = true)))
     }
 
     runOn(second) {
       changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(Map("a" → Flag(enabled = true)))
 
-      replicator ! Update(KeyH, ORMap.empty[Flag], writeTwo)(_ + ("b" → Flag(enabled = true)))
+      replicator ! Update(KeyH, ORMap.empty[String, Flag], writeTwo)(_ + ("b" → Flag(enabled = true)))
       changedProbe.expectMsgPF() { case c @ Changed(KeyH) ⇒ c.get(KeyH).entries } should be(
         Map("a" → Flag(enabled = true), "b" → Flag(enabled = true)))
     }

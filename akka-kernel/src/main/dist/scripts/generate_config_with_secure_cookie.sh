@@ -4,7 +4,7 @@ exec scala "$0" "$@"
 !#
 
 /**
- * Copyright (C) 2009-2015 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 import java.security.{MessageDigest, SecureRandom}
 

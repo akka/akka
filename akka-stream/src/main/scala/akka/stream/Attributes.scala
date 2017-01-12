@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream
 
@@ -65,10 +65,8 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   def getAttribute[T <: Attribute](c: Class[T]): Optional[T] =
     Optional.ofNullable(attributeList.foldLeft(
-      null.asInstanceOf[T]
-    )(
-      (acc, attr) ⇒ if (c.isInstance(attr)) c.cast(attr) else acc)
-    )
+      null.asInstanceOf[T])(
+      (acc, attr) ⇒ if (c.isInstance(attr)) c.cast(attr) else acc))
 
   /**
    * Java API: Get the first (least specific) attribute of a given `Class` or subclass thereof.
@@ -98,7 +96,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * If no such attribute exists the `default` value is returned.
    */
   def getFirst[T <: Attribute: ClassTag](default: T): T =
-    getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]], default)
+    getFirstAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]], default)
 
   /**
    * Scala API: Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
@@ -251,6 +249,8 @@ object ActorAttributes {
   import Attributes._
   final case class Dispatcher(dispatcher: String) extends Attribute
   final case class SupervisionStrategy(decider: Supervision.Decider) extends Attribute
+
+  val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
 
   /**
    * Specifies the name of the dispatcher.

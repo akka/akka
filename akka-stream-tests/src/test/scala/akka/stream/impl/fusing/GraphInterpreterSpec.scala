@@ -1,12 +1,11 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl.fusing
 
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
 import akka.stream.{ OverflowStrategy, Attributes }
-import akka.stream.stage.AbstractStage.PushPullGraphStage
 import akka.stream.scaladsl.{ Merge, Broadcast, Balance, Zip }
 import GraphInterpreter._
 
@@ -341,13 +340,11 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     "implement buffer" in new TestSetup {
       val source = new UpstreamProbe[String]("source")
       val sink = new DownstreamProbe[String]("sink")
-      val buffer = new PushPullGraphStage[String, String, NotUsed](
-        (_) ⇒ new Buffer[String](2, OverflowStrategy.backpressure),
-        Attributes.none)
+      val buffer = Buffer[String](2, OverflowStrategy.backpressure)
 
       builder(buffer)
-        .connect(source, buffer.shape.in)
-        .connect(buffer.shape.out, sink)
+        .connect(source, buffer.in)
+        .connect(buffer.out, sink)
         .init()
 
       stepAll()

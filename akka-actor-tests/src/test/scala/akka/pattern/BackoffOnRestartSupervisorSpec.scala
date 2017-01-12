@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.pattern
@@ -13,9 +13,13 @@ import akka.actor._
 import scala.language.postfixOps
 
 object TestActor {
+
   class TestException(msg: String) extends Exception(msg)
+
   class StoppingException extends TestException("stopping exception")
+
   class NormalException extends TestException("normal exception")
+
   def props(probe: ActorRef): Props = Props(new TestActor(probe))
 }
 
@@ -36,6 +40,7 @@ object TestParentActor {
   def props(probe: ActorRef, supervisorProps: Props): Props =
     Props(new TestParentActor(probe, supervisorProps))
 }
+
 class TestParentActor(probe: ActorRef, supervisorProps: Props) extends Actor {
   val supervisor = context.actorOf(supervisorProps)
 
@@ -48,7 +53,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
 
   def supervisorProps(probeRef: ActorRef) = {
     val options = Backoff.onFailure(TestActor.props(probeRef), "someChildName", 200 millis, 10 seconds, 0.0)
-      .withSupervisorStrategy(OneForOneStrategy() {
+      .withSupervisorStrategy(OneForOneStrategy(maxNrOfRetries = 4, withinTimeRange = 30 seconds) {
         case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
       })
     BackoffSupervisor.props(options)
@@ -168,6 +173,55 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
         expectMsgType[BackoffSupervisor.CurrentChild].ref.get should !==(child)
       }
 
+    }
+
+    "respect maxNrOfRetries property of OneForOneStrategy" in new Setup {
+      filterException[TestActor.TestException] {
+        probe.watch(supervisor)
+        // Have the child throw an exception 5 times, which is more than the max restarts allowed.
+        for (i ← 1 to 5) {
+          supervisor ! "THROW"
+          if (i < 5) {
+            // Since we should've died on this throw, don't expect to be started.
+            // We're not testing timing, so set a reasonably high timeout.
+            probe.expectMsg(4 seconds, "STARTED")
+          }
+        }
+        // Supervisor should've terminated.
+        probe.expectTerminated(supervisor)
+      }
+    }
+
+    "respect withinTimeRange property of OneForOneStrategy" in {
+      val probe = TestProbe()
+      // withinTimeRange indicates the time range in which maxNrOfRetries will cause the child to
+      // stop. IE: If we restart more than maxNrOfRetries in a time range longer than withinTimeRange
+      // that is acceptable.
+      val options = Backoff.onFailure(TestActor.props(probe.ref), "someChildName", 300 millis, 10 seconds, 0.0)
+        .withSupervisorStrategy(OneForOneStrategy(withinTimeRange = 1 seconds, maxNrOfRetries = 3) {
+          case _: TestActor.StoppingException ⇒ SupervisorStrategy.Stop
+        })
+      val supervisor = system.actorOf(BackoffSupervisor.props(options))
+      probe.expectMsg("STARTED")
+      filterException[TestActor.TestException] {
+        probe.watch(supervisor)
+        // Throw three times rapidly
+        for (i ← 1 to 3) {
+          supervisor ! "THROW"
+          probe.expectMsg("STARTED")
+        }
+        // Now wait the length of our window, and throw again. We should still restart.
+        Thread.sleep(1000)
+        supervisor ! "THROW"
+        probe.expectMsg("STARTED")
+        // Now we'll issue three more requests, and should be terminated.
+        supervisor ! "THROW"
+        probe.expectMsg("STARTED")
+        supervisor ! "THROW"
+        probe.expectMsg("STARTED")
+        supervisor ! "THROW"
+        probe.expectTerminated(supervisor)
+      }
     }
   }
 }

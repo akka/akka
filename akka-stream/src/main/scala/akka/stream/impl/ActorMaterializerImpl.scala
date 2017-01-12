@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl
 
@@ -38,6 +38,14 @@ abstract class ExtendedActorMaterializer extends ActorMaterializer {
   def materialize[Mat](
     _runnableGraph: Graph[ClosedShape, Mat],
     subflowFuser:   GraphInterpreterShell ⇒ ActorRef): Mat
+
+  /**
+   * INTERNAL API
+   */
+  def materialize[Mat](
+    _runnableGraph:    Graph[ClosedShape, Mat],
+    subflowFuser:      GraphInterpreterShell ⇒ ActorRef,
+    initialAttributes: Attributes): Mat
 
   /**
    * INTERNAL API
@@ -109,7 +117,7 @@ private[akka] case class ActorMaterializerImpl(
 
   private[this] def createFlowName(): String = flowNames.next()
 
-  private val initialAttributes = Attributes(
+  private val defaultInitialAttributes = Attributes(
     Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
       ActorAttributes.Dispatcher(settings.dispatcher) ::
       ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
@@ -135,11 +143,19 @@ private[akka] case class ActorMaterializerImpl(
     system.scheduler.scheduleOnce(delay, task)(executionContext)
 
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
-    materialize(_runnableGraph, null)
+    materialize(_runnableGraph, null, defaultInitialAttributes)
+
+  override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat =
+    materialize(_runnableGraph, null, initialAttributes)
+
+  override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], subflowFuser: (GraphInterpreterShell) ⇒ ActorRef): Mat =
+    materialize(_runnableGraph, subflowFuser, defaultInitialAttributes)
 
   override def materialize[Mat](
-    _runnableGraph: Graph[ClosedShape, Mat],
-    subflowFuser:   GraphInterpreterShell ⇒ ActorRef): Mat = {
+    _runnableGraph:    Graph[ClosedShape, Mat],
+    subflowFuser:      GraphInterpreterShell ⇒ ActorRef,
+    initialAttributes: Attributes
+  ): Mat = {
     val runnableGraph =
       if (settings.autoFusing) Fusing.aggressive(_runnableGraph)
       else _runnableGraph
@@ -181,7 +197,7 @@ private[akka] case class ActorMaterializerImpl(
           case tls: TlsModule ⇒ // TODO solve this so TlsModule doesn't need special treatment here
             val es = effectiveSettings(effectiveAttributes)
             val props =
-              TLSActor.props(es, tls.sslContext, tls.sslConfig, tls.firstSession, tls.role, tls.closing, tls.hostInfo)
+              TLSActor.props(es, tls.createSSLEngine, tls.verifySession, tls.closing)
             val impl = actorOf(props, stageName(effectiveAttributes), es.dispatcher)
             def factory(id: Int) = new ActorPublisher[Any](impl) {
               override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
@@ -240,6 +256,9 @@ private[akka] case class ActorMaterializerImpl(
     session.materialize().asInstanceOf[Mat]
   }
 
+  override def makeLogger(logSource: Class[_]): LoggingAdapter =
+    Logging(system, logSource)
+
   override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher match {
     case Deploy.NoDispatcherGiven ⇒ Dispatchers.DefaultDispatcherId
     case other                    ⇒ other
@@ -251,6 +270,9 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
   override def executionContext: ExecutionContextExecutor = delegate.executionContext
 
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat = delegate.materialize(runnable, registerShell)
+
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat =
+    delegate.materialize(runnable, registerShell, initialAttributes)
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = delegate.scheduleOnce(delay, task)
 

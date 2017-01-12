@@ -9,11 +9,6 @@ While the general approach is very similar to the :ref:`Actor based TCP handling
 by using Akka Streams you are freed of having to manually react to back-pressure signals,
 as the library does it transparently for you.
 
-.. note::
-  If you are not familiar with Akka Streams basic concepts, like ``Source``, ``Sink`` and ``Flow``,
-  please refer to the :ref:`Streams section <streams-java>` of the document. Also higher level APIs like ``bind`` are
-  used in Akka HTTP too. So you may get some hints from the :ref:`Akka HTTP introduction <http-java>`.
-
 Streaming TCP
 =============
 
@@ -27,7 +22,7 @@ which will emit an :class:`IncomingConnection` element for each new connection t
 .. image:: ../../images/tcp-stream-bind.png
 
 Next, we simply handle *each* incoming connection using a :class:`Flow` which will be used as the processing stage
-to handle and emit ByteStrings from and to the TCP Socket. Since one :class:`ByteString` does not have to necessarily
+to handle and emit ``ByteString`` s from and to the TCP Socket. Since one :class:`ByteString` does not have to necessarily
 correspond to exactly one line of text (the client might be sending the line in chunks) we use the ``delimiter``
 helper Flow from ``akka.stream.javadsl.Framing`` to chunk the inputs up into actual lines of text. The last boolean
 argument indicates that we require an explicit line ending even for the last message before the connection is closed.
@@ -94,7 +89,7 @@ it makes sense to make the Server initiate the conversation by emitting a "hello
 .. includecode:: ../code/docs/stream/io/StreamTcpDocTest.java#welcome-banner-chat-server
 
 To emit the initial message we merge a ``Source`` with a single element, after the command processing but before the
-framing and transformation to ``ByteStrings`` this way we do not have to repeat such logic.
+framing and transformation to ``ByteString`` s this way we do not have to repeat such logic.
 
 In this example both client and server may need to close the stream based on a parsed command - ``BYE`` in the case
 of the server, and ``q`` in the case of the client. This is implemented by using a custom :class:`GraphStage`

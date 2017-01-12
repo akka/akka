@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package docs.stream
 
@@ -23,7 +23,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
   trait Fixture {
     //#authors
     val authors = Flow[Tweet]
-      .filter(_.hashtags.contains(akka))
+      .filter(_.hashtags.contains(akkaTag))
       .map(_.author)
 
     //#authors

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl
 
@@ -118,23 +118,6 @@ private[akka] final class FanoutPublisherSink[In](
 
   override def withAttributes(attr: Attributes): AtomicModule =
     new FanoutPublisherSink[In](attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
- * Attaches a subscriber to this stream which will just discard all received
- * elements.
- */
-final class SinkholeSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, Future[Done]](shape) {
-
-  override def create(context: MaterializationContext) = {
-    val effectiveSettings = ActorMaterializerHelper.downcast(context.materializer).effectiveSettings(context.effectiveAttributes)
-    val p = Promise[Done]()
-    (new SinkholeSubscriber[Any](p), p.future)
-  }
-
-  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Future[Done]] = new SinkholeSink(attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new SinkholeSink(attr, amendShape(attr))
 }
 
 /**

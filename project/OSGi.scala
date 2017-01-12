@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka
 
 import com.typesafe.sbt.osgi.OsgiKeys
 import com.typesafe.sbt.osgi.SbtOsgi._
+import com.typesafe.sbt.osgi.SbtOsgi.autoImport._
 import sbt._
 import sbt.Keys._
 
@@ -17,7 +18,9 @@ object OSGi {
     packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
     // This will fail the build instead of accidentally removing classes from the resulting artifact.
     // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
-    OsgiKeys.failOnUndecidedPackage := true 
+    OsgiKeys.failOnUndecidedPackage := true,
+    // By default an entry is generated from module group-id, but our modules do not adhere to such package naming
+    OsgiKeys.privatePackage := Seq()
   )
 
   val actor = osgiSettings ++ Seq(
@@ -81,7 +84,12 @@ object OSGi {
 
   val httpJackson = exports(Seq("akka.http.javadsl.marshallers.jackson"))
 
-  val stream = exports(Seq("akka.stream.*"), imports = Seq(scalaJava8CompatImport()))
+  val stream =
+    exports(
+      packages = Seq("akka.stream.*",
+                     "com.typesafe.sslconfig.akka.*"),
+      imports = Seq(scalaJava8CompatImport(), scalaParsingCombinatorImport())) ++
+      Seq(OsgiKeys.requireBundle := Seq(s"""com.typesafe.sslconfig;bundle-version="${Dependencies.sslConfigVersion}""""))
 
   val streamTestkit = exports(Seq("akka.stream.testkit.*"))
 
@@ -104,7 +112,8 @@ object OSGi {
     OsgiKeys.importPackage := imports ++ scalaVersion(defaultImports).value,
     OsgiKeys.exportPackage := packages
   )
-  def defaultImports(scalaVersion: String) = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(scalaVersion), "*")
+  def defaultImports(scalaVersion: String) = Seq("!sun.misc", akkaImport(), configImport(), "!scala.compat.java8.*",
+    "!scala.util.parsing.*", scalaImport(scalaVersion), "*")
   def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.4", "2.5")
   def configImport(packageName: String = "com.typesafe.config.*") = versionedImport(packageName, "1.3.0", "1.4.0")
   def scalaImport(version: String) = {
@@ -114,6 +123,7 @@ object OSGi {
     versionedImport(packageName, s"$epoch.$major", s"$epoch.${major.toInt+1}")
   }
   def scalaJava8CompatImport(packageName: String = "scala.compat.java8.*") = versionedImport(packageName, "0.7.0", "1.0.0")
+  def scalaParsingCombinatorImport(packageName: String = "scala.util.parsing.combinator.*") = versionedImport(packageName, "1.0.4", "1.1.0")
   def kamonImport(packageName: String = "kamon.sigar.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def sigarImport(packageName: String = "org.hyperic.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)

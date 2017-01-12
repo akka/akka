@@ -1,5 +1,5 @@
 /*
-   * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+   * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
    */
 
 package akka.persistence.query;
@@ -23,6 +23,6 @@ public class PersistenceQueryTest {
   public void shouldExposeJavaDSLFriendlyQueryJournal() throws Exception {
     final DummyJavaReadJournal readJournal = PersistenceQuery.get(system).getReadJournalFor(DummyJavaReadJournal.class,
         "noop-journal");
-    final akka.stream.javadsl.Source<String, NotUsed> ids = readJournal.allPersistenceIds();
+    final akka.stream.javadsl.Source<String, NotUsed> ids = readJournal.persistenceIds();
   }
 }

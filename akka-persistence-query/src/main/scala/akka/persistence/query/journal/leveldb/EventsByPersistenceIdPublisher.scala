@@ -1,19 +1,17 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.persistence.query.journal.leveldb
 
 import scala.concurrent.duration._
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.Props
+import akka.actor.{ ActorLogging, ActorRef, Cancellable, Props }
 import akka.persistence.JournalProtocol._
 import akka.persistence.Persistence
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.Cancel
 import akka.stream.actor.ActorPublisherMessage.Request
 import akka.persistence.journal.leveldb.LeveldbJournal
-import akka.persistence.query.EventEnvelope
+import akka.persistence.query.{ EventEnvelope, Sequence }
 
 /**
  * INTERNAL API
@@ -40,6 +38,7 @@ private[akka] object EventsByPersistenceIdPublisher {
 /**
  * INTERNAL API
  */
+// FIXME needs a be rewritten as a GraphStage (since 2.5.0)
 private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
   val persistenceId: String, val fromSequenceNr: Long,
   val maxBufSize: Int, val writeJournalPluginId: String)
@@ -89,7 +88,7 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
   def replaying(limit: Int): Receive = {
     case ReplayedMessage(p) ⇒
       buf :+= EventEnvelope(
-        offset = p.sequenceNr,
+        offset = Sequence(p.sequenceNr),
         persistenceId = persistenceId,
         sequenceNr = p.sequenceNr,
         event = p.payload)
@@ -120,6 +119,7 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
 /**
  * INTERNAL API
  */
+// FIXME needs a be rewritten as a GraphStage (since 2.5.0)
 private[akka] class LiveEventsByPersistenceIdPublisher(
   persistenceId: String, fromSequenceNr: Long, override val toSequenceNr: Long,
   refreshInterval: FiniteDuration,
@@ -128,7 +128,7 @@ private[akka] class LiveEventsByPersistenceIdPublisher(
     persistenceId, fromSequenceNr, maxBufSize, writeJournalPluginId) {
   import EventsByPersistenceIdPublisher._
 
-  val tickTask =
+  val tickTask: Cancellable =
     context.system.scheduler.schedule(refreshInterval, refreshInterval, self, Continue)(context.dispatcher)
 
   override def postStop(): Unit =

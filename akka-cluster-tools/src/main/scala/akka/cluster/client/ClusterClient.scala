@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster.client
 
@@ -812,12 +812,21 @@ object ClusterReceptionist {
      */
     class ClientResponseTunnel(client: ActorRef, timeout: FiniteDuration) extends Actor with ActorLogging {
       context.setReceiveTimeout(timeout)
+
+      private val isAsk = {
+        val pathElements = client.path.elements
+        pathElements.size == 2 && pathElements.head == "temp" && pathElements.tail.head.startsWith("$")
+      }
+
       def receive = {
         case Ping ⇒ // keep alive from client
         case ReceiveTimeout ⇒
           log.debug("ClientResponseTunnel for client [{}] stopped due to inactivity", client.path)
           context stop self
-        case msg ⇒ client.tell(msg, Actor.noSender)
+        case msg ⇒
+          client.tell(msg, Actor.noSender)
+          if (isAsk)
+            context stop self
       }
     }
   }

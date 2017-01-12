@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.persistence.fsm
@@ -71,7 +71,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       expectMsg(CurrentState(fsmRef, LookingAround, None))
       expectMsg(Transition(fsmRef, LookingAround, Shopping, Some(1 second)))
 
-      within(0.9 seconds, 1.9 seconds) {
+      within(0.9 seconds, remainingOrDefault) {
         expectMsg(Transition(fsmRef, Shopping, Inactive, Some(2 seconds)))
       }
 
@@ -201,7 +201,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
       expectMsg(CurrentState(recoveredFsmRef, Shopping, Some(1 second)))
 
-      within(0.9 seconds, 1.9 seconds) {
+      within(0.9 seconds, remainingOrDefault) {
         expectMsg(Transition(recoveredFsmRef, Shopping, Inactive, Some(2 seconds)))
       }
 

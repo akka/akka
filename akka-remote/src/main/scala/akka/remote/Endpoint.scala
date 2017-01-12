@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote
 
@@ -8,24 +8,26 @@ import akka.actor.SupervisorStrategy._
 import akka.actor.Terminated
 import akka.actor._
 import akka.dispatch.sysmsg.SystemMessage
-import akka.event.{ Logging, LoggingAdapter }
+import akka.event.{ LogMarker, Logging, LoggingAdapter, MarkerLoggingAdapter }
 import akka.pattern.pipe
-import akka.remote.EndpointManager.{ ResendState, Link, Send }
-import akka.remote.EndpointWriter.{ StoppedReading, FlushAndStop }
+import akka.remote.EndpointManager.{ Link, ResendState, Send }
+import akka.remote.EndpointWriter.{ FlushAndStop, StoppedReading }
 import akka.remote.WireFormats.SerializedMessage
 import akka.remote.transport.AkkaPduCodec.Message
-import akka.remote.transport.AssociationHandle.{ DisassociateInfo, ActorHandleEventListener, Disassociated, InboundPayload }
+import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, DisassociateInfo, Disassociated, InboundPayload }
 import akka.remote.transport.Transport.InvalidAssociationException
 import akka.remote.transport._
 import akka.serialization.Serialization
 import akka.util.ByteString
-import akka.{ OnlyCauseStackTrace, AkkaException }
+import akka.{ AkkaException, OnlyCauseStackTrace }
 import java.io.NotSerializableException
-import java.util.concurrent.{ TimeUnit, TimeoutException, ConcurrentHashMap }
+import java.util.concurrent.{ ConcurrentHashMap, TimeUnit, TimeoutException }
+
 import scala.annotation.tailrec
-import scala.concurrent.duration.{ Deadline }
+import scala.concurrent.duration.Deadline
 import scala.util.control.NonFatal
 import java.util.concurrent.locks.LockSupport
+
 import scala.concurrent.Future
 import akka.util.OptionVal
 import akka.util.OptionVal
@@ -47,7 +49,7 @@ private[remote] trait InboundMessageDispatcher {
 private[remote] class DefaultMessageDispatcher(
   private val system:   ExtendedActorSystem,
   private val provider: RemoteActorRefProvider,
-  private val log:      LoggingAdapter) extends InboundMessageDispatcher {
+  private val log:      MarkerLoggingAdapter) extends InboundMessageDispatcher {
 
   private val remoteDaemon = provider.remoteDaemon
 
@@ -69,7 +71,7 @@ private[remote] class DefaultMessageDispatcher(
     recipient match {
 
       case `remoteDaemon` ⇒
-        if (UntrustedMode) log.debug("dropping daemon message in untrusted mode")
+        if (UntrustedMode) log.debug(LogMarker.Security, "dropping daemon message in untrusted mode")
         else {
           if (LogReceive) log.debug("received daemon message {}", msgLog)
           remoteDaemon ! payload
@@ -82,6 +84,7 @@ private[remote] class DefaultMessageDispatcher(
             if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
               sel.msg.isInstanceOf[PossiblyHarmful] || l != provider.rootGuardian))
               log.debug(
+                LogMarker.Security,
                 "operating in UntrustedMode, dropping inbound actor selection to [{}], " +
                   "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
                 sel.elements.mkString("/", "/", ""))
@@ -89,7 +92,7 @@ private[remote] class DefaultMessageDispatcher(
               // run the receive logic for ActorSelectionMessage here to make sure it is not stuck on busy user actor
               ActorSelection.deliverSelection(l, sender, sel)
           case msg: PossiblyHarmful if UntrustedMode ⇒
-            log.debug("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}]", msg.getClass.getName)
+            log.debug(LogMarker.Security, "operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}]", msg.getClass.getName)
           case msg: SystemMessage ⇒ l.sendSystemMessage(msg)
           case msg                ⇒ l.!(msg)(sender)
         }
@@ -532,6 +535,7 @@ private[remote] class EndpointWriter(
   import EndpointWriter._
   import context.dispatcher
 
+  private val markLog = Logging.withMarker(this)
   val extendedSystem: ExtendedActorSystem = context.system.asInstanceOf[ExtendedActorSystem]
   val remoteMetrics = RemoteMetricsExtension(extendedSystem)
   val backoffDispatcher = context.system.dispatchers.lookup("akka.remote.backoff-remote-dispatcher")
@@ -550,7 +554,7 @@ private[remote] class EndpointWriter(
   }
 
   val provider = RARP(extendedSystem).provider
-  val msgDispatch = new DefaultMessageDispatcher(extendedSystem, provider, log)
+  val msgDispatch = new DefaultMessageDispatcher(extendedSystem, provider, markLog)
 
   val inbound = handle.isDefined
   var stopReason: DisassociateInfo = AssociationHandle.Unknown
@@ -980,7 +984,18 @@ private[remote] class EndpointReader(
           if (msg.reliableDeliveryEnabled) {
             ackedReceiveBuffer = ackedReceiveBuffer.receive(msg)
             deliverAndAck()
-          } else msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.senderOption)
+          } else try
+            msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.senderOption)
+          catch {
+            case e: NotSerializableException ⇒
+              val sm = msg.serializedMessage
+              log.warning(
+                "Serializer not defined for message with serializer id [{}] and manifest [{}]. " +
+                  "Transient association error (association remains live). {}",
+                sm.getSerializerId,
+                if (sm.hasMessageManifest) sm.getMessageManifest.toStringUtf8 else "",
+                e.getMessage)
+          }
 
         case None ⇒
       }

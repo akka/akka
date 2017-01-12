@@ -1,11 +1,13 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.{ ActorMaterializerSettings, ActorMaterializer }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
+import akka.stream._
 import akka.stream.testkit.Utils.assertAllStagesStopped
+
 import scala.concurrent._
 import scala.concurrent.duration._
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
@@ -163,6 +165,32 @@ class FlowFlattenMergeSpec extends StreamSpec {
       val elems = p.within(1.second)((1 to 1000).map(i ⇒ p.requestNext()).toSet)
       p.expectComplete()
       elems should ===((0 until 1000).toSet)
+    }
+
+    val attributesSource = Source.fromGraph(
+      new GraphStage[SourceShape[Attributes]] {
+        val out = Outlet[Attributes]("AttributesSource.out")
+        override val shape: SourceShape[Attributes] = SourceShape(out)
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
+          override def onPull(): Unit = {
+            push(out, inheritedAttributes)
+            completeStage()
+          }
+          setHandler(out, this)
+        }
+      }
+    )
+
+    "propagate attributes to inner streams" in assertAllStagesStopped {
+      val f = Source.single(attributesSource.addAttributes(Attributes.name("inner")))
+        .flatMapMerge(1, identity)
+        .addAttributes(Attributes.name("outer"))
+        .runWith(Sink.head)
+
+      val attributes = Await.result(f, 3.seconds).attributeList
+      attributes should contain(Attributes.Name("inner"))
+      attributes should contain(Attributes.Name("outer"))
+      attributes.indexOf(Attributes.Name("outer")) < attributes.indexOf(Attributes.Name("inner")) should be(true)
     }
 
   }

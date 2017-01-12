@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl.io
 
@@ -32,9 +32,6 @@ private[stream] object OutputStreamSourceStage {
   case object Ok extends DownstreamStatus
   case object Canceled extends DownstreamStatus
 
-  sealed trait StageWithCallback {
-    def wakeUp(msg: AdapterToStageMessage): Future[Unit]
-  }
 }
 
 final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SourceShape[ByteString], OutputStream] {
@@ -52,7 +49,9 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
     val dataQueue = new LinkedBlockingQueue[ByteString](maxBuffer)
     val downstreamStatus = new AtomicReference[DownstreamStatus](Ok)
 
-    val logic = new GraphStageLogic(shape) with StageWithCallback {
+    final class OutputStreamSourceLogic extends GraphStageLogic(shape)
+      with CallbackWrapper[(AdapterToStageMessage, Promise[Unit])] {
+
       var flush: Option[Promise[Unit]] = None
       var close: Option[Promise[Unit]] = None
 
@@ -68,9 +67,9 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       private val upstreamCallback: AsyncCallback[(AdapterToStageMessage, Promise[Unit])] =
         getAsyncCallback(onAsyncMessage)
 
-      override def wakeUp(msg: AdapterToStageMessage): Future[Unit] = {
+      def wakeUp(msg: AdapterToStageMessage): Future[Unit] = {
         val p = Promise[Unit]()
-        upstreamCallback.invoke((msg, p))
+        this.invoke((msg, p))
         p.future
       }
 
@@ -81,11 +80,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
             sendResponseIfNeed()
           case Close ⇒
             close = Some(event._2)
-            if (dataQueue.isEmpty) {
-              downstreamStatus.set(Canceled)
-              completeStage()
-              unblockUpstream()
-            } else sendResponseIfNeed()
+            sendResponseIfNeed()
         }
 
       private def unblockUpstream(): Boolean =
@@ -96,8 +91,10 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
             true
           case None ⇒ close match {
             case Some(p) ⇒
+              downstreamStatus.set(Canceled)
               p.complete(Success(()))
               close = None
+              completeStage()
               true
             case None ⇒ false
           }
@@ -115,6 +112,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       override def preStart(): Unit = {
         dispatcher = ActorMaterializerHelper.downcast(materializer).system.dispatchers.lookup(dispatcherId)
         super.preStart()
+        initCallback(upstreamCallback.invoke)
       }
 
       setHandler(out, new OutHandler {
@@ -151,6 +149,8 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
         super.postStop()
       }
     }
+
+    val logic = new OutputStreamSourceLogic
     (logic, new OutputStreamAdapter(dataQueue, downstreamStatus, logic.wakeUp, writeTimeout))
   }
 }

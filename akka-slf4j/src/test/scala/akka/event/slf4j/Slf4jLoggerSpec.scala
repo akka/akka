@@ -1,16 +1,17 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.event.slf4j
 
 import language.postfixOps
-
 import akka.testkit.AkkaSpec
-import akka.actor.{ DiagnosticActorLogging, Actor, Props }
+import akka.actor.{ Actor, DiagnosticActorLogging, Props }
+
 import scala.concurrent.duration._
-import akka.event.Logging
+import akka.event.{ LogMarker, Logging }
 import ch.qos.logback.core.OutputStreamAppender
 import java.io.ByteArrayOutputStream
+
 import org.scalatest.BeforeAndAfterEach
 
 object Slf4jLoggerSpec {
@@ -25,9 +26,12 @@ object Slf4jLoggerSpec {
     }
     """
 
-  case class StringWithMDC(s: String, mdc: Map[String, Any])
+  final case class StringWithMDC(s: String, mdc: Map[String, Any])
+  final case class StringWithMarker(s: String, marker: LogMarker)
 
-  class LogProducer extends Actor with DiagnosticActorLogging {
+  final class LogProducer extends Actor with DiagnosticActorLogging {
+
+    val markLog = Logging.withMarker(this)
 
     def receive = {
       case e: Exception ⇒
@@ -38,6 +42,8 @@ object Slf4jLoggerSpec {
         log.mdc(mdc)
         log.info(s)
         log.clearMDC()
+      case StringWithMarker(s, marker) ⇒
+        markLog.info(marker, s)
     }
   }
 
@@ -93,6 +99,15 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       s should include regex (sourceThreadRegex)
       s should include("msg=[test x=3 y=17]")
+    }
+
+    "log info with marker" in {
+      producer ! StringWithMarker("security-wise interesting message", LogMarker("SECURITY"))
+
+      awaitCond(outputString.contains("----"), 5 seconds)
+      val s = outputString
+      s should include("marker=[SECURITY]")
+      s should include("msg=[security-wise interesting message]")
     }
 
     "put custom MDC values when specified" in {

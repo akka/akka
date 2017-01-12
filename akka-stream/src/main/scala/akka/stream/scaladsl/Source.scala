@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -43,8 +43,14 @@ final class Source[+Out, +Mat](override val module: Module)
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
-    if (flow.module eq GraphStages.Identity.module) this.asInstanceOf[Source[T, Mat3]]
-    else {
+    if (flow.module eq GraphStages.Identity.module) {
+      if (combine eq Keep.left)
+        this.asInstanceOf[Source[T, Mat3]]
+      else if (combine eq Keep.right)
+        this.mapMaterializedValue((_) ⇒ NotUsed).asInstanceOf[Source[T, Mat3]]
+      else
+        this.mapMaterializedValue(combine(_, NotUsed.asInstanceOf[Mat2])).asInstanceOf[Source[T, Mat3]]
+    } else {
       val flowCopy = flow.module.carbonCopy
       new Source(
         module
@@ -356,6 +362,14 @@ object Source {
         shape("FailedSource")))
 
   /**
+   * Creates a `Source` that is not materialized until there is downstream demand, when the source gets materialized
+   * the materialized future is completed with its value, if downstream cancels or fails without any demand the
+   * create factory is never called and the materialized `Future` is failed.
+   */
+  def lazily[T, M](create: () ⇒ Source[T, M]): Source[T, Future[M]] =
+    Source.fromGraph(new LazySource[T, M](create))
+
+  /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
   def asSubscriber[T]: Source[T, Subscriber[T]] =
@@ -365,7 +379,10 @@ object Source {
    * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
    * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` must
    * be [[akka.stream.actor.ActorPublisher]].
+   *
+   * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
    */
+  @deprecated("Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
   def actorPublisher[T](props: Props): Source[T, ActorRef] = {
     require(classOf[ActorPublisher[_]].isAssignableFrom(props.actorClass()), "Actor must be ActorPublisher")
     new Source(new ActorPublisherSource(props, DefaultAttributes.actorPublisherSource, shape("ActorPublisherSource")))
@@ -398,7 +415,7 @@ object Source {
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
    *
-   * See also [[akka.stream.javadsl.Source.queue]].
+   * See also [[akka.stream.scaladsl.Source.queue]].
    *
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
@@ -456,10 +473,10 @@ object Source {
    * there is no space available in the buffer.
    *
    * Acknowledgement mechanism is available.
-   * [[akka.stream.scaladsl.SourceQueue.offer]] returns ``Future[StreamCallbackStatus[Boolean]]`` which completes with `Success(true)`
-   * if element was added to buffer or sent downstream. It completes with `Success(false)` if element was dropped. Can also complete
-   * with [[akka.stream.StreamCallbackStatus.Failure]] - when stream failed or [[akka.stream.StreamCallbackStatus.StreamCompleted]]
-   * when downstream is completed.
+   * [[akka.stream.scaladsl.SourceQueue.offer]] returns `Future[QueueOfferResult]` which completes with
+   * `QueueOfferResult.Enqueued` if element was added to buffer or sent downstream. It completes with
+   * `QueueOfferResult.Dropped` if element was dropped. Can also complete  with `QueueOfferResult.Failure` -
+   * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
    *
    * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete last `offer():Future`
    * call when buffer is full.
@@ -467,8 +484,9 @@ object Source {
    * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueue.watchCompletion]].
    * It returns future that completes with success when stream is completed or fail when stream is failed.
    *
-   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait for downstream demand.
-   * When `bufferSize` is 0 the `overflowStrategy` does not matter.
+   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
+   * for downstream demand unless there is another message waiting for downstream demand, in that case
+   * offer result will be completed according to the overflow strategy.
    *
    * SourceQueue that current source is materialized to is for single thread usage only.
    *

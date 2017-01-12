@@ -1,7 +1,7 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.scaladsl
+package akka.stream.impl
 
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ OutHandler, GraphStageLogic, GraphStage }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl.fusing
 
@@ -553,33 +553,11 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       upstream.onNextAndComplete(1)
       lastEvents() should be(Set(OnNext(1), OnComplete))
-
-    }
-
-    //#20386
-    @deprecated("Usage of PushPullStage is deprecated, please use GraphStage instead", "2.4.5")
-    class InvalidAbsorbTermination extends PushPullStage[Int, Int] {
-      override def onPull(ctx: Context[Int]): SyncDirective = ctx.pull()
-      override def onPush(elem: Int, ctx: Context[Int]): SyncDirective = ctx.push(elem)
-      override def onDownstreamFinish(ctx: Context[Int]): TerminationDirective = ctx.absorbTermination()
-    }
-
-    // This test must be kept since it tests the compatibility layer, which while is deprecated it is still here.
-    "not allow absorbTermination from onDownstreamFinish()" in new OneBoundedSetup[Int]((new InvalidAbsorbTermination).toGS) {
-      lastEvents() should be(Set.empty)
-
-      EventFilter[UnsupportedOperationException]("It is not allowed to call absorbTermination() from onDownstreamFinish.", occurrences = 1).intercept {
-        downstream.cancel()
-        lastEvents() should be(Set(Cancel))
-      }
-
     }
 
   }
 
-  private[akka] final case class Doubler[T]() extends GraphStage[FlowShape[T, T]] {
-    val out: Outlet[T] = Outlet("Doubler.out")
-    val in: Inlet[T] = Inlet("Doubler.in")
+  private[akka] final case class Doubler[T]() extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -608,12 +586,9 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
         setHandlers(in, out, this)
       }
 
-    override val shape: FlowShape[T, T] = FlowShape(in, out)
   }
 
-  private[akka] final case class KeepGoing[T]() extends GraphStage[FlowShape[T, T]] {
-    val in = Inlet[T]("KeepGoing.in")
-    val out = Outlet[T]("KeepGoing.out")
+  private[akka] final case class KeepGoing[T]() extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -638,7 +613,6 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
         setHandlers(in, out, this)
       }
 
-    override val shape: FlowShape[T, T] = FlowShape(in, out)
   }
 
   private[akka] class PushFinishStage(onPostStop: () ⇒ Unit = () ⇒ ()) extends SimpleLinearGraphStage[Any] {

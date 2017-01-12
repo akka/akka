@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -119,11 +119,11 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "be able to update entry" in {
-      val m1 = ORMap.empty[ORSet[String]].put(node1, "a", ORSet.empty.add(node1, "A"))
+      val m1 = ORMap.empty[String, ORSet[String]].put(node1, "a", ORSet.empty.add(node1, "A"))
         .put(node1, "b", ORSet.empty.add(node1, "B01").add(node1, "B02").add(node1, "B03"))
-      val m2 = ORMap.empty[ORSet[String]].put(node2, "c", ORSet.empty.add(node2, "C"))
+      val m2 = ORMap.empty[String, ORSet[String]].put(node2, "c", ORSet.empty.add(node2, "C"))
 
-      val merged1: ORMap[ORSet[String]] = m1 merge m2
+      val merged1: ORMap[String, ORSet[String]] = m1 merge m2
 
       val m3 = merged1.updated(node1, "b", ORSet.empty[String])(_.clear(node1).add(node1, "B2"))
 
@@ -140,11 +140,11 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "be able to update ORSet entry with remove+put" in {
-      val m1 = ORMap.empty[ORSet[String]].put(node1, "a", ORSet.empty.add(node1, "A01"))
+      val m1 = ORMap.empty[String, ORSet[String]].put(node1, "a", ORSet.empty.add(node1, "A01"))
         .updated(node1, "a", ORSet.empty[String])(_.add(node1, "A02"))
         .updated(node1, "a", ORSet.empty[String])(_.add(node1, "A03"))
         .put(node1, "b", ORSet.empty.add(node1, "B01").add(node1, "B02").add(node1, "B03"))
-      val m2 = ORMap.empty[ORSet[String]].put(node2, "c", ORSet.empty.add(node2, "C"))
+      val m2 = ORMap.empty[String, ORSet[String]].put(node2, "c", ORSet.empty.add(node2, "C"))
 
       val merged1 = m1 merge m2
 
@@ -190,10 +190,10 @@ class ORMapSpec extends WordSpec with Matchers {
 
     "have unapply extractor" in {
       val m1 = ORMap.empty.put(node1, "a", Flag(true)).put(node2, "b", Flag(false))
-      val m2: ORMap[Flag] = m1
+      val m2: ORMap[String, Flag] = m1
       val ORMap(entries1) = m1
       val entries2: Map[String, Flag] = entries1
-      Changed(ORMapKey[Flag]("key"))(m1) match {
+      Changed(ORMapKey[String, Flag]("key"))(m1) match {
         case c @ Changed(ORMapKey("key")) ⇒
           val ORMap(entries3) = c.dataValue
           val entries4: Map[String, ReplicatedData] = entries3

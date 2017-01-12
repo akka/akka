@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -19,7 +19,7 @@ class LWWMapSpec extends WordSpec with Matchers {
   "A LWWMap" must {
 
     "be able to set entries" in {
-      val m = LWWMap.empty[Int].put(node1, "a", 1, defaultClock[Int]).put(node2, "b", 2, defaultClock[Int])
+      val m = LWWMap.empty[String, Int].put(node1, "a", 1, defaultClock[Int]).put(node2, "b", 2, defaultClock[Int])
       m.entries should be(Map("a" → 1, "b" → 2))
     }
 
@@ -51,7 +51,7 @@ class LWWMapSpec extends WordSpec with Matchers {
       val m1 = LWWMap.empty.put(node1, "a", 1L, defaultClock[Long])
       val LWWMap(entries1) = m1
       val entries2: Map[String, Long] = entries1
-      Changed(LWWMapKey[Long]("key"))(m1) match {
+      Changed(LWWMapKey[String, Long]("key"))(m1) match {
         case c @ Changed(LWWMapKey("key")) ⇒
           val LWWMap(entries3) = c.dataValue
           val entries4: Map[String, Long] = entries3

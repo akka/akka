@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.remote.artery
 
@@ -58,7 +58,7 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
       val port = SocketUtil.temporaryServerAddress("localhost", udp = true).getPort
       val channel = s"aeron:udp?endpoint=localhost:$port"
 
-      Source.fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, IgnoreEventSink))
+      Source.fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, IgnoreEventSink, 0))
         // fail receiver stream on first message
         .map(_ ⇒ throw new RuntimeException("stop") with NoStackTrace)
         .runWith(Sink.ignore)

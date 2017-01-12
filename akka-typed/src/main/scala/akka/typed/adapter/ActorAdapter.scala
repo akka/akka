@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com/>
  */
 package akka.typed
 package adapter
@@ -39,7 +39,7 @@ private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Ac
   }
 
   override def unhandled(msg: Any): Unit = msg match {
-    case Terminated(ref) ⇒ throw new a.DeathPactException(toUntyped(ref))
+    case Terminated(ref) ⇒ throw a.DeathPactException(toUntyped(ref))
     case other           ⇒ super.unhandled(other)
   }
 
