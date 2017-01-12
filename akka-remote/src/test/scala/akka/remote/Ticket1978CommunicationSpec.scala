@@ -13,12 +13,10 @@ import akka.remote.transport.netty.{ NettySSLSupport, SSLSettings }
 import akka.testkit._
 import akka.util.Timeout
 import com.typesafe.config._
-import org.uncommons.maths.random.RandomDotOrgSeedGenerator
 
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.reflect.classTag
-import scala.util.control.NonFatal
 
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
