@@ -151,7 +151,7 @@ by directly subclassing the Directive class. The Directive is defined like this
 
 @@snip [Directive.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) { #basic }
 
-It only has one abstract member that you need to implement, the happly method, which creates
+It only has one abstract member that you need to implement, the `tapply` method, which creates
 the Route the directives presents to the outside from its inner Route building function
 (taking the extractions as parameter).
 
