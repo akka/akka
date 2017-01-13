@@ -120,7 +120,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   /**
    * Is this node the leader?
    */
-  def isLeader: Boolean = leader == Some(selfAddress)
+  def isLeader: Boolean = leader.contains(selfAddress)
 
   /**
    * Get the address of the current leader.

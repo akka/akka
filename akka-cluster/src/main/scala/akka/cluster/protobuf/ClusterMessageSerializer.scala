@@ -139,9 +139,9 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
   // we don't care about races here since it's just a cache
   @volatile
-  private var protocolCache: String = null
+  private var protocolCache: String = _
   @volatile
-  private var systemCache: String = null
+  private var systemCache: String = _
 
   private def getProtocol(address: cm.Address): String = {
     val p = address.getProtocol
