@@ -317,7 +317,7 @@ track causality of the operations and resolve concurrent updates.
 Maps
 ----
 
-``ORMap`` (observed-remove map) is a map with ``String`` keys and the values are ``ReplicatedData``
+``ORMap`` (observed-remove map) is a map with keys of ``Any`` type and the values are ``ReplicatedData``
 types themselves. It supports add, remove and delete any number of times for a map entry.
 
 If an entry is concurrently added and removed, the add will win. You cannot remove an entry that
@@ -333,8 +333,8 @@ such as the following specialized maps.
 ``ORMultiMap`` (observed-remove multi-map) is a multi-map implementation that wraps an
 ``ORMap`` with an ``ORSet`` for the map's value.
 
-``PNCounterMap`` (positive negative counter map) is a map of named counters. It is a specialized 
-``ORMap`` with ``PNCounter`` values.
+``PNCounterMap`` (positive negative counter map) is a map of named counters (where the name can be of any type).
+It is a specialized ``ORMap`` with ``PNCounter`` values.
 
 ``LWWMap`` (last writer wins map) is a specialized ``ORMap`` with ``LWWRegister`` (last writer wins register)
 values. 
