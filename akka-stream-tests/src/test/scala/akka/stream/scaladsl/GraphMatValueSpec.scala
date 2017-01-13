@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
@@ -226,6 +226,20 @@ class GraphMatValueSpec extends StreamSpec {
 
       matValue should ===(NotUsed)
 
+    }
+
+    "not ignore materialized value of indentity flow which is optimized away" in {
+      implicit val mat = ActorMaterializer(ActorMaterializerSettings(system).withAutoFusing(false))
+      val (m1, m2) = Source.single(1).viaMat(Flow[Int])(Keep.both).to(Sink.ignore).run()
+      m1 should ===(NotUsed)
+      m2 should ===(NotUsed)
+
+      // Fails with ClassCastException if value is wrong
+      val m3: Promise[Option[Int]] = Source.maybe[Int].viaMat(Flow[Int])(Keep.left).to(Sink.ignore).run()
+      m3.success(None)
+
+      val m4 = Source.single(1).viaMat(Flow[Int])(Keep.right).to(Sink.ignore).run()
+      m4 should ===(NotUsed)
     }
   }
 }
