@@ -88,9 +88,9 @@ object ActorPath {
       case ValidPathCode ⇒
       // valid
       case EmptyPathCode ⇒
-        throw new InvalidActorNameException(s"Actor path element must not be empty $fullPathMsg")
+        throw InvalidActorNameException(s"Actor path element must not be empty $fullPathMsg")
       case invalidAt ⇒
-        throw new InvalidActorNameException(
+        throw InvalidActorNameException(
           s"""Invalid actor path element [$element]$fullPathMsg, illegal character [${element(invalidAt)}] at position: $invalidAt. """ +
             """Actor paths MUST: """ +
             """not start with `$`, """ +

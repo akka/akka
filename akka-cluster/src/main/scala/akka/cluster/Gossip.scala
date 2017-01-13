@@ -179,7 +179,7 @@ private[cluster] final case class Gossip(
   }
 
   def isLeader(node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
-    leader(selfUniqueAddress) == Some(node)
+    leader(selfUniqueAddress).contains(node)
 
   def leader(selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
     leaderOf(members, selfUniqueAddress)

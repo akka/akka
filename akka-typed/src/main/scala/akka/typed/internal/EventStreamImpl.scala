@@ -120,7 +120,7 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
    */
   private[typed] class StandardOutLogger extends ActorRef[LogEvent](StandardOutLoggerPath) with ActorRefImpl[LogEvent] with StdOutLogger {
     override def tell(message: LogEvent): Unit =
-      if (message == null) throw new a.InvalidMessageException("Message must not be null")
+      if (message == null) throw a.InvalidMessageException("Message must not be null")
       else print(message)
 
     def isLocal: Boolean = true

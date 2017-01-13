@@ -340,7 +340,7 @@ private[akka] object ActorCell {
 
   final val emptyActorRefSet: Set[ActorRef] = immutable.HashSet.empty
 
-  final val terminatedProps: Props = Props((throw new IllegalActorStateException("This Actor has been terminated")): Actor)
+  final val terminatedProps: Props = Props((throw IllegalActorStateException("This Actor has been terminated")): Actor)
 
   final val undefinedUid = 0
 
@@ -510,7 +510,7 @@ private[akka] class ActorCell(
     msg.message match {
       case t: Terminated              ⇒ receivedTerminated(t)
       case AddressTerminated(address) ⇒ addressTerminated(address)
-      case Kill                       ⇒ throw new ActorKilledException("Kill")
+      case Kill                       ⇒ throw ActorKilledException("Kill")
       case PoisonPill                 ⇒ self.stop()
       case sel: ActorSelectionMessage ⇒ receiveSelection(sel)
       case Identify(messageId)        ⇒ sender() ! ActorIdentity(messageId, Some(self))
@@ -642,7 +642,7 @@ private[akka] class ActorCell(
     if (actorInstance ne null) {
       if (!Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
         || !Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "self", self))
-        throw new IllegalActorStateException(actorInstance.getClass + " is not an Actor since it have not mixed in the 'Actor' trait")
+        throw IllegalActorStateException(actorInstance.getClass + " is not an Actor since it have not mixed in the 'Actor' trait")
     }
 
   // logging is not the main purpose, and if it fails there’s nothing we can do

@@ -559,7 +559,7 @@ private[akka] class RemoteActorRef private[akka] (
     } catch handleException(message, Actor.noSender)
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
-    if (message == null) throw new InvalidMessageException("Message is null")
+    if (message == null) throw InvalidMessageException("Message is null")
     try remote.send(message, OptionVal(sender), this) catch handleException(message, sender)
   }
 
