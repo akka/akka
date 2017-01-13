@@ -26,8 +26,8 @@ import akka.remote.DaemonMsgCreate
 import akka.remote.QuarantinedEvent
 import akka.remote.artery.AeronSink.GaveUpMessageException
 import akka.remote.artery.ArteryTransport.{ AeronTerminated, ShuttingDown }
-import akka.remote.artery.Encoder.ChangeOutboundCompression
-import akka.remote.artery.Encoder.ChangeOutboundCompressionFailed
+import akka.remote.artery.Encoder.OutboundCompressionAccess
+import akka.remote.artery.Encoder.AccessOutboundCompressionFailed
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
@@ -44,6 +44,7 @@ import akka.util.{ Unsafe, WildcardIndex }
 import akka.util.OptionVal
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.stream.SharedKillSwitch
+
 import scala.util.control.NoStackTrace
 import akka.actor.Cancellable
 
@@ -153,18 +154,18 @@ private[remote] class Association(
 
   @volatile private[this] var _outboundControlIngress: OptionVal[OutboundControlIngress] = OptionVal.None
   @volatile private[this] var materializing = new CountDownLatch(1)
-  @volatile private[this] var changeOutboundCompression: Vector[ChangeOutboundCompression] = Vector.empty
+  @volatile private[this] var outboundCompressionAccess: Vector[OutboundCompressionAccess] = Vector.empty
   // in case there is a restart at the same time as a compression table update
   private val changeCompressionTimeout = 5.seconds
 
   private[remote] def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] = {
     import transport.system.dispatcher
-    val c = changeOutboundCompression
+    val c = outboundCompressionAccess
     val result =
       if (c.isEmpty) Future.successful(Done)
       else if (c.size == 1) c.head.changeActorRefCompression(table)
       else Future.sequence(c.map(_.changeActorRefCompression(table))).map(_ ⇒ Done)
-    timeoutAfter(result, changeCompressionTimeout, new ChangeOutboundCompressionFailed)
+    timeoutAfter(result, changeCompressionTimeout, new AccessOutboundCompressionFailed)
   }
   // keyed by stream queue index
   private[this] val streamMatValues = new AtomicReference(Map.empty[Int, OutboundStreamMatValues])
@@ -172,26 +173,29 @@ private[remote] class Association(
 
   private[remote] def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] = {
     import transport.system.dispatcher
-    val c = changeOutboundCompression
+    val c = outboundCompressionAccess
     val result =
       if (c.isEmpty) Future.successful(Done)
       else if (c.size == 1) c.head.changeClassManifestCompression(table)
       else Future.sequence(c.map(_.changeClassManifestCompression(table))).map(_ ⇒ Done)
-    timeoutAfter(result, changeCompressionTimeout, new ChangeOutboundCompressionFailed)
+    timeoutAfter(result, changeCompressionTimeout, new AccessOutboundCompressionFailed)
   }
 
   private def clearOutboundCompression(): Future[Done] = {
     import transport.system.dispatcher
-    val c = changeOutboundCompression
+    val c = outboundCompressionAccess
     val result =
       if (c.isEmpty) Future.successful(Done)
       else if (c.size == 1) c.head.clearCompression()
       else Future.sequence(c.map(_.clearCompression())).map(_ ⇒ Done)
-    timeoutAfter(result, changeCompressionTimeout, new ChangeOutboundCompressionFailed)
+    timeoutAfter(result, changeCompressionTimeout, new AccessOutboundCompressionFailed)
   }
 
   private def clearInboundCompression(originUid: Long): Unit =
-    transport.inboundCompressions.foreach(_.close(originUid))
+    transport.inboundCompressionAccess match {
+      case OptionVal.Some(access) ⇒ access.closeCompressionFor(originUid)
+      case _                      ⇒ // do nothing
+    }
 
   private def timeoutAfter[T](f: Future[T], timeout: FiniteDuration, e: ⇒ Throwable): Future[T] = {
     import transport.system.dispatcher
@@ -558,18 +562,18 @@ private[remote] class Association(
 
       val streamKillSwitch = KillSwitches.shared("outboundMessagesKillSwitch")
 
-      val ((queueValue, testMgmt), (changeCompression, completed)) =
+      val (queueValue, testMgmt, changeCompression, completed) =
         Source.fromGraph(new SendQueue[OutboundEnvelope])
           .via(streamKillSwitch.flow)
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
-          .toMat(transport.outbound(this))(Keep.both)
+          .toMat(transport.outbound(this))({ case ((a, b), (c, d)) ⇒ (a, b, c, d) }) // "keep all, exploded"
           .run()(materializer)
 
       queueValue.inject(wrapper.queue)
       // replace with the materialized value, still same underlying queue
       queues(queueIndex) = queueValue
       queuesVisibility = true // volatile write for visibility of the queues array
-      changeOutboundCompression = Vector(changeCompression)
+      outboundCompressionAccess = Vector(changeCompression)
 
       updateStreamMatValues(OrdinaryQueueIndex, streamKillSwitch, completed)
       attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
@@ -601,12 +605,12 @@ private[remote] class Association(
         .via(streamKillSwitch.flow)
         .toMat(transport.aeronSink(this))(Keep.both).run()(materializer)
 
-      val values: Vector[(SendQueue.QueueValue[OutboundEnvelope], Encoder.ChangeOutboundCompression, Future[Done])] =
+      val values: Vector[(SendQueue.QueueValue[OutboundEnvelope], Encoder.OutboundCompressionAccess, Future[Done])] =
         (0 until outboundLanes).map { _ ⇒
           lane.to(mergeHub).run()(materializer)
         }(collection.breakOut)
 
-      val (queueValues, changeCompressionValues, laneCompletedValues) = values.unzip3
+      val (queueValues, compressionAccessValues, laneCompletedValues) = values.unzip3
 
       import transport.system.dispatcher
       val completed = Future.sequence(laneCompletedValues).flatMap(_ ⇒ aeronSinkCompleted)
@@ -624,7 +628,7 @@ private[remote] class Association(
       }
       queuesVisibility = true // volatile write for visibility of the queues array
 
-      changeOutboundCompression = changeCompressionValues
+      outboundCompressionAccess = compressionAccessValues
 
       attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
         completed, () ⇒ runOutboundOrdinaryMessagesStream())
@@ -660,7 +664,7 @@ private[remote] class Association(
                                   streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
 
     def lazyRestart(): Unit = {
-      changeOutboundCompression = Vector.empty
+      outboundCompressionAccess = Vector.empty
       if (queueIndex == ControlQueueIndex) {
         materializing = new CountDownLatch(1)
         _outboundControlIngress = OptionVal.None

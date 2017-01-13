@@ -19,6 +19,9 @@ private[remote] object CompressionProtocol {
   sealed trait CompressionMessage
 
   /** INTERNAL API */
+  sealed trait CompressionAckMessage extends CompressionMessage
+
+  /** INTERNAL API */
   sealed trait CompressionAdvertisement[T] extends ControlMessage with CompressionMessage {
     def from: UniqueAddress
     def table: CompressionTable[T]
@@ -39,7 +42,7 @@ private[remote] object CompressionProtocol {
    * table.
    */
   private[remote] final case class ActorRefCompressionAdvertisementAck(from: UniqueAddress, tableVersion: Byte)
-    extends ControlMessage with CompressionMessage
+    extends ControlMessage with CompressionAckMessage
 
   /**
    * INTERNAL API
@@ -56,7 +59,7 @@ private[remote] object CompressionProtocol {
    * table.
    */
   private[remote] final case class ClassManifestCompressionAdvertisementAck(from: UniqueAddress, tableVersion: Byte)
-    extends ControlMessage with CompressionMessage
+    extends ControlMessage with CompressionAckMessage
 
   /** INTERNAL API */
   private[remote] object Events {

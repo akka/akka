@@ -9,6 +9,8 @@ import java.util.concurrent.ThreadFactory
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 
+import akka.annotation.InternalApi
+
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ Await, ExecutionContext, Future, duration }
 
@@ -28,7 +30,7 @@ import scala.concurrent.{ Await, ExecutionContext, Future, duration }
  *
  * NOTE: this class is not serializable
  */
-// FIMXE add @InternalApi
+@InternalApi
 private[akka] class AESCounterBuiltinRNG(val seed: Array[Byte], implicit val executionContext: ExecutionContext,
                                          val reseedingThreshold: Long     = CounterRNGConstants.ReseedingThreshold,
                                          val reseedingDeadline:  Long     = CounterRNGConstants.ReseedingDeadline,
@@ -45,6 +47,9 @@ private[akka] class AESCounterBuiltinRNG(val seed: Array[Byte], implicit val exe
   private var bitsSinceSeeding: Long = 0
 
   private val cipher = Cipher.getInstance("AES/CTR/NoPadding")
+
+  // this algorithm can be further improved by better selection of the iv
+  // here and at re-seeding time further below
   private val ivArr = Array.fill[Byte](CounterSizeBytes)(0)
   ivArr(0) = (ivArr(0) + 1.toByte).toByte
   private val ivSpec = new IvParameterSpec(ivArr)
@@ -127,5 +132,9 @@ private object CounterRNGConstants {
 }
 
 private class AESCounterBuiltinRNGReSeeder extends ThreadFactory {
-  override def newThread(r: Runnable): Thread = new Thread(r, "AESCounterBuiltinRNGReSeeder")
+  override def newThread(r: Runnable): Thread = {
+    val thread = new Thread(r, "AESCounterBuiltinRNGReSeeder")
+    thread.setDaemon(true)
+    thread
+  }
 }
