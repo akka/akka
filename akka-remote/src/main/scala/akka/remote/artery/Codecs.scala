@@ -3,38 +3,38 @@
  */
 package akka.remote.artery
 
-import scala.concurrent.duration._
-import scala.util.control.NonFatal
-import akka.actor._
-import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRefProvider, UniqueAddress }
+import java.util.concurrent.TimeUnit
+
+import akka.Done
+import akka.actor.{ EmptyLocalActorRef, _ }
+import akka.event.Logging
+import akka.remote.artery.Decoder.{ AdvertiseActorRefsCompressionTable, AdvertiseClassManifestsCompressionTable, InboundCompressionAccess, InboundCompressionAccessImpl }
+import akka.remote.artery.FlightRecorderEvents.AeronSource_Started
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
+import akka.remote.artery.compress.CompressionProtocol._
+import akka.remote.artery.compress._
+import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRefProvider, UniqueAddress }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream._
 import akka.stream.stage._
-import akka.util.{ ByteString, OptionVal }
-import akka.actor.EmptyLocalActorRef
-import akka.remote.artery.compress.InboundCompressions
-import java.util.concurrent.TimeUnit
+import akka.util.OptionVal
 
-import scala.concurrent.Future
-import akka.remote.artery.compress.CompressionTable
-import akka.Done
-
-import scala.concurrent.Promise
-import akka.event.Logging
+import scala.concurrent.duration._
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
  */
 private[remote] object Encoder {
-  private[remote] trait ChangeOutboundCompression {
+  private[remote] trait OutboundCompressionAccess {
     def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done]
     def changeClassManifestCompression(table: CompressionTable[String]): Future[Done]
     def clearCompression(): Future[Done]
   }
 
-  private[remote] class ChangeOutboundCompressionFailed extends RuntimeException(
-    "Change of outbound compression table failed (will be retried), because materialization did not complete yet")
+  private[remote] class AccessOutboundCompressionFailed
+    extends RuntimeException("Change of outbound compression table failed (will be retried), because materialization did not complete yet")
 
 }
 
@@ -47,15 +47,15 @@ private[remote] class Encoder(
   outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
   bufferPool:           EnvelopeBufferPool,
   debugLogSend:         Boolean)
-  extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, EnvelopeBuffer], Encoder.ChangeOutboundCompression] {
+  extends GraphStageWithMaterializedValue[FlowShape[OutboundEnvelope, EnvelopeBuffer], Encoder.OutboundCompressionAccess] {
   import Encoder._
 
   val in: Inlet[OutboundEnvelope] = Inlet("Artery.Encoder.in")
   val out: Outlet[EnvelopeBuffer] = Outlet("Artery.Encoder.out")
   val shape: FlowShape[OutboundEnvelope, EnvelopeBuffer] = FlowShape(in, out)
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ChangeOutboundCompression) = {
-    val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging with ChangeOutboundCompression {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, OutboundCompressionAccess) = {
+    val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging with OutboundCompressionAccess {
 
       private val headerBuilder = HeaderBuilder.out()
       headerBuilder setVersion ArteryTransport.Version
@@ -178,7 +178,7 @@ private[remote] class Encoder(
           // This is a harmless failure, it will be retried on next advertisement or handshake attempt.
           // It will only occur when callback is invoked before preStart. That is highly unlikely to
           // happen since advertisement is not done immediately and handshake involves network roundtrip.
-          case NonFatal(_) ⇒ done.tryFailure(new ChangeOutboundCompressionFailed)
+          case NonFatal(_) ⇒ done.tryFailure(new AccessOutboundCompressionFailed)
         }
         done.future
       }
@@ -190,7 +190,7 @@ private[remote] class Encoder(
         val done = Promise[Done]()
         try changeClassManifsetCompressionCb.invoke((table, done)) catch {
           // in case materialization not completed yet
-          case NonFatal(_) ⇒ done.tryFailure(new ChangeOutboundCompressionFailed)
+          case NonFatal(_) ⇒ done.tryFailure(new AccessOutboundCompressionFailed)
         }
         done.future
       }
@@ -202,7 +202,7 @@ private[remote] class Encoder(
         val done = Promise[Done]()
         try clearCompressionCb.invoke(done) catch {
           // in case materialization not completed yet
-          case NonFatal(_) ⇒ done.tryFailure(new ChangeOutboundCompressionFailed)
+          case NonFatal(_) ⇒ done.tryFailure(new AccessOutboundCompressionFailed)
         }
         done.future
       }
@@ -224,6 +224,99 @@ private[remote] object Decoder {
     inboundEnvelope: InboundEnvelope)
 
   private object Tick
+
+  /** Materialized value of [[Encoder]] which allows safely calling into the stage to interfact with compression tables. */
+  private[remote] trait InboundCompressionAccess {
+    def confirmActorRefCompressionAdvertisementAck(ack: ActorRefCompressionAdvertisementAck): Future[Done]
+    def confirmClassManifestCompressionAdvertisementAck(ack: ClassManifestCompressionAdvertisementAck): Future[Done]
+    def closeCompressionFor(originUid: Long): Future[Done]
+
+    /** For testing purposes, usually triggered by timer from within Decoder stage. */
+    def runNextActorRefAdvertisement(): Unit
+    /** For testing purposes, usually triggered by timer from within Decoder stage. */
+    def runNextClassManifestAdvertisement(): Unit
+  }
+
+  private[remote] trait InboundCompressionAccessImpl extends InboundCompressionAccess {
+    this: GraphStageLogic with StageLogging ⇒
+
+    def compressions: InboundCompressions
+
+    private val closeCompressionForCb = getAsyncCallback[(Long, Promise[Done])] {
+      case (uid, done) ⇒
+        compressions.close(uid)
+        done.success(Done)
+    }
+    private val confirmActorRefCompressionAdvertisementCb = getAsyncCallback[(ActorRefCompressionAdvertisementAck, Promise[Done])] {
+      case (ActorRefCompressionAdvertisementAck(from, tableVersion), done) ⇒
+        compressions.confirmActorRefCompressionAdvertisement(from.uid, tableVersion)
+        done.success(Done)
+    }
+    private val confirmClassManifestCompressionAdvertisementCb = getAsyncCallback[(ClassManifestCompressionAdvertisementAck, Promise[Done])] {
+      case (ClassManifestCompressionAdvertisementAck(from, tableVersion), done) ⇒
+        compressions.confirmClassManifestCompressionAdvertisement(from.uid, tableVersion)
+        done.success(Done)
+    }
+    private val runNextActorRefAdvertisementCb = getAsyncCallback[Unit] {
+      _ ⇒ compressions.runNextActorRefAdvertisement()
+    }
+    private val runNextClassManifestAdvertisementCb = getAsyncCallback[Unit] {
+      _ ⇒ compressions.runNextClassManifestAdvertisement()
+    }
+
+    // TODO in practice though all those CB's will always succeed, no need for the futures etc IMO
+
+    /**
+     * External call from ChangeInboundCompression materialized value
+     */
+    override def closeCompressionFor(originUid: Long): Future[Done] = {
+      val done = Promise[Done]()
+      try closeCompressionForCb.invoke((originUid, done)) catch {
+        // in case materialization not completed yet
+        case NonFatal(_) ⇒ done.tryFailure(new AccessInboundCompressionFailed)
+      }
+      done.future
+    }
+    /**
+     * External call from ChangeInboundCompression materialized value
+     */
+    override def confirmActorRefCompressionAdvertisementAck(ack: ActorRefCompressionAdvertisementAck): Future[Done] = {
+      val done = Promise[Done]()
+      try confirmActorRefCompressionAdvertisementCb.invoke((ack, done)) catch {
+        // in case materialization not completed yet
+        case NonFatal(_) ⇒ done.tryFailure(new AccessInboundCompressionFailed)
+      }
+      done.future
+    }
+    /**
+     * External call from ChangeInboundCompression materialized value
+     */
+    override def confirmClassManifestCompressionAdvertisementAck(ack: ClassManifestCompressionAdvertisementAck): Future[Done] = {
+      val done = Promise[Done]()
+      try confirmClassManifestCompressionAdvertisementCb.invoke((ack, done)) catch {
+        case NonFatal(_) ⇒ done.tryFailure(new AccessInboundCompressionFailed)
+      }
+      done.future
+    }
+    /**
+     * External call from ChangeInboundCompression materialized value
+     */
+    override def runNextActorRefAdvertisement(): Unit =
+      runNextActorRefAdvertisementCb.invoke()
+    /**
+     * External call from ChangeInboundCompression materialized value
+     */
+    override def runNextClassManifestAdvertisement(): Unit =
+      runNextClassManifestAdvertisementCb.invoke()
+  }
+
+  private[remote] class AccessInboundCompressionFailed
+    extends RuntimeException("Change of inbound compression table failed (will be retried), because materialization did not complete yet")
+
+  // timer keys
+  private case object AdvertiseActorRefsCompressionTable
+  private case object AdvertiseClassManifestsCompressionTable
+
 }
 
 /**
@@ -244,22 +337,28 @@ private[remote] final class ActorRefResolveCacheWithAddress(provider: RemoteActo
  * INTERNAL API
  */
 private[remote] class Decoder(
-  inboundContext:     InboundContext,
-  system:             ExtendedActorSystem,
-  uniqueLocalAddress: UniqueAddress,
-  compression:        InboundCompressions,
-  bufferPool:         EnvelopeBufferPool,
-  inEnvelopePool:     ObjectPool[ReusableInboundEnvelope]) extends GraphStage[FlowShape[EnvelopeBuffer, InboundEnvelope]] {
+  inboundContext:      InboundContext,
+  system:              ExtendedActorSystem,
+  uniqueLocalAddress:  UniqueAddress,
+  settings:            ArterySettings,
+  bufferPool:          EnvelopeBufferPool,
+  inboundCompressions: InboundCompressions,
+  inEnvelopePool:      ObjectPool[ReusableInboundEnvelope])
+  extends GraphStageWithMaterializedValue[FlowShape[EnvelopeBuffer, InboundEnvelope], InboundCompressionAccess] {
+
   import Decoder.Tick
   val in: Inlet[EnvelopeBuffer] = Inlet("Artery.Decoder.in")
   val out: Outlet[InboundEnvelope] = Outlet("Artery.Decoder.out")
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+  def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, InboundCompressionAccess) = {
+    val logic = new TimerGraphStageLogic(shape) with InboundCompressionAccessImpl with InHandler with OutHandler with StageLogging {
       import Decoder.RetryResolveRemoteDeployedRecipient
+
+      override val compressions = inboundCompressions
+
       private val localAddress = inboundContext.localAddress.address
-      private val headerBuilder = HeaderBuilder.in(compression)
+      private val headerBuilder = HeaderBuilder.in(compressions)
       private val actorRefResolver: ActorRefResolveCacheWithAddress =
         new ActorRefResolveCacheWithAddress(system.provider.asInstanceOf[RemoteActorRefProvider], uniqueLocalAddress)
       private val bannedRemoteDeployedActorRefs = new java.util.HashSet[String]
@@ -278,8 +377,18 @@ private[remote] class Decoder(
 
       override def preStart(): Unit = {
         schedulePeriodically(Tick, 1.seconds)
-      }
 
+        if (settings.Advanced.Compression.Enabled) {
+          settings.Advanced.Compression.ActorRefs.AdvertisementInterval match {
+            case d: FiniteDuration ⇒ schedulePeriodicallyWithInitialDelay(AdvertiseActorRefsCompressionTable, d, d)
+            case _                 ⇒ // not advertising actor ref compressions
+          }
+          settings.Advanced.Compression.Manifests.AdvertisementInterval match {
+            case d: FiniteDuration ⇒ schedulePeriodicallyWithInitialDelay(AdvertiseClassManifestsCompressionTable, d, d)
+            case _                 ⇒ // not advertising class manifest compressions
+          }
+        }
+      }
       override def onPush(): Unit = {
         messageCount += 1
         val envelope = grab(in)
@@ -347,17 +456,17 @@ private[remote] class Decoder(
                 val remoteAddress = assoc.remoteAddress
                 sender match {
                   case OptionVal.Some(snd) ⇒
-                    compression.hitActorRef(originUid, remoteAddress, snd, 1)
+                    compressions.hitActorRef(originUid, remoteAddress, snd, 1)
                   case OptionVal.None ⇒
                 }
 
                 recipient match {
                   case OptionVal.Some(rcp) ⇒
-                    compression.hitActorRef(originUid, remoteAddress, rcp, 1)
+                    compressions.hitActorRef(originUid, remoteAddress, rcp, 1)
                   case OptionVal.None ⇒
                 }
 
-                compression.hitClassManifest(originUid, remoteAddress, classManifest, 1)
+                compressions.hitClassManifest(originUid, remoteAddress, classManifest, 1)
 
               case _ ⇒
                 // we don't want to record hits for compression while handshake is still in progress.
@@ -442,6 +551,12 @@ private[remote] class Decoder(
             tickMessageCount = messageCount
             tickTimestamp = now
 
+          case AdvertiseActorRefsCompressionTable ⇒
+            compressions.runNextActorRefAdvertisement() // TODO: optimise these operations, otherwise they stall the hotpath
+
+          case AdvertiseClassManifestsCompressionTable ⇒
+            compressions.runNextClassManifestAdvertisement() // TODO: optimise these operations, otherwise they stall the hotpath
+
           case RetryResolveRemoteDeployedRecipient(attemptsLeft, recipientPath, inboundEnvelope) ⇒
             resolveRecipient(recipientPath) match {
               case OptionVal.None ⇒
@@ -471,6 +586,10 @@ private[remote] class Decoder(
 
       setHandlers(in, out, this)
     }
+
+    (logic, logic)
+  }
+
 }
 
 /**

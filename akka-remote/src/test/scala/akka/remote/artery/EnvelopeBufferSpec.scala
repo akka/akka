@@ -45,8 +45,10 @@ class EnvelopeBufferSpec extends AkkaSpec {
     override def hitClassManifest(originUid: Long, remote: Address, manifest: String, n: Int): Unit = ()
     override def decompressClassManifest(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[String] = OptionVal(idxToManifest(idx))
     override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = ()
-    override def close(): Unit = ()
     override def close(originUid: Long): Unit = ()
+
+    override def runNextActorRefAdvertisement(): Unit = ???
+    override def runNextClassManifestAdvertisement(): Unit = ???
   }
 
   "EnvelopeBuffer" must {
