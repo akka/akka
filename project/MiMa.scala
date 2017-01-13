@@ -151,12 +151,20 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator"),
       ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.InternetSeedGenerator$"),
 
+      // #21648 Prefer reachable nodes in consistency writes/reads
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.ReadWriteAggregator.unreachable"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.WriteAggregator.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.WriteAggregator.props"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ReadAggregator.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ReadAggregator.props"),
+
       // #22035 Make it possible to use anything as the key in a map
       FilterAnyProblemStartingWith("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages"),
       FilterAnyProblemStartingWith("akka.cluster.ddata.ORMap"),
       FilterAnyProblemStartingWith("akka.cluster.ddata.LWWMap"),
       FilterAnyProblemStartingWith("akka.cluster.ddata.PNCounterMap"),
       FilterAnyProblemStartingWith("akka.cluster.ddata.ORMultiMap")
+
     )
 
     Map(

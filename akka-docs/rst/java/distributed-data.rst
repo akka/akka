@@ -71,7 +71,7 @@ function that only uses the data parameter and stable fields from enclosing scop
 for example not access ``sender()`` reference of an enclosing actor.
 
 ``Update`` is intended to only be sent from an actor running in same local ``ActorSystem`` as
- * the `Replicator`, because the `modify` function is typically not serializable.
+ the ``Replicator``, because the ``modify`` function is typically not serializable.
 
 You supply a write consistency level which has the following meaning:
 
@@ -84,7 +84,11 @@ You supply a write consistency level which has the following meaning:
   (or cluster role group)
 * ``writeAll`` the value will immediately be written to all nodes in the cluster
   (or all nodes in the cluster role group)
-  
+
+When you specify to write to ``n`` out of ``x`` nodes, the update will first replicate to ``n`` nodes. If there are not
+ enough Acks after 1/5th of the timeout, the update will be replicated to ``n`` other nodes. If there are less than n nodes
+ left all of the remaining nodes are used. Reachable nodes are prefered over unreachable nodes.
+
 .. includecode:: code/docs/ddata/DistributedDataDocTest.java#update  
 
 As reply of the ``Update`` a ``Replicator.UpdateSuccess`` is sent to the sender of the
