@@ -1,16 +1,19 @@
-/**
+/*
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
+package framing
 
-import Http2Protocol._
-import FrameType._
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
 
-class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEvent] {
+import Http2Protocol.FrameType._
+import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
+
+/** INTERNAL API */
+private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteStringParser[FrameEvent] {
   import ByteStringParser._
 
   abstract class Step extends ParseStep[FrameEvent]

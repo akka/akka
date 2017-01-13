@@ -1,15 +1,16 @@
-/**
+/*
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.http.impl.engine.http2
+package framing
 
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.ws.{ BitBuilder, WithMaterializerSpec }
 import akka.http.impl.util._
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import org.scalatest.{ FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
+import org.scalatest.{ FreeSpec, Matchers }
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -448,7 +449,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
     }
 
   private def parseToEvents(bytes: Seq[ByteString]): immutable.Seq[FrameEvent] =
-    Source(bytes.toVector).via(new FrameParser(shouldReadPreface = false)).runFold(Vector.empty[FrameEvent])(_ :+ _)
+    Source(bytes.toVector).via(new Http2FrameParsing(shouldReadPreface = false)).runFold(Vector.empty[FrameEvent])(_ :+ _)
       .awaitResult(1.second)
   private def renderToByteString(events: immutable.Seq[FrameEvent]): ByteString =
     Source(events).map(FrameRenderer.render).runFold(ByteString.empty)(_ ++ _)
