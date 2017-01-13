@@ -119,43 +119,43 @@ public class ReplicatedCache extends AbstractActor {
       .match(PutInCache.class, cmd -> receivePutInCache(cmd.key, cmd.value))
       .match(Evict.class, cmd -> receiveEvict(cmd.key))
       .match(GetFromCache.class, cmd -> receiveGetFromCache(cmd.key))
-      .match(GetSuccess.class, g -> receiveGetSuccess((GetSuccess<LWWMap<Object>>) g))
-      .match(NotFound.class, n -> receiveNotFound((NotFound<LWWMap<Object>>) n))
+      .match(GetSuccess.class, g -> receiveGetSuccess((GetSuccess<LWWMap<String, Object>>) g))
+      .match(NotFound.class, n -> receiveNotFound((NotFound<LWWMap<String, Object>>) n))
       .match(UpdateResponse.class, u -> {})
       .build());
   }
 
   private void receivePutInCache(String key, Object value) {
-    Update<LWWMap<Object>> update = new Update<>(dataKey(key), LWWMap.create(), writeLocal(),
+    Update<LWWMap<String, Object>> update = new Update<>(dataKey(key), LWWMap.create(), writeLocal(),
         curr -> curr.put(node, key, value));
     replicator.tell(update, self());
   }
 
   private void receiveEvict(String key) {
-    Update<LWWMap<Object>> update = new Update<>(dataKey(key), LWWMap.create(), writeLocal(),
+    Update<LWWMap<String, Object>> update = new Update<>(dataKey(key), LWWMap.create(), writeLocal(),
         curr -> curr.remove(node, key));
     replicator.tell(update, self());
   }
 
   private void receiveGetFromCache(String key) {
     Optional<Object> ctx = Optional.of(new Request(key, sender()));
-    Get<LWWMap<Object>> get = new Get<>(dataKey(key), readLocal(), ctx);
+    Get<LWWMap<String, Object>> get = new Get<>(dataKey(key), readLocal(), ctx);
     replicator.tell(get, self());
   }
 
-  private void receiveGetSuccess(GetSuccess<LWWMap<Object>> g) {
+  private void receiveGetSuccess(GetSuccess<LWWMap<String, Object>> g) {
     Request req = (Request) g.getRequest().get();
     Option<Object> valueOption = g.dataValue().get(req.key);
     Optional<Object> valueOptional = Optional.ofNullable(valueOption.isDefined() ? valueOption.get() : null);
     req.replyTo.tell(new Cached(req.key, valueOptional), self());
   }
 
-  private void receiveNotFound(NotFound<LWWMap<Object>> n) {
+  private void receiveNotFound(NotFound<LWWMap<String, Object>> n) {
     Request req = (Request) n.getRequest().get();
     req.replyTo.tell(new Cached(req.key, Optional.empty()), self());
   }
 
-  private Key<LWWMap<Object>> dataKey(String entryKey) {
+  private Key<LWWMap<String, Object>> dataKey(String entryKey) {
     return LWWMapKey.create("cache-" + Math.abs(entryKey.hashCode()) % 100);
   }
 

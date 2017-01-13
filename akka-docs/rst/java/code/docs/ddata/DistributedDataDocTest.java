@@ -301,10 +301,10 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   public void demonstratePNCounterMap() {
     //#pncountermap
     final Cluster node = Cluster.get(system);
-    final PNCounterMap m0 = PNCounterMap.create();
-    final PNCounterMap m1 = m0.increment(node, "a", 7);
-    final PNCounterMap m2 = m1.decrement(node, "a", 2);
-    final PNCounterMap m3 = m2.increment(node, "b", 1);
+    final PNCounterMap<String> m0 = PNCounterMap.create();
+    final PNCounterMap<String> m1 = m0.increment(node, "a", 7);
+    final PNCounterMap<String> m2 = m1.decrement(node, "a", 2);
+    final PNCounterMap<String> m3 = m2.increment(node, "b", 1);
     System.out.println(m3.get("a")); // 5
     System.out.println(m3.getEntries());
     //#pncountermap
@@ -334,12 +334,12 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   public void demonstrateORMultiMap() {
     //#ormultimap
     final Cluster node = Cluster.get(system);
-    final ORMultiMap<Integer> m0 = ORMultiMap.create();
-    final ORMultiMap<Integer> m1 = m0.put(node, "a", 
-        new HashSet<Integer>(Arrays.asList(1, 2, 3)));
-    final ORMultiMap<Integer> m2 = m1.addBinding(node, "a", 4);
-    final ORMultiMap<Integer> m3 = m2.removeBinding(node, "a", 2);
-    final ORMultiMap<Integer> m4 = m3.addBinding(node, "b", 1);
+    final ORMultiMap<String, Integer> m0 = ORMultiMap.create();
+    final ORMultiMap<String, Integer> m1 = m0.put(node, "a",
+        new HashSet<>(Arrays.asList(1, 2, 3)));
+    final ORMultiMap<String, Integer> m2 = m1.addBinding(node, "a", 4);
+    final ORMultiMap<String, Integer> m3 = m2.removeBinding(node, "a", 2);
+    final ORMultiMap<String, Integer> m4 = m3.addBinding(node, "b", 1);
     System.out.println(m4.getEntries());
     //#ormultimap
   }
