@@ -32,6 +32,7 @@ object Http2Blueprint {
   def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
     httpLayer() atop
     demux() atop
+    // FrameLogger.bidi() atop // enable for debugging
     hpackCoding() atop
     framing()
   }
