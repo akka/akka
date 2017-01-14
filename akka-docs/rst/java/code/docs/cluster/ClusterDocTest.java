@@ -21,7 +21,7 @@ public class ClusterDocTest extends AbstractJavaTest {
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("ClusterDocTest", 
-        ConfigFactory.parseString(ClusterDocSpec.config()));
+        ConfigFactory.parseString(scala.docs.cluster.ClusterDocSpec.config()));
   }
 
   @AfterClass

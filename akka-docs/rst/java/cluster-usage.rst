@@ -28,7 +28,41 @@ It joins the cluster and an actor subscribes to cluster membership events and lo
 
 The ``application.conf`` configuration looks like this:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/application.conf#snippet
+::
+
+    akka {
+      actor {
+        provider = "cluster"
+      }
+      remote {
+        log-remote-lifecycle-events = off
+        netty.tcp {
+          hostname = "127.0.0.1"
+          port = 0
+        }
+      }
+
+      cluster {
+        seed-nodes = [
+          "akka.tcp://ClusterSystem@127.0.0.1:2551",
+          "akka.tcp://ClusterSystem@127.0.0.1:2552"]
+
+        # auto downing is NOT safe for production deployments.
+        # you may want to use it during development, read more about it in the docs.
+        #
+        # auto-down-unreachable-after = 10s
+      }
+    }
+
+    # Disable legacy metrics in akka-cluster.
+    akka.cluster.metrics.enabled=off
+
+    # Enable metrics extension in akka-cluster-metrics.
+    akka.extensions=["akka.cluster.metrics.ClusterMetricsExtension"]
+
+    # Sigar native library extract location during tests.
+    # Note: use per-jvm-instance folder when running multiple jvm on one host.
+    akka.cluster.metrics.native-library-extract-folder=${user.dir}/target/native
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-java`
 settings, but with ``cluster``.
@@ -45,13 +79,13 @@ ip-addresses or host names of the machines in ``application.conf`` instead of ``
 
 An actor that uses the cluster extension may look like this:
 
-.. literalinclude:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/simple/SimpleClusterListener.java
+.. literalinclude:: code/docs/cluster/SimpleClusterListener.java
    :language: java
 
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
-The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
+    The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
 and open the tutorial named `Akka Cluster Samples with Java <http://www.lightbend.com/activator/template/akka-sample-cluster-java>`_.
 It contains instructions of how to run the ``SimpleClusterApp``.
 
@@ -140,7 +174,7 @@ It can also be performed programmatically with ``Cluster.get(system).down(addres
 
 A pre-packaged solution for the downing problem is provided by
 `Split Brain Resolver <http://doc.akka.io/docs/akka/akka-commercial-addons-1.0/java/split-brain-resolver.html>`_,
-which is part of the `Lightbend Reactive Platform <http://www.lightbend.com/platform>`_. 
+which is part of the `Lightbend Reactive Platform <http://www.lightbend.com/platform>`_.
 If you don’t use RP, you should anyway carefully read the `documentation <http://doc.akka.io/docs/akka/akka-commercial-addons-1.0/java/split-brain-resolver.html>`_
 of the Split Brain Resolver and make sure that the solution you are using handles the concerns
 described there.
@@ -188,13 +222,13 @@ It can also be performed programmatically with:
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving.
 
-The :ref:`coordinated-shutdown-java` will automatically run when the cluster node sees itself as 
-``Exiting``, i.e. leaving from another node will trigger the shutdown process on the leaving node. 
-Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and 
-Cluster Sharding are added automatically when Akka Cluster is used, i.e. running the shutdown 
-process will also trigger the graceful leaving if it's not already in progress. 
+The :ref:`coordinated-shutdown-java` will automatically run when the cluster node sees itself as
+``Exiting``, i.e. leaving from another node will trigger the shutdown process on the leaving node.
+Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and
+Cluster Sharding are added automatically when Akka Cluster is used, i.e. running the shutdown
+process will also trigger the graceful leaving if it's not already in progress.
 
-Normally this is handled automatically, but in case of network failures during this process it might still 
+Normally this is handled automatically, but in case of network failures during this process it might still
 be necessary to set the node’s status to ``Down`` in order to complete the removal.
 
 .. _weakly_up_java:
@@ -206,7 +240,7 @@ If a node is ``unreachable`` then gossip convergence is not possible and therefo
 ``leader`` actions are also not possible. However, we still might want new nodes to join
 the cluster in this scenario.
 
-``Joining`` members will be promoted to ``WeaklyUp`` and become part of the cluster if 
+``Joining`` members will be promoted to ``WeaklyUp`` and become part of the cluster if
 convergence can't be reached. Once gossip convergence is reached, the leader will move ``WeaklyUp``
 members to ``Up``.
 
@@ -227,7 +261,7 @@ Subscribe to Cluster Events
 You can subscribe to change notifications of the cluster membership by using
 ``Cluster.get(system).subscribe``.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/simple/SimpleClusterListener2.java#subscribe
+.. includecode:: code/docs/cluster/SimpleClusterListener2.java#subscribe
 
 A snapshot of the full state, ``akka.cluster.ClusterEvent.CurrentClusterState``, is sent to the subscriber
 as the first message, followed by events for incremental updates.
@@ -244,7 +278,7 @@ the events corresponding to the current state to mimic what you would have seen 
 listening to the events when they occurred in the past. Note that those initial events only correspond
 to the current state and it is not the full history of all changes that actually has occurred in the cluster.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/simple/SimpleClusterListener.java#subscribe
+.. includecode:: code/docs/cluster/SimpleClusterListener.java#subscribe
 
 The events to track the life-cycle of members are:
 
@@ -280,11 +314,11 @@ added or removed to the cluster dynamically.
 
 Messages:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/transformation/TransformationMessages.java#messages
+.. includecode:: code/docs/cluster/TransformationMessages.java#messages
 
 The backend worker that performs the transformation job:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/transformation/TransformationBackend.java#backend
+.. includecode:: code/docs/cluster/TransformationBackend.java#backend
 
 Note that the ``TransformationBackend`` actor subscribes to cluster events to detect new,
 potential, frontend nodes, and send them a registration message so that they know
@@ -292,7 +326,7 @@ that they can use the backend worker.
 
 The frontend that receives user jobs and delegates to one of the registered backend workers:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/transformation/TransformationFrontend.java#frontend
+.. includecode:: code/docs/cluster/TransformationFrontend.java#frontend
 
 Note that the ``TransformationFrontend`` actor watch the registered backend
 to be able to remove it from its list of available backend workers.
@@ -301,8 +335,8 @@ network failures and JVM crashes, in addition to graceful termination of watched
 actor. Death watch generates the ``Terminated`` message to the watching actor when the
 unreachable cluster node has been downed and removed.
 
-The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ tutorial named
-`Akka Cluster Samples with Java <http://www.lightbend.com/activator/template/akka-sample-cluster-java>`_.
+The Akka sample named
+`Akka Cluster Sample with Java <https://github.com/akka/akka-samples/tree/master/akka-sample-cluster-java>`_.
 contains the full source code and instructions of how to run the **Worker Dial-in Example**.
 
 Node Roles
@@ -326,20 +360,23 @@ A common use case is to start actors after the cluster has been initialized,
 members have joined, and the cluster has reached a certain size.
 
 With a configuration option you can define required number of members
-before the leader changes member status of 'Joining' members to 'Up'.
+before the leader changes member status of 'Joining' members to 'Up'.::
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/factorial.conf#min-nr-of-members
+  akka.cluster.min-nr-of-members = 3
 
 In a similar way you can define required number of members of a certain role
-before the leader changes member status of 'Joining' members to 'Up'.
+before the leader changes member status of 'Joining' members to 'Up'.::
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/factorial.conf#role-min-nr-of-members
+  akka.cluster.role {
+    frontend.min-nr-of-members = 1
+    backend.min-nr-of-members = 2
+  }
 
 You can start the actors in a ``registerOnMemberUp`` callback, which will
 be invoked when the current member status is changed to 'Up', i.e. the cluster
 has at least the defined number of members.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/FactorialFrontendMain.java#registerOnUp
+.. includecode:: code/docs/cluster/FactorialFrontendMain.java#registerOnUp
 
 This callback can be used for other things than starting actors.
 
@@ -508,9 +545,19 @@ Router with Group of Routees
 ----------------------------
 
 When using a ``Group`` you must start the routee actors on the cluster member nodes.
-That is not done by the router. The configuration for a group looks like this:
+That is not done by the router. The configuration for a group looks like this:::
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
+    akka.actor.deployment {
+      /statsService/workerRouter {
+          router = consistent-hashing-group
+          routees.paths = ["/user/statsWorker"]
+          cluster {
+            enabled = on
+            allow-local-routees = on
+            use-role = compute
+          }
+        }
+    }
 
 .. note::
   The routee actors should be started as early as possible when starting the actor system, because
@@ -527,7 +574,7 @@ Set it to a lower value if you want to limit total number of routees.
 
 The same type of router could also have been defined in code:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/Extra.java#router-lookup-in-code
+.. includecode:: code/docs/cluster/StatsService.java#router-lookup-in-code
 
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
@@ -545,40 +592,60 @@ the average number of characters per word when all results have been collected.
 
 Messages:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsMessages.java#messages
+.. includecode:: code/docs/cluster/StatsMessages.java#messages
 
 The worker that counts number of characters in each word:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsWorker.java#worker
+.. includecode:: code/docs/cluster/StatsWorker.java#worker
 
 The service that receives text from users and splits it up into words, delegates to workers and aggregates:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsService.java#service
+.. includecode:: code/docs/cluster/StatsService.java#service
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsAggregator.java#aggregator
+.. includecode:: code/docs/cluster/StatsAggregator.java#aggregator
 
 
 Note, nothing cluster specific so far, just plain actors.
 
 All nodes start ``StatsService`` and ``StatsWorker`` actors. Remember, routees are the workers in this case.
-The router is configured with ``routees.paths``:
+The router is configured with ``routees.paths``:::
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/stats1.conf#config-router-lookup
+    akka.actor.deployment {
+      /statsService/workerRouter {
+        router = consistent-hashing-group
+        routees.paths = ["/user/statsWorker"]
+        cluster {
+          enabled = on
+          allow-local-routees = on
+          use-role = compute
+        }
+      }
+    }
 
 This means that user requests can be sent to ``StatsService`` on any node and it will use
 ``StatsWorker`` on all nodes.
 
-The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ tutorial named
-`Akka Cluster Samples with Java <http://www.lightbend.com/activator/template/akka-sample-cluster-java>`_.
+The Akka sample named
+`Akka Cluster Sample with Java <https://github.com/akka/akka-samples/tree/master/akka-sample-cluster-java>`_.
 contains the full source code and instructions of how to run the **Router Example with Group of Routees**.
 
 Router with Pool of Remote Deployed Routees
 -------------------------------------------
 
 When using a ``Pool`` with routees created and deployed on the cluster member nodes
-the configuration for a router looks like this:
+the configuration for a router looks like this:::
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
+    akka.actor.deployment {
+      /statsService/singleton/workerRouter {
+          router = consistent-hashing-pool
+          cluster {
+            enabled = on
+            max-nr-of-instances-per-node = 3
+            allow-local-routees = on
+            use-role = compute
+          }
+        }
+    }
 
 It is possible to limit the deployment of routees to member nodes tagged with a certain role by
 specifying ``use-role``.
@@ -590,7 +657,7 @@ Set it to a lower value if you want to limit total number of routees.
 
 The same type of router could also have been defined in code:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/Extra.java#router-deploy-in-code
+.. includecode:: code/docs/cluster/StatsService.java#router-deploy-in-code
 
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
@@ -601,22 +668,32 @@ Let's take a look at how to use a cluster aware router on single master node tha
 and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton-java`
 in the cluster-tools module. The ``ClusterSingletonManager`` is started on each node.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsSampleOneMasterMain.java#create-singleton-manager
+.. includecode:: code/docs/cluster/StatsSampleOneMasterMain.java#create-singleton-manager
 
 We also need an actor on each node that keeps track of where current single master exists and
 delegates jobs to the ``StatsService``. That is provided by the ``ClusterSingletonProxy``.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/stats/StatsSampleOneMasterMain.java#singleton-proxy
+.. includecode:: code/docs/cluster/StatsSampleOneMasterMain.java#singleton-proxy
 
 The ``ClusterSingletonProxy`` receives text from users and delegates to the current ``StatsService``, the single
 master. It listens to cluster events to lookup the ``StatsService`` on the oldest node.
 
-All nodes start ``ClusterSingletonProxy`` and the ``ClusterSingletonManager``. The router is now configured like this:
+All nodes start ``ClusterSingletonProxy`` and the ``ClusterSingletonManager``. The router is now configured like this:::
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/stats2.conf#config-router-deploy
+    akka.actor.deployment {
+      /statsService/singleton/workerRouter {
+        router = consistent-hashing-pool
+        cluster {
+          enabled = on
+          max-nr-of-instances-per-node = 3
+          allow-local-routees = on
+          use-role = compute
+        }
+      }
+    }
 
-The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ tutorial named
-`Akka Cluster Samples with Java <http://www.lightbend.com/activator/template/akka-sample-cluster-java>`_.
+The Akka sample named
+`Akka Cluster Sample with Java <https://github.com/akka/akka-samples/tree/master/akka-sample-cluster-java>`_.
 contains the full source code and instructions of how to run the **Router Example with Pool of Remote Deployed Routees**.
 
 Cluster Metrics
@@ -634,7 +711,7 @@ Management
 HTTP
 ----
 
-Information and management of the cluster is available with a HTTP API. 
+Information and management of the cluster is available with a HTTP API.
 See documentation of `akka/akka-cluster-management <https://github.com/akka/akka-cluster-management>`_.
 
 .. _cluster_jmx_java:
@@ -662,7 +739,7 @@ Command Line
 ------------
 
 .. warning::
-  **Deprecation warning** - The command line script has been deprecated and is scheduled for removal 
+  **Deprecation warning** - The command line script has been deprecated and is scheduled for removal
   in the next major version. Use the :ref:`cluster_http_java` API with `curl <https://curl.haxx.se/>`_
   or similar instead.
 

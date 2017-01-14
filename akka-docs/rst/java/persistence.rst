@@ -87,7 +87,7 @@ Akka persistence supports event sourcing with the ``AbstractPersistentActor`` ab
 class uses the ``persist`` method to persist and handle events. The behavior of an ``AbstractPersistentActor``
 is defined by implementing ``createReceiveRecover`` and ``createReceive``. This is demonstrated in the following example.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/sample/persistence/PersistentActorExample.java#persistent-actor-example
+.. includecode:: ../../../akka-docs/rst/java/code/docs/persistence/PersistentActorExample.java#persistent-actor-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExamplePersistentActor`` is a list of persisted event data contained in ``ExampleState``.

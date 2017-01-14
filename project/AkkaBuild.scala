@@ -259,12 +259,13 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(
-      actor,
+      actor, cluster, clusterMetrics, slf4j, agent, camel, osgi, persistenceTck, persistenceQuery, distributedData, stream,
+      clusterTools % "compile;test->test",
       testkit % "compile;test->test",
-      remote % "compile;test->test", cluster, clusterMetrics, slf4j, agent, camel, osgi,
-      persistence % "compile;provided->provided;test->test", persistenceTck, persistenceQuery,
-      typed % "compile;test->test", distributedData,
-      stream, streamTestkit % "compile;test->test"
+      remote % "compile;test->test",
+      persistence % "compile;provided->provided;test->test",
+      typed % "compile;test->test",
+      streamTestkit % "compile;test->test"
     )
   )
 
