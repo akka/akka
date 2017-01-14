@@ -244,7 +244,11 @@ to all nodes.
 A deleted key cannot be reused again, but it is still recommended to delete unused
 data entries because that reduces the replication overhead when new nodes join the cluster.
 Subsequent ``Delete``, ``Update`` and ``Get`` requests will be replied with ``Replicator.DataDeleted``.
-Subscribers will receive ``Replicator.DataDeleted``.
+Subscribers will receive ``Replicator.Deleted``.
+
+In the `Delete` message you can pass an optional request context in the same way as for the
+`Update` message, described above. For example the original sender can be passed and replied
+to after receiving and transforming `DeleteSuccess`.
 
 .. includecode:: code/docs/ddata/DistributedDataDocSpec.scala#delete
 

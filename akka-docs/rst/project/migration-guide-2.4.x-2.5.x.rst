@@ -184,3 +184,9 @@ Java developers should use `<>` instead of `[]`, e.g: `PNCounterMap<String>`.
 
 **NOTE: Even though the interface is not compatible between 2.4 and 2.5, the binary protocol over the wire is (as long
 as you use String as key type). This means that 2.4 nodes can synchronize with 2.5 nodes.**
+
+Subscribers
+-----------
+
+When an entity is removed subscribers will not receive ``Replicator.DataDeleted`` any more.
+They will receive ``Replicator.Deleted`` instead.
