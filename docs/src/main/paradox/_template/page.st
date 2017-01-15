@@ -15,10 +15,9 @@
   <link rel="stylesheet" type="text/css" href="$page.base$lib/foundation/dist/foundation.min.css"/>
   <link rel="stylesheet" type="text/css" href="$page.base$css/page.css"/>
 
-  <!--
+  $!
   <link rel="shortcut icon" href="$page.base$images/favicon.ico" />
-  -->
-
+  !$
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.css"/>
 </head>
@@ -40,16 +39,13 @@
           <a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu">$menu()$</a>
 
           <img src="$page.base$css/../mini-akka-logo.png" alt="Akka logo" style="float: left"/> $title()$
-          <!--
-          <a href="https://www.example.com" class="logo show-for-medium">logo</a>
-          -->
         </div>
       </header>
 
       <div class="expanded row">
 
         <div class="medium-3 large-2 show-for-medium column">
-          <input type="search" id="search" class="form-control" style="position: relative; margin: 10px 0" placeholder="Search the docs..."/>
+          <input type="search" id="search" class="form-control" style="margin: 10px 0;" placeholder="Search the docs..."/>
 
           <nav class="site-nav">
             $navigation()$
@@ -73,7 +69,7 @@
               <div class="small-12 large-9 column" id="docs">
 
 $!
-   Must not be indented, will otherwise ST4 will otherwise indent <pre> blocks in the
+   Must not be indented, otherwise ST4 will indent <pre> blocks in the
    content as well, leading to extra indentation in the generated output.
 !$
 $page.content$
@@ -108,7 +104,7 @@ $page.content$
       </div>
 
       <footer class="site-footer">
-
+        $!
         <section class="site-footer-nav">
           <div class="expanded row">
             <div class="small-12 large-offset-2 large-10 column">
@@ -126,22 +122,19 @@ $page.content$
             </div>
           </div>
         </section>
+	!$
 
         <section class="site-footer-base">
           <div class="expanded row">
-            <div class="small-12 large-offset-2 large-10 column">
-              <div class="row site-footer-content">
-
-                <div class="small-12 text-center large-9 column">
-
-                  <!--
-                  <div class="copyright">
-                  <span class="text">&copy; $page.properties.("date.year")$</span>
-                  <a href="https://www.example.com" class="logo">logo</a>
-                  </div>
-                  -->
+            <div class="small-12 large-12 column">
+              <div class="row site-footer-content clearfix">
+                <div class="float-right">
+		  Last updated: $page.properties.("date")$
+		</div>
+                <div class="float-left">
+		  &copy; $page.properties.("date.year")$ <a href="https://www.lightbend.com/">Lightbend Inc.</a>
+		  <span class="license">Akka HTTP is Open Source and available under the Apache 2 License.</span>
                 </div>
-
               </div>
             </div>
           </div>
@@ -153,8 +146,9 @@ $page.content$
 </div>
 
 <script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/2/docsearch.min.js"></script>
+$! Override Algolia's search wrapper styles to let the search box span the whole left panel !$
+<style>.algolia-autocomplete { display: block !important }</style>
 <script type="text/javascript">
-
   var version = '$page.properties.("project.version.short")$'; // replaced by paradox
 
   var lang = "scala";
