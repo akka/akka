@@ -29,7 +29,7 @@ import StatusCodes._
 import HttpEntity._
 import ParserOutput._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.testkit.TestKit
+import akka.testkit._
 
 class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -253,7 +253,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
   private class Test {
-    def awaitAtMost: FiniteDuration = 3.seconds
+    def awaitAtMost: FiniteDuration = 3.seconds.dilated
     var closeAfterResponseCompletion = Seq.empty[Boolean]
 
     class StrictEqualHttpResponse(val resp: HttpResponse) {
@@ -318,7 +318,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         }.concatSubstreams
 
     def collectBlocking[T](source: Source[T, Any]): Seq[T] =
-      Await.result(source.limit(100000).runWith(Sink.seq), 1000.millis)
+      Await.result(source.limit(100000).runWith(Sink.seq), 1000.millis.dilated)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
 

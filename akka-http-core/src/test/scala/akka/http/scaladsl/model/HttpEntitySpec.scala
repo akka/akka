@@ -19,7 +19,7 @@ import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.impl.util.StreamUtils
-import akka.testkit.TestKit
+import akka.testkit._
 
 import scala.util.Random
 
@@ -38,7 +38,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   implicit val materializer = ActorMaterializer()
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
-  val awaitAtMost = 3.seconds
+  val awaitAtMost = 3.seconds.dilated
 
   "HttpEntity" - {
     "support dataBytes" - {
@@ -95,7 +95,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
       "Infinite data stream" in {
         val neverCompleted = Promise[ByteString]()
         intercept[TimeoutException] {
-          Await.result(Default(tpe, 42, Source.fromFuture(neverCompleted.future)).toStrict(100.millis), awaitAtMost)
+          Await.result(Default(tpe, 42, Source.fromFuture(neverCompleted.future)).toStrict(100.millis.dilated), awaitAtMost)
         }.getMessage must be("HttpEntity.toStrict timed out after 100 milliseconds while still waiting for outstanding data")
       }
     }

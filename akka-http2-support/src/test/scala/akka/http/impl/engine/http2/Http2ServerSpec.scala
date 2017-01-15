@@ -17,7 +17,7 @@ import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.stream.{ ActorMaterializer, Materializer }
-import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit._
 import akka.util.{ ByteString, ByteStringBuilder }
 import com.twitter.hpack.{ Decoder, Encoder, HeaderListener }
 import org.scalatest.concurrent.Eventually
@@ -244,16 +244,16 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
           totallySentBytes += dataLength
         }
 
-        eventually(Timeout(1.second)) {
+        eventually(Timeout(1.second.dilated)) {
           sendWindowFullOfData()
           remainingToServerWindowFor(TheStreamId) shouldBe 0
-          expectNoWindowUpdates(100.millis) // might fail here until all buffers have been filled
+          expectNoWindowUpdates(100.millis.dilated) // might fail here until all buffers have been filled
         }
 
         // now drain entity source
         entityDataIn.expectBytes(totallySentBytes)
 
-        eventually(Timeout(1.second)) {
+        eventually(Timeout(1.second.dilated)) {
           remainingToServerWindowFor(TheStreamId) should be > 0
         }
       }
@@ -388,7 +388,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
           eventually(Timeout(timeout)) {
             while (publisherProbe.pending > 0) body
 
-            try expectRequest(10.millis)
+            try expectRequest(10.millis.dilated)
             catch {
               case ex: Throwable ⇒ // ignore error here
             }
@@ -396,7 +396,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
           }
         }
 
-        fulfillDemandWithin(entityDataOut, 3.seconds)(sendAWindow())
+        fulfillDemandWithin(entityDataOut, 3.seconds.dilated)(sendAWindow())
 
         sendWINDOW_UPDATE(TheStreamId, totalSentBytes)
         sendWINDOW_UPDATE(0, totalSentBytes)

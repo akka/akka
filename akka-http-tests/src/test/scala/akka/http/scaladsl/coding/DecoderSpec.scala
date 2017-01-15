@@ -13,6 +13,7 @@ import akka.util.ByteString
 import akka.stream.stage._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
+import akka.testkit._
 import headers._
 import HttpMethods.POST
 
@@ -27,12 +28,12 @@ class DecoderSpec extends WordSpec with CodecSpecSupport {
       val request = HttpRequest(POST, entity = HttpEntity(smallText), headers = List(`Content-Encoding`(DummyDecoder.encoding)))
       val decoded = DummyDecoder.decode(request)
       decoded.headers shouldEqual Nil
-      decoded.entity.toStrict(3.seconds).awaitResult(3.seconds) shouldEqual HttpEntity(dummyDecompress(smallText))
+      decoded.entity.toStrict(3.seconds.dilated).awaitResult(3.seconds.dilated) shouldEqual HttpEntity(dummyDecompress(smallText))
     }
   }
 
   def dummyDecompress(s: String): String = dummyDecompress(ByteString(s, "UTF8")).decodeString("UTF8")
-  def dummyDecompress(bytes: ByteString): ByteString = DummyDecoder.decode(bytes).awaitResult(3.seconds)
+  def dummyDecompress(bytes: ByteString): ByteString = DummyDecoder.decode(bytes).awaitResult(3.seconds.dilated)
 
   case object DummyDecoder extends StreamDecoder {
     val encoding = HttpEncodings.compress

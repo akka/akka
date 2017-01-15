@@ -12,6 +12,7 @@ import akka.stream.scaladsl.{ Sink, Source }
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.coding._
+import akka.testkit._
 import headers._
 import HttpEntity.{ ChunkStreamPart, Chunk }
 import HttpCharsets._
@@ -78,7 +79,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       Post("/", defaultEntity) ~> echoDecodedEntity ~> check {
         inside(responseEntity) {
           case HttpEntity.Default(`application/octet-stream`, 9, dataChunks) ⇒
-            dataChunks.grouped(1000).runWith(Sink.head).awaitResult(1.second).toVector shouldEqual chunks
+            dataChunks.grouped(1000).runWith(Sink.head).awaitResult(1.second.dilated).toVector shouldEqual chunks
         }
       }
     }
@@ -94,7 +95,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       Post("/", defaultEntity) ~> echoDecodedEntity ~> check {
         inside(responseEntity) {
           case HttpEntity.Chunked(`application/octet-stream`, dataChunks) ⇒
-            dataChunks.grouped(1000).runWith(Sink.head).awaitResult(1.second).toVector shouldEqual chunks
+            dataChunks.grouped(1000).runWith(Sink.head).awaitResult(1.second.dilated).toVector shouldEqual chunks
         }
       }
     }
@@ -251,7 +252,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
         response should haveContentEncoding(gzip)
         chunks.size shouldEqual (11 + 1) // 11 regular + the last one
         val bytes = chunks.foldLeft(ByteString.empty)(_ ++ _.data)
-        Gzip.decode(bytes).awaitResult(1.second) should readAs(text)
+        Gzip.decode(bytes).awaitResult(1.second.dilated) should readAs(text)
       }
     }
     "correctly encode the chunk stream produced by an empty chunked response" in {
@@ -264,7 +265,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       } ~> check {
         response should haveContentEncoding(gzip)
         val bytes = chunks.foldLeft(ByteString.empty)(_ ++ _.data)
-        Gzip.decode(bytes).awaitResult(1.second) should readAs("")
+        Gzip.decode(bytes).awaitResult(1.second.dilated) should readAs("")
       }
     }
   }
@@ -536,5 +537,5 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
 
   def readAs(string: String, charset: String = "UTF8") = be(string) compose { (_: ByteString).decodeString(charset) }
 
-  def strictify(entity: HttpEntity) = entity.toStrict(1.second).awaitResult(1.second)
+  def strictify(entity: HttpEntity) = entity.toStrict(1.second.dilated).awaitResult(1.second.dilated)
 }

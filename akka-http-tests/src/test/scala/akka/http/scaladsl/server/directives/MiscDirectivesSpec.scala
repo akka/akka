@@ -9,6 +9,7 @@ import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
 import scala.util.Try
 import akka.http.scaladsl.model._
+import akka.testkit._
 import headers._
 import java.net.InetAddress
 
@@ -170,7 +171,7 @@ class MiscDirectivesSpec extends RoutingSpec {
               complete(lang.toString)
             }
           } ~> check(selected.complete(Try(responseAs[String])))
-          Await.result(selected.future, 1.second)
+          Await.result(selected.future, 1.second.dilated)
         }
       }
   }

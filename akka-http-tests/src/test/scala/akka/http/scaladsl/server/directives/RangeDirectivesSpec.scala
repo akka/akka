@@ -13,6 +13,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
+import akka.testkit._
 import org.scalatest.{ Inside, Inspectors }
 
 class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
@@ -100,19 +101,19 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
         wrs { complete("Some random and not super short entity.") }
       } ~> check {
         header[`Content-Range`] should be(None)
-        val parts = Await.result(responseAs[Multipart.ByteRanges].parts.limit(1000).runWith(Sink.seq), 1.second)
+        val parts = Await.result(responseAs[Multipart.ByteRanges].parts.limit(1000).runWith(Sink.seq), 1.second.dilated)
         parts.size shouldEqual 2
         inside(parts(0)) {
           case Multipart.ByteRanges.BodyPart(range, entity, unit, headers) ⇒
             range shouldEqual ContentRange.Default(0, 2, Some(39))
             unit shouldEqual RangeUnits.Bytes
-            Await.result(entity.dataBytes.utf8String, 100.millis) shouldEqual "Som"
+            Await.result(entity.dataBytes.utf8String, 100.millis.dilated) shouldEqual "Som"
         }
         inside(parts(1)) {
           case Multipart.ByteRanges.BodyPart(range, entity, unit, headers) ⇒
             range shouldEqual ContentRange.Default(5, 10, Some(39))
             unit shouldEqual RangeUnits.Bytes
-            Await.result(entity.dataBytes.utf8String, 100.millis) shouldEqual "random"
+            Await.result(entity.dataBytes.utf8String, 100.millis.dilated) shouldEqual "random"
         }
       }
     }
@@ -125,7 +126,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
         wrs { complete(HttpEntity.Default(ContentTypes.`text/plain(UTF-8)`, content.length, entityData())) }
       } ~> check {
         header[`Content-Range`] should be(None)
-        val parts = Await.result(responseAs[Multipart.ByteRanges].parts.limit(1000).runWith(Sink.seq), 1.second)
+        val parts = Await.result(responseAs[Multipart.ByteRanges].parts.limit(1000).runWith(Sink.seq), 1.second.dilated)
         parts.size shouldEqual 2
       }
     }

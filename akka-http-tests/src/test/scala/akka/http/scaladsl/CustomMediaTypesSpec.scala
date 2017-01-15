@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.MediaType.WithFixedCharset
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives
 import akka.stream.ActorMaterializer
-import akka.testkit.AkkaSpec
+import akka.testkit._
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration._
@@ -49,7 +49,7 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
       val response = Http().singleRequest(request).futureValue
 
       response.status should ===(StatusCodes.OK)
-      val responseBody = response.toStrict(1.second).futureValue.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String
+      val responseBody = response.toStrict(1.second.dilated).futureValue.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String
       responseBody should ===("application/custom = class akka.http.scaladsl.model.ContentType$WithFixedCharset")
     }
   }

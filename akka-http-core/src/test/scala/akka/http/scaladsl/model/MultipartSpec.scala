@@ -13,7 +13,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.testkit.TestKit
+import akka.testkit._
 import headers._
 
 class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAfterAll {
@@ -30,7 +30,7 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
       val streamed = Multipart.General(
         MediaTypes.`multipart/mixed`,
         Source(Multipart.General.BodyPart(defaultEntity("data"), List(ETag("xzy"))) :: Nil))
-      val strict = Await.result(streamed.toStrict(1.second), 1.second)
+      val strict = Await.result(streamed.toStrict(1.second.dilated), 1.second.dilated)
 
       strict shouldEqual Multipart.General(
         MediaTypes.`multipart/mixed`,
@@ -43,7 +43,7 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
         Source(Multipart.General.BodyPart(defaultEntity("data"), List(ETag("xzy"))) :: Nil))
       val result = streamed.toEntity("boundary")
       result.contentType shouldBe MediaTypes.`multipart/mixed`.withBoundary("boundary").toContentType
-      val encoding = Await.result(result.dataBytes.runWith(Sink.seq), 1.second)
+      val encoding = Await.result(result.dataBytes.runWith(Sink.seq), 1.second.dilated)
       encoding.map(_.utf8String).mkString shouldBe "--boundary\r\nContent-Type: text/plain; charset=UTF-8\r\nETag: \"xzy\"\r\n\r\ndata\r\n--boundary--"
     }
   }
@@ -53,7 +53,7 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
       val streamed = Multipart.FormData(Source(
         Multipart.FormData.BodyPart("foo", defaultEntity("FOO")) ::
           Multipart.FormData.BodyPart("bar", defaultEntity("BAR")) :: Nil))
-      val strict = Await.result(streamed.toStrict(1.second), 1.second)
+      val strict = Await.result(streamed.toStrict(1.second.dilated), 1.second.dilated)
 
       strict shouldEqual Multipart.FormData(Map("foo" → HttpEntity("FOO"), "bar" → HttpEntity("BAR")))
     }
@@ -64,7 +64,7 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
       val streamed = Multipart.ByteRanges(Source(
         Multipart.ByteRanges.BodyPart(ContentRange(0, 6), defaultEntity("snippet"), _additionalHeaders = List(ETag("abc"))) ::
           Multipart.ByteRanges.BodyPart(ContentRange(8, 9), defaultEntity("PR"), _additionalHeaders = List(ETag("xzy"))) :: Nil))
-      val strict = Await.result(streamed.toStrict(1.second), 1.second)
+      val strict = Await.result(streamed.toStrict(1.second.dilated), 1.second.dilated)
 
       strict shouldEqual Multipart.ByteRanges(
         Multipart.ByteRanges.BodyPart.Strict(ContentRange(0, 6), HttpEntity("snippet"), additionalHeaders = List(ETag("abc"))),

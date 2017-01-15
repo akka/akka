@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.pattern.CircuitBreaker
 
 import scala.concurrent.Future
-import akka.testkit.EventFilter
+import akka.testkit._
 import org.scalatest.Inside
 
 import scala.concurrent.duration._
@@ -25,8 +25,8 @@ class FutureDirectivesSpec extends RoutingSpec with Inside {
   }
 
   trait TestWithCircuitBreaker {
-    val breakerResetTimeout = 500.millis
-    val breaker = new CircuitBreaker(system.scheduler, maxFailures = 1, callTimeout = 10.seconds, breakerResetTimeout)
+    val breakerResetTimeout = 500.millis.dilated
+    val breaker = new CircuitBreaker(system.scheduler, maxFailures = 1, callTimeout = 10.seconds.dilated, breakerResetTimeout)
     def openBreaker() = breaker.withCircuitBreaker(Future.failed(new Exception("boom")))
   }
 

@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.{ ContentType, HttpRequest, HttpResponse }
 import akka.http.scaladsl.model.MediaTypes._
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.stream.testkit.Utils.{ TE, _ }
-import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.testkit._
 import org.scalatest.Inside
 
 import scala.concurrent.Await
@@ -57,7 +57,7 @@ class HttpServerBug21008Spec extends AkkaSpec(
           try {
             EventFilter[IllegalArgumentException](occurrences = 1) intercept {
               // make sure the failure has happened
-              Await.ready(done, 10.seconds)
+              Await.ready(done, 10.seconds.dilated)
               // and then when the failure has happened/future completes, we push a reply
               responses.sendNext(HttpResponse(entity = "Yeah"))
             }

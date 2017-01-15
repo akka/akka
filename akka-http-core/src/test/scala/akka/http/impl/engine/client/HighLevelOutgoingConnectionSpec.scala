@@ -7,7 +7,7 @@ package akka.http.impl.engine.client
 import scala.concurrent.duration._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowShape }
 import akka.stream.scaladsl._
-import akka.testkit.AkkaSpec
+import akka.testkit._
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.model._
 import akka.stream.testkit.Utils
@@ -30,10 +30,10 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         .take(N)
         .map(id ⇒ HttpRequest(uri = s"/r$id"))
         .via(Http().outgoingConnection(serverHostName, serverPort))
-        .mapAsync(4)(_.entity.toStrict(1.second))
+        .mapAsync(4)(_.entity.toStrict(1.second.dilated))
         .map { r ⇒ val s = r.data.utf8String; log.debug(s); s.toInt }
         .runFold(0)(_ + _)
-      result.futureValue(Timeout(10.seconds)) should ===(N * (N + 1) / 2)
+      result.futureValue(Timeout(10.seconds.dilated)) should ===(N * (N + 1) / 2)
       binding.futureValue.unbind()
     }
 
@@ -63,11 +63,11 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         .take(N)
         .map(id ⇒ HttpRequest(uri = s"/r$id"))
         .via(doubleConnection)
-        .mapAsync(4)(_.entity.toStrict(1.second))
+        .mapAsync(4)(_.entity.toStrict(1.second.dilated))
         .map { r ⇒ val s = r.data.utf8String; log.debug(s); s.toInt }
         .runFold(0)(_ + _)
 
-      result.futureValue(Timeout(10.seconds)) should ===(C * N * (N + 1) / 2)
+      result.futureValue(Timeout(10.seconds.dilated)) should ===(C * N * (N + 1) / 2)
       binding.futureValue.unbind()
     }
 

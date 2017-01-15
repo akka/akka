@@ -5,7 +5,7 @@ package akka.http.impl.util
 
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.testkit.AkkaSpec
+import akka.testkit._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -21,17 +21,17 @@ class StreamUtilsSpec extends AkkaSpec {
 
         newSource.runWith(Sink.ignore)
 
-        Await.result(whenCompleted, 3.seconds) shouldBe (())
+        Await.result(whenCompleted, 3.seconds.dilated) shouldBe (())
       }
 
       "upstream fails" in {
         val ex = new RuntimeException("ex")
         val (newSource, whenCompleted) = StreamUtils.captureTermination(Source.failed[Int](ex))
         intercept[RuntimeException] {
-          Await.result(newSource.runWith(Sink.head), 3.second)
+          Await.result(newSource.runWith(Sink.head), 3.second.dilated)
         } should be theSameInstanceAs ex
 
-        Await.ready(whenCompleted, 3.seconds).value shouldBe Some(Failure(ex))
+        Await.ready(whenCompleted, 3.seconds.dilated).value shouldBe Some(Failure(ex))
       }
 
       "downstream cancels" in {
@@ -39,7 +39,7 @@ class StreamUtilsSpec extends AkkaSpec {
 
         newSource.runWith(Sink.head)
 
-        Await.result(whenCompleted, 3.seconds) shouldBe (())
+        Await.result(whenCompleted, 3.seconds.dilated) shouldBe (())
       }
     }
   }

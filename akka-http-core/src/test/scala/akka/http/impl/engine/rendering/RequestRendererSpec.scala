@@ -21,7 +21,7 @@ import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import HttpEntity._
 import HttpMethods._
-import akka.testkit.TestKit
+import akka.testkit._
 
 class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -327,7 +327,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
     serverAddress: InetSocketAddress    = new InetSocketAddress("test.com", 8080))
     extends HttpRequestRendererFactory(userAgent, requestHeaderSizeHint = 64, NoLogging) {
 
-    def awaitAtMost: FiniteDuration = 4.seconds
+    def awaitAtMost: FiniteDuration = 4.seconds.dilated
 
     def renderTo(expected: String): Matcher[HttpRequest] =
       equal(expected.stripMarginWithNewline("\r\n")).matcher[String] compose { request ⇒
