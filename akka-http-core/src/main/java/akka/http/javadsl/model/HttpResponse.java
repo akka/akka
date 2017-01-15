@@ -6,6 +6,7 @@ package akka.http.javadsl.model;
 
 import akka.Done;
 import akka.http.impl.util.JavaAccessors;
+import akka.http.javadsl.model.headers.HttpEncoding;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 
@@ -39,6 +40,12 @@ public abstract class HttpResponse implements HttpMessage, HttpMessage.MessageTr
      * Returns a copy of this instance with a new entity.
      */
     public abstract HttpResponse withEntity(ResponseEntity entity);
+
+    /**
+     * Returns the content encoding as specified by the Content-Encoding header. If no Content-Encoding header is present the
+     * default value 'identity' is returned.
+     */
+    public abstract HttpEncoding encoding();
 
     /**
      * Returns a default response to be changed using the `withX` methods.

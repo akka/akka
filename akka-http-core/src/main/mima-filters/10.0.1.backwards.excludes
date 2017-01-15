@@ -1,3 +1,4 @@
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.parsingRendering")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.parsing")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpResponse.encoding")
