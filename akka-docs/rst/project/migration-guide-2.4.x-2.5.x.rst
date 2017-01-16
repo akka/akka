@@ -4,8 +4,8 @@
 Migration Guide 2.4.x to 2.5.x
 ##############################
 
-Akka Actor
-==========
+Actor
+=====
 
 Actor DSL deprecation
 ---------------------
@@ -13,8 +13,8 @@ Actor DSL deprecation
 Actor DSL is a rarely used feature and thus will be deprecated and removed.
 Use plain ``system.actorOf`` instead of the DSL to create Actors if you have been using it.
 
-Akka Streams
-============
+Streams
+=======
 
 Removal of StatefulStage, PushPullStage
 ---------------------------------------
@@ -85,6 +85,25 @@ in akka-remote's `reference.conf`_.
 Cluster
 =======
 
+Coordinated Shutdown
+--------------------
+
+There is a new extension named ``CoordinatedShutdown`` that will stop certain actors and 
+services in a specific order and perform registered tasks during the shutdown process.
+
+When using Akka Cluster, tasks for graceful leaving of cluster including graceful 
+shutdown of Cluster Singletons and Cluster Sharding are now performed automatically.
+
+Previously it was documented that things like terminating the ``ActorSystem`` should be
+done when the cluster member was removed, but this was very difficult to get right.
+That is now taken care of automatically. This might result in changed behavior, hopefully
+to the better. It might also be in conflict with your previous shutdown code so please 
+read the documentation for the Coordinated Shutdown and revisit your own implementations. 
+Most likely your implementation will not be needed any more or it can be simplified.
+
+More information can be found in the :ref:`documentation for Scala <coordinated-shutdown-scala>` or
+:ref:`documentation for Java <coordinated-shutdown-lambda>`  
+
 Cluster Management Command Line Tool
 ------------------------------------
 
@@ -97,8 +116,8 @@ See documentation of `akka/akka-cluster-management <https://github.com/akka/akka
 The command line script for cluster management has been deprecated and is scheduled for removal
 in the next major version. Use the HTTP API with `curl <https://curl.haxx.se/>`_ or similar instead.
 
-Akka Persistence
-================
+Persistence
+===========
 
 Removal of PersistentView
 -------------------------
@@ -123,8 +142,8 @@ non-sharable journal or snapshot store. The proxy is available by setting ``akka
 ``akka.persistence.snapshot-store.plugin`` to ``akka.persistence.journal.proxy`` or ``akka.persistence.snapshot-store.proxy``,
 respectively. The proxy supplants the :ref:`Shared LevelDB journal<shared-leveldb-journal>`.
 
-Akka Persistence Query
-======================
+Persistence Query
+=================
 
 Persistence Query has been promoted to a stable module.
 Only slight API changes were made since the module was introduced:

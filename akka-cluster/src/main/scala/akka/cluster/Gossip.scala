@@ -115,6 +115,13 @@ private[cluster] final case class Gossip(
   }
 
   /**
+   * Remove all seen entries
+   */
+  def clearSeen(): Gossip = {
+    this copy (overview = overview copy (seen = Set.empty))
+  }
+
+  /**
    * The nodes that have seen the current version of the Gossip.
    */
   def seenBy: Set[UniqueAddress] = overview.seen
@@ -158,7 +165,7 @@ private[cluster] final case class Gossip(
    *
    * @return true if convergence have been reached and false if not
    */
-  def convergence(selfUniqueAddress: UniqueAddress): Boolean = {
+  def convergence(selfUniqueAddress: UniqueAddress, exitingConfirmed: Set[UniqueAddress]): Boolean = {
     // First check that:
     //   1. we don't have any members that are unreachable, excluding observations from members
     //      that have status DOWN, or
@@ -167,10 +174,11 @@ private[cluster] final case class Gossip(
     // When that is done we check that all members with a convergence
     // status is in the seen table, i.e. has seen this version
     val unreachable = reachabilityExcludingDownedObservers.allUnreachableOrTerminated.collect {
-      case node if (node != selfUniqueAddress) ⇒ member(node)
+      case node if (node != selfUniqueAddress && !exitingConfirmed(node)) ⇒ member(node)
     }
     unreachable.forall(m ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(m.status)) &&
-      !members.exists(m ⇒ Gossip.convergenceMemberStatus(m.status) && !seenByNode(m.uniqueAddress))
+      !members.exists(m ⇒ Gossip.convergenceMemberStatus(m.status) &&
+        !(seenByNode(m.uniqueAddress) || exitingConfirmed(m.uniqueAddress)))
   }
 
   lazy val reachabilityExcludingDownedObservers: Reachability = {
@@ -187,7 +195,7 @@ private[cluster] final case class Gossip(
   def roleLeader(role: String, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
     leaderOf(members.filter(_.hasRole(role)), selfUniqueAddress)
 
-  private def leaderOf(mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
+  def leaderOf(mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
     val reachableMembers =
       if (overview.reachability.isAllReachable) mbrs.filterNot(_.status == Down)
       else mbrs.filter(m ⇒ m.status != Down &&

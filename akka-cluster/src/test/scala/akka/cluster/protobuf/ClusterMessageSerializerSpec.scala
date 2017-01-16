@@ -43,9 +43,9 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
 
     "be serializable" in {
       val address = Address("akka.tcp", "system", "some.host.org", 4711)
-      val uniqueAddress = UniqueAddress(address, 17)
+      val uniqueAddress = UniqueAddress(address, 17L)
       val address2 = Address("akka.tcp", "system", "other.host.org", 4711)
-      val uniqueAddress2 = UniqueAddress(address2, 18)
+      val uniqueAddress2 = UniqueAddress(address2, 18L)
       checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar")))
       checkSerialization(ClusterUserAction.Leave(address))
       checkSerialization(ClusterUserAction.Down(address))
@@ -54,6 +54,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       checkSerialization(InternalClusterAction.InitJoinNack(address))
       checkSerialization(ClusterHeartbeatSender.Heartbeat(address))
       checkSerialization(ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress))
+      checkSerialization(InternalClusterAction.ExitingConfirmed(uniqueAddress))
 
       val node1 = VectorClock.Node("node1")
       val node2 = VectorClock.Node("node2")

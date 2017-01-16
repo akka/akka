@@ -33,7 +33,7 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
   val eJoining = TestMember(Address("akka.tcp", "sys", "e", 2552), Joining, eRoles)
   val eUp = TestMember(Address("akka.tcp", "sys", "e", 2552), Up, eRoles)
   val eDown = TestMember(Address("akka.tcp", "sys", "e", 2552), Down, eRoles)
-  val selfDummyAddress = UniqueAddress(Address("akka.tcp", "sys", "selfDummy", 2552), 17)
+  val selfDummyAddress = UniqueAddress(Address("akka.tcp", "sys", "selfDummy", 2552), 17L)
 
   private[cluster] def converge(gossip: Gossip): (Gossip, Set[UniqueAddress]) =
     ((gossip, Set.empty[UniqueAddress]) /: gossip.members) { case ((gs, as), m) ⇒ (gs.seen(m.uniqueAddress), as + m.uniqueAddress) }

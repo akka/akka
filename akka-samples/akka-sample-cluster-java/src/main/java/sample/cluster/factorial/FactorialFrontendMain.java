@@ -34,39 +34,6 @@ public class FactorialFrontendMain {
     });
     //#registerOnUp
 
-    //#registerOnRemoved
-    Cluster.get(system).registerOnMemberRemoved(new Runnable() {
-      @Override
-      public void run() {
-        // exit JVM when ActorSystem has been terminated
-        final Runnable exit = new Runnable() {
-          @Override public void run() {
-            System.exit(0);
-          }
-        };
-        system.registerOnTermination(exit);
-
-        // shut down ActorSystem
-        system.terminate();
-
-        // In case ActorSystem shutdown takes longer than 10 seconds,
-        // exit the JVM forcefully anyway.
-        // We must spawn a separate thread to not block current thread,
-        // since that would have blocked the shutdown of the ActorSystem.
-        new Thread() {
-          @Override public void run(){
-            try {
-              Await.ready(system.whenTerminated(), Duration.create(10, TimeUnit.SECONDS));
-            } catch (Exception e) {
-              System.exit(-1);
-            }
-
-          }
-        }.start();
-      }
-    });
-    //#registerOnRemoved
-
   }
 
 }

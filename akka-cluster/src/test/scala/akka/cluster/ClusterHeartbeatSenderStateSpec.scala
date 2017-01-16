@@ -40,11 +40,11 @@ object ClusterHeartbeatSenderStateSpec {
 class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
   import ClusterHeartbeatSenderStateSpec._
 
-  val aa = UniqueAddress(Address("akka.tcp", "sys", "aa", 2552), 1)
-  val bb = UniqueAddress(Address("akka.tcp", "sys", "bb", 2552), 2)
-  val cc = UniqueAddress(Address("akka.tcp", "sys", "cc", 2552), 3)
-  val dd = UniqueAddress(Address("akka.tcp", "sys", "dd", 2552), 4)
-  val ee = UniqueAddress(Address("akka.tcp", "sys", "ee", 2552), 5)
+  val aa = UniqueAddress(Address("akka.tcp", "sys", "aa", 2552), 1L)
+  val bb = UniqueAddress(Address("akka.tcp", "sys", "bb", 2552), 2L)
+  val cc = UniqueAddress(Address("akka.tcp", "sys", "cc", 2552), 3L)
+  val dd = UniqueAddress(Address("akka.tcp", "sys", "dd", 2552), 4L)
+  val ee = UniqueAddress(Address("akka.tcp", "sys", "ee", 2552), 5L)
 
   private def emptyState: ClusterHeartbeatSenderState = emptyState(aa)
 
@@ -142,7 +142,8 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
 
     "behave correctly for random operations" in {
       val rnd = ThreadLocalRandom.current
-      val nodes = (1 to rnd.nextInt(10, 200)).map(n ⇒ UniqueAddress(Address("akka.tcp", "sys", "n" + n, 2552), n)).toVector
+      val nodes = (1 to rnd.nextInt(10, 200)).map(n ⇒
+        UniqueAddress(Address("akka.tcp", "sys", "n" + n, 2552), n.toLong)).toVector
       def rndNode() = nodes(rnd.nextInt(0, nodes.size))
       val selfUniqueAddress = rndNode()
       var state = emptyState(selfUniqueAddress)

@@ -186,11 +186,16 @@ It can also be performed programmatically with:
 .. includecode:: code/docs/cluster/ClusterDocTest.java#leave
 
 Note that this command can be issued to any member in the cluster, not necessarily the
-one that is leaving. The cluster extension, but not the actor system or JVM, of the
-leaving member will be shutdown after the leader has changed status of the member to
-`Exiting`. Thereafter the member will be removed from the cluster. Normally this is handled
-automatically, but in case of network failures during this process it might still be necessary
-to set the node’s status to ``Down`` in order to complete the removal.
+one that is leaving.
+
+The :ref:`coordinated-shutdown-lambda` will automatically run when the cluster node sees itself as 
+``Exiting``, i.e. leaving from another node will trigger the shutdown process on the leaving node. 
+Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and 
+Cluster Sharding are added automatically when Akka Cluster is used, i.e. running the shutdown 
+process will also trigger the graceful leaving if it's not already in progress. 
+
+Normally this is handled automatically, but in case of network failures during this process it might still 
+be necessary to set the node’s status to ``Down`` in order to complete the removal.
 
 .. _weakly_up_java:
 
@@ -357,9 +362,7 @@ How To Cleanup when Member is Removed
 You can do some clean up in a ``registerOnMemberRemoved`` callback, which will
 be invoked when the current member status is changed to 'Removed' or the cluster have been shutdown.
 
-For example, this is how to shut down the ``ActorSystem`` and thereafter exit the JVM:
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/FactorialFrontendMain.java#registerOnRemoved
+An alternative is to register tasks to the :ref:`coordinated-shutdown-lambda`.
 
 .. note::
    Register a OnMemberRemoved callback on a cluster that have been shutdown, the callback will be invoked immediately on

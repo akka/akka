@@ -293,11 +293,8 @@ to the ``ShardRegion`` actor to handoff all shards that are hosted by that ``Sha
 During this period other regions will buffer messages for those shards in the same way as when a rebalance is
 triggered by the coordinator. When the shards have been stopped the coordinator will allocate these shards elsewhere.
 
-When the ``ShardRegion`` has terminated you probably want to ``leave`` the cluster, and shut down the ``ActorSystem``.
-
-This is how to do that: 
-
-.. includecode:: ../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java#graceful-shutdown
+This is performed automatically by the :ref:`coordinated-shutdown-lambda` and is therefore part of the 
+graceful leaving process of a cluster member.
 
 .. _RemoveInternalClusterShardingData-java:
 

@@ -16,6 +16,10 @@ import akka.testkit.TestProbe
 import akka.actor.ActorSystem
 import akka.actor.Props
 import com.typesafe.config.ConfigFactory
+import akka.actor.CoordinatedShutdown
+import akka.cluster.ClusterEvent.MemberEvent
+import akka.cluster.ClusterEvent._
+import scala.concurrent.Await
 
 object ClusterSpec {
   val config = """
@@ -28,7 +32,7 @@ object ClusterSpec {
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.tcp.port = 0
-    #akka.loglevel = DEBUG
+    akka.remote.artery.canonical.port = 0
     """
 
   final case class GossipTo(address: Address)
@@ -109,6 +113,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
         akka.actor.provider = "cluster"
         akka.remote.netty.tcp.port = 0
+        akka.remote.artery.canonical.port = 0
         """))
       try {
         val ref = sys2.actorOf(Props.empty)
@@ -136,6 +141,78 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       testActor.path.address.host should ===(None)
       cluster.remotePathOf(testActor).uid should ===(testActor.path.uid)
       cluster.remotePathOf(testActor).address should ===(selfAddress)
+    }
+
+    "leave via CoordinatedShutdown.run" in {
+      val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
+        akka.actor.provider = "cluster"
+        akka.remote.netty.tcp.port = 0
+        akka.remote.artery.canonical.port = 0
+        """))
+      try {
+        val probe = TestProbe()(sys2)
+        Cluster(sys2).subscribe(probe.ref, classOf[MemberEvent])
+        probe.expectMsgType[CurrentClusterState]
+        Cluster(sys2).join(Cluster(sys2).selfAddress)
+        probe.expectMsgType[MemberUp]
+
+        CoordinatedShutdown(sys2).run()
+        probe.expectMsgType[MemberLeft]
+        probe.expectMsgType[MemberExited]
+        probe.expectMsgType[MemberRemoved]
+      } finally {
+        shutdown(sys2)
+      }
+    }
+
+    "terminate ActorSystem via leave (CoordinatedShutdown)" in {
+      val sys2 = ActorSystem("ClusterSpec2", ConfigFactory.parseString("""
+        akka.actor.provider = "cluster"
+        akka.remote.netty.tcp.port = 0
+        akka.remote.artery.canonical.port = 0
+        akka.coordinated-shutdown.terminate-actor-system = on
+        """))
+      try {
+        val probe = TestProbe()(sys2)
+        Cluster(sys2).subscribe(probe.ref, classOf[MemberEvent])
+        probe.expectMsgType[CurrentClusterState]
+        Cluster(sys2).join(Cluster(sys2).selfAddress)
+        probe.expectMsgType[MemberUp]
+
+        Cluster(sys2).leave(Cluster(sys2).selfAddress)
+        probe.expectMsgType[MemberLeft]
+        probe.expectMsgType[MemberExited]
+        probe.expectMsgType[MemberRemoved]
+        Await.result(sys2.whenTerminated, 10.seconds)
+        Cluster(sys2).isTerminated should ===(true)
+      } finally {
+        shutdown(sys2)
+      }
+    }
+
+    "terminate ActorSystem via down (CoordinatedShutdown)" in {
+      val sys3 = ActorSystem("ClusterSpec3", ConfigFactory.parseString("""
+        akka.actor.provider = "cluster"
+        akka.remote.netty.tcp.port = 0
+        akka.remote.artery.canonical.port = 0
+        akka.coordinated-shutdown.terminate-actor-system = on
+        akka.cluster.run-coordinated-shutdown-when-down = on
+akka.loglevel=DEBUG
+        """))
+      try {
+        val probe = TestProbe()(sys3)
+        Cluster(sys3).subscribe(probe.ref, classOf[MemberEvent])
+        probe.expectMsgType[CurrentClusterState]
+        Cluster(sys3).join(Cluster(sys3).selfAddress)
+        probe.expectMsgType[MemberUp]
+
+        Cluster(sys3).down(Cluster(sys3).selfAddress)
+        probe.expectMsgType[MemberRemoved]
+        Await.result(sys3.whenTerminated, 10.seconds)
+        Cluster(sys3).isTerminated should ===(true)
+      } finally {
+        shutdown(sys3)
+      }
     }
   }
 }
