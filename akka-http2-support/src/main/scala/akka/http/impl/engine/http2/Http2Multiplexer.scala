@@ -59,7 +59,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       def updateWindow(streamId: Int, increment: Int): Unit = {
         if (streamId == 0) {
           totalOutboundWindowLeft += increment
-          debug(s"Updating outgoing connection window by $increment to $totalOutboundWindowLeft")
+          debug(s"Updating outgoing connection window by $increment to $totalOutboundWindowLeft bufferedElements: ${buffer.size()}")
         } else {
           updateWindowFor(streamId, increment)
           debug(s"Updating window for $streamId by $increment to ${windowLeftFor(streamId)} bufferedElements: ${buffer.size()}")
@@ -88,17 +88,35 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
       override def doPush(elem: ElementAndTrigger): Unit =
         elem.element match {
-          case d @ DataFrame(streamId, _, pl) ⇒
-            if (pl.size <= totalOutboundWindowLeft && pl.size <= windowLeftFor(streamId)) {
+          case d @ DataFrame(streamId, _, payload) ⇒
+            val sendSize = totalOutboundWindowLeft min windowLeftFor(streamId) min payload.size
+
+            def send(elem: ElementAndTrigger): Unit = {
               super.doPush(elem)
+              totalOutboundWindowLeft -= elem.element.asInstanceOf[DataFrame].payload.size
+              updateWindowFor(streamId, -elem.element.asInstanceOf[DataFrame].payload.size)
+            }
 
-              val size = pl.size
-              totalOutboundWindowLeft -= size
-              updateWindowFor(streamId, -size)
+            if (sendSize == payload.size) {
+              // send unchanged
+              send(elem)
 
-              debug(s"Pushed $size bytes of data for stream $streamId total window left: $totalOutboundWindowLeft per stream window left: ${windowLeftFor(streamId)}")
+              debug(s"Pushed ${payload.size} bytes of data for stream $streamId total window left: $totalOutboundWindowLeft per stream window left: ${windowLeftFor(streamId)}")
+            } else if (sendSize > 0) {
+              // split up
+              val toSend = payload.take(sendSize)
+              val remaining = payload.drop(sendSize)
+
+              send(
+                elem.copy(
+                  element = d.copy(payload = toSend),
+                  trigger = () ⇒ buffer.add(elem.copy(d.copy(payload = remaining)))))
+
+              debug(s"Couldn't send completely because not enough window was left. Sending partially. " +
+                s"Total size: ${payload.size} sent: $sendSize left: ${remaining.size} " +
+                s"connection level window: $totalOutboundWindowLeft per stream window: ${windowLeftFor(streamId)}")
             } else {
-              debug(s"Couldn't send because no window left. Size: ${pl.size} total: $totalOutboundWindowLeft per stream: ${windowLeftFor(streamId)}")
+              debug(s"Couldn't send because no window left. Size: ${payload.size} total: $totalOutboundWindowLeft per stream: ${windowLeftFor(streamId)}")
               // adding to end of the queue only works if there's only ever one frame per
               // substream in the queue (which is the case since backpressure was introduced)
               // TODO: we should try to find another stream to push data in this case
