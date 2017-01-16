@@ -28,43 +28,57 @@ class GossipSpec extends WordSpec with Matchers {
   "A Gossip" must {
 
     "reach convergence when it's empty" in {
-      Gossip.empty.convergence(a1.uniqueAddress) should ===(true)
+      Gossip.empty.convergence(a1.uniqueAddress, Set.empty) should ===(true)
     }
 
     "reach convergence for one node" in {
-      val g1 = (Gossip(members = SortedSet(a1))).seen(a1.uniqueAddress)
-      g1.convergence(a1.uniqueAddress) should ===(true)
+      val g1 = Gossip(members = SortedSet(a1)).seen(a1.uniqueAddress)
+      g1.convergence(a1.uniqueAddress, Set.empty) should ===(true)
     }
 
     "not reach convergence until all have seen version" in {
-      val g1 = (Gossip(members = SortedSet(a1, b1))).seen(a1.uniqueAddress)
-      g1.convergence(a1.uniqueAddress) should ===(false)
+      val g1 = Gossip(members = SortedSet(a1, b1)).seen(a1.uniqueAddress)
+      g1.convergence(a1.uniqueAddress, Set.empty) should ===(false)
     }
 
     "reach convergence for two nodes" in {
-      val g1 = (Gossip(members = SortedSet(a1, b1))).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
-      g1.convergence(a1.uniqueAddress) should ===(true)
+      val g1 = Gossip(members = SortedSet(a1, b1)).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
+      g1.convergence(a1.uniqueAddress, Set.empty) should ===(true)
     }
 
     "reach convergence, skipping joining" in {
       // e1 is joining
-      val g1 = (Gossip(members = SortedSet(a1, b1, e1))).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
-      g1.convergence(a1.uniqueAddress) should ===(true)
+      val g1 = Gossip(members = SortedSet(a1, b1, e1)).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
+      g1.convergence(a1.uniqueAddress, Set.empty) should ===(true)
     }
 
     "reach convergence, skipping down" in {
       // e3 is down
-      val g1 = (Gossip(members = SortedSet(a1, b1, e3))).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
-      g1.convergence(a1.uniqueAddress) should ===(true)
+      val g1 = Gossip(members = SortedSet(a1, b1, e3)).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
+      g1.convergence(a1.uniqueAddress, Set.empty) should ===(true)
+    }
+
+    "reach convergence, skipping Leaving with exitingConfirmed" in {
+      // c1 is Leaving
+      val g1 = Gossip(members = SortedSet(a1, b1, c1)).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
+      g1.convergence(a1.uniqueAddress, Set(c1.uniqueAddress)) should ===(true)
+    }
+
+    "reach convergence, skipping unreachable Leaving with exitingConfirmed" in {
+      // c1 is Leaving
+      val r1 = Reachability.empty.unreachable(b1.uniqueAddress, c1.uniqueAddress)
+      val g1 = Gossip(members = SortedSet(a1, b1, c1), overview = GossipOverview(reachability = r1))
+        .seen(a1.uniqueAddress).seen(b1.uniqueAddress)
+      g1.convergence(a1.uniqueAddress, Set(c1.uniqueAddress)) should ===(true)
     }
 
     "not reach convergence when unreachable" in {
       val r1 = Reachability.empty.unreachable(b1.uniqueAddress, a1.uniqueAddress)
       val g1 = (Gossip(members = SortedSet(a1, b1), overview = GossipOverview(reachability = r1)))
         .seen(a1.uniqueAddress).seen(b1.uniqueAddress)
-      g1.convergence(b1.uniqueAddress) should ===(false)
+      g1.convergence(b1.uniqueAddress, Set.empty) should ===(false)
       // but from a1's point of view (it knows that itself is not unreachable)
-      g1.convergence(a1.uniqueAddress) should ===(true)
+      g1.convergence(a1.uniqueAddress, Set.empty) should ===(true)
     }
 
     "reach convergence when downed node has observed unreachable" in {
@@ -72,7 +86,7 @@ class GossipSpec extends WordSpec with Matchers {
       val r1 = Reachability.empty.unreachable(e3.uniqueAddress, a1.uniqueAddress)
       val g1 = (Gossip(members = SortedSet(a1, b1, e3), overview = GossipOverview(reachability = r1)))
         .seen(a1.uniqueAddress).seen(b1.uniqueAddress).seen(e3.uniqueAddress)
-      g1.convergence(b1.uniqueAddress) should ===(true)
+      g1.convergence(b1.uniqueAddress, Set.empty) should ===(true)
     }
 
     "merge members by status priority" in {

@@ -29,6 +29,7 @@ object RemoveInternalClusterShardingDataSpec {
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
+    akka.remote.artery.canonical.port = 0
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.journal.leveldb {
       native = off

@@ -14,7 +14,7 @@ class HeartbeatNodeRingPerfSpec extends WordSpec with Matchers {
   val iterations = sys.props.get("akka.cluster.HeartbeatNodeRingPerfSpec.iterations").getOrElse("1000").toInt
 
   def createHeartbeatNodeRingOfSize(size: Int): HeartbeatNodeRing = {
-    val nodes = (1 to size).map(n ⇒ UniqueAddress(Address("akka.tcp", "sys", "node-" + n, 2552), n))
+    val nodes = (1 to size).map(n ⇒ UniqueAddress(Address("akka.tcp", "sys", "node-" + n, 2552), n.toLong))
     val selfAddress = nodes(size / 2)
     HeartbeatNodeRing(selfAddress, nodes.toSet, Set.empty, 5)
   }

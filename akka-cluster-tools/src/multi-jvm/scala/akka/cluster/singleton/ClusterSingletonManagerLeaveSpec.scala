@@ -130,8 +130,12 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
       }
 
       runOn(first) {
+        cluster.registerOnMemberRemoved(testActor ! "MemberRemoved")
         expectMsg(10.seconds, "stop")
         expectMsg("postStop")
+        // CoordinatedShutdown makes sure that singleton actors are
+        // stopped before Cluster shutdown
+        expectMsg("MemberRemoved")
       }
       enterBarrier("first-stopped")
 
@@ -153,13 +157,12 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
       }
       enterBarrier("second-working")
 
-      runOn(third) {
-        cluster.leave(node(second).address)
-      }
-
       runOn(second) {
+        cluster.registerOnMemberRemoved(testActor ! "MemberRemoved")
+        cluster.leave(node(second).address)
         expectMsg(15.seconds, "stop")
         expectMsg("postStop")
+        expectMsg("MemberRemoved")
       }
       enterBarrier("second-stopped")
 
@@ -169,12 +172,11 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
       enterBarrier("third-started")
 
       runOn(third) {
+        cluster.registerOnMemberRemoved(testActor ! "MemberRemoved")
         cluster.leave(node(third).address)
-      }
-
-      runOn(third) {
         expectMsg(5.seconds, "stop")
         expectMsg("postStop")
+        expectMsg("MemberRemoved")
       }
       enterBarrier("third-stopped")
 

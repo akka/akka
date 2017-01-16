@@ -38,32 +38,6 @@ object ClusterShardingGracefulShutdownSpec {
     case id: Int ⇒ id.toString
   }
 
-  //#graceful-shutdown
-  class IllustrateGracefulShutdown extends Actor {
-    val system = context.system
-    val cluster = Cluster(system)
-    val region = ClusterSharding(system).shardRegion("Entity")
-
-    def receive = {
-      case "leave" ⇒
-        context.watch(region)
-        region ! ShardRegion.GracefulShutdown
-
-      case Terminated(`region`) ⇒
-        cluster.registerOnMemberRemoved(self ! "member-removed")
-        cluster.leave(cluster.selfAddress)
-
-      case "member-removed" ⇒
-        // Let singletons hand over gracefully before stopping the system
-        import context.dispatcher
-        system.scheduler.scheduleOnce(10.seconds, self, "stop-system")
-
-      case "stop-system" ⇒
-        system.terminate()
-    }
-  }
-  //#graceful-shutdown
-
 }
 
 abstract class ClusterShardingGracefulShutdownSpecConfig(val mode: String) extends MultiNodeConfig {

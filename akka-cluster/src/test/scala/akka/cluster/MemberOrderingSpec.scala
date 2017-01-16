@@ -50,7 +50,7 @@ class MemberOrderingSpec extends WordSpec with Matchers {
     "have stable equals and hashCode" in {
       val address = Address("akka.tcp", "sys1", "host1", 9000)
       val m1 = m(address, Joining)
-      val m11 = Member(UniqueAddress(address, -3), Set.empty)
+      val m11 = Member(UniqueAddress(address, -3L), Set.empty)
       val m2 = m1.copy(status = Up)
       val m22 = m11.copy(status = Up)
       val m3 = m(address.copy(port = Some(10000)), Up)
@@ -81,7 +81,7 @@ class MemberOrderingSpec extends WordSpec with Matchers {
 
       // different uid
       val a = m(address1, Joining)
-      val b = Member(UniqueAddress(address1, -3), Set.empty)
+      val b = Member(UniqueAddress(address1, -3L), Set.empty)
       Member.ordering.compare(a, b) should ===(1)
       Member.ordering.compare(b, a) should ===(-1)
 
