@@ -51,7 +51,7 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
     private def statement() = connection.prepareStatement(
       """
         SELECT id, persistent_repr FROM journal
-        WHERE tag = ? AND id >= ?
+        WHERE tag = ? AND id > ?
         ORDER BY id LIMIT ?
       """)
 

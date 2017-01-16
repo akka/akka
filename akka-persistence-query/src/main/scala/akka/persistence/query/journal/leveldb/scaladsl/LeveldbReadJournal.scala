@@ -10,7 +10,7 @@ import akka.actor.ExtendedActorSystem
 import akka.event.Logging
 import akka.persistence.query.journal.leveldb.{ AllPersistenceIdsPublisher, EventsByPersistenceIdPublisher, EventsByTagPublisher }
 import akka.persistence.query.scaladsl.{ ReadJournal, _ }
-import akka.persistence.query.{ EventEnvelope, Offset, Sequence }
+import akka.persistence.query.{ EventEnvelope, NoOffset, Offset, Sequence }
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.config.Config
@@ -128,11 +128,15 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
    * To tag events you create an [[akka.persistence.journal.EventAdapter]] that wraps the events
    * in a [[akka.persistence.journal.Tagged]] with the given `tags`.
    *
-   * You can retrieve a subset of all events by specifying `offset`, or use `0L` to retrieve all
-   * events with a given tag. The `offset` corresponds to an ordered sequence number for
+   * You can use `NoOffset` to retrieve all events with a given tag or retrieve a subset of all
+   * events by specifying a `Sequence` `offset`. The `offset` corresponds to an ordered sequence number for
    * the specific tag. Note that the corresponding offset of each event is provided in the
    * [[akka.persistence.query.EventEnvelope]], which makes it possible to resume the
    * stream at a later point from a given offset.
+   *
+   * The `offset` is exclusive, i.e. the event with the exact same sequence number will not be included
+   * in the returned stream. This means that you can use the offset that is returned in `EventEnvelope`
+   * as the `offset` parameter in a subsequent query.
    *
    * In addition to the `offset` the `EventEnvelope` also provides `persistenceId` and `sequenceNr`
    * for each event. The `sequenceNr` is the sequence number for the persistent actor with the
@@ -163,7 +167,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
           refreshInterval, maxBufSize, writeJournalPluginId))
           .mapMaterializedValue(_ ⇒ NotUsed)
           .named("eventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
-
+      case NoOffset ⇒ eventsByTag(tag, Sequence(0L)) //recursive
       case _ ⇒
         throw new IllegalArgumentException("LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")
     }
@@ -179,7 +183,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
         Source.actorPublisher[EventEnvelope](EventsByTagPublisher.props(tag, seq.value, Long.MaxValue,
           None, maxBufSize, writeJournalPluginId)).mapMaterializedValue(_ ⇒ NotUsed)
           .named("currentEventsByTag-" + URLEncoder.encode(tag, ByteString.UTF_8))
-
+      case NoOffset ⇒ currentEventsByTag(tag, Sequence(0L)) //recursive
       case _ ⇒
         throw new IllegalArgumentException("LevelDB does not support " + Logging.simpleName(offset.getClass) + " offsets")
     }

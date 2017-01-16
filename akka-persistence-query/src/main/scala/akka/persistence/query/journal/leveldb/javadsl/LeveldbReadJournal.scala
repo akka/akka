@@ -116,6 +116,10 @@ class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.lev
    * `persistenceId` that persisted the event. The `persistenceId` + `sequenceNr` is an unique
    * identifier for the event.
    *
+   * The `offset` is exclusive, i.e. the event with the exact same sequence number will not be included
+   * in the returned stream. This means that you can use the offset that is returned in `EventEnvelope`
+   * as the `offset` parameter in a subsequent query.
+   *
    * The returned event stream is ordered by the offset (tag sequence number), which corresponds
    * to the same order as the write journal stored the events. The same stream elements (in same order)
    * are returned for multiple executions of the query. Deleted events are not deleted from the
