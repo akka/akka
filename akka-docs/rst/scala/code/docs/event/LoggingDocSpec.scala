@@ -144,7 +144,7 @@ class LoggingDocSpec extends AkkaSpec {
         }
       }
 
-      val listener = system.actorOf(Props(classOf[Listener], this))
+      val listener = system.actorOf(Props[Listener])
       system.eventStream.subscribe(listener, classOf[DeadLetter])
       //#deadletters
     }
@@ -166,8 +166,8 @@ class LoggingDocSpec extends AkkaSpec {
         }
       }
 
-      val jazzListener = system.actorOf(Props(classOf[Listener], this))
-      val musicListener = system.actorOf(Props(classOf[Listener], this))
+      val jazzListener = system.actorOf(Props[Listener])
+      val musicListener = system.actorOf(Props[Listener])
       system.eventStream.subscribe(jazzListener, classOf[Jazz])
       system.eventStream.subscribe(musicListener, classOf[AllKindsOfMusic])
 
