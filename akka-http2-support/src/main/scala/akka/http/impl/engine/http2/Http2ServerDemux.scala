@@ -81,29 +81,27 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with BufferedOutletSupport with StageLogging {
+    new GraphStageLogic(shape) with GenericOutletSupport with Http2MultiplexerSupport with StageLogging {
       logic ⇒
 
       final case class SubStream(
-        streamId:               Int,
-        state:                  StreamState,
-        outlet:                 Option[BufferedOutlet[ByteString]],
-        inlet:                  Option[SubSinkInlet[ByteString]],
-        var outboundWindowLeft: Long
+        streamId: Int,
+        state:    StreamState,
+        outlet:   Option[BufferedOutlet[ByteString]]
       )
+
+      val multiplexer = createMultiplexer(frameOut)
 
       override def preStart(): Unit = {
         pull(frameIn)
         pull(substreamIn)
 
-        bufferedFrameOut.push(SettingsFrame(Nil)) // server side connection preface
+        multiplexer.pushControlFrame(SettingsFrame(Nil)) // server side connection preface
       }
 
       // we should not handle streams later than the GOAWAY told us about with lastStreamId
       private var closedAfter: Option[Int] = None
       private var incomingStreams = mutable.Map.empty[Int, SubStream]
-      private var totalOutboundWindowLeft = Http2Protocol.InitialWindowSize
-      private var streamLevelWindow = Http2Protocol.InitialWindowSize
 
       /**
        * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
@@ -118,7 +116,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         val last = lastStreamId
         closedAfter = Some(last)
         val frame = GoAwayFrame(last, errorCode, ByteString(debug))
-        bufferedFrameOut.push(frame)
+        multiplexer.pushControlFrame(frame)
         // FIXME: handle the connection closing according to the specification
       }
 
@@ -127,10 +125,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         def onPush(): Unit = {
           val in = grab(frameIn)
           in match {
-            case WindowUpdateFrame(0, increment) ⇒
-              totalOutboundWindowLeft += increment
-              debug(f"outbound window is now $totalOutboundWindowLeft%10d after increment $increment%6d")
-              bufferedFrameOut.tryFlush()
+            case WindowUpdateFrame(streamId, increment) ⇒ multiplexer.updateWindow(streamId, increment)
 
             case e: StreamFrameEvent if !Http2Compliance.isClientInitiatedStreamId(e.streamId) ⇒
               pushGOAWAY()
@@ -151,7 +146,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                       incomingStreams.remove(streamId)
                   }))
                 }
-              val entry = SubStream(streamId, StreamState.Open /* FIXME stream state */ , outlet, None, streamLevelWindow)
+              val entry = SubStream(streamId, StreamState.Open /* FIXME stream state */ , outlet)
               incomingStreams += streamId → entry // TODO optimise for lookup later on
 
               dispatchSubstream(Http2SubStream(frame, data))
@@ -175,12 +170,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
             case RstStreamFrame(streamId, errorCode) ⇒
               // FIXME: also need to handle the other case when no response has been produced yet (inlet still None)
-              incomingStreams(streamId).inlet.foreach(_.cancel())
-
-            case WindowUpdateFrame(streamId, increment) ⇒
-              incomingStreams(streamId).outboundWindowLeft += increment
-              debug(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
-              bufferedFrameOut.tryFlush()
+              multiplexer.cancelSubStream(streamId)
 
             case PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
               debug(s"Received PriorityFrame for stream $streamId with ${if (exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
@@ -190,19 +180,19 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               settings.foreach {
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
                   debug(s"Setting initial window to $value")
-                  val delta = value - streamLevelWindow
-                  streamLevelWindow = value
-                  incomingStreams.values.foreach(_.outboundWindowLeft += delta)
+                  multiplexer.updateDefaultWindow(value)
+                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
+                  multiplexer.updateFrameSize(value)
                 case Setting(id, value) ⇒
                   debug(s"Ignoring setting $id -> $value (in Demux)")
               }
 
-              bufferedFrameOut.push(SettingsAckFrame(settings))
+              multiplexer.pushControlFrame(SettingsAckFrame(settings))
 
             case PingFrame(true, _) ⇒
             // ignore for now (we don't send any pings)
             case PingFrame(false, data) ⇒
-              bufferedFrameOut.push(PingFrame(ack = true, data))
+              multiplexer.pushControlFrame(PingFrame(ack = true, data))
 
             case e ⇒
               debug(s"Got unhandled event $e")
@@ -222,7 +212,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
             case e: Http2Compliance.Http2ProtocolStreamException ⇒
               incomingStreams.remove(e.streamId)
-              bufferedFrameOut.push(RstStreamFrame(e.streamId, e.errorCode))
+              multiplexer.pushControlFrame(RstStreamFrame(e.streamId, e.errorCode))
 
             case e: ParsingException ⇒
               e.getCause match {
@@ -244,46 +234,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         def onPush(): Unit = {
           val sub = grab(substreamIn)
           pull(substreamIn)
-          bufferedFrameOut.push(sub.initialHeaders)
-          if (!sub.initialHeaders.endStream) { // if endStream is set, the source is never read
-            val subIn = new SubSinkInlet[ByteString](s"substream-in-${sub.streamId}")
-            incomingStreams = incomingStreams.updated(sub.streamId, incomingStreams(sub.streamId).copy(inlet = Some(subIn)))
-            subIn.pull()
-            subIn.setHandler(new InHandler {
-              def onPush(): Unit = bufferedFrameOut.pushWithTrigger(DataFrame(sub.streamId, endStream = false, subIn.grab()), () ⇒
-                if (!subIn.isClosed) subIn.pull())
-
-              override def onUpstreamFinish(): Unit = bufferedFrameOut.push(DataFrame(sub.streamId, endStream = true, ByteString.empty))
-            })
-            sub.data.runWith(subIn.sink)(subFusingMaterializer)
-          }
+          multiplexer.registerSubStream(sub)
         }
       })
-
-      val bufferedFrameOut = new BufferedOutletExtended[FrameEvent](frameOut) {
-        override def doPush(elem: ElementAndTrigger): Unit = {
-          elem.element match {
-            case d @ DataFrame(streamId, _, pl) ⇒
-              if (pl.size <= totalOutboundWindowLeft && pl.size <= incomingStreams(streamId).outboundWindowLeft) {
-                super.doPush(elem)
-
-                val size = pl.size
-                totalOutboundWindowLeft -= size
-                incomingStreams(streamId).outboundWindowLeft -= size
-
-                debug(s"Pushed $size bytes of data for stream $streamId total window left: $totalOutboundWindowLeft per stream window left: ${incomingStreams(streamId).outboundWindowLeft}")
-              } else {
-                debug(s"Couldn't send because no window left. Size: ${pl.size} total: $totalOutboundWindowLeft per stream: ${incomingStreams(streamId).outboundWindowLeft}")
-                // adding to end of the queue only works if there's only ever one frame per
-                // substream in the queue (which is the case since backpressure was introduced)
-                // TODO: we should try to find another stream to push data in this case
-                buffer.add(elem)
-              }
-            case _ ⇒
-              super.doPush(elem)
-          }
-        }
-      }
 
       def debug(msg: String): Unit = println(msg)
     }
