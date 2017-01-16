@@ -84,7 +84,7 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
   private void query() {
     if (buf.isEmpty()) {
       final String query = "SELECT id, persistent_repr " +
-        "FROM journal WHERE tag = ? AND id >= ? " +
+        "FROM journal WHERE tag = ? AND id > ? " +
         "ORDER BY id LIMIT ?";
 
       try (PreparedStatement s = connection.prepareStatement(query)) {

@@ -96,10 +96,10 @@ object SnapshotFailureRobustnessSpec {
 }
 
 class SnapshotFailureRobustnessSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "SnapshotFailureRobustnessSpec", serialization = "off", extraConfig = Some(
-  """
-  akka.persistence.snapshot-store.local.class = "akka.persistence.SnapshotFailureRobustnessSpec$FailingLocalSnapshotStore"
-  akka.persistence.snapshot-store.local-delete-fail = ${akka.persistence.snapshot-store.local}
-  akka.persistence.snapshot-store.local-delete-fail.class = "akka.persistence.SnapshotFailureRobustnessSpec$DeleteFailingLocalSnapshotStore"
+  s"""
+  akka.persistence.snapshot-store.local.class = "akka.persistence.SnapshotFailureRobustnessSpec$$FailingLocalSnapshotStore"
+  akka.persistence.snapshot-store.local-delete-fail = $${akka.persistence.snapshot-store.local}
+  akka.persistence.snapshot-store.local-delete-fail.class = "akka.persistence.SnapshotFailureRobustnessSpec$$DeleteFailingLocalSnapshotStore"
   """))) with ImplicitSender {
 
   import SnapshotFailureRobustnessSpec._

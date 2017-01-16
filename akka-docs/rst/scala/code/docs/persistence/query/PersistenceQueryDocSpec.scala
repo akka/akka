@@ -54,12 +54,24 @@ object PersistenceQueryDocSpec {
     private val refreshInterval: FiniteDuration =
       config.getDuration("refresh-interval", MILLISECONDS).millis
 
+    /**
+     * You can use `NoOffset` to retrieve all events with a given tag or retrieve a subset of all
+     * events by specifying a `Sequence` `offset`. The `offset` corresponds to an ordered sequence number for
+     * the specific tag. Note that the corresponding offset of each event is provided in the
+     * [[akka.persistence.query.EventEnvelope]], which makes it possible to resume the
+     * stream at a later point from a given offset.
+     *
+     * The `offset` is exclusive, i.e. the event with the exact same sequence number will not be included
+     * in the returned stream. This means that you can use the offset that is returned in `EventEnvelope`
+     * as the `offset` parameter in a subsequent query.
+     */
     override def eventsByTag(
       tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] = offset match {
       case Sequence(offsetValue) ⇒
         val props = MyEventsByTagPublisher.props(tag, offsetValue, refreshInterval)
         Source.actorPublisher[EventEnvelope](props)
           .mapMaterializedValue(_ => NotUsed)
+      case NoOffset => eventsByTag(tag, Sequence(0L)) //recursive
       case _ ⇒
         throw new IllegalArgumentException("LevelDB does not support " + offset.getClass.getName + " offsets")
     }

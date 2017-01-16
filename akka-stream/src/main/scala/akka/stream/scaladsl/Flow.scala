@@ -10,7 +10,7 @@ import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage._
-import org.reactivestreams.{Processor, Publisher, Subscriber, Subscription}
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
