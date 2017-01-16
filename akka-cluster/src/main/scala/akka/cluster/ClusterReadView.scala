@@ -4,8 +4,6 @@
 
 package akka.cluster
 
-// TODO remove metrics 
-
 import java.io.Closeable
 import scala.collection.immutable
 import akka.actor.{ Actor, ActorRef, Address, Props }
@@ -36,12 +34,6 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
    */
   @volatile
   private var _latestStats = CurrentInternalStats(GossipStats(), VectorClockStats())
-
-  /**
-   * Current cluster metrics, updated periodically via event bus.
-   */
-  @volatile
-  private var _clusterMetrics: Set[NodeMetrics] = Set.empty
 
   val selfAddress = cluster.selfAddress
 
@@ -76,9 +68,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
             _state = _state.copy(leader = leader)
           case RoleLeaderChanged(role, leader) ⇒
             _state = _state.copy(roleLeaderMap = _state.roleLeaderMap + (role → leader))
-          case stats: CurrentInternalStats  ⇒ _latestStats = stats
-          case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
-          case ClusterShuttingDown          ⇒
+          case stats: CurrentInternalStats ⇒ _latestStats = stats
+          case ClusterShuttingDown         ⇒
         }
         case s: CurrentClusterState ⇒ _state = s
       }
@@ -144,11 +135,6 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   }
 
   def reachability: Reachability = _reachability
-
-  /**
-   * Current cluster metrics.
-   */
-  def clusterMetrics: Set[NodeMetrics] = _clusterMetrics
 
   /**
    * INTERNAL API

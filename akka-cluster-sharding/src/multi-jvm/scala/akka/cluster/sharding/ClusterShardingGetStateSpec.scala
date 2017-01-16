@@ -48,7 +48,6 @@ object ClusterShardingGetStateSpecConfig extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.metrics.enabled = off
     akka.cluster.auto-down-unreachable-after = 0s
     akka.cluster.sharding {
       coordinator-failure-backoff = 3s
