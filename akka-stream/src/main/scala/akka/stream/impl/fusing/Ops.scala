@@ -332,13 +332,7 @@ final case class Drop[T](count: Long) extends SimpleLinearGraphStage[T] {
       if (left > 0) {
         left -= 1
         pull(in)
-      } else {
-        push(out, grab(in))
-        // After dropping N elements, the following behavior is just pushing
-        setHandler(in, new InHandler {
-          def onPush() = push(out, grab(in))
-        })
-      }
+      } else push(out, grab(in))
     }
 
     override def onPull(): Unit = pull(in)
@@ -1611,16 +1605,22 @@ final class TakeWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraph
 }
 
 final class DropWithin[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
 
-    override def preStart(): Unit = scheduleOnce("DropWithinTimer", timeout)
+    private val startNanoTime = System.nanoTime()
+    private val timeoutInNano = timeout.toNanos
 
-    final override protected def onTimer(key: Any): Unit =
-      setHandler(in, new InHandler {
-        def onPush() = push(out, grab(in))
-      })
-
-    def onPush(): Unit = pull(in)
+    def onPush(): Unit = {
+      if (System.nanoTime() - startNanoTime <= timeoutInNano) {
+        pull(in)
+      } else {
+        push(out, grab(in))
+        // change the in handler to avoid System.nanoTime call after timeout
+        setHandler(in, new InHandler {
+          def onPush() = push(out, grab(in))
+        })
+      }
+    }
 
     def onPull(): Unit = pull(in)
 
