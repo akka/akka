@@ -256,6 +256,15 @@ private[http] object StreamUtils {
       }
     }
   }
+
+  /**
+   * Similar idea than [[FlowOps.statefulMapConcat]] but for a simple map.
+   */
+  def statefulMap[T, U](functionConstructor: () ⇒ T ⇒ U): Flow[T, U, NotUsed] =
+    Flow[T].statefulMapConcat { () ⇒
+      val f = functionConstructor()
+      i ⇒ f(i) :: Nil
+    }
 }
 
 /**
