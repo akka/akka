@@ -127,6 +127,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
             ContinuationFrame(streamId, endHeaders, payload.remainingData)
 
           case PING ⇒
+            // see 6.7
             Http2Compliance.requireFrameSize(payload.remainingSize, 8)
             Http2Compliance.requireZeroStreamId(streamId)
             val ack = Flags.ACK.isSet(flags)

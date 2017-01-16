@@ -513,7 +513,26 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     }
 
     "support low-level features" should {
-      "respond to PING frames" in pending
+      "respond to PING frames (spec 6_7)" in new TestSetup with RequestResponseProbes {
+        sendFrame(FrameType.PING, new ByteFlag(0x0), 0, ByteString("data1234")) // ping frame data must be of size 8
+
+        val (flag, payload) = expectFrameFlagsAndPayload(FrameType.PING, 0) // must be on stream 0
+        flag should ===(new ByteFlag(0x1)) // a PING response
+        payload should ===(ByteString("data1234"))
+      }
+      "NOT respond to PING ACK frames (spec 6_7)" in new TestSetup with RequestResponseProbes {
+        val AckFlag = new ByteFlag(0x1)
+        sendFrame(FrameType.PING, AckFlag, 0, ByteString("data1234"))
+
+        expectNoMsg(100 millis)
+      }
+      "respond to invalid (not 0x0 streamId) PING with GOAWAY (spec 6_7)" in new TestSetup with RequestResponseProbes {
+        val invalidIdForPing = 1
+        sendFrame(FrameType.PING, ByteFlag.Zero, invalidIdForPing, ByteString("abcd1234"))
+
+        val (lastStreamId, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
+      }
       "respond to PING frames giving precedence over any other kind pending frame" in pending
       "acknowledge SETTINGS frames" in pending
     }
