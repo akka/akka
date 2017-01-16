@@ -24,6 +24,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
+    akka.actor.enable-additional-serialization-bindings=on
     """))) with WordSpecLike with Matchers with BeforeAndAfterAll {
 
   val serializer = new ReplicatedDataSerializer(system.asInstanceOf[ExtendedActorSystem])
@@ -168,7 +169,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
 
     "be compatible with old LWWMap serialization" in {
       // Below blob was created with previous version of the serializer
-      val oldBlobAsBase64 = "H4sIAAAAAAAAAOPy51LhUuKS4xLi4i3Oz03Vy8gvLtHLL0oXeK4iysjAwCALxAwC0kJEqZJiTBSy5wISVhwzrl2fuyRMiIAWKUEu3jVvGVhLGNjKEnNKUw0FGAG1K/3VkgAAAA=="
+      val oldBlobAsBase64 = "H4sIAAAAAAAAAOPy51LhUuKS4xLi4i3Oz03Vy8gvLtHLL0oXeK4iysjAwCALxAwC0kJEqZJiTBSy4AISxhwzrl2fuyRMiIAWKS4utrLEnNJUQwERAD96/peLAAAA"
       checkCompatibility(oldBlobAsBase64, LWWMap())
     }
 
