@@ -141,6 +141,18 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         Http2Compliance.requireNoSelfDependency(streamId, dependencyId)
         PriorityFrame(streamId, exclusiveFlag, dependencyId, priority)
 
+      case PUSH_PROMISE ⇒
+        val pad = Flags.PADDED.isSet(flags)
+        val endHeaders = Flags.END_HEADERS.isSet(flags)
+
+        val paddingLength =
+          if (pad) payload.readByte() & 0xff
+          else 0
+
+        val promisedStreamId = payload.readIntBE()
+
+        PushPromiseFrame(streamId, endHeaders, promisedStreamId, payload.take(payload.remainingSize - paddingLength))
+
       case tpe ⇒ // TODO: remove once all stream types are defined
         UnknownFrameEvent(tpe, flags, streamId, payload.remainingData)
     }
