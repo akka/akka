@@ -55,7 +55,7 @@ for common use cases to simplify the creation of request and response instances.
 ### Synthetic Headers
 
 In some cases it may be necessary to deviate from fully RFC-Compliant behavior. For instance, Amazon S3 treats 
-the + character in the path part of the URL as a string, even though the RFC specifies that this behavior should
+the `+` character in the path part of the URL as a space, even though the RFC specifies that this behavior should
 be limited exclusively to the query portion of the URI.
 
 In order to work around these types of edge cases, Akka HTTP provides for the ability to provide extra, 
@@ -65,8 +65,7 @@ but are instead consumed by the request engine and used to override default beha
 For instance, in order to provide a raw request uri, bypassing the default url normalization, you could do the
 following:
 
-    import akka.http.scaladsl.model.headers.`Raw-Request-URI`
-    val req = HttpRequest(uri = "/ignored", headers=List(`Raw-Request-URI`("/a/b%2Bc")))
+@@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #synthetic-header-s3 }
 
 ## HttpResponse
 

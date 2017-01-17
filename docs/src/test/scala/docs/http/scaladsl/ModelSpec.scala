@@ -88,4 +88,11 @@ class ModelSpec extends AkkaSpec {
     credentialsOfRequest(HttpRequest()) should be(None)
     credentialsOfRequest(HttpRequest(headers = List(Authorization(GenericHttpCredentials("Other", Map.empty[String, String]))))) should be(None)
   }
+
+  "Synthetic-header-s3" in {
+    //#synthetic-header-s3
+    import akka.http.scaladsl.model.headers.`Raw-Request-URI`
+    val req = HttpRequest(uri = "/ignored", headers=List(`Raw-Request-URI`("/a/b%2Bc")))
+    //#synthetic-header-s3
+  }
 }

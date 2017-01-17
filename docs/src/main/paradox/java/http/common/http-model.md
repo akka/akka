@@ -53,6 +53,23 @@ new immutable instance, so instances can be shared freely. There exist some over
 simplify creating requests for common cases. Also, to aid readability, there are predefined alternatives for `create`
 named after HTTP methods to create a request with a given method and URI directly.
 
+<a id="synthetic-headers-java"></a>
+### Synthetic Headers
+
+In some cases it may be necessary to deviate from fully RFC-Compliant behavior. For instance, Amazon S3 treats 
+the `+` character in the path part of the URL as a space, even though the RFC specifies that this behavior should
+be limited exclusively to the query portion of the URI.
+
+In order to work around these types of edge cases, Akka HTTP provides for the ability to provide extra, 
+non-standard information to the request via synthetic headers. These headers are not passed to the client
+but are instead consumed by the request engine and used to override default behavior.
+
+For instance, in order to provide a raw request uri, bypassing the default url normalization, you could do the
+following:
+
+@@snip [ModelDocTest.java](../../../../../test/java/docs/http/javadsl/ModelDocTest.java) { #synthetic-header-s3 }
+
+
 ## HttpResponse
 
 An `HttpResponse` consists of

@@ -31,8 +31,8 @@ public class ModelDocTest {
         HttpRequest postRequest1 = HttpRequest.POST("/receive").withEntity(data);
 
         // customize every detail of HTTP request
-        //import HttpProtocols._
-        //import MediaTypes._
+        //import HttpProtocols.*
+        //import MediaTypes.*
         Authorization authorization = Authorization.basic("user", "pass");
         HttpRequest complexRequest =
             HttpRequest.PUT("/user")
@@ -88,4 +88,13 @@ public class ModelDocTest {
             return Optional.empty();
     }
     //#headers
+
+  @Test
+  public void syntheticHeaderS3() {
+    //#synthetic-header-s3
+    // imports akka.http.javadsl.model.headers.RawRequestURI
+    HttpRequest.create("/ignored").addHeader(RawRequestURI.create("/a/b%2Bc"));
+    //#synthetic-header-s3
+  }
+
 }
