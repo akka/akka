@@ -33,10 +33,15 @@ final case class ContinuationFrame(
   endHeaders: Boolean,
   payload:    ByteString) extends StreamFrameEvent
 
+case class PushPromiseFrame(
+  streamId:            Int,
+  endHeaders:          Boolean,
+  promisedStreamId:    Int,
+  headerBlockFragment: ByteString) extends StreamFrameEvent
+
 final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends StreamFrameEvent
 final case class SettingsFrame(settings: Seq[Setting]) extends FrameEvent
 case object SettingsAckFrame extends FrameEvent
-//case class PushPromiseFrame(streamId: Int) extends StreamFrameEvent
 case class PingFrame(ack: Boolean, data: ByteString) extends FrameEvent
 final case class WindowUpdateFrame(
   streamId:            Int,

@@ -116,6 +116,17 @@ object FrameRenderer {
           new ByteStringBuilder().putInt(errorCode.id).result
         )
 
+      case PushPromiseFrame(streamId, endHeaders, promisedStreamId, headerBlockFragment) ⇒
+        renderFrame(
+          Http2Protocol.FrameType.PUSH_PROMISE,
+          Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
+          streamId,
+          new ByteStringBuilder()
+            .putInt(promisedStreamId)
+            .append(headerBlockFragment)
+            .result()
+        )
+
       case frame @ PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
         renderFrame(
           Http2Protocol.FrameType.PRIORITY,
