@@ -89,7 +89,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx=3546 # stream ID
-            xxxxxxxx=3
+            xxxxxxxx=3   # amount of padding
             xxxxxxxx=62  # data
             xxxxxxxx=63
             xxxxxxxx=64
@@ -122,9 +122,35 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx=65
             xxxxxxxx=66
          """ should parseTo(HeadersFrame(0x3546, endStream = false, endHeaders = false, ByteString("cdef"), Some(PriorityFrame(0x3546, false, 0xabdef0, 0xbd))))
-        // TODO: actually check that PriorityFrame is emitted as well
       }
-      "with padding and priority settings" in pending
+      "with padding and priority settings" in {
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=f   # length = 15 = 1 byte padding length + 4 bytes stream dependency + 1 byte weight + 4 bytes payload + 5 bytes padding
+            xxxxxxxx=1   # type = 0x1 = HEADERS
+            00101000     # flags = PRIORITY | PADDED
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=348 # stream ID
+            xxxxxxxx=5   # amount of padding
+            0            # E flag unset
+             xxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=abd # stream dependency
+            xxxxxxxx=ef  # weight
+            xxxxxxxx=63  # data
+            xxxxxxxx=64
+            xxxxxxxx=65
+            xxxxxxxx=66
+            00000000     # padding
+            00000000
+            00000000
+            00000000
+            00000000
+         """ should parseTo(HeadersFrame(0x348, endStream = false, endHeaders = false, ByteString("cdef"), Some(PriorityFrame(0x348, false, 0xabd, 0xef))), checkRendering = false)
+      }
     }
     "SETTINGS frame" - {
       "empty" in {
