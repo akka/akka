@@ -434,11 +434,11 @@ object SupervisorHierarchySpec {
     var hierarchy: ActorRef = _
 
     override def preRestart(cause: Throwable, msg: Option[Any]) {
-      throw new ActorKilledException("I want to DIE")
+      throw ActorKilledException("I want to DIE")
     }
 
     override def postRestart(cause: Throwable) {
-      throw new ActorKilledException("I said I wanted to DIE, dammit!")
+      throw ActorKilledException("I said I wanted to DIE, dammit!")
     }
 
     override def postStop {

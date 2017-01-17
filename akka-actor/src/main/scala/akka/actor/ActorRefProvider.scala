@@ -541,7 +541,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
       if (isWalking)
         message match {
-          case null ⇒ throw new InvalidMessageException("Message is null")
+          case null ⇒ throw InvalidMessageException("Message is null")
           case _    ⇒ log.error(s"$this received unexpected message [$message]")
         }
 

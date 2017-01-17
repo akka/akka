@@ -101,8 +101,8 @@ private[typed] class ActorCell[T](
   protected def ctx: ActorContext[T] = this
 
   override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig): ActorRef[U] = {
-    if (childrenMap contains name) throw new InvalidActorNameException(s"actor name [$name] is not unique")
-    if (terminatingMap contains name) throw new InvalidActorNameException(s"actor name [$name] is not yet free")
+    if (childrenMap contains name) throw InvalidActorNameException(s"actor name [$name] is not unique")
+    if (terminatingMap contains name) throw InvalidActorNameException(s"actor name [$name] is not yet free")
     val dispatcher = deployment.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
     val capacity = deployment.firstOrElse(MailboxCapacity(system.settings.DefaultMailboxCapacity))
     val cell = new ActorCell[U](system, Behavior.validateAsInitial(behavior), system.dispatchers.lookup(dispatcher), capacity.capacity, self)
