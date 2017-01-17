@@ -16,8 +16,8 @@ private[http2] object FrameLogger {
 
   def bidi: BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
-      Flow[FrameEvent].log(s"${Console.BLUE}down${Console.RESET}", FrameLogger.logEvent),
-      Flow[FrameEvent].log(s"${Console.BLUE} up ${Console.RESET}", FrameLogger.logEvent))
+      Flow[FrameEvent].log(s"${Console.RED}DOWN${Console.RESET}", FrameLogger.logEvent),
+      Flow[FrameEvent].log(s"${Console.GREEN} UP ${Console.RESET}", FrameLogger.logEvent))
 
   def logEvent(frameEvent: FrameEvent): String = {
     case class LogEntry(
@@ -55,7 +55,7 @@ private[http2] object FrameLogger {
           LogEntry(streamId, "DATA", hex(payload), flag(endStream, "ES"))
 
         case GoAwayFrame(lastStreamId, errorCode, debug) ⇒
-          LogEntry(0, "GOAY", s"lastStreamId = $lastStreamId, debug = ${hex(debug)}")
+          LogEntry(0, "GOAY", s"lastStreamId = $lastStreamId, errorCode = $errorCode, debug = ${debug.utf8String}")
 
         case ParsedHeadersFrame(streamId, endStream, kvPairs, prio) ⇒
           val prioInfo = if (prio.isDefined) display(entryForFrame(prio.get)) + " " else ""

@@ -1,19 +1,21 @@
-/**
+/*
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
+package framing
 
 import java.nio.ByteOrder
 
-import akka.http.impl.engine.http2.Http2Protocol.FrameType
-import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
-import akka.util.ByteStringBuilder
+import akka.util.{ ByteString, ByteStringBuilder }
+
+import Http2Protocol.FrameType
 
 import scala.annotation.tailrec
 
-object FrameRenderer {
+/** INTERNAL API */
+private[http2] object FrameRenderer {
   implicit val byteOrder = ByteOrder.BIG_ENDIAN
 
   def render(frame: FrameEvent): ByteString =

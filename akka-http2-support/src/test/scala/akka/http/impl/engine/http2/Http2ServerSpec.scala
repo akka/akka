@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
+import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ LogByteStringTools, StringRendering }
