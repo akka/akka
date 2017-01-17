@@ -5,9 +5,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteOrder
 
 import akka.NotUsed
-import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.http2.Http2Protocol.Flags
-import akka.http.impl.engine.http2.Http2Protocol.FrameType
+import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
@@ -515,7 +513,26 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     }
 
     "support low-level features" should {
-      "respond to PING frames" in pending
+      "respond to PING frames (spec 6_7)" in new TestSetup with RequestResponseProbes {
+        sendFrame(FrameType.PING, new ByteFlag(0x0), 0, ByteString("data1234")) // ping frame data must be of size 8
+
+        val (flag, payload) = expectFrameFlagsAndPayload(FrameType.PING, 0) // must be on stream 0
+        flag should ===(new ByteFlag(0x1)) // a PING response
+        payload should ===(ByteString("data1234"))
+      }
+      "NOT respond to PING ACK frames (spec 6_7)" in new TestSetup with RequestResponseProbes {
+        val AckFlag = new ByteFlag(0x1)
+        sendFrame(FrameType.PING, AckFlag, 0, ByteString("data1234"))
+
+        expectNoMsg(100 millis)
+      }
+      "respond to invalid (not 0x0 streamId) PING with GOAWAY (spec 6_7)" in new TestSetup with RequestResponseProbes {
+        val invalidIdForPing = 1
+        sendFrame(FrameType.PING, ByteFlag.Zero, invalidIdForPing, ByteString("abcd1234"))
+
+        val (lastStreamId, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
+      }
       "respond to PING frames giving precedence over any other kind pending frame" in pending
       "acknowledge SETTINGS frames" in pending
     }
@@ -640,6 +657,11 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       (lastStreamId, ErrorCode.byId(reader.readIntBE()))
     }
 
+    def expectSettingsAck() = expectFrame(FrameType.SETTINGS, Flags.ACK, 0, ByteString.empty)
+
+    def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString) =
+      expectFramePayload(frameType, expectedFlags, streamId) should be === payload
+
     @tailrec
     final def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString) = {
       val header = expectFrameHeader()
@@ -677,11 +699,17 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       // FIXME: also collect CONTINUATION frames as long as END_HEADERS is not set
       expectFramePayload(FrameType.HEADERS, Flags.END_STREAM.ifSet(endStream) | Flags.END_HEADERS, streamId)
 
+    def sendFrame(frame: FrameEvent): Unit =
+      sendBytes(FrameRenderer.render(frame))
+
     def sendFrame(frameType: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): Unit =
       sendBytes(FrameRenderer.renderFrame(frameType, flags, streamId, payload))
 
     def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit =
       sendFrame(FrameType.DATA, Flags.END_STREAM.ifSet(endStream), streamId, data)
+
+    def sendSETTING(identifier: SettingIdentifier, value: Int): Unit =
+      sendFrame(SettingsFrame(Setting(identifier, value) :: Nil))
 
     def sendHEADERS(streamId: Int, endStream: Boolean, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment, None)))

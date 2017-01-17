@@ -9,6 +9,8 @@ import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.util.ByteString
 
+import scala.collection.immutable
+
 sealed trait FrameEvent
 sealed trait StreamFrameEvent extends FrameEvent {
   def streamId: Int
@@ -40,8 +42,9 @@ case class PushPromiseFrame(
   headerBlockFragment: ByteString) extends StreamFrameEvent
 
 final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends StreamFrameEvent
-final case class SettingsFrame(settings: Seq[Setting]) extends FrameEvent
+final case class SettingsFrame(settings: immutable.Seq[Setting]) extends FrameEvent
 case object SettingsAckFrame extends FrameEvent
+
 case class PingFrame(ack: Boolean, data: ByteString) extends FrameEvent
 final case class WindowUpdateFrame(
   streamId:            Int,

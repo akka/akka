@@ -199,7 +199,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
               bufferedFrameOut.push(SettingsAckFrame)
 
-            case PingFrame(true, _) ⇒ // ignore for now (we don't send any pings)
+            case PingFrame(true, _) ⇒
+            // ignore for now (we don't send any pings)
             case PingFrame(false, data) ⇒
               bufferedFrameOut.push(PingFrame(ack = true, data))
 
