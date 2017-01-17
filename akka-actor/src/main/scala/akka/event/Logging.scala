@@ -985,11 +985,11 @@ object Logging {
    * <code>akka.stdout-loglevel</code>.
    */
   class StandardOutLogger extends MinimalActorRef with StdOutLogger {
-    val path: ActorPath = new RootActorPath(Address("akka", "all-systems"), "/StandardOutLogger")
+    val path: ActorPath = RootActorPath(Address("akka", "all-systems"), "/StandardOutLogger")
     def provider: ActorRefProvider = throw new UnsupportedOperationException("StandardOutLogger does not provide")
     override val toString = "StandardOutLogger"
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
-      if (message == null) throw new InvalidMessageException("Message is null")
+      if (message == null) throw InvalidMessageException("Message is null")
       else print(message)
 
     @throws(classOf[java.io.ObjectStreamException])

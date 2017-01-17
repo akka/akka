@@ -154,7 +154,7 @@ class StubbedActorContext[T](
   }
   override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] =
     _children get name match {
-      case Some(_) ⇒ throw new untyped.InvalidActorNameException(s"actor name $name is already taken")
+      case Some(_) ⇒ throw untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
         // FIXME correct child path for the Inbox ref
         val i = Inbox[U](name)

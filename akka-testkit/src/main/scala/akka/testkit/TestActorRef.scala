@@ -86,7 +86,7 @@ class TestActorRef[T <: Actor](
    */
   def underlyingActor: T = {
     // volatile mailbox read to bring in actor field
-    if (isTerminated) throw new IllegalActorStateException("underlying actor is terminated")
+    if (isTerminated) throw IllegalActorStateException("underlying actor is terminated")
     underlying.actor.asInstanceOf[T] match {
       case null ⇒
         val t = TestKitExtension(_system).DefaultTimeout

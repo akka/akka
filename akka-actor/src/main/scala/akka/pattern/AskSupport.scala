@@ -530,7 +530,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = state match {
     case Stopped | _: StoppedWithPath ⇒ provider.deadLetters ! message
     case _ ⇒
-      if (message == null) throw new InvalidMessageException("Message is null")
+      if (message == null) throw InvalidMessageException("Message is null")
       if (!(result.tryComplete(
         message match {
           case Status.Success(r) ⇒ Success(r)
@@ -592,7 +592,7 @@ private[akka] object PromiseActorRef {
   private case object Stopped
   private final case class StoppedWithPath(path: ActorPath)
 
-  private val ActorStopResult = Failure(new ActorKilledException("Stopped"))
+  private val ActorStopResult = Failure(ActorKilledException("Stopped"))
 
   def apply(provider: ActorRefProvider, timeout: Timeout, targetName: Any, messageClassName: String, sender: ActorRef = Actor.noSender): PromiseActorRef = {
     val result = Promise[Any]()
