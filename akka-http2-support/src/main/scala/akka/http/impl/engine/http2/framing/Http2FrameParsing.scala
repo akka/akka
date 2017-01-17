@@ -5,6 +5,8 @@
 package akka.http.impl.engine.http2
 package framing
 
+import scala.collection.immutable
+
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
@@ -101,7 +103,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
 
           SettingsAckFrame
         } else {
-          def readSettings(read: List[Setting]): Seq[Setting] =
+          def readSettings(read: List[Setting]): immutable.Seq[Setting] =
             if (payload.hasRemaining) {
               val id = payload.readShortBE()
               val value = payload.readIntBE()
