@@ -100,7 +100,8 @@ private[persistence] trait LeveldbRecovery extends AsyncRecovery { this: Leveldb
     }
 
     withIterator { iter ⇒
-      val startKey = Key(tagNid, if (fromSequenceNr < 1L) 1L else fromSequenceNr, 0)
+      // fromSequenceNr is exclusive, i.e. start with +1
+      val startKey = Key(tagNid, if (fromSequenceNr < 1L) 1L else fromSequenceNr + 1, 0)
       iter.seek(keyToBytes(startKey))
       go(iter, startKey, 0L, replayCallback)
     }

@@ -100,6 +100,10 @@ private[persistence] object LeveldbJournal {
   final case class SubscribeTag(tag: String) extends SubscriptionCommand
   final case class TaggedEventAppended(tag: String) extends DeadLetterSuppression
 
+  /**
+   * `fromSequenceNr` is exclusive
+   * `toSequenceNr` is inclusive
+   */
   final case class ReplayTaggedMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long,
                                         tag: String, replyTo: ActorRef) extends SubscriptionCommand
   final case class ReplayedTaggedMessage(persistent: PersistentRepr, tag: String, offset: Long)
