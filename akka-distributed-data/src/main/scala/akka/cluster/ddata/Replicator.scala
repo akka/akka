@@ -884,7 +884,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     OneForOneStrategy()(
       ({
         case e @ (_: DurableStore.LoadFailed | _: ActorInitializationException) if fromDurableStore ⇒
-          log.error(e, "Stopping distributed-data Replicator due to load or startup failure in durable store")
+          log.error(e, "Stopping distributed-data Replicator due to load or startup failure in durable store, caused by: {}", if (e.getCause eq null) "" else e.getCause.getMessage)
           context.stop(self)
           SupervisorStrategy.Stop
       }: SupervisorStrategy.Decider).orElse(SupervisorStrategy.defaultDecider))
