@@ -36,7 +36,8 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 
-class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventually {
+class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
+  with WithInPendingUntilFixed with Eventually {
   implicit val mat = ActorMaterializer()
 
   "The Http/2 server implementation" should {
@@ -490,7 +491,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         val (lastStreamId, error) = expectGOAWAY()
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
-      "received SETTINGs frame frame with a length other than a multiple of 6 octets (invalid 6.5)" in new TestSetup with RequestResponseProbes {
+      "received SETTINGs frame frame with a length other than a multiple of 6 octets (invalid 6_5)" in new TestSetup with RequestResponseProbes {
         val data = hex"00 00 02 04 00 00 00 00 00"
 
         sendFrame(FrameType.SETTINGS, ByteFlag.Zero, 0, data)
@@ -499,12 +500,35 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
 
-      "received SETTINGS_MAX_FRAME_SIZE" in pending
+      "received SETTINGS_MAX_FRAME_SIZE should cause outgoing DATA to be chunked up into at-most-that-size parts " in new TestSetup with RequestResponseProbes {
+        val maxSize = Math.pow(2, 15).toInt // 32768, valid value (between 2^14 and 2^14 - 1)
+        sendSETTING(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, maxSize)
+
+        expectSettingsAck()
+
+        sendWINDOW_UPDATE(0, maxSize * 10) // make sure we can receive such large response, on connection
+
+        sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        sendWINDOW_UPDATE(1, maxSize * 5) // make sure we can receive such large response, on this stream
+
+        val theTooLargeByteString = ByteString("x" * (maxSize * 2))
+        val tooLargeEntity = Source.single(theTooLargeByteString)
+        val tooLargeResponse = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, tooLargeEntity))
+        emitResponse(1, tooLargeResponse)
+
+        expectHeaderBlock(1, endStream = false)
+        // we receive the DATA in 2 parts, since the ByteString does not fit in a single frame
+        val d1 = expectDATA(1, endStream = false, numBytes = maxSize)
+        val d2 = expectDATA(1, endStream = true, numBytes = maxSize)
+        d1.toList should have length maxSize
+        d2.toList should have length maxSize
+        (d1 ++ d2) should ===(theTooLargeByteString) // makes sure we received the parts in the right order
+      }
 
       "received SETTINGS_MAX_CONCURRENT_STREAMS" in pending
 
       "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
-        sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, Math.pow(2, 15).toInt) // 32768, valid value (between 2^14 and 2^14 - 1)
+        sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, Math.pow(2, 15).toInt) // 32768, valid value (between 2^14 and 2^24 - 1)
 
         expectSettingsAck() // TODO check that the setting was indeed applied
       }

@@ -37,7 +37,7 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
           applySettings(s)
           push(eventsOut, ack)
 
-        case fr @ ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) ⇒
+        case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) ⇒
           os.reset()
           kvs.foreach {
             case (key, value) ⇒

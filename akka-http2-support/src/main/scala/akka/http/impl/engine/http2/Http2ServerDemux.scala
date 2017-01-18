@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FRAME_SIZE_ERROR }
 import akka.stream.Attributes
@@ -84,14 +85,12 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       logic ⇒
 
       final case class SubStream(
-        streamId:                  Int,
-        state:                     StreamState,
-        outlet:                    Option[BufferedOutlet[ByteString]],
-        inlet:                     Option[SubSinkInlet[ByteString]],
-        initialOutboundWindowLeft: Long
-      ) {
-        var outboundWindowLeft = initialOutboundWindowLeft
-      }
+        streamId:               Int,
+        state:                  StreamState,
+        outlet:                 Option[BufferedOutlet[ByteString]],
+        inlet:                  Option[SubSinkInlet[ByteString]],
+        var outboundWindowLeft: Long
+      )
 
       override def preStart(): Unit = {
         pull(frameIn)
@@ -187,14 +186,15 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               debug(s"Received PriorityFrame for stream $streamId with ${if (exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
 
             case SettingsFrame(settings) ⇒
-              debug(s"Got ${settings.length} settings!")
+              if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
               settings.foreach {
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
                   debug(s"Setting initial window to $value")
                   val delta = value - streamLevelWindow
                   streamLevelWindow = value
                   incomingStreams.values.foreach(_.outboundWindowLeft += delta)
-                case Setting(id, value) ⇒ debug(s"Ignoring setting $id -> $value")
+                case Setting(id, value) ⇒
+                  debug(s"Ignoring setting $id -> $value (in Demux)")
               }
 
               bufferedFrameOut.push(SettingsAckFrame(settings))

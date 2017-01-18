@@ -7,6 +7,7 @@ package akka.http.impl.engine.http2.hpack
 import java.io.IOException
 import java.nio.charset.{ Charset, StandardCharsets }
 
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.COMPRESSION_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, SettingIdentifier }
 import akka.http.impl.engine.http2._
 import akka.stream._
