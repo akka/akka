@@ -137,10 +137,10 @@ abstract class ClusterShardingSpecConfig(
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
     akka.persistence.journal.leveldb-shared.store {
       native = off
-      dir = "target/journal-ClusterShardingSpec"
+      dir = "target/ClusterShardingSpec/journal"
     }
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingSpec"
+    akka.persistence.snapshot-store.local.dir = "target/ClusterShardingSpec/snapshots"
     akka.cluster.sharding {
       retry-interval = 1 s
       handoff-timeout = 10 s
@@ -156,6 +156,10 @@ abstract class ClusterShardingSpecConfig(
       least-shard-allocation-strategy {
         rebalance-threshold = 2
         max-simultaneous-rebalance = 1
+      }
+      distributed-data.durable.lmdb {
+        dir = target/ClusterShardingSpec/sharding-ddata
+        map-size = 10 MiB
       }
     }
     akka.testconductor.barrier-timeout = 70s
@@ -237,21 +241,16 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
 
   override def initialParticipants = roles.size
 
-  val storageLocations = List(
-    "akka.persistence.journal.leveldb.dir",
-    "akka.persistence.journal.leveldb-shared.store.dir",
-    "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
+  val storageLocations = List(new File(system.settings.config.getString(
+    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup() {
-    runOn(controller) {
-      storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
-    }
+    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    enterBarrier("startup")
   }
 
   override protected def afterTermination() {
-    runOn(controller) {
-      storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
-    }
+    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   def join(from: RoleName, to: RoleName): Unit = {
@@ -262,9 +261,10 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     enterBarrier(from.name + "-joined")
   }
 
+  lazy val replicator = system.actorOf(Replicator.props(
+    ReplicatorSettings(system).withGossipInterval(1.second).withMaxDeltaElements(10)), "replicator")
+
   def createCoordinator(): Unit = {
-    val replicator = system.actorOf(Replicator.props(
-      ReplicatorSettings(system).withGossipInterval(1.second).withMaxDeltaElements(10)), "replicator")
 
     def coordinatorProps(typeName: String, rebalanceEnabled: Boolean, rememberEntities: Boolean) = {
       val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
@@ -316,7 +316,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
         extractEntityId = extractEntityId,
         extractShardId = extractShardId,
-        handOffStopMessage = PoisonPill),
+        handOffStopMessage = PoisonPill,
+        replicator),
       name = typeName + "Region")
   }
 
@@ -329,8 +330,11 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
   lazy val rebalancingPersistentRegion = createRegion("RebalancingRememberCounter", rememberEntities = true)
   lazy val autoMigrateRegion = createRegion("AutoMigrateRememberRegionTest", rememberEntities = true)
 
+  def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
+
   s"Cluster sharding ($mode)" must {
 
+    // must be done also in ddata mode since Counter is PersistentActor
     "setup shared journal" in {
       // start the Persistence extension
       Persistence(system)
@@ -440,7 +444,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
             settings,
             coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
             extractEntityId = extractEntityId,
-            extractShardId = extractShardId),
+            extractShardId = extractShardId,
+            system.deadLetters),
           name = "regionProxy")
 
         proxy ! Get(1)
@@ -802,7 +807,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         system.actorSelection(shard / "1") ! Identify(3)
         expectMsg(ActorIdentity(3, None))
 
-        //Check counter 13 is alive again                        8
+        //Check counter 13 is alive again
         system.actorSelection(shard / "13") ! Identify(4)
         expectMsgType[ActorIdentity](3 seconds).ref should not be (None)
       }

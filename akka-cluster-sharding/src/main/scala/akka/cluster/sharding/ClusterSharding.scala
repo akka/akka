@@ -25,6 +25,10 @@ import akka.pattern.BackoffSupervisor
 import akka.util.ByteString
 import akka.pattern.ask
 import akka.dispatch.Dispatchers
+import akka.cluster.ddata.ReplicatorSettings
+import akka.cluster.ddata.Replicator
+import scala.util.control.NonFatal
+import akka.actor.Status
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -413,7 +417,11 @@ private[akka] class ClusterShardingGuardian extends Actor {
 
   val cluster = Cluster(context.system)
   val sharding = ClusterSharding(context.system)
-  lazy val replicator = DistributedData(context.system).replicator
+
+  private lazy val replicatorSettings =
+    ReplicatorSettings(context.system.settings.config.getConfig(
+      "akka.cluster.sharding.distributed-data"))
+  private var replicatorByRole = Map.empty[Option[String], ActorRef]
 
   private def coordinatorSingletonManagerName(encName: String): String =
     encName + "Coordinator"
@@ -421,65 +429,102 @@ private[akka] class ClusterShardingGuardian extends Actor {
   private def coordinatorPath(encName: String): String =
     (self.path / coordinatorSingletonManagerName(encName) / "singleton" / "coordinator").toStringWithoutAddress
 
+  private def replicator(settings: ClusterShardingSettings): ActorRef = {
+    if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
+      // one Replicator per role
+      replicatorByRole.get(settings.role) match {
+        case Some(ref) ⇒ ref
+        case None ⇒
+          val name = settings.role match {
+            case Some(r) ⇒ URLEncoder.encode(r, ByteString.UTF_8) + "Replicator"
+            case None    ⇒ "replicator"
+          }
+          val ref = context.actorOf(Replicator.props(replicatorSettings.withRole(settings.role)), name)
+          replicatorByRole = replicatorByRole.updated(settings.role, ref)
+          ref
+      }
+    } else
+      context.system.deadLetters
+  }
+
   def receive = {
     case Start(typeName, entityProps, settings, extractEntityId, extractShardId, allocationStrategy, handOffStopMessage) ⇒
-      import settings.role
-      import settings.tuningParameters.coordinatorFailureBackoff
+      try {
+        import settings.role
+        import settings.tuningParameters.coordinatorFailureBackoff
 
-      val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
-      val cName = coordinatorSingletonManagerName(encName)
-      val cPath = coordinatorPath(encName)
-      val shardRegion = context.child(encName).getOrElse {
-        if (context.child(cName).isEmpty) {
-          val coordinatorProps =
-            if (settings.stateStoreMode == "persistence")
-              ShardCoordinator.props(typeName, settings, allocationStrategy)
-            else
-              ShardCoordinator.props(typeName, settings, allocationStrategy, replicator)
-          val singletonProps = BackoffSupervisor.props(
-            childProps = coordinatorProps,
-            childName = "coordinator",
-            minBackoff = coordinatorFailureBackoff,
-            maxBackoff = coordinatorFailureBackoff * 5,
-            randomFactor = 0.2).withDeploy(Deploy.local)
-          val singletonSettings = settings.coordinatorSingletonSettings
-            .withSingletonName("singleton").withRole(role)
+        val rep = replicator(settings)
+        val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
+        val cName = coordinatorSingletonManagerName(encName)
+        val cPath = coordinatorPath(encName)
+        val shardRegion = context.child(encName).getOrElse {
+          if (context.child(cName).isEmpty) {
+            val coordinatorProps =
+              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+                ShardCoordinator.props(typeName, settings, allocationStrategy)
+              else {
+                ShardCoordinator.props(typeName, settings, allocationStrategy, rep)
+              }
+            val singletonProps = BackoffSupervisor.props(
+              childProps = coordinatorProps,
+              childName = "coordinator",
+              minBackoff = coordinatorFailureBackoff,
+              maxBackoff = coordinatorFailureBackoff * 5,
+              randomFactor = 0.2).withDeploy(Deploy.local)
+            val singletonSettings = settings.coordinatorSingletonSettings
+              .withSingletonName("singleton").withRole(role)
+            context.actorOf(
+              ClusterSingletonManager.props(
+                singletonProps,
+                terminationMessage = PoisonPill,
+                singletonSettings).withDispatcher(context.props.dispatcher),
+              name = cName)
+          }
+
           context.actorOf(
-            ClusterSingletonManager.props(
-              singletonProps,
-              terminationMessage = PoisonPill,
-              singletonSettings).withDispatcher(context.props.dispatcher),
-            name = cName)
+            ShardRegion.props(
+              typeName = typeName,
+              entityProps = entityProps,
+              settings = settings,
+              coordinatorPath = cPath,
+              extractEntityId = extractEntityId,
+              extractShardId = extractShardId,
+              handOffStopMessage = handOffStopMessage,
+              replicator = rep).withDispatcher(context.props.dispatcher),
+            name = encName)
         }
-
-        context.actorOf(
-          ShardRegion.props(
-            typeName = typeName,
-            entityProps = entityProps,
-            settings = settings,
-            coordinatorPath = cPath,
-            extractEntityId = extractEntityId,
-            extractShardId = extractShardId,
-            handOffStopMessage = handOffStopMessage).withDispatcher(context.props.dispatcher),
-          name = encName)
+        sender() ! Started(shardRegion)
+      } catch {
+        case NonFatal(e) ⇒
+          // don't restart
+          // could be invalid ReplicatorSettings, or InvalidActorNameException
+          // if it has already been started
+          sender() ! Status.Failure(e)
       }
-      sender() ! Started(shardRegion)
 
     case StartProxy(typeName, settings, extractEntityId, extractShardId) ⇒
-      val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
-      val cName = coordinatorSingletonManagerName(encName)
-      val cPath = coordinatorPath(encName)
-      val shardRegion = context.child(encName).getOrElse {
-        context.actorOf(
-          ShardRegion.proxyProps(
-            typeName = typeName,
-            settings = settings,
-            coordinatorPath = cPath,
-            extractEntityId = extractEntityId,
-            extractShardId = extractShardId).withDispatcher(context.props.dispatcher),
-          name = encName)
+      try {
+        val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
+        val cName = coordinatorSingletonManagerName(encName)
+        val cPath = coordinatorPath(encName)
+        val shardRegion = context.child(encName).getOrElse {
+          context.actorOf(
+            ShardRegion.proxyProps(
+              typeName = typeName,
+              settings = settings,
+              coordinatorPath = cPath,
+              extractEntityId = extractEntityId,
+              extractShardId = extractShardId,
+              replicator = context.system.deadLetters).withDispatcher(context.props.dispatcher),
+            name = encName)
+        }
+        sender() ! Started(shardRegion)
+      } catch {
+        case NonFatal(e) ⇒
+          // don't restart
+          // could be InvalidActorNameException if it has already been started
+          sender() ! Status.Failure(e)
       }
-      sender() ! Started(shardRegion)
 
   }
 

@@ -56,6 +56,10 @@ object ClusterShardingGetStatsSpecConfig extends MultiNodeConfig {
       updating-state-timeout = 2s
       waiting-for-state-timeout = 2s
     }
+    akka.cluster.sharding.distributed-data.durable.lmdb {
+      dir = target/ClusterShardingGetStatsSpec/sharding-ddata
+      map-size = 10 MiB
+    }
     akka.actor.warn-about-java-serializer-usage=false
     """))
 
