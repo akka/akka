@@ -463,7 +463,9 @@ works with any type that has a registered Akka serializer. This is how such an s
 look like for the ``TwoPhaseSet``:
 
 .. includecode:: code/docs/ddata/protobuf/TwoPhaseSetSerializer2.scala#serializer
-  
+
+.. _ddata_durable_scala:
+
 Durable Storage
 ---------------
 
@@ -498,6 +500,12 @@ The location of the files for the data is configured with::
   # 2. Otherwise the path is used as is, as a relative or absolute path to
   #    a directory.
   akka.cluster.distributed-data.durable.lmdb.dir = "ddata"
+
+When running in production you may want to configure the directory to a specific
+path (alt 2), since the default directory contains the remote port of the
+actor system to make the name unique. If using a dynamically assigned 
+port (0) it will be different each time and the previously stored data 
+will not be loaded.
 
 Making the data durable has of course a performance cost. By default, each update is flushed
 to disk before the ``UpdateSuccess`` reply is sent. For better performance, but with the risk of losing 

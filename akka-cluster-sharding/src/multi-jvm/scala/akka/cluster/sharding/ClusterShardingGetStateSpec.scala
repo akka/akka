@@ -54,6 +54,10 @@ object ClusterShardingGetStateSpecConfig extends MultiNodeConfig {
       shard-failure-backoff = 3s
       state-store-mode = "ddata"
     }
+    akka.cluster.sharding.distributed-data.durable.lmdb {
+      dir = target/ClusterShardingGetStateSpec/sharding-ddata
+      map-size = 10 MiB
+    }
     """))
 
   nodeConfig(first, second)(ConfigFactory.parseString(

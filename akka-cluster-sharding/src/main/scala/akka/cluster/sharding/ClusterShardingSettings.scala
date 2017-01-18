@@ -11,6 +11,10 @@ import com.typesafe.config.Config
 import akka.cluster.singleton.ClusterSingletonManagerSettings
 
 object ClusterShardingSettings {
+
+  val StateStoreModePersistence = "persistence"
+  val StateStoreModeDData = "ddata"
+
   /**
    * Create settings from the default configuration
    * `akka.cluster.sharding`.
@@ -155,9 +159,10 @@ final class ClusterShardingSettings(
   val tuningParameters:             ClusterShardingSettings.TuningParameters,
   val coordinatorSingletonSettings: ClusterSingletonManagerSettings) extends NoSerializationVerificationNeeded {
 
+  import ClusterShardingSettings.{ StateStoreModePersistence, StateStoreModeDData }
   require(
-    stateStoreMode == "persistence" || stateStoreMode == "ddata",
-    s"Unknown 'state-store-mode' [$stateStoreMode], valid values are 'persistence' or 'ddata'")
+    stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
+    s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'")
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.roleOption(role))
 
