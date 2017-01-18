@@ -259,7 +259,7 @@ The events to track the life-cycle of members are:
 
 * ``ClusterEvent.MemberJoined`` - A new member has joined the cluster and its status has been changed to ``Joining``.
 * ``ClusterEvent.MemberUp`` - A new member has joined the cluster and its status has been changed to ``Up``.
-* ``ClusterEvent.MemberExited`` - A member is leaving the cluster and its status has been changed to ``Exiting``
+* ``ClusterEvent.MemberExited`` - A member is leaving the cluster and its status has been changed to ``Exiting``.
   Note that the node might already have been shutdown when this event is published on another node.
 * ``ClusterEvent.MemberRemoved`` - Member completely removed from the cluster.
 * ``ClusterEvent.UnreachableMember`` - A member is considered as unreachable, detected by the failure detector
