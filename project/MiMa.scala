@@ -185,7 +185,15 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#DataDeleted.apply"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#DataDeleted.copy"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#DataDeleted.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#Delete.copy")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#Delete.copy"),
+
+      // #21618 distributed data
+      ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ddata.Replicator$ReadMajority$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#ReadMajority.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#ReadMajority.apply"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ddata.Replicator$WriteMajority$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.apply")
     )
 
     Map(
