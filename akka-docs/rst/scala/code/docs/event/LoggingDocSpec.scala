@@ -3,7 +3,7 @@
  */
 package docs.event
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ Actor, Props, DeadLetter }
 import akka.testkit.AkkaSpec
 
 object LoggingDocSpec {
@@ -112,6 +112,33 @@ object LoggingDocSpec {
   }
   //#my-source
 
+  object Listeners {
+    def println(s: Any) = ()
+
+    //#deadletters
+    import akka.actor.{ Actor, DeadLetter, Props }
+
+    class DeadLetterListener extends Actor {
+      def receive = {
+        case d: DeadLetter => println(d)
+      }
+    }
+    //#deadletters
+
+    //#superclass-subscription-eventstream
+    abstract class AllKindsOfMusic { def artist: String }
+    case class Jazz(artist: String) extends AllKindsOfMusic
+    case class Electronic(artist: String) extends AllKindsOfMusic
+
+    class Listener extends Actor {
+      def receive = {
+        case m: Jazz       => println(s"${self.path.name} is listening to: ${m.artist}")
+        case m: Electronic => println(s"${self.path.name} is listening to: ${m.artist}")
+      }
+    }
+    //#superclass-subscription-eventstream
+  }
+
 }
 
 class LoggingDocSpec extends AkkaSpec {
@@ -134,67 +161,44 @@ class LoggingDocSpec extends AkkaSpec {
   }
 
   "allow registration to dead letters" in {
-    new AnyRef {
-      //#deadletters
-      import akka.actor.{ Actor, DeadLetter, Props }
+    import LoggingDocSpec.Listeners._
+    //#deadletters
 
-      class Listener extends Actor {
-        def receive = {
-          case d: DeadLetter => println(d)
-        }
-      }
-
-      val listener = system.actorOf(Props[Listener])
-      system.eventStream.subscribe(listener, classOf[DeadLetter])
-      //#deadletters
-    }
+    val listener = system.actorOf(Props[DeadLetterListener])
+    system.eventStream.subscribe(listener, classOf[DeadLetter])
+    //#deadletters
   }
 
   "demonstrate superclass subscriptions on eventStream" in {
-    def println(s: String) = ()
+    import LoggingDocSpec.Listeners._
+    //#superclass-subscription-eventstream
 
-    new AnyRef {
-      //#superclass-subscription-eventstream
-      abstract class AllKindsOfMusic { def artist: String }
-      case class Jazz(artist: String) extends AllKindsOfMusic
-      case class Electronic(artist: String) extends AllKindsOfMusic
+    val jazzListener = system.actorOf(Props[Listener])
+    val musicListener = system.actorOf(Props[Listener])
+    system.eventStream.subscribe(jazzListener, classOf[Jazz])
+    system.eventStream.subscribe(musicListener, classOf[AllKindsOfMusic])
 
-      class Listener extends Actor {
-        def receive = {
-          case m: Jazz       => println(s"${self.path.name} is listening to: ${m.artist}")
-          case m: Electronic => println(s"${self.path.name} is listening to: ${m.artist}")
-        }
-      }
+    // only musicListener gets this message, since it listens to *all* kinds of music:
+    system.eventStream.publish(Electronic("Parov Stelar"))
 
-      val jazzListener = system.actorOf(Props[Listener])
-      val musicListener = system.actorOf(Props[Listener])
-      system.eventStream.subscribe(jazzListener, classOf[Jazz])
-      system.eventStream.subscribe(musicListener, classOf[AllKindsOfMusic])
-
-      // only musicListener gets this message, since it listens to *all* kinds of music:
-      system.eventStream.publish(Electronic("Parov Stelar"))
-
-      // jazzListener and musicListener will be notified about Jazz:
-      system.eventStream.publish(Jazz("Sonny Rollins"))
-      //#superclass-subscription-eventstream
-    }
+    // jazzListener and musicListener will be notified about Jazz:
+    system.eventStream.publish(Jazz("Sonny Rollins"))
+    //#superclass-subscription-eventstream
   }
 
   "allow registration to suppressed dead letters" in {
-    new AnyRef {
-      import akka.actor.Props
-      val listener = system.actorOf(Props[MyActor])
+    import akka.actor.Props
+    val listener = system.actorOf(Props[MyActor])
 
-      //#suppressed-deadletters
-      import akka.actor.SuppressedDeadLetter
-      system.eventStream.subscribe(listener, classOf[SuppressedDeadLetter])
-      //#suppressed-deadletters
+    //#suppressed-deadletters
+    import akka.actor.SuppressedDeadLetter
+    system.eventStream.subscribe(listener, classOf[SuppressedDeadLetter])
+    //#suppressed-deadletters
 
-      //#all-deadletters
-      import akka.actor.AllDeadLetters
-      system.eventStream.subscribe(listener, classOf[AllDeadLetters])
-      //#all-deadletters
-    }
+    //#all-deadletters
+    import akka.actor.AllDeadLetters
+    system.eventStream.subscribe(listener, classOf[AllDeadLetters])
+    //#all-deadletters
   }
 
   "demonstrate logging more arguments" in {
