@@ -6,10 +6,13 @@ package akka.http.impl.engine.http2.hpack
 
 import java.io.ByteArrayOutputStream
 
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 import akka.util.ByteString
+
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -23,12 +26,17 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) {
     var currentMaxFrameSize = Http2Protocol.InitialMaxFrameSize
 
-    val encoder = new com.twitter.hpack.Encoder(HeaderDecompression.maxHeaderTableSize) // TODO: is that the right size?
+    val encoder = new com.twitter.hpack.Encoder(Http2Protocol.InitialMaxHeaderTableSize)
     val os = new ByteArrayOutputStream()
+
     become(Idle)
 
     object Idle extends State {
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
+        case ack @ SettingsAckFrame(s) ⇒
+          applySettings(s)
+          push(eventsOut, ack)
+
         case fr @ ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) ⇒
           os.reset()
           kvs.foreach {
@@ -56,6 +64,17 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
             })
           }
       }
+
+      def applySettings(s: immutable.Seq[Setting]): Unit =
+        s foreach {
+          case Setting(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, size) ⇒
+            debug(s"Applied SETTINGS_HEADER_TABLE_SIZE($size) in header compression")
+            encoder.setMaxHeaderTableSize(os, size)
+          case _ ⇒ // ignore, not applicable to this stage
+        }
     }
   }
+
+  private def debug(s: String): Unit = println(s)
+
 }

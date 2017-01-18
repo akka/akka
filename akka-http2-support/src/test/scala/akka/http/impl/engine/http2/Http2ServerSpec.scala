@@ -503,12 +503,10 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
 
       "received SETTINGS_MAX_CONCURRENT_STREAMS" in pending
 
-      "received SETTINGS_HEADER_TABLE_SIZE" in {
-        // if the sender of the new size wants to shrink its decoding table, the encoding table on
-        // our side needs to be shrunk *before* sending the SETTINGS ACK. So a mechanism needs to be
-        // found that prevents race-conditions in the encoder between sending out an encoded message
-        // which still uses the old table size and sending the SETTINGS ACK.
-        pending
+      "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
+        sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, Math.pow(2, 15).toInt) // 32768, valid value (between 2^14 and 2^14 - 1)
+
+        expectSettingsAck() // TODO check that the setting was indeed applied
       }
     }
 
@@ -660,7 +658,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     def expectSettingsAck() = expectFrame(FrameType.SETTINGS, Flags.ACK, 0, ByteString.empty)
 
     def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString) =
-      expectFramePayload(frameType, expectedFlags, streamId) should be === payload
+      expectFramePayload(frameType, expectedFlags, streamId) should ===(payload)
 
     @tailrec
     final def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString) = {
@@ -791,15 +789,19 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       val headerBlockBytes = expectHeaderBlock(streamId, endStream)
       decodeHeadersToResponse(headerBlockBytes)
     }
+
     def expectDecodedResponseHEADERSPairs(streamId: Int, endStream: Boolean = true): Seq[(String, String)] = {
       val headerBlockBytes = expectHeaderBlock(streamId, endStream)
       decodeHeaders(headerBlockBytes)
     }
 
-    val encoder = new Encoder(HeaderDecompression.maxHeaderTableSize)
+    val encoder = new Encoder(Http2Protocol.InitialMaxHeaderTableSize)
+
     def encodeHeaders(request: HttpRequest): ByteString = {
       val bos = new ByteArrayOutputStream()
+
       def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
+
       encode(":method", request.method.value)
       encode(":scheme", request.uri.scheme.toString)
       encode(":path", request.uri.path.toString)
@@ -817,7 +819,8 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       ByteString(bos.toByteArray)
     }
 
-    val decoder = new Decoder(HeaderDecompression.maxHeaderSize, HeaderDecompression.maxHeaderTableSize)
+    val decoder = new Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
+
     def decodeHeaders(bytes: ByteString): Seq[(String, String)] = {
       val bis = new ByteArrayInputStream(bytes.toArray)
       val hs = new VectorBuilder[(String, String)]()

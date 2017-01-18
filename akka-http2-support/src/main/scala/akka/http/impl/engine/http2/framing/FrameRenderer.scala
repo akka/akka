@@ -94,7 +94,7 @@ private[http2] object FrameRenderer {
           bb.result()
         )
 
-      case SettingsAckFrame ⇒
+      case _: SettingsAckFrame ⇒
         renderFrame(
           Http2Protocol.FrameType.SETTINGS,
           Http2Protocol.Flags.ACK,

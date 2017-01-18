@@ -43,7 +43,7 @@ case class PushPromiseFrame(
 
 final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends StreamFrameEvent
 final case class SettingsFrame(settings: immutable.Seq[Setting]) extends FrameEvent
-case object SettingsAckFrame extends FrameEvent
+final case class SettingsAckFrame(acked: immutable.Seq[Setting]) extends FrameEvent
 
 case class PingFrame(ack: Boolean, data: ByteString) extends FrameEvent
 final case class WindowUpdateFrame(

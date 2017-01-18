@@ -269,7 +269,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx=0   # no stream ID
-         """ should parseTo(SettingsAckFrame)
+         """ should parseTo(SettingsAckFrame(Nil))
       }
     }
     "PING frame" - {

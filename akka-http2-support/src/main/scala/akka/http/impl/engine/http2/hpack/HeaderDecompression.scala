@@ -5,9 +5,9 @@
 package akka.http.impl.engine.http2.hpack
 
 import java.io.IOException
-import java.nio.charset.Charset
+import java.nio.charset.{ Charset, StandardCharsets }
 
-import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, SettingIdentifier }
 import akka.http.impl.engine.http2._
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
@@ -22,10 +22,7 @@ import scala.collection.immutable.VectorBuilder
  * Can be used on server and client side.
  */
 private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
-  val UTF8 = Charset.forName("utf-8")
-
-  final val maxHeaderSize = 4096
-  final val maxHeaderTableSize = 4096
+  val UTF8 = StandardCharsets.UTF_8
 
   val eventsIn = Inlet[FrameEvent]("HeaderDecompression.eventsIn")
   val eventsOut = Outlet[FrameEvent]("HeaderDecompression.eventsOut")
@@ -33,7 +30,8 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
   val shape = FlowShape(eventsIn, eventsOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) {
-    val decoder = new com.twitter.hpack.Decoder(maxHeaderSize, maxHeaderTableSize)
+    val decoder = new com.twitter.hpack.Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
+
     become(Idle)
 
     // simple state machine
@@ -55,7 +53,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
       } catch {
         case ex: IOException ⇒
           // this is signalled by the decoder when it failed, we want to react to this by rendering a GOAWAY frame
-          fail(eventsOut, new Http2Compliance.HeaderDecompressionFailed("Decompression failed."))
+          fail(eventsOut, new Http2Compliance.Http2ProtocolException(ErrorCode.COMPRESSION_ERROR, "Decompression failed."))
       }
     }
 

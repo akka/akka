@@ -114,11 +114,11 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         incomingStreams.keys.toList.sortBy(-_).headOption.getOrElse(0) // FIXME should be optimised
       }
 
-      def pushGOAWAY(errorCode: ErrorCode = Http2Protocol.ErrorCode.PROTOCOL_ERROR): Unit = {
+      def pushGOAWAY(errorCode: ErrorCode = Http2Protocol.ErrorCode.PROTOCOL_ERROR, debug: String = ""): Unit = {
         // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
         val last = lastStreamId
         closedAfter = Some(last)
-        val frame = GoAwayFrame(last, errorCode)
+        val frame = GoAwayFrame(last, errorCode, ByteString(debug))
         bufferedFrameOut.push(frame)
         // FIXME: handle the connection closing according to the specification
       }
@@ -197,7 +197,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                 case Setting(id, value) ⇒ debug(s"Ignoring setting $id -> $value")
               }
 
-              bufferedFrameOut.push(SettingsAckFrame)
+              bufferedFrameOut.push(SettingsAckFrame(settings))
 
             case PingFrame(true, _) ⇒
             // ignore for now (we don't send any pings)
@@ -217,11 +217,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case e: Http2Compliance.IllegalHttp2StreamIdException ⇒
               pushGOAWAY()
 
-            case e: Http2Compliance.HeaderDecompressionFailed ⇒
-              pushGOAWAY(COMPRESSION_ERROR)
-
-            case e: Http2Compliance.IllegalHttp2FrameSize ⇒
-              pushGOAWAY(FRAME_SIZE_ERROR)
+            case e: Http2Compliance.Http2ProtocolException ⇒
+              pushGOAWAY(e.errorCode, e.getMessage)
 
             case e: ParsingException ⇒
               e.getCause match {

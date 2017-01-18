@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.http2
 
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+
 /** INTERNAL API */
 private[akka] object Http2Compliance {
 
@@ -15,8 +17,6 @@ private[akka] object Http2Compliance {
   final class IllegalHttp2StreamDependency(id: Int)
     extends IllegalArgumentException(s"Illegal self dependency of stream for id: [$id]!")
 
-  final class HeaderDecompressionFailed(msg: String) extends IllegalStateException(msg)
-
   final class IllegalPayloadInSettingsAckFrame(size: Int, expected: String) extends IllegalHttp2FrameSize(size, expected)
 
   final class IllegalPayloadLengthInSettingsFrame(size: Int, expected: String) extends IllegalHttp2FrameSize(size, expected)
@@ -25,9 +25,19 @@ private[akka] object Http2Compliance {
 
   // @DoNotInherit
   private[akka] sealed class IllegalHttp2FrameSize(size: Int, expected: String)
-    extends IllegalArgumentException(s"Illegal HTTP/2 frame size: [$size]. $expected!")
+    extends Http2ProtocolException(ErrorCode.FRAME_SIZE_ERROR, s"Illegal HTTP/2 frame size: [$size]. $expected!")
 
   // require methods use `if` because `require` allocates
+
+  /** Validate value of MAX_FRAME_SIZE setting. */
+  def validateMaxFrameSize(value: Int): Unit = {
+    import Http2Protocol.MinFrameSize
+    import Http2Protocol.MaxFrameSize
+    if (value < MinFrameSize) throw new Http2ProtocolException(ErrorCode.PROTOCOL_ERROR, s"MAX_FRAME_SIZE MUST NOT be < than $MinFrameSize, attempted setting to: $value!")
+    if (value > MaxFrameSize) throw new Http2ProtocolException(ErrorCode.PROTOCOL_ERROR, s"MAX_FRAME_SIZE MUST NOT be > than $MaxFrameSize, attempted setting to: $value!")
+  }
+
+  class Http2ProtocolException(val errorCode: ErrorCode, message: String) extends IllegalStateException(message)
 
   final def requireZeroStreamId(id: Int): Unit =
     if (id != 0) throw new IllegalHttp2StreamIdException(id, "MUST BE == 0.")

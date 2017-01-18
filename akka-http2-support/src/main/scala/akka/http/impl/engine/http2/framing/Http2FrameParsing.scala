@@ -100,7 +100,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
               if (payload.hasRemaining)
                 throw new Http2Compliance.IllegalPayloadInSettingsAckFrame(payload.remainingSize, s"SETTINGS ACK frame MUST NOT contain payload (spec 6.5)!")
 
-              SettingsAckFrame
+              SettingsAckFrame(Nil) // TODO if we were to send out settings, here would be the spot to include the acks for the ones we've sent out
             } else {
               def readSettings(read: List[Setting]): immutable.Seq[Setting] =
                 if (payload.hasRemaining) {

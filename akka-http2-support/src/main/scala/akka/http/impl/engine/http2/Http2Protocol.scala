@@ -46,6 +46,44 @@ object Http2Protocol {
   final val InitialMaxFrameSize = 16384
 
   /**
+   * Minimum frame size that can be written.
+   *
+   * See http://httpwg.org/specs/rfc7540.html#rfc.section.4.2
+   *
+   * The size of a frame payload is limited by the maximum size that a receiver advertises in the SETTINGS_MAX_FRAME_SIZE setting.
+   * This setting can have any value between 2^14^ (16,384) and 2^24^-1 (16,777,215) octets, inclusive.
+   */
+  final val MinFrameSize = 16384
+
+  /**
+   * Maximum frame size that can be written.
+   *
+   * See http://httpwg.org/specs/rfc7540.html#rfc.section.4.2
+   *
+   * The size of a frame payload is limited by the maximum size that a receiver advertises in the SETTINGS_MAX_FRAME_SIZE setting.
+   * This setting can have any value between 2^14^ (16,384) and 2^24^-1 (16,777,215) octets, inclusive.
+   */
+  final val MaxFrameSize = 16777215
+
+  /**
+   * Initial maximum size of the header compression table used to decode header blocks, in octets.
+   *
+   * See http://httpwg.org/specs/rfc7540.html#SettingValues
+   */
+  final val InitialMaxHeaderTableSize = 4096
+
+  /**
+   * This advisory setting informs a peer of the maximum size of header list that the sender is prepared to accept, in octets.
+   *
+   * The value is based on the uncompressed size of header fields,
+   * including the length of the name and value in octets plus an overhead of 32 octets for each header field.
+   * For any given request, a lower limit than what is advertised MAY be enforced.
+   *
+   * See http://httpwg.org/specs/rfc7540.html#SettingValues
+   */
+  final val InitialMaxHeaderListSize = Int.MaxValue // "unlimited"
+
+  /**
    * The stream id to be used for frames not associated with any individual stream
    * as defined by the specification.
    *
@@ -57,6 +95,8 @@ object Http2Protocol {
    *   opposed to an individual stream.
    */
   final val NoStreamId = 0
+
+  final val PushPromiseEnabledDefault = true
 
   sealed abstract class FrameType(val id: Int) extends Product
   object FrameType {

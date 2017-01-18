@@ -8,6 +8,8 @@ import akka.NotUsed
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.util.ByteString
 
+import scala.collection.immutable.Seq
+
 /**
  * INTERNAL API
  */
@@ -76,8 +78,9 @@ private[http2] object FrameLogger {
           }.mkString(", ")
           LogEntry(0, "SETT", settingsInfo)
 
-        case SettingsAckFrame ⇒
-          LogEntry(0, "SETA", "")
+        case SettingsAckFrame(s) ⇒
+          val acksInfo = formatSettings(s)
+          LogEntry(0, "SETA", acksInfo)
 
         case WindowUpdateFrame(streamId, windowSizeIncrement) ⇒
           LogEntry(streamId, "WIND", s"+ $windowSizeIncrement")
@@ -96,4 +99,10 @@ private[http2] object FrameLogger {
     }
     display(entryForFrame(frameEvent))
   }
+
+  private def formatSettings(s: Seq[Setting]) =
+    s.map {
+      case Setting(id, value) ⇒ s"$id -> $value"
+    }.mkString(", ")
+
 }
