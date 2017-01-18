@@ -67,7 +67,7 @@ object DurableStore {
   case object LoadAll
   final case class LoadData(data: Map[String, ReplicatedData])
   case object LoadAllCompleted
-  class LoadFailed(message: String, cause: Throwable) extends RuntimeException(message) {
+  class LoadFailed(message: String, cause: Throwable) extends RuntimeException(message, cause) {
     def this(message: String) = this(message, null)
   }
 
