@@ -7,8 +7,7 @@ import akka.NotUsed
 import akka.stream._
 import akka.stream.testkit._
 
-import scala.concurrent.Await
-import scala.concurrent.Future
+import scala.concurrent._
 import scala.concurrent.duration._
 
 class GraphMatValueSpec extends StreamSpec {
