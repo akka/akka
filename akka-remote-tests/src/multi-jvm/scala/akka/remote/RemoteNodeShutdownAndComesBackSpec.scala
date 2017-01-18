@@ -123,7 +123,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec
       }
 
       runOn(second) {
-        val addr = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+        val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         system.actorOf(Props[Subject], "subject")
         system.actorOf(Props[Subject], "sysmsgBarrier")
         val path = node(first)
@@ -134,8 +134,8 @@ abstract class RemoteNodeShutdownAndComesBackSpec
         Await.ready(system.whenTerminated, 30.seconds)
 
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
-          akka.remote.netty.tcp.port = ${addr.port.get}
-          akka.remote.artery.canonical.port = ${addr.port.get}
+          akka.remote.netty.tcp.port = ${address.port.get}
+          akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject")
 

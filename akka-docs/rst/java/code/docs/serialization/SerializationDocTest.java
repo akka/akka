@@ -238,7 +238,7 @@ public class SerializationDocTest {
     final ActorSystem system = ActorSystem.create();
     final Address remoteAddr = new Address("", "");
     // #external-address-default
-    final Address addr = DefaultAddress.ID.get(system).getAddress();
+    final Address address = DefaultAddress.ID.get(system).getAddress();
     // #external-address-default
   }
 

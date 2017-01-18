@@ -46,7 +46,7 @@ private[io] trait WithUdpSend {
         Dns.resolve(send.target.getHostName)(context.system, self) match {
           case Some(r) ⇒
             try {
-              pendingSend = pendingSend.copy(target = new InetSocketAddress(r.addr, pendingSend.target.getPort))
+              pendingSend = pendingSend.copy(target = new InetSocketAddress(r.address, pendingSend.target.getPort))
               doSend(registration)
             } catch {
               case NonFatal(e) ⇒

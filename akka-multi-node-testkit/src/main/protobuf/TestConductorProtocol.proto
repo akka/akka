@@ -10,7 +10,7 @@ message Wrapper {
   optional EnterBarrier barrier = 2;
   optional InjectFailure failure = 3;
   optional string done = 4;
-  optional AddressRequest addr = 5;
+  optional AddressRequest addressRequest = 5;
 }
 
 message Hello {
@@ -33,7 +33,7 @@ message EnterBarrier {
 
 message AddressRequest {
   required string node = 1;
-  optional Address addr = 2;
+  optional Address address = 2;
 }
 
 message Address {

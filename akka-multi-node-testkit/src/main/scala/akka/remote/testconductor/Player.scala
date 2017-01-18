@@ -5,7 +5,7 @@ package akka.remote.testconductor
 
 import java.util.concurrent.TimeoutException
 import akka.actor._
-import akka.remote.testconductor.RemoteConnection.getAddrString
+import akka.remote.testconductor.RemoteConnection.getAddressString
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Await, Future }
 import scala.concurrent.duration._
@@ -44,13 +44,13 @@ trait Player { this: TestConductorExt ⇒
    * this is a first barrier in itself). The number of expected participants is
    * set in [[akka.remote.testconductor.Conductor]]`.startController()`.
    */
-  def startClient(name: RoleName, controllerAddr: InetSocketAddress): Future[Done] = {
+  def startClient(name: RoleName, controllerAddress: InetSocketAddress): Future[Done] = {
     import ClientFSM._
     import akka.actor.FSM._
     import Settings.BarrierTimeout
 
     if (_client ne null) throw new IllegalStateException("TestConductorClient already started")
-    _client = system.actorOf(Props(classOf[ClientFSM], name, controllerAddr), "TestConductorClient")
+    _client = system.actorOf(Props(classOf[ClientFSM], name, controllerAddress), "TestConductorClient")
     val a = system.actorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
       var waiting: ActorRef = _
       def receive = {
@@ -142,13 +142,13 @@ private[akka] object ClientFSM {
  *
  * INTERNAL API.
  */
-private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor
+private[akka] class ClientFSM(name: RoleName, controllerAddress: InetSocketAddress) extends Actor
   with LoggingFSM[ClientFSM.State, ClientFSM.Data] with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ClientFSM._
 
   val settings = TestConductor().Settings
 
-  val handler = new PlayerHandler(controllerAddr, settings.ClientReconnects, settings.ReconnectBackoff,
+  val handler = new PlayerHandler(controllerAddress, settings.ClientReconnects, settings.ReconnectBackoff,
     settings.ClientSocketWorkerPoolSize, self, Logging(context.system, classOf[PlayerHandler].getName),
     context.system.scheduler)(context.dispatcher)
 
@@ -312,25 +312,25 @@ private[akka] class PlayerHandler(
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val ch = event.getChannel
-    log.debug("connected to {}", getAddrString(ch))
+    log.debug("connected to {}", getAddressString(ch))
     fsm ! Connected(ch)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
-    log.debug("disconnected from {}", getAddrString(channel))
+    log.debug("disconnected from {}", getAddressString(channel))
     fsm ! PoisonPill
     executor.execute(new Runnable { def run = RemoteConnection.shutdown(channel) }) // Must be shutdown outside of the Netty IO pool
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val channel = event.getChannel
-    log.debug("message from {}: {}", getAddrString(channel), event.getMessage)
+    log.debug("message from {}: {}", getAddressString(channel), event.getMessage)
     event.getMessage match {
       case msg: NetworkOp ⇒
         fsm ! msg
       case msg ⇒
-        log.info("server {} sent garbage '{}', disconnecting", getAddrString(channel), msg)
+        log.info("server {} sent garbage '{}', disconnecting", getAddressString(channel), msg)
         channel.close()
     }
   }

@@ -119,9 +119,9 @@ class NettyTransportSettings(config: Config) {
 
   val TcpKeepalive: Boolean = getBoolean("tcp-keepalive")
 
-  val TcpReuseAddr: Boolean = getString("tcp-reuse-addr") match {
+  val TcpReuseAddress: Boolean = getString("tcp-reuse-address") match {
     case "off-for-windows" ⇒ !Helpers.isWindows
-    case _                 ⇒ getBoolean("tcp-reuse-addr")
+    case _                 ⇒ getBoolean("tcp-reuse-address")
   }
 
   val Hostname: String = getString("hostname") match {
@@ -244,17 +244,17 @@ private[transport] object NettyTransport {
 
   val uniqueIdCounter = new AtomicInteger(0)
 
-  def addressFromSocketAddress(addr: SocketAddress, schemeIdentifier: String, systemName: String,
-                               hostName: Option[String], port: Option[Int]): Option[Address] = addr match {
+  def addressFromSocketAddress(socketAddress: SocketAddress, schemeIdentifier: String, systemName: String,
+                               hostName: Option[String], port: Option[Int]): Option[Address] = socketAddress match {
     case sa: InetSocketAddress ⇒ Some(Address(schemeIdentifier, systemName,
       hostName.getOrElse(sa.getHostString), port.getOrElse(sa.getPort)))
     case _ ⇒ None
   }
 
   // Need to do like this for binary compatibility reasons
-  def addressFromSocketAddress(addr: SocketAddress, schemeIdentifier: String, systemName: String,
+  def addressFromSocketAddress(socketAddress: SocketAddress, schemeIdentifier: String, systemName: String,
                                hostName: Option[String]): Option[Address] =
-    addressFromSocketAddress(addr, schemeIdentifier, systemName, hostName, port = None)
+    addressFromSocketAddress(socketAddress, schemeIdentifier, systemName, hostName, port = None)
 }
 
 // FIXME: Split into separate UDP and TCP classes
@@ -374,7 +374,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     bootstrap.setOption("backlog", settings.Backlog)
     bootstrap.setOption("child.tcpNoDelay", settings.TcpNodelay)
     bootstrap.setOption("child.keepAlive", settings.TcpKeepalive)
-    bootstrap.setOption("reuseAddress", settings.TcpReuseAddr)
+    bootstrap.setOption("reuseAddress", settings.TcpReuseAddress)
     if (isDatagram) bootstrap.setOption("receiveBufferSizePredictorFactory", new FixedReceiveBufferSizePredictorFactory(ReceiveBufferSize.get))
     settings.ReceiveBufferSize.foreach(sz ⇒ bootstrap.setOption("receiveBufferSize", sz))
     settings.SendBufferSize.foreach(sz ⇒ bootstrap.setOption("sendBufferSize", sz))
@@ -403,9 +403,9 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   override def isResponsibleFor(address: Address): Boolean = true //TODO: Add configurable subnet filtering
 
   // TODO: This should be factored out to an async (or thread-isolated) name lookup service #2960
-  def addressToSocketAddress(addr: Address): Future[InetSocketAddress] = addr match {
+  def addressToSocketAddress(address: Address): Future[InetSocketAddress] = address match {
     case Address(_, _, Some(host), Some(port)) ⇒ Future { blocking { new InetSocketAddress(InetAddress.getByName(host), port) } }
-    case _                                     ⇒ Future.failed(new IllegalArgumentException(s"Address [$addr] does not contain host or port information."))
+    case _                                     ⇒ Future.failed(new IllegalArgumentException(s"Address [$address] does not contain host or port information."))
   }
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
@@ -468,10 +468,10 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         handle ← if (isDatagram)
           Future {
             readyChannel.getRemoteAddress match {
-              case addr: InetSocketAddress ⇒
+              case address: InetSocketAddress ⇒
                 val handle = new UdpAssociationHandle(localAddress, remoteAddress, readyChannel, NettyTransport.this)
                 handle.readHandlerPromise.future.onSuccess {
-                  case listener ⇒ udpConnectionTable.put(addr, listener)
+                  case listener ⇒ udpConnectionTable.put(address, listener)
                 }
                 handle
               case unknown ⇒ throw new NettyTransportException(s"Unknown outbound remote address type [${unknown.getClass.getName}]")

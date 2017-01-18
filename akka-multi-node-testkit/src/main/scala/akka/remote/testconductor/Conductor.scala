@@ -16,7 +16,7 @@ import akka.util.Timeout
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import org.jboss.netty.channel.{ Channel, ChannelHandlerContext, ChannelStateEvent, MessageEvent, SimpleChannelUpstreamHandler }
-import RemoteConnection.getAddrString
+import RemoteConnection.getAddressString
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -64,7 +64,7 @@ trait Conductor { this: TestConductorExt ⇒
     _controller = system.actorOf(Props(classOf[Controller], participants, controllerPort), "controller")
     import Settings.BarrierTimeout
     import system.dispatcher
-    controller ? GetSockAddr flatMap { case sockAddr: InetSocketAddress ⇒ startClient(name, sockAddr) map (_ ⇒ sockAddr) }
+    controller ? GetSockAddress flatMap { case sockAddress: InetSocketAddress ⇒ startClient(name, sockAddress) map (_ ⇒ sockAddress) }
   }
 
   /**
@@ -72,9 +72,9 @@ trait Conductor { this: TestConductorExt ⇒
    * will deviate from the configuration in `akka.testconductor.port` in case
    * that was given as zero.
    */
-  def sockAddr: Future[InetSocketAddress] = {
+  def sockAddress: Future[InetSocketAddress] = {
     import Settings.QueryTimeout
-    controller ? GetSockAddr mapTo classTag[InetSocketAddress]
+    controller ? GetSockAddress mapTo classTag[InetSocketAddress]
   }
 
   /**
@@ -251,14 +251,14 @@ private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorR
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
-    log.debug("connection from {}", getAddrString(channel))
+    log.debug("connection from {}", getAddressString(channel))
     val fsm: ActorRef = Await.result(controller ? Controller.CreateServerFSM(channel) mapTo classTag[ActorRef], Duration.Inf)
     clients.put(channel, fsm)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
-    log.debug("disconnect from {}", getAddrString(channel))
+    log.debug("disconnect from {}", getAddressString(channel))
     val fsm = clients.get(channel)
     fsm ! Controller.ClientDisconnected
     clients.remove(channel)
@@ -266,12 +266,12 @@ private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorR
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val channel = event.getChannel
-    log.debug("message from {}: {}", getAddrString(channel), event.getMessage)
+    log.debug("message from {}: {}", getAddressString(channel), event.getMessage)
     event.getMessage match {
       case msg: NetworkOp ⇒
         clients.get(channel) ! msg
       case msg ⇒
-        log.info("client {} sent garbage '{}', disconnecting", getAddrString(channel), msg)
+        log.info("client {} sent garbage '{}', disconnecting", getAddressString(channel), msg)
         channel.close()
     }
   }
@@ -324,19 +324,19 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
   }
 
   when(Initial, stateTimeout = 10 seconds) {
-    case Event(Hello(name, addr), _) ⇒
+    case Event(Hello(name, address), _) ⇒
       roleName = RoleName(name)
-      controller ! NodeInfo(roleName, addr, self)
+      controller ! NodeInfo(roleName, address, self)
       goto(Ready)
     case Event(x: NetworkOp, _) ⇒
-      log.warning("client {} sent no Hello in first message (instead {}), disconnecting", getAddrString(channel), x)
+      log.warning("client {} sent no Hello in first message (instead {}), disconnecting", getAddressString(channel), x)
       channel.close()
       stop()
     case Event(ToClient(msg), _) ⇒
       log.warning("cannot send {} in state Initial", msg)
       stay
     case Event(StateTimeout, _) ⇒
-      log.info("closing channel to {} because of Hello timeout", getAddrString(channel))
+      log.info("closing channel to {} because of Hello timeout", getAddressString(channel))
       channel.close()
       stop()
   }
@@ -349,7 +349,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
       controller ! op
       stay
     case Event(msg: NetworkOp, _) ⇒
-      log.warning("client {} sent unsupported message {}", getAddrString(channel), msg)
+      log.warning("client {} sent unsupported message {}", getAddressString(channel), msg)
       stop()
     case Event(ToClient(msg: UnconfirmedClientOp), _) ⇒
       channel.write(msg)
@@ -372,10 +372,10 @@ private[akka] object Controller {
   final case class ClientDisconnected(name: RoleName) extends DeadLetterSuppression
   class ClientDisconnectedException(msg: String) extends AkkaException(msg) with NoStackTrace
   case object GetNodes
-  case object GetSockAddr
+  case object GetSockAddress
   final case class CreateServerFSM(channel: Channel) extends NoSerializationVerificationNeeded
 
-  final case class NodeInfo(name: RoleName, addr: Address, fsm: ActorRef)
+  final case class NodeInfo(name: RoleName, address: Address, fsm: ActorRef)
 }
 
 /**
@@ -418,7 +418,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   var nodes = Map[RoleName, NodeInfo]()
 
   // map keeping unanswered queries for node addresses (enqueued upon GetAddress, serviced upon NodeInfo)
-  var addrInterest = Map[RoleName, Set[ActorRef]]()
+  var addressInterest = Map[RoleName, Set[ActorRef]]()
   val generation = Iterator from 1
 
   override def receive = LoggingReceive {
@@ -426,7 +426,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
       val (ip, port) = channel.getRemoteAddress match { case s: InetSocketAddress ⇒ (s.getAddress.getHostAddress, s.getPort) }
       val name = ip + ":" + port + "-server" + generation.next
       sender() ! context.actorOf(Props(classOf[ServerFSM], self, channel).withDeploy(Deploy.local), name)
-    case c @ NodeInfo(name, addr, fsm) ⇒
+    case c @ NodeInfo(name, address, fsm) ⇒
       barrier forward c
       if (nodes contains name) {
         if (initialParticipants > 0) {
@@ -441,9 +441,9 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
           for (NodeInfo(_, _, client) ← nodes.values) client ! ToClient(Done)
           initialParticipants = 0
         }
-        if (addrInterest contains name) {
-          addrInterest(name) foreach (_ ! ToClient(AddressReply(name, addr)))
-          addrInterest -= name
+        if (addressInterest contains name) {
+          addressInterest(name) foreach (_ ! ToClient(AddressReply(name, address)))
+          addressInterest -= name
         }
       }
     case c @ ClientDisconnected(name) ⇒
@@ -454,18 +454,18 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case _: EnterBarrier ⇒ barrier forward op
         case _: FailBarrier  ⇒ barrier forward op
         case GetAddress(node) ⇒
-          if (nodes contains node) sender() ! ToClient(AddressReply(node, nodes(node).addr))
-          else addrInterest += node → ((addrInterest get node getOrElse Set()) + sender())
+          if (nodes contains node) sender() ! ToClient(AddressReply(node, nodes(node).address))
+          else addressInterest += node → ((addressInterest get node getOrElse Set()) + sender())
         case _: Done ⇒ //FIXME what should happen?
       }
     case op: CommandOp ⇒
       op match {
         case Throttle(node, target, direction, rateMBit) ⇒
           val t = nodes(target)
-          nodes(node).fsm forward ToClient(ThrottleMsg(t.addr, direction, rateMBit))
+          nodes(node).fsm forward ToClient(ThrottleMsg(t.address, direction, rateMBit))
         case Disconnect(node, target, abort) ⇒
           val t = nodes(target)
-          nodes(node).fsm forward ToClient(DisconnectMsg(t.addr, abort))
+          nodes(node).fsm forward ToClient(DisconnectMsg(t.address, abort))
         case Terminate(node, shutdownOrExit) ⇒
           barrier ! BarrierCoordinator.RemoveClient(node)
           nodes(node).fsm forward ToClient(TerminateMsg(shutdownOrExit))
@@ -474,7 +474,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
     case GetNodes    ⇒ sender() ! nodes.keys
-    case GetSockAddr ⇒ sender() ! connection.getLocalAddress
+    case GetSockAddress ⇒ sender() ! connection.getLocalAddress
   }
 
   override def postStop() {

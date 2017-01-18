@@ -38,22 +38,22 @@ public class RemoteDeploymentDocTest {
   @SuppressWarnings("unused")
   void makeAddress() {
     //#make-address-artery
-    Address addr = new Address("akka", "sys", "host", 1234);
-    addr = AddressFromURIString.parse("akka://sys@host:1234"); // the same
+    Address address = new Address("akka", "sys", "host", 1234);
+    address = AddressFromURIString.parse("akka://sys@host:1234"); // the same
     //#make-address-artery
   }
   
   @Test
   public void demonstrateDeployment() {
     //#make-address
-    Address addr = new Address("akka.tcp", "sys", "host", 1234);
-    addr = AddressFromURIString.parse("akka.tcp://sys@host:1234"); // the same
+    Address address = new Address("akka.tcp", "sys", "host", 1234);
+    address = AddressFromURIString.parse("akka.tcp://sys@host:1234"); // the same
     //#make-address
     //#deploy
     ActorRef ref = system.actorOf(Props.create(SampleActor.class).withDeploy(
-      new Deploy(new RemoteScope(addr))));
+      new Deploy(new RemoteScope(address))));
     //#deploy
-    assert ref.path().address().equals(addr);
+    assert ref.path().address().equals(address);
   }
 
   @Test

@@ -26,11 +26,11 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   }
 
   case class Resolved(name: String, ipv4: immutable.Seq[Inet4Address], ipv6: immutable.Seq[Inet6Address]) extends Command {
-    val addrOption: Option[InetAddress] = ipv4.headOption orElse ipv6.headOption
+    val addressOption: Option[InetAddress] = ipv4.headOption orElse ipv6.headOption
 
     @throws[UnknownHostException]
-    def addr: InetAddress = addrOption match {
-      case Some(addr) ⇒ addr
+    def address: InetAddress = addressOption match {
+      case Some(address) ⇒ address
       case None       ⇒ throw new UnknownHostException(name)
     }
   }
