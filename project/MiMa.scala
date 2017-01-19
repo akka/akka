@@ -257,6 +257,10 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.EventStream.this"),
       ProblemFilters.exclude[MissingClassProblem]("akka.event.japi.ActorEventBus"),
       
+      // #21423 remove deprecated util.Crypt
+      ProblemFilters.exclude[MissingClassProblem]("akka.util.Crypt"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.util.Crypt$"),
+      
       // #21423 removal of deprecated `PersistentView` (in 2.5.x)
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
