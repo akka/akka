@@ -11,7 +11,7 @@ import akka.stream.ActorMaterializerSettings
 import akka.util.Helpers.{ ConfigOps, Requiring, toRootLowerCase }
 import akka.util.WildcardIndex
 import akka.NotUsed
-import com.typesafe.config.Config
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -23,6 +23,13 @@ import java.util.concurrent.TimeUnit
 private[akka] final class ArterySettings private (config: Config) {
   import config._
   import ArterySettings._
+
+  def withDisabledCompression(): ArterySettings =
+    ArterySettings(ConfigFactory.parseString(
+      """|akka.remote.artery.advanced.compression {
+         |  actor-refs.max = 0
+         |  manifests.max = 0
+         |}""".stripMargin).withFallback(config))
 
   val Enabled: Boolean = getBoolean("enabled")
 
@@ -151,7 +158,7 @@ private[akka] object ArterySettings {
   private[remote] final class Compression private[ArterySettings] (config: Config) {
     import config._
 
-    final val Enabled = true
+    private[akka] final val Enabled = ActorRefs.Max > 0 || Manifests.Max > 0
 
     object ActorRefs {
       val config = getConfig("actor-refs")
