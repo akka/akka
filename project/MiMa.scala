@@ -251,6 +251,12 @@ object MiMa extends AutoPlugin {
       // #21423 remove deprecated ActorPath.ElementRegex
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorPath.ElementRegex"),
       
+      // #21423 remove some deprecated event bus classes
+      ProblemFilters.exclude[MissingClassProblem]("akka.event.ActorClassification"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.event.EventStream$"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.EventStream.this"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.event.japi.ActorEventBus"),
+      
       // #21423 removal of deprecated `PersistentView` (in 2.5.x)
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
