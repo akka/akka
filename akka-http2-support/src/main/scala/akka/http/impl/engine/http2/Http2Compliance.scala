@@ -38,9 +38,15 @@ private[akka] object Http2Compliance {
   }
 
   class Http2ProtocolException(val errorCode: ErrorCode, message: String) extends IllegalStateException(message)
+  class Http2ProtocolStreamException(val streamId: Int, val errorCode: ErrorCode, message: String) extends IllegalStateException(message)
 
   final def requireZeroStreamId(id: Int): Unit =
     if (id != 0) throw new IllegalHttp2StreamIdException(id, "MUST BE == 0.")
+
+  final def requirePositiveWindowUpdateIncrement(streamId: Int, increment: Int): Unit =
+    if (increment <= 0)
+      if (streamId == 0) throw new Http2ProtocolException(ErrorCode.PROTOCOL_ERROR, "WINDOW_UPDATE MUST be > 0, was: " + increment) // cause GOAWAY
+      else throw new Http2ProtocolStreamException(streamId, ErrorCode.PROTOCOL_ERROR, "WINDOW_UPDATE MUST be > 0, was: " + increment) // cause RST_STREAM
 
   /** checks if the stream id was client initiated, by checking if the stream id was odd-numbered */
   final def isClientInitiatedStreamId(id: Int): Boolean = id % 2 != 0

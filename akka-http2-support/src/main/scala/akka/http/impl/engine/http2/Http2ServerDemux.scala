@@ -220,6 +220,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case e: Http2Compliance.Http2ProtocolException ⇒
               pushGOAWAY(e.errorCode, e.getMessage)
 
+            case e: Http2Compliance.Http2ProtocolStreamException ⇒
+              incomingStreams.remove(e.streamId)
+              bufferedFrameOut.push(RstStreamFrame(e.streamId, e.errorCode))
+
             case e: ParsingException ⇒
               e.getCause match {
                 case null  ⇒ super.onUpstreamFailure(e) // fail with the raw parsing exception

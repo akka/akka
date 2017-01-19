@@ -116,9 +116,9 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
           case WINDOW_UPDATE ⇒
             // TODO: check frame size
             // TODO: check flags
-            // TODO: check reserved flag
-            // TODO: check that increment is > 0
             val increment = payload.readIntBE()
+            Http2Compliance.requirePositiveWindowUpdateIncrement(streamId, increment)
+
             WindowUpdateFrame(streamId, increment)
 
           case CONTINUATION ⇒

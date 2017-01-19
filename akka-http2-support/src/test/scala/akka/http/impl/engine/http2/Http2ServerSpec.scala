@@ -473,6 +473,21 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
       "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed when window became negative through setting" in pending
 
       "eventually send WINDOW_UPDATE frames for received data" in pending
+
+      "reject WINDOW_UPDATE for connection with zero increment with PROTOCOL_ERROR" in new TestSetup with RequestResponseProbes {
+        sendWINDOW_UPDATE(0, 0) // illegal
+        val (_, errorCode) = expectGOAWAY()
+
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
+      }
+      "reject WINDOW_UPDATE for stream with zero increment with PROTOCOL_ERROR" in new TestSetup with RequestResponseProbes {
+        // making sure we don't handle stream 0 and others differently here
+        sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        sendWINDOW_UPDATE(1, 0) // illegal
+
+        expectRST_STREAM(1, ErrorCode.PROTOCOL_ERROR)
+      }
+
     }
 
     "respect settings" should {
