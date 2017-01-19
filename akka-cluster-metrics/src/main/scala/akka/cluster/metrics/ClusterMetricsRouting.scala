@@ -121,7 +121,7 @@ final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem, metricsS
 @SerialVersionUID(1L)
 final case class AdaptiveLoadBalancingPool(
   metricsSelector:                 MetricsSelector    = MixMetricsSelector,
-  override val nrOfInstances:      Int                = 0,
+  val nrOfInstances:               Int                = 0,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
   override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
   override val usePoolDispatcher:  Boolean            = false)
@@ -203,7 +203,7 @@ final case class AdaptiveLoadBalancingPool(
 @SerialVersionUID(1L)
 final case class AdaptiveLoadBalancingGroup(
   metricsSelector:               MetricsSelector            = MixMetricsSelector,
-  override val paths:            immutable.Iterable[String] = Nil,
+  val paths:                     immutable.Iterable[String] = Nil,
   override val routerDispatcher: String                     = Dispatchers.DefaultDispatcherId)
   extends Group {
 
