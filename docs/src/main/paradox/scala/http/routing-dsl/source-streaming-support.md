@@ -125,4 +125,4 @@ Refer to the below, complete, example showcasing how to configure a custom marsh
 the entity streaming's support content type to be compatible. This is an area that would benefit from additional type-safety,
 which we hope to add in a future release.
 
-@@snip [JsonStreamingFullExamples.scala](../../../../../test/java/docs/http/scaladsl/server/JsonStreamingFullExamples.scala) { #custom-content-type }
+@@snip [JsonStreamingFullExamples.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/JsonStreamingFullExamples.scala) { #custom-content-type }
