@@ -524,42 +524,6 @@ abstract class ActorSystem extends ActorRefFactory {
   def registerOnTermination(code: Runnable): Unit
 
   /**
-   * Block current thread until the system has been shutdown, or the specified
-   * timeout has elapsed. This will block until after all on termination
-   * callbacks have been run.
-   *
-   * Throws TimeoutException in case of timeout.
-   */
-  @deprecated("Use Await.result(whenTerminated, timeout) instead", "2.4")
-  def awaitTermination(timeout: Duration): Unit
-
-  /**
-   * Block current thread until the system has been shutdown. This will
-   * block until after all on termination callbacks have been run.
-   */
-  @deprecated("Use Await.result(whenTerminated, Duration.Inf) instead", "2.4")
-  def awaitTermination(): Unit
-
-  /**
-   * Stop this actor system. This will stop the guardian actor, which in turn
-   * will recursively stop all its child actors, then the system guardian
-   * (below which the logging actors reside) and the execute all registered
-   * termination handlers (see [[ActorSystem#registerOnTermination]]).
-   */
-  @deprecated("Use the terminate() method instead", "2.4")
-  def shutdown(): Unit
-
-  /**
-   * Query the termination status: if it returns true, all callbacks have run
-   * and the ActorSystem has been fully stopped, i.e.
-   * `awaitTermination(0 seconds)` would return normally. If this method
-   * returns `false`, the status is actually unknown, since it might have
-   * changed since you queried it.
-   */
-  @deprecated("Use the whenTerminated method instead.", "2.4")
-  def isTerminated: Boolean
-
-  /**
    * Terminates this actor system. This will stop the guardian actor, which in turn
    * will recursively stop all its child actors, then the system guardian
    * (below which the logging actors reside) and the execute all registered
@@ -820,11 +784,6 @@ private[akka] class ActorSystemImpl(
   def start(): this.type = _start
   def registerOnTermination[T](code: ⇒ T) { registerOnTermination(new Runnable { def run = code }) }
   def registerOnTermination(code: Runnable) { terminationCallbacks.add(code) }
-  override def awaitTermination(timeout: Duration) { Await.ready(whenTerminated, timeout) }
-  override def awaitTermination() = awaitTermination(Duration.Inf)
-  override def isTerminated = whenTerminated.isCompleted
-
-  override def shutdown(): Unit = terminate()
 
   override def terminate(): Future[Terminated] = {
     if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener foreach stop
