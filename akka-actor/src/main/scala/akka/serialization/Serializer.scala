@@ -281,14 +281,6 @@ object JavaSerializer {
  */
 class JavaSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
-  @deprecated("Use constructor with ExtendedActorSystem", "2.4")
-  def this() = this(null)
-
-  // TODO remove this when deprecated this() is removed
-  override val identifier: Int =
-    if (system eq null) 1
-    else identifierFromConfig
-
   def includeManifest: Boolean = false
 
   def toBinary(o: AnyRef): Array[Byte] = {
@@ -323,14 +315,6 @@ class NullSerializer extends Serializer {
  * (just returns the byte array unchanged/uncopied)
  */
 class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerializer with ByteBufferSerializer {
-
-  @deprecated("Use constructor with ExtendedActorSystem", "2.4")
-  def this() = this(null)
-
-  // TODO remove this when deprecated this() is removed
-  override val identifier: Int =
-    if (system eq null) 4
-    else identifierFromConfig
 
   def includeManifest: Boolean = false
   def toBinary(o: AnyRef): Array[Byte] = o match {

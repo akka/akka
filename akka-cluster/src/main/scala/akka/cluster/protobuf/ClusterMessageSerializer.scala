@@ -26,14 +26,6 @@ import akka.cluster.InternalClusterAction.ExitingConfirmed
  */
 class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
-  @deprecated("Use constructor with ExtendedActorSystem", "2.4")
-  def this() = this(null)
-
-  // TODO remove this when deprecated this() is removed
-  override val identifier: Int =
-    if (system eq null) 5
-    else identifierFromConfig
-
   private final val BufferSize = 1024 * 4
   // must be lazy because serializer is initialized from Cluster extension constructor
   private lazy val GossipTimeToLive = Cluster(system).settings.GossipTimeToLive
