@@ -269,6 +269,10 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.serialization.ByteArraySerializer.this"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.protobuf.ClusterMessageSerializer.this"),
       
+      // #21423 removal of deprecated constructor in PromiseActorRef
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.apply"),
+      
       // #21423 removal of deprecated `PersistentView` (in 2.5.x)
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),

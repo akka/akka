@@ -438,9 +438,6 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   import AbstractPromiseActorRef.{ stateOffset, watchedByOffset }
   import PromiseActorRef._
 
-  @deprecated("Use the full constructor", "2.4")
-  def this(provider: ActorRefProvider, result: Promise[Any]) = this(provider, result, "unknown")
-
   // This is necessary for weaving the PromiseActorRef into the asked message, i.e. the replyTo pattern.
   @volatile var messageClassName = _mcn
 
@@ -607,7 +604,4 @@ private[akka] object PromiseActorRef {
     a
   }
 
-  @deprecated("Use apply with messageClassName and sender parameters", "2.4")
-  def apply(provider: ActorRefProvider, timeout: Timeout, targetName: String): PromiseActorRef =
-    apply(provider, timeout, targetName, "unknown", Actor.noSender)
 }
