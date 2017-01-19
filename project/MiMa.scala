@@ -238,6 +238,16 @@ object MiMa extends AutoPlugin {
       // object akka.stream.stage.StatefulStage#Finish does not have a correspondent in current version
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$"),
 
+      // #21423 remove deprecated ActorSystem termination methods (in 2.5.x)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.shutdown"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.isTerminated"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.awaitTermination"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.awaitTermination"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.shutdown"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.isTerminated"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.awaitTermination"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.awaitTermination"),
+      
       // #21423 removal of deprecated `PersistentView` (in 2.5.x)
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
