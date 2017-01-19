@@ -153,6 +153,10 @@ And then using it:
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#defining-fixed-pool-size-dispatcher
 
+Another example that uses the thread pool based on the number of cores (e.g. for CPU bound tasks)
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-bounded-config
+
 Configuring a ``PinnedDispatcher``:
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-pinned-dispatcher-config

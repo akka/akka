@@ -78,7 +78,6 @@ object DispatcherDocSpec {
       executor = "thread-pool-executor"
       # Configuration for the thread pool
       thread-pool-executor {
-        // or in Akka 2.4.2+
         fixed-pool-size = 16
       }
       # Throughput defines the maximum number of messages to be
