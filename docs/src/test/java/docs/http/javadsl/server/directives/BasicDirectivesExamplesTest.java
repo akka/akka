@@ -174,7 +174,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       )
     );
 
-    //tests:
+    // tests:
     testRoute(route).run(HttpRequest.GET("/sample"))
       .assertEntity("Run on " + system().dispatcher().hashCode() + "!");
     //#extractExecutionContext
@@ -204,6 +204,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     // tests:
     testRoute(route).run(HttpRequest.GET("/sample"))
       .assertEntity("Logging using " + system().log() + "!");
+    
     testRoute(route).run(HttpRequest.GET("/special/sample"))
       .assertEntity("Logging using " + special + "!");
     //#withLog

@@ -76,11 +76,15 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
         .orElseGet(() -> "unknown"))
     );
 
-    //tests:
+    // tests:
     final String ip = "192.168.1.2";
-    testRoute(route).run(HttpRequest.GET("/")
-        .addHeader(RemoteAddress
-          .create(akka.http.javadsl.model.RemoteAddress.create(InetAddress.getByName(ip)))))
+    final akka.http.javadsl.model.RemoteAddress remoteAddress = 
+      akka.http.javadsl.model.RemoteAddress.create(InetAddress.getByName(ip));
+    
+    final HttpRequest request = HttpRequest.GET("/")
+      .addHeader(RemoteAddress.create(remoteAddress)); // 
+    
+    testRoute(route).run(request)
       .assertEntity("Client's IP is " + ip);
 
     testRoute(route).run(HttpRequest.GET("/"))
@@ -97,7 +101,7 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
       complete("request entity present")
     ));
 
-    //tests:
+    // tests:
     testRoute(route).run(HttpRequest.POST("/"))
       .assertEntity("request entity empty");
     testRoute(route).run(HttpRequest.POST("/").withEntity("foo"))
@@ -118,7 +122,7 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
     );
 
 
-    //tests:
+    // tests:
     final HttpRequest request = HttpRequest.GET("/").addHeader(AcceptLanguage.create(
       Language.create("en-US").withQValue(1f),
       Language.create("en").withQValue(0.7f),
@@ -140,7 +144,7 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
         () -> complete("Full URI: " + uri.toString()))
     );
 
-    //tests:
+    // tests:
     testRoute(route).run(HttpRequest.GET("/234"))
       .assertEntity("Full URI: http://example.com/234");
     testRoute(route).run(HttpRequest.GET("/abcdefghijkl"))

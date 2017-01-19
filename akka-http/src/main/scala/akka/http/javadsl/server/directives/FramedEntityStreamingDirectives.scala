@@ -17,6 +17,8 @@ import akka.http.scaladsl.server.{ Directives ⇒ D }
 import akka.stream.javadsl.Source
 import akka.util.ByteString
 
+import scala.reflect.ClassTag
+
 /** EXPERIMENTAL API */
 abstract class FramedEntityStreamingDirectives extends TimeoutDirectives {
 

@@ -4,11 +4,13 @@
 
 package akka.http.scaladsl.marshallers.sprayjson
 
+import akka.http.javadsl.{ common, model ⇒ jm }
 import akka.NotUsed
+import akka.event.Logging
 import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model.{ HttpCharsets, MediaTypes }
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{ FromByteStringUnmarshaller, FromEntityUnmarshaller, Unmarshaller }
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{ Flow, Keep, Source }
@@ -66,3 +68,75 @@ trait SprayJsonSupport {
     Marshaller.StringMarshaller.wrap(MediaTypes.`application/json`)(printer)
 }
 object SprayJsonSupport extends SprayJsonSupport
+
+/**
+ * Entity streaming support, implemented using spray-json.
+ *
+ * See also <a href="https://github.com/spray/spray-json">github.com/spray/spray-json</a> for details about Spray JSON itself
+ */
+object SprayJsonEntityStreamingSupport {
+
+  /**
+   * Default `application/json` entity streaming support.
+   *
+   * Provides framing (based on scanning the incoming dataBytes for valid JSON objects, so for example uploads using arrays or
+   * new-line separated JSON objects are all parsed correctly) and rendering of Sources as JSON Arrays.
+   * A different very popular style of returning streaming JSON is to separate JSON objects on a line-by-line basis,
+   * you can configure the support trait to do so by calling `withFramingRendererFlow`.
+   *
+   * Limits the maximum JSON object length to 8KB, if you want to increase this limit provide a value explicitly.
+   *
+   * See also <a href="https://en.wikipedia.org/wiki/JSON_Streaming">https://en.wikipedia.org/wiki/JSON_Streaming</a>
+   */
+  def json(): JsonEntityStreamingSupport = json(8 * 1024)
+
+  /**
+   * Default `application/json` entity streaming support.
+   *
+   * Provides framing (based on scanning the incoming dataBytes for valid JSON objects, so for example uploads using arrays or
+   * new-line separated JSON objects are all parsed correctly) and rendering of Sources as JSON Arrays.
+   * A different very popular style of returning streaming JSON is to separate JSON objects on a line-by-line basis,
+   * you can configure the support trait to do so by calling `withFramingRendererFlow`.
+   *
+   * See also <a href="https://en.wikipedia.org/wiki/JSON_Streaming">https://en.wikipedia.org/wiki/JSON_Streaming</a>
+   */
+  def json(maxObjectLength: Int): JsonEntityStreamingSupport = new JsonEntityStreamingSupport(maxObjectLength)
+
+}
+
+final class JsonEntityStreamingSupport private[akka] (
+  maxObjectSize:       Int,
+  val supported:       ContentTypeRange,
+  val contentType:     ContentType,
+  val framingRenderer: Flow[ByteString, ByteString, NotUsed],
+  val parallelism:     Int,
+  val unordered:       Boolean
+) extends common.JsonEntityStreamingSupport {
+  import akka.http.impl.util.JavaMapping.Implicits._
+
+  def this(maxObjectSize: Int) =
+    this(
+      maxObjectSize,
+      ContentTypeRange(ContentTypes.`application/json`),
+      ContentTypes.`application/json`,
+      Flow[ByteString].intersperse(ByteString("["), ByteString(","), ByteString("]")),
+      1, false)
+
+  override val framingDecoder: Flow[ByteString, ByteString, NotUsed] =
+    akka.stream.scaladsl.JsonFraming.objectScanner(maxObjectSize)
+
+  override def withFramingRendererFlow(framingRendererFlow: akka.stream.javadsl.Flow[ByteString, ByteString, NotUsed]): JsonEntityStreamingSupport =
+    withFramingRenderer(framingRendererFlow.asScala)
+  def withFramingRenderer(framingRendererFlow: Flow[ByteString, ByteString, NotUsed]): JsonEntityStreamingSupport =
+    new JsonEntityStreamingSupport(maxObjectSize, supported, contentType, framingRendererFlow, parallelism, unordered)
+
+  override def withContentType(ct: jm.ContentType): JsonEntityStreamingSupport =
+    new JsonEntityStreamingSupport(maxObjectSize, supported, ct.asScala, framingRenderer, parallelism, unordered)
+  override def withSupported(range: jm.ContentTypeRange): JsonEntityStreamingSupport =
+    new JsonEntityStreamingSupport(maxObjectSize, range.asScala, contentType, framingRenderer, parallelism, unordered)
+  override def withParallelMarshalling(parallelism: Int, unordered: Boolean): JsonEntityStreamingSupport =
+    new JsonEntityStreamingSupport(maxObjectSize, supported, contentType, framingRenderer, parallelism, unordered)
+
+  override def toString = s"""${Logging.simpleName(getClass)}($maxObjectSize, $supported, $contentType)"""
+
+}

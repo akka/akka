@@ -5,3 +5,7 @@
 # passes in such an Unmarshaller that was compiled with 10.0.0 it would then fail. The likelihood is small
 # so we are ignoring that for now.
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.unmarshalling.Unmarshaller.andThen")
+
+# =core #424 fix stream marshalling, better errors, more examples 
+# added new implicit marshaller provider; old method became non-implicit so binary compatibility is kept, but new code will use the new implicit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.LowPriorityToResponseMarshallerImplicits.fromEntityStreamingSupportAndEntityMarshaller")

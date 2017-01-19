@@ -4,7 +4,10 @@
 
 package akka.http.scaladsl.marshalling
 
+import akka.event.Logging
 import akka.http.scaladsl.common.EntityStreamingSupport
+import akka.http.scaladsl.model
+import akka.http.scaladsl.model.ContentType.{ Binary, WithFixedCharset }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
@@ -14,6 +17,7 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImplicits {
   import PredefinedToResponseMarshallers._
@@ -96,8 +100,12 @@ trait LowPriorityToResponseMarshallerImplicits {
   implicit def liftMarshaller[T](implicit m: ToEntityMarshaller[T]): ToResponseMarshaller[T] =
     PredefinedToResponseMarshallers.fromToEntityMarshaller()
 
+  @deprecated("This method exists only for the purpose of binary compatibility, it used to be implicit.", "10.0.2")
+  def fromEntityStreamingSupportAndEntityMarshaller[T, M](s: EntityStreamingSupport, m: ToEntityMarshaller[T]): ToResponseMarshaller[Source[T, M]] =
+    fromEntityStreamingSupportAndEntityMarshaller(s, m, null)
+
   // FIXME deduplicate this!!!
-  implicit def fromEntityStreamingSupportAndEntityMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToEntityMarshaller[T]): ToResponseMarshaller[Source[T, M]] = {
+  implicit def fromEntityStreamingSupportAndEntityMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToEntityMarshaller[T], tag: ClassTag[T]): ToResponseMarshaller[Source[T, M]] = {
     Marshaller[Source[T, M], HttpResponse] { implicit ec ⇒ source ⇒
       FastFuture successful {
         Marshalling.WithFixedContentType(s.contentType, () ⇒ {
@@ -107,7 +115,7 @@ trait LowPriorityToResponseMarshallerImplicits {
           // TODO, NOTE: this is somewhat duplicated from Marshal.scala it could be made DRYer
           val bestMarshallingPerElement = availableMarshallingsPerElement mapConcat { marshallings ⇒
             // pick the Marshalling that matches our EntityStreamingSupport
-            (s.contentType match {
+            val selectedMarshallings = (s.contentType match {
               case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset) ⇒
                 marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
 
@@ -117,7 +125,14 @@ trait LowPriorityToResponseMarshallerImplicits {
                   case Marshalling.WithOpenCharset(`bestMT`, marshal)    ⇒ () ⇒ marshal(bestCS)
                 }
             }).toList
+
+            // TODO we could either special case for certrain known types,
+            // or extend the entity support to be more advanced such that it would negotiate the element content type it
+            // is able to render.
+            if (selectedMarshallings.isEmpty) throw new NoStrictlyCompatibleElementMarshallingAvailableException[T](s.contentType, marshallings)
+            else selectedMarshallings
           }
+
           val marshalledElements: Source[ByteString, M] =
             bestMarshallingPerElement.map(_.apply()) // marshal!
               .flatMapConcat(_.dataBytes) // extract raw dataBytes
@@ -128,7 +143,6 @@ trait LowPriorityToResponseMarshallerImplicits {
       }
     }
   }
-
 }
 
 object PredefinedToResponseMarshallers extends PredefinedToResponseMarshallers {
@@ -146,3 +160,13 @@ object PredefinedToResponseMarshallers extends PredefinedToResponseMarshallers {
     else HttpResponse(statusCode, headers, HttpEntity.Empty)
   }
 }
+
+final class NoStrictlyCompatibleElementMarshallingAvailableException[T](
+  streamContentType:     ContentType,
+  availableMarshallings: List[Marshalling[_]])(implicit tag: ClassTag[T])
+  extends RuntimeException(
+    s"None of the available marshallings ($availableMarshallings) directly " +
+      s"match the ContentType requested by the top-level streamed entity ($streamContentType). " +
+      s"Please provide an implicit `Marshaller[${if (tag == null) "T" else tag.runtimeClass.getName}, HttpEntity]` " +
+      s"that can render ${if (tag == null) "" else tag.runtimeClass.getName + " "}" +
+      s"as [$streamContentType]")
