@@ -40,9 +40,6 @@ object ProtobufSerializer {
  */
 class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
-  @deprecated("Will be removed without replacement", "2.4")
-  val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
-
   private val parsingMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
   private val toByteArrayMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
 
