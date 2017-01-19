@@ -803,6 +803,7 @@ object UriRendering {
   def renderUriWithoutFragment[R <: Rendering](r: R, value: Uri, charset: Charset): r.type = {
     import value._
     if (isAbsolute) r ~~ scheme ~~ ':'
+    if (authority.nonEmpty) r ~~ '/' ~~ '/'
     renderAuthority(r, authority, path, scheme, charset)
     renderPath(r, path, charset, encodeFirstSegmentColons = isRelative)
     rawQueryString.foreach(r ~~ '?' ~~ _)
@@ -815,7 +816,6 @@ object UriRendering {
   def renderAuthority[R <: Rendering](r: R, authority: Authority, path: Path, scheme: String, charset: Charset): r.type =
     if (authority.nonEmpty) {
       import authority._
-      r ~~ '/' ~~ '/'
       if (!userinfo.isEmpty) encode(r, userinfo, charset, `userinfo-char`) ~~ '@'
       r ~~ host
       if (port != 0) r ~~ ':' ~~ port else r

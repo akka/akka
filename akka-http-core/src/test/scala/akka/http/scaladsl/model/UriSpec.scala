@@ -731,6 +731,13 @@ class UriSpec extends WordSpec with Matchers {
       Uri("https://host:3030/").withPort(4450).effectivePort shouldEqual 4450
     }
 
+    "properly render authority" in {
+      Uri("http://localhost/test").authority.toString shouldEqual "localhost"
+      Uri("http://example.com:80/test").authority.toString shouldEqual "example.com:80"
+      Uri("ftp://host/").authority.toString shouldEqual "host"
+      Uri("http://user@host").authority.toString shouldEqual "user@host"
+    }
+
     "keep the specified authority port" in {
       Uri("example.com").withPort(0).authority.port shouldEqual 0
       Uri("example.com").withPort(80).authority.port shouldEqual 80
