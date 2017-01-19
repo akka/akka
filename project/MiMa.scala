@@ -305,6 +305,9 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShardCoordinator.persistAsync"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData#RemoveOnePersistenceId.persist"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData#RemoveOnePersistenceId.persistAsync"),
+      
+      // #21423 remove deprecated ARRAY_OF_BYTE_ARRAY
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.ProtobufSerializer.ARRAY_OF_BYTE_ARRAY"),
           
       // #21423 removal of deprecated `PersistentView` (in 2.5.x)
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
