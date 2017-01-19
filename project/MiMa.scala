@@ -284,6 +284,28 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.routing.ClusterRouterGroup.paths"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.routing.ClusterRouterPool.nrOfInstances"),
       
+      // #21423 remove deprecated persist method (persistAll)
+      // This might filter changes to the ordinary persist method also, but not much to do about that
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persistAsync"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Eventsourced.persist"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Eventsourced.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.AbstractPersistentFSM.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.AbstractPersistentFSM.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.AbstractPersistentLoggingFSM.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.AbstractPersistentLoggingFSM.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShard.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShard.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShardCoordinator.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShardCoordinator.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData#RemoveOnePersistenceId.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData#RemoveOnePersistenceId.persistAsync"),
+          
       // #21423 removal of deprecated `PersistentView` (in 2.5.x)
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
