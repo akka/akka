@@ -273,6 +273,17 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.this"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.apply"),
       
+      // #21423 remove deprecated methods in routing
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.Pool.nrOfInstances"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.Group.paths"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.PoolBase.nrOfInstances"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.GroupBase.paths"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.GroupBase.getPaths"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.FromConfig.nrOfInstances"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.routing.RemoteRouterConfig.nrOfInstances"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.routing.ClusterRouterGroup.paths"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.routing.ClusterRouterPool.nrOfInstances"),
+      
       // #21423 removal of deprecated `PersistentView` (in 2.5.x)
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
