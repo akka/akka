@@ -78,7 +78,7 @@ private[akka] abstract class AbstractEventsByTagPublisher(
   def receiveIdleRequest(): Unit
 
   def timeForReplay: Boolean =
-    (buf.isEmpty || buf.size <= maxBufSize / 2) && (currOffset <= toOffset)
+    (buf.isEmpty || buf.size <= maxBufSize / 2) && (currOffset < toOffset)
 
   def replay(): Unit = {
     val limit = maxBufSize - buf.size
@@ -94,7 +94,7 @@ private[akka] abstract class AbstractEventsByTagPublisher(
         persistenceId = p.persistenceId,
         sequenceNr = p.sequenceNr,
         event = p.payload)
-      currOffset = offset + 1
+      currOffset = offset
       deliverBuf()
 
     case RecoverySuccess(highestSeqNr) ⇒
@@ -143,13 +143,13 @@ private[akka] class LiveEventsByTagPublisher(
 
   override def receiveIdleRequest(): Unit = {
     deliverBuf()
-    if (buf.isEmpty && currOffset > toOffset)
+    if (buf.isEmpty && currOffset >= toOffset)
       onCompleteThenStop()
   }
 
   override def receiveRecoverySuccess(highestSeqNr: Long): Unit = {
     deliverBuf()
-    if (buf.isEmpty && currOffset > toOffset)
+    if (buf.isEmpty && currOffset >= toOffset)
       onCompleteThenStop()
     context.become(idle)
   }
@@ -174,7 +174,7 @@ private[akka] class CurrentEventsByTagPublisher(
 
   override def receiveIdleRequest(): Unit = {
     deliverBuf()
-    if (buf.isEmpty && currOffset > toOffset)
+    if (buf.isEmpty && currOffset >= toOffset)
       onCompleteThenStop()
     else
       self ! Continue
@@ -184,7 +184,7 @@ private[akka] class CurrentEventsByTagPublisher(
     deliverBuf()
     if (highestSeqNr < toOffset)
       _toOffset = highestSeqNr
-    if (buf.isEmpty && (currOffset > toOffset || currOffset == fromOffset))
+    if (buf.isEmpty && (currOffset >= toOffset || currOffset == fromOffset))
       onCompleteThenStop()
     else
       self ! Continue // more to fetch

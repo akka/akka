@@ -15,6 +15,7 @@ import akka.routing.ActorRefRoutee
 class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       akka.actor.provider = "cluster"
       akka.remote.netty.tcp.port = 0
+      akka.remote.artery.canonical.port = 0
       """)) {
 
   val protocol =

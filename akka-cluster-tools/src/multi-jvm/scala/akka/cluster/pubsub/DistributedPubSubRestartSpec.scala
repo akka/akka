@@ -141,9 +141,10 @@ class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestar
         val newSystem = {
           val port = Cluster(system).selfAddress.port.get
           val config = ConfigFactory.parseString(
-            if (RARP(system).provider.remoteSettings.Artery.Enabled) s"akka.remote.artery.canonical.port=$port"
-            else s"akka.remote.netty.tcp.port=$port"
-          ).withFallback(system.settings.config)
+            s"""
+              akka.remote.artery.canonical.port=$port
+              akka.remote.netty.tcp.port=$port
+              """).withFallback(system.settings.config)
 
           ActorSystem(system.name, config)
         }

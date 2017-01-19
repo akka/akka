@@ -19,6 +19,7 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
 import java.io.NotSerializableException
+import akka.cluster.InternalClusterAction.ExitingConfirmed
 
 /**
  * Protobuf serializer of cluster messages.
@@ -57,6 +58,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
     classOf[InternalClusterAction.InitJoinNack] → (bytes ⇒ InternalClusterAction.InitJoinNack(addressFromBinary(bytes))),
     classOf[ClusterHeartbeatSender.Heartbeat] → (bytes ⇒ ClusterHeartbeatSender.Heartbeat(addressFromBinary(bytes))),
     classOf[ClusterHeartbeatSender.HeartbeatRsp] → (bytes ⇒ ClusterHeartbeatSender.HeartbeatRsp(uniqueAddressFromBinary(bytes))),
+    classOf[ExitingConfirmed] → (bytes ⇒ InternalClusterAction.ExitingConfirmed(uniqueAddressFromBinary(bytes))),
     classOf[GossipStatus] → gossipStatusFromBinary,
     classOf[GossipEnvelope] → gossipEnvelopeFromBinary,
     classOf[MetricsGossipEnvelope] → metricsGossipEnvelopeFromBinary)
@@ -64,18 +66,19 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
   def includeManifest: Boolean = true
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case ClusterHeartbeatSender.Heartbeat(from)      ⇒ addressToProtoByteArray(from)
-    case ClusterHeartbeatSender.HeartbeatRsp(from)   ⇒ uniqueAddressToProtoByteArray(from)
-    case m: GossipEnvelope                           ⇒ gossipEnvelopeToProto(m).toByteArray
-    case m: GossipStatus                             ⇒ gossipStatusToProto(m).toByteArray
-    case m: MetricsGossipEnvelope                    ⇒ compress(metricsGossipEnvelopeToProto(m))
-    case InternalClusterAction.Join(node, roles)     ⇒ joinToProto(node, roles).toByteArray
-    case InternalClusterAction.Welcome(from, gossip) ⇒ compress(welcomeToProto(from, gossip))
-    case ClusterUserAction.Leave(address)            ⇒ addressToProtoByteArray(address)
-    case ClusterUserAction.Down(address)             ⇒ addressToProtoByteArray(address)
-    case InternalClusterAction.InitJoin              ⇒ cm.Empty.getDefaultInstance.toByteArray
-    case InternalClusterAction.InitJoinAck(address)  ⇒ addressToProtoByteArray(address)
-    case InternalClusterAction.InitJoinNack(address) ⇒ addressToProtoByteArray(address)
+    case ClusterHeartbeatSender.Heartbeat(from)       ⇒ addressToProtoByteArray(from)
+    case ClusterHeartbeatSender.HeartbeatRsp(from)    ⇒ uniqueAddressToProtoByteArray(from)
+    case m: GossipEnvelope                            ⇒ gossipEnvelopeToProto(m).toByteArray
+    case m: GossipStatus                              ⇒ gossipStatusToProto(m).toByteArray
+    case m: MetricsGossipEnvelope                     ⇒ compress(metricsGossipEnvelopeToProto(m))
+    case InternalClusterAction.Join(node, roles)      ⇒ joinToProto(node, roles).toByteArray
+    case InternalClusterAction.Welcome(from, gossip)  ⇒ compress(welcomeToProto(from, gossip))
+    case ClusterUserAction.Leave(address)             ⇒ addressToProtoByteArray(address)
+    case ClusterUserAction.Down(address)              ⇒ addressToProtoByteArray(address)
+    case InternalClusterAction.InitJoin               ⇒ cm.Empty.getDefaultInstance.toByteArray
+    case InternalClusterAction.InitJoinAck(address)   ⇒ addressToProtoByteArray(address)
+    case InternalClusterAction.InitJoinNack(address)  ⇒ addressToProtoByteArray(address)
+    case InternalClusterAction.ExitingConfirmed(node) ⇒ uniqueAddressToProtoByteArray(node)
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
   }
@@ -139,9 +142,9 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSeri
 
   // we don't care about races here since it's just a cache
   @volatile
-  private var protocolCache: String = null
+  private var protocolCache: String = _
   @volatile
-  private var systemCache: String = null
+  private var systemCache: String = _
 
   private def getProtocol(address: cm.Address): String = {
     val p = address.getProtocol

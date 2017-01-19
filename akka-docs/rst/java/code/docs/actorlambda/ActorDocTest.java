@@ -12,11 +12,17 @@ import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import docs.AbstractJavaTest;
+import docs.actor.ActorDocTest.FirstActor;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 import static docs.actorlambda.Messages.Swap.Swap;
 import static docs.actorlambda.Messages.*;
 import static akka.japi.Util.immutableSeq;
+import akka.actor.CoordinatedShutdown;
+import static akka.pattern.PatternsCS.ask;
+import akka.util.Timeout;
+import akka.Done;
+import java.util.concurrent.CompletionStage;
 
 import java.util.concurrent.TimeUnit;
 
@@ -675,6 +681,32 @@ public class ActorDocTest extends AbstractJavaTest {
       }};
     } finally {
       system.eventStream().publish(new TestEvent.UnMute(immutableSeq(ignoreExceptions)));
+    }
+  }
+  
+  @Test
+  public void coordinatedShutdown() {
+    final ActorRef someActor = system.actorOf(Props.create(FirstActor.class));
+    //#coordinated-shutdown-addTask
+    CoordinatedShutdown.get(system).addTask(
+      CoordinatedShutdown.PhaseBeforeServiceUnbind(), "someTaskName",
+      () -> {
+        return ask(someActor, "stop", new Timeout(5, TimeUnit.SECONDS))
+          .thenApply(reply -> Done.getInstance());
+    });
+    //#coordinated-shutdown-addTask
+
+    //#coordinated-shutdown-jvm-hook
+    CoordinatedShutdown.get(system).addJvmShutdownHook(() ->
+      System.out.println("custom JVM shutdown hook...")
+    );
+    //#coordinated-shutdown-jvm-hook
+
+    // don't run this
+    if (false) {
+      //#coordinated-shutdown-run
+      CompletionStage<Done> done = CoordinatedShutdown.get(system).runAll();
+      //#coordinated-shutdown-run
     }
   }
 

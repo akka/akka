@@ -22,7 +22,8 @@ public class ClusterClientTest extends JUnitSuite {
     new AkkaJUnitActorSystemResource("DistributedPubSubMediatorTest",
         ConfigFactory.parseString(
             "akka.actor.provider = \"cluster\"\n" +
-            "akka.remote.netty.tcp.port=0"));
+            "akka.remote.netty.tcp.port=0\n" +
+            "akka.remote.artery.canonical.port=0"));
 
   private final ActorSystem system = actorSystemResource.getSystem();
 

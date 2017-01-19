@@ -193,6 +193,8 @@ object Replicator {
     Props(new Replicator(settings)).withDeploy(Deploy.local).withDispatcher(settings.dispatcher)
   }
 
+  val DefaultMajorityMinCap: Int = 0
+
   sealed trait ReadConsistency {
     def timeout: FiniteDuration
   }
@@ -202,7 +204,9 @@ object Replicator {
   final case class ReadFrom(n: Int, timeout: FiniteDuration) extends ReadConsistency {
     require(n >= 2, "ReadFrom n must be >= 2, use ReadLocal for n=1")
   }
-  final case class ReadMajority(timeout: FiniteDuration) extends ReadConsistency
+  final case class ReadMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends ReadConsistency {
+    def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
+  }
   final case class ReadAll(timeout: FiniteDuration) extends ReadConsistency
 
   sealed trait WriteConsistency {
@@ -214,7 +218,9 @@ object Replicator {
   final case class WriteTo(n: Int, timeout: FiniteDuration) extends WriteConsistency {
     require(n >= 2, "WriteTo n must be >= 2, use WriteLocal for n=1")
   }
-  final case class WriteMajority(timeout: FiniteDuration) extends WriteConsistency
+  final case class WriteMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends WriteConsistency {
+    def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
+  }
   final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency
 
   /**
@@ -318,7 +324,7 @@ object Replicator {
    *
    * The subscriber will automatically be unregistered if it is terminated.
    *
-   * If the key is deleted the subscriber is notified with a [[DataDeleted]]
+   * If the key is deleted the subscriber is notified with a [[Deleted]]
    * message.
    */
   final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef) extends ReplicatorMessage
@@ -347,6 +353,10 @@ object Replicator {
      * The data value. Use [[#get]] to get the fully typed value.
      */
     def dataValue: A = data
+  }
+
+  final case class Deleted[A <: ReplicatedData](key: Key[A]) extends NoSerializationVerificationNeeded {
+    override def toString: String = s"Deleted [$key]"
   }
 
   object Update {
@@ -458,20 +468,40 @@ object Replicator {
    * It will eventually be disseminated to other replicas, unless the local replica
    * crashes before it has been able to communicate with other replicas.
    */
-  final case class StoreFailure[A <: ReplicatedData](key: Key[A], request: Option[Any]) extends UpdateFailure[A] with DeleteResponse[A]
+  final case class StoreFailure[A <: ReplicatedData](key: Key[A], request: Option[Any])
+    extends UpdateFailure[A] with DeleteResponse[A] {
+
+    /** Java API */
+    override def getRequest: Optional[Any] = Optional.ofNullable(request.orNull)
+  }
 
   /**
    * Send this message to the local `Replicator` to delete a data value for the
    * given `key`. The `Replicator` will reply with one of the [[DeleteResponse]] messages.
+   *
+   * The optional `request` context is included in the reply messages. This is a convenient
+   * way to pass contextual information (e.g. original sender) without having to use `ask`
+   * or maintain local correlation data structures.
    */
-  final case class Delete[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency) extends Command[A]
+  final case class Delete[A <: ReplicatedData](key: Key[A], consistency: WriteConsistency, request: Option[Any] = None)
+    extends Command[A] with NoSerializationVerificationNeeded {
 
-  sealed trait DeleteResponse[A <: ReplicatedData] {
-    def key: Key[A]
+    def this(key: Key[A], consistency: WriteConsistency) = this(key, consistency, None)
+
+    def this(key: Key[A], consistency: WriteConsistency, request: Optional[Any]) =
+      this(key, consistency, Option(request.orElse(null)))
   }
-  final case class DeleteSuccess[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
-  final case class ReplicationDeleteFailure[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
-  final case class DataDeleted[A <: ReplicatedData](key: Key[A])
+
+  sealed trait DeleteResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+    def key: Key[A]
+    def request: Option[Any]
+
+    /** Java API*/
+    def getRequest: Optional[Any] = Optional.ofNullable(request.orNull)
+  }
+  final case class DeleteSuccess[A <: ReplicatedData](key: Key[A], request: Option[Any]) extends DeleteResponse[A]
+  final case class ReplicationDeleteFailure[A <: ReplicatedData](key: Key[A], request: Option[Any]) extends DeleteResponse[A]
+  final case class DataDeleted[A <: ReplicatedData](key: Key[A], request: Option[Any])
     extends RuntimeException with NoStackTrace with DeleteResponse[A] {
     override def toString: String = s"DataDeleted [$key]"
   }
@@ -752,7 +782,11 @@ object Replicator {
  * A deleted key cannot be reused again, but it is still recommended to delete unused
  * data entries because that reduces the replication overhead when new nodes join the cluster.
  * Subsequent `Delete`, `Update` and `Get` requests will be replied with [[Replicator.DataDeleted]].
- * Subscribers will receive [[Replicator.DataDeleted]].
+ * Subscribers will receive [[Replicator.Deleted]].
+ *
+ * In the `Delete` message you can pass an optional request context in the same way as for the
+ * `Update` message, described above. For example the original sender can be passed and replied
+ * to after receiving and transforming `DeleteSuccess`.
  *
  * == CRDT Garbage ==
  *
@@ -882,7 +916,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     OneForOneStrategy()(
       ({
         case e @ (_: DurableStore.LoadFailed | _: ActorInitializationException) if fromDurableStore ⇒
-          log.error(e, "Stopping distributed-data Replicator due to load or startup failure in durable store")
+          log.error(e, "Stopping distributed-data Replicator due to load or startup failure in durable store, caused by: {}", if (e.getCause eq null) "" else e.getCause.getMessage)
           context.stop(self)
           SupervisorStrategy.Stop
       }: SupervisorStrategy.Decider).orElse(SupervisorStrategy.defaultDecider))
@@ -951,7 +985,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     case LeaderChanged(leader)                  ⇒ receiveLeaderChanged(leader, None)
     case RoleLeaderChanged(role, leader)        ⇒ receiveLeaderChanged(leader, Some(role))
     case GetKeyIds                              ⇒ receiveGetKeyIds()
-    case Delete(key, consistency)               ⇒ receiveDelete(key, consistency)
+    case Delete(key, consistency, req)          ⇒ receiveDelete(key, consistency, req)
     case RemovedNodePruningTick                 ⇒ receiveRemovedNodePruningTick()
     case GetReplicaCount                        ⇒ receiveGetReplicaCount()
   }
@@ -961,7 +995,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     log.debug("Received Get for key [{}], local data [{}]", key, localValue)
     if (isLocalGet(consistency)) {
       val reply = localValue match {
-        case Some(DataEnvelope(DeletedData, _)) ⇒ DataDeleted(key)
+        case Some(DataEnvelope(DeletedData, _)) ⇒ DataDeleted(key, req)
         case Some(DataEnvelope(data, _))        ⇒ GetSuccess(key, req)(data)
         case None                               ⇒ NotFound(key, req)
       }
@@ -989,7 +1023,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val localValue = getData(key.id)
     Try {
       localValue match {
-        case Some(DataEnvelope(DeletedData, _)) ⇒ throw new DataDeleted(key)
+        case Some(DataEnvelope(DeletedData, _)) ⇒ throw new DataDeleted(key, req)
         case Some(envelope @ DataEnvelope(existing, _)) ⇒
           existing.merge(modify(Some(existing)).asInstanceOf[existing.T])
         case None ⇒ modify(None)
@@ -1082,27 +1116,27 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     sender() ! GetKeyIdsResult(keys)
   }
 
-  def receiveDelete(key: KeyR, consistency: WriteConsistency): Unit = {
+  def receiveDelete(key: KeyR, consistency: WriteConsistency, req: Option[Any]): Unit = {
     getData(key.id) match {
       case Some(DataEnvelope(DeletedData, _)) ⇒
         // already deleted
-        sender() ! DataDeleted(key)
+        sender() ! DataDeleted(key, req)
       case _ ⇒
         setData(key.id, DeletedEnvelope)
         val durable = isDurable(key.id)
         if (isLocalUpdate(consistency)) {
           if (durable)
             durableStore ! Store(key.id, DeletedData,
-              Some(StoreReply(DeleteSuccess(key), StoreFailure(key, None), sender())))
+              Some(StoreReply(DeleteSuccess(key, req), StoreFailure(key, req), sender())))
           else
-            sender() ! DeleteSuccess(key)
+            sender() ! DeleteSuccess(key, req)
         } else {
           val writeAggregator =
-            context.actorOf(WriteAggregator.props(key, DeletedEnvelope, consistency, None, nodes, unreachable, sender(), durable)
+            context.actorOf(WriteAggregator.props(key, DeletedEnvelope, consistency, req, nodes, unreachable, sender(), durable)
               .withDispatcher(context.props.dispatcher))
           if (durable) {
             durableStore ! Store(key.id, DeletedData,
-              Some(StoreReply(DeleteSuccess(key), StoreFailure(key, None), writeAggregator)))
+              Some(StoreReply(DeleteSuccess(key, req), StoreFailure(key, req), writeAggregator)))
           }
         }
     }
@@ -1147,7 +1181,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       val key = subscriptionKeys(keyId)
       getData(keyId) match {
         case Some(envelope) ⇒
-          val msg = if (envelope.data == DeletedData) DataDeleted(key) else Changed(key)(envelope.data)
+          val msg = if (envelope.data == DeletedData) Deleted(key) else Changed(key)(envelope.data)
           subs.foreach { _ ! msg }
         case None ⇒
       }
@@ -1461,6 +1495,16 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 private[akka] object ReadWriteAggregator {
   case object SendToSecondary
   val MaxSecondaryNodes = 10
+
+  def calculateMajorityWithMinCap(minCap: Int, numberOfNodes: Int): Int = {
+    if (numberOfNodes <= minCap) {
+      numberOfNodes
+    } else {
+      val majority = numberOfNodes / 2 + 1
+      if (majority <= minCap) minCap
+      else majority
+    }
+  }
 }
 
 /**
@@ -1543,9 +1587,9 @@ private[akka] class WriteAggregator(
   override val doneWhenRemainingSize = consistency match {
     case WriteTo(n, _) ⇒ nodes.size - (n - 1)
     case _: WriteAll   ⇒ 0
-    case _: WriteMajority ⇒
+    case WriteMajority(_, minCap) ⇒
       val N = nodes.size + 1
-      val w = N / 2 + 1 // write to at least (N/2+1) nodes
+      val w = calculateMajorityWithMinCap(minCap, N)
       N - w
     case WriteLocal ⇒
       throw new IllegalArgumentException("WriteLocal not supported by WriteAggregator")
@@ -1600,9 +1644,9 @@ private[akka] class WriteAggregator(
     val isTimeoutOrNotEnoughNodes = isTimeout || notEnoughNodes || gotWriteNackFrom.isEmpty
 
     val replyMsg =
-      if (isSuccess && isDelete) DeleteSuccess(key)
+      if (isSuccess && isDelete) DeleteSuccess(key, req)
       else if (isSuccess) UpdateSuccess(key, req)
-      else if (isTimeoutOrNotEnoughNodes && isDelete) ReplicationDeleteFailure(key)
+      else if (isTimeoutOrNotEnoughNodes && isDelete) ReplicationDeleteFailure(key, req)
       else if (isTimeoutOrNotEnoughNodes) UpdateTimeout(key, req)
       else StoreFailure(key, req)
 
@@ -1650,9 +1694,9 @@ private[akka] class ReadAggregator(
   override val doneWhenRemainingSize = consistency match {
     case ReadFrom(n, _) ⇒ nodes.size - (n - 1)
     case _: ReadAll     ⇒ 0
-    case _: ReadMajority ⇒
+    case ReadMajority(_, minCap) ⇒
       val N = nodes.size + 1
-      val r = N / 2 + 1 // read from at least (N/2+1) nodes
+      val r = calculateMajorityWithMinCap(minCap, N)
       N - r
     case ReadLocal ⇒
       throw new IllegalArgumentException("ReadLocal not supported by ReadAggregator")
@@ -1702,7 +1746,7 @@ private[akka] class ReadAggregator(
   def waitReadRepairAck(envelope: Replicator.Internal.DataEnvelope): Receive = {
     case ReadRepairAck ⇒
       val replyMsg =
-        if (envelope.data == DeletedData) DataDeleted(key)
+        if (envelope.data == DeletedData) DataDeleted(key, req)
         else GetSuccess(key, req)(envelope.data)
       replyTo.tell(replyMsg, context.parent)
       context.stop(self)

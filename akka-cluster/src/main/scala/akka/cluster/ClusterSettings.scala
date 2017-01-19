@@ -103,6 +103,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
       case (key, value: ConfigObject) ⇒ key → value.toConfig.getInt("min-nr-of-members")
     }.toMap
   }
+  val RunCoordinatedShutdownWhenDown: Boolean = cc.getBoolean("run-coordinated-shutdown-when-down")
   val JmxEnabled: Boolean = cc.getBoolean("jmx.enabled")
   val UseDispatcher: String = cc.getString("use-dispatcher") match {
     case "" ⇒ Dispatchers.DefaultDispatcherId
