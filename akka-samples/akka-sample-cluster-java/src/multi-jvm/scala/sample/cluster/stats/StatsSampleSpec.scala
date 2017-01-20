@@ -31,8 +31,6 @@ object StatsSampleSpecConfig extends MultiNodeConfig {
   nodeList foreach { role =>
     nodeConfig(role) {
       ConfigFactory.parseString(s"""
-      # Disable legacy metrics in akka-cluster.
-      akka.cluster.metrics.enabled=off
       # Enable metrics extension in akka-cluster-metrics.
       akka.extensions=["akka.cluster.metrics.ClusterMetricsExtension"]
       # Sigar native library extract location during tests.

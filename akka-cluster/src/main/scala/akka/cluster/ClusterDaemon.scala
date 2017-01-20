@@ -125,8 +125,6 @@ private[cluster] object InternalClusterAction {
 
   case object ReapUnreachableTick extends Tick
 
-  case object MetricsTick extends Tick
-
   case object LeaderActionsTick extends Tick
 
   case object PublishStatsTick extends Tick
@@ -134,8 +132,6 @@ private[cluster] object InternalClusterAction {
   final case class SendGossipTo(address: Address)
 
   case object GetClusterCoreRef
-
-  final case class PublisherCreated(publisher: ActorRef)
 
   /**
    * Command to [[akka.cluster.ClusterDaemon]] to create a
@@ -217,13 +213,6 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
       context.actorOf(Props(classOf[OnMemberStatusChangedListener], code, Up).withDeploy(Deploy.local))
     case AddOnMemberRemovedListener(code) ⇒
       context.actorOf(Props(classOf[OnMemberStatusChangedListener], code, Removed).withDeploy(Deploy.local))
-    case PublisherCreated(publisher) ⇒
-      if (settings.MetricsEnabled) {
-        // metrics must be started after core/publisher to be able
-        // to inject the publisher ref to the ClusterMetricsCollector
-        context.actorOf(Props(classOf[ClusterMetricsCollector], publisher).
-          withDispatcher(context.props.dispatcher), name = "metrics")
-      }
     case CoordinatedShutdownLeave.LeaveReq ⇒
       val ref = context.actorOf(CoordinatedShutdownLeave.props().withDispatcher(context.props.dispatcher))
       // forward the ask request
@@ -254,7 +243,6 @@ private[cluster] final class ClusterCoreSupervisor extends Actor with ActorLoggi
       withDispatcher(context.props.dispatcher), name = "publisher")
     coreDaemon = Some(context.watch(context.actorOf(Props(classOf[ClusterCoreDaemon], publisher).
       withDispatcher(context.props.dispatcher), name = "daemon")))
-    context.parent ! PublisherCreated(publisher)
   }
 
   override val supervisorStrategy =
