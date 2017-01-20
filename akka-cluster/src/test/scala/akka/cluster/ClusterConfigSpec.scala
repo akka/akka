@@ -48,12 +48,6 @@ class ClusterConfigSpec extends AkkaSpec {
       ReduceGossipDifferentViewProbability should ===(400)
       SchedulerTickDuration should ===(33 millis)
       SchedulerTicksPerWheel should ===(512)
-      // TODO remove metrics
-      MetricsEnabled should ===(true)
-      MetricsCollectorClass should ===(classOf[SigarMetricsCollector].getName)
-      MetricsInterval should ===(3 seconds)
-      MetricsGossipInterval should ===(3 seconds)
-      MetricsMovingAverageHalfLife should ===(12 seconds)
     }
   }
 }

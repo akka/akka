@@ -3,9 +3,6 @@
  */
 package akka.cluster
 
-// TODO remove metrics
-// FIXME this test is not migrated to metrics extension
-
 import language.postfixOps
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -26,12 +23,9 @@ import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.actor.SupervisorStrategy._
 import akka.actor.Terminated
-import akka.cluster.ClusterEvent.ClusterMetricsChanged
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.CurrentInternalStats
 import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.StandardMetrics.Cpu
-import akka.cluster.StandardMetrics.HeapMemory
 import akka.remote.DefaultFailureDetectorRegistry
 import akka.remote.PhiAccrualFailureDetector
 import akka.remote.RemoteScope
@@ -116,7 +110,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       # (width * math.pow(width, levels) - 1) / (width - 1)
       tree-width = 4
       tree-levels = 4
-      report-metrics-interval = 10s
       # scale convergence within timeouts with this factor
       convergence-within-factor = 1.0
       # set to off to only test cluster membership
@@ -211,7 +204,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     val expectedTestDuration = testConfig.getMillisDuration("expected-test-duration") * dFactor
     val treeWidth = getInt("tree-width")
     val treeLevels = getInt("tree-levels")
-    val reportMetricsInterval = testConfig.getMillisDuration("report-metrics-interval")
     val convergenceWithinFactor = getDouble("convergence-within-factor")
     val exerciseActors = getBoolean("exercise-actors")
 
@@ -251,12 +243,10 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
    * itself when expected results has been collected.
    */
   class ClusterResultAggregator(title: String, expectedResults: Int, settings: Settings) extends Actor with ActorLogging {
-    import settings.reportMetricsInterval
     import settings.infolog
     private val cluster = Cluster(context.system)
     private var reportTo: Option[ActorRef] = None
     private var results = Vector.empty[ClusterResult]
-    private var nodeMetrics = Set.empty[NodeMetrics]
     private var phiValuesObservedByNode = {
       import akka.cluster.Member.addressOrdering
       immutable.SortedMap.empty[Address, immutable.SortedSet[PhiValue]]
@@ -267,30 +257,19 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     }
 
     import context.dispatcher
-    private val reportMetricsTask = context.system.scheduler.schedule(
-      reportMetricsInterval, reportMetricsInterval, self, ReportTick)
-
-    // subscribe to ClusterMetricsChanged, re-subscribe when restart
-    override def preStart(): Unit = cluster.subscribe(self, classOf[ClusterMetricsChanged])
-    override def postStop(): Unit = {
-      cluster.unsubscribe(self)
-      reportMetricsTask.cancel()
-      super.postStop()
-    }
 
     def receive = {
-      case ClusterMetricsChanged(clusterMetrics) ⇒ nodeMetrics = clusterMetrics
-      case PhiResult(from, phiValues)            ⇒ phiValuesObservedByNode += from → phiValues
-      case StatsResult(from, stats)              ⇒ clusterStatsObservedByNode += from → stats
+      case PhiResult(from, phiValues) ⇒ phiValuesObservedByNode += from → phiValues
+      case StatsResult(from, stats)   ⇒ clusterStatsObservedByNode += from → stats
       case ReportTick ⇒
         if (infolog)
-          log.info(s"[${title}] in progress\n${formatMetrics}\n\n${formatPhi}\n\n${formatStats}")
+          log.info(s"[${title}] in progress\n\n${formatPhi}\n\n${formatStats}")
       case r: ClusterResult ⇒
         results :+= r
         if (results.size == expectedResults) {
           val aggregated = AggregatedClusterResult(title, maxDuration, totalGossipStats)
           if (infolog)
-            log.info(s"[${title}] completed in [${aggregated.duration.toMillis}] ms\n${aggregated.clusterStats}\n${formatMetrics}\n\n${formatPhi}\n\n${formatStats}")
+            log.info(s"[${title}] completed in [${aggregated.duration.toMillis}] ms\n${aggregated.clusterStats}\n\n${formatPhi}\n\n${formatStats}")
           reportTo foreach { _ ! aggregated }
           context stop self
         }
@@ -301,27 +280,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def maxDuration = results.map(_.duration).max
 
     def totalGossipStats = results.foldLeft(GossipStats()) { _ :+ _.clusterStats }
-
-    def formatMetrics: String = {
-      import akka.cluster.Member.addressOrdering
-      (formatMetricsHeader +: (nodeMetrics.toSeq.sortBy(_.address) map formatMetricsLine)).mkString("\n")
-    }
-
-    def formatMetricsHeader: String = "[Node]\t[Heap (MB)]\t[CPU (%)]\t[Load]"
-
-    def formatMetricsLine(nodeMetrics: NodeMetrics): String = {
-      val heap = nodeMetrics match {
-        case HeapMemory(address, timestamp, used, committed, max) ⇒
-          (used.doubleValue / 1024 / 1024).form
-        case _ ⇒ ""
-      }
-      val cpuAndLoad = nodeMetrics match {
-        case Cpu(address, timestamp, loadOption, cpuOption, processors) ⇒
-          format(cpuOption) + "\t" + format(loadOption)
-        case _ ⇒ "N/A\tN/A"
-      }
-      s"${nodeMetrics.address}\t${heap}\t${cpuAndLoad}"
-    }
 
     def format(opt: Option[Double]) = opt match {
       case None    ⇒ "N/A"

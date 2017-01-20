@@ -26,9 +26,6 @@ and add the following configuration stanza to your ``application.conf``
 
    akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 
-Make sure to disable legacy metrics in akka-cluster: ``akka.cluster.metrics.enabled=off``,
-since it is still enabled in akka-cluster by default (for compatibility with past releases).
-
 Cluster members with status :ref:`WeaklyUp <weakly_up_scala>`, if that feature is enabled,
 will participate in Cluster Metrics collection and dissemination.
 

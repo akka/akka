@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.cluster.routing
+package akka.cluster.metrics
 
 import com.typesafe.config.ConfigFactory
 import akka.actor.Address
@@ -11,6 +11,7 @@ import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import akka.routing.ActorSelectionRoutee
 import akka.routing.ActorRefRoutee
+import scala.Vector
 
 class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       akka.actor.provider = "cluster"

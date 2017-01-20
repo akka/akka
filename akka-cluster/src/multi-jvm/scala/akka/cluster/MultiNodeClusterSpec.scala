@@ -3,8 +3,6 @@
  */
 package akka.cluster
 
-// TODO remove metrics
-
 import java.util.UUID
 
 import language.implicitConversions
@@ -115,8 +113,6 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   def muteLog(sys: ActorSystem = system): Unit = {
     if (!sys.log.isDebugEnabled) {
       Seq(
-        ".*Metrics collection has started successfully.*",
-        ".*Metrics will be retreived from MBeans.*",
         ".*Cluster Node.* - registered cluster JMX MBean.*",
         ".*Cluster Node.* - is starting up.*",
         ".*Shutting down cluster Node.*",
@@ -130,8 +126,6 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
         classOf[ClusterHeartbeatSender.HeartbeatRsp],
         classOf[GossipEnvelope],
         classOf[GossipStatus],
-        classOf[MetricsGossipEnvelope],
-        classOf[ClusterEvent.ClusterMetricsChanged],
         classOf[InternalClusterAction.Tick],
         classOf[akka.actor.PoisonPill],
         classOf[akka.dispatch.sysmsg.DeathWatchNotification],
