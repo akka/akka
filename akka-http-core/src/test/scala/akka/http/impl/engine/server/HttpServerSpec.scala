@@ -821,6 +821,70 @@ class HttpServerSpec extends AkkaSpec(
       shutdownBlueprint()
     })
 
+    "don't leak stages when connection is closed for request" which {
+      "uses GET method with an unread empty chunked entity" in assertAllStagesStopped(new TestSetup {
+        send("""GET / HTTP/1.1
+               |Host: example.com
+               |Connection: close
+               |Transfer-Encoding: chunked
+               |
+               |0
+               |
+               |""")
+
+        val req = expectRequest()
+        // entity was not read
+
+        // send out an 200 OK response
+        responses.sendNext(HttpResponse())
+
+        netIn.sendComplete()
+        netOut.cancel()
+
+        requests.expectComplete()
+      })
+
+      "uses GET request with an unread truncated chunked entity" in assertAllStagesStopped(new TestSetup {
+        send("""GET / HTTP/1.1
+               |Host: example.com
+               |Connection: close
+               |Transfer-Encoding: chunked
+               |
+               |0
+               |""")
+
+        val req = expectRequest()
+        // entity was not read
+
+        // send out an 200 OK response
+        responses.sendNext(HttpResponse())
+
+        netIn.sendComplete()
+        netOut.cancel()
+
+        requests.expectComplete()
+      })
+
+      "uses GET request with a truncated default entity" in assertAllStagesStopped(new TestSetup {
+        send("""GET / HTTP/1.1
+               |Host: example.com
+               |Content-Length: 1
+               |
+               |""")
+
+        val req = expectRequest()
+        // entity was not read
+
+        // send out an 200 OK response
+        responses.sendNext(HttpResponse())
+
+        netIn.sendComplete()
+        netOut.cancel()
+
+        requests.expectComplete()
+      })
+    }
+
     "support request timeouts" which {
 
       "are defined via the config" in assertAllStagesStopped(new RequestTimeoutTestSetup(10.millis) {
