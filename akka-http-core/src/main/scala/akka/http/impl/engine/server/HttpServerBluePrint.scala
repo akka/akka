@@ -454,16 +454,11 @@ private[http] object HttpServerBluePrint {
           }
       })
 
-      class ResponseCtxOutHandler extends OutHandler {
-        override def onPull() = {}
-        override def onDownstreamFinish() =
-          cancel(httpResponseIn) // we cannot fully completeState() here as the websocket pipeline would not complete properly
-      }
-      setHandler(responseCtxOut, new ResponseCtxOutHandler {
+      setHandler(responseCtxOut, new OutHandler {
         override def onPull() = {
           pull(httpResponseIn)
           // after the initial pull here we only ever pull after having emitted in `onPush` of `httpResponseIn`
-          setHandler(responseCtxOut, new ResponseCtxOutHandler)
+          setHandler(responseCtxOut, GraphStageLogic.EagerTerminateOutput)
         }
       })
 
