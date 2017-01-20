@@ -8,7 +8,7 @@ import akka.actor._
 import akka.annotation.InternalApi
 import akka.persistence.fsm.PersistentFSM.FSMState
 import akka.persistence.serialization.Message
-import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import akka.persistence.{ PersistentActor, RecoveryCompleted, SnapshotOffer }
 
 import scala.annotation.varargs
 import scala.collection.immutable

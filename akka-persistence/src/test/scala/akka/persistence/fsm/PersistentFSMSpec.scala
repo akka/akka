@@ -339,7 +339,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
       fsm ! TimeoutFSM.OverrideTimeoutToInf
       p.expectMsg(TimeoutFSM.OverrideTimeoutToInf)
-      p.expectNoMsg(3.seconds)
+      p.expectNoMsg(1.seconds)
 
     }
 
@@ -536,7 +536,7 @@ object PersistentFSMSpec {
 
     startWith(State("init"), "")
 
-    when(State("init"), stateTimeout = 1.second) {
+    when(State("init"), stateTimeout = 300.millis) {
       case Event(StateTimeout, _) ⇒
         probe ! StateTimeout
         stay()
