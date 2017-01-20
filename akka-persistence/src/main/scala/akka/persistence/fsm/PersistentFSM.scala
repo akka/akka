@@ -11,7 +11,7 @@ import akka.persistence.{ PersistentActor, RecoveryCompleted, SnapshotOffer }
 
 import scala.annotation.varargs
 import scala.collection.immutable
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
 /**
@@ -133,6 +133,13 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
 }
 
 object PersistentFSM {
+
+  /**
+   * Used by `forMax` to signal "cancel stateTimeout"
+   * INTERNAL API
+   */
+  private[fsm] final val SomeMaxFiniteDuration = Some(Long.MaxValue.nanos)
+
   /**
    * Base persistent event class
    */
@@ -300,7 +307,7 @@ object PersistentFSM {
      */
     def forMax(timeout: Duration): State[S, D, E] = timeout match {
       case f: FiniteDuration ⇒ copy(timeout = Some(f))
-      case _                 ⇒ copy(timeout = None)
+      case _                 ⇒ copy(timeout = PersistentFSM.SomeMaxFiniteDuration) // we need to differentiate "not set" from disabled
     }
 
     /**
