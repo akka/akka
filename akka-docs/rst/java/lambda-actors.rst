@@ -833,6 +833,14 @@ those shutting down Akka Remoting (Artery).
 
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#coordinated-shutdown-jvm-hook
 
+For some tests it might be undesired to terminate the ``ActorSystem`` via ``CoordinatedShutdown``.
+You can disable that by adding the following to the configuration of the ``ActorSystem`` that is 
+used in the test::
+
+  # Don't terminate ActorSystem via CoordinatedShutdown in tests
+  akka.coordinated-shutdown.terminate-actor-system = off
+  akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
+  akka.cluster.run-coordinated-shutdown-when-down = off
 
 .. _actor-hotswap-lambda:
 

@@ -102,7 +102,16 @@ read the documentation for the Coordinated Shutdown and revisit your own impleme
 Most likely your implementation will not be needed any more or it can be simplified.
 
 More information can be found in the :ref:`documentation for Scala <coordinated-shutdown-scala>` or
-:ref:`documentation for Java <coordinated-shutdown-lambda>`  
+:ref:`documentation for Java <coordinated-shutdown-lambda>`
+
+For some tests it might be undesired to terminate the ``ActorSystem`` via ``CoordinatedShutdown``.
+You can disable that by adding the following to the configuration of the ``ActorSystem`` that is 
+used in the test::
+
+  # Don't terminate ActorSystem via CoordinatedShutdown in tests
+  akka.coordinated-shutdown.terminate-actor-system = off
+  akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
+  akka.cluster.run-coordinated-shutdown-when-down = off 
 
 Cluster Management Command Line Tool
 ------------------------------------
