@@ -5,9 +5,10 @@
 package akka.persistence.fsm
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.persistence.fsm.PersistentFSM.FSMState
 import akka.persistence.serialization.Message
-import akka.persistence.{ PersistentActor, RecoveryCompleted, SnapshotOffer }
+import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 
 import scala.annotation.varargs
 import scala.collection.immutable
@@ -136,13 +137,14 @@ object PersistentFSM {
 
   /**
    * Used by `forMax` to signal "cancel stateTimeout"
-   * INTERNAL API
    */
+  @InternalApi
   private[fsm] final val SomeMaxFiniteDuration = Some(Long.MaxValue.nanos)
 
   /**
    * Base persistent event class
    */
+  @InternalApi
   private[persistence] sealed trait PersistentFsmEvent extends Message
 
   /**
@@ -151,6 +153,7 @@ object PersistentFSM {
    * @param stateIdentifier FSM state identifier
    * @param timeout FSM state timeout
    */
+  @InternalApi
   private[persistence] case class StateChangeEvent(stateIdentifier: String, timeout: Option[FiniteDuration]) extends PersistentFsmEvent
 
   /**
@@ -161,6 +164,7 @@ object PersistentFSM {
    * @param timeout FSM state timeout
    * @tparam D state data type
    */
+  @InternalApi
   private[persistence] case class PersistentFSMSnapshot[D](stateIdentifier: String, data: D, timeout: Option[FiniteDuration]) extends Message
 
   /**
@@ -238,12 +242,14 @@ object PersistentFSM {
   case object StateTimeout
 
   /** INTERNAL API */
+  @InternalApi
   private[persistence] final case class TimeoutMarker(generation: Long)
 
   /**
    * INTERNAL API
    */
   // FIXME: what about the cancellable?
+  @InternalApi
   private[persistence] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext)
     extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
@@ -294,6 +300,7 @@ object PersistentFSM {
     /**
      * Copy object and update values if needed.
      */
+    @InternalApi
     private[akka] def copy(stateName: S = stateName, stateData: D = stateData, timeout: Option[FiniteDuration] = timeout, stopReason: Option[Reason] = stopReason, replies: List[Any] = replies, notifies: Boolean = notifies, domainEvents: Seq[E] = domainEvents, afterTransitionDo: D ⇒ Unit = afterTransitionDo): State[S, D, E] = {
       State(stateName, stateData, timeout, stopReason, replies, domainEvents, afterTransitionDo)(notifies)
     }
@@ -323,6 +330,7 @@ object PersistentFSM {
      * Modify state transition descriptor with new state data. The data will be
      * set when transitioning to the new state.
      */
+    @InternalApi
     private[akka] def using(@deprecatedName('nextStateDate) nextStateData: D): State[S, D, E] = {
       copy(stateData = nextStateData)
     }
@@ -330,10 +338,12 @@ object PersistentFSM {
     /**
      * INTERNAL API.
      */
+    @InternalApi
     private[akka] def withStopReason(reason: Reason): State[S, D, E] = {
       copy(stopReason = Some(reason))
     }
 
+    @InternalApi
     private[akka] def withNotification(notifies: Boolean): State[S, D, E] = {
       copy(notifies = notifies)
     }
