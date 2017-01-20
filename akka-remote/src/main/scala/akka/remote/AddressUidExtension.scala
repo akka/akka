@@ -3,12 +3,9 @@
  */
 package akka.remote
 
-import java.util.concurrent.ThreadLocalRandom
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
+import java.security.SecureRandom
+
+import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 
 /**
  * Extension that holds a uid that is assigned as a random `Long` or `Int` depending
@@ -32,7 +29,7 @@ class AddressUidExtension(val system: ExtendedActorSystem) extends Extension {
   private def arteryEnabled = system.provider.asInstanceOf[RemoteActorRefProvider].remoteSettings.Artery.Enabled
 
   val longAddressUid: Long = {
-    val tlr = ThreadLocalRandom.current
+    val tlr = new SecureRandom
     if (arteryEnabled) tlr.nextLong()
     // with the old remoting we need to make toInt.toLong return the same number
     // to keep wire compatibility
