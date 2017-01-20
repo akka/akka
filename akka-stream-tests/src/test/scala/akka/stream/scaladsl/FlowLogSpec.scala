@@ -16,7 +16,10 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
 
-class FlowLogSpec extends StreamSpec("akka.loglevel = DEBUG") with ScriptedTest {
+class FlowLogSpec extends StreamSpec("""
+     akka.loglevel = DEBUG
+     akka.actor.serialize-messages = off
+     """) with ScriptedTest {
 
   implicit val mat: Materializer = ActorMaterializer()
 
