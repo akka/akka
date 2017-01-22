@@ -168,7 +168,7 @@ object Source {
     new Source(scaladsl.Source.fromFuture(future))
 
   /**
-   * Start a new `Source` from the given `CompletionStage`. The stream will consist of
+   * Starts a new `Source` from the given `CompletionStage`. The stream will consist of
    * one element when the `CompletionStage` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `CompletionStage` is completed with a failure.
@@ -177,18 +177,18 @@ object Source {
     new Source(scaladsl.Source.fromCompletionStage(future))
 
   /**
-   * A graph with the shape of a source logically is a source.
-   * This method makes an asynchronous graph of such shape in type with
-   * an asynchronous materialized value.
+   * Starts a new `Source` from another `future` source.
+   * The stream will consist of the elements of the given source,
+   * once it successfully completes.
    */
-  def fromFutureGraph[T, M](future: Future[Graph[SourceShape[T], M]]): javadsl.Source[T, Future[M]] = new Source(scaladsl.Source.fromFutureGraph(future))
+  def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): javadsl.Source[T, Future[M]] = new Source(scaladsl.Source.fromFutureSource(future))
 
   /**
-   * A graph with the shape of a source logically is a source.
-   * This method makes an asynchronous graph of such shape in type with
-   * an asynchronous materialized value.
+   * Starts a new `Source` from a `completion` stage of an asynchronous source.
+   * The stream will consist of the elements of the given source,
+   * once it successfully completes.
    */
-  def fromGraphCompletionStage[T, M](future: CompletionStage[Graph[SourceShape[T], M]]): javadsl.Source[T, CompletionStage[M]] = new Source(scaladsl.Source.fromGraphCompletionStage(future))
+  def fromSourceCompletionStage[T, M](completion: CompletionStage[Graph[SourceShape[T], M]]): javadsl.Source[T, CompletionStage[M]] = new Source(scaladsl.Source.fromSourceCompletionStage(completion))
 
   /**
    * Elements are emitted periodically with the specified interval.

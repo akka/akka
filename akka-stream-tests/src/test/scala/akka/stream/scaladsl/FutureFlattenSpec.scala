@@ -71,7 +71,7 @@ class FutureFlattenSpec extends StreamSpec {
       val veryPatient = Timeout(20.seconds)
 
       "flattening from a future graph" in assertAllStagesStopped {
-        val g = Source.fromFutureGraph(Future {
+        val g = Source.fromFutureSource(Future {
           Thread.sleep(2000)
           Fusing.aggressive((1 to tooDeepForStack).
             foldLeft(Source.single(42).mapMaterializedValue(_ ⇒ 1))(
@@ -90,7 +90,7 @@ class FutureFlattenSpec extends StreamSpec {
               (f, i) ⇒ f.map(identity)))
         }
         val stage: CompletionStage[Graph[SourceShape[Int], Int]] = future.toJava
-        val g = Source.fromGraphCompletionStage(stage)
+        val g = Source.fromSourceCompletionStage(stage)
 
         val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
         mat.toScala.futureValue(veryPatient) should ===(1)
@@ -129,7 +129,7 @@ class FutureFlattenSpec extends StreamSpec {
 
       EventFilter[IllegalArgumentException](
         pattern = "Error in stage.*", occurrences = 1).intercept {
-        Await.result(Source.fromFutureGraph(Future(failyStage)).
+        Await.result(Source.fromFutureSource(Future(failyStage)).
           runWith(Sink.ignore), 3.seconds)
       }
     }

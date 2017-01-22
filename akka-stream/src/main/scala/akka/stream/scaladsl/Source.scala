@@ -268,18 +268,24 @@ object Source {
     fromGraph(new FutureSource(future.toScala))
 
   /**
-   * A graph with the shape of a source logically is a source.
-   * This method makes an asynchronous graph of such shape in type with
-   * an asynchronous materialized value.
+   * Starts a new `Source` from a `future` source.
+   * The stream will consist of the elements of the given source,
+   * once it successfully completes.
    */
-  def fromFutureGraph[T, M](future: Future[Graph[SourceShape[T], M]]): Source[T, Future[M]] = fromGraph(new FutureFlattenSource(future))
 
   /**
-   * A graph with the shape of a source logically is a source.
-   * This method makes an asynchronous graph of such shape in type with
-   * an asynchronous materialized value.
+   * Starts a new `Source` from another `future` source.
+   * The stream will consist of the elements of the given source,
+   * once it successfully completes.
    */
-  def fromGraphCompletionStage[T, M](future: CompletionStage[Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureGraph(future.toScala).mapMaterializedValue(_.toJava)
+  def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): Source[T, Future[M]] = fromGraph(new FutureFlattenSource(future))
+
+  /**
+   * Starts a new `Source` from a `completion` stage of an asynchronous source.
+   * The stream will consist of the elements of the given source,
+   * once it successfully completes.
+   */
+  def fromSourceCompletionStage[T, M](completion: CompletionStage[Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
 
   /**
    * Elements are emitted periodically with the specified interval.

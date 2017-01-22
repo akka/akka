@@ -421,7 +421,7 @@ public class FlowTest extends StreamTest {
         CompletableFuture.supplyAsync(fn);
 
     final Source<String, CompletionStage<NotUsed>> source =
-        Source.fromGraphCompletionStage(stage);
+        Source.fromSourceCompletionStage(stage);
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, materializer);
