@@ -23,7 +23,7 @@ Stream
   An active process that involves moving and transforming data.
 Element
   An element is the processing unit of streams. All operations transform and transfer elements from upstream to
-  downstream. Buffer sizes are always expressed as number of elements independently form the actual size of the elements.
+  downstream. Buffer sizes are always expressed as number of elements independently from the actual size of the elements.
 Back-pressure
   A means of flow-control, a way for consumers of data to notify a producer about their current availability, effectively
   slowing down the upstream producer to match their consumption speeds.
