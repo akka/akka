@@ -1,6 +1,7 @@
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import akka._
 import AkkaDependency._
+import akka.ValidatePullRequest._
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -166,5 +167,6 @@ lazy val docs = project("docs")
       "github.base_url" -> GitHub.url(version.value)
     ),
     Formatting.docFormatSettings,
+    additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )

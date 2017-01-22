@@ -1,7 +1,8 @@
 /**
   * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
   */
-import akka.GitHub
+package akka
+
 import com.typesafe.tools.mima.plugin.MimaKeys.mimaReportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
