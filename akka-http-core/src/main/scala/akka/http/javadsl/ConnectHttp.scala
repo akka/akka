@@ -46,9 +46,12 @@ object ConnectHttp {
    *
    * The host string may contain a URI or a <host>:<port> pair. In both cases the
    * port is ignored.
+   *
+   * If the given port is 0, a new local port will be assigned by the operating system,
+   * which can then be retrieved by the materialized [[akka.http.javadsl.Http.ServerBinding]].
    */
   def toHost(host: String, port: Int): ConnectHttp = {
-    require(port > 0, "port must be > 0")
+    require(port >= 0, "port must be >= 0")
     toHost(createUriWithScheme("http", host), port)
   }
 
@@ -84,11 +87,14 @@ object ConnectHttp {
    * The host string may contain a URI or a <host>:<port> pair. In both cases the
    * port is ignored.
    *
+   * If the given port is 0, a new local port will be assigned by the operating system,
+   * which can then be retrieved by the materialized [[akka.http.javadsl.Http.ServerBinding]].
+   *
    * Uses the default HTTPS context.
    */
   @throws(classOf[IllegalArgumentException])
   def toHostHttps(host: String, port: Int): ConnectWithHttps = {
-    require(port > 0, "port must be > 0")
+    require(port >= 0, "port must be >= 0")
     toHostHttps(createUriWithScheme("https", host), port)
   }
 
@@ -105,7 +111,7 @@ object ConnectHttp {
 
   private def effectivePort(scheme: String, port: Int): Int = {
     val s = scheme.toLowerCase(Locale.ROOT)
-    if (port > 0) port
+    if (port >= 0) port
     else if (s == "https" || s == "wss") 443
     else if (s == "http" || s == "ws") 80
     else throw new IllegalArgumentException("Scheme is not http/https/ws/wss and no port given!")

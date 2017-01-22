@@ -36,6 +36,13 @@ class ConnectHttpSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       connect.host should ===("127.0.0.1")
       connect.port should ===(8080)
     }
+    "connect toHost HTTP:0 when port is 0" in {
+      val connect = ConnectHttp.toHost("http://127.0.0.1", 0)
+      connect.isHttps should ===(false)
+      connect.connectionContext.isPresent should equal(false)
+      connect.host should ===("127.0.0.1")
+      connect.port should ===(0)
+    }
     "connect toHostHttps HTTPS:443 by default" in {
       val connect = ConnectHttp.toHostHttps("127.0.0.1")
       connect.isHttps should ===(true)
@@ -77,6 +84,13 @@ class ConnectHttpSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       connect.connectionContext.isPresent should equal(true)
       connect.host should ===("127.0.0.1")
       connect.port should ===(443)
+    }
+    "connect toHostHttps HTTPS:0 when port is 0" in {
+      val connect = ConnectHttp.toHostHttps("https://127.0.0.1", 0)
+      connect.isHttps should ===(true)
+      connect.connectionContext.isPresent should equal(false)
+      connect.host should ===("127.0.0.1")
+      connect.port should ===(0)
     }
     "throw when toHostHttps used but http:// prefix found" in {
       val ex = intercept[IllegalArgumentException] {
