@@ -3,7 +3,10 @@
  */
 package docs.http.javadsl.server.directives;
 
+import akka.http.javadsl.model.HttpEntities;
 import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.model.headers.AcceptEncoding;
 import akka.http.javadsl.model.headers.ContentEncoding;
 import akka.http.javadsl.model.headers.HttpEncodings;
@@ -153,4 +156,22 @@ public class CodingDirectivesExamplesTest extends JUnitRouteTest {
     //#decodeRequestWith
   }
 
+  @Test
+  public void testWithPrecompressedMediaTypeSupport() {
+    //#withPrecompressedMediaTypeSupport
+    final ByteString svgz = Coder.Gzip.encode(ByteString.fromString("<svg/>"));
+
+    final Route route = withPrecompressedMediaTypeSupport(() ->
+      complete(
+        HttpResponse.create().withEntity(
+          HttpEntities.create(MediaTypes.IMAGE_SVGZ.toContentType(), svgz))
+      )
+    );
+
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/"))
+      .assertMediaType(MediaTypes.IMAGE_SVG_XML)
+      .assertHeaderExists(ContentEncoding.create(HttpEncodings.GZIP));
+    //#withPrecompressedMediaTypeSupport
+  }
 }

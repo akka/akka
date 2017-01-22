@@ -104,6 +104,7 @@ public final class MediaTypes {
     public static final MediaType.Binary IMAGE_JPEG = akka.http.scaladsl.model.MediaTypes.image$divjpeg();
     public static final MediaType.Binary IMAGE_PICT = akka.http.scaladsl.model.MediaTypes.image$divpict();
     public static final MediaType.Binary IMAGE_PNG = akka.http.scaladsl.model.MediaTypes.image$divpng();
+    public static final MediaType.Binary IMAGE_SVGZ = akka.http.scaladsl.model.MediaTypes.image$divsvgz();
     public static final MediaType.Binary IMAGE_SVG_XML = akka.http.scaladsl.model.MediaTypes.image$divsvg$plusxml();
     public static final MediaType.Binary IMAGE_TIFF = akka.http.scaladsl.model.MediaTypes.image$divtiff();
     public static final MediaType.Binary IMAGE_X_ICON = akka.http.scaladsl.model.MediaTypes.image$divx$minusicon();

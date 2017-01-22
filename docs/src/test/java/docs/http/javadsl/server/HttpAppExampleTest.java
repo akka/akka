@@ -25,9 +25,6 @@ import static akka.pattern.PatternsCS.after;
 //#selfClosing
 
 
-/**
- * Created by josep on 10/01/2017.
- */
 public class HttpAppExampleTest extends JUnitSuite {
 
   @Test
@@ -60,7 +57,7 @@ public class HttpAppExampleTest extends JUnitSuite {
     final MinimalHttpApp myServer = new MinimalHttpApp();
     myServer.startServer("localhost", 8080, ServerSettings.create(ConfigFactory.load()));
     //#minimal-routing-example
- }
+  }
 
 
   static

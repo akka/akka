@@ -11,5 +11,6 @@
 * [encodeResponseWith](encodeResponseWith.md)
 * [requestEncodedWith](requestEncodedWith.md)
 * [responseEncodingAccepted](responseEncodingAccepted.md)
+* [withPrecompressedMediaTypeSupport](withPrecompressedMediaTypeSupport.md)
 
 @@@

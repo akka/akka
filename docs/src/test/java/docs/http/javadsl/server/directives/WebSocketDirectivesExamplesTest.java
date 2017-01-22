@@ -118,4 +118,63 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     wsClient.expectCompletion();
     //#handleWebSocketMessagesForProtocol
   }
+
+  @Test
+  public void testExtractUpgradeToWebSocket() {
+    //#extractUpgradeToWebSocket
+    final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
+
+    final Route websocketRoute = path("services", () ->
+      route(
+        extractUpgradeToWebSocket(upgrade ->
+          complete(upgrade.handleMessagesWith(echoService, "echo"))
+        )
+      )
+    );
+
+    // tests:
+    // create a testing probe representing the client-side
+    final WSProbe wsClient = WSProbe.create(system(), materializer());
+
+    // WS creates a WebSocket request for testing
+    testRoute(websocketRoute)
+      .run(WS(Uri.create("/services"), wsClient.flow(), materializer(), Collections.emptyList()))
+      .assertHeaderExists(SecWebSocketProtocol.create("echo"));
+
+    wsClient.sendMessage("ping");
+    wsClient.expectMessage("ping");
+
+    wsClient.sendCompletion();
+    wsClient.expectCompletion();
+    //#extractUpgradeToWebSocket
+  }
+
+  @Test
+  public void testExtractOfferedWsProtocols() {
+    //#extractOfferedWsProtocols
+    final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
+
+    final Route websocketRoute = path("services", () ->
+      route(
+        extractOfferedWsProtocols(protocols ->
+          handleWebSocketMessagesForOptionalProtocol(echoService, protocols.stream().findFirst())
+        )
+      )
+    );
+
+    // tests:
+    // create a testing probe representing the client-side
+    final WSProbe wsClient = WSProbe.create(system(), materializer());
+
+    testRoute(websocketRoute)
+      .run(WS(Uri.create("/services"), wsClient.flow(), materializer(), Arrays.asList("echo", "alfa", "kilo")))
+      .assertHeaderExists(SecWebSocketProtocol.create("echo"));
+
+    wsClient.sendMessage("ping");
+    wsClient.expectMessage("ping");
+
+    wsClient.sendCompletion();
+    wsClient.expectCompletion();
+    //#extractOfferedWsProtocols
+  }
 }
