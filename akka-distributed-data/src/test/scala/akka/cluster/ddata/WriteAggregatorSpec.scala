@@ -168,16 +168,16 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
 
       import ReadWriteAggregator._
 
-      calculateMajorityWithMinCap(minCap, 3) should be (3)
-      calculateMajorityWithMinCap(minCap, 4) should be (4)
-      calculateMajorityWithMinCap(minCap, 5) should be (5)
-      calculateMajorityWithMinCap(minCap, 6) should be (5)
-      calculateMajorityWithMinCap(minCap, 7) should be (5)
-      calculateMajorityWithMinCap(minCap, 8) should be (5)
-      calculateMajorityWithMinCap(minCap, 9) should be (5)
-      calculateMajorityWithMinCap(minCap, 10) should be (6)
-      calculateMajorityWithMinCap(minCap, 11) should be (6)
-      calculateMajorityWithMinCap(minCap, 12) should be (7)
+      calculateMajorityWithMinCap(minCap, 3) should be(3)
+      calculateMajorityWithMinCap(minCap, 4) should be(4)
+      calculateMajorityWithMinCap(minCap, 5) should be(5)
+      calculateMajorityWithMinCap(minCap, 6) should be(5)
+      calculateMajorityWithMinCap(minCap, 7) should be(5)
+      calculateMajorityWithMinCap(minCap, 8) should be(5)
+      calculateMajorityWithMinCap(minCap, 9) should be(5)
+      calculateMajorityWithMinCap(minCap, 10) should be(6)
+      calculateMajorityWithMinCap(minCap, 11) should be(6)
+      calculateMajorityWithMinCap(minCap, 12) should be(7)
     }
   }
 
