@@ -315,6 +315,21 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
       }
       "fail if advertised content-length doesn't match" in pending
 
+      "send data frame with exactly the number of remaining connection-level window bytes even when chunk is bigger than that" in new WaitingForResponseDataSetup {
+        // otherwise, the stream may stall if the client doesn't send another window update (which it isn't required to do
+        // unless a window falls to 0)
+
+        entityDataOut.sendNext(bytes(70000, 0x23)) // 70000 > Http2Protocol.InitialWindowSize
+        expectDATA(TheStreamId, false, Http2Protocol.InitialWindowSize)
+
+        expectNoBytes()
+
+        sendWINDOW_UPDATE(TheStreamId, 10000) // > than the remaining bytes (70000 - InitialWindowSize)
+        sendWINDOW_UPDATE(0, 10000)
+
+        expectDATA(TheStreamId, false, 70000 - Http2Protocol.InitialWindowSize)
+      }
+
       "backpressure response entity stream until WINDOW_UPDATE was received" in new WaitingForResponseDataSetup {
         var totalSentBytes = 0
         var totalReceivedBytes = 0
