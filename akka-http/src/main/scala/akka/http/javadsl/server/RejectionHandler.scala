@@ -4,7 +4,11 @@
 package akka.http.javadsl.server
 
 import akka.http.scaladsl.server
+import akka.http.impl.util.JavaMapping
 import java.util.function
+
+import akka.http.javadsl.model.HttpResponse
+
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
 
@@ -27,13 +31,18 @@ final class RejectionHandler(val asScala: server.RejectionHandler) {
    * "Seals" this handler by attaching a default handler as fallback if necessary.
    */
   def seal = new RejectionHandler(asScala.seal)
+
+  /** Map any HTTP response which was returned by this RejectionHandler to a different one before rendering it. */
+  def mapRejectionResponse(map: function.UnaryOperator[HttpResponse]): RejectionHandler = new RejectionHandler(asScala.mapRejectionResponse(resp ⇒ {
+    JavaMapping.toScala(map.apply(resp))
+  }))
 }
 
 class RejectionHandlerBuilder(asScala: server.RejectionHandler.Builder) {
   def build = new RejectionHandler(asScala.result())
 
   /**
-   * Handles a single [[Rejection]] with the given partial function.
+   * Handles a single [[Rejection]] with the given function.
    */
   def handle[T <: Rejection](t: Class[T], handler: function.Function[T, Route]): RejectionHandlerBuilder = {
     asScala.handle { case r if t.isInstance(r) ⇒ handler.apply(t.cast(r)).delegate }

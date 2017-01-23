@@ -117,17 +117,17 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
           complete("Hello there")
         }
       )
-      
-    //#example-json
+
+    // tests:
     Get("/nope") ~> route ~> check {
       status should === (StatusCodes.NotFound)
       contentType should === (ContentTypes.`application/json`)
       responseAs[String] should ===("""{"rejection": "The requested resource could not be found."}""")
     }
+    //#example-json
   }
   
   "example-3-custom-rejection-http-response" in {
-    //#example-json
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.server.RejectionHandler
 
@@ -144,20 +144,23 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
             
           case x => x // pass through all other types of responses
         }
-    
-    val route =
+
+    //#example-json
+
+    val anotherRoute =
       Route.seal(
         validate(check = false, "Whoops, bad request!") {
           complete("Hello there") 
         }
       )
-      
-    //#example-json
-    Get("/hello") ~> route ~> check {
+
+    // tests:
+    Get("/hello") ~> anotherRoute ~> check {
       status should === (StatusCodes.BadRequest)
       contentType should === (ContentTypes.`application/json`)
       responseAs[String] should ===("""{"rejection": "Whoops, bad request!"}""")
     }
+    //#example-json
   }
 
   "test custom handler example" in {
