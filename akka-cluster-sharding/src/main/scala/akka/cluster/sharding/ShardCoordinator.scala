@@ -882,7 +882,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   }
 
   // this state will stash all messages until it receives UpdateSuccess
-  def waitingForUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: DomainEvent ⇒ Unit): Receive = {
+  def waitingForUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: E ⇒ Unit): Receive = {
     case UpdateSuccess(CoordinatorStateKey, Some(`evt`)) ⇒
       log.debug("The coordinator state was successfully updated with {}", evt)
       context.unbecome()
@@ -914,7 +914,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   }
 
   def update[E <: DomainEvent](evt: E)(f: E ⇒ Unit): Unit = {
-    context.become(waitingForUpdate(evt, f.asInstanceOf[DomainEvent ⇒ Unit]), discardOld = false)
+    context.become(waitingForUpdate(evt, f), discardOld = false)
     sendUpdate(evt)
   }
 

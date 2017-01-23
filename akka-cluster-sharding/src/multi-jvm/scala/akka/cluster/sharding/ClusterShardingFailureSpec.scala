@@ -21,6 +21,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
+import akka.cluster.MemberStatus
 
 object ClusterShardingFailureSpec {
   case class Get(id: String)
@@ -64,15 +65,19 @@ abstract class ClusterShardingFailureSpecConfig(val mode: String) extends MultiN
       timeout = 5s
       store {
         native = off
-        dir = "target/journal-ClusterShardingFailureSpec"
+        dir = "target/ClusterShardingFailureSpec/journal"
       }
     }
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingFailureSpec"
+    akka.persistence.snapshot-store.local.dir = "target/ClusterShardingFailureSpec/snapshots"
     akka.cluster.sharding {
       coordinator-failure-backoff = 3s
       shard-failure-backoff = 3s
       state-store-mode = "$mode"
+    }
+    akka.cluster.sharding.distributed-data.durable.lmdb {
+      dir = target/ClusterShardingFailureSpec/sharding-ddata
+      map-size = 10 MiB
     }
     """))
 
@@ -99,27 +104,31 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
 
   override def initialParticipants = roles.size
 
-  val storageLocations = List(
-    "akka.persistence.journal.leveldb.dir",
-    "akka.persistence.journal.leveldb-shared.store.dir",
-    "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
+  val storageLocations = List(new File(system.settings.config.getString(
+    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup() {
-    runOn(controller) {
-      storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
-    }
+    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    enterBarrier("startup")
   }
 
   override protected def afterTermination() {
-    runOn(controller) {
-      storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
-    }
+    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
   }
+
+  val cluster = Cluster(system)
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      cluster join node(to).address
       startSharding()
+
+      within(remaining) {
+        awaitAssert {
+          cluster.state.members.map(_.uniqueAddress) should contain(cluster.selfUniqueAddress)
+          cluster.state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        }
+      }
     }
     enterBarrier(from.name + "-joined")
   }
@@ -135,23 +144,27 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
-  s"Cluster sharding ($mode) with flaky journal" must {
+  def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
-    "setup shared journal" in {
-      // start the Persistence extension
-      Persistence(system)
-      runOn(controller) {
-        system.actorOf(Props[SharedLeveldbStore], "store")
+  s"Cluster sharding ($mode) with flaky journal/network" must {
+
+    if (!isDdataMode) {
+      "setup shared journal" in {
+        // start the Persistence extension
+        Persistence(system)
+        runOn(controller) {
+          system.actorOf(Props[SharedLeveldbStore], "store")
+        }
+        enterBarrier("peristence-started")
+
+        runOn(first, second) {
+          system.actorSelection(node(controller) / "user" / "store") ! Identify(None)
+          val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
+          SharedLeveldbJournal.setStore(sharedStore, system)
+        }
+
+        enterBarrier("after-1")
       }
-      enterBarrier("peristence-started")
-
-      runOn(first, second) {
-        system.actorSelection(node(controller) / "user" / "store") ! Identify(None)
-        val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
-        SharedLeveldbJournal.setStore(sharedStore, system)
-      }
-
-      enterBarrier("after-1")
     }
 
     "join cluster" in within(20.seconds) {
@@ -173,15 +186,19 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
       enterBarrier("after-2")
     }
 
-    "recover after journal failure" in within(20.seconds) {
+    "recover after journal/network failure" in within(20.seconds) {
       runOn(controller) {
-        testConductor.blackhole(controller, first, Direction.Both).await
-        testConductor.blackhole(controller, second, Direction.Both).await
+        if (isDdataMode)
+          testConductor.blackhole(first, second, Direction.Both).await
+        else {
+          testConductor.blackhole(controller, first, Direction.Both).await
+          testConductor.blackhole(controller, second, Direction.Both).await
+        }
       }
       enterBarrier("journal-blackholed")
 
       runOn(first) {
-        // try with a new shard, will not reply until journal is available again
+        // try with a new shard, will not reply until journal/network is available again
         region ! Add("40", 4)
         val probe = TestProbe()
         region.tell(Get("40"), probe.ref)
@@ -191,8 +208,12 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
       enterBarrier("first-delayed")
 
       runOn(controller) {
-        testConductor.passThrough(controller, first, Direction.Both).await
-        testConductor.passThrough(controller, second, Direction.Both).await
+        if (isDdataMode)
+          testConductor.passThrough(first, second, Direction.Both).await
+        else {
+          testConductor.passThrough(controller, first, Direction.Both).await
+          testConductor.passThrough(controller, second, Direction.Both).await
+        }
       }
       enterBarrier("journal-ok")
 
@@ -202,13 +223,13 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
         val entity21 = lastSender
         val shard2 = system.actorSelection(entity21.path.parent)
 
-        //Test the ShardCoordinator allocating shards during a journal failure
+        //Test the ShardCoordinator allocating shards after a journal/network failure
         region ! Add("30", 3)
 
-        //Test the Shard starting entities and persisting during a journal failure
+        //Test the Shard starting entities and persisting after a journal/network failure
         region ! Add("11", 1)
 
-        //Test the Shard passivate works during a journal failure
+        //Test the Shard passivate works after a journal failure
         shard2.tell(Passivate(PoisonPill), entity21)
         region ! Add("21", 1)
 

@@ -50,10 +50,11 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
     newBlob should equal(oldBlob)
   }
 
-  def checkSerialization(obj: AnyRef): Unit = {
+  def checkSerialization(obj: AnyRef): Int = {
     val blob = serializer.toBinary(obj)
     val ref = serializer.fromBinary(blob, serializer.manifest(obj))
     ref should be(obj)
+    blob.length
   }
 
   def checkSameContent(a: AnyRef, b: AnyRef): Unit = {
@@ -99,6 +100,31 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       val s3 = ORSet().add(address1, "a").add(address2, 17).remove(address3, 17)
       val s4 = ORSet().add(address2, 17).remove(address3, 17).add(address1, "a")
       checkSameContent(s3.merge(s4), s4.merge(s3))
+    }
+
+    "serialize large GSet" in {
+      val largeSet = (10000 until 20000).foldLeft(GSet.empty[String]) {
+        case (acc, n) ⇒ acc.add(n.toString)
+      }
+      val numberOfBytes = checkSerialization(largeSet)
+      info(s"size of GSet with ${largeSet.size} elements: $numberOfBytes bytes")
+      numberOfBytes should be <= (80000)
+    }
+
+    "serialize large ORSet" in {
+      val largeSet = (10000 until 20000).foldLeft(ORSet.empty[String]) {
+        case (acc, n) ⇒
+          val address = (n % 3) match {
+            case 0 ⇒ address1
+            case 1 ⇒ address2
+            case 2 ⇒ address3
+          }
+          acc.add(address, n.toString)
+      }
+      val numberOfBytes = checkSerialization(largeSet)
+      // note that ORSet is compressed, and therefore smaller than GSet
+      info(s"size of ORSet with ${largeSet.size} elements: $numberOfBytes bytes")
+      numberOfBytes should be <= (50000)
     }
 
     "serialize Flag" in {

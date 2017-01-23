@@ -61,23 +61,37 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(val mode: String) exten
       timeout = 5s
       store {
         native = off
-        dir = "target/journal-ClusterShardingRememberEntitiesSpec"
+        dir = "target/ShardingRememberEntitiesSpec/journal"
       }
     }
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingRememberEntitiesSpec"
+    akka.persistence.snapshot-store.local.dir = "target/ShardingRememberEntitiesSpec/snapshots"
     akka.cluster.sharding.state-store-mode = "$mode"
+    akka.cluster.sharding.distributed-data.durable.lmdb {
+      dir = target/ShardingRememberEntitiesSpec/sharding-ddata
+      map-size = 10 MiB
+    }
     """))
 }
 
-object PersistentClusterShardingRememberEntitiesSpecConfig extends ClusterShardingRememberEntitiesSpecConfig("persistence")
-object DDataClusterShardingRememberEntitiesSpecConfig extends ClusterShardingRememberEntitiesSpecConfig("ddata")
+object PersistentClusterShardingRememberEntitiesSpecConfig extends ClusterShardingRememberEntitiesSpecConfig(
+  ClusterShardingSettings.StateStoreModePersistence)
+object DDataClusterShardingRememberEntitiesSpecConfig extends ClusterShardingRememberEntitiesSpecConfig(
+  ClusterShardingSettings.StateStoreModeDData)
 
-class PersistentClusterShardingRememberEntitiesSpec extends ClusterShardingRememberEntitiesSpec(PersistentClusterShardingRememberEntitiesSpecConfig)
+class PersistentClusterShardingRememberEntitiesSpec extends ClusterShardingRememberEntitiesSpec(
+  PersistentClusterShardingRememberEntitiesSpecConfig)
 
 class PersistentClusterShardingRememberEntitiesMultiJvmNode1 extends PersistentClusterShardingRememberEntitiesSpec
 class PersistentClusterShardingRememberEntitiesMultiJvmNode2 extends PersistentClusterShardingRememberEntitiesSpec
 class PersistentClusterShardingRememberEntitiesMultiJvmNode3 extends PersistentClusterShardingRememberEntitiesSpec
+
+class DDataClusterShardingRememberEntitiesSpec extends ClusterShardingRememberEntitiesSpec(
+  DDataClusterShardingRememberEntitiesSpecConfig)
+
+class DDataClusterShardingRememberEntitiesMultiJvmNode1 extends DDataClusterShardingRememberEntitiesSpec
+class DDataClusterShardingRememberEntitiesMultiJvmNode2 extends DDataClusterShardingRememberEntitiesSpec
+class DDataClusterShardingRememberEntitiesMultiJvmNode3 extends DDataClusterShardingRememberEntitiesSpec
 
 abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememberEntitiesSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
   import ClusterShardingRememberEntitiesSpec._
@@ -85,21 +99,16 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
 
   override def initialParticipants = roles.size
 
-  val storageLocations = List(
-    "akka.persistence.journal.leveldb.dir",
-    "akka.persistence.journal.leveldb-shared.store.dir",
-    "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
+  val storageLocations = List(new File(system.settings.config.getString(
+    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup() {
-    runOn(first) {
-      storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
-    }
+    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    enterBarrier("startup")
   }
 
   override protected def afterTermination() {
-    runOn(first) {
-      storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
-    }
+    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   def join(from: RoleName, to: RoleName): Unit = {
@@ -122,23 +131,27 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
+  def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
+
   s"Cluster with min-nr-of-members using sharding ($mode)" must {
 
-    "setup shared journal" in {
-      // start the Persistence extension
-      Persistence(system)
-      runOn(first) {
-        system.actorOf(Props[SharedLeveldbStore], "store")
-      }
-      enterBarrier("peristence-started")
+    if (!isDdataMode) {
+      "setup shared journal" in {
+        // start the Persistence extension
+        Persistence(system)
+        runOn(first) {
+          system.actorOf(Props[SharedLeveldbStore], "store")
+        }
+        enterBarrier("peristence-started")
 
-      runOn(second, third) {
-        system.actorSelection(node(first) / "user" / "store") ! Identify(None)
-        val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
-        SharedLeveldbJournal.setStore(sharedStore, system)
-      }
+        runOn(second, third) {
+          system.actorSelection(node(first) / "user" / "store") ! Identify(None)
+          val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
+          SharedLeveldbJournal.setStore(sharedStore, system)
+        }
 
-      enterBarrier("after-1")
+        enterBarrier("after-1")
+      }
     }
 
     "start remembered entities when coordinator fail over" in within(30.seconds) {
@@ -148,6 +161,7 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
         region ! 1
         expectMsgType[Started]
       }
+      enterBarrier("second-started")
 
       join(third, second)
       runOn(third) {
@@ -164,6 +178,12 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
       enterBarrier("all-up")
 
       runOn(first) {
+        if (isDdataMode) {
+          // Entity 1 in region of first node was started when there was only one node
+          // and then the remembering state will be replicated to second node by the
+          // gossip. So we must give that a chance to replicate before shutting down second.
+          Thread.sleep(5000)
+        }
         testConductor.exit(second, 0).await
       }
       enterBarrier("crash-second")
