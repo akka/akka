@@ -347,7 +347,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" → true)) with I
 
         startWith("init", "")
 
-        when("init", stateTimeout = 1.second) {
+        when("init", stateTimeout = 300.millis) {
           case Event(StateTimeout, _) ⇒
             p.ref ! StateTimeout
             stay()
@@ -365,7 +365,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" → true)) with I
 
         fsm ! OverrideTimeoutToInf
         p.expectMsg(OverrideTimeoutToInf)
-        p.expectNoMsg(3.seconds)
+        p.expectNoMsg(1.seconds)
       } finally {
         TestKit.shutdownActorSystem(sys)
       }
