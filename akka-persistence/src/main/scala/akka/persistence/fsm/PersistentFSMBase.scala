@@ -485,7 +485,13 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
         this.nextState = null
       }
       currentState = nextState
-      val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
+      val timeout =
+        currentState.timeout match {
+          case PersistentFSM.SomeMaxFiniteDuration ⇒ None
+          case x: Some[FiniteDuration]             ⇒ x
+          case None                                ⇒ stateTimeouts(currentState.stateName)
+        }
+
       if (timeout.isDefined) {
         val t = timeout.get
         if (t.isFinite && t.length >= 0) {

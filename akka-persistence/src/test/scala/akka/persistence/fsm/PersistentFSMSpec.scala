@@ -329,6 +329,20 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       persistentEventsStreamer ! PoisonPill
       expectTerminated(persistentEventsStreamer)
     }
+
+    "allow cancelling stateTimeout by issuing forMax(Duration.Inf)" in {
+      val p = TestProbe()(system)
+
+      val fsm = system.actorOf(TimeoutFSM.props(p.ref))
+
+      p.expectMsg(PersistentFSM.StateTimeout)
+
+      fsm ! TimeoutFSM.OverrideTimeoutToInf
+      p.expectMsg(TimeoutFSM.OverrideTimeoutToInf)
+      p.expectNoMsg(1.seconds)
+
+    }
+
   }
 }
 
@@ -506,6 +520,33 @@ object PersistentFSMSpec {
     def props(persistenceId: String, client: ActorRef) =
       Props(new PersistentEventsStreamer(persistenceId, client))
   }
+
+  object TimeoutFSM {
+    val OverrideTimeoutToInf = "override-timeout-to-inf"
+    case class State(identifier: String) extends PersistentFSM.FSMState
+    def props(probe: ActorRef) = Props(new TimeoutFSM(probe))
+  }
+
+  class TimeoutFSM(probe: ActorRef)(implicit val domainEventClassTag: ClassTag[String]) extends Actor
+    with PersistentFSM[TimeoutFSM.State, String, String] {
+
+    import TimeoutFSM._
+    override def applyEvent(domainEvent: String, currentData: String): String = "whatever"
+    override def persistenceId: String = "timeout-test"
+
+    startWith(State("init"), "")
+
+    when(State("init"), stateTimeout = 300.millis) {
+      case Event(StateTimeout, _) ⇒
+        probe ! StateTimeout
+        stay()
+
+      case Event(OverrideTimeoutToInf, _) ⇒
+        probe ! OverrideTimeoutToInf
+        stay() forMax Duration.Inf
+    }
+  }
+
 }
 
 class LeveldbPersistentFSMSpec extends PersistentFSMSpec(PersistenceSpec.config("leveldb", "PersistentFSMSpec"))
