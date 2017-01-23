@@ -137,11 +137,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         var r2: ActorRef = null
         awaitAssert(r2 = newReplicator()) // try until name is free
 
-        // wait until all loaded
-        awaitAssert {
-          r2 ! GetKeyIds
-          expectMsgType[GetKeyIdsResult].keyIds should !==(Set.empty[String])
-        }
+        // note that it will stash the commands until loading completed
         r2 ! Get(KeyA, ReadLocal)
         expectMsgType[GetSuccess[GCounter]].dataValue.value.toInt should be(3)
 
