@@ -331,6 +331,15 @@ class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyRefer
       intercept[NotSerializableException] { ser.serializerFor(classOf[Object]) }
     }
 
+    "serialize function with JavaSerializer" in {
+      val f = (i: Int) ⇒ i + 1
+      val serializer = ser.serializerFor(f.getClass)
+      serializer.getClass should ===(classOf[JavaSerializer])
+      val bytes = ser.serialize(f).get
+      val f2 = ser.deserialize(bytes, serializer.identifier, "").get.asInstanceOf[Function1[Int, Int]]
+      f2(3) should ===(4)
+    }
+
   }
 }
 
@@ -424,6 +433,7 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
           "626c653b4c00056368696c647400154c616b6b612f6163746f722f4163746f725265663b78700000" +
           "00007070")
     }
+
   }
 }
 
