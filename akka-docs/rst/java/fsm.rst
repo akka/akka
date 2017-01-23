@@ -1,4 +1,4 @@
-.. _lambda-fsm:
+.. _fsm-java:
 
 #####
  FSM 

@@ -4,13 +4,13 @@ Actors
 .. toctree::
    :maxdepth: 2
 
-   lambda-actors
-   lambda-fault-tolerance
+   actors
+   fault-tolerance
    dispatchers
    mailboxes
    routing
-   lambda-fsm
-   lambda-persistence
+   fsm
+   persistence
    persistence-schema-evolution
    persistence-query
    persistence-query-leveldb

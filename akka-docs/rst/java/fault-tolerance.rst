@@ -22,7 +22,7 @@ sample as it is easy to follow the log output to understand what is happening in
 
 .. toctree::
 
-   lambda-fault-tolerance-sample
+   fault-tolerance-sample
 
 Creating a Supervisor Strategy
 ------------------------------
