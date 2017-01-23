@@ -1,39 +1,32 @@
 package akka.http.impl.engine.http2
 
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.nio.ByteOrder
 
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.http.impl.engine.http2.framing.FrameRenderer
-import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ LogByteStringTools, StringRendering }
+import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.impl.io.ByteStringParser.ByteReader
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.stream.testkit.TestPublisher
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.TestPublisher.ManualProbe
-import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.testkit.{ AkkaSpec, TestProbe }
-import akka.util.ByteString
-import akka.util.ByteStringBuilder
-import com.twitter.hpack.Decoder
-import com.twitter.hpack.Encoder
-import com.twitter.hpack.HeaderListener
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import akka.util.{ ByteString, ByteStringBuilder }
+import com.twitter.hpack.{ Decoder, Encoder, HeaderListener }
 import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
-import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
@@ -626,7 +619,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
     def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed]
 
     handlerFlow
-      .join(Http2Blueprint.serverStack())
+      .join(Http2Blueprint.serverStack(ServerSettings(system).withServerHeader(None), system.log))
       .runWith(Source.fromPublisher(fromNet), toNet.sink)
 
     def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)
@@ -826,7 +819,9 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
 
     def expectDecodedResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
       val headerBlockBytes = expectHeaderBlock(streamId, endStream)
-      decodeHeadersToResponse(headerBlockBytes)
+      val decoded = decodeHeadersToResponse(headerBlockBytes)
+      // filter date to make it easier to test
+      decoded.withHeaders(decoded.headers.filterNot(h ⇒ h.is("date")))
     }
 
     def expectDecodedResponseHEADERSPairs(streamId: Int, endStream: Boolean = true): Seq[(String, String)] = {

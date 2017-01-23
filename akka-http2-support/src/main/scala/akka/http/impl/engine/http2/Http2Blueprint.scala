@@ -5,21 +5,16 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.event.LoggingAdapter
+import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
-import akka.event.{ Logging, LoggingAdapter }
-import akka.http.impl.engine.http2.framing.{ FrameRenderer, Http2FrameParsing, Http2FrameRendering }
-import akka.http.impl.util.LogByteStringTools
-import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.stream.scaladsl.BidiFlow
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Source
+import akka.http.scaladsl.settings.ServerSettings
+import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * Represents one direction of an Http2 substream.
@@ -30,12 +25,12 @@ private[http2] final case class Http2SubStream(initialHeaders: ParsedHeadersFram
 
 object Http2Blueprint {
   // format: OFF
-  def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
-    httpLayer() atop
+  def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+    httpLayer(settings, log) atop
     demux() atop
     // FrameLogger.bidi atop // enable for debugging
     hpackCoding() atop
-    // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging 
+    // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
     framing()
   }
   // format: ON
@@ -74,9 +69,9 @@ object Http2Blueprint {
    * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
    * bindAndHandle the user needs to take of this manually.
    */
-  def httpLayer(): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] =
+  def httpLayer(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] =
     BidiFlow.fromFlows(
-      Flow[HttpResponse].map(ResponseRendering.renderResponse),
+      Flow[HttpResponse].map(ResponseRendering.renderResponse(settings, log)),
       Flow[Http2SubStream].map(RequestParsing.parseRequest))
 
   /**

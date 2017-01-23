@@ -53,7 +53,7 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
       })
 
     def http2Layer(): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-      Http2Blueprint.serverStack() atop
+      Http2Blueprint.serverStack(settings, log) atop
         unwrapTls atop
         logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
 
