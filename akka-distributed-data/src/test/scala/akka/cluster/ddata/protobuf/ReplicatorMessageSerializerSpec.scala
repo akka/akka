@@ -70,8 +70,8 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(Changed(keyA)(data1))
       checkSerialization(DataEnvelope(data1))
       checkSerialization(DataEnvelope(data1, pruning = Map(
-        address1 → PruningState(address2, PruningPerformed),
-        address3 → PruningState(address2, PruningInitialized(Set(address1.address))))))
+        address1 → PruningPerformed(System.currentTimeMillis()),
+        address3 → PruningInitialized(address2, Set(address1.address)))))
       checkSerialization(Write("A", DataEnvelope(data1)))
       checkSerialization(WriteAck)
       checkSerialization(WriteNack)
@@ -85,6 +85,9 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
         "A" → DataEnvelope(data1),
         "B" → DataEnvelope(GSet() + "b" + "c")), sendBack = true))
       checkSerialization(new DurableDataEnvelope(data1))
+      checkSerialization(new DurableDataEnvelope(DataEnvelope(data1, pruning = Map(
+        address1 → PruningPerformed(System.currentTimeMillis()),
+        address3 → PruningInitialized(address2, Set(address1.address))))))
     }
 
   }

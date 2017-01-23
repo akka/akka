@@ -102,6 +102,8 @@ final class GCounter private[akka] (
       new GCounter(merged)
     }
 
+  override def modifiedByNodes: Set[UniqueAddress] = state.keySet
+
   override def needPruningFrom(removedNode: UniqueAddress): Boolean =
     state.contains(removedNode)
 

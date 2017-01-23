@@ -126,17 +126,18 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
       }
 
       within(15.seconds) {
+        var values = Set.empty[Int]
         awaitAssert {
           replicator ! Get(KeyA, ReadLocal)
           val counter3 = expectMsgType[GetSuccess[GCounter]].dataValue
-          counter3.value should be(10)
+          val value = counter3.value.intValue
+          values += value
+          value should be(10)
           counter3.state.size should be(3)
         }
+        values should ===(Set(10))
       }
       enterBarrier("pruned")
-
-      // let it become tombstone
-      Thread.sleep(5000)
 
       runOn(first) {
         val addr = cluster2.selfAddress
@@ -150,14 +151,30 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
         Cluster(sys3).join(node(first).address)
 
         within(10.seconds) {
+          var values = Set.empty[Int]
           awaitAssert {
             replicator3.tell(Get(KeyA, ReadLocal), probe3.ref)
             val counter4 = probe3.expectMsgType[GetSuccess[GCounter]].dataValue
-            counter4.value should be(10)
+            val value = counter4.value.intValue
+            values += value
+            value should be(10)
             counter4.state.size should be(3)
           }
+          values should ===(Set(10))
         }
+
+        // after merging with others
+        replicator3 ! Get(KeyA, ReadAll(remainingOrDefault))
+        val counter5 = expectMsgType[GetSuccess[GCounter]].dataValue
+        counter5.value should be(10)
+        counter5.state.size should be(3)
       }
+
+      enterBarrier("sys3-started")
+      replicator ! Get(KeyA, ReadAll(remainingOrDefault))
+      val counter6 = expectMsgType[GetSuccess[GCounter]].dataValue
+      counter6.value should be(10)
+      counter6.state.size should be(3)
 
       enterBarrier("after-1")
     }
