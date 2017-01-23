@@ -157,7 +157,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
         }
       }
       /master-node-3/workers = {
-        router = adaptive-pool
+        router = round-robin-pool
         cluster {
           enabled = on
           max-nr-of-instances-per-node = 1
