@@ -9,7 +9,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import akka.actor.ActorRef;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.io.Tcp.CommandFailed;
@@ -19,14 +19,13 @@ import akka.io.Tcp.Received;
 import akka.io.Tcp.Write;
 import akka.io.Tcp.WritingResumed;
 import akka.io.TcpMessage;
-import akka.japi.Procedure;
 import akka.util.ByteString;
 
 //#echo-handler
-public class EchoHandler extends UntypedActor {
+public class EchoHandler extends AbstractActor {
 
   final LoggingAdapter log = Logging
-      .getLogger(getContext().system(), getSelf());
+      .getLogger(getContext().system(), self());
 
   final ActorRef connection;
   final InetSocketAddress remote;
@@ -34,6 +33,13 @@ public class EchoHandler extends UntypedActor {
   public static final long MAX_STORED = 100000000;
   public static final long HIGH_WATERMARK = MAX_STORED * 5 / 10;
   public static final long LOW_WATERMARK = MAX_STORED * 2 / 10;
+  
+  private long transferred;
+  private int storageOffset = 0;
+  private long stored = 0;
+  private Queue<ByteString> storage = new LinkedList<ByteString>();
+
+  private boolean suspended = false;
   
   private static class Ack implements Event {
     public final int ack;
@@ -45,6 +51,8 @@ public class EchoHandler extends UntypedActor {
   public EchoHandler(ActorRef connection, InetSocketAddress remote) {
     this.connection = connection;
     this.remote = remote;
+    
+    writing = writing();
 
     // sign death pact: this actor stops when the connection is closed
     getContext().watch(connection);
@@ -52,137 +60,135 @@ public class EchoHandler extends UntypedActor {
     // start out in optimistic write-through mode
     getContext().become(writing);
   }
+  
+  @Override
+    public Receive createReceive() {
+      return writing;
+    }
 
-  private final Procedure<Object> writing = new Procedure<Object>() {
-    @Override
-    public void apply(Object msg) throws Exception {
-      if (msg instanceof Received) {
-        final ByteString data = ((Received) msg).data();
-        connection.tell(TcpMessage.write(data, new Ack(currentOffset())), getSelf());
+  private final Receive writing;
+  
+  private Receive writing() { 
+    return receiveBuilder()
+      .match(Received.class, msg -> {
+        final ByteString data = msg.data();
+        connection.tell(TcpMessage.write(data, new Ack(currentOffset())), self());
         buffer(data);
 
-      } else if (msg instanceof Integer) {
-        acknowledge((Integer) msg);
-
-      } else if (msg instanceof CommandFailed) {
-        final Write w = (Write) ((CommandFailed) msg).cmd();
-        connection.tell(TcpMessage.resumeWriting(), getSelf());
+      })
+      .match(Integer.class,  msg -> {
+        acknowledge(msg);
+      })
+      .match(CommandFailed.class, msg -> {
+        final Write w = (Write) msg.cmd();
+        connection.tell(TcpMessage.resumeWriting(), self());
         getContext().become(buffering((Ack) w.ack()));
-
-      } else if (msg instanceof ConnectionClosed) {
-        final ConnectionClosed cl = (ConnectionClosed) msg;
-        if (cl.isPeerClosed()) {
+      })
+      .match(ConnectionClosed.class, msg -> {
+        if (msg.isPeerClosed()) {
           if (storage.isEmpty()) {
-            getContext().stop(getSelf());
+            getContext().stop(self());
           } else {
-            getContext().become(closing);
+            getContext().become(closing());
           }
         }
-      }
-    }
-  };
+      })
+      .build();
+  }
 
   //#buffering
-  protected Procedure<Object> buffering(final Ack nack) {
-    return new Procedure<Object>() {
+  
+  final static class BufferingState {
+    int toAck = 10;
+    boolean peerClosed = false;
+  }
+  
+  protected Receive buffering(final Ack nack) {
+    final BufferingState state = new BufferingState();
+    
+    return receiveBuilder()
+      .match(Received.class, msg -> {
+        buffer(msg.data());
 
-      private int toAck = 10;
-      private boolean peerClosed = false;
+      })
+      .match(WritingResumed.class, msg -> {
+        writeFirst();
 
-      @Override
-      public void apply(Object msg) throws Exception {
-        if (msg instanceof Received) {
-          buffer(((Received) msg).data());
+      })
+      .match(ConnectionClosed.class, msg -> {
+        if (msg.isPeerClosed())
+          state.peerClosed = true;
+        else
+          getContext().stop(self());
 
-        } else if (msg instanceof WritingResumed) {
-          writeFirst();
+      })
+      .match(Integer.class, ack -> {
+        acknowledge(ack);
 
-        } else if (msg instanceof ConnectionClosed) {
-          if (((ConnectionClosed) msg).isPeerClosed())
-            peerClosed = true;
-          else
-            getContext().stop(getSelf());
+        if (ack >= nack.ack) {
+          // otherwise it was the ack of the last successful write
 
-        } else if (msg instanceof Integer) {
-          final int ack = (Integer) msg;
-          acknowledge(ack);
+          if (storage.isEmpty()) {
+            if (state.peerClosed)
+              getContext().stop(self());
+            else
+              getContext().become(writing);
 
-          if (ack >= nack.ack) {
-            // otherwise it was the ack of the last successful write
-
-            if (storage.isEmpty()) {
-              if (peerClosed)
-                getContext().stop(getSelf());
+          } else {
+            if (state.toAck > 0) {
+              // stay in ACK-based mode for a short while
+              writeFirst();
+              --state.toAck;
+            } else {
+              // then return to NACK-based again
+              writeAll();
+              if (state.peerClosed)
+                getContext().become(closing());
               else
                 getContext().become(writing);
-
-            } else {
-              if (toAck > 0) {
-                // stay in ACK-based mode for a short while
-                writeFirst();
-                --toAck;
-              } else {
-                // then return to NACK-based again
-                writeAll();
-                if (peerClosed)
-                  getContext().become(closing);
-                else
-                  getContext().become(writing);
-              }
             }
           }
         }
-      }
-    };
+      })
+      .build();
   }
   //#buffering
 
   //#closing
-  protected Procedure<Object> closing = new Procedure<Object>() {
-    @Override
-    public void apply(Object msg) throws Exception {
-      if (msg instanceof CommandFailed) {
+  protected Receive closing() {
+    return receiveBuilder()
+      .match(CommandFailed.class, msg -> {
         // the command can only have been a Write
-        connection.tell(TcpMessage.resumeWriting(), getSelf());
-        getContext().become(closeResend, false);
-      } else if (msg instanceof Integer) {
-        acknowledge((Integer) msg);
+        connection.tell(TcpMessage.resumeWriting(), self());
+        getContext().become(closeResend(), false);
+      })
+      .match(Integer.class, msg -> {  
+        acknowledge(msg);
         if (storage.isEmpty())
-          getContext().stop(getSelf());
-      }
-    }
-  };
+          getContext().stop(self());
+      })
+      .build();
+  }
 
-  protected Procedure<Object> closeResend = new Procedure<Object>() {
-    @Override
-    public void apply(Object msg) throws Exception {
-      if (msg instanceof WritingResumed) {
+  protected Receive closeResend() {
+    return receiveBuilder()
+      .match(WritingResumed.class, msg -> {
         writeAll();
         getContext().unbecome();
-      } else if (msg instanceof Integer) {
-        acknowledge((Integer) msg);
-      }
-    }
-  };
+      })
+      .match(Integer.class, msg -> {
+        acknowledge(msg);
+      })
+      .build();
+  }
   //#closing
 
   //#storage-omitted
-  @Override
-  public void onReceive(Object msg) throws Exception {
-    // this method is not used due to become()
-  }
 
   @Override
   public void postStop() {
     log.info("transferred {} bytes from/to [{}]", transferred, remote);
   }
-
-  private long transferred;
-  private int storageOffset = 0;
-  private long stored = 0;
-  private Queue<ByteString> storage = new LinkedList<ByteString>();
-
-  private boolean suspended = false;
 
   //#helpers
   protected void buffer(ByteString data) {
@@ -191,11 +197,11 @@ public class EchoHandler extends UntypedActor {
 
     if (stored > MAX_STORED) {
       log.warning("drop connection to [{}] (buffer overrun)", remote);
-      getContext().stop(getSelf());
+      getContext().stop(self());
 
     } else if (stored > HIGH_WATERMARK) {
       log.debug("suspending reading at {}", currentOffset());
-      connection.tell(TcpMessage.suspendReading(), getSelf());
+      connection.tell(TcpMessage.suspendReading(), self());
       suspended = true;
     }
   }
@@ -211,7 +217,7 @@ public class EchoHandler extends UntypedActor {
 
     if (suspended && stored < LOW_WATERMARK) {
       log.debug("resuming reading");
-      connection.tell(TcpMessage.resumeReading(), getSelf());
+      connection.tell(TcpMessage.resumeReading(), self());
       suspended = false;
     }
   }
@@ -224,12 +230,12 @@ public class EchoHandler extends UntypedActor {
   protected void writeAll() {
     int i = 0;
     for (ByteString data : storage) {
-      connection.tell(TcpMessage.write(data, new Ack(storageOffset + i++)), getSelf());
+      connection.tell(TcpMessage.write(data, new Ack(storageOffset + i++)), self());
     }
   }
 
   protected void writeFirst() {
-    connection.tell(TcpMessage.write(storage.peek(), new Ack(storageOffset)), getSelf());
+    connection.tell(TcpMessage.write(storage.peek(), new Ack(storageOffset)), self());
   }
 
   //#storage-omitted

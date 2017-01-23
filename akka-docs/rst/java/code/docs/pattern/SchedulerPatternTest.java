@@ -30,7 +30,7 @@ public class SchedulerPatternTest extends AbstractJavaTest {
     private final Cancellable tick = getContext().system().scheduler().schedule(
       Duration.create(500, TimeUnit.MILLISECONDS),
       Duration.create(1, TimeUnit.SECONDS),
-      getSelf(), "tick", getContext().dispatcher(), null);
+      self(), "tick", getContext().dispatcher(), null);
     //#schedule-constructor
     // this variable and constructor is declared here to not show up in the docs
     final ActorRef target;
@@ -49,7 +49,7 @@ public class SchedulerPatternTest extends AbstractJavaTest {
       if (message.equals("tick")) {
         // do something useful here
         //#schedule-constructor
-        target.tell(message, getSelf());
+        target.tell(message, self());
         //#schedule-constructor
       }
       //#schedule-constructor
@@ -79,7 +79,7 @@ public class SchedulerPatternTest extends AbstractJavaTest {
     public void preStart() {
       getContext().system().scheduler().scheduleOnce(
         Duration.create(500, TimeUnit.MILLISECONDS),
-        getSelf(), "tick", getContext().dispatcher(), null);
+        self(), "tick", getContext().dispatcher(), null);
     }
 
     // override postRestart so we don't call preStart and schedule a new message
@@ -93,10 +93,10 @@ public class SchedulerPatternTest extends AbstractJavaTest {
         // send another periodic tick after the specified delay
         getContext().system().scheduler().scheduleOnce(
           Duration.create(1, TimeUnit.SECONDS),
-          getSelf(), "tick", getContext().dispatcher(), null);
+          self(), "tick", getContext().dispatcher(), null);
         // do something useful here
         //#schedule-receive
-        target.tell(message, getSelf());
+        target.tell(message, self());
         //#schedule-receive
       }
       //#schedule-receive

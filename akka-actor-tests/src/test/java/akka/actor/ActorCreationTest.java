@@ -21,9 +21,9 @@ import org.scalatest.junit.JUnitSuite;
 
 public class ActorCreationTest extends JUnitSuite {
 
-  static class C implements Creator<UntypedActor> {
+  static class C implements Creator<AbstractActor> {
     @Override
-    public UntypedActor create() throws Exception {
+    public AbstractActor create() throws Exception {
       return null;
     }
   }
@@ -35,19 +35,19 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
-  static class E<T extends UntypedActor> implements Creator<T> {
+  static class E<T extends AbstractActor> implements Creator<T> {
     @Override
     public T create() {
       return null;
     }
   }
 
-  static interface I<T> extends Creator<UntypedActor> {
+  static interface I<T> extends Creator<AbstractActor> {
   }
 
   static class F implements I<Object> {
     @Override
-    public UntypedActor create() {
+    public AbstractActor create() {
       return null;
     }
   }
@@ -59,12 +59,12 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
-  abstract class H extends UntypedActor {
+  abstract class H extends AbstractActor {
     public H(String a) {
     }
   }
 
-  static class P implements Creator<UntypedActor> {
+  static class P implements Creator<AbstractActor> {
     final String value;
 
     public P(String value) {
@@ -72,7 +72,7 @@ public class ActorCreationTest extends JUnitSuite {
     }
 
     @Override
-    public UntypedActor create() throws Exception {
+    public AbstractActor create() throws Exception {
       return null;
     }
   }
@@ -94,40 +94,46 @@ public class ActorCreationTest extends JUnitSuite {
     TestActor(Integer magicNumber) {
       this.magicNumber = magicNumber;
     }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder().build();
+    }
+
   }
 
-  public static class UntypedTestActor extends UntypedActor {
+  public static class TestActor2 extends UntypedAbstractActor {
 
     public static Props propsUsingCreator(final int magicNumber) {
       // You need to specify the actual type of the returned actor
       // since runtime type information erased
-      return Props.create(UntypedTestActor.class, new Creator<UntypedTestActor>() {
+      return Props.create(TestActor2.class, new Creator<TestActor2>() {
         private static final long serialVersionUID = 1L;
 
         @Override
-        public UntypedTestActor create() throws Exception {
-          return new UntypedTestActor(magicNumber);
+        public TestActor2 create() throws Exception {
+          return new TestActor2(magicNumber);
         }
       });
     }
 
     public static Props propsUsingCreatorWithoutClass(final int magicNumber) {
-      return Props.create(new Creator<UntypedTestActor>() {
+      return Props.create(new Creator<TestActor2>() {
         private static final long serialVersionUID = 1L;
 
         @Override
-        public UntypedTestActor create() throws Exception {
-          return new UntypedTestActor(magicNumber);
+        public TestActor2 create() throws Exception {
+          return new TestActor2(magicNumber);
         }
       });
     }
 
-    private static final Creator<UntypedTestActor> staticCreator = new Creator<UntypedTestActor>() {
+    private static final Creator<TestActor2> staticCreator = new Creator<TestActor2>() {
       private static final long serialVersionUID = 1L;
 
       @Override
-      public UntypedTestActor create() throws Exception {
-        return new UntypedTestActor(12);
+      public TestActor2 create() throws Exception {
+        return new TestActor2(12);
       }
     };
 
@@ -140,7 +146,7 @@ public class ActorCreationTest extends JUnitSuite {
 
     final int magicNumber;
 
-    UntypedTestActor(int magicNumber) {
+    TestActor2(int magicNumber) {
       this.magicNumber = magicNumber;
     }
 
@@ -149,7 +155,7 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
-  public static class Issue20537Reproducer extends UntypedActor {
+  public static class Issue20537Reproducer extends UntypedAbstractActor {
 
     static final class ReproducerCreator implements Creator<Issue20537Reproducer> {
 
@@ -197,13 +203,13 @@ public class ActorCreationTest extends JUnitSuite {
     } catch (IllegalArgumentException e) {
       assertEquals("erased Creator types are unsupported, use Props.create(actorClass, creator) instead", e.getMessage());
     }
-    Props.create(UntypedActor.class, new G());
+    Props.create(AbstractActor.class, new G());
   }
 
   @Test
   public void testRightStaticCreator() {
     final Props p = Props.create(new C());
-    assertEquals(UntypedActor.class, p.actorClass());
+    assertEquals(AbstractActor.class, p.actorClass());
   }
 
   @Test
@@ -218,27 +224,27 @@ public class ActorCreationTest extends JUnitSuite {
 
   @Test
   public void testRightTopLevelNonStaticCreator() {
-    final Creator<UntypedActor> nonStatic = new NonStaticCreator();
+    final Creator<UntypedAbstractActor> nonStatic = new NonStaticCreator();
     final Props p = Props.create(nonStatic);
-    assertEquals(UntypedActor.class, p.actorClass());
+    assertEquals(UntypedAbstractActor.class, p.actorClass());
   }
 
   @Test
   public void testRightStaticParametricCreator() {
-    final Props p = Props.create(new D<UntypedActor>());
+    final Props p = Props.create(new D<AbstractActor>());
     assertEquals(Actor.class, p.actorClass());
   }
 
   @Test
   public void testRightStaticBoundedCreator() {
-    final Props p = Props.create(new E<UntypedActor>());
-    assertEquals(UntypedActor.class, p.actorClass());
+    final Props p = Props.create(new E<AbstractActor>());
+    assertEquals(AbstractActor.class, p.actorClass());
   }
 
   @Test
   public void testRightStaticSuperinterface() {
     final Props p = Props.create(new F());
-    assertEquals(UntypedActor.class, p.actorClass());
+    assertEquals(AbstractActor.class, p.actorClass());
   }
 
   @Test
@@ -251,10 +257,10 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
-  private static Creator<UntypedActor> createAnonymousCreatorInStaticMethod() {
-    return new Creator<UntypedActor>() {
+  private static Creator<AbstractActor> createAnonymousCreatorInStaticMethod() {
+    return new Creator<AbstractActor>() {
       @Override
-      public UntypedActor create() throws Exception {
+      public AbstractActor create() throws Exception {
         return null;
       }
     };
@@ -262,20 +268,20 @@ public class ActorCreationTest extends JUnitSuite {
 
   @Test
   public void testAnonymousClassCreatedInStaticMethodCreator() {
-    final Creator<UntypedActor> anonymousCreatorFromStaticMethod = createAnonymousCreatorInStaticMethod();
+    final Creator<AbstractActor> anonymousCreatorFromStaticMethod = createAnonymousCreatorInStaticMethod();
     Props.create(anonymousCreatorFromStaticMethod);
   }
 
   @Test
   public void testClassCreatorWithArguments() {
-    final Creator<UntypedActor> anonymousCreatorFromStaticMethod = new P("hello");
+    final Creator<AbstractActor> anonymousCreatorFromStaticMethod = new P("hello");
     Props.create(anonymousCreatorFromStaticMethod);
   }
 
   @Test
   public void testAnonymousClassCreatorWithArguments() {
     try {
-      final Creator<UntypedActor> anonymousCreatorFromStaticMethod = new P("hello") {
+      final Creator<AbstractActor> anonymousCreatorFromStaticMethod = new P("hello") {
         // captures enclosing class
       };
       Props.create(anonymousCreatorFromStaticMethod);
@@ -306,14 +312,14 @@ public class ActorCreationTest extends JUnitSuite {
 
   @Test
   public void testRightPropsUsingCreator() {
-    final Props p = UntypedTestActor.propsUsingCreator(17);
-    assertEquals(UntypedTestActor.class, p.actorClass());
+    final Props p = TestActor2.propsUsingCreator(17);
+    assertEquals(TestActor2.class, p.actorClass());
   }
 
   @Test
   public void testPropsUsingCreatorWithoutClass() {
-    final Props p = UntypedTestActor.propsUsingCreatorWithoutClass(17);
-    assertEquals(UntypedTestActor.class, p.actorClass());
+    final Props p = TestActor2.propsUsingCreatorWithoutClass(17);
+    assertEquals(TestActor2.class, p.actorClass());
   }
 
   @Test

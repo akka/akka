@@ -39,8 +39,7 @@ private[persistence] object Eventsourced {
 /**
  * INTERNAL API.
  *
- * Scala API and implementation details of [[PersistentActor]], [[AbstractPersistentActor]] and
- * [[UntypedPersistentActor]].
+ * Scala API and implementation details of [[PersistentActor]] and [[AbstractPersistentActor]].
  */
 private[persistence] trait Eventsourced extends Snapshotter with PersistenceStash with PersistenceIdentity with PersistenceRecovery {
   import JournalProtocol._

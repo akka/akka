@@ -11,6 +11,7 @@ import akka.actor._
 import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Helpers }
 import akka.serialization.SerializerWithStringManifest
+import java.util.Optional
 
 private[akka] object Children {
   val GetNobody = () ⇒ Nobody
@@ -35,6 +36,7 @@ private[akka] trait Children { this: ActorCell ⇒
     case Some(s: ChildRestartStats) ⇒ s.child
     case _                          ⇒ null
   }
+  def findChild(name: String): Optional[ActorRef] = Optional.ofNullable(getChild(name))
 
   def actorOf(props: Props): ActorRef =
     makeChild(this, props, randomName(), async = false, systemService = false)

@@ -18,12 +18,12 @@ public class Consumer3 extends UntypedConsumerActor{
 
   public void onReceive(Object message) {
     if (message instanceof CamelMessage) {
-      getSender().tell(Ack.getInstance(), getSelf());
+      sender().tell(Ack.getInstance(), self());
       // on success
       // ..
       Exception someException = new Exception("e1");
       // on failure
-      getSender().tell(new Status.Failure(someException), getSelf());
+      sender().tell(new Status.Failure(someException), self());
     } else
       unhandled(message);
   }

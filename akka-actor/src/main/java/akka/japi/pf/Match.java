@@ -14,7 +14,6 @@ import scala.PartialFunction;
  * @param <I> the input type, that this PartialFunction will be applied to
  * @param <R> the return type, that the results of the application will have
  *
- * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public class Match<I, R> extends AbstractMatch<I, R> {
 
@@ -27,9 +26,23 @@ public class Match<I, R> extends AbstractMatch<I, R> {
    * @return a builder with the case statement added
    * @see PFBuilder#match(Class, FI.Apply)
    */
-  public static <F, T, P> PFBuilder<F, T> match(final Class<? extends P> type,
-                                                final FI.Apply<? extends P, T> apply) {
+  public static <F, T, P> PFBuilder<F, T> match(final Class<P> type,
+                                                final FI.Apply<P, T> apply) {
     return new PFBuilder<F, T>().match(type, apply);
+  }
+
+  /**
+   * Convenience function to create a {@link PFBuilder} with the first
+   * case statement added without compile time type check of the parameters.
+   * Should normally not be used, but when matching on class with generic type
+   * argument it can be useful, e.g. <code>List.class</code> and
+   * <code>(List&lt;String&gt; list) -> {}</code>.
+   *
+   * @see PFBuilder#matchUnchecked(Class, FI.Apply)
+   */
+  public static <F, T> PFBuilder<F, T> matchUnchecked(final Class<?> type,
+                                                final FI.Apply<?, T> apply) {
+    return new PFBuilder<F, T>().matchUnchecked(type, apply);
   }
 
   /**
@@ -42,10 +55,25 @@ public class Match<I, R> extends AbstractMatch<I, R> {
    * @return a builder with the case statement added
    * @see PFBuilder#match(Class, FI.TypedPredicate, FI.Apply)
    */
-  public static <F, T, P> PFBuilder<F, T> match(final Class<? extends P> type,
-                                                final FI.TypedPredicate<? extends P> predicate,
-                                                final FI.Apply<? extends P, T> apply) {
+  public static <F, T, P> PFBuilder<F, T> match(final Class<P> type,
+                                                final FI.TypedPredicate<P> predicate,
+                                                final FI.Apply<P, T> apply) {
     return new PFBuilder<F, T>().match(type, predicate, apply);
+  }
+
+  /**
+   * Convenience function to create a {@link PFBuilder} with the first
+   * case statement added without compile time type check of the parameters.
+   * Should normally not be used, but when matching on class with generic type
+   * argument it can be useful, e.g. <code>List.class</code> and
+   * <code>(List&lt;String&gt; list) -> {}</code>.
+   *
+   * @see PFBuilder#matchUnchecked(Class, FI.TypedPredicate, FI.Apply)
+   */
+  public static <F, T> PFBuilder<F, T> matchUnchecked(final Class<?> type,
+                                                final FI.TypedPredicate<?> predicate,
+                                                final FI.Apply<?, T> apply) {
+    return new PFBuilder<F, T>().matchUnchecked(type, predicate, apply);
   }
 
   /**
@@ -91,10 +119,10 @@ public class Match<I, R> extends AbstractMatch<I, R> {
   /**
    * Convenience function to make the Java code more readable.
    * <p></p>
-   * 
+   *
    * <pre><code>
    *   Matcher&lt;X, Y&gt; matcher = Matcher.create(...);
-   * 
+   *
    *   Y someY = matcher.match(obj);
    * </code></pre>
    *

@@ -17,7 +17,7 @@ It is possible to require a certain type of message queue for a certain type of 
 by having that actor implement the parameterized interface :class:`RequiresMessageQueue`. Here is
 an example:
 
-.. includecode:: code/docs/actor/MyBoundedUntypedActor.java#my-bounded-untyped-actor
+.. includecode:: code/docs/actorlambda/MyBoundedActor.java#my-bounded-untyped-actor
 
 The type parameter to the :class:`RequiresMessageQueue` interface needs to be mapped to a mailbox in
 configuration like this:
@@ -25,7 +25,7 @@ configuration like this:
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala
    :include: bounded-mailbox-config,required-mailbox-config
 
-Now every time you create an actor of type :class:`MyBoundedUntypedActor` it will try to get a bounded
+Now every time you create an actor of type :class:`MyBoundedActor` it will try to get a bounded
 mailbox. If the actor has a different mailbox configured in deployment, either directly or via
 a dispatcher with a specified mailbox type, then that will override this mapping.
 

@@ -33,7 +33,7 @@ import static java.util.stream.Collectors.toList;
 //#events-by-tag-publisher
 class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
   private final Serialization serialization =
-    SerializationExtension.get(context().system());
+    SerializationExtension.get(getContext().system());
 
   private final Connection connection;
 
@@ -54,20 +54,23 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
     this.tag = tag;
     this.currentOffset = offset;
 
-    final Scheduler scheduler = context().system().scheduler();
+    final Scheduler scheduler = getContext().system().scheduler();
     this.continueTask = scheduler
       .schedule(refreshInterval, refreshInterval, self(), CONTINUE,
-                context().dispatcher(), self());
-
-    receive(ReceiveBuilder
-              .matchEquals(CONTINUE, (in) -> {
-                query();
-                deliverBuf();
-              })
-      .match(Cancel.class, (in) -> {
-        context().stop(self());
+                getContext().dispatcher(), self());
+  }
+  
+  @Override
+  public Receive createReceive() {
+    return receiveBuilder()
+      .matchEquals(CONTINUE, (in) -> {
+        query();
+        deliverBuf();
       })
-      .build());
+      .match(Cancel.class, (in) -> {
+        getContext().stop(self());
+      })
+      .build();
   }
 
   public static Props props(Connection conn, String tag, Long offset, 

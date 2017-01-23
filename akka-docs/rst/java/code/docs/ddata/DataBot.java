@@ -5,6 +5,7 @@ package docs.ddata;
 
 //#data-bot
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import scala.concurrent.duration.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -29,25 +30,26 @@ public class DataBot extends AbstractActor {
   
   private static final String TICK = "tick";
   
-  private final LoggingAdapter log = Logging.getLogger(context().system(), this);
+  private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
   private final ActorRef replicator = 
-      DistributedData.get(context().system()).replicator();
-  private final Cluster node = Cluster.get(context().system());
+      DistributedData.get(getContext().system()).replicator();
+  private final Cluster node = Cluster.get(getContext().system());
 
-  private final Cancellable tickTask = context().system().scheduler().schedule(
+  private final Cancellable tickTask = getContext().system().scheduler().schedule(
       Duration.create(5, SECONDS), Duration.create(5, SECONDS), self(), TICK,
-      context().dispatcher(), self());
+      getContext().dispatcher(), self());
 
   private final Key<ORSet<String>> dataKey = ORSetKey.create("key");
   
   @SuppressWarnings("unchecked")
-  public DataBot() {
-    receive(ReceiveBuilder
+  @Override
+  public Receive createReceive() {
+    return receiveBuilder()
       .match(String.class, a -> a.equals(TICK), a -> receiveTick())
       .match(Changed.class, c -> c.key().equals(dataKey), c -> receiveChanged((Changed<ORSet<String>>) c))
       .match(UpdateResponse.class, r -> receiveUpdateResoponse())
-      .build());
+      .build();
   }
 
 

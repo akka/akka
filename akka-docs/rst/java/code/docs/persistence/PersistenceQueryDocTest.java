@@ -451,15 +451,20 @@ public class PersistenceQueryDocTest {
 
     public TheOneWhoWritesToQueryJournal() {
       store = new ExampleStore();
-
-      receive(ReceiveBuilder.matchAny(message -> {
-        state = updateState(state, message);
-
-        // example saving logic that requires state to become ready:
-        if (state.readyToSave())
-          store.save(Record.of(state));
-        
-      }).build());
+    }
+    
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchAny(message -> {
+          state = updateState(state, message);
+  
+          // example saving logic that requires state to become ready:
+          if (state.readyToSave())
+            store.save(Record.of(state));
+          
+        })
+        .build();
     }
 
 

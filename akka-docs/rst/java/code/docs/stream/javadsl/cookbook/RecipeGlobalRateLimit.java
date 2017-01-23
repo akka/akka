@@ -87,14 +87,17 @@ public class RecipeGlobalRateLimit extends RecipeTest {
         this.tokenRefreshPeriod,
         self(),
         REPLENISH_TOKENS,
-        context().system().dispatcher(),
+        getContext().system().dispatcher(),
         self());
-
-      receive(open());
+    }
+    
+    @Override
+    public Receive createReceive() {
+      return open();
     }
 
-    PartialFunction<Object, BoxedUnit> open() {
-      return ReceiveBuilder
+    private Receive open() {
+      return receiveBuilder()
         .match(ReplenishTokens.class, rt -> {
           permitTokens = Math.min(permitTokens + tokenRefreshAmount, maxAvailableTokens);
         })
@@ -102,13 +105,14 @@ public class RecipeGlobalRateLimit extends RecipeTest {
           permitTokens -= 1;
           sender().tell(MAY_PASS, self());
           if (permitTokens == 0) {
-            context().become(closed());
+            getContext().become(closed());
           }
-        }).build();
+        })
+        .build();
     }
 
-    PartialFunction<Object, BoxedUnit> closed() {
-      return ReceiveBuilder
+    private Receive closed() {
+      return receiveBuilder()
         .match(ReplenishTokens.class, rt -> {
           permitTokens = Math.min(permitTokens + tokenRefreshAmount, maxAvailableTokens);
           releaseWaiting();
@@ -128,7 +132,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
       permitTokens -= toBeReleased.size();
       toBeReleased.stream().forEach(ref -> ref.tell(MAY_PASS, self()));
       if (permitTokens > 0) {
-        context().become(open());
+        getContext().become(open());
       }
     }
 

@@ -74,13 +74,13 @@ public class SupervisedAsk {
     public void onReceive(Object message) throws Exception {
       if (message instanceof AskParam) {
         askParam = (AskParam) message;
-        caller = getSender();
+        caller = sender();
         targetActor = getContext().actorOf(askParam.props);
         getContext().watch(targetActor);
         targetActor.forward(askParam.message, getContext());
         Scheduler scheduler = getContext().system().scheduler();
         timeoutMessage = scheduler.scheduleOnce(askParam.timeout.duration(),
-            self(), new AskTimeout(), context().dispatcher(), null);
+            self(), new AskTimeout(), getContext().dispatcher(), null);
       } else if (message instanceof Terminated) {
         Throwable ex = new ActorKilledException("Target actor terminated.");
         caller.tell(new Status.Failure(ex), self());

@@ -161,44 +161,49 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
       public WorkerPool() {
         final List<Routee> routees = new ArrayList<>();
         for (int i = 0; i < 3; i++)
-          routees.add(new ActorRefRoutee(context().actorOf(Props.create(Worker.class))));
+          routees.add(new ActorRefRoutee(getContext().actorOf(Props.create(Worker.class))));
         router = new Router(new RoundRobinRoutingLogic(), routees);
-
-        receive(ReceiveBuilder.
-        match(ActorSubscriberMessage.OnNext.class, on -> on.element() instanceof WorkerPoolProtocol.Msg,
-          onNext -> {
-            WorkerPoolProtocol.Msg msg = (WorkerPoolProtocol.Msg) onNext.element();
-            queue.put(msg.id, msg.replyTo);
-
-            if (queue.size() > MAX_QUEUE_SIZE)
-              throw new RuntimeException("queued too many: " + queue.size());
-
-            router.route(WorkerPoolProtocol.work(msg.id), self());
-        }).
-        match(ActorSubscriberMessage.onCompleteInstance().getClass(), complete -> {
-          if (queue.isEmpty()) {
-            context().stop(self());
-          }
-        }).
-        match(WorkerPoolProtocol.Reply.class, reply -> {
-          int id = reply.id;
-          queue.get(id).tell(WorkerPoolProtocol.done(id), self());
-          queue.remove(id);
-          if (canceled() && queue.isEmpty()) {
-            context().stop(self());
-          }
-        }).
-        build());
+      }
+      
+      @Override
+      public Receive createReceive() {
+        return receiveBuilder()
+          .match(ActorSubscriberMessage.OnNext.class, on -> on.element() instanceof WorkerPoolProtocol.Msg,
+            onNext -> {
+              WorkerPoolProtocol.Msg msg = (WorkerPoolProtocol.Msg) onNext.element();
+              queue.put(msg.id, msg.replyTo);
+  
+              if (queue.size() > MAX_QUEUE_SIZE)
+                throw new RuntimeException("queued too many: " + queue.size());
+  
+              router.route(WorkerPoolProtocol.work(msg.id), self());
+          })
+          .match(ActorSubscriberMessage.onCompleteInstance().getClass(), complete -> {
+            if (queue.isEmpty()) {
+              getContext().stop(self());
+            }
+          })
+          .match(WorkerPoolProtocol.Reply.class, reply -> {
+            int id = reply.id;
+            queue.get(id).tell(WorkerPoolProtocol.done(id), self());
+            queue.remove(id);
+            if (canceled() && queue.isEmpty()) {
+              getContext().stop(self());
+            }
+          })
+          .build();
       }
     }
 
     static class Worker extends AbstractActor {
-      public Worker() {
-        receive(ReceiveBuilder.
-          match(WorkerPoolProtocol.Work.class, work -> {
+      @Override
+      public Receive createReceive() {
+        return receiveBuilder()
+          .match(WorkerPoolProtocol.Work.class, work -> {
             // ...
             sender().tell(WorkerPoolProtocol.reply(work.id), self());
-          }).build());
+          })
+          .build();
       }
     }
     //#worker-pool

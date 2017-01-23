@@ -166,7 +166,7 @@ from localhost on port 8877.
 
 After starting the actor, clients can send messages to that actor by POSTing to
 ``http://localhost:8877/camel/default``. The actor sends a response by using the
-getSender().tell method. For returning a message body and headers to the HTTP
+sender().tell method. For returning a message body and headers to the HTTP
 client the response type should be `CamelMessage`_. For any other response type, a
 new CamelMessage object is created by akka-camel with the actor response as message
 body.
@@ -304,7 +304,7 @@ designed to be asynchronous. This is the case for both, consumer and producer
 actors.
 
 * A consumer endpoint sends request messages to its consumer actor using the ``tell``
-  method and the actor returns responses with ``getSender().tell`` once they are
+  method and the actor returns responses with ``sender().tell`` once they are
   ready.
 
 * A producer actor sends request messages to its endpoint using Camel's

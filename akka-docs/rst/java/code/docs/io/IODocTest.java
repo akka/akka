@@ -8,7 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import akka.actor.ActorSystem;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 //#imports
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -24,65 +24,63 @@ import akka.util.ByteString;
 
 public class IODocTest {
 
-  static public class Demo extends UntypedActor {
+  static public class Demo extends AbstractActor {
     ActorRef connectionActor = null;
-    ActorRef listener = getSelf();
+    ActorRef listener = self();
 
     @Override
-    public void onReceive(Object msg) {
-      if ("connect".equals(msg)) {
-        //#manager
-        final ActorRef tcp = Tcp.get(system).manager();
-        //#manager
-        //#connect
-        final InetSocketAddress remoteAddr = new InetSocketAddress("127.0.0.1",
-            12345);
-        tcp.tell(TcpMessage.connect(remoteAddr), getSelf());
-        //#connect
-        //#connect-with-options
-        final InetSocketAddress localAddr = new InetSocketAddress("127.0.0.1",
-            1234);
-        final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
-        options.add(TcpSO.keepAlive(true));
-        tcp.tell(TcpMessage.connect(remoteAddr, localAddr, options, null, false), getSelf());
-        //#connect-with-options
-      } else
-      //#connected
-      if (msg instanceof Tcp.Connected) {
-        final Tcp.Connected conn = (Tcp.Connected) msg;
-        connectionActor = getSender();
-        connectionActor.tell(TcpMessage.register(listener), getSelf());
-      }
-      //#connected
-      else
-      //#received
-      if (msg instanceof Tcp.Received) {
-        final Tcp.Received recv = (Tcp.Received) msg;
-        final ByteString data = recv.data();
-        // and do something with the received data ...
-      } else if (msg instanceof Tcp.CommandFailed) {
-        final Tcp.CommandFailed failed = (Tcp.CommandFailed) msg;
-        final Tcp.Command command = failed.cmd();
-        // react to failed connect, bind, write, etc.
-      } else if (msg instanceof Tcp.ConnectionClosed) {
-        final Tcp.ConnectionClosed closed = (Tcp.ConnectionClosed) msg;
-        if (closed.isAborted()) {
-          // handle close reasons like this
-        }
-      }
-      //#received
-      else
-      if ("bind".equals(msg)) {
-        final ActorRef handler = getSelf();
-        //#bind
-        final ActorRef tcp = Tcp.get(system).manager();
-        final InetSocketAddress localAddr = new InetSocketAddress("127.0.0.1",
-            1234);
-        final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
-        options.add(TcpSO.reuseAddress(true));
-        tcp.tell(TcpMessage.bind(handler, localAddr, 10, options, false), getSelf());
-        //#bind
-      }
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("connect", msg -> {
+          //#manager
+          final ActorRef tcp = Tcp.get(system).manager();
+          //#manager
+          //#connect
+          final InetSocketAddress remoteAddr = new InetSocketAddress("127.0.0.1",
+              12345);
+          tcp.tell(TcpMessage.connect(remoteAddr), self());
+          //#connect
+          //#connect-with-options
+          final InetSocketAddress localAddr = new InetSocketAddress("127.0.0.1",
+              1234);
+          final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
+          options.add(TcpSO.keepAlive(true));
+          tcp.tell(TcpMessage.connect(remoteAddr, localAddr, options, null, false), self());
+          //#connect-with-options
+        })
+        //#connected
+        .match(Tcp.Connected.class, conn -> {
+          connectionActor = sender();
+          connectionActor.tell(TcpMessage.register(listener), self());
+        })
+        //#connected
+        //#received
+        .match(Tcp.Received.class, recv -> {
+          final ByteString data = recv.data();
+          // and do something with the received data ...
+        })
+        .match(Tcp.CommandFailed.class, failed -> {
+          final Tcp.Command command = failed.cmd();
+          // react to failed connect, bind, write, etc.
+        })
+        .match(Tcp.ConnectionClosed.class, closed -> {
+          if (closed.isAborted()) {
+            // handle close reasons like this
+          }
+        })
+        //#received
+        .matchEquals("bind", msg -> {
+          final ActorRef handler = self();
+          //#bind
+          final ActorRef tcp = Tcp.get(system).manager();
+          final InetSocketAddress localAddr = new InetSocketAddress("127.0.0.1",
+              1234);
+          final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
+          options.add(TcpSO.reuseAddress(true));
+          tcp.tell(TcpMessage.bind(handler, localAddr, 10, options, false), self());
+          //#bind
+        })
+        .build();
     }
   }
 

@@ -10,6 +10,7 @@ import scala.PartialFunction;
 
 import static org.junit.Assert.*;
 
+@SuppressWarnings("serial")
 public class PFBuilderTest extends JUnitSuite {
 
   @Test
@@ -18,7 +19,7 @@ public class PFBuilderTest extends JUnitSuite {
       .matchEquals("hello", s -> 1)
       .matchAny(s -> Integer.valueOf(s))
       .build();
-      
+
     assertTrue(pf.isDefinedAt("hello"));
     assertTrue(pf.isDefinedAt("42"));
     assertEquals(42, pf.apply("42").intValue());

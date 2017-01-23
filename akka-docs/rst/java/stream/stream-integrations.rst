@@ -30,7 +30,7 @@ even though the actor will only process one message at a time because then there
 is already a message in the mailbox when the actor has completed previous
 message. 
 
-The actor must reply to the ``getSender()`` for each message from the stream. That
+The actor must reply to the ``sender()`` for each message from the stream. That
 reply will complete the ``CompletionStage`` of the ``ask`` and it will be the element that
 is emitted downstreams from ``mapAsync``.
 

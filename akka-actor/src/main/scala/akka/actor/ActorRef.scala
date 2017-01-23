@@ -65,29 +65,23 @@ object ActorRef {
  * import static akka.pattern.Patterns.ask;
  * import static akka.pattern.Patterns.pipe;
  *
- * public class ExampleActor extends UntypedActor {
+ * public class ExampleActor extends AbstractActor {
  *   // this child will be destroyed and re-created upon restart by default
  *   final ActorRef other = getContext().actorOf(Props.create(OtherActor.class), "childName");
- *
  *   @Override
- *   public void onReceive(Object o) {
- *     if (o instanceof Request1) {
- *       Msg msg = ((Request1) o).getMsg();
- *       other.tell(msg, getSelf()); // uses this actor as sender reference, reply goes to us
- *
- *     } else if (o instanceof Request2) {
- *       Msg msg = ((Request2) o).getMsg();
- *       other.tell(msg, getSender()); // forward sender reference, enabling direct reply
- *
- *     } else if (o instanceof Request3) {
- *       Msg msg = ((Request3) o).getMsg();
- *       pipe(ask(other, msg, 5000), context().dispatcher()).to(getSender());
- *       // the ask call will get a future from other's reply
- *       // when the future is complete, send its value to the original sender
- *
- *     } else {
- *       unhandled(o);
- *     }
+ *   public Receive createReceive() {
+ *     return receiveBuilder()
+ *       .match(Request1.class, msg ->
+ *         // uses this actor as sender reference, reply goes to us
+ *         other.tell(msg, getSelf()))
+ *       .match(Request2.class, msg ->
+ *         // forward sender reference, enabling direct reply
+ *         other.tell(msg, getSender()))
+ *       .match(Request3.class, msg ->
+ *         // the ask call will get a future from other's reply
+ *         // when the future is complete, send its value to the original sender
+ *         pipe(ask(other, msg, 5000), context().dispatcher()).to(getSender()))
+ *       .build();
  *   }
  * }
  * }}}
