@@ -122,14 +122,18 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
 
       runOn(first, second) {
         within(15.seconds) {
+          var values = Set.empty[Int]
           awaitAssert {
             replicator ! Get(KeyA, ReadLocal)
             expectMsgPF() {
               case g @ GetSuccess(KeyA, _) ⇒
-                g.get(KeyA).value should be(9)
+                val value = g.get(KeyA).value.toInt
+                values += value
+                value should be(9)
                 g.get(KeyA).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
+          values should ===(Set(9))
         }
         within(5.seconds) {
           awaitAssert {
@@ -154,10 +158,12 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       }
       enterBarrier("pruning-done")
 
-      // on one of the nodes the data has been updated by the pruning,
-      // client can update anyway
+      // after pruning performed we should not be able to update with data from removed node
       def updateAfterPruning(expectedValue: Int): Unit = {
-        replicator ! Update(KeyA, GCounter(), WriteAll(timeout), None)(_ + 1)
+        replicator ! Update(KeyA, GCounter(), WriteAll(timeout), None) { existing ⇒
+          // inject data from removed node to simulate bad data
+          existing.merge(oldCounter) + 1
+        }
         expectMsgPF() {
           case UpdateSuccess(KeyA, _) ⇒
             replicator ! Get(KeyA, ReadLocal)
@@ -165,6 +171,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
             retrieved.value should be(expectedValue)
         }
       }
+
       runOn(first) {
         updateAfterPruning(expectedValue = 10)
       }
@@ -175,19 +182,19 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       }
       enterBarrier("update-second-after-pruning")
 
-      // after pruning performed and maxDissemination it is tombstoned
-      // and we should still not be able to update with data from removed node
+      // after full replication should still not be able to update with data from removed node
+      // but it would not work after removal of the PruningPerformed markers
       expectNoMsg(maxPruningDissemination + 3.seconds)
 
       runOn(first) {
         updateAfterPruning(expectedValue = 12)
       }
-      enterBarrier("update-first-after-tombstone")
+      enterBarrier("update-first-after-dissemination")
 
       runOn(second) {
         updateAfterPruning(expectedValue = 13)
       }
-      enterBarrier("update-second-after-tombstone")
+      enterBarrier("update-second-after-dissemination")
 
       enterBarrier("after-1")
     }
