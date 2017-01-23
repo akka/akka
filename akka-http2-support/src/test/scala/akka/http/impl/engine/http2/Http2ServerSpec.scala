@@ -548,7 +548,12 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
         (d1 ++ d2) should ===(theTooLargeByteString) // makes sure we received the parts in the right order
       }
 
-      "received SETTINGS_MAX_CONCURRENT_STREAMS" in pending
+      "received SETTINGS_MAX_CONCURRENT_STREAMS should limit the number of streams" in new TestSetup with RequestResponseProbes {
+        sendSETTING(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 1)
+        expectSettingsAck()
+
+        // TODO actually apply the limiting and verify it works
+      }
 
       "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
         sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, Math.pow(2, 15).toInt) // 32768, valid value (between 2^14 and 2^24 - 1)

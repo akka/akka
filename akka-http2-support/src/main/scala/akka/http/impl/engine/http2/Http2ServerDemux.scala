@@ -102,6 +102,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       // we should not handle streams later than the GOAWAY told us about with lastStreamId
       private var closedAfter: Option[Int] = None
       private var incomingStreams = mutable.Map.empty[Int, SubStream]
+      private var maxConcurrentStreams: Option[Int] = None
 
       /**
        * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
@@ -183,6 +184,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                   multiplexer.updateDefaultWindow(value)
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
                   multiplexer.updateFrameSize(value)
+                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) ⇒
+                  debug(s"Setting max concurrent streams to $value (not enforced)")
+                  maxConcurrentStreams = Some(value)
                 case Setting(id, value) ⇒
                   debug(s"Ignoring setting $id -> $value (in Demux)")
               }
