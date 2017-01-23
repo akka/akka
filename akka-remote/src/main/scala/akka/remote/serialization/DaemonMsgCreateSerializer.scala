@@ -13,6 +13,7 @@ import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
 import akka.routing.{ NoRouter, RouterConfig }
 import scala.reflect.ClassTag
 import util.{ Failure, Success }
+import java.io.Serializable
 
 /**
  * Serializes Akka's internal DaemonMsgCreate using protobuf
@@ -30,6 +31,8 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
 
   @deprecated("Use constructor with ExtendedActorSystem", "2.4")
   def this() = this(null)
+
+  private val scala212OrLater = !scala.util.Properties.versionNumberString.startsWith("2.11")
 
   // TODO remove this when deprecated this() is removed
   override val identifier: Int =
@@ -61,7 +64,22 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
           .setClazz(props.clazz.getName)
           .setDeploy(deployProto(props.deploy))
         props.args map serialize foreach builder.addArgs
-        props.args map (a ⇒ if (a == null) "null" else a.getClass.getName) foreach builder.addClasses
+        props.args.map { a ⇒
+          val argClassName =
+            if (a == null) "null"
+            else {
+              val className = a.getClass.getName
+              if (scala212OrLater && a.getClass.isInstanceOf[Serializable] && a.getClass.isSynthetic &&
+                className.contains("$Lambda$")) {
+                // The serialization of the parameters is based on passing class name instead of
+                // serializerId and manifest as we usually do. With Scala 2.12 the functions are generated as
+                // lambdas and we can't use that load class from that name when deserializing.
+                classOf[Serializable].getName
+              } else
+                className
+            }
+          builder.addClasses(argClassName)
+        }
         builder.build
       }
 
