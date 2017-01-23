@@ -373,7 +373,7 @@ final class CoordinatedShutdown private[akka] (
 
   /**
    * Scala API: Add a JVM shutdown hook that will be run when the JVM process
-   * begins its shutdown sequence. Added hooks may run in an order
+   * begins its shutdown sequence. Added hooks may run in any order
    * concurrently, but they are running before Akka internal shutdown
    * hooks, e.g. those shutting down Artery.
    */
@@ -382,11 +382,16 @@ final class CoordinatedShutdown private[akka] (
       val currentLatch = _jvmHooksLatch.get
       val newLatch = new CountDownLatch(currentLatch.getCount.toInt + 1)
       if (_jvmHooksLatch.compareAndSet(currentLatch, newLatch)) {
-        Runtime.getRuntime.addShutdownHook(new Thread {
+        try Runtime.getRuntime.addShutdownHook(new Thread {
           override def run(): Unit = {
             try hook() finally _jvmHooksLatch.get.countDown()
           }
-        })
+        }) catch {
+          case e: IllegalStateException ⇒
+            // Shutdown in progress, if CoordinatedShutdown is created via a JVM shutdown hook (Artery)
+            log.warning("Could not addJvmShutdownHook, due to: {}", e.getMessage)
+            _jvmHooksLatch.get.countDown()
+        }
       } else
         addJvmShutdownHook(hook) // lost CAS, retry
     }

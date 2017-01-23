@@ -938,6 +938,9 @@ private[akka] class ActorSystemImpl(
       }
     }
 
+    // eager initialization of CoordinatedShutdown
+    CoordinatedShutdown(this)
+
     loadExtensions("akka.library-extensions", throwOnLoadFail = true)
     loadExtensions("akka.extensions", throwOnLoadFail = false)
   }

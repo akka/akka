@@ -324,7 +324,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
    */
   private[this] val _inboundCompressions = {
     if (settings.Advanced.Compression.Enabled) {
-      println(s"settings.Advanced.Compression.Enabled = ${settings.Advanced.Compression.Enabled}")
       val eventSink = createFlightRecorderEventSink(synchr = false)
       new InboundCompressionsImpl(system, this, settings.Advanced.Compression, eventSink)
     } else NoInboundCompressions
