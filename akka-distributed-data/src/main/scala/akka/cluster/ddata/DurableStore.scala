@@ -115,6 +115,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       case path ⇒
         new File(path)
     }
+    log.info("Using durable data in LMDB directory [{}]", dir.getCanonicalPath)
     dir.mkdirs()
     Env.create()
       .setMapSize(mapSize)

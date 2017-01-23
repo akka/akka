@@ -37,9 +37,10 @@ object ShardRegion {
     coordinatorPath:    String,
     extractEntityId:    ShardRegion.ExtractEntityId,
     extractShardId:     ShardRegion.ExtractShardId,
-    handOffStopMessage: Any): Props =
+    handOffStopMessage: Any,
+    replicator:         ActorRef): Props =
     Props(new ShardRegion(typeName, Some(entityProps), settings, coordinatorPath, extractEntityId,
-      extractShardId, handOffStopMessage)).withDeploy(Deploy.local)
+      extractShardId, handOffStopMessage, replicator)).withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
@@ -51,9 +52,10 @@ object ShardRegion {
     settings:        ClusterShardingSettings,
     coordinatorPath: String,
     extractEntityId: ShardRegion.ExtractEntityId,
-    extractShardId:  ShardRegion.ExtractShardId): Props =
-    Props(new ShardRegion(typeName, None, settings, coordinatorPath, extractEntityId, extractShardId, PoisonPill))
-      .withDeploy(Deploy.local)
+    extractShardId:  ShardRegion.ExtractShardId,
+    replicator:      ActorRef): Props =
+    Props(new ShardRegion(typeName, None, settings, coordinatorPath, extractEntityId, extractShardId,
+      PoisonPill, replicator)).withDeploy(Deploy.local)
 
   /**
    * Marker type of entity identifier (`String`).
@@ -332,20 +334,23 @@ object ShardRegion {
 }
 
 /**
+ * INTERNAL API
+ *
  * This actor creates children entity actors on demand for the shards that it is told to be
  * responsible for. It delegates messages targeted to other shards to the responsible
  * `ShardRegion` actor on other nodes.
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-class ShardRegion(
+private[akka] class ShardRegion(
   typeName:           String,
   entityProps:        Option[Props],
   settings:           ClusterShardingSettings,
   coordinatorPath:    String,
   extractEntityId:    ShardRegion.ExtractEntityId,
   extractShardId:     ShardRegion.ExtractShardId,
-  handOffStopMessage: Any) extends Actor with ActorLogging {
+  handOffStopMessage: Any,
+  replicator:         ActorRef) extends Actor with ActorLogging {
 
   import ShardCoordinator.Internal._
   import ShardRegion._
@@ -762,7 +767,8 @@ class ShardRegion(
                 settings,
                 extractEntityId,
                 extractShardId,
-                handOffStopMessage).withDispatcher(context.props.dispatcher),
+                handOffStopMessage,
+                replicator).withDispatcher(context.props.dispatcher),
               name))
             shardsByRef = shardsByRef.updated(shard, id)
             shards = shards.updated(id, shard)

@@ -71,12 +71,16 @@ abstract class ClusterShardingLeavingSpecConfig(val mode: String) extends MultiN
       timeout = 5s
       store {
         native = off
-        dir = "target/journal-ClusterShardingLeavingSpec"
+        dir = "target/ClusterShardingLeavingSpec/journal"
       }
     }
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingLeavingSpec"
+    akka.persistence.snapshot-store.local.dir = "target/ClusterShardingLeavingSpec/snapshots"
     akka.cluster.sharding.state-store-mode = "$mode"
+    akka.cluster.sharding.distributed-data.durable.lmdb {
+      dir = target/ClusterShardingLeavingSpec/sharding-ddata
+      map-size = 10 MiB
+    }
     """))
 }
 
@@ -102,21 +106,16 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
 
   override def initialParticipants = roles.size
 
-  val storageLocations = List(
-    "akka.persistence.journal.leveldb.dir",
-    "akka.persistence.journal.leveldb-shared.store.dir",
-    "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
+  val storageLocations = List(new File(system.settings.config.getString(
+    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
   override protected def atStartup() {
-    runOn(first) {
-      storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
-    }
+    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
+    enterBarrier("startup")
   }
 
   override protected def afterTermination() {
-    runOn(first) {
-      storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteDirectory(dir))
-    }
+    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
   val cluster = Cluster(system)
@@ -145,21 +144,25 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
+  def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
+
   s"Cluster sharding ($mode) with leaving member" must {
 
-    "setup shared journal" in {
-      // start the Persistence extension
-      Persistence(system)
-      runOn(first) {
-        system.actorOf(Props[SharedLeveldbStore], "store")
+    if (!isDdataMode) {
+      "setup shared journal" in {
+        // start the Persistence extension
+        Persistence(system)
+        runOn(first) {
+          system.actorOf(Props[SharedLeveldbStore], "store")
+        }
+        enterBarrier("peristence-started")
+
+        system.actorSelection(node(first) / "user" / "store") ! Identify(None)
+        val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
+        SharedLeveldbJournal.setStore(sharedStore, system)
+
+        enterBarrier("after-1")
       }
-      enterBarrier("peristence-started")
-
-      system.actorSelection(node(first) / "user" / "store") ! Identify(None)
-      val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
-      SharedLeveldbJournal.setStore(sharedStore, system)
-
-      enterBarrier("after-1")
     }
 
     "join cluster" in within(20.seconds) {
