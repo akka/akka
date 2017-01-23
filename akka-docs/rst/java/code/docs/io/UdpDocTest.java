@@ -29,15 +29,15 @@ public class UdpDocTest {
       
       // request creation of a SimpleSender
       final ActorRef mgr = Udp.get(getContext().system()).getManager();
-      mgr.tell(UdpMessage.simpleSender(), getSelf());
+      mgr.tell(UdpMessage.simpleSender(), self());
     }
     
     @Override
     public void onReceive(Object msg) {
       if (msg instanceof Udp.SimpleSenderReady) {
-        getContext().become(ready(getSender()));
+        getContext().become(ready(sender()));
         //#sender
-        getSender().tell(UdpMessage.send(ByteString.fromString("hello"), remote), getSelf());
+        sender().tell(UdpMessage.send(ByteString.fromString("hello"), remote), self());
         //#sender
       } else unhandled(msg);
     }
@@ -48,10 +48,10 @@ public class UdpDocTest {
         public void apply(Object msg) throws Exception {
           if (msg instanceof String) {
             final String str = (String) msg;
-            send.tell(UdpMessage.send(ByteString.fromString(str), remote), getSelf());
+            send.tell(UdpMessage.send(ByteString.fromString(str), remote), self());
             //#sender
             if (str.equals("world")) {
-              send.tell(PoisonPill.getInstance(), getSelf());
+              send.tell(PoisonPill.getInstance(), self());
             }
             //#sender
 
@@ -72,8 +72,8 @@ public class UdpDocTest {
       // request creation of a bound listen socket
       final ActorRef mgr = Udp.get(getContext().system()).getManager();
       mgr.tell(
-          UdpMessage.bind(getSelf(), new InetSocketAddress("localhost", 0)),
-          getSelf());
+          UdpMessage.bind(self(), new InetSocketAddress("localhost", 0)),
+          self());
     }
 
     @Override
@@ -81,9 +81,9 @@ public class UdpDocTest {
       if (msg instanceof Udp.Bound) {
         final Udp.Bound b = (Udp.Bound) msg;
         //#listener
-        nextActor.tell(b.localAddress(), getSender());
+        nextActor.tell(b.localAddress(), sender());
         //#listener
-        getContext().become(ready(getSender()));
+        getContext().become(ready(sender()));
       } else unhandled(msg);
     }
     
@@ -94,19 +94,19 @@ public class UdpDocTest {
           if (msg instanceof Udp.Received) {
             final Udp.Received r = (Udp.Received) msg;
             // echo server example: send back the data
-            socket.tell(UdpMessage.send(r.data(), r.sender()), getSelf());
+            socket.tell(UdpMessage.send(r.data(), r.sender()), self());
             // or do some processing and forward it on
             final Object processed = // parse data etc., e.g. using PipelineStage
                 //#listener
                 r.data().utf8String();
             //#listener
-            nextActor.tell(processed, getSelf());
+            nextActor.tell(processed, self());
             
           } else if (msg.equals(UdpMessage.unbind())) {
-            socket.tell(msg, getSelf());
+            socket.tell(msg, self());
           
           } else if (msg instanceof Udp.Unbound) {
-            getContext().stop(getSelf());
+            getContext().stop(self());
             
           } else unhandled(msg);
         }
@@ -124,17 +124,17 @@ public class UdpDocTest {
       
       // create a restricted a.k.a. “connected” socket
       final ActorRef mgr = UdpConnected.get(getContext().system()).getManager();
-      mgr.tell(UdpConnectedMessage.connect(getSelf(), remote), getSelf());
+      mgr.tell(UdpConnectedMessage.connect(self(), remote), self());
     }
     
     @Override
     public void onReceive(Object msg) {
       if (msg instanceof UdpConnected.Connected) {
-        getContext().become(ready(getSender()));
+        getContext().become(ready(sender()));
         //#connected
-        getSender()
+        sender()
             .tell(UdpConnectedMessage.send(ByteString.fromString("hello")),
-                getSelf());
+                self());
         //#connected
       } else unhandled(msg);
     }
@@ -150,7 +150,7 @@ public class UdpDocTest {
             if (r.data().utf8String().equals("hello")) {
               connection.tell(
                   UdpConnectedMessage.send(ByteString.fromString("world")),
-                  getSelf());
+                  self());
             }
             // #connected
             
@@ -158,13 +158,13 @@ public class UdpDocTest {
             final String str = (String) msg;
             connection
                 .tell(UdpConnectedMessage.send(ByteString.fromString(str)),
-                    getSelf());
+                    self());
           
           } else if (msg.equals(UdpConnectedMessage.disconnect())) {
-            connection.tell(msg, getSelf());
+            connection.tell(msg, self());
           
           } else if (msg instanceof UdpConnected.Disconnected) {
-            getContext().stop(getSelf());
+            getContext().stop(self());
           
           } else unhandled(msg);
         }

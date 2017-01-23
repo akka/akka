@@ -105,7 +105,7 @@ public class RouterDocTest extends AbstractJavaTest {
 
     public void onReceive(Object msg) {
       if (msg instanceof Work) {
-        router.route(msg, getSender());
+        router.route(msg, sender());
       } else if (msg instanceof Terminated) {
         router = router.removeRoutee(((Terminated) msg).actor());
         ActorRef r = getContext().actorOf(Props.create(Worker.class));
@@ -123,18 +123,18 @@ public class RouterDocTest extends AbstractJavaTest {
   
   static public class Echo extends UntypedActor {
     public void onReceive(Object msg) {
-      getSender().tell(msg, getSelf());
+      sender().tell(msg, self());
     }
   }
   
   static public class Replier extends UntypedActor {
     public void onReceive(Object msg) {
       //#reply-with-self
-      getSender().tell("reply", getSelf());
+      sender().tell("reply", self());
       //#reply-with-self
       
       //#reply-with-parent
-      getSender().tell("reply", getContext().parent());
+      sender().tell("reply", getContext().parent());
       //#reply-with-parent
     }
   }

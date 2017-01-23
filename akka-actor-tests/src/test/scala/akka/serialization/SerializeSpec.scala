@@ -88,8 +88,9 @@ object SerializationTests {
     }
   }
 
-  class FooUntypedActor extends UntypedActor {
-    def onReceive(message: Any) {}
+  class FooAbstractActor extends AbstractActor {
+    override def createReceive(): AbstractActor.Receive =
+      receiveBuilder().build()
   }
 
   class NonSerializableActor(system: ActorSystem) extends Actor {
@@ -286,7 +287,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     val a = system.actorOf(Props[FooActor])
     system stop a
 
-    val b = system.actorOf(Props(new FooActor))
+    val b = system.actorOf(Props(new FooAbstractActor))
     system stop b
 
     intercept[IllegalArgumentException] {

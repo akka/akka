@@ -96,7 +96,7 @@ public class CustomRouterDocTest extends AbstractJavaTest {
   
   static public class Storage extends UntypedActor {
     public void onReceive(Object msg) {
-      getSender().tell(msg, getSelf());
+      sender().tell(msg, self());
     }
   }
   

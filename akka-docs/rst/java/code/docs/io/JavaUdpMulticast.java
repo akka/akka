@@ -73,7 +73,7 @@ public class JavaUdpMulticast {
             final ActorRef mgr = Udp.get(getContext().system()).getManager();
             // listen for datagrams on this address
             InetSocketAddress endpoint = new InetSocketAddress(port);
-            mgr.tell(UdpMessage.bind(getSelf(), endpoint, options), getSelf());
+            mgr.tell(UdpMessage.bind(self(), endpoint, options), self());
             //#bind
         }
 
@@ -82,12 +82,12 @@ public class JavaUdpMulticast {
             if (msg instanceof Udp.Bound) {
                 final Udp.Bound b = (Udp.Bound) msg;
                 log.info("Bound to {}", b.localAddress());
-                sink.tell(b, getSelf());
+                sink.tell(b, self());
             } else if (msg instanceof Udp.Received) {
                 final Udp.Received r = (Udp.Received) msg;
                 final String txt = r.data().decodeString("utf-8");
                 log.info("Received '{}' from {}", txt, r.sender());
-                sink.tell(txt, getSelf());
+                sink.tell(txt, self());
             } else unhandled(msg);
         }
     }
@@ -110,7 +110,7 @@ public class JavaUdpMulticast {
             options.add(new Inet6ProtocolFamily());
 
             final ActorRef mgr = Udp.get(getContext().system()).getManager();
-            mgr.tell(UdpMessage.simpleSender(options), getSelf());
+            mgr.tell(UdpMessage.simpleSender(options), self());
         }
 
         @Override
@@ -118,7 +118,7 @@ public class JavaUdpMulticast {
             if (msg instanceof Udp.SimpleSenderReady) {
                 InetSocketAddress remote = new InetSocketAddress(group + "%" + iface, port);
                 log.info("Sending message to " + remote);
-                getSender().tell(UdpMessage.send(ByteString.fromString(message), remote), getSelf());
+                sender().tell(UdpMessage.send(ByteString.fromString(message), remote), self());
             } else unhandled(msg);
         }
     }

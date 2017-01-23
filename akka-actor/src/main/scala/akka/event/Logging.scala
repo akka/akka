@@ -642,6 +642,7 @@ object Logging {
    * Obtain LoggingAdapter with MDC support for the given actor.
    * Don't use it outside its specific Actor as it isn't thread safe
    */
+  @deprecated("Use AbstractActor instead of UntypedActor.", since = "2.5.0")
   def getLogger(logSource: UntypedActor): DiagnosticLoggingAdapter = {
     val (str, clazz) = LogSource.fromAnyRef(logSource)
     val system = logSource.getContext().system.asInstanceOf[ExtendedActorSystem]

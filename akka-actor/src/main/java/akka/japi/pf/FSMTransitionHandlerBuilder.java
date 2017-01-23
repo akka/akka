@@ -13,11 +13,10 @@ import scala.Tuple2;
  *
  * @param <S> the state type
  *
- * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public class FSMTransitionHandlerBuilder<S> {
 
-  private UnitPFBuilder<Tuple2<S, S>> builder =
+  private final UnitPFBuilder<Tuple2<S, S>> builder =
     new UnitPFBuilder<Tuple2<S, S>>();
 
   /**

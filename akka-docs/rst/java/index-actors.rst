@@ -4,8 +4,7 @@ Actors
 .. toctree::
    :maxdepth: 2
 
-   untyped-actors
-   typed-actors
+   actors
    fault-tolerance
    dispatchers
    mailboxes
@@ -16,3 +15,4 @@ Actors
    persistence-query
    persistence-query-leveldb
    testing
+   typed-actors

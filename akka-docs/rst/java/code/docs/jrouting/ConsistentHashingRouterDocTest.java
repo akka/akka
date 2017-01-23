@@ -51,7 +51,7 @@ public class ConsistentHashingRouterDocTest extends AbstractJavaTest {
       } else if (msg instanceof Get) {
         Get get = (Get) msg;
         Object value = cache.get(get.key);
-        getSender().tell(value == null ? NOT_FOUND : value, 
+        sender().tell(value == null ? NOT_FOUND : value, 
           getContext().self());
       } else if (msg instanceof Evict) {
         Evict evict = (Evict) msg;

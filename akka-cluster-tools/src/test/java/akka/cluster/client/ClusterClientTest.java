@@ -58,13 +58,13 @@ public class ClusterClientTest extends JUnitSuite {
     system.actorOf(Props.create(ReceptionistListener.class, ClusterClientReceptionist.get(system).underlying()));
   }
 
-  static public class Service extends UntypedActor {
+  static public class Service extends UntypedAbstractActor {
     public void onReceive(Object msg) {
     }
   }
 
   //#clientEventsListener
-  static public class ClientListener extends UntypedActor {
+  static public class ClientListener extends AbstractActor {
     private final ActorRef targetClient;
     private final Set<ActorPath> contactPoints = new HashSet<>();
 
@@ -78,26 +78,28 @@ public class ClusterClientTest extends JUnitSuite {
     }
 
     @Override
-    public void onReceive(Object message) {
-      if (message instanceof ContactPoints) {
-        ContactPoints msg = (ContactPoints)message;
-        contactPoints.addAll(msg.getContactPoints());
-        // Now do something with an up-to-date "contactPoints"
-      } else if (message instanceof ContactPointAdded) {
-        ContactPointAdded msg = (ContactPointAdded) message;
-        contactPoints.add(msg.contactPoint());
-        // Now do something with an up-to-date "contactPoints"
-      } else if (message instanceof ContactPointRemoved) {
-        ContactPointRemoved msg = (ContactPointRemoved)message;
-        contactPoints.remove(msg.contactPoint());
-        // Now do something with an up-to-date "contactPoints"
-      }
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(ContactPoints.class, msg -> {
+          contactPoints.addAll(msg.getContactPoints());
+          // Now do something with an up-to-date "contactPoints"
+        })
+        .match(ContactPointAdded.class, msg -> {
+          contactPoints.add(msg.contactPoint());
+          // Now do something with an up-to-date "contactPoints"
+        })
+        .match(ContactPointRemoved.class, msg -> {
+          contactPoints.remove(msg.contactPoint());
+          // Now do something with an up-to-date "contactPoints"
+        })
+        .build();
     }
+
   }
   //#clientEventsListener
 
   //#receptionistEventsListener
-  static public class ReceptionistListener extends UntypedActor {
+  static public class ReceptionistListener extends AbstractActor {
     private final ActorRef targetReceptionist;
     private final Set<ActorRef> clusterClients = new HashSet<>();
 
@@ -111,21 +113,23 @@ public class ClusterClientTest extends JUnitSuite {
     }
 
     @Override
-    public void onReceive(Object message) {
-      if (message instanceof ClusterClients) {
-        ClusterClients msg = (ClusterClients) message;
-        clusterClients.addAll(msg.getClusterClients());
-        // Now do something with an up-to-date "clusterClients"
-      } else if (message instanceof ClusterClientUp) {
-        ClusterClientUp msg = (ClusterClientUp) message;
-        clusterClients.add(msg.clusterClient());
-        // Now do something with an up-to-date "clusterClients"
-      } else if (message instanceof ClusterClientUnreachable) {
-        ClusterClientUnreachable msg = (ClusterClientUnreachable) message;
-        clusterClients.remove(msg.clusterClient());
-        // Now do something with an up-to-date "clusterClients"
-      }
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(ClusterClients.class, msg -> {
+          clusterClients.addAll(msg.getClusterClients());
+          // Now do something with an up-to-date "clusterClients"
+        })
+        .match(ClusterClientUp.class, msg -> {
+          clusterClients.add(msg.clusterClient());
+          // Now do something with an up-to-date "clusterClients"
+        })
+        .match(ClusterClientUnreachable.class, msg -> {
+          clusterClients.remove(msg.clusterClient());
+          // Now do something with an up-to-date "clusterClients"
+        })
+        .build();
     }
+
   }
   //#receptionistEventsListener
 

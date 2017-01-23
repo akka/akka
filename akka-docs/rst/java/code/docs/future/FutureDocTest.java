@@ -65,7 +65,7 @@ import org.junit.Test;
 import akka.testkit.AkkaSpec;
 import akka.actor.Status.Failure;
 import akka.actor.ActorSystem;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.pattern.Patterns;
@@ -656,20 +656,21 @@ public class FutureDocTest extends AbstractJavaTest {
 
 
 
-  public static class MyActor extends UntypedActor {
-    public void onReceive(Object message) {
-      if (message instanceof String) {
-        getSender().tell(((String) message).toUpperCase(), getSelf());
-      } else if (message instanceof Integer) {
-        int i = ((Integer) message).intValue();
-        if (i < 0) {
-          getSender().tell(new Failure(new ArithmeticException("Negative values not supported")), getSelf());
-        } else {
-          getSender().tell(i, getSelf());
-        }
-      } else {
-        unhandled(message);
-      }
+  public static class MyActor extends AbstractActor {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(String.class, msg -> {
+          sender().tell(msg.toUpperCase(), self());
+        })
+        .match(Integer.class, i -> {
+          if (i < 0) {
+            sender().tell(new Failure(new ArithmeticException("Negative values not supported")), self());
+          } else {
+            sender().tell(i, self());
+          }
+        })
+        .build();
     }
   }
 }

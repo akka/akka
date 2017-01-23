@@ -25,7 +25,7 @@ public class RemoteDeploymentDocTest {
 
   public static class SampleActor extends UntypedActor {
     public void onReceive(Object message) {
-      getSender().tell(getSelf(), getSelf());
+      sender().tell(self(), self());
     }
   }
 

@@ -3,7 +3,7 @@ package docs.osgi
 case object SomeMessage
 
 class SomeActor extends akka.actor.Actor {
-  def receive = { case SomeMessage => }
+  def receive = { case SomeMessage ⇒ }
 }
 
 //#Activator

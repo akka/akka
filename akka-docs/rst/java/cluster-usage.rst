@@ -188,7 +188,7 @@ It can also be performed programmatically with:
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving.
 
-The :ref:`coordinated-shutdown-lambda` will automatically run when the cluster node sees itself as 
+The :ref:`coordinated-shutdown-java` will automatically run when the cluster node sees itself as 
 ``Exiting``, i.e. leaving from another node will trigger the shutdown process on the leaving node. 
 Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and 
 Cluster Sharding are added automatically when Akka Cluster is used, i.e. running the shutdown 
@@ -362,7 +362,7 @@ How To Cleanup when Member is Removed
 You can do some clean up in a ``registerOnMemberRemoved`` callback, which will
 be invoked when the current member status is changed to 'Removed' or the cluster have been shutdown.
 
-An alternative is to register tasks to the :ref:`coordinated-shutdown-lambda`.
+An alternative is to register tasks to the :ref:`coordinated-shutdown-java`.
 
 .. note::
    Register a OnMemberRemoved callback on a cluster that have been shutdown, the callback will be invoked immediately on
@@ -532,7 +532,7 @@ That is not done by the router. The configuration for a group looks like this:
 
 The actor paths without address information that are defined in ``routees.paths`` are used for selecting the
 actors to which the messages will be forwarded to by the router.
-Messages will be forwarded to the routees using :ref:`ActorSelection <actorSelection-java>`, so the same delivery semantics should be expected.
+Messages will be forwarded to the routees using :ref:`ActorSelection <actorselection-java>`, so the same delivery semantics should be expected.
 It is possible to limit the lookup of routees to member nodes tagged with a certain role by specifying ``use-role``.
 
 ``max-total-nr-of-instances`` defines total number of routees in the cluster. By default ``max-total-nr-of-instances``

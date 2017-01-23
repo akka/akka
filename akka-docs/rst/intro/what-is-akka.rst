@@ -38,7 +38,7 @@ Actors give you:
 - Asynchronous, non-blocking and highly performant message-driven programming model.
 - Very lightweight event-driven processes (several million actors per GB of heap memory).
 
-See the chapter for :ref:`Scala <actors-scala>` or :ref:`Java <untyped-actors-java>`.
+See the chapter for :ref:`Scala <actors-scala>` or :ref:`Java <actors-java>`.
 
 Fault Tolerance
 ---------------

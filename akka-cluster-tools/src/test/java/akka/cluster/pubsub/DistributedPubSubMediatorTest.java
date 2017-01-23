@@ -14,7 +14,7 @@ import org.junit.Test;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import org.scalatest.junit.JUnitSuite;
@@ -65,7 +65,7 @@ public class DistributedPubSubMediatorTest extends JUnitSuite {
   }
 
   static//#subscriber
-  public class Subscriber extends UntypedActor {
+  public class Subscriber extends AbstractActor {
     LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
     public Subscriber() {
@@ -76,40 +76,42 @@ public class DistributedPubSubMediatorTest extends JUnitSuite {
         getSelf());
     }
 
-    public void onReceive(Object msg) {
-      if (msg instanceof String)
-        log.info("Got: {}", msg);
-      else if (msg instanceof DistributedPubSubMediator.SubscribeAck)
-        log.info("subscribing");
-      else
-        unhandled(msg);
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(String.class, msg ->
+          log.info("Got: {}", msg))
+        .match(DistributedPubSubMediator.SubscribeAck.class, msg ->
+          log.info("subscribing"))
+        .build();
     }
   }
 
   //#subscriber
 
   static//#publisher
-  public class Publisher extends UntypedActor {
+  public class Publisher extends AbstractActor {
 
     // activate the extension
     ActorRef mediator =
       DistributedPubSub.get(getContext().system()).mediator();
 
-    public void onReceive(Object msg) {
-      if (msg instanceof String) {
-        String in = (String) msg;
-        String out = in.toUpperCase();
-        mediator.tell(new DistributedPubSubMediator.Publish("content", out),
-          getSelf());
-      } else {
-        unhandled(msg);
+    @Override
+      public Receive createReceive() {
+        return receiveBuilder()
+          .match(String.class, in -> {
+            String out = in.toUpperCase();
+            mediator.tell(new DistributedPubSubMediator.Publish("content", out),
+              getSelf());
+          })
+          .build();
       }
-    }
+
   }
   //#publisher
 
   static//#send-destination
-  public class Destination extends UntypedActor {
+  public class Destination extends AbstractActor {
     LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
     public Destination() {
@@ -119,36 +121,39 @@ public class DistributedPubSubMediatorTest extends JUnitSuite {
       mediator.tell(new DistributedPubSubMediator.Put(getSelf()), getSelf());
     }
 
-    public void onReceive(Object msg) {
-      if (msg instanceof String)
-        log.info("Got: {}", msg);
-      else if (msg instanceof DistributedPubSubMediator.SubscribeAck)
-        log.info("subscribing");
-      else
-        unhandled(msg);
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(String.class, msg ->
+          log.info("Got: {}", msg))
+        .match(DistributedPubSubMediator.SubscribeAck.class, msg ->
+          log.info("subscribing"))
+        .build();
     }
+
   }
 
   //#send-destination
 
   static//#sender
-  public class Sender extends UntypedActor {
+  public class Sender extends AbstractActor {
 
     // activate the extension
     ActorRef mediator =
       DistributedPubSub.get(getContext().system()).mediator();
 
-    public void onReceive(Object msg) {
-      if (msg instanceof String) {
-        String in = (String) msg;
-        String out = in.toUpperCase();
-        boolean localAffinity = true;
-        mediator.tell(new DistributedPubSubMediator.Send("/user/destination", out,
-            localAffinity), getSelf());
-      } else {
-        unhandled(msg);
-      }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(String.class, in -> {
+          String out = in.toUpperCase();
+          boolean localAffinity = true;
+          mediator.tell(new DistributedPubSubMediator.Send("/user/destination", out,
+              localAffinity), getSelf());
+        })
+        .build();
     }
+
   }
   //#sender
 }

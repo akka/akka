@@ -172,6 +172,20 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterCoreDaemon.removed"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.convergence"),  
 
+      //#21717 Improvements to AbstractActor API
+      FilterAnyProblemStartingWith("akka.japi.pf.ReceiveBuilder"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.AbstractActor.receive"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor.createReceive"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.actor.AbstractActorContext"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.AbstractActor.getContext"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.AbstractActor.emptyBehavior"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Children.findChild"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.actor.ActorCell"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.routing.RoutedActorCell"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.routing.ResizablePoolCell"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AbstractPersistentActor.createReceiveRecover"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AbstractPersistentActor.createReceive"),        
+        
       // #21423 removal of deprecated stages (in 2.5.x)
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.transform"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SubSource.transform"),
