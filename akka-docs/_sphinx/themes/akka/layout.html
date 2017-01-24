@@ -26,7 +26,11 @@
 {% block extrahead %}
   {%- if include_analytics %}
     <!-- Hint to search engines that the "canonical" page is under "current", which will boost it appearing in search results -->
-    <link rel="canonical" href="http://akka.io/docs/akka/current/{{ pagename }}.html" />
+    {% if "scala/http" in pagename or "java/http" in pagename %}
+      <link rel="canonical" href="http://doc.akka.io/docs/akka-http/current/{{ pagename }}.html" />
+    {% else %}
+      <link rel="canonical" href="http://doc.akka.io/docs/akka/current/{{ pagename }}.html" />
+    {% endif %}
 
     <!--Google Analytics-->
     <script type="text/javascript">
