@@ -41,11 +41,6 @@ class DeadlineFailureDetector(
       acceptableHeartbeatPause = config.getMillisDuration("acceptable-heartbeat-pause"),
       heartbeatInterval = config.getMillisDuration("heartbeat-interval"))
 
-  // for backwards compatibility with 2.3.x
-  @deprecated("Use constructor with acceptableHeartbeatPause and heartbeatInterval", "2.4")
-  def this(acceptableHeartbeatPause: FiniteDuration)(implicit clock: Clock) =
-    this(acceptableHeartbeatPause, heartbeatInterval = 1.millis)(clock)
-
   require(acceptableHeartbeatPause >= Duration.Zero, "failure-detector.acceptable-heartbeat-pause must be >= 0 s")
   require(heartbeatInterval > Duration.Zero, "failure-detector.heartbeat-interval must be > 0 s")
 

@@ -40,17 +40,6 @@ object ProtobufSerializer {
  */
 class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
-  @deprecated("Use constructor with ExtendedActorSystem", "2.4")
-  def this() = this(null)
-
-  // TODO remove this when deprecated this() is removed
-  override val identifier: Int =
-    if (system eq null) 2
-    else identifierFromConfig
-
-  @deprecated("Will be removed without replacement", "2.4")
-  val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
-
   private val parsingMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
   private val toByteArrayMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
 

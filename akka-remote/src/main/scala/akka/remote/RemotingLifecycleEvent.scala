@@ -84,7 +84,7 @@ final case class RemotingErrorEvent(cause: Throwable) extends RemotingLifecycleE
 // For binary compatibility
 object QuarantinedEvent extends AbstractFunction2[Address, Int, QuarantinedEvent] {
 
-  @deprecated("Use long uid apply")
+  @deprecated("Use long uid apply", "2.4.x")
   def apply(address: Address, uid: Int) = new QuarantinedEvent(address, uid)
 }
 
@@ -99,13 +99,13 @@ final case class QuarantinedEvent(address: Address, longUid: Long) extends Remot
 
   // For binary compatibility
 
-  @deprecated("Use long uid constructor")
+  @deprecated("Use long uid constructor", "2.4.x")
   def this(address: Address, uid: Int) = this(address, uid.toLong)
 
-  @deprecated("Use long uid")
+  @deprecated("Use long uid", "2.4.x")
   def uid: Int = longUid.toInt
 
-  @deprecated("Use long uid copy method")
+  @deprecated("Use long uid copy method", "2.4.x")
   def copy(address: Address = address, uid: Int = uid) = new QuarantinedEvent(address, uid)
 }
 

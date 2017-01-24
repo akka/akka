@@ -413,7 +413,9 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
 
       result.failed.futureValue shouldBe a[StreamTcpException]
 
-      binding.map(_.unbind()).recover { case NonFatal(_) ⇒ () } foreach (_ ⇒ system2.shutdown())
+      binding.map(_.unbind()).recover { case NonFatal(_) ⇒ () }.foreach { _ ⇒
+        shutdown(system2)
+      }
     }
 
   }

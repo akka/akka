@@ -197,30 +197,26 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       import system.dispatcher
       system2.scheduler.scheduleOnce(200.millis.dilated) { system2.terminate() }
 
-      system2.awaitTermination(5 seconds)
       Await.ready(system2.whenTerminated, 5 seconds)
       callbackWasRun should ===(true)
     }
 
     "return isTerminated status correctly" in {
       val system = ActorSystem().asInstanceOf[ActorSystemImpl]
-      system.isTerminated should ===(false)
       val wt = system.whenTerminated
       wt.isCompleted should ===(false)
       val f = system.terminate()
       val terminated = Await.result(wt, 10 seconds)
+      system.whenTerminated.isCompleted should ===(true)
       terminated.actor should ===(system.provider.rootGuardian)
       terminated.addressTerminated should ===(true)
       terminated.existenceConfirmed should ===(true)
       terminated should be theSameInstanceAs Await.result(f, 10 seconds)
-      system.awaitTermination(10 seconds)
-      system.isTerminated should ===(true)
     }
 
     "throw RejectedExecutionException when shutdown" in {
       val system2 = ActorSystem("AwaitTermination", AkkaSpec.testConf)
       Await.ready(system2.terminate(), 10 seconds)
-      system2.awaitTermination(10 seconds)
 
       intercept[RejectedExecutionException] {
         system2.registerOnTermination { println("IF YOU SEE THIS THEN THERE'S A BUG HERE") }

@@ -102,17 +102,11 @@ private[akka] class RoutedActorCell(
     _router = routerConfig.createRouter(system)
     routerConfig match {
       case pool: Pool ⇒
-        // must not use pool.nrOfInstances(system) for old (not re-compiled) custom routers
-        // for binary backwards compatibility reasons
-        val deprecatedNrOfInstances = pool.nrOfInstances
-        val nrOfRoutees = if (deprecatedNrOfInstances < 0) pool.nrOfInstances(system) else deprecatedNrOfInstances
+        val nrOfRoutees = pool.nrOfInstances(system)
         if (nrOfRoutees > 0)
           addRoutees(Vector.fill(nrOfRoutees)(pool.newRoutee(routeeProps, this)))
       case group: Group ⇒
-        // must not use group.paths(system) for old (not re-compiled) custom routers
-        // for binary backwards compatibility reasons
-        val deprecatedPaths = group.paths
-        val paths = if (deprecatedPaths == null) group.paths(system) else deprecatedPaths
+        val paths = group.paths(system)
         if (paths.nonEmpty)
           addRoutees(paths.map(p ⇒ group.routeeFor(p, this))(collection.breakOut))
       case _ ⇒
