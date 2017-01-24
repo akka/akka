@@ -208,7 +208,7 @@ The settings for Distributed Data is configured in the the section
 ``akka.cluster.sharding.distributed-data``. It's not possible to have different 
 ``distributed-data`` settings for different sharding entity types.
 
-You must explicitly add the ``akka-distributed-data-experimental`` dependency to your build if
+You must explicitly add the ``akka-distributed-data`` dependency to your build if
 you use this mode. It is possible to remove ``akka-persistence`` dependency from a project if it
 is not used in user code.
 

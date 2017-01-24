@@ -24,13 +24,6 @@ It is eventually consistent and geared toward providing high read and write avai
 (partition tolerance), with low latency. Note that in an eventually consistent system a read may return an 
 out-of-date value.
 
-.. warning::
-
-  This module is marked as **“experimental”** as of its introduction in Akka 2.4.0. We will continue to
-  improve this API based on our users’ feedback, which implies that while we try to keep incompatible
-  changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
-  contents of the ``akka.persistence`` package.
-  
 Using the Replicator
 ====================
 
@@ -618,13 +611,13 @@ To use Distributed Data you must add the following dependency in your project.
 
 sbt::
 
-    "com.typesafe.akka" %% "akka-distributed-data-experimental" % "@version@" @crossString@
+    "com.typesafe.akka" %% "akka-distributed-data" % "@version@" @crossString@
 
 maven::
 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-distributed-data-experimental_@binVersion@</artifactId>
+    <artifactId>akka-distributed-data_@binVersion@</artifactId>
     <version>@version@</version>
   </dependency>
 
