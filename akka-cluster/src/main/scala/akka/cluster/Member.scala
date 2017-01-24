@@ -183,10 +183,6 @@ sealed abstract class MemberStatus
 
 object MemberStatus {
   @SerialVersionUID(1L) case object Joining extends MemberStatus
-  /**
-   * WeaklyUp is an EXPERIMENTAL feature and is subject to change until
-   * it has received more real world testing.
-   */
   @SerialVersionUID(1L) case object WeaklyUp extends MemberStatus
   @SerialVersionUID(1L) case object Up extends MemberStatus
   @SerialVersionUID(1L) case object Leaving extends MemberStatus
@@ -201,8 +197,6 @@ object MemberStatus {
 
   /**
    * Java API: retrieve the “weaklyUp” status singleton.
-   * WeaklyUp is an EXPERIMENTAL feature and is subject to change until
-   * it has received more real world testing.
    */
   def weaklyUp: MemberStatus = WeaklyUp
 

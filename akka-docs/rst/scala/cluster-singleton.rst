@@ -53,8 +53,7 @@ It's worth noting that messages can always be lost because of the distributed na
 As always, additional logic should be implemented in the singleton (acknowledgement) and in the
 client (retry) actors to ensure at-least-once message delivery.
 
-The singleton instance will not run on members with status :ref:`WeaklyUp <weakly_up_scala>` if that feature
-is enabled.
+The singleton instance will not run on members with status :ref:`WeaklyUp <weakly_up_scala>`.
 
 Potential problems to be aware of
 ---------------------------------

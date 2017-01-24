@@ -40,7 +40,7 @@ with a specific role. It communicates with other ``Replicator`` instances with t
 (without address) that are running on other nodes . For convenience it can be used with the
 ``akka.cluster.ddata.DistributedData`` extension.
 
-Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, if that feature is enabled,
+Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, 
 will participate in Distributed Data. This means that the data will be replicated to the
 :ref:`WeaklyUp <weakly_up_java>` nodes with the background gossip protocol. Note that it
 will not participate in any actions where the consistency mode is to read/write from all

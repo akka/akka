@@ -19,7 +19,10 @@ final case class ConvergenceMultiNodeConfig(failureDetectorPuppet: Boolean) exte
   val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.failure-detector.threshold = 4")).
+    withFallback(ConfigFactory.parseString("""
+      akka.cluster.failure-detector.threshold = 4
+      akka.cluster.allow-weakly-up-members = off
+      """)).
     withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 }
 
