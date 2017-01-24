@@ -716,13 +716,6 @@ Persistent FSM
 Its internal state is persisted as a sequence of changes, later referred to as domain events.
 Relationship between incoming messages, FSM's states and transitions, persistence of domain events is defined by a DSL.
 
-.. warning::
-
-  ``AbstractPersistentFSM`` is marked as **“experimental”** as of its introduction in Akka 2.4.0. We will continue to
-  improve this API based on our users’ feedback, which implies that while we try to keep incompatible
-  changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
-  contents of the `classes related to ``AbstractPersistentFSM``.
-
 A Simple Example
 ----------------
 To demonstrate the features of the ``AbstractPersistentFSM``, consider an actor which represents a Web store customer.
