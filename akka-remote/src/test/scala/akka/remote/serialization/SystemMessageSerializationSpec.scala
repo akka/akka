@@ -10,9 +10,6 @@ import com.typesafe.config.ConfigFactory
 object SystemMessageSerializationSpec {
   val serializationTestOverrides =
     """
-    akka.actor.enable-additional-serialization-bindings=on
-    # or they can be enabled with
-    # akka.remote.artery.enabled=on
     """
 
   val testConfig = ConfigFactory.parseString(serializationTestOverrides).withFallback(AkkaSpec.testConf)
@@ -43,8 +40,7 @@ class SystemMessageSerializationSpec extends AkkaSpec(PrimitivesSerializationSpe
       "Unwatch(ref, ref)" → Unwatch(testRef, testRef2),
       "Failed(ref, ex, uid)" → Failed(testRef, new TestException("test4"), 42),
       "DeathWatchNotification(ref, confimed, addressTerminated)" →
-        DeathWatchNotification(testRef, existenceConfirmed = true, addressTerminated = true)
-    ).foreach {
+        DeathWatchNotification(testRef, existenceConfirmed = true, addressTerminated = true)).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for [$scenario]" in {
             val serializer = SerializationExtension(system)

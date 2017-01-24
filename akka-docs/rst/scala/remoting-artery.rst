@@ -444,15 +444,16 @@ Note that the array based methods can be implemented by delegation like this:
 Disabling the Java Serializer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-With Artery it is possible to completely disable Java Serialization for the entire Actor system.
+It is possible to completely disable Java Serialization for the entire Actor system.
 
 Java serialization is known to be slow and prone to attacks of various kinds - it never was designed for high 
 throughput messaging after all. However it is very convenient to use, thus it remained the default serialization 
 mechanism that Akka used to serialize user messages as well as some of its internal messages in previous versions.
-Since the release of Artery, Akka internals do not rely on Java serialization anymore (exceptions to that being ``java.lang.Throwable`` and "remote deployment").
+
+Akka internals do not rely on Java serialization (exceptions to that being ``java.lang.Throwable`` and "remote deployment").
 
 .. note:: 
-  When using Artery, Akka does not use Java Serialization for any of it's internal messages.
+  Akka does not use Java Serialization for any of it's internal messages.
   It is highly encouraged to disable java serialization, so please plan to do so at the earliest possibility you have in your project.
 
   One may think that network bandwidth and latency limit the performance of remote messaging, but serialization is a more typical bottleneck.
