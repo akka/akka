@@ -9,8 +9,6 @@ import java.io.InputStreamReader
 import java.util.Properties
 
 import akka.TestExtras.JUnitFileReporting
-import com.typesafe.sbt.S3Plugin.S3
-import com.typesafe.sbt.S3Plugin.s3Settings
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
@@ -38,17 +36,10 @@ object AkkaBuild extends Build {
   )
 
   lazy val rootSettings = parentSettings ++ Release.settings ++
-    SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++
+    SphinxDoc.akkaSettings ++
     UnidocRoot.akkaSettings ++
     Protobuf.settings ++ Seq(
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      S3.host in S3.upload := "downloads.typesafe.com.s3.amazonaws.com",
-      S3.progress in S3.upload := true,
-      mappings in S3.upload <<= (Release.releaseDirectory, version) map { (d, v) =>
-        val downloads = d / "downloads"
-        val archivesPathFinder = downloads * s"*$v.zip"
-        archivesPathFinder.get.map(file => file -> ("akka/" + file.getName))
-      }
+      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean
     )
 
   lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
@@ -290,7 +281,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile;test->provided")
   ).configs(MultiJvm)
 
-  lazy val samplesSettings = parentSettings ++ ActivatorDist.settings
+  lazy val samplesSettings = parentSettings
 
   lazy val samples = Project(
       id = "akka-samples",
@@ -357,8 +348,7 @@ object AkkaBuild extends Build {
   val dontPublishSettings = Seq(
     publishSigned := (),
     publish := (),
-    publishArtifact in Compile := false,
-    Dist.includeInDist := false
+    publishArtifact in Compile := false
   )
 
   val dontPublishDocsSettings = Seq(
@@ -474,9 +464,7 @@ object AkkaBuild extends Build {
 
     // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
     // -a Show stack traces and exception class name for AssertionErrors.
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
-
-    Dist.includeInDist := true
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
   ) ++
     mavenLocalResolverSettings ++
     JUnitFileReporting.settings ++
