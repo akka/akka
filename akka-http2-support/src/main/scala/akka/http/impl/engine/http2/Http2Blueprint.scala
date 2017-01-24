@@ -8,9 +8,11 @@ import akka.NotUsed
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.impl.util.StreamUtils
+import akka.http.scaladsl.model.{ ErrorInfo, HttpRequest, HttpResponse }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.http.scaladsl.settings.ServerSettings
+import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
@@ -25,14 +27,14 @@ private[http2] final case class Http2SubStream(initialHeaders: ParsedHeadersFram
 
 object Http2Blueprint {
   // format: OFF
-  def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+  def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
-    demux() atop
-    // FrameLogger.bidi atop // enable for debugging
-    hpackCoding() atop
-    // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
-    framing()
-  }
+      demux() atop
+      // FrameLogger.bidi atop // enable for debugging
+      hpackCoding() atop
+      // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
+      framing()
+
   // format: ON
 
   def framing(): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
@@ -69,10 +71,22 @@ object Http2Blueprint {
    * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
    * bindAndHandle the user needs to take of this manually.
    */
-  def httpLayer(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] =
+  def httpLayer(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
+    val parserSettings = settings.parserSettings
+    // This is master header parser, every other usage should do .createShallowCopy()
+    // HttpHeaderParser is not thread safe and should not be called concurrently,
+    // the internal trie, however, has built-in protection and will do copy-on-write
+    val masterHttpHeaderParser = HttpHeaderParser(parserSettings, log) { info ⇒
+      if (parserSettings.illegalHeaderWarnings)
+        logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
+    }
     BidiFlow.fromFlows(
       Flow[HttpResponse].map(ResponseRendering.renderResponse(settings, log)),
-      Flow[Http2SubStream].map(RequestParsing.parseRequest))
+      Flow[Http2SubStream].via(StreamUtils.statefulMap { () ⇒
+        val headerParser = masterHttpHeaderParser.createShallowCopy()
+        RequestParsing.parseRequest(headerParser)
+      }))
+  }
 
   /**
    * Returns a flow that handles `parallelism` requests in parallel, automatically keeping track of the
@@ -88,4 +102,12 @@ object Http2Blueprint {
           case None                 ⇒ response
         }
       }
+
+  private[http2] def logParsingError(info: ErrorInfo, log: LoggingAdapter,
+                                     setting: ParserSettings.ErrorLoggingVerbosity): Unit =
+    setting match {
+      case ParserSettings.ErrorLoggingVerbosity.Off    ⇒ // nothing to do
+      case ParserSettings.ErrorLoggingVerbosity.Simple ⇒ log.warning(info.summary)
+      case ParserSettings.ErrorLoggingVerbosity.Full   ⇒ log.warning(info.formatPretty)
+    }
 }
