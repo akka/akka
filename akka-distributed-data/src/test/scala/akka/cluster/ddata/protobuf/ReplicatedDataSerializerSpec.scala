@@ -24,7 +24,6 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
-    akka.actor.enable-additional-serialization-bindings=on
     """))) with WordSpecLike with Matchers with BeforeAndAfterAll {
 
   val serializer = new ReplicatedDataSerializer(system.asInstanceOf[ExtendedActorSystem])

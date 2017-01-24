@@ -17,10 +17,6 @@ import java.io.NotSerializableException
 object MiscMessageSerializerSpec {
   val serializationTestOverrides =
     """
-    akka.actor.enable-additional-serialization-bindings=on
-    # or they can be enabled with
-    # akka.remote.artery.enabled=on
-
     akka.actor.serialization-bindings {
       "akka.remote.serialization.MiscMessageSerializerSpec$TestException" = akka-misc
     }
