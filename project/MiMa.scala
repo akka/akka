@@ -82,6 +82,9 @@ object MiMa extends AutoPlugin {
     import com.typesafe.tools.mima.core._
 
     val bcIssuesBetween24and25 = Seq(
+
+      // #21875 delta-CRDT
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GCounter.this"),  
       // #21423 Remove deprecated metrics
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterReadView.clusterMetrics"),
       ProblemFilters.exclude[MissingClassProblem]("akka.cluster.InternalClusterAction$MetricsTick$"),
@@ -165,6 +168,12 @@ object MiMa extends AutoPlugin {
       // #21647 pruning
       FilterAnyProblemStartingWith("akka.cluster.ddata.PruningState"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.RemovedNodePruning.modifiedByNodes"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.Replicator"),
+      FilterAnyProblemStartingWith("akka.cluster.ddata.protobuf.msg"),
+
+      // #21647 pruning
+      FilterAnyProblemStartingWith("akka.cluster.ddata.PruningState"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.RemovedNodePruning.usingNodes"),
       FilterAnyProblemStartingWith("akka.cluster.ddata.Replicator"),
       FilterAnyProblemStartingWith("akka.cluster.ddata.protobuf.msg"),
 

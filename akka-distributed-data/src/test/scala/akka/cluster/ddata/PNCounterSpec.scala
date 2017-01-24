@@ -11,8 +11,8 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
 class PNCounterSpec extends WordSpec with Matchers {
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A PNCounter" must {
 
@@ -24,10 +24,18 @@ class PNCounterSpec extends WordSpec with Matchers {
 
       val c4 = c3 increment node2
       val c5 = c4 increment node2
-      val c6 = c5 increment node2
+      val c6 = c5.resetDelta increment node2
 
       c6.increments.state(node1) should be(2)
       c6.increments.state(node2) should be(3)
+
+      c2.delta.value.toLong should be(1)
+      c2.delta.increments.state(node1) should be(1)
+      c3.delta.value should be(2)
+      c3.delta.increments.state(node1) should be(2)
+
+      c6.delta.value should be(3)
+      c6.delta.increments.state(node2) should be(3)
     }
 
     "be able to decrement each node's record by one" in {
@@ -38,10 +46,16 @@ class PNCounterSpec extends WordSpec with Matchers {
 
       val c4 = c3 decrement node2
       val c5 = c4 decrement node2
-      val c6 = c5 decrement node2
+      val c6 = c5.resetDelta decrement node2
 
       c6.decrements.state(node1) should be(2)
       c6.decrements.state(node2) should be(3)
+
+      c3.delta.value should be(-2)
+      c3.delta.decrements.state(node1) should be(2)
+
+      c6.delta.value should be(-3)
+      c6.delta.decrements.state(node2) should be(3)
     }
 
     "be able to increment each node's record by arbitrary delta" in {
