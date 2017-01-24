@@ -21,13 +21,6 @@ These relations are interpreted as meaning:
   *If we are in state S and the event E occurs, we should perform the actions A
   and make a transition to the state S'.*
 
-.. warning::
-
-  The Java with lambda support part of Akka is marked as **“experimental”** as of its introduction in
-  Akka 2.3.0. We will continue to improve this API based on our users’ feedback, which implies that
-  while we try to keep incompatible changes to a minimum, but the binary compatibility guarantee for
-  maintenance releases does not apply to the :class:`akka.actor.AbstractFSM`, related classes and the
-  :class:`akka.japi.pf` package.
 
 A Simple Example
 ================

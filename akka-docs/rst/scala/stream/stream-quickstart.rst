@@ -192,7 +192,7 @@ only make sense in streaming and vice versa):
 Finally in order to :ref:`materialize <stream-materialization-scala>` and run the stream computation we need to attach
 the Flow to a :class:`Sink` that will get the Flow running. The simplest way to do this is to call
 ``runWith(sink)`` on a ``Source``. For convenience a number of common Sinks are predefined and collected as methods on
-the :class:`Sink` `companion object <http://doc.akka.io/api/akka-stream-and-http-experimental/@version@/#akka.stream.scaladsl.Sink$>`_.
+the :class:`Sink` companion object.
 For now let's simply print each author:
 
 .. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocSpec.scala#authors-foreachsink-println
