@@ -57,9 +57,20 @@ object MiMa extends AutoPlugin {
           akka24WithScala212
       }
     }
+    
+    val akka25PromotedArtifacts = Set(
+      "akka-distributed-data"
+    )
 
     // check against all binary compatible artifacts
-    versions.map(organization %% projectName % _).toSet
+    versions.map { v =>
+      val adjustedProjectName =
+        if (akka25PromotedArtifacts(projectName) && v.startsWith("2.4"))
+          projectName + "-experimental"
+        else 
+          projectName
+      organization %% adjustedProjectName % v
+    }.toSet
   }
 
   case class FilterAnyProblem(name: String) extends com.typesafe.tools.mima.core.ProblemFilter {
