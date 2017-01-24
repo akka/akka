@@ -277,10 +277,10 @@ marked as ``down`` and new incarnation can rejoin the cluster without manual int
 
 As mentioned before, if a node is ``unreachable`` then gossip convergence is not
 possible and therefore any ``leader`` actions are also not possible. By enabling
-``akka.cluster.allow-weakly-up-members`` it is possible to let new joining nodes be
-promoted while convergence is not yet reached. These ``Joining`` nodes will be
-promoted as ``WeaklyUp``. Once gossip convergence is reached, the leader will move
-``WeaklyUp`` members to ``Up``.
+``akka.cluster.allow-weakly-up-members`` (enabled by default) it is possible to 
+let new joining nodes be promoted while convergence is not yet reached. These 
+``Joining`` nodes will be promoted as ``WeaklyUp``. Once gossip convergence is 
+reached, the leader will move ``WeaklyUp`` members to ``Up``.
 
 Note that members on the other side of a network partition have no knowledge about 
 the existence of the new members. You should for example not count ``WeaklyUp`` 

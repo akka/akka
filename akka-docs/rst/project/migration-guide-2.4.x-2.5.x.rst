@@ -314,6 +314,16 @@ used in the test::
   akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
   akka.cluster.run-coordinated-shutdown-when-down = off 
 
+WeaklyUp
+--------
+
+:ref:`weakly_up_scala` is now enabled by default, but it can be disabled with configuration option::
+
+    akka.cluster.allow-weakly-up-members = off
+
+You should not run a cluster with this feature enabled on some nodes and disabled on some. Therefore
+you might need to enable/disable it in configuration when performing rolling upgrade from 2.4.x to 2.5.0. 
+
 Cluster Management Command Line Tool
 ------------------------------------
 
