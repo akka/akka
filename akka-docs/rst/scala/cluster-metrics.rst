@@ -55,11 +55,11 @@ Metrics Events
 
 Metrics extension periodically publishes current snapshot of the cluster metrics to the node system event bus.
 
-The publication period is controlled by the ``akka.cluster.metrics.collector.sample-period`` setting.
+The publication interval is controlled by the ``akka.cluster.metrics.collector.sample-interval`` setting.
 
 The payload of the ``akka.cluster.metrics.ClusterMetricsChanged`` event will contain
 latest metrics of the node as well as other cluster member nodes metrics gossip
-which was received during the collector sample period.
+which was received during the collector sample interval.
 
 You can subscribe your metrics listener actors to these events in order to implement custom node lifecycle
 ::
