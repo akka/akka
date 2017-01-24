@@ -196,7 +196,7 @@ only make sense in streaming and vice versa):
 Finally in order to :ref:`materialize <stream-materialization-java>` and run the stream computation we need to attach
 the Flow to a ``Sink<T, M>`` that will get the Flow running. The simplest way to do this is to call
 ``runWith(sink)`` on a ``Source<Out, M>``. For convenience a number of common Sinks are predefined and collected as static methods on
-the `Sink class <http://doc.akka.io/japi/akka-stream-and-http-experimental/@version@/akka/stream/javadsl/Sink.html>`_.
+the ``Sink class``.
 For now let's simply print each author:
 
 .. includecode:: ../code/docs/stream/TwitterStreamQuickstartDocTest.java#authors-foreachsink-println

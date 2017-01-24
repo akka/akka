@@ -120,7 +120,7 @@ tag - for example if the journal stored the events as json it may try to find th
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#events-by-tag
 
-As you can see, we can use all the usual stream combinators available from `Akka Streams`_ on the resulting query stream,
+As you can see, we can use all the usual stream combinators available from :ref:`streams-scala` on the resulting query stream,
 including for example taking the first 10 and cancelling the stream. It is worth pointing out that the built-in ``EventsByTag``
 query has an optionally supported offset parameter (of type ``Long``) which the journals can use to implement resumable-streams.
 For example a journal may be able to use a WHERE clause to begin the read starting from a specific row, or in a datastore
@@ -130,8 +130,8 @@ If your usage does not require a live stream, you can use the ``currentEventsByT
 
 Materialized values of queries
 ------------------------------
-Journals are able to provide additional information related to a query by exposing `materialized values`_,
-which are a feature of `Akka Streams`_ that allows to expose additional values at stream materialization time.
+Journals are able to provide additional information related to a query by exposing :ref:`materialized-values-quick-scala`,
+which are a feature of :ref:`streams-scala` that allows to expose additional values at stream materialization time.
 
 More advanced query journals may use this technique to expose information about the character of the materialized
 stream, for example if it's finite or infinite, strictly ordered or not ordered at all. The materialized value type
@@ -144,8 +144,6 @@ specialised query object, as demonstrated in the sample below:
 
 .. includecode:: code/docs/persistence/query/PersistenceQueryDocSpec.scala#advanced-journal-query-usage
 
-.. _materialized values: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala/stream-quickstart.html#Materialized_values
-.. _Akka Streams: http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala.html
 .. _Community plugins: http://akka.io/community/#plugins-to-akka-persistence-query
 
 Performance and denormalization
