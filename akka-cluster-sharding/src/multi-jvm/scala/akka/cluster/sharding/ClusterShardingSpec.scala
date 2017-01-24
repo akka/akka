@@ -274,10 +274,12 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
       rebalance-interval = ${if (rebalanceEnabled) "2s" else "3600s"}
       """).withFallback(system.settings.config.getConfig("akka.cluster.sharding"))
       val settings = ClusterShardingSettings(cfg).withRememberEntities(rememberEntities)
+      val majorityMinCap = system.settings.config.getInt(
+        "akka.cluster.sharding.distributed-data.majority-min-cap")
       if (settings.stateStoreMode == "persistence")
         ShardCoordinator.props(typeName, settings, allocationStrategy)
       else
-        ShardCoordinator.props(typeName, settings, allocationStrategy, replicator)
+        ShardCoordinator.props(typeName, settings, allocationStrategy, replicator, majorityMinCap)
     }
 
     List("counter", "rebalancingCounter", "RememberCounterEntities", "AnotherRememberCounter",
@@ -317,7 +319,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         extractEntityId = extractEntityId,
         extractShardId = extractShardId,
         handOffStopMessage = PoisonPill,
-        replicator),
+        replicator,
+        majorityMinCap = 3),
       name = typeName + "Region")
   }
 
@@ -445,7 +448,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
             coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
             extractEntityId = extractEntityId,
             extractShardId = extractShardId,
-            system.deadLetters),
+            system.deadLetters,
+            majorityMinCap = 0),
           name = "regionProxy")
 
         proxy ! Get(1)

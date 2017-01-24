@@ -72,17 +72,19 @@ You supply a write consistency level which has the following meaning:
 
 * ``writeLocal`` the value will immediately only be written to the local replica,
   and later disseminated with gossip
-* ``writeTo(n)`` the value will immediately be written to at least ``n`` replicas,
+* ``WriteTo(n)`` the value will immediately be written to at least ``n`` replicas,
   including the local replica
-* ``writeMajority`` the value will immediately be written to a majority of replicas, i.e.
+* ``WriteMajority`` the value will immediately be written to a majority of replicas, i.e.
   at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
   (or cluster role group)
-* ``writeAll`` the value will immediately be written to all nodes in the cluster
+* ``WriteAll`` the value will immediately be written to all nodes in the cluster
   (or all nodes in the cluster role group)
 
 When you specify to write to ``n`` out of ``x`` nodes, the update will first replicate to ``n`` nodes. If there are not
  enough Acks after 1/5th of the timeout, the update will be replicated to ``n`` other nodes. If there are less than n nodes
  left all of the remaining nodes are used. Reachable nodes are prefered over unreachable nodes.
+ 
+Note that ``WriteMajority`` has a ``minCap`` parameter that is useful to specify to achieve better safety for small clusters.
 
 .. includecode:: code/docs/ddata/DistributedDataDocTest.java#update  
 
@@ -117,14 +119,15 @@ To retrieve the current value of a data you send ``Replicator.Get`` message to t
 ``Replicator``. You supply a consistency level which has the following meaning:
 
 * ``readLocal`` the value will only be read from the local replica
-* ``readFrom(n)`` the value will be read and merged from ``n`` replicas,
+* ``ReadFrom(n)`` the value will be read and merged from ``n`` replicas,
   including the local replica
-* ``readMajority`` the value will be read and merged from a majority of replicas, i.e.
+* ``ReadMajority`` the value will be read and merged from a majority of replicas, i.e.
   at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
   (or cluster role group)
-* ``readAll`` the value will be read and merged from all nodes in the cluster
+* ``ReadAll`` the value will be read and merged from all nodes in the cluster
   (or all nodes in the cluster role group)
 
+Note that ``ReadMajority`` has a ``minCap`` parameter that is useful to specify to achieve better safety for small clusters.
 
 .. includecode:: code/docs/ddata/DistributedDataDocTest.java#get
 
@@ -161,7 +164,7 @@ from other nodes might not be visible yet.
 When using ``writeLocal`` the update is only written to the local replica and then disseminated
 in the background with the gossip protocol, which can take few seconds to spread to all nodes.
 
-``writeAll`` and ``readAll`` is the strongest consistency level, but also the slowest and with
+``WriteAll`` and ``ReadAll`` is the strongest consistency level, but also the slowest and with
 lowest availability. For example, it is enough that one node is unavailable for a ``Get`` request
 and you will not receive the value.
 
@@ -176,10 +179,17 @@ used for the ``Replicator``.
 For example, in a 7 node cluster this these consistency properties are achieved by writing to 4 nodes
 and reading from 4 nodes, or writing to 5 nodes and reading from 3 nodes.
 
-By combining ``writeMajority`` and ``readMajority`` levels a read always reflects the most recent write.
+By combining ``WriteMajority`` and ``ReadMajority`` levels a read always reflects the most recent write.
 The ``Replicator`` writes and reads to a majority of replicas, i.e. **N / 2 + 1**. For example,
 in a 5 node cluster it writes to 3 nodes and reads from 3 nodes. In a 6 node cluster it writes 
 to 4 nodes and reads from 4 nodes.
+
+For small clusters (<7) the risk of membership changes between a WriteMajority and ReadMajority 
+is rather high and then the nice properties of combining majority write and reads are not
+guaranteed. Therefore the ``ReadMajority`` and ``WriteMajority`` have a ``minCap`` parameter that 
+is useful to specify to achieve better safety for small clusters. It means that if the cluster 
+size is smaller than the majority size it will use the ``minCap`` number of nodes but at most 
+the total size of the cluster. 
 
 Here is an example of using ``writeMajority`` and ``readMajority``:
 

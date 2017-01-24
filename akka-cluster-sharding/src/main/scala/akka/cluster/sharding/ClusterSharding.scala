@@ -418,6 +418,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
   val cluster = Cluster(context.system)
   val sharding = ClusterSharding(context.system)
 
+  val majorityMinCap = context.system.settings.config.getInt(
+    "akka.cluster.sharding.distributed-data.majority-min-cap")
   private lazy val replicatorSettings =
     ReplicatorSettings(context.system.settings.config.getConfig(
       "akka.cluster.sharding.distributed-data"))
@@ -463,7 +465,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
               if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
                 ShardCoordinator.props(typeName, settings, allocationStrategy)
               else {
-                ShardCoordinator.props(typeName, settings, allocationStrategy, rep)
+                ShardCoordinator.props(typeName, settings, allocationStrategy, rep, majorityMinCap)
               }
             val singletonProps = BackoffSupervisor.props(
               childProps = coordinatorProps,
@@ -490,7 +492,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
               extractEntityId = extractEntityId,
               extractShardId = extractShardId,
               handOffStopMessage = handOffStopMessage,
-              replicator = rep).withDispatcher(context.props.dispatcher),
+              replicator = rep,
+              majorityMinCap).withDispatcher(context.props.dispatcher),
             name = encName)
         }
         sender() ! Started(shardRegion)
@@ -515,7 +518,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
               coordinatorPath = cPath,
               extractEntityId = extractEntityId,
               extractShardId = extractShardId,
-              replicator = context.system.deadLetters).withDispatcher(context.props.dispatcher),
+              replicator = context.system.deadLetters,
+              majorityMinCap).withDispatcher(context.props.dispatcher),
             name = encName)
         }
         sender() ! Started(shardRegion)
