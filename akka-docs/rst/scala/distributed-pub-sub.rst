@@ -107,7 +107,7 @@ Send
 ----
 
 This is a point-to-point mode where each message is delivered to one destination,
-but you still does not have to know where the destination is located.
+but you still do not have to know where the destination is located.
 A typical usage of this mode is private chat to one other user in an instant messaging
 application. It can also be used for distributing tasks to registered workers, like a 
 cluster aware router where the routees dynamically can register themselves.
