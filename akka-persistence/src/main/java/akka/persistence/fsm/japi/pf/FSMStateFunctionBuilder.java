@@ -19,7 +19,6 @@ import java.util.List;
  * @param <D> the data type
  * @param <E> the domain event type
  *
- * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 @SuppressWarnings("rawtypes")
 public class FSMStateFunctionBuilder<S, D, E> {

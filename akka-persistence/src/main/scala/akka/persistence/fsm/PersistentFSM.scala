@@ -26,7 +26,6 @@ import scala.reflect.ClassTag
  * Incoming messages are deferred until the state is applied.
  * State Data is constructed based on domain events, according to user's implementation of applyEvent function.
  *
- * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with PersistentFSMBase[S, D, E] with ActorLogging {
   import akka.persistence.fsm.PersistentFSM._
@@ -382,7 +381,6 @@ object PersistentFSM {
  *
  * Persistent Finite State Machine actor abstract base class.
  *
- * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 abstract class AbstractPersistentFSM[S <: FSMState, D, E] extends AbstractPersistentFSMBase[S, D, E] with PersistentFSM[S, D, E] {
   import java.util.function.Consumer
@@ -414,7 +412,6 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E] extends AbstractPersis
  *
  * Persistent Finite State Machine actor abstract base class with FSM Logging
  *
- * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 abstract class AbstractPersistentLoggingFSM[S <: FSMState, D, E]
   extends AbstractPersistentFSMBase[S, D, E]
