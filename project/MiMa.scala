@@ -258,6 +258,80 @@ object MiMa extends AutoPlugin {
       // object akka.stream.stage.StatefulStage#Finish does not have a correspondent in current version
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.StatefulStage$Finish$"),
 
+      // #21423 remove deprecated ActorSystem termination methods (in 2.5.x)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.shutdown"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.isTerminated"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.awaitTermination"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.awaitTermination"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.shutdown"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.isTerminated"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.awaitTermination"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.awaitTermination"),
+      
+      // #21423 remove deprecated ActorPath.ElementRegex
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorPath.ElementRegex"),
+      
+      // #21423 remove some deprecated event bus classes
+      ProblemFilters.exclude[MissingClassProblem]("akka.event.ActorClassification"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.event.EventStream$"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.EventStream.this"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.event.japi.ActorEventBus"),
+      
+      // #21423 remove deprecated util.Crypt
+      ProblemFilters.exclude[MissingClassProblem]("akka.util.Crypt"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.util.Crypt$"),
+      
+      // #21423 removal of deprecated serializer constructors (in 2.5.x)
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.ProtobufSerializer.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.MessageContainerSerializer.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.serialization.JavaSerializer.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.serialization.ByteArraySerializer.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.protobuf.ClusterMessageSerializer.this"),
+      
+      // #21423 removal of deprecated constructor in PromiseActorRef
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.apply"),
+      
+      // #21423 remove deprecated methods in routing
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.Pool.nrOfInstances"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.Group.paths"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.PoolBase.nrOfInstances"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.GroupBase.paths"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.GroupBase.getPaths"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.FromConfig.nrOfInstances"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.routing.RemoteRouterConfig.nrOfInstances"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.routing.ClusterRouterGroup.paths"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.routing.ClusterRouterPool.nrOfInstances"),
+      
+      // #21423 remove deprecated persist method (persistAll)
+      // This might filter changes to the ordinary persist method also, but not much to do about that
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persistAsync"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Eventsourced.persist"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Eventsourced.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.AbstractPersistentFSM.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.AbstractPersistentFSM.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.AbstractPersistentLoggingFSM.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.fsm.AbstractPersistentLoggingFSM.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShard.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShard.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShardCoordinator.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShardCoordinator.persistAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData#RemoveOnePersistenceId.persist"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData#RemoveOnePersistenceId.persistAsync"),
+      
+      // #21423 remove deprecated ARRAY_OF_BYTE_ARRAY
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.ProtobufSerializer.ARRAY_OF_BYTE_ARRAY"),
+      
+      // #21423 remove deprecated constructor in DeadlineFailureDetector
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.DeadlineFailureDetector.this"),
+          
       // #21423 removal of deprecated `PersistentView` (in 2.5.x)
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),

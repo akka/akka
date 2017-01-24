@@ -3,6 +3,7 @@
  */
 package akka.actor
 
+import scala.language.implicitConversions
 import java.util.concurrent.CompletionStage
 
 import scala.annotation.tailrec
@@ -231,7 +232,7 @@ object ActorSelection {
                     matchingChildren.foreach(_.tell(sel.msg, sender))
                 } else {
                   val matchingChildren = chldr.filter(c ⇒ p.pattern.matcher(c.path.name).matches)
-                  // don't send to emptyRef after wildcard fan-out 
+                  // don't send to emptyRef after wildcard fan-out
                   if (matchingChildren.isEmpty && !sel.wildcardFanOut)
                     emptyRef.tell(sel, sender)
                   else {

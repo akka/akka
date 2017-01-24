@@ -344,10 +344,6 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     }
   }
 
-  @deprecated("use persistAll instead", "2.4")
-  def persist[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
-    persistAll(events)(handler)
-
   /**
    * Asynchronously persists `event`. On successful persistence, `handler` is called with the
    * persisted event.
@@ -396,10 +392,6 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         sequenceNr = nextSequenceNr(), writerUuid = writerUuid, sender = sender())))
     }
   }
-
-  @deprecated("use persistAllAsync instead", "2.4")
-  def persistAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
-    persistAllAsync(events)(handler)
 
   /**
    * Defer the handler execution until all pending handlers have been executed.

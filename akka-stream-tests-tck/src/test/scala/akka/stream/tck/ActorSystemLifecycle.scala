@@ -13,6 +13,7 @@ import akka.event.Logging
 import akka.testkit.TestEvent
 import akka.testkit.EventFilter
 import org.testng.annotations.BeforeClass
+import scala.concurrent.Await
 
 trait ActorSystemLifecycle {
 
@@ -31,8 +32,7 @@ trait ActorSystemLifecycle {
   @AfterClass
   def shutdownActorSystem(): Unit = {
     try {
-      system.terminate()
-      system.awaitTermination(shutdownTimeout)
+      Await.ready(system.terminate(), shutdownTimeout)
     } catch {
       case _: TimeoutException ⇒
         val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, shutdownTimeout,
