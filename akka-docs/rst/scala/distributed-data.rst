@@ -84,6 +84,8 @@ You supply a write consistency level which has the following meaning:
 When you specify to write to ``n`` out of ``x`` nodes, the update will first replicate to ``n`` nodes. If there are not
  enough Acks after 1/5th of the timeout, the update will be replicated to ``n`` other nodes. If there are less than n nodes
  left all of the remaining nodes are used. Reachable nodes are prefered over unreachable nodes.
+ 
+Note that ``WriteMajority`` has a ``minCap`` parameter that is useful to specify to achieve better safety for small clusters.
 
 .. includecode:: code/docs/ddata/DistributedDataDocSpec.scala#update  
 
@@ -126,6 +128,7 @@ To retrieve the current value of a data you send ``Replicator.Get`` message to t
 * ``ReadAll`` the value will be read and merged from all nodes in the cluster
   (or all nodes in the cluster role group)
 
+Note that ``ReadMajority`` has a ``minCap`` parameter that is useful to specify to achieve better safety for small clusters.
 
 .. includecode:: code/docs/ddata/DistributedDataDocSpec.scala#get
 
@@ -189,6 +192,13 @@ If the minCap is higher then **N / 2 + 1** the minCap will be used.
 
 For example if the minCap is 5 the ``WriteMajority`` and ``ReadMajority`` for cluster of 3 nodes will be 3, for
 cluster of 6 nodes will be 5 and for cluster of 12 nodes will be 7(**N / 2 + 1**).
+
+For small clusters (<7) the risk of membership changes between a WriteMajority and ReadMajority 
+is rather high and then the nice properties of combining majority write and reads are not
+guaranteed. Therefore the ``ReadMajority`` and ``WriteMajority`` have a ``minCap`` parameter that 
+is useful to specify to achieve better safety for small clusters. It means that if the cluster 
+size is smaller than the majority size it will use the ``minCap`` number of nodes but at most 
+the total size of the cluster.
 
 Here is an example of using ``WriteMajority`` and ``ReadMajority``:
 

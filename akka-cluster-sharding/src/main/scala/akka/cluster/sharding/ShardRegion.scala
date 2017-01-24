@@ -38,9 +38,10 @@ object ShardRegion {
     extractEntityId:    ShardRegion.ExtractEntityId,
     extractShardId:     ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    replicator:         ActorRef): Props =
+    replicator:         ActorRef,
+    majorityMinCap:     Int): Props =
     Props(new ShardRegion(typeName, Some(entityProps), settings, coordinatorPath, extractEntityId,
-      extractShardId, handOffStopMessage, replicator)).withDeploy(Deploy.local)
+      extractShardId, handOffStopMessage, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
@@ -53,9 +54,10 @@ object ShardRegion {
     coordinatorPath: String,
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId:  ShardRegion.ExtractShardId,
-    replicator:      ActorRef): Props =
+    replicator:      ActorRef,
+    majorityMinCap:  Int): Props =
     Props(new ShardRegion(typeName, None, settings, coordinatorPath, extractEntityId, extractShardId,
-      PoisonPill, replicator)).withDeploy(Deploy.local)
+      PoisonPill, replicator, majorityMinCap)).withDeploy(Deploy.local)
 
   /**
    * Marker type of entity identifier (`String`).
@@ -350,7 +352,8 @@ private[akka] class ShardRegion(
   extractEntityId:    ShardRegion.ExtractEntityId,
   extractShardId:     ShardRegion.ExtractShardId,
   handOffStopMessage: Any,
-  replicator:         ActorRef) extends Actor with ActorLogging {
+  replicator:         ActorRef,
+  majorityMinCap:     Int) extends Actor with ActorLogging {
 
   import ShardCoordinator.Internal._
   import ShardRegion._
@@ -768,7 +771,8 @@ private[akka] class ShardRegion(
                 extractEntityId,
                 extractShardId,
                 handOffStopMessage,
-                replicator).withDispatcher(context.props.dispatcher),
+                replicator,
+                majorityMinCap).withDispatcher(context.props.dispatcher),
               name))
             shardsByRef = shardsByRef.updated(shard, id)
             shards = shards.updated(id, shard)

@@ -44,8 +44,9 @@ object ShardCoordinator {
    */
   private[akka] def props(typeName: String, settings: ClusterShardingSettings,
                           allocationStrategy: ShardAllocationStrategy,
-                          replicator:         ActorRef): Props =
-    Props(new DDataShardCoordinator(typeName: String, settings, allocationStrategy, replicator)).withDeploy(Deploy.local)
+                          replicator:         ActorRef, majorityMinCap: Int): Props =
+    Props(new DDataShardCoordinator(typeName: String, settings, allocationStrategy, replicator,
+      majorityMinCap)).withDeploy(Deploy.local)
 
   /**
    * Interface of the pluggable shard allocation and rebalancing logic used by the [[ShardCoordinator]].
@@ -830,13 +831,16 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
  */
 class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
                             allocationStrategy: ShardCoordinator.ShardAllocationStrategy,
-                            replicator:         ActorRef)
+                            replicator:         ActorRef,
+                            majorityMinCap:     Int)
   extends ShardCoordinator(typeName, settings, allocationStrategy) with Stash {
   import ShardCoordinator.Internal._
   import akka.cluster.ddata.Replicator.Update
 
-  val waitingForStateTimeout = settings.tuningParameters.waitingForStateTimeout
-  val updatingStateTimeout = settings.tuningParameters.updatingStateTimeout
+  private val readMajority = ReadMajority(
+    settings.tuningParameters.waitingForStateTimeout,
+    majorityMinCap)
+  private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
 
   implicit val node = Cluster(context.system)
   val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
@@ -860,7 +864,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
     case GetFailure(CoordinatorStateKey, _) ⇒
       log.error(
         "The ShardCoordinator was unable to get an initial state within 'waiting-for-state-timeout' (was retrying): {} millis",
-        waitingForStateTimeout.toMillis)
+        readMajority.timeout.toMillis)
       // repeat until GetSuccess
       getState()
 
@@ -892,7 +896,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) ⇒
       log.error(
         "The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout'={} millis (was retrying), event={}",
-        updatingStateTimeout.toMillis,
+        writeMajority.timeout.toMillis,
         evt)
       // repeat until UpdateSuccess
       sendUpdate(evt)
@@ -919,11 +923,11 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   }
 
   def getState(): Unit =
-    replicator ! Get(CoordinatorStateKey, ReadMajority(waitingForStateTimeout))
+    replicator ! Get(CoordinatorStateKey, readMajority)
 
   def sendUpdate(evt: DomainEvent) = {
     val s = state.updated(evt)
-    replicator ! Update(CoordinatorStateKey, LWWRegister(initEmptyState), WriteMajority(updatingStateTimeout), Some(evt)) { reg ⇒
+    replicator ! Update(CoordinatorStateKey, LWWRegister(initEmptyState), writeMajority, Some(evt)) { reg ⇒
       reg.withValue(s)
     }
   }
