@@ -322,7 +322,24 @@ WeaklyUp
     akka.cluster.allow-weakly-up-members = off
 
 You should not run a cluster with this feature enabled on some nodes and disabled on some. Therefore
-you might need to enable/disable it in configuration when performing rolling upgrade from 2.4.x to 2.5.0. 
+you might need to enable/disable it in configuration when performing rolling upgrade from 2.4.x to 2.5.0.
+
+Cluster Sharding state-store-mode
+---------------------------------
+
+Distributed Data mode is now the default ``state-store-mode`` for Cluster Sharding. The persistence mode
+is also supported. Read more in the documentation :ref:`for Scala <cluster_sharding_mode_scala>` or
+the documentation :ref:`for Java <cluster_sharding_mode_java>`.
+
+It's important to use the same mode on all nodes in the cluster, i.e. if you perform a rolling upgrade
+from 2.4.16 you might need to change the ``state-store-mode`` to be the same (``persistence`` is default
+in 2.4.x)::
+
+  akka.cluster.sharding.state-store-mode = persistence
+
+Note that the stored :ref:`cluster_sharding_remembering_java` data with ``persistence`` mode cannot 
+be migrated to the ``data`` mode. Such entities must be started again in some other way when using 
+``ddata`` mode.
 
 Cluster Management Command Line Tool
 ------------------------------------
@@ -335,6 +352,28 @@ See documentation of `akka/akka-cluster-management <https://github.com/akka/akka
 
 The command line script for cluster management has been deprecated and is scheduled for removal
 in the next major version. Use the HTTP API with `curl <https://curl.haxx.se/>`_ or similar instead.
+
+Distributed Data
+================
+
+Map allow generic type for the keys
+-----------------------------------
+
+In 2.4 the key of any Distributed Data map always needed to be of type String. In 2.5 you can use any type for the key. This means that
+every map (ORMap, LWWMap, PNCounterMap, ORMultiMap) now takes an extra type parameter to specify the key type. To migrate
+existing code from 2.4 to 2.5 you simple add String as key type, for example: `ORMultiMap[Foo]` becomes `ORMultiMap[String, Foo]`.
+`PNCounterMap` didn't take a type parameter in version 2.4, so `PNCounterMap` in 2.4 becomes `PNCounterMap[String]` in 2.5.
+Java developers should use `<>` instead of `[]`, e.g: `PNCounterMap<String>`.
+
+**NOTE: Even though the interface is not compatible between 2.4 and 2.5, the binary protocol over the wire is (as long
+as you use String as key type). This means that 2.4 nodes can synchronize with 2.5 nodes.**
+
+Subscribers
+-----------
+
+When an entity is removed subscribers will not receive ``Replicator.DataDeleted`` any more.
+They will receive ``Replicator.Deleted`` instead.
+
 
 Persistence
 ===========
@@ -409,23 +448,3 @@ We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so 
 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
 
-Distributed Data
-================
-
-Map allow generic type for the keys
------------------------------------
-
-In 2.4 the key of any Distributed Data map always needed to be of type String. In 2.5 you can use any type for the key. This means that
-every map (ORMap, LWWMap, PNCounterMap, ORMultiMap) now takes an extra type parameter to specify the key type. To migrate
-existing code from 2.4 to 2.5 you simple add String as key type, for example: `ORMultiMap[Foo]` becomes `ORMultiMap[String, Foo]`.
-`PNCounterMap` didn't take a type parameter in version 2.4, so `PNCounterMap` in 2.4 becomes `PNCounterMap[String]` in 2.5.
-Java developers should use `<>` instead of `[]`, e.g: `PNCounterMap<String>`.
-
-**NOTE: Even though the interface is not compatible between 2.4 and 2.5, the binary protocol over the wire is (as long
-as you use String as key type). This means that 2.4 nodes can synchronize with 2.5 nodes.**
-
-Subscribers
------------
-
-When an entity is removed subscribers will not receive ``Replicator.DataDeleted`` any more.
-They will receive ``Replicator.Deleted`` instead.
