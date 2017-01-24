@@ -42,7 +42,7 @@ with a specific role. It communicates with other ``Replicator`` instances with t
 actor using the ``Replicator.props``. If it is started as an ordinary actor it is important
 that it is given the same name, started on same path, on all nodes.
 
-Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, if that feature is enabled,
+Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, 
 will participate in Distributed Data. This means that the data will be replicated to the
 :ref:`WeaklyUp <weakly_up_java>` nodes with the background gossip protocol. Note that it
 will not participate in any actions where the consistency mode is to read/write from all

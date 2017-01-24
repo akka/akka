@@ -30,7 +30,7 @@ and add the following configuration stanza to your ``application.conf``
 
    akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 
-Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, if that feature is enabled,
+Cluster members with status :ref:`WeaklyUp <weakly_up_java>`,
 will participate in Cluster Metrics collection and dissemination.
 
 Metrics Collector
