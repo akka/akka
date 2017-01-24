@@ -22,7 +22,7 @@ a few seconds. Changes are only performed in the own part of the registry and th
 changes are versioned. Deltas are disseminated in a scalable way to other nodes with
 a gossip protocol.
 
-Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, if that feature is enabled,
+Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, 
 will participate in Distributed Publish Subscribe, i.e. subscribers on nodes with 
 ``WeaklyUp`` status will receive published messages if the publisher and subscriber are on
 same side of a network partition.

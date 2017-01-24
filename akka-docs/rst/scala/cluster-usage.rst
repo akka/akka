@@ -202,30 +202,18 @@ If a node is ``unreachable`` then gossip convergence is not possible and therefo
 ``leader`` actions are also not possible. However, we still might want new nodes to join
 the cluster in this scenario.
 
-.. warning::
-
-  The WeaklyUp feature is marked as **“experimental”** as of its introduction in Akka 2.4.0. We will continue to
-  improve this feature based on our users’ feedback, which implies that while we try to keep incompatible
-  changes to a minimum the binary compatibility guarantee for maintenance releases does not apply this feature.
-
-This feature is disabled by default. With a configuration option you can allow this behavior::
-
-    akka.cluster.allow-weakly-up-members = on
-
-When ``allow-weakly-up-members`` is enabled and there is no gossip convergence,
-``Joining`` members will be promoted to ``WeaklyUp`` and they will become part of the
-cluster. Once gossip convergence is reached, the leader will move ``WeaklyUp``
+``Joining`` members will be promoted to ``WeaklyUp`` and become part of the cluster if 
+convergence can't be reached. Once gossip convergence is reached, the leader will move ``WeaklyUp``
 members to ``Up``.
+
+This feature is enabled by default, but it can be disabled with configuration option::
+
+    akka.cluster.allow-weakly-up-members = off
 
 You can subscribe to the ``WeaklyUp`` membership event to make use of the members that are
 in this state, but you should be aware of that members on the other side of a network partition
 have no knowledge about the existence of the new members. You should for example not count
 ``WeaklyUp`` members in quorum decisions.
-
-.. warning::
-
-  This feature is only available from Akka 2.4.0 and cannot be used if some of your
-  cluster members are running an older version of Akka.
 
 
 .. _cluster_subscriber_scala:
