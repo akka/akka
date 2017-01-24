@@ -6,6 +6,7 @@ package akka.actor
 import scala.language.implicitConversions
 import java.util.concurrent.CompletionStage
 
+import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
