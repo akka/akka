@@ -95,7 +95,13 @@ object MiMa extends AutoPlugin {
     val bcIssuesBetween24and25 = Seq(
 
       // #21875 delta-CRDT
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GCounter.this"),  
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GCounter.this"), 
+      
+      // #22141 sharding minCap
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.updatingStateTimeout"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.waitingForStateTimeout"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.this"),
+      
       // #21423 Remove deprecated metrics
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterReadView.clusterMetrics"),
       ProblemFilters.exclude[MissingClassProblem]("akka.cluster.InternalClusterAction$MetricsTick$"),
