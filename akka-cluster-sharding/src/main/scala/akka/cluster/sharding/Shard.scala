@@ -103,10 +103,11 @@ private[akka] object Shard {
     extractEntityId:    ShardRegion.ExtractEntityId,
     extractShardId:     ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    replicator:         ActorRef): Props = {
+    replicator:         ActorRef,
+    majorityMinCap:     Int): Props = {
     if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
       Props(new DDataShard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId,
-        handOffStopMessage, replicator)).withDeploy(Deploy.local)
+        handOffStopMessage, replicator, majorityMinCap)).withDeploy(Deploy.local)
     } else if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
       Props(new PersistentShard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
         .withDeploy(Deploy.local)
@@ -457,7 +458,8 @@ private[akka] class DDataShard(
   extractEntityId:       ShardRegion.ExtractEntityId,
   extractShardId:        ShardRegion.ExtractShardId,
   handOffStopMessage:    Any,
-  replicator:            ActorRef) extends Shard(
+  replicator:            ActorRef,
+  majorityMinCap:        Int) extends Shard(
   typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
   with RememberingShard with Stash with ActorLogging {
 
@@ -465,8 +467,10 @@ private[akka] class DDataShard(
   import Shard._
   import settings.tuningParameters._
 
-  private val waitingForStateTimeout = settings.tuningParameters.waitingForStateTimeout
-  private val updatingStateTimeout = settings.tuningParameters.updatingStateTimeout
+  private val readMajority = ReadMajority(
+    settings.tuningParameters.waitingForStateTimeout,
+    majorityMinCap)
+  private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
   private val maxUpdateAttempts = 3
 
   implicit private val node = Cluster(context.system)
@@ -490,7 +494,7 @@ private[akka] class DDataShard(
 
   private def getState(): Unit = {
     (0 until numberOfKeys).map { i ⇒
-      replicator ! Get(stateKeys(i), ReadMajority(waitingForStateTimeout), Some(i))
+      replicator ! Get(stateKeys(i), readMajority, Some(i))
     }
   }
 
@@ -544,7 +548,7 @@ private[akka] class DDataShard(
   }
 
   private def sendUpdate(evt: StateChange, retryCount: Int) = {
-    replicator ! Update(key(evt.entityId), ORSet.empty[EntityId], WriteMajority(updatingStateTimeout),
+    replicator ! Update(key(evt.entityId), ORSet.empty[EntityId], writeMajority,
       Some((evt, retryCount))) { existing ⇒
         evt match {
           case EntityStarted(id) ⇒ existing + id
