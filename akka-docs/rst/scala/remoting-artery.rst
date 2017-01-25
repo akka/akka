@@ -458,7 +458,7 @@ Akka internals do not rely on Java serialization (exceptions to that being ``jav
 
   One may think that network bandwidth and latency limit the performance of remote messaging, but serialization is a more typical bottleneck.
   
-For user messages, the default serializer, implemented using Java serialization, remains available and enabled in Artery.
+For user messages the default serializer implemented using Java serialization remains available and enabled by default.
 We do however recommend to disable it entirely and utilise a proper serialization library instead in order effectively utilise 
 the improved performance and ability for rolling deployments using Artery. Libraries that we recommend to use include, 
 but are not limited to, `Kryo`_ by using the `akka-kryo-serialization`_ library or `Google Protocol Buffers`_ if you want
