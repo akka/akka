@@ -38,7 +38,7 @@ This is how an entity actor may look like:
 
 .. includecode:: ../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java#counter-actor
 
-The above actor uses event sourcing and the support provided in ``UntypedPersistentActor`` to store its state.
+The above actor uses event sourcing and the support provided in ``AbstractPersistentActor`` to store its state.
 It does not have to be a persistent actor, but in case of failure or migration of entities between nodes it must be able to recover
 its state if it is valuable.
 
@@ -167,9 +167,8 @@ must be to begin the rebalancing. This strategy can be replaced by an applicatio
 implementation.
 
 The state of shard locations in the ``ShardCoordinator`` is persistent (durable) with
-:ref:`persistence-java` to survive failures. Since it is running in a cluster :ref:`persistence-java`
-must be configured with a distributed journal. When a crashed or unreachable coordinator
-node has been removed (via down) from the cluster a new ``ShardCoordinator`` singleton
+:ref:`distributed_data-java` or :ref:`persistence-java` to survive failures. When a crashed or 
+unreachable coordinator node has been removed (via down) from the cluster a new ``ShardCoordinator`` singleton
 actor will take over and the state is recovered. During such a failure period shards
 with known location are still available, while messages for new (unknown) shards
 are buffered until the new ``ShardCoordinator`` becomes available.
@@ -185,21 +184,39 @@ unused shards due to the round-trip to the coordinator. Rebalancing of shards ma
 also add latency. This should be considered when designing the application specific
 shard resolution, e.g. to avoid too fine grained shards.
 
-.. _cluster_sharding_ddata_java:
+.. _cluster_sharding_mode_java:
+
+Distributed Data vs. Persistence Mode
+-------------------------------------
+
+The state of the coordinator and the state of :ref:`cluster_sharding_remembering_java` of the shards
+are persistent (durable) to survive failures. :ref:`distributed_data_java` or :ref:`persistence-java`
+can be used for the storage. Distributed Data is used by default.
+
+The functionality when using the two modes is the same. If your sharded entities are not using Akka Persistence
+themselves it is more convenient to use the Distributed Data mode, since then you don't have to
+setup and operate a separate data store (e.g. Cassandra) for persistence. Aside from that, there are
+no major reasons for using one mode over the the other.
+
+It's important to use the same mode on all nodes in the cluster, i.e. it's not possible to perform
+a rolling upgrade to change this setting.
 
 Distributed Data Mode
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
-Instead of using :ref:`persistence-java` it is possible to use the :ref:`distributed_data_java` module
-as storage for the state of the sharding coordinator. In such case the state of the 
-``ShardCoordinator`` will be replicated inside a cluster by the :ref:`distributed_data_java` module with
-``WriteMajority``/``ReadMajority`` consistency.
+This mode is enabled with configuration (enabled by default)::
 
-This mode can be enabled by setting configuration property::
+  akka.cluster.sharding.state-store-mode = ddata
 
-    akka.cluster.sharding.state-store-mode = ddata 
+The state of the ``ShardCoordinator`` will be replicated inside a cluster by the 
+:ref:`distributed_data_java` module with ``WriteMajority``/``ReadMajority`` consistency.
+The state of the coordinator is not durable, it's not stored to disk. When all nodes in
+the cluster have been stopped the state is lost and not needed any more.
 
-It is using its own Distributed Data ``Replicator`` per node role. In this way you can use a subset of
+The state of :ref:`cluster_sharding_remembering_java` is also durable, i.e. it is stored to
+disk. The stored entities are started also after a complete cluster restart.
+
+Cluster Sharding  is using its own Distributed Data ``Replicator`` per node role. In this way you can use a subset of
 all nodes for some entity types and another subset for other entity types. Each such replicator has a name
 that contains the node role and therefore the role configuration must be the same on all nodes in the
 cluster, i.e. you can't change the roles when performing a rolling upgrade. 
@@ -208,14 +225,18 @@ The settings for Distributed Data is configured in the the section
 ``akka.cluster.sharding.distributed-data``. It's not possible to have different 
 ``distributed-data`` settings for different sharding entity types.
 
-You must explicitly add the ``akka-distributed-data`` dependency to your build if
-you use this mode. It is possible to remove ``akka-persistence`` dependency from a project if it
-is not used in user code.
+Persistence Mode
+^^^^^^^^^^^^^^^^
 
-.. warning::
+This mode is enabled with configuration::
 
-  The ``ddata`` mode is considered as **“experimental”** as of its introduction in Akka 2.4.0, since
-  it depends on the experimental Distributed Data module.
+  akka.cluster.sharding.state-store-mode = persistence
+
+Since it is running in a cluster :ref:`persistence-java` must be configured with a distributed journal.
+
+You must explicitly add the ``akka-persistence`` dependency to your build if
+you use this mode.
+
 
 Startup after minimum number of members
 ---------------------------------------
@@ -250,6 +271,8 @@ then supposed to stop itself. Incoming messages will be buffered by the ``Shard`
 between reception of ``Passivate`` and termination of the entity. Such buffered messages
 are thereafter delivered to a new incarnation of the entity.
 
+.. _cluster_sharding_remembering_java:
+
 Remembering Entities
 --------------------
 
@@ -262,7 +285,7 @@ a ``Passivate`` message must be sent to the parent of the entity actor, otherwis
 entity will be automatically restarted after the entity restart backoff specified in 
 the configuration.
 
-When :ref:`cluster_sharding_ddata_java` is used the identifiers of the entities are
+When :ref:`Distributed Data mode <cluster_sharding_mode_java>` is used the identifiers of the entities are
 stored in :ref:`ddata_durable_java` of Distributed Data. You may want to change the 
 configuration of the akka.cluster.sharding.distributed-data.durable.lmdb.dir`, since
 the default directory contains the remote port of the actor system. If using a dynamically

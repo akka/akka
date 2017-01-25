@@ -37,6 +37,12 @@ Akka is very modular and consists of several JARs containing different features.
 
 - ``akka-cluster`` – Cluster membership management, elastic routers.
 
+- ``akka-cluster-sharding`` – Cluster Sharding of actors.
+
+- ``akka-cluster-tools`` – Additoinal Cluster utilities, such as Singleton, Pub/Sub and Client.
+
+- ``akka-distributed-data`` – Cluster data with CRDTs.
+
 - ``akka-osgi`` – Utilities for using Akka in OSGi containers
 
 - ``akka-osgi-aries`` – Aries blueprint for provisioning actor systems
