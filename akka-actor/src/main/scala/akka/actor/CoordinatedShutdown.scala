@@ -377,14 +377,14 @@ final class CoordinatedShutdown private[akka] (
    * concurrently, but they are running before Akka internal shutdown
    * hooks, e.g. those shutting down Artery.
    */
-  @tailrec def addJvmShutdownHook(hook: () ⇒ Unit): Unit = {
+  @tailrec def addJvmShutdownHook[T](hook: ⇒ T): Unit = {
     if (!runStarted.get) {
       val currentLatch = _jvmHooksLatch.get
       val newLatch = new CountDownLatch(currentLatch.getCount.toInt + 1)
       if (_jvmHooksLatch.compareAndSet(currentLatch, newLatch)) {
         try Runtime.getRuntime.addShutdownHook(new Thread {
           override def run(): Unit = {
-            try hook() finally _jvmHooksLatch.get.countDown()
+            try hook finally _jvmHooksLatch.get.countDown()
           }
         }) catch {
           case e: IllegalStateException ⇒
@@ -404,6 +404,6 @@ final class CoordinatedShutdown private[akka] (
    * hooks, e.g. those shutting down Artery.
    */
   def addJvmShutdownHook(hook: Runnable): Unit =
-    addJvmShutdownHook(() ⇒ hook.run())
+    addJvmShutdownHook(hook.run())
 
 }
