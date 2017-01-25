@@ -18,6 +18,9 @@ Here is an example of what a simple test with the routing testkit might look lik
 
 @@snip [FullTestKitExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/FullTestKitExampleSpec.scala) { #source-quote }
 
+The testkit also supports testing routes with [specs2](http://etorreborre.github.io/specs2/). The equivalent of the above example can be found
+@github[here](docs/src/test/scala/docs/http/scaladsl/server/FullSpecs2TestKitExampleSpec.scala).
+
 The basic structure of a test built with the testkit is this (expression placeholder in all-caps):
 
 ```
