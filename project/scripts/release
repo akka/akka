@@ -58,18 +58,8 @@
 # 3.2) Install your public ssh key to avoid typing in your password.
 #      From the command line:
 #        shell> cat ~/.ssh/id_rsa.pub | ssh akkarepo@repo.akka.io "cat >> ~/.ssh/authorized_keys"
-#
-# 4) You must have upload access to S3 bucket "downloads.typesafe.com"
-#
-# 4.1) Ask Akka team member for the AWS access key for 'akka.team' user.
-#
-# 4.2) Add your credentials to sbt by adding this to your global.sbt file
-#        credentials += Credentials("Amazon S3",
-#          "downloads.typesafe.com.s3.amazonaws.com",
-#          "<Access Key Id>",
-#          "<Secret Access Key>")
-#
-# 5) Have access to github.com/akka/akka. This should be a given.
+##
+# 4) Have access to github.com/akka/akka. This should be a given.
 #
 # Now you should be all set to run the script
 #
@@ -362,11 +352,9 @@ echolog "Pushing ${release_dir} to ${publish_path} ..."
 if [ $dry_run ]; then
   echodry "Not actually pushing to server. Command:"
   echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/"
-  echodry "  sbt uploadRelease"
 else
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
   important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/
-  important sbt uploadRelease
   important ssh ${release_server} cp -v ${release_path}/docs/akka/${version}/_static/warnOldDocs.js ${release_path}/docs/akka
   important ssh ${release_server} ln -snvf ../../warnOldDocs.js ${release_path}/docs/akka/${version}/_static/warnOldDocs.js
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'publish version $version'"
