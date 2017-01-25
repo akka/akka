@@ -646,7 +646,7 @@ class ActorDocSpec extends AkkaSpec("""
     //#coordinated-shutdown-addTask
 
     //#coordinated-shutdown-jvm-hook
-    CoordinatedShutdown(system).addJvmShutdownHook { () =>
+    CoordinatedShutdown(system).addJvmShutdownHook {
       println("custom JVM shutdown hook...")
     }
     //#coordinated-shutdown-jvm-hook
