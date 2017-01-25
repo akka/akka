@@ -18,10 +18,16 @@ import akka.actor.ActorRef
 import akka.testkit.TestKitExtension
 import akka.actor.ActorIdentity
 import akka.actor.Identify
+import com.typesafe.config.ConfigFactory
 
 object ReliableProxySpec extends MultiNodeConfig {
   val local = role("local")
   val remote = role("remote")
+
+  commonConfig(ConfigFactory.parseString("""
+    # Remove this when issue #22224 has been fixed
+    akka.actor.enable-additional-serialization-bindings = off
+    """))
 
   testTransport(on = true)
 }
