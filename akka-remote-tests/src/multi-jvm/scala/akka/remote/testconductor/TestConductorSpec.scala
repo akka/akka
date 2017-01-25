@@ -75,7 +75,7 @@ class TestConductorSpec extends RemotingMultiNodeSpec(TestConductorMultiJvmSpec)
         for (i ← 0 to 9) echo ! i
       }
 
-      within(0.6 seconds, 2 seconds) {
+      within(0.5 seconds, 2 seconds) {
         expectMsg(500 millis, 0)
         receiveN(9) should ===(1 to 9)
       }
