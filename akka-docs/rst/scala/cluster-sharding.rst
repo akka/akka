@@ -237,9 +237,6 @@ This mode is enabled with configuration::
 
 Since it is running in a cluster :ref:`persistence-scala` must be configured with a distributed journal.
 
-You must explicitly add the ``akka-persistence`` dependency to your build if
-you use this mode.
-
 
 Startup after minimum number of members
 ---------------------------------------
