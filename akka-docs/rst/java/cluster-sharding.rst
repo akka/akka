@@ -167,7 +167,7 @@ must be to begin the rebalancing. This strategy can be replaced by an applicatio
 implementation.
 
 The state of shard locations in the ``ShardCoordinator`` is persistent (durable) with
-:ref:`distributed_data-java` or :ref:`persistence-java` to survive failures. When a crashed or 
+:ref:`distributed_data_java` or :ref:`persistence-java` to survive failures. When a crashed or 
 unreachable coordinator node has been removed (via down) from the cluster a new ``ShardCoordinator`` singleton
 actor will take over and the state is recovered. During such a failure period shards
 with known location are still available, while messages for new (unknown) shards
