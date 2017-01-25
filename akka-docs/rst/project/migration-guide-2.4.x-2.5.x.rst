@@ -283,6 +283,28 @@ It is still possible to make a rolling upgrade from a version < 2.4.12 by doing 
 For more information see the documentation for the ``akka.remote.netty.ssl.require-mutual-authentication`` configuration setting
 in :ref:`akka-remote's reference.conf <config-akka-remote>`.
 
+additional-serialization-bindings
+---------------------------------
+
+From Akka 2.5.0 the ``additional-serialization-bindings`` are enabled by default. That defines 
+serializers that are replacing some Java serialization that were used in 2.4. This setting was disabled
+by default in Akka 2.4.16 but can also be enabled in an Akka 2.4 system. 
+
+To still be able to support rolling upgrade from a system with this setting disabled, e.g. default for 2.4.16,
+it is possible to disable the additional serializers and continue using Java serialization for those messages. 
+ 
+.. code-block:: ruby
+
+  akka.actor {
+    # Set this to off to disable serialization-bindings define in
+    # additional-serialization-bindings. That should only be needed
+    # for backwards compatibility reasons. 
+    enable-additional-serialization-bindings = off
+  }
+
+Please note that this setting must be the same on all nodes participating in a cluster, otherwise 
+the mis-aligned serialization configurations will cause deserialization errors on the receiving nodes.
+
 Cluster
 =======
 
