@@ -1,7 +1,6 @@
-import akka.{ AkkaBuild, Dependencies, Formatting, OSGi, Dist }
+import akka.{ AkkaBuild, Dependencies, Formatting, OSGi }
 
 AkkaBuild.defaultSettings
-Dist.includeInDist := false
 Formatting.formatSettings
 OSGi.osgi
 Dependencies.osgi
