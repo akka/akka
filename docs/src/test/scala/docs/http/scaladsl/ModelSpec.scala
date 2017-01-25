@@ -92,7 +92,7 @@ class ModelSpec extends AkkaSpec {
   "Synthetic-header-s3" in {
     //#synthetic-header-s3
     import akka.http.scaladsl.model.headers.`Raw-Request-URI`
-    val req = HttpRequest(uri = "/ignored", headers=List(`Raw-Request-URI`("/a/b%2Bc")))
+    val req = HttpRequest(uri = "/ignored", headers = List(`Raw-Request-URI`("/a/b%2Bc")))
     //#synthetic-header-s3
   }
 }
