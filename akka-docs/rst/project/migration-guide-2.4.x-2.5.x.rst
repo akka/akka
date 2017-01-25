@@ -266,6 +266,8 @@ which explains using and implementing GraphStages in more practical terms than t
 Remote
 ======
 
+.. _mig25_mutual:
+
 Mutual TLS authentication now required by default for netty-based SSL transport
 -------------------------------------------------------------------------------
 
@@ -282,6 +284,8 @@ It is still possible to make a rolling upgrade from a version < 2.4.12 by doing 
 
 For more information see the documentation for the ``akka.remote.netty.ssl.require-mutual-authentication`` configuration setting
 in :ref:`akka-remote's reference.conf <config-akka-remote>`.
+
+.. _mig25_addser:
 
 additional-serialization-bindings
 ---------------------------------
@@ -305,8 +309,36 @@ it is possible to disable the additional serializers and continue using Java ser
 Please note that this setting must be the same on all nodes participating in a cluster, otherwise 
 the mis-aligned serialization configurations will cause deserialization errors on the receiving nodes.
 
+Wire Protocol Compatibility
+---------------------------
+
+It is possible to use Akka Remoting between nodes running Akka 2.4.16 and 2.5-M1, but some settings have changed so you might need
+to adjust some configuration as described in :ref:`mig25_rolling`.
+
 Cluster
 =======
+
+.. _mig25_rolling:
+
+Rolling Update
+----------------
+
+It is possible to do a rolling update from Akka 2.4.16 to 2.5-M1, i.e. running a cluster of 2.4.16 nodes and
+join nodes running 2.5-M1 followed by shutting down the old nodes.
+
+You must first update all nodes to 2.4.16. It's not supported to update directly from an older version than
+2.4.16 to 2.5-M1. For example, if you are running 2.4.11 you must first do a rolling update to 2.4.16, shut down
+all 2.4.11 nodes, and then do the rolling update to 2.5-M1.
+
+For some configuration settings it's important to use the same values on all nodes in the cluster.
+Some settings have changed default value in 2.5-M1 and therefore you need to review your configuration
+before doing a rolling update to 2.5-M1. Such settings are mentioned elsewhere in this migration guide
+and here is a summary of things to consider.
+
+* :ref:`mig25_addser`
+* :ref:`mig25_weaklyup`
+* :ref:`mig25_sharding_store`
+* :ref:`mig25_mutual`
 
 Coordinated Shutdown
 --------------------
@@ -336,6 +368,8 @@ used in the test::
   akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
   akka.cluster.run-coordinated-shutdown-when-down = off 
 
+.. _mig25_weaklyup:
+
 WeaklyUp
 --------
 
@@ -345,6 +379,8 @@ WeaklyUp
 
 You should not run a cluster with this feature enabled on some nodes and disabled on some. Therefore
 you might need to enable/disable it in configuration when performing rolling upgrade from 2.4.x to 2.5.0.
+
+.. _mig25_sharding_store:
 
 Cluster Sharding state-store-mode
 ---------------------------------
