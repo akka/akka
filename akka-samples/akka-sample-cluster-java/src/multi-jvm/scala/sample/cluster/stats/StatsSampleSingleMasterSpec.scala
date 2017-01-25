@@ -27,7 +27,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
   // register the named roles (nodes) of the test
   val first = role("first")
   val second = role("second")
-  val third = role("thrid")
+  val third = role("third")
 
   def nodeList = Seq(first, second, third)
 
