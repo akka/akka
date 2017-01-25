@@ -82,12 +82,13 @@ object SystemMessageDeliveryStressTest {
     var counter = 0
     var burstCounter = 0
     val targetRef = target.asInstanceOf[InternalActorRef]
+    val child = context.actorOf(Props.empty, "failedChild") // need a dummy ActorRef
 
     override def preStart(): Unit = self ! "sendnext"
 
     override def receive = {
       case "sendnext" ⇒
-        targetRef.sendSystemMessage(Failed(null, null, counter))
+        targetRef.sendSystemMessage(Failed(child, null, counter))
         counter += 1
         burstCounter += 1
 
