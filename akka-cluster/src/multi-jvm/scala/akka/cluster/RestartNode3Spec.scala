@@ -25,7 +25,10 @@ object RestartNode3MultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.auto-down-unreachable-after = off")).
+    withFallback(ConfigFactory.parseString("""
+      akka.cluster.auto-down-unreachable-after = off
+      akka.cluster.allow-weakly-up-members = off
+      """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)

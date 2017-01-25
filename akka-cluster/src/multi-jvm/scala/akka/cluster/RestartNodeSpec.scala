@@ -31,6 +31,7 @@ object RestartNodeMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = 5s
+      akka.cluster.allow-weakly-up-members = off
       #akka.remote.use-passive-connections = off
       """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
