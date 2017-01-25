@@ -24,6 +24,7 @@ object QuickRestartMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = off
+      akka.cluster.allow-weakly-up-members = off
       """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 

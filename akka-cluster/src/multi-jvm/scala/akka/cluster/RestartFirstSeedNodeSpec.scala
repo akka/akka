@@ -30,6 +30,7 @@ object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
     withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = off
       akka.cluster.retry-unsuccessful-join-after = 3s
+      akka.cluster.allow-weakly-up-members = off
       """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
