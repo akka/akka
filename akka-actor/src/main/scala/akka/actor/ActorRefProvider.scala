@@ -63,12 +63,12 @@ trait ActorRefProvider {
   def settings: ActorSystem.Settings
 
   /**
-   * Initialization of an ActorRefProvider happens in two steps: first
+   * INTERNAL API: Initialization of an ActorRefProvider happens in two steps: first
    * construction of the object with settings, eventStream, etc.
    * and then—when the ActorSystem is constructed—the second phase during
    * which actors may be created (e.g. the guardians).
    */
-  def init(system: ActorSystemImpl): Unit
+  private[akka] def init(system: ActorSystemImpl): Unit
 
   /**
    * The Deployer associated with this ActorRefProvider
@@ -86,9 +86,9 @@ trait ActorRefProvider {
   def tempContainer: InternalActorRef
 
   /**
-   * Registers an actorRef at a path returned by tempPath(); do NOT pass in any other path.
+   * INTERNAL API: Registers an actorRef at a path returned by tempPath(); do NOT pass in any other path.
    */
-  def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit
+  private[akka] def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit
 
   /**
    * Unregister a temporary actor from the “/temp” path (i.e. obtained from tempPath()); do NOT pass in any other path.
@@ -96,7 +96,7 @@ trait ActorRefProvider {
   def unregisterTempActor(path: ActorPath): Unit
 
   /**
-   * Actor factory with create-only semantics: will create an actor as
+   * INTERNAL API: Actor factory with create-only semantics: will create an actor as
    * described by props with the given supervisor and path (may be different
    * in case of remote supervision). If systemService is true, deployment is
    * bypassed (local-only). If ``Some(deploy)`` is passed in, it should be
@@ -104,7 +104,7 @@ trait ActorRefProvider {
    * but it should be overridable from external configuration; the lookup of
    * the latter can be suppressed by setting ``lookupDeploy`` to ``false``.
    */
-  def actorOf(
+  private[akka] def actorOf(
     system:        ActorSystemImpl,
     props:         Props,
     supervisor:    InternalActorRef,
@@ -643,7 +643,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     tempContainer.removeChild(path.name)
   }
 
-  def init(_system: ActorSystemImpl) {
+  private[akka] def init(_system: ActorSystemImpl) {
     system = _system
     rootGuardian.start()
     // chain death watchers so that killing guardian stops the application
