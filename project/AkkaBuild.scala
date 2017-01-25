@@ -171,7 +171,7 @@ object AkkaBuild extends Build {
     //      Scope "test" is alright in the pom.xml, but would have been nicer with
     //      provided.
     dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
-        distributedData % "compile;test->provided", persistence % "provided;test", clusterTools)
+        distributedData, persistence % "compile;test->provided", clusterTools)
   ).configs(MultiJvm)
 
   lazy val distributedData = Project(
