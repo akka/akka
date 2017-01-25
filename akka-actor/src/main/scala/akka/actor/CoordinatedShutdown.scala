@@ -307,18 +307,24 @@ final class CoordinatedShutdown private[akka] (
                 }).map(_ ⇒ Done)(ExecutionContexts.sameThreadExecutionContext)
                 val timeout = phases(phase).timeout
                 val deadline = Deadline.now + timeout
-                val timeoutFut = after(timeout, system.scheduler) {
-                  if (phase == CoordinatedShutdown.PhaseActorSystemTerminate && deadline.hasTimeLeft) {
-                    // too early, i.e. triggered by system termination
+                val timeoutFut = try {
+                  after(timeout, system.scheduler) {
+                    if (phase == CoordinatedShutdown.PhaseActorSystemTerminate && deadline.hasTimeLeft) {
+                      // too early, i.e. triggered by system termination
+                      result
+                    } else if (result.isCompleted)
+                      Future.successful(Done)
+                    else if (recoverEnabled) {
+                      log.warning("Coordinated shutdown phase [{}] timed out after {}", phase, timeout)
+                      Future.successful(Done)
+                    } else
+                      Future.failed(
+                        new TimeoutException(s"Coordinated shutdown phase [$phase] timed out after $timeout"))
+                  }
+                } catch {
+                  case _: IllegalStateException ⇒
+                    // The call to `after` threw IllegalStateException, triggered by system termination
                     result
-                  } else if (result.isCompleted)
-                    Future.successful(Done)
-                  else if (recoverEnabled) {
-                    log.warning("Coordinated shutdown phase [{}] timed out after {}", phase, timeout)
-                    Future.successful(Done)
-                  } else
-                    Future.failed(
-                      new TimeoutException(s"Coordinated shutdown phase [$phase] timed out after $timeout"))
                 }
                 Future.firstCompletedOf(List(result, timeoutFut))
             })
