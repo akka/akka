@@ -16,9 +16,6 @@ import scala.util.Random
 object PrimitivesSerializationSpec {
   val serializationTestOverrides =
     """
-    akka.actor.enable-additional-serialization-bindings=on
-    # or they can be enabled with
-    # akka.remote.artery.enabled=on
     """
 
   val testConfig = ConfigFactory.parseString(serializationTestOverrides).withFallback(AkkaSpec.testConf)
@@ -96,8 +93,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
       "empty string" → "",
       "hello" → "hello",
       "árvíztűrőütvefúrógép" → "árvíztűrőütvefúrógép",
-      "random" → random
-    ).foreach {
+      "random" → random).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for [$scenario]" in {
             val serializer = SerializationExtension(system)
@@ -132,8 +128,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
       "empty string" → ByteString.empty,
       "simple content" → ByteString("hello"),
       "concatenated content" → (ByteString("hello") ++ ByteString("world")),
-      "sliced content" → ByteString("helloabc").take(5)
-    ).foreach {
+      "sliced content" → ByteString("helloabc").take(5)).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for [$scenario]" in {
             val serializer = SerializationExtension(system)
