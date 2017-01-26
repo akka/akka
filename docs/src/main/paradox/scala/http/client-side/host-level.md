@@ -144,6 +144,37 @@ please make sure that active connections are shut down before shutting down the 
 calling the `Http().shutdownAllConnectionPools()` method, and only once its Future completes, shutting down the actor system.
 @@@
 
-## Example
+## Examples
 
-@@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-example }
+@@@ note
+At this place we previously showed an example that used the `Source.single(request).via(pool).runWith(Sink.head)`. In
+fact, this is an anti-pattern that doesn't perform well. Please either supply requests using a queue or in a streamed fashion as
+shown below.
+@@@
+
+### Using the host-level API with a queue
+
+In many cases, you just want to issue requests to a pool and receive responses when they are available. In most cases,
+you should use the @ref[Request-Level Client-Side API](request-level.md) for this purpose. If you want to use a similar Future-based API
+with the host-level API, here's how to do it.
+
+As explained above, Akka HTTP prevents to build up an unbounded buffer of requests and an unlimited number of connections.
+Therefore, it guards itself a) by applying backpressure to all request streams connected to the cached pool and b)
+by failing requests with a `BufferOverflowException` when the internal buffer overflows when too many materializations
+exist or too many requests have been issued to the pool.
+
+To mimic the request-level API we can put an explicit queue in front of the pool and decide ourselves what to do when
+this explicit queue overflows. This example shows how to do this. (Thanks go to [kazuhiro's blog for the initial idea](http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/2016/01/31/connection-pooling-with-akka-http-and-source-queue.html).)
+
+You can tweak the `QueueSize` setting according to your memory constraints. In any case, you need to think about a strategy
+about what to do when requests fail because the queue overflowed (e.g. try again later or just fail).
+
+@@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-queue-example }
+
+### Using the host-level API in a streaming fashion
+
+Even better is it to use the streaming API directly. This will mostly prevent intermediate buffers as data can be
+generated "on-the-fly" while streaming the requests. You supply the requests as a stream, i.e. as a `Source[(HttpRequest, ...)]`, and
+the pool will "pull out" single requests when capacity is available on one of the connections to the host.
+
+@@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-streamed-example }
