@@ -4,9 +4,11 @@
 package akka.cluster.ddata
 
 object GSet {
-  private val _empty: GSet[Any] = new GSet(Set.empty)
+  private val _empty: GSet[Any] = new GSet(Set.empty)(None)
   def empty[A]: GSet[A] = _empty.asInstanceOf[GSet[A]]
   def apply(): GSet[Any] = _empty
+  private[akka] def apply[A](set: Set[A]): GSet[A] = new GSet(set)(None)
+
   /**
    * Java API
    */
@@ -27,7 +29,8 @@ object GSet {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final case class GSet[A](elements: Set[A]) extends ReplicatedData with ReplicatedDataSerialization with FastMerge {
+final case class GSet[A] private (elements: Set[A])(_delta: Option[GSet[A]])
+  extends DeltaReplicatedData with ReplicatedDataSerialization with FastMerge {
 
   type T = GSet[A]
 
@@ -53,15 +56,32 @@ final case class GSet[A](elements: Set[A]) extends ReplicatedData with Replicate
   /**
    * Adds an element to the set
    */
-  def add(element: A): GSet[A] = assignAncestor(copy(elements + element))
+  def add(element: A): GSet[A] = {
+    val newDelta = _delta match {
+      case Some(e) ⇒ Some(new GSet(e.elements + element)(None))
+      case None    ⇒ Some(new GSet[A](Set.apply[A](element))(None))
+    }
+    assignAncestor(new GSet[A](elements + element)(newDelta))
+  }
 
   override def merge(that: GSet[A]): GSet[A] =
     if ((this eq that) || that.isAncestorOf(this)) this.clearAncestor()
     else if (this.isAncestorOf(that)) that.clearAncestor()
     else {
       clearAncestor()
-      copy(elements union that.elements)
+      new GSet[A](elements union that.elements)(None)
     }
+
+  override def delta: GSet[A] = _delta match {
+    case Some(d) ⇒ d
+    case None    ⇒ GSet.empty[A]
+  }
+
+  override def resetDelta: GSet[A] = new GSet[A](elements)(None)
+
+  override def toString: String = s"G$elements"
+
+  def copy(e: Set[A] = elements) = new GSet[A](e)(_delta)
 }
 
 object GSetKey {
