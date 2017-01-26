@@ -1,7 +1,7 @@
 <a id="host-level-api-java"></a>
 # Host-Level Client-Side API
 
-As opposed to the @ref[Connection-Level Client-Side API](../client-side/connection-level.md#connection-level-api-java) the host-level API relieves you from manually managing individual HTTP
+As opposed to the @ref[Connection-Level Client-Side API](connection-level.md) the host-level API relieves you from manually managing individual HTTP
 connections. It autonomously manages a configurable pool of connections to *one particular target endpoint* (i.e.
 host/port combination).
 
@@ -140,4 +140,5 @@ shutting down the actor system.
 
 ## Example
 
-@@snip [HttpClientExampleDocTest.java](../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #host-level-example }
+For now, please see the Scala examples in @ref[Scala Host-Level Client API](../../../scala/http/client-side/host-level.md#examples).
+If you want to help with converting the examples see issue [#836](https://github.com/akka/akka-http/issues/836).

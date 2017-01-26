@@ -7,8 +7,6 @@ package docs.http.scaladsl
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
-import scala.concurrent.Future
-
 class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
 
   "manual-entity-consume-example-1" in compileOnlySpec {
@@ -39,12 +37,13 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
   "manual-entity-consume-example-2" in compileOnlySpec {
     //#manual-entity-consume-example-2
+    import scala.concurrent.Future
+    import scala.concurrent.duration._
+
     import akka.actor.ActorSystem
     import akka.http.scaladsl.model._
     import akka.stream.ActorMaterializer
     import akka.util.ByteString
-
-    import scala.concurrent.duration._
 
     implicit val system = ActorSystem()
     implicit val dispatcher = system.dispatcher
@@ -88,6 +87,8 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     //#manual-entity-discard-example-1
   }
   "manual-entity-discard-example-2" in compileOnlySpec {
+    import scala.concurrent.Future
+
     import akka.Done
     import akka.actor.ActorSystem
     import akka.http.scaladsl.model._
@@ -125,13 +126,27 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
         val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
           Http().outgoingConnection("akka.io")
-        val responseFuture: Future[HttpResponse] =
-          Source.single(HttpRequest(uri = "/"))
+
+        def dispatchRequest(request: HttpRequest): Future[HttpResponse] =
+          // This is actually a bad idea in general. Even if the `connectionFlow` was instantiated only once above,
+          // a new connection is opened every single time, `runWith` is called. Materialization (the `runWith` call)
+          // and opening up a new connection is slow.
+          //
+          // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest]`
+          // (other than Source.single) available that you want to use to run requests on a single persistent HTTP
+          // connection.
+          //
+          // Unfortunately, this case is so uncommon, that we couldn't come up with a good example.
+          //
+          // In almost all cases it is better to use the `Http().singleRequest()` API instead.
+          Source.single(request)
             .via(connectionFlow)
             .runWith(Sink.head)
 
+        val responseFuture: Future[HttpResponse] = dispatchRequest(HttpRequest(uri = "/"))
+
         responseFuture.andThen {
-          case Success(_) => println("request succeded")
+          case Success(_) => println("request succeeded")
           case Failure(_) => println("request failed")
         }.andThen {
           case _ => system.terminate()
@@ -141,26 +156,111 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     //#outgoing-connection-example
   }
 
-  "host-level-example" in compileOnlySpec {
-    //#host-level-example
+  "host-level-queue-example" in compileOnlySpec {
+    //#host-level-queue-example
+    import scala.util.{ Failure, Success }
+    import scala.concurrent.{ Future, Promise }
+
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
     import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
 
-    import scala.concurrent.Future
-    import scala.util.Try
+    import akka.stream.{ OverflowStrategy, QueueOfferResult }
 
     implicit val system = ActorSystem()
+    import system.dispatcher // to get an implicit ExecutionContext into scope
     implicit val materializer = ActorMaterializer()
-    // construct a pool client flow with context type `Int`
-    val poolClientFlow = Http().cachedHostConnectionPool[Int]("akka.io")
-    val responseFuture: Future[(Try[HttpResponse], Int)] =
-      Source.single(HttpRequest(uri = "/") -> 42)
+
+    val QueueSize = 10
+
+    // This idea came initially from this blog post:
+    // http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/2016/01/31/connection-pooling-with-akka-http-and-source-queue.html
+    val poolClientFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]]("akka.io")
+    val queue =
+      Source.queue[(HttpRequest, Promise[HttpResponse])](QueueSize, OverflowStrategy.dropNew)
         .via(poolClientFlow)
-        .runWith(Sink.head)
-    //#host-level-example
+        .toMat(Sink.foreach({
+          case ((Success(resp), p)) => p.success(resp)
+          case ((Failure(e), p))    => p.failure(e)
+        }))(Keep.left)
+        .run()
+
+    def queueRequest(request: HttpRequest): Future[HttpResponse] = {
+      val responsePromise = Promise[HttpResponse]()
+      queue.offer(request -> responsePromise).flatMap {
+        case QueueOfferResult.Enqueued    => responsePromise.future
+        case QueueOfferResult.Dropped     => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
+        case QueueOfferResult.Failure(ex) => Future.failed(ex)
+        case QueueOfferResult.QueueClosed => Future.failed(new RuntimeException("Queue was closed (pool shut down) while running the request. Try again later."))
+      }
+    }
+
+    val responseFuture: Future[HttpResponse] = queueRequest(HttpRequest(uri = "/"))
+    //#host-level-queue-example
+  }
+
+  "host-level-streamed-example" in compileOnlySpec {
+    //#host-level-streamed-example
+    import java.nio.file.Path
+
+    import scala.util.{ Failure, Success }
+    import scala.concurrent.Future
+
+    import akka.NotUsed
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model._
+    import akka.stream.ActorMaterializer
+    import akka.stream.scaladsl._
+
+    import akka.http.scaladsl.model.Multipart.FormData
+    import akka.http.scaladsl.marshalling.Marshal
+
+    implicit val system = ActorSystem()
+    import system.dispatcher // to get an implicit ExecutionContext into scope
+    implicit val materializer = ActorMaterializer()
+
+    case class FileToUpload(name: String, location: Path)
+
+    def filesToUpload(): Source[FileToUpload, NotUsed] = ???
+
+    val poolClientFlow =
+      Http().cachedHostConnectionPool[FileToUpload]("akka.io")
+
+    def createUploadRequest(fileToUpload: FileToUpload): Future[(HttpRequest, FileToUpload)] = {
+      val bodyPart =
+        // fromPath will use FileIO.fromPath to stream the data from the file directly
+        FormData.BodyPart.fromPath(fileToUpload.name, ContentTypes.`application/octet-stream`, fileToUpload.location)
+
+      val body = FormData(bodyPart) // only one file per upload
+      Marshal(body).to[RequestEntity].map { entity => // use marshalling to create multipart/formdata entity
+        // build the request and annotate it with the original metadata
+        HttpRequest(method = HttpMethods.POST, uri = "http://example.com/uploader", entity = entity) -> fileToUpload
+      }
+    }
+
+    // you need to supply the list of files to upload as a Source[...]
+    filesToUpload()
+      // The stream will "pull out" these requests when capacity is available.
+      // When that is the case we create one request concurrently
+      // (the pipeline will still allow multiple requests running at the same time)
+      .mapAsync(1)(createUploadRequest)
+      // then dispatch the request to the connection pool
+      .via(poolClientFlow)
+      // report each response
+      // Note: responses will not come in in the same order as requests. The requests will be run on one of the
+      // multiple pooled connections and may thus "overtake" each other.
+      .runForeach {
+        case (Success(response), fileToUpload) =>
+          // TODO: also check for response status code
+          println(s"Result for file: $fileToUpload was successful: $response")
+          response.discardEntityBytes() // don't forget this
+        case (Failure(ex), fileToUpload) =>
+          println(s"Uploading file $fileToUpload failed with $ex")
+      }
+    //#host-level-streamed-example
   }
 
   "single-request-example" in compileOnlySpec {
