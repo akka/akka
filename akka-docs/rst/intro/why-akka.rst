@@ -6,7 +6,7 @@ What features can the Akka platform offer, over the competition?
 
 Akka provides scalable real-time transaction processing.
 
-Akka is an unified runtime and programming model for:
+Akka is a unified runtime and programming model for:
 
 - Scale up (Concurrency)
 - Scale out (Remoting)
