@@ -1,4 +1,3 @@
-<a id="denial-of-service-stream-unconsumed-closed-connections"></a>
 # Denial-of-Service by stream leak on unconsumed closed connections
 
 ## Date
