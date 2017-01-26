@@ -4,8 +4,8 @@
 
 @@@ index
 
+* [security](security.md)
 * [java](java.md)
 * [scala](scala.md)
-* [security](security.md)
 
 @@@
