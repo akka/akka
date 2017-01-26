@@ -17,10 +17,10 @@ to ensure that a fix can be provided without delay.
 
 ## Fixed Security Vulnerabilities
 
+### Fixed in Akka HTTP 10.0.2 & 2.4.11.1
+
+* @ref:[Denial-of-Service by stream leak on unconsumed closed connections](security/2017-01-23-denial-of-service-via-leak-on-unconsumed-closed-connections.md)
+
 ### Fixed in Akka HTTP 2.4.11
 
 * @ref:[Directory Traversal Vulnerability Announcement](security/2016-09-30-windows-directory-traversal.md)
-
-### Fixed in Akka HTTP 10.0.2 & 2.4.11.1
- 
-* @ref:[Denial-of-Service by stream leak on unconsumed closed connections](security/2017-01-23-denial-of-service-via-leak-on-unconsumed-closed-connections.md)
