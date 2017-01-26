@@ -93,6 +93,8 @@ object MiMa extends AutoPlugin {
     import com.typesafe.tools.mima.core._
 
     val bcIssuesBetween24and25 = Seq(
+      // ##22269 GSet as delta-CRDT
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GSet.this"), // constructor supplied by companion object
 
       // #21875 delta-CRDT
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GCounter.this"), 
