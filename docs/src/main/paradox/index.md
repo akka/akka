@@ -5,6 +5,7 @@
 @@@ index
 
 * [security](security.md)
+* [release notes](release-notes.md)
 * [java](java.md)
 * [scala](scala.md)
 
