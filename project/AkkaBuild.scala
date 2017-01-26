@@ -55,7 +55,6 @@ object AkkaBuild extends Build {
     contrib,
     distributedData,
     docs,
-    kernel,
     multiNodeTestkit,
     osgi,
     persistence,
@@ -242,12 +241,6 @@ object AkkaBuild extends Build {
     id = "akka-stream-tests-tck",
     base = file("akka-stream-tests-tck"),
     dependencies = Seq(streamTestkit % "test->test", stream)
-  )
-
-  lazy val kernel = Project(
-    id = "akka-kernel",
-    base = file("akka-kernel"),
-    dependencies = Seq(actor, testkit % "test->test")
   )
 
   lazy val camel = Project(
