@@ -7,7 +7,7 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FRAME_SIZE_ERROR }
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FLOW_CONTROL_ERROR, FRAME_SIZE_ERROR }
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
@@ -178,10 +178,18 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
             case SettingsFrame(settings) ⇒
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
+
+              var settingsAppliedOk = true
+
               settings.foreach {
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
-                  debug(s"Setting initial window to $value")
-                  multiplexer.updateDefaultWindow(value)
+                  if (value >= 0) {
+                    debug(s"Setting initial window to $value")
+                    multiplexer.updateDefaultWindow(value)
+                  } else {
+                    pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
+                    settingsAppliedOk = false
+                  }
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
                   multiplexer.updateFrameSize(value)
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) ⇒
@@ -191,7 +199,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                   debug(s"Ignoring setting $id -> $value (in Demux)")
               }
 
-              multiplexer.pushControlFrame(SettingsAckFrame(settings))
+              if (settingsAppliedOk) {
+                multiplexer.pushControlFrame(SettingsAckFrame(settings))
+              }
 
             case PingFrame(true, _) ⇒
             // ignore for now (we don't send any pings)
