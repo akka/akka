@@ -1154,9 +1154,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
     "be able to persist events that happen during recovery" in {
       val persistentActor = namedPersistentActor[PersistInRecovery]
       persistentActor ! GetState
-      expectMsg(List("a-1", "a-2", "rc-1", "rc-2"))
-      persistentActor ! GetState
-      expectMsg(List("a-1", "a-2", "rc-1", "rc-2", "rc-3"))
+      expectMsgAnyOf(List("a-1", "a-2", "rc-1", "rc-2"), List("a-1", "a-2", "rc-1", "rc-2", "rc-3"))
       persistentActor ! Cmd("invalid")
       persistentActor ! GetState
       expectMsg(List("a-1", "a-2", "rc-1", "rc-2", "rc-3", "invalid"))
