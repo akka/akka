@@ -14,15 +14,16 @@
 
 # FIXME support authentication? if so add: -Dcom.sun.management.jmxremote.password.file=<path to file> AND tweak this script to support it (arg need 'user:passwd' instead of '-')
 
-declare AKKA_HOME="$(cd "$(cd "$(dirname "$0")"; pwd -P)"/..; pwd)"
+
 
 SELF=`basename $0` # script name
 HOST=$1            # cluster node to talk to through JMX
 PORT=$2
+JMXSHJAR=`dirname $0`/jmxsh-R5.jar
 
 shift 2
 
-JMX_CLIENT="java -jar $AKKA_HOME/bin/jmxsh-R5.jar -h $HOST -p $PORT /dev/fd/0"
+JMX_CLIENT="java -jar $JMXSHJAR -h $HOST -p $PORT /dev/fd/0"
 
 function invoke() {
   echo jmx_invoke -m akka:type=Cluster "$@" | $JMX_CLIENT
@@ -169,7 +170,7 @@ case "$1" in
         ;;
 
     *)
-        printf "Usage: bin/$SELF <node-hostname> <jmx-port> <command> ...\n"
+        printf "Usage: $0 <node-hostname> <jmx-port> <command> ...\n"
         printf "\n"
         printf "Supported commands are:\n"
         printf "%26s - %s\n" "join <node-url>"   "Sends request a JOIN node with the specified URL"
@@ -184,9 +185,9 @@ case "$1" in
         printf "%26s - %s\n" is-available        "Checks if the member node is available"
         printf "Where the <node-url> should be on the format of 'akka.tcp://actor-system-name@hostname:port'\n"
         printf "\n"
-        printf "Examples: bin/$SELF localhost 9999 is-available\n"
-        printf "          bin/$SELF localhost 9999 join akka.tcp://MySystem@darkstar:2552\n"
-        printf "          bin/$SELF localhost 9999 cluster-status\n"
+        printf "Examples: $0 localhost 9999 is-available\n"
+        printf "          $0 localhost 9999 join akka.tcp://MySystem@darkstar:2552\n"
+        printf "          $0 localhost 9999 cluster-status\n"
         exit 1
         ;;
 esac
