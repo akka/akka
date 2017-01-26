@@ -721,12 +721,11 @@ Command Line
   in the next major version. Use the :ref:`cluster_http_scala` API with `curl <https://curl.haxx.se/>`_
   or similar instead.
 
-The cluster can be managed with the script `bin/akka-cluster` provided in the
-Akka distribution.
+The cluster can be managed with the script ``akka-cluster`` provided in the Akka github repository here: @github@/akka-cluster/jmx-client. Place the script and the ``jmxsh-R5.jar`` library in the same directory.
 
 Run it without parameters to see instructions about how to use the script::
 
-  Usage: bin/akka-cluster <node-hostname> <jmx-port> <command> ...
+  Usage: ./akka-cluster <node-hostname> <jmx-port> <command> ...
 
   Supported commands are:
              join <node-url> - Sends request a JOIN node with the specified URL
@@ -744,9 +743,9 @@ Run it without parameters to see instructions about how to use the script::
   Where the <node-url> should be on the format of
     'akka.<protocol>://<actor-system-name>@<hostname>:<port>'
 
-  Examples: bin/akka-cluster localhost 9999 is-available
-            bin/akka-cluster localhost 9999 join akka.tcp://MySystem@darkstar:2552
-            bin/akka-cluster localhost 9999 cluster-status
+  Examples: ./akka-cluster localhost 9999 is-available
+            ./akka-cluster localhost 9999 join akka.tcp://MySystem@darkstar:2552
+            ./akka-cluster localhost 9999 cluster-status
 
 
 To be able to use the script you must enable remote monitoring and management when starting the JVMs of the cluster nodes,
