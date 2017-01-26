@@ -1,6 +1,6 @@
 name := "akka-sample-persistence-java-lambda"
 
-version := "2.5-SNAPSHOT"
+version := "2.5-M1"
 
 scalaVersion := "2.11.8"
 
@@ -9,7 +9,7 @@ javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target
 javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-Xdoclint:none")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-persistence" % "2.5-SNAPSHOT",
+  "com.typesafe.akka" %% "akka-persistence" % "2.5-M1",
   "org.iq80.leveldb" % "leveldb" % "0.7",
   "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8"
 )
