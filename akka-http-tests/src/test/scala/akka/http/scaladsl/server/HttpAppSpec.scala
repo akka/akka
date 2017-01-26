@@ -82,7 +82,7 @@ class HttpAppSpec extends AkkaSpec with Directives with RequestBuilding with Eve
       callAndVerify(host, port, "shutdown")
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
-      system.isTerminated should ===(false)
+      system.whenTerminated.isCompleted should ===(false)
     }
 
     "provide binding if available" in {

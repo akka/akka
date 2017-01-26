@@ -59,7 +59,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
-      system.isTerminated should ===(false)
+      system.whenTerminated.isCompleted should ===(false)
     }
 
     "provide binding if available" in {
