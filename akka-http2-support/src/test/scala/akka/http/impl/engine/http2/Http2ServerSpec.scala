@@ -545,7 +545,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
       }
 
       "received SETTINGS_MAX_FRAME_SIZE should cause outgoing DATA to be chunked up into at-most-that-size parts " in new TestSetup with RequestResponseProbes {
-        val maxSize = Math.pow(2, 15).toInt // 32768, valid value (between 2^14 and 2^14 - 1)
+        val maxSize = Math.pow(2, 15).toInt // 32768, valid value (between 2^14 and 2^24 - 1)
         sendSETTING(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, maxSize)
 
         expectSettingsAck()
@@ -573,7 +573,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
         sendSETTING(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 1)
         expectSettingsAck()
 
-        // TODO actually apply the limiting and verify it works
+        // TODO actually apply the limiting and verify it works		
       }
 
       "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {

@@ -103,7 +103,6 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       private var closedAfter: Option[Int] = None
       private var incomingStreams = mutable.Map.empty[Int, SubStream]
       private var maxConcurrentStreams: Option[Int] = None
-
       /**
        * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
        * @see http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
@@ -112,7 +111,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         incomingStreams.keys.toList.sortBy(-_).headOption.getOrElse(0) // FIXME should be optimised
       }
 
-      def pushGOAWAY(errorCode: ErrorCode = Http2Protocol.ErrorCode.PROTOCOL_ERROR, debug: String = ""): Unit = {
+      def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
         // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
         val last = lastStreamId
         closedAfter = Some(last)
@@ -129,7 +128,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case WindowUpdateFrame(streamId, increment) ⇒ multiplexer.updateWindow(streamId, increment)
 
             case e: StreamFrameEvent if !Http2Compliance.isClientInitiatedStreamId(e.streamId) ⇒
-              pushGOAWAY()
+              pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Not a valid client initiated stream id! Was: " + e.streamId)
 
             case e: StreamFrameEvent if e.streamId > closedAfter.getOrElse(Int.MaxValue) ⇒
             // streams that will have a greater stream id than the one we sent with GOAWAY will be ignored
@@ -152,12 +151,17 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
               dispatchSubstream(Http2SubStream(frame, data))
 
+            case PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
+              // must be before the "unknown stream id" case, since can be sent eagerly (e.g. firefox does so)
+              debug(s"Received PriorityFrame for stream $streamId with ${if (exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
+
             case e: StreamFrameEvent if !incomingStreams.contains(e.streamId) ⇒
               // if a stream is invalid we will GO_AWAY
-              pushGOAWAY()
+              pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Unknown stream id: " + e.streamId)
 
             case h: ParsedHeadersFrame ⇒
-              pushGOAWAY()
+              // TODO: probably a trailing header frame here which we currently don't support but which we should ignore. 
+              pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Unexpected internal frame reached Demux! Was: " + h)
 
             case DataFrame(streamId, endStream, payload) ⇒
               // technically this case is the same as StreamFrameEvent, however we're handling it earlier in the match here for efficiency
@@ -172,9 +176,6 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case RstStreamFrame(streamId, errorCode) ⇒
               // FIXME: also need to handle the other case when no response has been produced yet (inlet still None)
               multiplexer.cancelSubStream(streamId)
-
-            case PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
-              debug(s"Received PriorityFrame for stream $streamId with ${if (exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
 
             case SettingsFrame(settings) ⇒
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
@@ -219,7 +220,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           ex match {
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
             case e: Http2Compliance.IllegalHttp2StreamIdException ⇒
-              pushGOAWAY()
+              pushGOAWAY(ErrorCode.PROTOCOL_ERROR, e.getMessage)
 
             case e: Http2Compliance.Http2ProtocolException ⇒
               pushGOAWAY(e.errorCode, e.getMessage)
