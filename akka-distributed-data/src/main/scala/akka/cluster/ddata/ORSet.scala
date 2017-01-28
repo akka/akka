@@ -347,6 +347,24 @@ final class ORSet[A] private[akka] (
     }
   }
 
+  private def coalesceDeltas(lhs: ORSet[A], rhs: ORSet[A]): ORSet[A] = {
+    val joinedMapKeys = lhs.elementsMap.keySet ++ rhs.elementsMap.keySet
+    val updateMap = joinedMapKeys.foldLeft(List.empty[(A, ORSet.Dot)]) {
+      (acc: List[(A, ORSet.Dot)], key: A) ⇒
+        {
+          val el: (A, ORSet.Dot) = if (lhs.elementsMap.contains(key) && rhs.elementsMap.contains(key)) {
+            (key, lhs.elementsMap.get(key).get.merge(rhs.elementsMap.get(key).get))
+          } else if (lhs.elementsMap.contains(key)) {
+            (key, lhs.elementsMap.get(key).get)
+          } else {
+            (key, rhs.elementsMap.get(key).get)
+          }
+          acc :+ el
+        }
+    }
+    new ORSet(updateMap.toMap, lhs.vvector.merge(rhs.vvector))
+  }
+
   override def merge(that: ORSet[A]): ORSet[A] = {
     val thisDelta = (this.vvector.contains(ORSet.addTag) || this.vvector.contains(ORSet.removeTag))
     val thatDelta = (that.vvector.contains(ORSet.addTag) || that.vvector.contains(ORSet.removeTag))
@@ -356,7 +374,9 @@ final class ORSet[A] private[akka] (
     //    println("that elements: " + that.elementsMap.toString())
     //    println("that vector " + that.vvector.toString)
     val mergeResult =
-      if ((thisDelta && thatDelta) || (!thisDelta && !thatDelta)) // deltas merge is like non deltas merge
+      if ((thisDelta && thatDelta)) {
+        coalesceDeltas(this, that)
+      } else if ((!thisDelta && !thatDelta))
         nonDeltaMerge(this, that)
       else {
         if (thisDelta) {
@@ -383,7 +403,7 @@ final class ORSet[A] private[akka] (
           }
           val lhs = llhs
           val rhs = new ORSet[A](llhs.elementsMap ++ updateMap.toMap, llhs.vvector.merge(rhsVector))
-          rhs
+          nonDeltaMerge(lhs, rhs)
         } else {
           val llhs = this
           val rrhs = that
@@ -407,7 +427,7 @@ final class ORSet[A] private[akka] (
           }
           val lhs = llhs
           val rhs = new ORSet[A](llhs.elementsMap ++ updateMap.toMap, llhs.vvector.merge(rhsVector))
-          rhs
+          nonDeltaMerge(lhs, rhs)
         }
       }
     //    println("final elements: " + mergeResult.elementsMap.toString)
