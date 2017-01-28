@@ -84,12 +84,32 @@ class ORSetSpec extends WordSpec with Matchers {
 
       println(c5m3.toString)
 
-      val c6 = c5m3 merge c4Delta
+      val c7 = c5m3 merge c4Delta
 
-      println(c6.toString)
+      println(c7.toString)
+
+      println("SUMMARY")
+
+      val c6m1 = c5 merge c3Delta
+
+      println(c6m1.toString)
+
+      val c6m2 = c6m1 merge c2aDelta
+
+      println(c6m2.toString)
+
+      val c6m3 = c6m2 merge c4Delta
+
+      println(c6m3.toString)
+
+      val c8 = c6m3 merge c2bDelta
+
+      println(c8.toString)
+
+      println("SUMMARY")
 
       // c7 != c6 as currently deltas cannot be merged out of order
-      val c7 = c5 merge c3Delta merge c2aDelta merge c4Delta merge c2bDelta
+      val c6 = c5 merge c3Delta merge c2aDelta merge c4Delta merge c2bDelta
 
       c6.elements should contain(user1)
       c6.elements should contain(user2)
