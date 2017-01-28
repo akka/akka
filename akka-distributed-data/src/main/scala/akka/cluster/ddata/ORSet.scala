@@ -172,12 +172,12 @@ object ORSet {
   /**
    * INTERNAL API
    */
-  private[akka] val addTag = UniqueAddress(Address("delta-add-tag", "tag", "localhost", 0), 1)
+  private[akka] val addTag = UniqueAddress(Address("delta-add-tag", "tag", "localhostabc", 0), 1)
 
   /**
    * INTERNAL API
    */
-  private[akka] val removeTag = UniqueAddress(Address("delta-remove-tag", "tag", "localhost", 0), 1)
+  private[akka] val removeTag = UniqueAddress(Address("delta-remove-tag", "tag", "localhostcde", 0), 1)
 }
 
 /**
@@ -304,6 +304,7 @@ final class ORSet[A] private[akka] (
    * INTERNAL API
    */
   private[akka] def clear(node: UniqueAddress): ORSet[A] = {
+    // FIXME: this is wrong... fix a bit
     //    println("CLEAR on vector " + this.toString)
     val newDelta = _delta match {
       case Some(d) ⇒
@@ -368,7 +369,7 @@ final class ORSet[A] private[akka] (
   override def merge(that: ORSet[A]): ORSet[A] = {
     val thisDelta = (this.vvector.contains(ORSet.addTag) || this.vvector.contains(ORSet.removeTag))
     val thatDelta = (that.vvector.contains(ORSet.addTag) || that.vvector.contains(ORSet.removeTag))
-    //    println("MERGE\n DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta)
+    //    println("MERGE\n DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta + "\n constants: " + ORSet.addTag.toString + " " + ORSet.removeTag.toString)
     //    println("this elements: " + this.elementsMap.toString())
     //    println("this vector " + this.vvector.toString)
     //    println("that elements: " + that.elementsMap.toString())
@@ -383,10 +384,12 @@ final class ORSet[A] private[akka] (
           // apply Delta creating new rhs, non-delta as lhs
           val llhs = that
           val rrhs = this
-          def f(el: (UniqueAddress, Long)): Boolean = (el._1 == ORSet.addTag || el._1 == ORSet.removeTag)
+          def f(el: (UniqueAddress, Long)): Boolean = el._1.address.host == ORSet.addTag.address.host
           val lst = rrhs.vvector.versionsIterator.toList.filterNot(f)
+          //          lst.foreach { x ⇒ println(x._1.address.protocol) }
           val rhsVector = VersionVector(lst)
-          //          println("is filtered delta? " + rhsVector.contains(ORSet.addTag) + " " + rhsVector.contains(ORSet.removeTag))
+          //          println("filtering sanity: \n original " + rrhs.vvector.toString + " pairs " + lst.toString)
+          //          println("is filtered delta? " + rhsVector.contains(ORSet.addTag) + " " + rhsVector.contains(ORSet.removeTag) + "\n\t VVecotr " + rhsVector.toString)
           // fold here
           val updateMap = rrhs.elementsMap.foldLeft(List.empty[(A, ORSet.Dot)]) {
             (acc: List[(A, ORSet.Dot)], pair: (A, ORSet.Dot)) ⇒
@@ -407,11 +410,13 @@ final class ORSet[A] private[akka] (
         } else {
           val llhs = this
           val rrhs = that
-          def f(el: (UniqueAddress, Long)): Boolean = (el._1 == ORSet.addTag || el._1 == ORSet.removeTag)
+          def f(el: (UniqueAddress, Long)): Boolean = el._1.address.host == ORSet.addTag.address.host
           val lst = rrhs.vvector.versionsIterator.toList.filterNot(f)
+          //          lst.foreach { x ⇒ println(x._1.address.protocol) }
           val rhsVector = VersionVector(lst)
-          //          println("is filtered delta? " + rhsVector.contains(ORSet.addTag) + " " + rhsVector.contains(ORSet.removeTag))
-          // fold here
+          //          println("filtering sanity: \n original " + rrhs.vvector.toString + " pairs " + lst.toString)
+          //          println("is filtered delta? " + rhsVector.contains(ORSet.addTag) + " " + rhsVector.contains(ORSet.removeTag) + "\n\t VVecotr " + rhsVector.toString)
+          //          // fold here
           val updateMap = rrhs.elementsMap.foldLeft(List.empty[(A, ORSet.Dot)]) {
             (acc: List[(A, ORSet.Dot)], pair: (A, ORSet.Dot)) ⇒
               {
@@ -431,7 +436,7 @@ final class ORSet[A] private[akka] (
         }
       }
     //    println("final elements: " + mergeResult.elementsMap.toString)
-    //    println("final vector: " + mergeResult.vvector.toString)
+    //    println("final vector: " + mergeResult.vvector.toString + "\n is final delta? " + mergeResult.vvector.contains(ORSet.addTag))
     mergeResult
   }
 
