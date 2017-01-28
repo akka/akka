@@ -9,9 +9,9 @@ import akka.util.ByteString
 import akka.http.scaladsl.model.headers.`Content-Length`
 import akka.http.impl.engine.parsing.SpecializedHeaderValueParsers.ContentLengthParser
 
-class ContentLengthHeaderParserSpec extends WordSpec with Matchers {
+abstract class ContentLengthHeaderParserSpec(mode: String, newLine: String) extends WordSpec with Matchers {
 
-  "specialized ContentLength parser" should {
+  s"specialized ContentLength parser (mode: $mode)" should {
     "accept zero" in {
       parse("0") shouldEqual 0L
     }
@@ -30,8 +30,12 @@ class ContentLengthHeaderParserSpec extends WordSpec with Matchers {
   }
 
   def parse(bigint: String): Long = {
-    val (`Content-Length`(length), _) = ContentLengthParser(null, ByteString(bigint + "\r\n").compact, 0, _ ⇒ ())
+    val (`Content-Length`(length), _) = ContentLengthParser(null, ByteString(bigint + newLine).compact, 0, _ ⇒ ())
     length
   }
 
 }
+
+class ContentLengthHeaderParserCRLFSpec extends ContentLengthHeaderParserSpec("CRLF", "\r\n")
+
+class ContentLengthHeaderParserLFSpec extends ContentLengthHeaderParserSpec("LF", "\n")

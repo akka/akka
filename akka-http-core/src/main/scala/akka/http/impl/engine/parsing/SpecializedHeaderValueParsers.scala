@@ -26,6 +26,7 @@ private object SpecializedHeaderValueParsers {
         else if (DIGIT(c)) recurse(ix + 1, result * 10 + c - '0')
         else if (WSP(c)) recurse(ix + 1, result)
         else if (c == '\r' && byteChar(input, ix + 1) == '\n') (`Content-Length`(result), ix + 2)
+        else if (c == '\n') (`Content-Length`(result), ix + 1)
         else fail("Illegal `Content-Length` header value")
       }
       recurse()

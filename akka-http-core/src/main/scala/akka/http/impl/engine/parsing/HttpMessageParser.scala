@@ -242,6 +242,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
           case c if CharacterClasses.HEXDIG(c) ⇒ parseSize(cursor + 1, size * 16 + CharUtils.hexValue(c))
           case ';' if cursor > offset ⇒ parseChunkExtensions(size.toInt, cursor + 1)()
           case '\r' if cursor > offset && byteChar(input, cursor + 1) == '\n' ⇒ parseChunkBody(size.toInt, "", cursor + 2)
+          case '\n' if cursor > offset ⇒ parseChunkBody(size.toInt, "", cursor + 1)
           case c ⇒ failEntityStream(s"Illegal character '${escape(c)}' in chunk start")
         }
       } else failEntityStream(s"HTTP chunk size exceeds the configured limit of ${settings.maxChunkSize} bytes")

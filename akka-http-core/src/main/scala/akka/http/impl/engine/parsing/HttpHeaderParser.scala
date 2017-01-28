@@ -463,6 +463,7 @@ private[http] object HttpHeaderParser {
     insertInGoodOrder(specializedHeaderValueParsers)()
     insertInGoodOrder(predefinedHeaders.sorted)()
     parser.insert(ByteString("\r\n"), EmptyHeader)()
+    parser.insert(ByteString("\n"), EmptyHeader)()
     parser
   }
 
@@ -522,6 +523,9 @@ private[http] object HttpHeaderParser {
         case '\r' if byteChar(input, ix + 1) == '\n' ⇒
           if (WSP(byteChar(input, ix + 2))) scanHeaderValue(hhp, input, start, limit, log, mode)(appended(' '), ix + 3)
           else (if (sb != null) sb.toString else asciiString(input, start, ix), ix + 2)
+        case '\n' ⇒
+          if (WSP(byteChar(input, ix + 1))) scanHeaderValue(hhp, input, start, limit, log, mode)(appended(' '), ix + 2)
+          else (if (sb != null) sb.toString else asciiString(input, start, ix), ix + 1)
         case c ⇒
           var nix = ix + 1
           val nsb =
