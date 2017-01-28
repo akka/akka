@@ -115,7 +115,7 @@ Since Akka HTTP is released separately to Akka "core" yet some features require 
 to be able to develop Akka HTTP with Akka's sources used directly instead of the binary dependency. You can check out the Akka 
 repository and run sbt with `-Dakka.sources=$HOME/akka` to develop Akka HTTP with Akka as a source dependency instead of a binary one.
 
-This allows simple and fast iterations on changes that would need to be intoduced in Akka to develop a feature in HTTP that would require those.
+This allows simple and fast iterations on changes that would need to be introduced in Akka to develop a feature in HTTP that would require those.
 
 ## Binary compatibility
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules

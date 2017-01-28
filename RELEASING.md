@@ -1,6 +1,6 @@
 ## Releasing
 
-1. Create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release decsription including notable changes mentioning external contributors.
+1. Create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description including notable changes mentioning external contributors.
 2. Travis CI will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray and will sync them to Maven Central.
 3. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.0 deployRsync repo.akka.io"` to deploy API and reference documentation.
 4. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
