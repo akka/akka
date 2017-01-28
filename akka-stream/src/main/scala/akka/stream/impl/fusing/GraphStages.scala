@@ -327,14 +327,20 @@ object GraphStages {
 
             sinkIn.pull()
 
-            val src = Source.fromGraph(graph).watchTermination() { (m, done) ⇒
-              materialized.completeWith(
-                done.map(_ ⇒ m)(ExecutionContexts.sameThreadExecutionContext))
-            }
+            val src = Source.fromGraph(graph)
+            val runnable = src.to(sinkIn.sink)
 
-            interpreter.subFusingMaterializer.materialize(
-              src.to(sinkIn.sink),
-              initialAttributes = attr)
+            try {
+              val matVal = interpreter.subFusingMaterializer.materialize(
+                runnable,
+                initialAttributes = attr)
+
+              materialized.success(matVal)
+            } catch {
+              case cause: Throwable ⇒
+                materialized.failure(cause)
+                failStage(cause)
+            }
           }
 
           case scala.util.Failure(t) ⇒ failStage(t)

@@ -23,7 +23,9 @@ import akka.stream.testkit.Utils.assertAllStagesStopped
 
 class FutureFlattenSpec extends StreamSpec {
   val materializer = ActorMaterializer()
-  //implicit def ec: ExecutionContext = materializer.executionContext
+
+  // Seen tests run in 9-10 seconds, these test cases are heavy on the GC
+  val veryPatient = Timeout(20.seconds)
 
   "Future source" must {
     "use default materializer" when {
@@ -43,7 +45,7 @@ class FutureFlattenSpec extends StreamSpec {
           NotUsed
         }
 
-        val p = watched.runWith(Sink.asPublisher(false))
+        val p = watched.runWith(Sink asPublisher false)
         val c = TestSubscriber.manualProbe[Int]()
         p.subscribe(c)
 
@@ -56,7 +58,7 @@ class FutureFlattenSpec extends StreamSpec {
 
         c.expectComplete()
 
-        Await.result(materialized.future, 3.seconds) should ===("foo")
+        materialized.future.futureValue(Timeout(3.seconds)) should ===("foo")
       }
     }
 
@@ -66,9 +68,6 @@ class FutureFlattenSpec extends StreamSpec {
       implicit def ec = noFusing.executionContext
 
       val tooDeepForStack = 50000
-
-      // Seen tests run in 9-10 seconds, these test cases are heavy on the GC
-      val veryPatient = Timeout(20.seconds)
 
       "flattening from a future graph" in assertAllStagesStopped {
         val g = Source.fromFutureSource(Future {
@@ -98,10 +97,96 @@ class FutureFlattenSpec extends StreamSpec {
       }
     }
 
-    // TODO: downstream cancels before the future is completed
-    // TODO: the future is completed with a failure
+    "be cancelled before the underlying Future completes" in {
+      implicit def m = materializer
+
+      assertAllStagesStopped {
+        val promise = Promise[Source[Int, Int]]()
+        val aside = Promise[Int]()
+        val result = Promise[akka.Done]()
+        def futureSource = Source.fromFutureSource(
+          promise.future).map { i ⇒
+          aside.success(i); i // should never occur
+        }.watchTermination[Unit]() {
+          case (_, res) ⇒ result.completeWith(res); ()
+        }
+
+        futureSource.runWith(Sink.cancelled) should ===(NotUsed)
+        result.future.futureValue should ===(akka.Done)
+        aside.future.isCompleted should ===(false)
+      }
+    }
+
+    "fails as the underlying Future is failed" in {
+      implicit def m = materializer
+
+      assertAllStagesStopped {
+        val promise = Promise[Source[Int, Int]]()
+        val result = Promise[akka.Done]()
+        def futureSource = Source.fromFutureSource(promise.future)
+        def sink = Sink.fold[Int, Int](1)(_ * _)
+
+        promise.failure(new Exception("Foo"))
+
+        futureSource.runWith(sink).failed.
+          map(_.getMessage)(m.executionContext).futureValue should ===("Foo")
+      }
+    }
+
     // TODO: downstream is applying backpressure when the future completes
-    // TODO: the future is completed with a graph that fails to materialize (throws exception)
+
+    "applies back-pressure according future completion" in {
+      implicit def m = materializer
+
+      assertAllStagesStopped {
+        val probe = TestSubscriber.probe[Float]()
+        val underlying = Iterator.iterate(0.1F)(_ + 0.1F).take(3)
+        val promise = Promise[Source[Float, NotUsed]]()
+        val first = Promise[Unit]()
+        lazy val futureSource =
+          Source.fromFutureSource(promise.future).map {
+            case 0.1F ⇒
+              first.success({}); 1.1F
+            case f    ⇒ (f * 10F) + 0.1F
+          }
+
+        futureSource.runWith(Sink asPublisher true).subscribe(probe)
+        promise.isCompleted should ===(false)
+
+        val sub = probe.expectSubscription()
+
+        promise.success(Source.fromIterator(() ⇒ underlying))
+        first.isCompleted should ===(false)
+
+        sub.request(5)
+        probe.expectNext(1.1F)
+        probe.expectNext(2.1F)
+        probe.expectNext(3.1F)
+        probe.expectComplete()
+
+        first.isCompleted should ===(true)
+      }
+    }
+
+    "be materialized with a failure" in {
+      implicit def m = materializer
+      implicit def ec = m.executionContext
+
+      assertAllStagesStopped {
+        def underlying = Future(Source.single(100L).
+          mapMaterializedValue(_ ⇒ sys.error("MatEx")))
+
+        val aside = Promise[Long]()
+        def futureSource = Source.fromFutureSource(underlying).
+          map { i ⇒ aside.success(i); i }
+
+        val x = futureSource.runWith(Sink.last).onComplete {
+          case res ⇒ println(s"res = $res")
+        }
+
+        // x.failed.map(_.getMessage).futureValue should ===("MatEx")
+      }
+    }
   }
 
   "ActorGraphInterpreter" must {
@@ -123,7 +208,6 @@ class FutureFlattenSpec extends StreamSpec {
               push(shape.out, -1)
             }
           })
-
         }
       }
 
