@@ -369,6 +369,7 @@ final class ORSet[A] private[akka] (
   override def merge(that: ORSet[A]): ORSet[A] = {
     val thisDelta = (this.vvector.contains(ORSet.addTag) || this.vvector.contains(ORSet.removeTag))
     val thatDelta = (that.vvector.contains(ORSet.addTag) || that.vvector.contains(ORSet.removeTag))
+    //println("MERGE DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta)
     //    println("MERGE\n DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta + "\n constants: " + ORSet.addTag.toString + " " + ORSet.removeTag.toString)
     //    println("this elements: " + this.elementsMap.toString())
     //    println("this vector " + this.vvector.toString)
@@ -437,6 +438,13 @@ final class ORSet[A] private[akka] (
       }
     //    println("final elements: " + mergeResult.elementsMap.toString)
     //    println("final vector: " + mergeResult.vvector.toString + "\n is final delta? " + mergeResult.vvector.contains(ORSet.addTag))
+    println("MERGE DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta + "\n merging " + this.elements.toString + "\n with: " + that.elements.toString + "\n\t geting: " + mergeResult.elements.toString)
+    //    if (mergeResult.elements.size < this.elements.size || mergeResult.elements.size < that.elements.size) {
+    //      println("NOT GOOD, debug info: deltas involved? " + thisDelta + "/" + thatDelta + "\nthis elements: " + this.elementsMap.toString + "\nthis vector " + this.vvector.toString +
+    //        "\nthat elements: " + that.elementsMap.toString + "\nthat vector " + that.vvector.toString +
+    //        "\n\tfinal elements: " + mergeResult.elementsMap.toString + "\n\t vector: " + mergeResult.vvector.toString)
+    //
+    //    }
     mergeResult
   }
 
