@@ -128,6 +128,109 @@ class ORSetSpec extends WordSpec with Matchers {
       c6.elements should contain(user3)
     }
 
+    // not good enough test, improve :)
+    "be able to produce the same result with deltas as with normal updates" in {
+      val c1 = ORSet()
+
+      val c2 = c1.add(node1, user1)
+      val c2Delta = c2.delta
+
+      val c2a = c2.resetDelta.add(node1, user2)
+      val c2aDelta = c2a.delta
+      val c2b = c2a.resetDelta.remove(node1, user2)
+      val c2bDelta = c2b.delta
+      val c3 = c2b.add(node2, user2)
+
+      val c3Delta = c3.delta
+
+      val c4 = c3.resetDelta.add(node2, user3)
+
+      val c4Delta = c4.delta
+
+      val c5 = ORSet()
+
+      val addDelta = c3Delta merge c2aDelta
+
+      val c6 = c5 merge c2Delta merge addDelta merge c2bDelta merge c4Delta
+
+      val c7 = c5 merge c2Delta merge c2aDelta merge c3Delta merge c2bDelta merge c4Delta
+
+      val c8 = c5 merge c2 merge c2a merge c3 merge c2b merge c4
+
+      c6.elementsMap shouldEqual c7.elementsMap
+      c6.vvector shouldEqual c7.vvector
+
+      c6.elementsMap shouldEqual c8.elementsMap
+      c6.vvector shouldEqual c8.vvector
+
+      c6.elements should contain(user1)
+      c6.elements should contain(user2)
+      c6.elements should contain(user3)
+    }
+
+    // not good enough test, improve :)
+    "not have holes due to out of order operations" in {
+      val c1a = ORSet()
+
+      val c1b = ORSet()
+
+      val c2a = c1a.add(node1, user1)
+
+      val c2aDelta = c2a.delta
+
+      val c2b = c1b.add(node2, user1)
+
+      val c2bDelta = c2b.delta
+
+      val c3a = c2a.resetDelta.add(node1, user2)
+
+      val c3aDelta = c3a.delta
+
+      val c3b = c2b.resetDelta.add(node2, user2)
+
+      val c3bDelta = c3b.delta
+
+      val c4a = c3a.resetDelta.add(node1, user3)
+
+      val c4aDelta = c4a.delta
+
+      val c4b = c3b.resetDelta.add(node2, user3)
+
+      val c4bDelta = c4b.delta
+
+      val c5 = ORSet()
+
+      // previous versions and skipped full updates do not delete
+      val c6 = c5 merge c4b merge c3a
+
+      c6.elements should contain(user1)
+      c6.elements should contain(user2)
+      c6.elements should contain(user3)
+
+      val c7a = c5 merge c1a merge c2a merge c3a merge c4a
+
+      val c8a = c5 merge c2aDelta merge c3aDelta merge c4aDelta
+
+      val c7b = c5 merge c1b merge c2b merge c3b merge c4b
+
+      val c8b = c5 merge c2bDelta merge c3bDelta merge c4bDelta
+
+      c7a.elementsMap shouldEqual c8a.elementsMap
+
+      c7b.elementsMap shouldEqual c8b.elementsMap
+
+      // skipped deltas delete
+      val deltaA = c5 merge c2aDelta merge c4bDelta merge c4aDelta
+      val deltaB = c5 merge c2bDelta merge c3bDelta
+
+      val c9 = deltaA merge deltaB
+
+      c9.elements should contain(user1)
+      //      c9.elements should contain(user2)
+      c9.elements should contain(user3)
+
+    }
+
     "be able to remove added user" in {
       val c1 = ORSet()
 
