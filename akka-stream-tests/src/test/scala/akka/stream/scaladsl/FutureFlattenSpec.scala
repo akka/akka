@@ -133,8 +133,6 @@ class FutureFlattenSpec extends StreamSpec {
       }
     }
 
-    // TODO: downstream is applying backpressure when the future completes
-
     "applies back-pressure according future completion" in {
       implicit def m = materializer
 
@@ -147,7 +145,7 @@ class FutureFlattenSpec extends StreamSpec {
           Source.fromFutureSource(promise.future).map {
             case 0.1F ⇒
               first.success({}); 1.1F
-            case f    ⇒ (f * 10F) + 0.1F
+            case f ⇒ (f * 10F) + 0.1F
           }
 
         futureSource.runWith(Sink asPublisher true).subscribe(probe)
@@ -174,17 +172,17 @@ class FutureFlattenSpec extends StreamSpec {
 
       assertAllStagesStopped {
         def underlying = Future(Source.single(100L).
-          mapMaterializedValue(_ ⇒ sys.error("MatEx")))
+          mapMaterializedValue[String](_ ⇒ sys.error("MatEx")))
 
         val aside = Promise[Long]()
-        def futureSource = Source.fromFutureSource(underlying).
-          map { i ⇒ aside.success(i); i }
+        def futureSource: Source[Long, Future[String]] =
+          Source.fromFutureSource(underlying).
+            map { i ⇒ aside.success(i); i }
 
-        val x = futureSource.runWith(Sink.last).onComplete {
-          case res ⇒ println(s"res = $res")
-        }
+        def graph = futureSource.toMat(Sink.last) { (m, _) ⇒ m }
 
-        // x.failed.map(_.getMessage).futureValue should ===("MatEx")
+        graph.run().failed.map(_.getMessage).futureValue should ===("MatEx")
+        aside.future.futureValue should ===(100L)
       }
     }
   }

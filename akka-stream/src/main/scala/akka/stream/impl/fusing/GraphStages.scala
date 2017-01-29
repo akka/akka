@@ -331,15 +331,13 @@ object GraphStages {
             val runnable = src.to(sinkIn.sink)
 
             try {
-              val matVal = interpreter.subFusingMaterializer.materialize(
-                runnable,
-                initialAttributes = attr)
+              def materialize = interpreter.subFusingMaterializer.
+                materialize(runnable, initialAttributes = attr)
 
-              materialized.success(matVal)
+              materialized.success(materialize)
             } catch {
               case cause: Throwable ⇒
                 materialized.failure(cause)
-                failStage(cause)
             }
           }
 
