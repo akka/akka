@@ -883,6 +883,7 @@ class TestKit(_system: ActorSystem) extends { implicit val system = _system } wi
 
 @deprecated("Use akka.testkit.scaladsl.TestKit instead", since = "2.5.0")
 object TestKit {
+  private[testkit] val testActorId = new AtomicInteger(0)
 
   /**
    * Await until the given condition evaluates to `true` or the timeout
@@ -891,6 +892,11 @@ object TestKit {
   def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis, noThrow: Boolean = false): Boolean = {
     TestKitBase.awaitCond(p, max, interval, noThrow)
   }
+
+  /**
+   * Obtain current timestamp as Duration for relative measurements (using System.nanoTime).
+   */
+  def now: Duration = System.nanoTime().nanos
 
   /**
    * Shut down an actor system and wait for termination.
