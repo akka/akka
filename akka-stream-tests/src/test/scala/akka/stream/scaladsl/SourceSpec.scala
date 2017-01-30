@@ -15,6 +15,8 @@ import akka.stream.testkit._
 import akka.NotUsed
 import akka.testkit.EventFilter
 import scala.collection.immutable
+import java.util
+import java.util.stream.BaseStream
 
 class SourceSpec extends StreamSpec with DefaultTimeout {
 
@@ -365,6 +367,55 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       }
     }
 
+    "close the underlying stream when completed" in {
+      var closed = false
+
+      final class DummyStream[A] extends BaseStream[A, DummyStream[A]] {
+        override def unordered(): DummyStream[A] = this
+        override def sequential(): DummyStream[A] = this
+        override def parallel(): DummyStream[A] = this
+        override def isParallel: Boolean = false
+
+        override def spliterator(): util.Spliterator[A] = ???
+        override def onClose(closeHandler: Runnable): DummyStream[A] = ???
+
+        override def iterator(): util.Iterator[A] = new util.Iterator[A] {
+          override def next(): A = ???
+          override def hasNext: Boolean = false
+        }
+
+        override def close(): Unit = closed = true
+      }
+
+      Await.ready(StreamConverters.fromJavaStream(() ⇒ new DummyStream[Unit]).runWith(Sink.ignore), 3.seconds)
+
+      closed should ===(true)
+    }
+
+    "close the underlying stream when failed" in {
+      var closed = false
+
+      final class DummyStream[A] extends BaseStream[A, DummyStream[A]] {
+        override def unordered(): DummyStream[A] = this
+        override def sequential(): DummyStream[A] = this
+        override def parallel(): DummyStream[A] = this
+        override def isParallel: Boolean = false
+
+        override def spliterator(): util.Spliterator[A] = ???
+        override def onClose(closeHandler: Runnable): DummyStream[A] = ???
+
+        override def iterator(): util.Iterator[A] = new util.Iterator[A] {
+          override def next(): A = throw new RuntimeException("ouch")
+          override def hasNext: Boolean = true
+        }
+
+        override def close(): Unit = closed = true
+      }
+
+      Await.ready(StreamConverters.fromJavaStream(() ⇒ new DummyStream[Unit]).runWith(Sink.ignore), 3.seconds)
+
+      closed should ===(true)
+    }
   }
 
 }
