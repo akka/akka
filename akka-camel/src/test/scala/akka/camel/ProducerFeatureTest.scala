@@ -17,6 +17,7 @@ import scala.concurrent.duration._
 import akka.util.Timeout
 import org.scalatest.Matchers
 import akka.testkit._
+import akka.testkit.scaladsl.TestKit
 import akka.actor.Status.Failure
 
 /**

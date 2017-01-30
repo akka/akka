@@ -6,7 +6,7 @@ package akka.camel
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import akka.actor.ActorSystem
-import akka.testkit.TestKit
+import akka.testkit.scaladsl.TestKit
 import akka.util.Helpers.ConfigOps
 
 class CamelConfigSpec extends WordSpec with Matchers {

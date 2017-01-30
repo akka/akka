@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -18,7 +19,6 @@ import akka.actor.Inbox;
 import akka.actor.PoisonPill;
 import akka.actor.Terminated;
 import akka.testkit.AkkaSpec;
-import akka.testkit.JavaTestKit;
 
 public class InboxDocTest extends AbstractJavaTest {
 
@@ -30,7 +30,7 @@ public class InboxDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateInbox() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final ActorRef target = probe.getRef();
     //#inbox
     final Inbox inbox = Inbox.create(system);
@@ -49,7 +49,7 @@ public class InboxDocTest extends AbstractJavaTest {
   
   @Test
   public void demonstrateWatch() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final ActorRef target = probe.getRef();
     //#watch
     final Inbox inbox = Inbox.create(system);

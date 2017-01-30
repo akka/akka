@@ -26,7 +26,9 @@ import akka.actor.Status.Failure
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem.Settings
 import akka.event.{ LoggingAdapter, MarkerLoggingAdapter }
-import akka.testkit.{ TestKit, TestLatch, TestProbe, TimingTest }
+import akka.testkit.{ TestLatch, TimingTest }
+import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestProbe
 import org.apache.camel.impl.DefaultCamelContext
 
 import scala.concurrent.{ Await, Future }

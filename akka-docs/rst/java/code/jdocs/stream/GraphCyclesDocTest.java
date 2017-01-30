@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import akka.NotUsed;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -12,7 +13,6 @@ import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.scaladsl.MergePreferred.MergePreferredShape;
-import akka.testkit.JavaTestKit;
 
 
 public class GraphCyclesDocTest extends AbstractJavaTest {
@@ -28,7 +28,7 @@ public class GraphCyclesDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

@@ -11,7 +11,7 @@ import akka.stream.javadsl.Framing;
 import akka.stream.javadsl.FramingTruncation;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -33,7 +33,7 @@ public class RecipeParseLines extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

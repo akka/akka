@@ -4,7 +4,7 @@
 package akka.actor.setup
 
 import akka.actor.ActorSystem
-import akka.testkit.TestKit
+import akka.testkit.scaladsl.TestKit
 import org.scalatest.{ Matchers, WordSpec }
 
 case class DummySetup(name: String) extends Setup

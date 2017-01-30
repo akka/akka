@@ -6,7 +6,7 @@ package docs.persistence
 
 import scala.collection.immutable
 import akka.actor.ActorSystem
-import akka.testkit.TestKit
+import akka.testkit.scaladsl.TestKit
 import com.typesafe.config._
 import org.scalatest.WordSpec
 import scala.collection.immutable.Seq

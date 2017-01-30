@@ -14,7 +14,8 @@ import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
+import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,7 +35,7 @@ public class RecipeHold extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
@@ -136,7 +137,7 @@ public class RecipeHold extends RecipeTest {
 
   @Test
   public void workForVersion1() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         final Source<Integer, TestPublisher.Probe<Integer>> source = TestSource.probe(system);
         final Sink<Integer, TestSubscriber.Probe<Integer>> sink = TestSink.probe(system);
@@ -164,7 +165,7 @@ public class RecipeHold extends RecipeTest {
 
   @Test
   public void workForVersion2() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         final Source<Integer, TestPublisher.Probe<Integer>> source = TestSource.probe(system);
         final Sink<Integer, TestSubscriber.Probe<Integer>> sink = TestSink.probe(system);

@@ -3,6 +3,8 @@
  */
 package docs.testkit
 
+import akka.testkit.{ ImplicitSender, DefaultTimeout, TestActors }
+
 import language.postfixOps
 
 //#testkit-usage
@@ -18,7 +20,7 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
-import akka.testkit.{ TestActors, DefaultTimeout, ImplicitSender, TestKit }
+import akka.testkit.scaladsl.TestKit
 import scala.concurrent.duration._
 import scala.collection.immutable
 

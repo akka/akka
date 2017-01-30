@@ -6,6 +6,7 @@ package jdocs.actor;
 import akka.actor.*;
 
 
+import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import jdocs.AbstractJavaTest;
@@ -14,7 +15,6 @@ import java.util.Optional;
 import static akka.pattern.Patterns.ask;
 
 //#testkit
-import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
 import akka.testkit.ErrorFilter;
 import akka.testkit.EventFilter;
@@ -145,7 +145,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
 
   @AfterClass
   public static void cleanup() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
   }
 

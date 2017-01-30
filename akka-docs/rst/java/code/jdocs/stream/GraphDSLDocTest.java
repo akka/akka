@@ -14,6 +14,7 @@ import akka.NotUsed;
 import akka.stream.ClosedShape;
 import akka.stream.SourceShape;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -22,7 +23,6 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.testkit.JavaTestKit;
 
 public class GraphDSLDocTest extends AbstractJavaTest {
 
@@ -37,7 +37,7 @@ public class GraphDSLDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

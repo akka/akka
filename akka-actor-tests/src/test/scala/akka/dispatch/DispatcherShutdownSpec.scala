@@ -5,7 +5,7 @@
 package akka.dispatch
 
 import akka.actor.ActorSystem
-import akka.testkit.TestKit
+import akka.testkit.scaladsl.TestKit
 import java.lang.management.ManagementFactory
 import org.scalatest.{ Matchers, WordSpec }
 import scala.concurrent.{ Await, Future }

@@ -11,6 +11,7 @@ import scala.collection.immutable.Seq
 import akka.actor._
 import akka.persistence._
 import akka.persistence.JournalProtocol._
+import akka.testkit.scaladsl._
 import akka.testkit._
 
 import com.typesafe.config._

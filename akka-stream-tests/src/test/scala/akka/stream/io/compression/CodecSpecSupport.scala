@@ -6,7 +6,7 @@ package akka.stream.io.compression
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.testkit.TestKit
+import akka.testkit.scaladsl.TestKit
 import akka.util.ByteString
 import org.scalatest.{ BeforeAndAfterAll, Matchers, Suite }
 

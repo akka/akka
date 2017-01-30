@@ -7,8 +7,8 @@ import akka.stream.*;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -35,7 +35,7 @@ class KillSwitchDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

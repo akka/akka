@@ -8,7 +8,7 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -28,7 +28,7 @@ public class RecipeKeepAlive extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
@@ -38,7 +38,7 @@ public class RecipeKeepAlive extends RecipeTest {
 
   @Test
   public void workForVersion1() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         final ByteString keepAliveMessage = ByteString.fromArray(new byte[]{11});
 

@@ -4,6 +4,7 @@
 package akka.event
 
 import akka.testkit._
+import akka.testkit.scaladsl.TestKit
 import scala.concurrent.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._

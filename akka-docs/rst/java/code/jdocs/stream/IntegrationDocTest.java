@@ -8,8 +8,8 @@ import akka.NotUsed;
 import akka.actor.*;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
+import akka.testkit.javadsl.TestKit;
 import akka.util.Timeout;
 
 import com.typesafe.config.Config;
@@ -62,7 +62,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
     ref = null;
@@ -328,7 +328,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   @Test
   public void callingExternalServiceWithMapAsync() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final TestProbe probe = new TestProbe(system);
       final AddressSystem addressSystem = new AddressSystem();
       final EmailServer emailServer = new EmailServer(probe.ref());
@@ -372,7 +372,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
   @Test
   @SuppressWarnings("unused")
   public void callingExternalServiceWithMapAsyncAndSupervision() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final AddressSystem2 addressSystem = new AddressSystem2();
 
       {
@@ -396,7 +396,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   @Test
   public void callingExternalServiceWithMapAsyncUnordered() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final TestProbe probe = new TestProbe(system);
       final AddressSystem addressSystem = new AddressSystem();
       final EmailServer emailServer = new EmailServer(probe.ref());
@@ -428,7 +428,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   @Test
   public void carefulManagedBlockingWithMapAsync() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final AddressSystem addressSystem = new AddressSystem();
       final EmailServer emailServer = new EmailServer(getRef());
       final SmsServer smsServer = new SmsServer(getRef());
@@ -471,7 +471,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   @Test
   public void carefulManagedBlockingWithMap() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final TestProbe probe = new TestProbe(system);
       final AddressSystem addressSystem = new AddressSystem();
       final EmailServer emailServer = new EmailServer(probe.ref());
@@ -511,7 +511,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   @Test
   public void callingActorServiceWithMapAsync() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final TestProbe probe = new TestProbe(system);
       final EmailServer emailServer = new EmailServer(probe.ref());
 
@@ -542,7 +542,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   @Test
   public void illustrateOrderingAndParallelismOfMapAsync() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final TestProbe probe = new TestProbe(system);
       final EmailServer emailServer = new EmailServer(probe.ref());
 
@@ -588,7 +588,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   @Test
   public void illustrateOrderingAndParallelismOfMapAsyncUnordered() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final EmailServer emailServer = new EmailServer(getRef());
 
       class MockSystem {

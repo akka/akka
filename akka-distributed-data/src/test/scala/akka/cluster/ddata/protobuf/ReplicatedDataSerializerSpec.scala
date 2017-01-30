@@ -13,7 +13,7 @@ import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata._
 import akka.cluster.ddata.Replicator.Internal._
-import akka.testkit.TestKit
+import akka.testkit.scaladsl.TestKit
 import akka.cluster.UniqueAddress
 import akka.remote.RARP
 import com.typesafe.config.ConfigFactory

@@ -13,7 +13,7 @@ import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.DebugFilter;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
 import jdocs.stream.SilenceSystemOut;
 import org.junit.AfterClass;
@@ -35,14 +35,14 @@ public class RecipeLoggingElements extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
 
   @Test
   public void workWithPrintln() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final SilenceSystemOut.System System = SilenceSystemOut.get(getTestActor());
 
       {
@@ -60,7 +60,7 @@ public class RecipeLoggingElements extends RecipeTest {
 
   @Test
   public void workWithLog() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       private <T> T analyse(T i) {
         return i;
       }

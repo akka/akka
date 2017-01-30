@@ -6,10 +6,10 @@ package jdocs.routing;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import akka.testkit.JavaTestKit;
 import akka.actor.ActorSystem;
 
 //#imports1
@@ -108,7 +108,7 @@ public class ConsistentHashingRouterDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateUsageOfConsistentHashableRouter() {
 
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
 
       //#consistent-hashing-router      
       

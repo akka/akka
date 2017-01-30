@@ -246,7 +246,7 @@ object Coroner {
  * counts during start and stop.
  */
 trait WatchedByCoroner {
-  self: TestKit ⇒
+  self: akka.testkit.scaladsl.TestKit ⇒
 
   @volatile private var coronerWatch: Coroner.WatchHandle = _
 

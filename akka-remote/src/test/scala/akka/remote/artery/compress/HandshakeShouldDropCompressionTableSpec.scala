@@ -9,6 +9,7 @@ import akka.pattern.ask
 import akka.remote.RARP
 import akka.remote.artery.compress.CompressionProtocol.Events.{ Event, ReceivedActorRefCompressionTable }
 import akka.remote.artery.{ ArteryMultiNodeSpec, ArterySpecSupport, ArteryTransport }
+import akka.testkit.scaladsl._
 import akka.testkit._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
@@ -119,7 +120,7 @@ class HandshakeShouldDropCompressionTableSpec extends ArteryMultiNodeSpec(Handsh
     }
   }
 
-  def waitForEcho(probe: TestKit, m: String, max: Duration = 3.seconds): Any =
+  def waitForEcho(probe: TestKitBase, m: String, max: Duration = 3.seconds): Any =
     probe.fishForMessage(max = max, hint = s"waiting for '$m'") {
       case `m` ⇒ true
       case x   ⇒ false

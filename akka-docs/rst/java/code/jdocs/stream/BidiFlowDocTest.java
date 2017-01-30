@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import akka.NotUsed;
 import akka.stream.javadsl.GraphDSL;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -21,7 +22,6 @@ import akka.japi.pf.PFBuilder;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.stage.*;
-import akka.testkit.JavaTestKit;
 import akka.util.ByteIterator;
 import akka.util.ByteString;
 import akka.util.ByteStringBuilder;
@@ -40,7 +40,7 @@ public class BidiFlowDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

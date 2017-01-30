@@ -5,7 +5,7 @@ package docs.config
 
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
-import akka.testkit.TestKit
+import akka.testkit.scaladsl.TestKit
 
 //#imports
 import akka.actor.ActorSystem

@@ -7,7 +7,7 @@ import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.AkkaSpec;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
@@ -58,7 +58,7 @@ public class ActorSubscriberTest extends StreamTest {
 
   @Test
   public void mustHaveJavaAPI() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final ActorRef ref = system.actorOf(Props.create(TestSubscriber.class, probe.getRef()).withDispatcher("akka.test.stream-dispatcher"));
     final Subscriber<Integer> subscriber = UntypedActorSubscriber.create(ref);
     final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3);

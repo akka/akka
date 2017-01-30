@@ -3,22 +3,21 @@
  */
 package akka.actor
 
-import language.postfixOps
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.{ Await, ExecutionContext, Future }
-import scala.concurrent.duration._
 import java.util.concurrent.{ ConcurrentLinkedQueue, RejectedExecutionException }
 
 import akka.actor.setup.ActorSystemSetup
-import akka.util.Timeout
+import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.pattern.ask
-import akka.dispatch._
-import com.typesafe.config.Config
-import akka.util.Switch
+import akka.testkit._
+import akka.testkit.scaladsl.TestKit
 import akka.util.Helpers.ConfigOps
+import akka.util.{ Switch, Timeout }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.language.postfixOps
 
 object ActorSystemSpec {
 

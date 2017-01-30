@@ -13,7 +13,7 @@ import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -39,14 +39,14 @@ public class RecipeReduceByKeyTest extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
 
   @Test
   public void work() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         final Source<String, NotUsed> words = Source.from(Arrays.asList("hello", "world", "and", "hello", "akka"));
 
@@ -93,7 +93,7 @@ public class RecipeReduceByKeyTest extends RecipeTest {
 
   @Test
   public void workGeneralised() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         final Source<String, NotUsed> words = Source.from(Arrays.asList("hello", "world", "and", "hello", "akka"));
 

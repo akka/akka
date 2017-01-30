@@ -231,7 +231,7 @@ object TestSubscriber {
   /**
    * Implementation of [[org.reactivestreams.Subscriber]] that allows various assertions.
    *
-   * All timeouts are dilated automatically, for more details about time dilation refer to [[akka.testkit.TestKit]].
+   * All timeouts are dilated automatically, for more details about time dilation refer to [[akka.testkit.scaladsl.TestKit]].
    */
   class ManualProbe[I] private[TestSubscriber] ()(implicit system: ActorSystem) extends Subscriber[I] {
     import akka.testkit._

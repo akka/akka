@@ -15,7 +15,8 @@ import scala.reflect.ClassTag
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import scala.concurrent.Await
 import akka.util.Timeout
-import akka.testkit.{ TestKit, AkkaSpec }
+import akka.testkit.AkkaSpec
+import akka.testkit.scaladsl.TestKit
 
 private[camel] object TestSupport {
   def start(actor: ⇒ Actor, name: String)(implicit system: ActorSystem, timeout: Timeout): ActorRef =

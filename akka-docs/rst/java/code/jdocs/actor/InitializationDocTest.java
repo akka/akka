@@ -8,8 +8,8 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.pf.FI;
-import akka.testkit.JavaTestKit;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -120,7 +120,7 @@ public class InitializationDocTest extends AbstractJavaTest {
   @Test
   public void testIt() {
 
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       ActorRef testactor = system.actorOf(Props.create(MessageInitExample.class), "testactor");
       String msg = "U OK?";
 
@@ -135,7 +135,7 @@ public class InitializationDocTest extends AbstractJavaTest {
 
   @Test
   public void testGenericActor() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       ActorRef genericTestActor = system.actorOf(Props.create(GenericActor.class), "genericActor");
       GenericMessage<String> genericMessage = new GenericMessage<String>("a");
 
@@ -146,7 +146,7 @@ public class InitializationDocTest extends AbstractJavaTest {
 
   @Test
   public void actorShouldNotRespondForEmptyMessage() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       ActorRef genericTestActor = system.actorOf(Props.create(GenericActorWithPredicate.class), "genericActorWithPredicate");
       GenericMessage<String> emptyGenericMessage = new GenericMessage<String>("");
       GenericMessage<String> nonEmptyGenericMessage = new GenericMessage<String>("a");

@@ -10,8 +10,8 @@ import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.testkit.JavaTestKit;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,7 +37,7 @@ public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
@@ -161,7 +161,7 @@ public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateBuildSinkWithCombine() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     ActorRef actorRef =  probe.getRef();
 
     //#sink-combine

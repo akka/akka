@@ -3,7 +3,8 @@
  */
 package akka.contrib.pattern
 
-import akka.testkit.{ ImplicitSender, TestKit }
+import akka.testkit.ImplicitSender
+import akka.testkit.scaladsl.TestKit
 import org.scalatest.FunSuiteLike
 import org.scalatest.Matchers
 import scala.annotation.tailrec

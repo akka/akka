@@ -1,6 +1,7 @@
 package akka.cluster.pubsub
 
 import akka.testkit._
+import akka.testkit.scaladsl.TestKit
 import akka.routing.{ ConsistentHashingRoutingLogic, RouterEnvelope }
 import org.scalatest.WordSpecLike
 import akka.actor.{ DeadLetter, ActorRef }

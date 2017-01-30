@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import akka.testkit.scaladsl.TestKit
+
 import language.postfixOps
 
 import akka.testkit._

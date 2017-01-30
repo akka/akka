@@ -4,7 +4,8 @@
 package akka.cluster.singleton
 
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
-import akka.testkit.{ TestProbe, TestKit }
+import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestProbe
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.cluster.Cluster

@@ -11,6 +11,7 @@ import akka.routing.SeveralRoutees;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -22,7 +23,6 @@ import scala.collection.immutable.IndexedSeq;
 import static akka.japi.Util.immutableIndexedSeq;
 
 import docs.routing.CustomRouterDocSpec;
-import akka.testkit.JavaTestKit;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -134,7 +134,7 @@ public class CustomRouterDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateUsageOfCustomRouter() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       //#usage-1
       for (int n = 1; n <= 10; n++) {
         system.actorOf(Props.create(Storage.class), "s" + n);

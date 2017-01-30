@@ -10,7 +10,8 @@ import FaultHandlingDocSpec._
 //#testkit
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ FlatSpecLike, Matchers, BeforeAndAfterAll }
-import akka.testkit.{ TestActors, TestKit, ImplicitSender, EventFilter }
+import akka.testkit.scaladsl.TestKit
+import akka.testkit.{ ImplicitSender, TestActors, EventFilter }
 
 //#testkit
 object FaultHandlingDocSpec {

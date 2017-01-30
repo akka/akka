@@ -57,7 +57,7 @@ object AkkaSpec {
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-  extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
+  extends akka.testkit.scaladsl.TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
   with ConversionCheckedTripleEquals with ScalaFutures {
 
   implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, org.scalatest.time.Millis))

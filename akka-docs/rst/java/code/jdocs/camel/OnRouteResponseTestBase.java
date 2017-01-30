@@ -1,7 +1,7 @@
 package jdocs.camel;
 
 import akka.actor.*;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 
 public class OnRouteResponseTestBase {
 
@@ -18,6 +18,6 @@ public class OnRouteResponseTestBase {
     //#RouteResponse
     system.stop(receiver);
     system.stop(forwardResponse);
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 }
