@@ -50,6 +50,10 @@ What do they do?
 * State transition listeners: 
 	* Callbacks can be provided for every state entry via `onOpen`, `onClose`, and `onHalfOpen`
 	* These are executed in the :class:`ExecutionContext` provided. 
+* Calls result listeners:
+    * Callbacks can be used eg. to collect statistics about all invocations or to react on specific call results like success, failures or timeouts.
+    * Supported callbacks are: `onCallSuccess`, `onCallFailure`, `onCallTimeout`, `onCallBreakerOpen`.
+    * These are executed in the :class:`ExecutionContext` provided.
 
 .. image:: ../images/circuit-breaker-states.png
 
