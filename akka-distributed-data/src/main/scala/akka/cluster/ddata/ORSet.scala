@@ -180,6 +180,9 @@ object ORSet {
   private[akka] val removeTag = UniqueAddress(Address("delta-remove-tag", "tag", "localhostcde", 0), 1)
 }
 
+private[akka] case class DeltaUpdate[A](update: A, isAddition: Boolean, // if false then deletion
+                                        beforeDot: ORSet.Dot, afterDot: ORSet.Dot)
+
 /**
  * Implements a 'Observed Remove Set' CRDT, also called a 'OR-Set'.
  * Elements can be added and removed any number of times. Concurrent add wins
@@ -213,7 +216,8 @@ object ORSet {
 final class ORSet[A] private[akka] (
   private[akka] val elementsMap: Map[A, ORSet.Dot],
   private[akka] val vvector:     VersionVector,
-  private[akka] val _delta:      Option[ORSet[A]]  = None)
+  private[akka] val _delta:      Option[ORSet[A]]     = None,
+  private[akka] val _updates:    List[DeltaUpdate[A]] = List.empty)
   extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
 
   type T = ORSet[A]

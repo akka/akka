@@ -1327,6 +1327,143 @@ public final class ReplicatedDataMessages {
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getOtherElementsOrBuilder(
         int index);
+
+    // repeated bool additionToggles = 7;
+    /**
+     * <code>repeated bool additionToggles = 7;</code>
+     */
+    java.util.List<java.lang.Boolean> getAdditionTogglesList();
+    /**
+     * <code>repeated bool additionToggles = 7;</code>
+     */
+    int getAdditionTogglesCount();
+    /**
+     * <code>repeated bool additionToggles = 7;</code>
+     */
+    boolean getAdditionToggles(int index);
+
+    // repeated .akka.cluster.ddata.VersionVector beforeDots = 8;
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+     */
+    java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> 
+        getBeforeDotsList();
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+     */
+    akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector getBeforeDots(int index);
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+     */
+    int getBeforeDotsCount();
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+     */
+    java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder> 
+        getBeforeDotsOrBuilderList();
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+     */
+    akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder getBeforeDotsOrBuilder(
+        int index);
+
+    // repeated .akka.cluster.ddata.VersionVector afterDots = 9;
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+     */
+    java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> 
+        getAfterDotsList();
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+     */
+    akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector getAfterDots(int index);
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+     */
+    int getAfterDotsCount();
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+     */
+    java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder> 
+        getAfterDotsOrBuilderList();
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+     */
+    akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder getAfterDotsOrBuilder(
+        int index);
+
+    // repeated string updateStringElements = 10;
+    /**
+     * <code>repeated string updateStringElements = 10;</code>
+     */
+    java.util.List<java.lang.String>
+    getUpdateStringElementsList();
+    /**
+     * <code>repeated string updateStringElements = 10;</code>
+     */
+    int getUpdateStringElementsCount();
+    /**
+     * <code>repeated string updateStringElements = 10;</code>
+     */
+    java.lang.String getUpdateStringElements(int index);
+    /**
+     * <code>repeated string updateStringElements = 10;</code>
+     */
+    akka.protobuf.ByteString
+        getUpdateStringElementsBytes(int index);
+
+    // repeated sint32 updateIntElements = 11;
+    /**
+     * <code>repeated sint32 updateIntElements = 11;</code>
+     */
+    java.util.List<java.lang.Integer> getUpdateIntElementsList();
+    /**
+     * <code>repeated sint32 updateIntElements = 11;</code>
+     */
+    int getUpdateIntElementsCount();
+    /**
+     * <code>repeated sint32 updateIntElements = 11;</code>
+     */
+    int getUpdateIntElements(int index);
+
+    // repeated sint64 updateLongElements = 12;
+    /**
+     * <code>repeated sint64 updateLongElements = 12;</code>
+     */
+    java.util.List<java.lang.Long> getUpdateLongElementsList();
+    /**
+     * <code>repeated sint64 updateLongElements = 12;</code>
+     */
+    int getUpdateLongElementsCount();
+    /**
+     * <code>repeated sint64 updateLongElements = 12;</code>
+     */
+    long getUpdateLongElements(int index);
+
+    // repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;
+    /**
+     * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+     */
+    java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage> 
+        getUpdateOtherElementsList();
+    /**
+     * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+     */
+    akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getUpdateOtherElements(int index);
+    /**
+     * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+     */
+    int getUpdateOtherElementsCount();
+    /**
+     * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+     */
+    java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
+        getUpdateOtherElementsOrBuilderList();
+    /**
+     * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+     */
+    akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getUpdateOtherElementsOrBuilder(
+        int index);
   }
   /**
    * Protobuf type {@code akka.cluster.ddata.ORSet}
@@ -1458,6 +1595,101 @@ public final class ReplicatedDataMessages {
               otherElements_.add(input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.PARSER, extensionRegistry));
               break;
             }
+            case 56: {
+              if (!((mutable_bitField0_ & 0x00000040) == 0x00000040)) {
+                additionToggles_ = new java.util.ArrayList<java.lang.Boolean>();
+                mutable_bitField0_ |= 0x00000040;
+              }
+              additionToggles_.add(input.readBool());
+              break;
+            }
+            case 58: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000040) == 0x00000040) && input.getBytesUntilLimit() > 0) {
+                additionToggles_ = new java.util.ArrayList<java.lang.Boolean>();
+                mutable_bitField0_ |= 0x00000040;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                additionToggles_.add(input.readBool());
+              }
+              input.popLimit(limit);
+              break;
+            }
+            case 66: {
+              if (!((mutable_bitField0_ & 0x00000080) == 0x00000080)) {
+                beforeDots_ = new java.util.ArrayList<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector>();
+                mutable_bitField0_ |= 0x00000080;
+              }
+              beforeDots_.add(input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.PARSER, extensionRegistry));
+              break;
+            }
+            case 74: {
+              if (!((mutable_bitField0_ & 0x00000100) == 0x00000100)) {
+                afterDots_ = new java.util.ArrayList<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector>();
+                mutable_bitField0_ |= 0x00000100;
+              }
+              afterDots_.add(input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.PARSER, extensionRegistry));
+              break;
+            }
+            case 82: {
+              if (!((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
+                updateStringElements_ = new akka.protobuf.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000200;
+              }
+              updateStringElements_.add(input.readBytes());
+              break;
+            }
+            case 88: {
+              if (!((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+                updateIntElements_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000400;
+              }
+              updateIntElements_.add(input.readSInt32());
+              break;
+            }
+            case 90: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000400) == 0x00000400) && input.getBytesUntilLimit() > 0) {
+                updateIntElements_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000400;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                updateIntElements_.add(input.readSInt32());
+              }
+              input.popLimit(limit);
+              break;
+            }
+            case 96: {
+              if (!((mutable_bitField0_ & 0x00000800) == 0x00000800)) {
+                updateLongElements_ = new java.util.ArrayList<java.lang.Long>();
+                mutable_bitField0_ |= 0x00000800;
+              }
+              updateLongElements_.add(input.readSInt64());
+              break;
+            }
+            case 98: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000800) == 0x00000800) && input.getBytesUntilLimit() > 0) {
+                updateLongElements_ = new java.util.ArrayList<java.lang.Long>();
+                mutable_bitField0_ |= 0x00000800;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                updateLongElements_.add(input.readSInt64());
+              }
+              input.popLimit(limit);
+              break;
+            }
+            case 106: {
+              if (!((mutable_bitField0_ & 0x00001000) == 0x00001000)) {
+                updateOtherElements_ = new java.util.ArrayList<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage>();
+                mutable_bitField0_ |= 0x00001000;
+              }
+              updateOtherElements_.add(input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.PARSER, extensionRegistry));
+              break;
+            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
@@ -1480,6 +1712,27 @@ public final class ReplicatedDataMessages {
         }
         if (((mutable_bitField0_ & 0x00000020) == 0x00000020)) {
           otherElements_ = java.util.Collections.unmodifiableList(otherElements_);
+        }
+        if (((mutable_bitField0_ & 0x00000040) == 0x00000040)) {
+          additionToggles_ = java.util.Collections.unmodifiableList(additionToggles_);
+        }
+        if (((mutable_bitField0_ & 0x00000080) == 0x00000080)) {
+          beforeDots_ = java.util.Collections.unmodifiableList(beforeDots_);
+        }
+        if (((mutable_bitField0_ & 0x00000100) == 0x00000100)) {
+          afterDots_ = java.util.Collections.unmodifiableList(afterDots_);
+        }
+        if (((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
+          updateStringElements_ = new akka.protobuf.UnmodifiableLazyStringList(updateStringElements_);
+        }
+        if (((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+          updateIntElements_ = java.util.Collections.unmodifiableList(updateIntElements_);
+        }
+        if (((mutable_bitField0_ & 0x00000800) == 0x00000800)) {
+          updateLongElements_ = java.util.Collections.unmodifiableList(updateLongElements_);
+        }
+        if (((mutable_bitField0_ & 0x00001000) == 0x00001000)) {
+          updateOtherElements_ = java.util.Collections.unmodifiableList(updateOtherElements_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -1685,6 +1938,213 @@ public final class ReplicatedDataMessages {
       return otherElements_.get(index);
     }
 
+    // repeated bool additionToggles = 7;
+    public static final int ADDITIONTOGGLES_FIELD_NUMBER = 7;
+    private java.util.List<java.lang.Boolean> additionToggles_;
+    /**
+     * <code>repeated bool additionToggles = 7;</code>
+     */
+    public java.util.List<java.lang.Boolean>
+        getAdditionTogglesList() {
+      return additionToggles_;
+    }
+    /**
+     * <code>repeated bool additionToggles = 7;</code>
+     */
+    public int getAdditionTogglesCount() {
+      return additionToggles_.size();
+    }
+    /**
+     * <code>repeated bool additionToggles = 7;</code>
+     */
+    public boolean getAdditionToggles(int index) {
+      return additionToggles_.get(index);
+    }
+
+    // repeated .akka.cluster.ddata.VersionVector beforeDots = 8;
+    public static final int BEFOREDOTS_FIELD_NUMBER = 8;
+    private java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> beforeDots_;
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+     */
+    public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> getBeforeDotsList() {
+      return beforeDots_;
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+     */
+    public java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder> 
+        getBeforeDotsOrBuilderList() {
+      return beforeDots_;
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+     */
+    public int getBeforeDotsCount() {
+      return beforeDots_.size();
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+     */
+    public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector getBeforeDots(int index) {
+      return beforeDots_.get(index);
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+     */
+    public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder getBeforeDotsOrBuilder(
+        int index) {
+      return beforeDots_.get(index);
+    }
+
+    // repeated .akka.cluster.ddata.VersionVector afterDots = 9;
+    public static final int AFTERDOTS_FIELD_NUMBER = 9;
+    private java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> afterDots_;
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+     */
+    public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> getAfterDotsList() {
+      return afterDots_;
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+     */
+    public java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder> 
+        getAfterDotsOrBuilderList() {
+      return afterDots_;
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+     */
+    public int getAfterDotsCount() {
+      return afterDots_.size();
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+     */
+    public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector getAfterDots(int index) {
+      return afterDots_.get(index);
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+     */
+    public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder getAfterDotsOrBuilder(
+        int index) {
+      return afterDots_.get(index);
+    }
+
+    // repeated string updateStringElements = 10;
+    public static final int UPDATESTRINGELEMENTS_FIELD_NUMBER = 10;
+    private akka.protobuf.LazyStringList updateStringElements_;
+    /**
+     * <code>repeated string updateStringElements = 10;</code>
+     */
+    public java.util.List<java.lang.String>
+        getUpdateStringElementsList() {
+      return updateStringElements_;
+    }
+    /**
+     * <code>repeated string updateStringElements = 10;</code>
+     */
+    public int getUpdateStringElementsCount() {
+      return updateStringElements_.size();
+    }
+    /**
+     * <code>repeated string updateStringElements = 10;</code>
+     */
+    public java.lang.String getUpdateStringElements(int index) {
+      return updateStringElements_.get(index);
+    }
+    /**
+     * <code>repeated string updateStringElements = 10;</code>
+     */
+    public akka.protobuf.ByteString
+        getUpdateStringElementsBytes(int index) {
+      return updateStringElements_.getByteString(index);
+    }
+
+    // repeated sint32 updateIntElements = 11;
+    public static final int UPDATEINTELEMENTS_FIELD_NUMBER = 11;
+    private java.util.List<java.lang.Integer> updateIntElements_;
+    /**
+     * <code>repeated sint32 updateIntElements = 11;</code>
+     */
+    public java.util.List<java.lang.Integer>
+        getUpdateIntElementsList() {
+      return updateIntElements_;
+    }
+    /**
+     * <code>repeated sint32 updateIntElements = 11;</code>
+     */
+    public int getUpdateIntElementsCount() {
+      return updateIntElements_.size();
+    }
+    /**
+     * <code>repeated sint32 updateIntElements = 11;</code>
+     */
+    public int getUpdateIntElements(int index) {
+      return updateIntElements_.get(index);
+    }
+
+    // repeated sint64 updateLongElements = 12;
+    public static final int UPDATELONGELEMENTS_FIELD_NUMBER = 12;
+    private java.util.List<java.lang.Long> updateLongElements_;
+    /**
+     * <code>repeated sint64 updateLongElements = 12;</code>
+     */
+    public java.util.List<java.lang.Long>
+        getUpdateLongElementsList() {
+      return updateLongElements_;
+    }
+    /**
+     * <code>repeated sint64 updateLongElements = 12;</code>
+     */
+    public int getUpdateLongElementsCount() {
+      return updateLongElements_.size();
+    }
+    /**
+     * <code>repeated sint64 updateLongElements = 12;</code>
+     */
+    public long getUpdateLongElements(int index) {
+      return updateLongElements_.get(index);
+    }
+
+    // repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;
+    public static final int UPDATEOTHERELEMENTS_FIELD_NUMBER = 13;
+    private java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage> updateOtherElements_;
+    /**
+     * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+     */
+    public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage> getUpdateOtherElementsList() {
+      return updateOtherElements_;
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+     */
+    public java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
+        getUpdateOtherElementsOrBuilderList() {
+      return updateOtherElements_;
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+     */
+    public int getUpdateOtherElementsCount() {
+      return updateOtherElements_.size();
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+     */
+    public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getUpdateOtherElements(int index) {
+      return updateOtherElements_.get(index);
+    }
+    /**
+     * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+     */
+    public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getUpdateOtherElementsOrBuilder(
+        int index) {
+      return updateOtherElements_.get(index);
+    }
+
     private void initFields() {
       vvector_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.getDefaultInstance();
       dots_ = java.util.Collections.emptyList();
@@ -1692,6 +2152,13 @@ public final class ReplicatedDataMessages {
       intElements_ = java.util.Collections.emptyList();
       longElements_ = java.util.Collections.emptyList();
       otherElements_ = java.util.Collections.emptyList();
+      additionToggles_ = java.util.Collections.emptyList();
+      beforeDots_ = java.util.Collections.emptyList();
+      afterDots_ = java.util.Collections.emptyList();
+      updateStringElements_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      updateIntElements_ = java.util.Collections.emptyList();
+      updateLongElements_ = java.util.Collections.emptyList();
+      updateOtherElements_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1714,6 +2181,24 @@ public final class ReplicatedDataMessages {
       }
       for (int i = 0; i < getOtherElementsCount(); i++) {
         if (!getOtherElements(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      for (int i = 0; i < getBeforeDotsCount(); i++) {
+        if (!getBeforeDots(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      for (int i = 0; i < getAfterDotsCount(); i++) {
+        if (!getAfterDots(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      for (int i = 0; i < getUpdateOtherElementsCount(); i++) {
+        if (!getUpdateOtherElements(i).isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
@@ -1750,6 +2235,27 @@ public final class ReplicatedDataMessages {
       }
       for (int i = 0; i < otherElements_.size(); i++) {
         output.writeMessage(6, otherElements_.get(i));
+      }
+      for (int i = 0; i < additionToggles_.size(); i++) {
+        output.writeBool(7, additionToggles_.get(i));
+      }
+      for (int i = 0; i < beforeDots_.size(); i++) {
+        output.writeMessage(8, beforeDots_.get(i));
+      }
+      for (int i = 0; i < afterDots_.size(); i++) {
+        output.writeMessage(9, afterDots_.get(i));
+      }
+      for (int i = 0; i < updateStringElements_.size(); i++) {
+        output.writeBytes(10, updateStringElements_.getByteString(i));
+      }
+      for (int i = 0; i < updateIntElements_.size(); i++) {
+        output.writeSInt32(11, updateIntElements_.get(i));
+      }
+      for (int i = 0; i < updateLongElements_.size(); i++) {
+        output.writeSInt64(12, updateLongElements_.get(i));
+      }
+      for (int i = 0; i < updateOtherElements_.size(); i++) {
+        output.writeMessage(13, updateOtherElements_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -1808,6 +2314,51 @@ public final class ReplicatedDataMessages {
       for (int i = 0; i < otherElements_.size(); i++) {
         size += akka.protobuf.CodedOutputStream
           .computeMessageSize(6, otherElements_.get(i));
+      }
+      {
+        int dataSize = 0;
+        dataSize = 1 * getAdditionTogglesList().size();
+        size += dataSize;
+        size += 1 * getAdditionTogglesList().size();
+      }
+      for (int i = 0; i < beforeDots_.size(); i++) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(8, beforeDots_.get(i));
+      }
+      for (int i = 0; i < afterDots_.size(); i++) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(9, afterDots_.get(i));
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < updateStringElements_.size(); i++) {
+          dataSize += akka.protobuf.CodedOutputStream
+            .computeBytesSizeNoTag(updateStringElements_.getByteString(i));
+        }
+        size += dataSize;
+        size += 1 * getUpdateStringElementsList().size();
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < updateIntElements_.size(); i++) {
+          dataSize += akka.protobuf.CodedOutputStream
+            .computeSInt32SizeNoTag(updateIntElements_.get(i));
+        }
+        size += dataSize;
+        size += 1 * getUpdateIntElementsList().size();
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < updateLongElements_.size(); i++) {
+          dataSize += akka.protobuf.CodedOutputStream
+            .computeSInt64SizeNoTag(updateLongElements_.get(i));
+        }
+        size += dataSize;
+        size += 1 * getUpdateLongElementsList().size();
+      }
+      for (int i = 0; i < updateOtherElements_.size(); i++) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(13, updateOtherElements_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1920,6 +2471,9 @@ public final class ReplicatedDataMessages {
           getVvectorFieldBuilder();
           getDotsFieldBuilder();
           getOtherElementsFieldBuilder();
+          getBeforeDotsFieldBuilder();
+          getAfterDotsFieldBuilder();
+          getUpdateOtherElementsFieldBuilder();
         }
       }
       private static Builder create() {
@@ -1951,6 +2505,32 @@ public final class ReplicatedDataMessages {
           bitField0_ = (bitField0_ & ~0x00000020);
         } else {
           otherElementsBuilder_.clear();
+        }
+        additionToggles_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000040);
+        if (beforeDotsBuilder_ == null) {
+          beforeDots_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000080);
+        } else {
+          beforeDotsBuilder_.clear();
+        }
+        if (afterDotsBuilder_ == null) {
+          afterDots_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000100);
+        } else {
+          afterDotsBuilder_.clear();
+        }
+        updateStringElements_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000200);
+        updateIntElements_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000400);
+        updateLongElements_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000800);
+        if (updateOtherElementsBuilder_ == null) {
+          updateOtherElements_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00001000);
+        } else {
+          updateOtherElementsBuilder_.clear();
         }
         return this;
       }
@@ -2021,6 +2601,54 @@ public final class ReplicatedDataMessages {
           result.otherElements_ = otherElements_;
         } else {
           result.otherElements_ = otherElementsBuilder_.build();
+        }
+        if (((bitField0_ & 0x00000040) == 0x00000040)) {
+          additionToggles_ = java.util.Collections.unmodifiableList(additionToggles_);
+          bitField0_ = (bitField0_ & ~0x00000040);
+        }
+        result.additionToggles_ = additionToggles_;
+        if (beforeDotsBuilder_ == null) {
+          if (((bitField0_ & 0x00000080) == 0x00000080)) {
+            beforeDots_ = java.util.Collections.unmodifiableList(beforeDots_);
+            bitField0_ = (bitField0_ & ~0x00000080);
+          }
+          result.beforeDots_ = beforeDots_;
+        } else {
+          result.beforeDots_ = beforeDotsBuilder_.build();
+        }
+        if (afterDotsBuilder_ == null) {
+          if (((bitField0_ & 0x00000100) == 0x00000100)) {
+            afterDots_ = java.util.Collections.unmodifiableList(afterDots_);
+            bitField0_ = (bitField0_ & ~0x00000100);
+          }
+          result.afterDots_ = afterDots_;
+        } else {
+          result.afterDots_ = afterDotsBuilder_.build();
+        }
+        if (((bitField0_ & 0x00000200) == 0x00000200)) {
+          updateStringElements_ = new akka.protobuf.UnmodifiableLazyStringList(
+              updateStringElements_);
+          bitField0_ = (bitField0_ & ~0x00000200);
+        }
+        result.updateStringElements_ = updateStringElements_;
+        if (((bitField0_ & 0x00000400) == 0x00000400)) {
+          updateIntElements_ = java.util.Collections.unmodifiableList(updateIntElements_);
+          bitField0_ = (bitField0_ & ~0x00000400);
+        }
+        result.updateIntElements_ = updateIntElements_;
+        if (((bitField0_ & 0x00000800) == 0x00000800)) {
+          updateLongElements_ = java.util.Collections.unmodifiableList(updateLongElements_);
+          bitField0_ = (bitField0_ & ~0x00000800);
+        }
+        result.updateLongElements_ = updateLongElements_;
+        if (updateOtherElementsBuilder_ == null) {
+          if (((bitField0_ & 0x00001000) == 0x00001000)) {
+            updateOtherElements_ = java.util.Collections.unmodifiableList(updateOtherElements_);
+            bitField0_ = (bitField0_ & ~0x00001000);
+          }
+          result.updateOtherElements_ = updateOtherElements_;
+        } else {
+          result.updateOtherElements_ = updateOtherElementsBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -2123,6 +2751,124 @@ public final class ReplicatedDataMessages {
             }
           }
         }
+        if (!other.additionToggles_.isEmpty()) {
+          if (additionToggles_.isEmpty()) {
+            additionToggles_ = other.additionToggles_;
+            bitField0_ = (bitField0_ & ~0x00000040);
+          } else {
+            ensureAdditionTogglesIsMutable();
+            additionToggles_.addAll(other.additionToggles_);
+          }
+          onChanged();
+        }
+        if (beforeDotsBuilder_ == null) {
+          if (!other.beforeDots_.isEmpty()) {
+            if (beforeDots_.isEmpty()) {
+              beforeDots_ = other.beforeDots_;
+              bitField0_ = (bitField0_ & ~0x00000080);
+            } else {
+              ensureBeforeDotsIsMutable();
+              beforeDots_.addAll(other.beforeDots_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.beforeDots_.isEmpty()) {
+            if (beforeDotsBuilder_.isEmpty()) {
+              beforeDotsBuilder_.dispose();
+              beforeDotsBuilder_ = null;
+              beforeDots_ = other.beforeDots_;
+              bitField0_ = (bitField0_ & ~0x00000080);
+              beforeDotsBuilder_ = 
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getBeforeDotsFieldBuilder() : null;
+            } else {
+              beforeDotsBuilder_.addAllMessages(other.beforeDots_);
+            }
+          }
+        }
+        if (afterDotsBuilder_ == null) {
+          if (!other.afterDots_.isEmpty()) {
+            if (afterDots_.isEmpty()) {
+              afterDots_ = other.afterDots_;
+              bitField0_ = (bitField0_ & ~0x00000100);
+            } else {
+              ensureAfterDotsIsMutable();
+              afterDots_.addAll(other.afterDots_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.afterDots_.isEmpty()) {
+            if (afterDotsBuilder_.isEmpty()) {
+              afterDotsBuilder_.dispose();
+              afterDotsBuilder_ = null;
+              afterDots_ = other.afterDots_;
+              bitField0_ = (bitField0_ & ~0x00000100);
+              afterDotsBuilder_ = 
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getAfterDotsFieldBuilder() : null;
+            } else {
+              afterDotsBuilder_.addAllMessages(other.afterDots_);
+            }
+          }
+        }
+        if (!other.updateStringElements_.isEmpty()) {
+          if (updateStringElements_.isEmpty()) {
+            updateStringElements_ = other.updateStringElements_;
+            bitField0_ = (bitField0_ & ~0x00000200);
+          } else {
+            ensureUpdateStringElementsIsMutable();
+            updateStringElements_.addAll(other.updateStringElements_);
+          }
+          onChanged();
+        }
+        if (!other.updateIntElements_.isEmpty()) {
+          if (updateIntElements_.isEmpty()) {
+            updateIntElements_ = other.updateIntElements_;
+            bitField0_ = (bitField0_ & ~0x00000400);
+          } else {
+            ensureUpdateIntElementsIsMutable();
+            updateIntElements_.addAll(other.updateIntElements_);
+          }
+          onChanged();
+        }
+        if (!other.updateLongElements_.isEmpty()) {
+          if (updateLongElements_.isEmpty()) {
+            updateLongElements_ = other.updateLongElements_;
+            bitField0_ = (bitField0_ & ~0x00000800);
+          } else {
+            ensureUpdateLongElementsIsMutable();
+            updateLongElements_.addAll(other.updateLongElements_);
+          }
+          onChanged();
+        }
+        if (updateOtherElementsBuilder_ == null) {
+          if (!other.updateOtherElements_.isEmpty()) {
+            if (updateOtherElements_.isEmpty()) {
+              updateOtherElements_ = other.updateOtherElements_;
+              bitField0_ = (bitField0_ & ~0x00001000);
+            } else {
+              ensureUpdateOtherElementsIsMutable();
+              updateOtherElements_.addAll(other.updateOtherElements_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.updateOtherElements_.isEmpty()) {
+            if (updateOtherElementsBuilder_.isEmpty()) {
+              updateOtherElementsBuilder_.dispose();
+              updateOtherElementsBuilder_ = null;
+              updateOtherElements_ = other.updateOtherElements_;
+              bitField0_ = (bitField0_ & ~0x00001000);
+              updateOtherElementsBuilder_ = 
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getUpdateOtherElementsFieldBuilder() : null;
+            } else {
+              updateOtherElementsBuilder_.addAllMessages(other.updateOtherElements_);
+            }
+          }
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -2144,6 +2890,24 @@ public final class ReplicatedDataMessages {
         }
         for (int i = 0; i < getOtherElementsCount(); i++) {
           if (!getOtherElements(i).isInitialized()) {
+            
+            return false;
+          }
+        }
+        for (int i = 0; i < getBeforeDotsCount(); i++) {
+          if (!getBeforeDots(i).isInitialized()) {
+            
+            return false;
+          }
+        }
+        for (int i = 0; i < getAfterDotsCount(); i++) {
+          if (!getAfterDots(i).isInitialized()) {
+            
+            return false;
+          }
+        }
+        for (int i = 0; i < getUpdateOtherElementsCount(); i++) {
+          if (!getUpdateOtherElements(i).isInitialized()) {
             
             return false;
           }
@@ -2990,6 +3754,1017 @@ public final class ReplicatedDataMessages {
           otherElements_ = null;
         }
         return otherElementsBuilder_;
+      }
+
+      // repeated bool additionToggles = 7;
+      private java.util.List<java.lang.Boolean> additionToggles_ = java.util.Collections.emptyList();
+      private void ensureAdditionTogglesIsMutable() {
+        if (!((bitField0_ & 0x00000040) == 0x00000040)) {
+          additionToggles_ = new java.util.ArrayList<java.lang.Boolean>(additionToggles_);
+          bitField0_ |= 0x00000040;
+         }
+      }
+      /**
+       * <code>repeated bool additionToggles = 7;</code>
+       */
+      public java.util.List<java.lang.Boolean>
+          getAdditionTogglesList() {
+        return java.util.Collections.unmodifiableList(additionToggles_);
+      }
+      /**
+       * <code>repeated bool additionToggles = 7;</code>
+       */
+      public int getAdditionTogglesCount() {
+        return additionToggles_.size();
+      }
+      /**
+       * <code>repeated bool additionToggles = 7;</code>
+       */
+      public boolean getAdditionToggles(int index) {
+        return additionToggles_.get(index);
+      }
+      /**
+       * <code>repeated bool additionToggles = 7;</code>
+       */
+      public Builder setAdditionToggles(
+          int index, boolean value) {
+        ensureAdditionTogglesIsMutable();
+        additionToggles_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bool additionToggles = 7;</code>
+       */
+      public Builder addAdditionToggles(boolean value) {
+        ensureAdditionTogglesIsMutable();
+        additionToggles_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bool additionToggles = 7;</code>
+       */
+      public Builder addAllAdditionToggles(
+          java.lang.Iterable<? extends java.lang.Boolean> values) {
+        ensureAdditionTogglesIsMutable();
+        super.addAll(values, additionToggles_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bool additionToggles = 7;</code>
+       */
+      public Builder clearAdditionToggles() {
+        additionToggles_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000040);
+        onChanged();
+        return this;
+      }
+
+      // repeated .akka.cluster.ddata.VersionVector beforeDots = 8;
+      private java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> beforeDots_ =
+        java.util.Collections.emptyList();
+      private void ensureBeforeDotsIsMutable() {
+        if (!((bitField0_ & 0x00000080) == 0x00000080)) {
+          beforeDots_ = new java.util.ArrayList<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector>(beforeDots_);
+          bitField0_ |= 0x00000080;
+         }
+      }
+
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder> beforeDotsBuilder_;
+
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> getBeforeDotsList() {
+        if (beforeDotsBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(beforeDots_);
+        } else {
+          return beforeDotsBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public int getBeforeDotsCount() {
+        if (beforeDotsBuilder_ == null) {
+          return beforeDots_.size();
+        } else {
+          return beforeDotsBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector getBeforeDots(int index) {
+        if (beforeDotsBuilder_ == null) {
+          return beforeDots_.get(index);
+        } else {
+          return beforeDotsBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public Builder setBeforeDots(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector value) {
+        if (beforeDotsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureBeforeDotsIsMutable();
+          beforeDots_.set(index, value);
+          onChanged();
+        } else {
+          beforeDotsBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public Builder setBeforeDots(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder builderForValue) {
+        if (beforeDotsBuilder_ == null) {
+          ensureBeforeDotsIsMutable();
+          beforeDots_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          beforeDotsBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public Builder addBeforeDots(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector value) {
+        if (beforeDotsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureBeforeDotsIsMutable();
+          beforeDots_.add(value);
+          onChanged();
+        } else {
+          beforeDotsBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public Builder addBeforeDots(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector value) {
+        if (beforeDotsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureBeforeDotsIsMutable();
+          beforeDots_.add(index, value);
+          onChanged();
+        } else {
+          beforeDotsBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public Builder addBeforeDots(
+          akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder builderForValue) {
+        if (beforeDotsBuilder_ == null) {
+          ensureBeforeDotsIsMutable();
+          beforeDots_.add(builderForValue.build());
+          onChanged();
+        } else {
+          beforeDotsBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public Builder addBeforeDots(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder builderForValue) {
+        if (beforeDotsBuilder_ == null) {
+          ensureBeforeDotsIsMutable();
+          beforeDots_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          beforeDotsBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public Builder addAllBeforeDots(
+          java.lang.Iterable<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> values) {
+        if (beforeDotsBuilder_ == null) {
+          ensureBeforeDotsIsMutable();
+          super.addAll(values, beforeDots_);
+          onChanged();
+        } else {
+          beforeDotsBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public Builder clearBeforeDots() {
+        if (beforeDotsBuilder_ == null) {
+          beforeDots_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000080);
+          onChanged();
+        } else {
+          beforeDotsBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public Builder removeBeforeDots(int index) {
+        if (beforeDotsBuilder_ == null) {
+          ensureBeforeDotsIsMutable();
+          beforeDots_.remove(index);
+          onChanged();
+        } else {
+          beforeDotsBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder getBeforeDotsBuilder(
+          int index) {
+        return getBeforeDotsFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder getBeforeDotsOrBuilder(
+          int index) {
+        if (beforeDotsBuilder_ == null) {
+          return beforeDots_.get(index);  } else {
+          return beforeDotsBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder> 
+           getBeforeDotsOrBuilderList() {
+        if (beforeDotsBuilder_ != null) {
+          return beforeDotsBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(beforeDots_);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder addBeforeDotsBuilder() {
+        return getBeforeDotsFieldBuilder().addBuilder(
+            akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder addBeforeDotsBuilder(
+          int index) {
+        return getBeforeDotsFieldBuilder().addBuilder(
+            index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector beforeDots = 8;</code>
+       */
+      public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder> 
+           getBeforeDotsBuilderList() {
+        return getBeforeDotsFieldBuilder().getBuilderList();
+      }
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder> 
+          getBeforeDotsFieldBuilder() {
+        if (beforeDotsBuilder_ == null) {
+          beforeDotsBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
+              akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder>(
+                  beforeDots_,
+                  ((bitField0_ & 0x00000080) == 0x00000080),
+                  getParentForChildren(),
+                  isClean());
+          beforeDots_ = null;
+        }
+        return beforeDotsBuilder_;
+      }
+
+      // repeated .akka.cluster.ddata.VersionVector afterDots = 9;
+      private java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> afterDots_ =
+        java.util.Collections.emptyList();
+      private void ensureAfterDotsIsMutable() {
+        if (!((bitField0_ & 0x00000100) == 0x00000100)) {
+          afterDots_ = new java.util.ArrayList<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector>(afterDots_);
+          bitField0_ |= 0x00000100;
+         }
+      }
+
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder> afterDotsBuilder_;
+
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> getAfterDotsList() {
+        if (afterDotsBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(afterDots_);
+        } else {
+          return afterDotsBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public int getAfterDotsCount() {
+        if (afterDotsBuilder_ == null) {
+          return afterDots_.size();
+        } else {
+          return afterDotsBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector getAfterDots(int index) {
+        if (afterDotsBuilder_ == null) {
+          return afterDots_.get(index);
+        } else {
+          return afterDotsBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public Builder setAfterDots(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector value) {
+        if (afterDotsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureAfterDotsIsMutable();
+          afterDots_.set(index, value);
+          onChanged();
+        } else {
+          afterDotsBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public Builder setAfterDots(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder builderForValue) {
+        if (afterDotsBuilder_ == null) {
+          ensureAfterDotsIsMutable();
+          afterDots_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          afterDotsBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public Builder addAfterDots(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector value) {
+        if (afterDotsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureAfterDotsIsMutable();
+          afterDots_.add(value);
+          onChanged();
+        } else {
+          afterDotsBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public Builder addAfterDots(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector value) {
+        if (afterDotsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureAfterDotsIsMutable();
+          afterDots_.add(index, value);
+          onChanged();
+        } else {
+          afterDotsBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public Builder addAfterDots(
+          akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder builderForValue) {
+        if (afterDotsBuilder_ == null) {
+          ensureAfterDotsIsMutable();
+          afterDots_.add(builderForValue.build());
+          onChanged();
+        } else {
+          afterDotsBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public Builder addAfterDots(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder builderForValue) {
+        if (afterDotsBuilder_ == null) {
+          ensureAfterDotsIsMutable();
+          afterDots_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          afterDotsBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public Builder addAllAfterDots(
+          java.lang.Iterable<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector> values) {
+        if (afterDotsBuilder_ == null) {
+          ensureAfterDotsIsMutable();
+          super.addAll(values, afterDots_);
+          onChanged();
+        } else {
+          afterDotsBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public Builder clearAfterDots() {
+        if (afterDotsBuilder_ == null) {
+          afterDots_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000100);
+          onChanged();
+        } else {
+          afterDotsBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public Builder removeAfterDots(int index) {
+        if (afterDotsBuilder_ == null) {
+          ensureAfterDotsIsMutable();
+          afterDots_.remove(index);
+          onChanged();
+        } else {
+          afterDotsBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder getAfterDotsBuilder(
+          int index) {
+        return getAfterDotsFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder getAfterDotsOrBuilder(
+          int index) {
+        if (afterDotsBuilder_ == null) {
+          return afterDots_.get(index);  } else {
+          return afterDotsBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder> 
+           getAfterDotsOrBuilderList() {
+        if (afterDotsBuilder_ != null) {
+          return afterDotsBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(afterDots_);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder addAfterDotsBuilder() {
+        return getAfterDotsFieldBuilder().addBuilder(
+            akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder addAfterDotsBuilder(
+          int index) {
+        return getAfterDotsFieldBuilder().addBuilder(
+            index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.VersionVector afterDots = 9;</code>
+       */
+      public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder> 
+           getAfterDotsBuilderList() {
+        return getAfterDotsFieldBuilder().getBuilderList();
+      }
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder> 
+          getAfterDotsFieldBuilder() {
+        if (afterDotsBuilder_ == null) {
+          afterDotsBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
+              akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVector.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.VersionVectorOrBuilder>(
+                  afterDots_,
+                  ((bitField0_ & 0x00000100) == 0x00000100),
+                  getParentForChildren(),
+                  isClean());
+          afterDots_ = null;
+        }
+        return afterDotsBuilder_;
+      }
+
+      // repeated string updateStringElements = 10;
+      private akka.protobuf.LazyStringList updateStringElements_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      private void ensureUpdateStringElementsIsMutable() {
+        if (!((bitField0_ & 0x00000200) == 0x00000200)) {
+          updateStringElements_ = new akka.protobuf.LazyStringArrayList(updateStringElements_);
+          bitField0_ |= 0x00000200;
+         }
+      }
+      /**
+       * <code>repeated string updateStringElements = 10;</code>
+       */
+      public java.util.List<java.lang.String>
+          getUpdateStringElementsList() {
+        return java.util.Collections.unmodifiableList(updateStringElements_);
+      }
+      /**
+       * <code>repeated string updateStringElements = 10;</code>
+       */
+      public int getUpdateStringElementsCount() {
+        return updateStringElements_.size();
+      }
+      /**
+       * <code>repeated string updateStringElements = 10;</code>
+       */
+      public java.lang.String getUpdateStringElements(int index) {
+        return updateStringElements_.get(index);
+      }
+      /**
+       * <code>repeated string updateStringElements = 10;</code>
+       */
+      public akka.protobuf.ByteString
+          getUpdateStringElementsBytes(int index) {
+        return updateStringElements_.getByteString(index);
+      }
+      /**
+       * <code>repeated string updateStringElements = 10;</code>
+       */
+      public Builder setUpdateStringElements(
+          int index, java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureUpdateStringElementsIsMutable();
+        updateStringElements_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string updateStringElements = 10;</code>
+       */
+      public Builder addUpdateStringElements(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureUpdateStringElementsIsMutable();
+        updateStringElements_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string updateStringElements = 10;</code>
+       */
+      public Builder addAllUpdateStringElements(
+          java.lang.Iterable<java.lang.String> values) {
+        ensureUpdateStringElementsIsMutable();
+        super.addAll(values, updateStringElements_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string updateStringElements = 10;</code>
+       */
+      public Builder clearUpdateStringElements() {
+        updateStringElements_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000200);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string updateStringElements = 10;</code>
+       */
+      public Builder addUpdateStringElementsBytes(
+          akka.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureUpdateStringElementsIsMutable();
+        updateStringElements_.add(value);
+        onChanged();
+        return this;
+      }
+
+      // repeated sint32 updateIntElements = 11;
+      private java.util.List<java.lang.Integer> updateIntElements_ = java.util.Collections.emptyList();
+      private void ensureUpdateIntElementsIsMutable() {
+        if (!((bitField0_ & 0x00000400) == 0x00000400)) {
+          updateIntElements_ = new java.util.ArrayList<java.lang.Integer>(updateIntElements_);
+          bitField0_ |= 0x00000400;
+         }
+      }
+      /**
+       * <code>repeated sint32 updateIntElements = 11;</code>
+       */
+      public java.util.List<java.lang.Integer>
+          getUpdateIntElementsList() {
+        return java.util.Collections.unmodifiableList(updateIntElements_);
+      }
+      /**
+       * <code>repeated sint32 updateIntElements = 11;</code>
+       */
+      public int getUpdateIntElementsCount() {
+        return updateIntElements_.size();
+      }
+      /**
+       * <code>repeated sint32 updateIntElements = 11;</code>
+       */
+      public int getUpdateIntElements(int index) {
+        return updateIntElements_.get(index);
+      }
+      /**
+       * <code>repeated sint32 updateIntElements = 11;</code>
+       */
+      public Builder setUpdateIntElements(
+          int index, int value) {
+        ensureUpdateIntElementsIsMutable();
+        updateIntElements_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated sint32 updateIntElements = 11;</code>
+       */
+      public Builder addUpdateIntElements(int value) {
+        ensureUpdateIntElementsIsMutable();
+        updateIntElements_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated sint32 updateIntElements = 11;</code>
+       */
+      public Builder addAllUpdateIntElements(
+          java.lang.Iterable<? extends java.lang.Integer> values) {
+        ensureUpdateIntElementsIsMutable();
+        super.addAll(values, updateIntElements_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated sint32 updateIntElements = 11;</code>
+       */
+      public Builder clearUpdateIntElements() {
+        updateIntElements_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000400);
+        onChanged();
+        return this;
+      }
+
+      // repeated sint64 updateLongElements = 12;
+      private java.util.List<java.lang.Long> updateLongElements_ = java.util.Collections.emptyList();
+      private void ensureUpdateLongElementsIsMutable() {
+        if (!((bitField0_ & 0x00000800) == 0x00000800)) {
+          updateLongElements_ = new java.util.ArrayList<java.lang.Long>(updateLongElements_);
+          bitField0_ |= 0x00000800;
+         }
+      }
+      /**
+       * <code>repeated sint64 updateLongElements = 12;</code>
+       */
+      public java.util.List<java.lang.Long>
+          getUpdateLongElementsList() {
+        return java.util.Collections.unmodifiableList(updateLongElements_);
+      }
+      /**
+       * <code>repeated sint64 updateLongElements = 12;</code>
+       */
+      public int getUpdateLongElementsCount() {
+        return updateLongElements_.size();
+      }
+      /**
+       * <code>repeated sint64 updateLongElements = 12;</code>
+       */
+      public long getUpdateLongElements(int index) {
+        return updateLongElements_.get(index);
+      }
+      /**
+       * <code>repeated sint64 updateLongElements = 12;</code>
+       */
+      public Builder setUpdateLongElements(
+          int index, long value) {
+        ensureUpdateLongElementsIsMutable();
+        updateLongElements_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated sint64 updateLongElements = 12;</code>
+       */
+      public Builder addUpdateLongElements(long value) {
+        ensureUpdateLongElementsIsMutable();
+        updateLongElements_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated sint64 updateLongElements = 12;</code>
+       */
+      public Builder addAllUpdateLongElements(
+          java.lang.Iterable<? extends java.lang.Long> values) {
+        ensureUpdateLongElementsIsMutable();
+        super.addAll(values, updateLongElements_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated sint64 updateLongElements = 12;</code>
+       */
+      public Builder clearUpdateLongElements() {
+        updateLongElements_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000800);
+        onChanged();
+        return this;
+      }
+
+      // repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;
+      private java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage> updateOtherElements_ =
+        java.util.Collections.emptyList();
+      private void ensureUpdateOtherElementsIsMutable() {
+        if (!((bitField0_ & 0x00001000) == 0x00001000)) {
+          updateOtherElements_ = new java.util.ArrayList<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage>(updateOtherElements_);
+          bitField0_ |= 0x00001000;
+         }
+      }
+
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> updateOtherElementsBuilder_;
+
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage> getUpdateOtherElementsList() {
+        if (updateOtherElementsBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(updateOtherElements_);
+        } else {
+          return updateOtherElementsBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public int getUpdateOtherElementsCount() {
+        if (updateOtherElementsBuilder_ == null) {
+          return updateOtherElements_.size();
+        } else {
+          return updateOtherElementsBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getUpdateOtherElements(int index) {
+        if (updateOtherElementsBuilder_ == null) {
+          return updateOtherElements_.get(index);
+        } else {
+          return updateOtherElementsBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public Builder setUpdateOtherElements(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+        if (updateOtherElementsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureUpdateOtherElementsIsMutable();
+          updateOtherElements_.set(index, value);
+          onChanged();
+        } else {
+          updateOtherElementsBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public Builder setUpdateOtherElements(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder builderForValue) {
+        if (updateOtherElementsBuilder_ == null) {
+          ensureUpdateOtherElementsIsMutable();
+          updateOtherElements_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          updateOtherElementsBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public Builder addUpdateOtherElements(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+        if (updateOtherElementsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureUpdateOtherElementsIsMutable();
+          updateOtherElements_.add(value);
+          onChanged();
+        } else {
+          updateOtherElementsBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public Builder addUpdateOtherElements(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
+        if (updateOtherElementsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureUpdateOtherElementsIsMutable();
+          updateOtherElements_.add(index, value);
+          onChanged();
+        } else {
+          updateOtherElementsBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public Builder addUpdateOtherElements(
+          akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder builderForValue) {
+        if (updateOtherElementsBuilder_ == null) {
+          ensureUpdateOtherElementsIsMutable();
+          updateOtherElements_.add(builderForValue.build());
+          onChanged();
+        } else {
+          updateOtherElementsBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public Builder addUpdateOtherElements(
+          int index, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder builderForValue) {
+        if (updateOtherElementsBuilder_ == null) {
+          ensureUpdateOtherElementsIsMutable();
+          updateOtherElements_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          updateOtherElementsBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public Builder addAllUpdateOtherElements(
+          java.lang.Iterable<? extends akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage> values) {
+        if (updateOtherElementsBuilder_ == null) {
+          ensureUpdateOtherElementsIsMutable();
+          super.addAll(values, updateOtherElements_);
+          onChanged();
+        } else {
+          updateOtherElementsBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public Builder clearUpdateOtherElements() {
+        if (updateOtherElementsBuilder_ == null) {
+          updateOtherElements_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00001000);
+          onChanged();
+        } else {
+          updateOtherElementsBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public Builder removeUpdateOtherElements(int index) {
+        if (updateOtherElementsBuilder_ == null) {
+          ensureUpdateOtherElementsIsMutable();
+          updateOtherElements_.remove(index);
+          onChanged();
+        } else {
+          updateOtherElementsBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder getUpdateOtherElementsBuilder(
+          int index) {
+        return getUpdateOtherElementsFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getUpdateOtherElementsOrBuilder(
+          int index) {
+        if (updateOtherElementsBuilder_ == null) {
+          return updateOtherElements_.get(index);  } else {
+          return updateOtherElementsBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
+           getUpdateOtherElementsOrBuilderList() {
+        if (updateOtherElementsBuilder_ != null) {
+          return updateOtherElementsBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(updateOtherElements_);
+        }
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder addUpdateOtherElementsBuilder() {
+        return getUpdateOtherElementsFieldBuilder().addBuilder(
+            akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder addUpdateOtherElementsBuilder(
+          int index) {
+        return getUpdateOtherElementsFieldBuilder().addBuilder(
+            index, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.OtherMessage updateOtherElements = 13;</code>
+       */
+      public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder> 
+           getUpdateOtherElementsBuilderList() {
+        return getUpdateOtherElementsFieldBuilder().getBuilderList();
+      }
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
+          getUpdateOtherElementsFieldBuilder() {
+        if (updateOtherElementsBuilder_ == null) {
+          updateOtherElementsBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
+              akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
+                  updateOtherElements_,
+                  ((bitField0_ & 0x00001000) == 0x00001000),
+                  getParentForChildren(),
+                  isClean());
+          updateOtherElements_ = null;
+        }
+        return updateOtherElementsBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:akka.cluster.ddata.ORSet)
@@ -15424,55 +17199,62 @@ public final class ReplicatedDataMessages {
       "\004GSet\022\026\n\016stringElements\030\001 \003(\t\022\027\n\013intElem" +
       "ents\030\002 \003(\021B\002\020\001\022\030\n\014longElements\030\003 \003(\022B\002\020\001" +
       "\0227\n\rotherElements\030\004 \003(\0132 .akka.cluster.d" +
-      "data.OtherMessage\"\360\001\n\005ORSet\0222\n\007vvector\030\001" +
+      "data.OtherMessage\"\212\004\n\005ORSet\0222\n\007vvector\030\001" +
       " \002(\0132!.akka.cluster.ddata.VersionVector\022" +
       "/\n\004dots\030\002 \003(\0132!.akka.cluster.ddata.Versi" +
       "onVector\022\026\n\016stringElements\030\003 \003(\t\022\027\n\013intE" +
       "lements\030\004 \003(\021B\002\020\001\022\030\n\014longElements\030\005 \003(\022B",
       "\002\020\001\0227\n\rotherElements\030\006 \003(\0132 .akka.cluste" +
-      "r.ddata.OtherMessage\"\027\n\004Flag\022\017\n\007enabled\030" +
-      "\001 \002(\010\"\202\001\n\013LWWRegister\022\021\n\ttimestamp\030\001 \002(\022" +
-      "\022/\n\004node\030\002 \002(\0132!.akka.cluster.ddata.Uniq" +
-      "ueAddress\022/\n\005state\030\003 \002(\0132 .akka.cluster." +
-      "ddata.OtherMessage\"\210\001\n\010GCounter\0223\n\007entri" +
-      "es\030\001 \003(\0132\".akka.cluster.ddata.GCounter.E" +
-      "ntry\032G\n\005Entry\022/\n\004node\030\001 \002(\0132!.akka.clust" +
-      "er.ddata.UniqueAddress\022\r\n\005value\030\002 \002(\014\"o\n" +
-      "\tPNCounter\0220\n\nincrements\030\001 \002(\0132\034.akka.cl",
-      "uster.ddata.GCounter\0220\n\ndecrements\030\002 \002(\013" +
-      "2\034.akka.cluster.ddata.GCounter\"\224\001\n\rVersi" +
-      "onVector\0228\n\007entries\030\001 \003(\0132\'.akka.cluster" +
-      ".ddata.VersionVector.Entry\032I\n\005Entry\022/\n\004n" +
-      "ode\030\001 \002(\0132!.akka.cluster.ddata.UniqueAdd" +
-      "ress\022\017\n\007version\030\002 \002(\003\"\205\002\n\005ORMap\022\'\n\004keys\030" +
-      "\001 \002(\0132\031.akka.cluster.ddata.ORSet\0220\n\007entr" +
-      "ies\030\002 \003(\0132\037.akka.cluster.ddata.ORMap.Ent" +
-      "ry\032\240\001\n\005Entry\022\021\n\tstringKey\030\001 \001(\t\022/\n\005value" +
-      "\030\002 \002(\0132 .akka.cluster.ddata.OtherMessage",
-      "\022\016\n\006intKey\030\003 \001(\021\022\017\n\007longKey\030\004 \001(\022\0222\n\010oth" +
-      "erKey\030\005 \001(\0132 .akka.cluster.ddata.OtherMe" +
-      "ssage\"\206\002\n\006LWWMap\022\'\n\004keys\030\001 \002(\0132\031.akka.cl" +
-      "uster.ddata.ORSet\0221\n\007entries\030\002 \003(\0132 .akk" +
-      "a.cluster.ddata.LWWMap.Entry\032\237\001\n\005Entry\022\021" +
-      "\n\tstringKey\030\001 \001(\t\022.\n\005value\030\002 \002(\0132\037.akka." +
-      "cluster.ddata.LWWRegister\022\016\n\006intKey\030\003 \001(" +
-      "\021\022\017\n\007longKey\030\004 \001(\022\0222\n\010otherKey\030\005 \001(\0132 .a" +
-      "kka.cluster.ddata.OtherMessage\"\220\002\n\014PNCou" +
-      "nterMap\022\'\n\004keys\030\001 \002(\0132\031.akka.cluster.dda",
-      "ta.ORSet\0227\n\007entries\030\002 \003(\0132&.akka.cluster" +
-      ".ddata.PNCounterMap.Entry\032\235\001\n\005Entry\022\021\n\ts" +
-      "tringKey\030\001 \001(\t\022,\n\005value\030\002 \002(\0132\035.akka.clu" +
-      "ster.ddata.PNCounter\022\016\n\006intKey\030\003 \001(\021\022\017\n\007" +
-      "longKey\030\004 \001(\022\0222\n\010otherKey\030\005 \001(\0132 .akka.c" +
-      "luster.ddata.OtherMessage\"\210\002\n\nORMultiMap" +
-      "\022\'\n\004keys\030\001 \002(\0132\031.akka.cluster.ddata.ORSe" +
-      "t\0225\n\007entries\030\002 \003(\0132$.akka.cluster.ddata." +
-      "ORMultiMap.Entry\032\231\001\n\005Entry\022\021\n\tstringKey\030" +
-      "\001 \001(\t\022(\n\005value\030\002 \002(\0132\031.akka.cluster.ddat",
-      "a.ORSet\022\016\n\006intKey\030\003 \001(\021\022\017\n\007longKey\030\004 \001(\022" +
-      "\0222\n\010otherKey\030\005 \001(\0132 .akka.cluster.ddata." +
-      "OtherMessageB#\n\037akka.cluster.ddata.proto" +
-      "buf.msgH\001"
+      "r.ddata.OtherMessage\022\027\n\017additionToggles\030" +
+      "\007 \003(\010\0225\n\nbeforeDots\030\010 \003(\0132!.akka.cluster" +
+      ".ddata.VersionVector\0224\n\tafterDots\030\t \003(\0132" +
+      "!.akka.cluster.ddata.VersionVector\022\034\n\024up" +
+      "dateStringElements\030\n \003(\t\022\031\n\021updateIntEle" +
+      "ments\030\013 \003(\021\022\032\n\022updateLongElements\030\014 \003(\022\022" +
+      "=\n\023updateOtherElements\030\r \003(\0132 .akka.clus" +
+      "ter.ddata.OtherMessage\"\027\n\004Flag\022\017\n\007enable" +
+      "d\030\001 \002(\010\"\202\001\n\013LWWRegister\022\021\n\ttimestamp\030\001 \002",
+      "(\022\022/\n\004node\030\002 \002(\0132!.akka.cluster.ddata.Un" +
+      "iqueAddress\022/\n\005state\030\003 \002(\0132 .akka.cluste" +
+      "r.ddata.OtherMessage\"\210\001\n\010GCounter\0223\n\007ent" +
+      "ries\030\001 \003(\0132\".akka.cluster.ddata.GCounter" +
+      ".Entry\032G\n\005Entry\022/\n\004node\030\001 \002(\0132!.akka.clu" +
+      "ster.ddata.UniqueAddress\022\r\n\005value\030\002 \002(\014\"" +
+      "o\n\tPNCounter\0220\n\nincrements\030\001 \002(\0132\034.akka." +
+      "cluster.ddata.GCounter\0220\n\ndecrements\030\002 \002" +
+      "(\0132\034.akka.cluster.ddata.GCounter\"\224\001\n\rVer" +
+      "sionVector\0228\n\007entries\030\001 \003(\0132\'.akka.clust",
+      "er.ddata.VersionVector.Entry\032I\n\005Entry\022/\n" +
+      "\004node\030\001 \002(\0132!.akka.cluster.ddata.UniqueA" +
+      "ddress\022\017\n\007version\030\002 \002(\003\"\205\002\n\005ORMap\022\'\n\004key" +
+      "s\030\001 \002(\0132\031.akka.cluster.ddata.ORSet\0220\n\007en" +
+      "tries\030\002 \003(\0132\037.akka.cluster.ddata.ORMap.E" +
+      "ntry\032\240\001\n\005Entry\022\021\n\tstringKey\030\001 \001(\t\022/\n\005val" +
+      "ue\030\002 \002(\0132 .akka.cluster.ddata.OtherMessa" +
+      "ge\022\016\n\006intKey\030\003 \001(\021\022\017\n\007longKey\030\004 \001(\022\0222\n\010o" +
+      "therKey\030\005 \001(\0132 .akka.cluster.ddata.Other" +
+      "Message\"\206\002\n\006LWWMap\022\'\n\004keys\030\001 \002(\0132\031.akka.",
+      "cluster.ddata.ORSet\0221\n\007entries\030\002 \003(\0132 .a" +
+      "kka.cluster.ddata.LWWMap.Entry\032\237\001\n\005Entry" +
+      "\022\021\n\tstringKey\030\001 \001(\t\022.\n\005value\030\002 \002(\0132\037.akk" +
+      "a.cluster.ddata.LWWRegister\022\016\n\006intKey\030\003 " +
+      "\001(\021\022\017\n\007longKey\030\004 \001(\022\0222\n\010otherKey\030\005 \001(\0132 " +
+      ".akka.cluster.ddata.OtherMessage\"\220\002\n\014PNC" +
+      "ounterMap\022\'\n\004keys\030\001 \002(\0132\031.akka.cluster.d" +
+      "data.ORSet\0227\n\007entries\030\002 \003(\0132&.akka.clust" +
+      "er.ddata.PNCounterMap.Entry\032\235\001\n\005Entry\022\021\n" +
+      "\tstringKey\030\001 \001(\t\022,\n\005value\030\002 \002(\0132\035.akka.c",
+      "luster.ddata.PNCounter\022\016\n\006intKey\030\003 \001(\021\022\017" +
+      "\n\007longKey\030\004 \001(\022\0222\n\010otherKey\030\005 \001(\0132 .akka" +
+      ".cluster.ddata.OtherMessage\"\210\002\n\nORMultiM" +
+      "ap\022\'\n\004keys\030\001 \002(\0132\031.akka.cluster.ddata.OR" +
+      "Set\0225\n\007entries\030\002 \003(\0132$.akka.cluster.ddat" +
+      "a.ORMultiMap.Entry\032\231\001\n\005Entry\022\021\n\tstringKe" +
+      "y\030\001 \001(\t\022(\n\005value\030\002 \002(\0132\031.akka.cluster.dd" +
+      "ata.ORSet\022\016\n\006intKey\030\003 \001(\021\022\017\n\007longKey\030\004 \001" +
+      "(\022\0222\n\010otherKey\030\005 \001(\0132 .akka.cluster.ddat" +
+      "a.OtherMessageB#\n\037akka.cluster.ddata.pro",
+      "tobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -15490,7 +17272,7 @@ public final class ReplicatedDataMessages {
           internal_static_akka_cluster_ddata_ORSet_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_ORSet_descriptor,
-              new java.lang.String[] { "Vvector", "Dots", "StringElements", "IntElements", "LongElements", "OtherElements", });
+              new java.lang.String[] { "Vvector", "Dots", "StringElements", "IntElements", "LongElements", "OtherElements", "AdditionToggles", "BeforeDots", "AfterDots", "UpdateStringElements", "UpdateIntElements", "UpdateLongElements", "UpdateOtherElements", });
           internal_static_akka_cluster_ddata_Flag_descriptor =
             getDescriptor().getMessageTypes().get(2);
           internal_static_akka_cluster_ddata_Flag_fieldAccessorTable = new
