@@ -82,7 +82,8 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
     }
 
     "serialize ORSet" in {
-      val l: List[DeltaUpdate[Int]] = List(DeltaUpdate(1, true, VersionVector.empty, VersionVector.empty), DeltaUpdate(2, false, VersionVector.empty, VersionVector.empty))
+      val addTag = UniqueAddress(Address("delta-add-tag", "tag", "localhostabc", 0), 1)
+      val l: List[DeltaUpdate[Int]] = List(DeltaUpdate(1, true, addTag, 3L, 5L), DeltaUpdate(2, false, addTag, 7L, 9L))
       val a: ORSet[Int] = new ORSet(Map.empty, VersionVector.empty, None, l)
       checkSerialization(a)
       checkSerialization(ORSet())

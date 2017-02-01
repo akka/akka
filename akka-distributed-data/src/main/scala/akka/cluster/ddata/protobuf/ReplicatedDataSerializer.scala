@@ -363,8 +363,9 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
 
     orset._updates.foreach { du: DeltaUpdate[Any] ⇒
       b.addAdditionToggles(du.isAddition)
-      b.addBeforeDots(versionVectorToProto(du.beforeDot))
-      b.addAfterDots(versionVectorToProto(du.afterDot))
+      b.addUpdateNodes(uniqueAddressToProto(du.node))
+      b.addBeforeVersions(du.beforeVersion)
+      b.addAfterVersions(du.afterVersion)
       val update = du.update match {
         case s: String ⇒ b.addUpdateStringElements(s)
         case i: Int    ⇒ b.addUpdateIntElements(i)
@@ -398,13 +399,14 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
         orset.getUpdateOtherElementsList.iterator.asScala.map(otherMessageFromProto))
 
     val additionToggles = orset.getAdditionTogglesList.asScala.iterator
-    val updateBeforeDots = orset.getBeforeDotsList.asScala.map(versionVectorFromProto).iterator
-    val updateAfterDots = orset.getAfterDotsList.asScala.map(versionVectorFromProto).iterator
+    val updateBeforeVersions = orset.getBeforeVersionsList.iterator.asScala
+    val updateAfterVersions = orset.getAfterVersionsList.iterator.asScala
+    val updateNodes = orset.getUpdateNodesList.asScala.map(uniqueAddressFromProto).iterator
 
-    val updatesList = updateElements.zip(additionToggles).zip(updateBeforeDots).zip(updateAfterDots).toList
+    val updatesList = updateElements.zip(additionToggles).zip(updateNodes).zip(updateBeforeVersions).zip(updateAfterVersions).toList
 
     val updates = updatesList map {
-      case (((update, addToggle), beforeDot), afterDot) ⇒ DeltaUpdate(update, addToggle, beforeDot, afterDot)
+      case ((((update, addToggle), node), beforeDot), afterDot) ⇒ DeltaUpdate(update, addToggle, node, beforeDot, afterDot)
     }
 
     new ORSet(elementsMap, vvector = versionVectorFromProto(orset.getVvector), _updates = updates)
