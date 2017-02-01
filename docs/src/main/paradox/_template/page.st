@@ -39,13 +39,17 @@
           <a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu">$menu()$</a>
 
           <img src="$page.base$css/../mini-akka-logo.png" alt="Akka logo" style="float: left"/> $title()$
+
+          <div style="position: relative; right:0; min-width:25%" class="float-right">
+            <input type="search" id="search" class="form-control" style="margin: 10px 0;" placeholder="Search the docs..."/>
+          </div>
+
         </div>
       </header>
 
       <div class="expanded row">
 
         <div class="medium-3 large-2 show-for-medium column">
-          <input type="search" id="search" class="form-control" style="margin: 10px 0;" placeholder="Search the docs..."/>
 
           <nav class="site-nav">
             $navigation()$
