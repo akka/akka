@@ -228,12 +228,30 @@ final class ORSet[A] private[akka] (
   private[akka] val _deltaStash:          Map[UniqueAddress, SortedSet[DeltaUpdate[A]]] = Map.empty[UniqueAddress, SortedSet[DeltaUpdate[A]]])
   extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
 
-  //  println("\n\n\n$$$$$$$$$$$$$$$$ VARIABLES INIT\n\n")
+  println("\n\n\n$$$$$$$$$$$$$$$$ VARIABLES INIT\n\n")
+  println("INITITIAL vvector " + vvector.toString)
+
+  // FIXME: Add ORSet init message with starting delta to kick off latestAppliedDelta
+  // must have special type (change the delta type tag to integer)
+  // this will kick off the process
+  // TODO: will require bumping up initial vvector on node and adding to deltas - or maybe the vvector already has init value?
 
   private var latestAppliedDeltaVersionForNode: Map[UniqueAddress, Long] =
     Map[UniqueAddress, Long](_latestAppliedDeltas.toSeq: _*)
   private var deltaStash: Map[UniqueAddress, SortedSet[DeltaUpdate[A]]] =
     Map[UniqueAddress, SortedSet[DeltaUpdate[A]]](_deltaStash.toSeq: _*)
+
+  // guard against submarine updates
+  vvector.versionsIterator.foreach(_ match {
+    case (node, version) ⇒ if (latestAppliedDeltaVersionForNode.contains(node)) {
+      if (latestAppliedDeltaVersionForNode(node) < version) {
+        latestAppliedDeltaVersionForNode = latestAppliedDeltaVersionForNode + (node → version)
+      }
+
+    } else {
+      latestAppliedDeltaVersionForNode = latestAppliedDeltaVersionForNode + (node → version)
+    }
+  })
 
   //  println("latest: " + latestAppliedDeltaVersionForNode.toString)
 
@@ -272,13 +290,14 @@ final class ORSet[A] private[akka] (
    * INTERNAL API
    */
   private[akka] def add(node: UniqueAddress, element: A): ORSet[A] = {
-    println("ADDING: element " + element.toString + "to vector " + this.toString)
     val oldVvector = vvector
     val newVvector = vvector + node
     val oldVersion = oldVvector.versionAt(node)
     val newVersion = newVvector.versionAt(node)
     val newDot = VersionVector(node, newVersion)
     val deltaUpdate = DeltaUpdate(element, true, node, oldVersion, newVersion)
+    println("############################ ADDING: element " + element.toString + "to vector " + this.toString +
+      "orig version: " + oldVersion + " new version " + newVersion)
     val newDelta = _delta match {
       case Some(d) ⇒ {
         Some(new ORSet[A](Map.empty, VersionVector.empty, _updates = d._updates :+ deltaUpdate))
@@ -460,11 +479,11 @@ final class ORSet[A] private[akka] (
           }
           )
           // coalesce that stash and apply on non-delta part of that
-          //          println("STASH AFTER GETTING DELTAS: " + deltaStash.toString)
+          println("STASH AFTER GETTING DELTAS: " + deltaStash.toString)
 
           val latestString = latestAppliedDeltaVersionForNode.toList.toString
 
-          //          println("LATEST BEFORE APPLYING DELTAS: " + latestString)
+          println("LATEST BEFORE APPLYING DELTAS: " + latestString)
 
           deltaStash foreach {
             case (node, stashSet) ⇒ {
@@ -472,7 +491,7 @@ final class ORSet[A] private[akka] (
                 val firstDelta = stashSet.head
                 if (!latestAppliedDeltaVersionForNode.contains(node)) {
                   //                  println("ADDING INITIAL VRESION to latest: " + node.toString + " ver: " + firstDelta.beforeVersion)
-                  latestAppliedDeltaVersionForNode = latestAppliedDeltaVersionForNode + (node → firstDelta.beforeVersion)
+                  latestAppliedDeltaVersionForNode = latestAppliedDeltaVersionForNode + (node → 0)
                 }
               }
               val appliedDeltasForNode = mutable.ListBuffer.empty[DeltaUpdate[A]]
@@ -490,8 +509,8 @@ final class ORSet[A] private[akka] (
             }
           }
 
-          //          println("LATEST AFTER APPLYING DELTAS: " + latestAppliedDeltaVersionForNode.toList.toString)
-          //          println("WILL APPLY DELTAS " + deltasToApply.toString)
+          println("LATEST AFTER APPLYING DELTAS: " + latestAppliedDeltaVersionForNode.toList.toString)
+          println("WILL APPLY DELTAS " + deltasToApply.toString)
 
           // merge this and that, discard _updates
 
@@ -514,13 +533,21 @@ final class ORSet[A] private[akka] (
           }
           val lhs = new ORSet[A](this.elementsMap ++ thisUpdateMap, this.vvector.merge(thisUpdateVector))
           //          println("ABOUT TO DO FINAL RIGHT DELTA MERGE: " + "\n left side: " + lhs.elementsMap.toString + "\n right side: " + that.elementsMap.toString)
-          val merged = nonDeltaMerge(lhs, this)
+          val merged = nonDeltaMerge(lhs, that)
           new ORSet(merged.elementsMap, merged.vvector, _latestAppliedDeltas = latestAppliedDeltaVersionForNode, _deltaStash = deltaStash)
         }
       }
     //    println("final elements: " + mergeResult.elementsMap.toString)
     //    println("final vector: " + mergeResult.vvector.toString + "\n is final delta? " + mergeResult.vvector.contains(ORSet.addTag))
     //    println("MERGE DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta + "\n merging " + this.elements.toString + "\n with: " + that.elements.toString + "\n\t geting: " + mergeResult.elements.toString)
+    println("MERGE DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta +
+      "\n\t merge " + this.toString + " + " + that.toString + " == " + mergeResult.toString +
+      "\n merging " + this.elementsMap.toString + "\n\t vvector " + this.vvector.toString +
+      "\n\t having deltas " + this._updates.toString +
+      "\n with: " + that.elementsMap.toString + "\n\t vvector " + that.vvector.toString +
+      "\n\t having deltas " + that._updates.toString +
+      "\n\t geting: " + mergeResult.elementsMap.toString + "\n\t vvector " + mergeResult.vvector.toString +
+      "\n\t latest: " + latestAppliedDeltaVersionForNode.toString + "\n\t stash " + deltaStash.toString + "\n\n")
     //    if (mergeResult.elements.size < this.elements.size || mergeResult.elements.size < that.elements.size) {
     //      println("NOT GOOD, debug info: deltas involved? " + thisDelta + "/" + thatDelta + "\nthis elements: " + this.elementsMap.toString + "\nthis vector " + this.vvector.toString +
     //        "\nthat elements: " + that.elementsMap.toString + "\nthat vector " + that.vvector.toString +
