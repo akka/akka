@@ -1033,7 +1033,7 @@ aggregated to the batched value.
 expand
 ^^^^^^
 Allow for a faster downstream by expanding the last incoming element to an ``Iterator``. For example
-``Iterator.continually(element)`` to keep repating the last incoming element.
+``Iterator.continually(element)`` to keep repeating the last incoming element.
 
 **emits** when downstream stops backpressuring
 
