@@ -23,7 +23,8 @@ object JepsenInspiredInsertSpec extends MultiNodeConfig {
   val n5 = role("n5")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = "OFF"
+    akka.stdout-loglevel = "OFF"
     akka.actor.provider = "cluster"
     akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
@@ -54,7 +55,7 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
   val nodeCount = nodes.size
   val timeout = 3.seconds.dilated
   val delayMillis = 0
-  val totalCount = 200
+  val totalCount = 10
   //  val delayMillis = 20
   //  val totalCount = 2000
   val expectedData = (0 until totalCount).toSet
