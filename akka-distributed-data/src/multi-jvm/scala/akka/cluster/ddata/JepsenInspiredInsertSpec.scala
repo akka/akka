@@ -55,7 +55,7 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
   val nodeCount = nodes.size
   val timeout = 10.seconds.dilated
   val delayMillis = 0
-  val totalCount = 10
+  val totalCount = 30
   //  val delayMillis = 20
   //  val totalCount = 2000
   val expectedData = (0 until totalCount).toSet

@@ -385,16 +385,19 @@ final class ORSet[A] private[akka] (
     val mergeResult =
       if (thisDelta && thatDelta) {
         val nonDeltaPart = nonDeltaMerge(this, that)
-        new ORSet(nonDeltaPart.elementsMap, nonDeltaPart.vvector, _updates = this._updates ++ that._updates)
+        val thisUpdates = this._updates.toSet
+        val thatUpdates = that._updates.toSet
+        val joinedUpdates = (thisUpdates ++ thatUpdates).toList
+        new ORSet(nonDeltaPart.elementsMap, nonDeltaPart.vvector, _updates = joinedUpdates)
       } else if (!thisDelta && !thatDelta) {
         nonDeltaMerge(this, that)
       } else {
         if (thisDelta) { // asymmetric
           // merging with delta on left side results in delta!
-          // delta updates must flow from right to left
+          // delta updates must flow from right to left - but the stashedUpdates approach does not seem feasible atm...
           val nonDeltaPart = nonDeltaMerge(this, that)
-          val stashedUpdates = that.deltaStash.values.foldLeft(List.empty[DeltaUpdate[A]]) { (acc, set) ⇒ acc ++ set.toList }
-          new ORSet(nonDeltaPart.elementsMap, nonDeltaPart.vvector, _updates = this._updates ++ that._updates ++ stashedUpdates)
+          val thatStashedUpdates = that.deltaStash.values.foldLeft(Set.empty[DeltaUpdate[A]]) { (acc, set) ⇒ acc ++ set }
+          new ORSet(nonDeltaPart.elementsMap, nonDeltaPart.vvector, _updates = (this._updates.toSet ++ thatStashedUpdates).toList)
         } else {
           // most complex merge
           // filter out delete deltas as they are just tags marking update as delta, not real ops
@@ -464,14 +467,15 @@ final class ORSet[A] private[akka] (
           new ORSet(merged.elementsMap, merged.vvector, _latestAppliedDeltas = latestAppliedDeltaVersionForNode, _deltaStash = deltaStash)
         }
       }
-    //    println("MERGE DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta +
-    //      "\n\t merge " + this.toString + " + " + that.toString + " == " + mergeResult.toString +
-    //      "\n merging " + this.elementsMap.toString + "\n\t vvector " + this.vvector.toString +
-    //      "\n\t having deltas " + this._updates.toString +
-    //      "\n with: " + that.elementsMap.toString + "\n\t vvector " + that.vvector.toString +
-    //      "\n\t having deltas " + that._updates.toString +
-    //      "\n\t geting: " + mergeResult.elementsMap.toString + "\n\t vvector " + mergeResult.vvector.toString +
-    //      "\n\t latest: " + latestAppliedDeltaVersionForNode.toString + "\n\t stash " + deltaStash.toString + "\n\n")
+    println("MERGE DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta +
+      "\n\t merge " + this.toString + " + " + that.toString + " == " + mergeResult.toString +
+      //      "END")
+      "\n merging " + this.elementsMap.toString + "\n\t vvector " + this.vvector.toString +
+      "\n\t having deltas " + this._updates.toString +
+      "\n with: " + that.elementsMap.toString + "\n\t vvector " + that.vvector.toString +
+      "\n\t having deltas " + that._updates.toString +
+      "\n\t geting: " + mergeResult.elementsMap.toString + "\n\t vvector " + mergeResult.vvector.toString +
+      "\n\t latest: " + latestAppliedDeltaVersionForNode.toString + "\n\t stash " + deltaStash.toString + "\n\n")
     mergeResult
   }
 
