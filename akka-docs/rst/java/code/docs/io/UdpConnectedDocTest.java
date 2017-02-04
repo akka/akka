@@ -4,12 +4,11 @@
 
 package docs.io;
 
-import akka.testkit.AkkaJUnitActorSystemResource;
-import org.junit.ClassRule;
+import akka.japi.pf.ReceiveBuilder;
 import org.junit.Test;
 
 import akka.actor.ActorSystem;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 //#imports
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -24,14 +23,15 @@ import akka.util.ByteString;
 
 public class UdpConnectedDocTest {
 
-  static public class Demo extends UntypedActor {
+  static public class Demo extends AbstractActor {
     ActorRef connectionActor = null;
     ActorRef handler = self();
     ActorSystem system = getContext().system();
 
     @Override
-    public void onReceive(Object msg) {
-      if ("connect".equals(msg)) {
+    public Receive createReceive() {
+      ReceiveBuilder builder = receiveBuilder();
+      builder.matchEquals("connect", message -> {
         //#manager
         final ActorRef udp = UdpConnected.get(system).manager();
         //#manager
@@ -48,34 +48,33 @@ public class UdpConnectedDocTest {
         options.add(UdpSO.broadcast(true));
         udp.tell(UdpConnectedMessage.connect(handler, remoteAddr, localAddr, options), self());
         //#connect-with-options
-      } else
-        //#connected
-        if (msg instanceof UdpConnected.Connected) {
-          final UdpConnected.Connected conn = (UdpConnected.Connected) msg;
-          connectionActor = sender(); // Save the worker ref for later use
-        }
-        //#connected
-        else
-          //#received
-          if (msg instanceof UdpConnected.Received) {
-            final UdpConnected.Received recv = (UdpConnected.Received) msg;
-            final ByteString data = recv.data();
-            // and do something with the received data ...
-          } else if (msg instanceof UdpConnected.CommandFailed) {
-            final UdpConnected.CommandFailed failed = (UdpConnected.CommandFailed) msg;
-            final UdpConnected.Command command = failed.cmd();
-            // react to failed connect, etc.
-          } else if (msg instanceof UdpConnected.Disconnected) {
-            // do something on disconnect
-          }
-          //#received
-          else
-          if ("send".equals(msg)) {
-            ByteString data = ByteString.empty();
-            //#send
-            connectionActor.tell(UdpConnectedMessage.send(data), self());
-            //#send
-          }
+      });
+      //#connected
+      builder.match(UdpConnected.Connected.class, conn -> {
+        connectionActor = sender(); // Save the worker ref for later use
+      });
+      //#connected
+      //#received
+      builder
+        .match(UdpConnected.Received.class, recv -> {
+          final ByteString data = recv.data();
+          // and do something with the received data ...
+        })
+        .match(UdpConnected.CommandFailed.class, failed -> {
+          final UdpConnected.Command command = failed.cmd();
+          // react to failed connect, etc.
+        })
+        .match(UdpConnected.Disconnected.class, x -> {
+          // do something on disconnect
+        });
+      //#received
+      builder.matchEquals("send", x -> {
+        ByteString data = ByteString.empty();
+        //#send
+        connectionActor.tell(UdpConnectedMessage.send(data), self());
+        //#send
+      });
+      return builder.build();
     }
   }
 

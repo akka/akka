@@ -7,7 +7,7 @@ package docs.io;
 //#imports
 import akka.actor.ActorRef;
 import akka.actor.PoisonPill;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.io.Udp;
 import akka.io.UdpConnected;
 import akka.io.UdpConnectedMessage;
@@ -21,7 +21,7 @@ import java.net.InetSocketAddress;
 public class UdpDocTest {
 
   //#sender
-  public static class SimpleSender extends UntypedActor {
+  public static class SimpleSender extends AbstractActor {
     final InetSocketAddress remote;
 
     public SimpleSender(InetSocketAddress remote) {
@@ -33,37 +33,34 @@ public class UdpDocTest {
     }
     
     @Override
-    public void onReceive(Object msg) {
-      if (msg instanceof Udp.SimpleSenderReady) {
-        getContext().become(ready(sender()));
-        //#sender
-        sender().tell(UdpMessage.send(ByteString.fromString("hello"), remote), self());
-        //#sender
-      } else unhandled(msg);
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(Udp.SimpleSenderReady.class, message -> {
+          getContext().become(ready(sender()));
+          //#sender
+          sender().tell(UdpMessage.send(ByteString.fromString("hello"), remote), self());
+          //#sender
+        })
+        .build();
     }
-    
-    private Procedure<Object> ready(final ActorRef send) {
-      return new Procedure<Object>() {
-        @Override
-        public void apply(Object msg) throws Exception {
-          if (msg instanceof String) {
-            final String str = (String) msg;
-            send.tell(UdpMessage.send(ByteString.fromString(str), remote), self());
-            //#sender
-            if (str.equals("world")) {
-              send.tell(PoisonPill.getInstance(), self());
-            }
-            //#sender
 
-          } else unhandled(msg);
-        }
-      };
+    private Receive ready(final ActorRef send) {
+      return receiveBuilder()
+        .match(String.class, message -> {
+          send.tell(UdpMessage.send(ByteString.fromString(message), remote), self());
+          //#sender
+          if (message.equals("world")) {
+            send.tell(PoisonPill.getInstance(), self());
+          }
+          //#sender
+        })
+        .build();
     }
   }
   //#sender
   
   //#listener
-  public static class Listener extends UntypedActor {
+  public static class Listener extends AbstractActor {
     final ActorRef nextActor;
 
     public Listener(ActorRef nextActor) {
@@ -77,46 +74,42 @@ public class UdpDocTest {
     }
 
     @Override
-    public void onReceive(Object msg) {
-      if (msg instanceof Udp.Bound) {
-        final Udp.Bound b = (Udp.Bound) msg;
-        //#listener
-        nextActor.tell(b.localAddress(), sender());
-        //#listener
-        getContext().become(ready(sender()));
-      } else unhandled(msg);
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(Udp.Bound.class, bound -> {
+          //#listener
+          nextActor.tell(bound.localAddress(), sender());
+          //#listener
+          getContext().become(ready(sender()));
+        })
+        .build();
     }
-    
-    private Procedure<Object> ready(final ActorRef socket) {
-      return new Procedure<Object>() {
-        @Override
-        public void apply(Object msg) throws Exception {
-          if (msg instanceof Udp.Received) {
-            final Udp.Received r = (Udp.Received) msg;
-            // echo server example: send back the data
-            socket.tell(UdpMessage.send(r.data(), r.sender()), self());
-            // or do some processing and forward it on
-            final Object processed = // parse data etc., e.g. using PipelineStage
-                //#listener
-                r.data().utf8String();
-            //#listener
-            nextActor.tell(processed, self());
-            
-          } else if (msg.equals(UdpMessage.unbind())) {
-            socket.tell(msg, self());
-          
-          } else if (msg instanceof Udp.Unbound) {
-            getContext().stop(self());
-            
-          } else unhandled(msg);
-        }
-      };
+
+    private Receive ready(final ActorRef socket) {
+      return receiveBuilder()
+        .match(Udp.Received.class, r -> {
+          // echo server example: send back the data
+          socket.tell(UdpMessage.send(r.data(), r.sender()), self());
+          // or do some processing and forward it on
+          final Object processed = // parse data etc., e.g. using PipelineStage
+          // #listener
+          r.data().utf8String();
+          //#listener
+          nextActor.tell(processed, self());
+        })
+        .matchEquals(UdpMessage.unbind(), message -> {
+          socket.tell(message, self());
+        })
+        .match(Udp.Unbound.class, message -> {
+          getContext().stop(self());
+        })
+        .build();
     }
   }
   //#listener
   
   //#connected
-  public static class Connected extends UntypedActor  {
+  public static class Connected extends AbstractActor  {
     final InetSocketAddress remote;
 
     public Connected(InetSocketAddress remote) {
@@ -126,49 +119,45 @@ public class UdpDocTest {
       final ActorRef mgr = UdpConnected.get(getContext().system()).getManager();
       mgr.tell(UdpConnectedMessage.connect(self(), remote), self());
     }
-    
+
     @Override
-    public void onReceive(Object msg) {
-      if (msg instanceof UdpConnected.Connected) {
-        getContext().become(ready(sender()));
-        //#connected
-        sender()
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(UdpConnected.Connected.class, message -> {
+          getContext().become(ready(sender()));
+          //#connected
+          sender()
             .tell(UdpConnectedMessage.send(ByteString.fromString("hello")),
-                self());
-        //#connected
-      } else unhandled(msg);
+              self());
+          //#connected
+        })
+        .build();
     }
-    
-    private Procedure<Object> ready(final ActorRef connection) {
-      return new Procedure<Object>() {
-        @Override
-        public void apply(Object msg) throws Exception {
-          if (msg instanceof UdpConnected.Received) {
-            final UdpConnected.Received r = (UdpConnected.Received) msg;
-            // process data, send it on, etc.
-            // #connected
-            if (r.data().utf8String().equals("hello")) {
-              connection.tell(
-                  UdpConnectedMessage.send(ByteString.fromString("world")),
-                  self());
-            }
-            // #connected
-            
-          } else if (msg instanceof String) {
-            final String str = (String) msg;
-            connection
-                .tell(UdpConnectedMessage.send(ByteString.fromString(str)),
-                    self());
-          
-          } else if (msg.equals(UdpConnectedMessage.disconnect())) {
-            connection.tell(msg, self());
-          
-          } else if (msg instanceof UdpConnected.Disconnected) {
-            getContext().stop(self());
-          
-          } else unhandled(msg);
-        }
-      };
+
+    private Receive ready(final ActorRef connection) {
+      return receiveBuilder()
+        .match(UdpConnected.Received.class, r -> {
+          // process data, send it on, etc.
+          // #connected
+          if (r.data().utf8String().equals("hello")) {
+            connection.tell(
+              UdpConnectedMessage.send(ByteString.fromString("world")),
+              self());
+          }
+          // #connected
+        })
+        .match(String.class, str -> {
+          connection
+            .tell(UdpConnectedMessage.send(ByteString.fromString(str)),
+              self());
+        })
+        .matchEquals(UdpConnectedMessage.disconnect(), message -> {
+          connection.tell(message, self());
+        })
+        .match(UdpConnected.Disconnected.class, x -> {
+          getContext().stop(self());
+        })
+        .build();
     }
   }
   //#connected

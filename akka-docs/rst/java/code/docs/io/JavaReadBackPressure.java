@@ -2,7 +2,7 @@ package docs.io;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.io.Inet;
 import akka.io.Tcp;
 import akka.io.TcpMessage;
@@ -17,23 +17,26 @@ import java.util.List;
  */
 public class JavaReadBackPressure {
 
-    static public class Listener extends UntypedActor {
+    static public class Listener extends AbstractActor {
         ActorRef tcp;
         ActorRef listener;
 
         @Override
         //#pull-accepting
-        public void onReceive(Object message) throws Exception {
-            if (message instanceof Tcp.Bound) {
-                listener = sender();
-                // Accept connections one by one
-                listener.tell(TcpMessage.resumeAccepting(1), self());
-            } else if (message instanceof Tcp.Connected) {
-                ActorRef handler = getContext().actorOf(Props.create(PullEcho.class, sender()));
-                sender().tell(TcpMessage.register(handler), self());
-                // Resume accepting connections
-                listener.tell(TcpMessage.resumeAccepting(1), self());
-            }
+        public Receive createReceive() {
+            return receiveBuilder()
+                .match(Tcp.Bound.class, x -> {
+                  listener = sender();
+                  // Accept connections one by one
+                  listener.tell(TcpMessage.resumeAccepting(1), self());
+                })
+                .match(Tcp.Connected.class, x -> {
+                  ActorRef handler = getContext().actorOf(Props.create(PullEcho.class, sender()));
+                  sender().tell(TcpMessage.register(handler), self());
+                  // Resume accepting connections
+                  listener.tell(TcpMessage.resumeAccepting(1), self());
+                })
+                .build();
         }
         //#pull-accepting
 
@@ -63,7 +66,7 @@ public class JavaReadBackPressure {
     static public class Ack implements Tcp.Event {
     }
 
-    static public class PullEcho extends UntypedActor {
+    static public class PullEcho extends AbstractActor {
         final ActorRef connection;
 
         public PullEcho(ActorRef connection) {
@@ -77,17 +80,18 @@ public class JavaReadBackPressure {
         }
 
         @Override
-        public void onReceive(Object message) throws Exception {
-            if (message instanceof Tcp.Received) {
-                ByteString data = ((Tcp.Received) message).data();
-                connection.tell(TcpMessage.write(data, new Ack()), self());
-            } else if (message instanceof Ack) {
-                connection.tell(TcpMessage.resumeReading(), self());
-            }
+        public Receive createReceive() {
+            return receiveBuilder()
+                .match(Tcp.Received.class, message -> {
+                    ByteString data = message.data();
+                    connection.tell(TcpMessage.write(data, new Ack()), self());
+                })
+                .match(Ack.class, message -> {
+                    connection.tell(TcpMessage.resumeReading(), self());
+                })
+                .build();
         }
         //#pull-reading-echo
-
-
     }
 
 }

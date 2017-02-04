@@ -121,7 +121,7 @@ public class Match<I, R> extends AbstractMatch<I, R> {
    * <p></p>
    *
    * <pre><code>
-   *   Matcher&lt;X, Y&gt; matcher = Matcher.create(...);
+   *   Match&lt;X, Y&gt; matcher = Match.create(...);
    *
    *   Y someY = matcher.match(obj);
    * </code></pre>

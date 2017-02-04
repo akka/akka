@@ -85,15 +85,15 @@ actors may of course also process commands that do not change application state 
 
 Akka persistence supports event sourcing with the ``AbstractPersistentActor`` abstract class. An actor that extends this
 class uses the ``persist`` method to persist and handle events. The behavior of an ``AbstractPersistentActor``
-is defined by implementing ``receiveRecover`` and ``receiveCommand``. This is demonstrated in the following example.
+is defined by implementing ``createReceiveRecover`` and ``createReceive``. This is demonstrated in the following example.
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/sample/persistence/PersistentActorExample.java#persistent-actor-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExamplePersistentActor`` is a list of persisted event data contained in ``ExampleState``.
 
-The persistent actor's ``receiveRecover`` method defines how ``state`` is updated during recovery by handling ``Evt``
-and ``SnapshotOffer`` messages. The persistent actor's ``receiveCommand`` method is a command handler. In this example,
+The persistent actor's ``createReceiveRecover`` method defines how ``state`` is updated during recovery by handling ``Evt``
+and ``SnapshotOffer`` messages. The persistent actor's ``createReceive`` method is a command handler. In this example,
 a command is handled by generating two events which are then persisted and handled. Events are persisted by calling
 ``persist`` with an event (or a sequence of events) as first argument and an event handler as second argument.
 
@@ -125,8 +125,8 @@ It contains instructions on how to run the ``PersistentActorExample``.
   It's also possible to switch between different command handlers during normal processing and recovery
   with ``getContext().become()`` and ``getContext().unbecome()``. To get the actor into the same state after
   recovery you need to take special care to perform the same state transitions with ``become`` and
-  ``unbecome`` in the ``receiveRecover`` method as you would have done in the command handler.
-  Note that when using ``become`` from ``receiveRecover`` it will still only use the ``receiveRecover``
+  ``unbecome`` in the ``createReceiveRecover`` method as you would have done in the command handler.
+  Note that when using ``become`` from ``createReceiveRecover`` it will still only use the ``createReceiveRecover``
   behavior when replaying the events. When replay is completed it will use the new behavior.
 
 Identifiers

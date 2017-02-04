@@ -27,54 +27,52 @@ public class ParentChildTest {
   private final ActorSystem system = actorSystemResource.getSystem();
 
   //#test-example
-  static class Parent extends UntypedActor {
+  static class Parent extends AbstractActor {
     final ActorRef child = getContext().actorOf(Props.create(Child.class), "child");
     boolean ponged = false;
 
-    @Override public void onReceive(Object message) throws Exception {
-      if ("pingit".equals(message)) {
-        child.tell("ping", self());
-      } else if ("pong".equals(message)) {
-        ponged = true;
-      } else {
-        unhandled(message);
-      }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("pingit", message -> child.tell("ping", self()))
+        .matchEquals("pong", message -> ponged = true)
+        .build();
     }
   }
 
-  static class Child extends UntypedActor {
-    @Override public void onReceive(Object message) throws Exception {
-      if ("ping".equals(message)) {
-        getContext().parent().tell("pong", self());
-      } else {
-        unhandled(message);
-      }
+  static class Child extends AbstractActor {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("ping", message -> {
+          getContext().parent().tell("pong", self());
+        })
+        .build();
     }
   }
   //#test-example
 
   static
   //#test-dependentchild
-  class DependentChild extends UntypedActor {
+  class DependentChild extends AbstractActor {
     private final ActorRef parent;
 
     public DependentChild(ActorRef parent) {
       this.parent = parent;
     }
 
-    @Override public void onReceive(Object message) throws Exception {
-      if ("ping".equals(message)) {
-        parent.tell("pong", self());
-      } else {
-        unhandled(message);
-      }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("ping", message -> parent.tell("pong", self()))
+        .build();
     }
   }
   //#test-dependentchild
 
   static
   //#test-dependentparent
-  class DependentParent extends UntypedActor {
+  class DependentParent extends AbstractActor {
     final ActorRef child;
     boolean ponged = false;
 
@@ -82,21 +80,19 @@ public class ParentChildTest {
       child = getContext().actorOf(childProps, "child");
     }
 
-    @Override public void onReceive(Object message) throws Exception {
-      if ("pingit".equals(message)) {
-        child.tell("ping", self());
-      } else if ("pong".equals(message)) {
-        ponged = true;
-      } else {
-        unhandled(message);
-      }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("pingit", message -> child.tell("ping", self()))
+        .matchEquals("pong", message -> ponged = true)
+        .build();
     }
   }
   //#test-dependentparent
 
   static
   //#test-dependentparent-generic
-  class GenericDependentParent extends UntypedActor {
+  class GenericDependentParent extends AbstractActor {
     final ActorRef child;
     boolean ponged = false;
 
@@ -105,14 +101,12 @@ public class ParentChildTest {
       child = childMaker.apply(getContext());
     }
 
-    @Override public void onReceive(Object message) throws Exception {
-      if ("pingit".equals(message)) {
-        child.tell("ping", self());
-      } else if ("pong".equals(message)) {
-        ponged = true;
-      } else {
-        unhandled(message);
-      }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("pingit", message -> child.tell("ping", self()))
+        .matchEquals("pong", message -> ponged = true)
+        .build();
     }
   }
   //#test-dependentparent-generic
@@ -174,15 +168,21 @@ public class ParentChildTest {
     }
 
     @Override public Actor create() throws Exception {
-      return new UntypedActor() {
+      return new AbstractActor() {
         final ActorRef child = getContext().actorOf(Props.create(Child.class), "child");
 
-        @Override public void onReceive(Object x) throws Exception {
-          if (sender().equals(child)) {
-            proxy.ref().forward(x, getContext());
-          } else {
-            child.forward(x, getContext());
-          }
+        @Override
+        public Receive createReceive() {
+          return receiveBuilder()
+            .matchAny(message -> {
+              if (sender().equals(child)) {
+                proxy.ref().forward(message, getContext());
+              } else {
+                child.forward(message, getContext());
+              }
+            })
+            .build();
+
         }
       };
     }

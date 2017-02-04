@@ -295,18 +295,17 @@ public class IntegrationDocTest extends AbstractJavaTest {
   //#sometimes-slow-service
   
   //#ask-actor
-  static class Translator extends UntypedActor {
+  static class Translator extends AbstractActor {
     @Override
-    public void onReceive(Object message) {
-      if (message instanceof String) {
-        String word = (String) message;
-        // ... process message
-        String reply = word.toUpperCase();
-        // reply to the ask
-        sender().tell(reply, self());
-      } else {
-        unhandled(message);
-      }
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(String.class, word -> {
+          // ... process message
+          String reply = word.toUpperCase();
+          // reply to the ask
+          sender().tell(reply, self());
+        })
+        .build();
     }
   }
   //#ask-actor

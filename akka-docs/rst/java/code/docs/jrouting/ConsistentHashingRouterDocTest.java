@@ -13,7 +13,7 @@ import akka.testkit.JavaTestKit;
 import akka.actor.ActorSystem;
 
 //#imports1
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.routing.ConsistentHashingRouter.ConsistentHashable;
 
 import java.util.Map;
@@ -41,24 +41,24 @@ public class ConsistentHashingRouterDocTest extends AbstractJavaTest {
 
   static
   //#cache-actor
-  public class Cache extends UntypedActor {
+  public class Cache extends AbstractActor {
     Map<String, String> cache = new HashMap<String, String>();
 
-    public void onReceive(Object msg) {
-      if (msg instanceof Entry) {
-        Entry entry = (Entry) msg;
-        cache.put(entry.key, entry.value);
-      } else if (msg instanceof Get) {
-        Get get = (Get) msg;
-        Object value = cache.get(get.key);
-        sender().tell(value == null ? NOT_FOUND : value, 
-          getContext().self());
-      } else if (msg instanceof Evict) {
-        Evict evict = (Evict) msg;
-        cache.remove(evict.key);
-      } else {
-        unhandled(msg);
-      }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(Entry.class, entry -> {
+          cache.put(entry.key, entry.value);
+        })
+        .match(Get.class, get -> {
+          Object value = cache.get(get.key);
+          sender().tell(value == null ? NOT_FOUND : value,
+            getContext().self());
+        })
+        .match(Evict.class, evict -> {
+          cache.remove(evict.key);
+        })
+        .build();
     }
   }
 
