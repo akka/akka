@@ -12,25 +12,27 @@ import org.junit.Test;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.testkit.JavaTestKit;
 import scala.concurrent.duration.Duration;
 
 public class TestKitSampleTest {
   
-  public static class SomeActor extends UntypedActor {
+  public static class SomeActor extends AbstractActor {
     ActorRef target = null;
-    
-    public void onReceive(Object msg) {
-    
-      if (msg.equals("hello")) {
-        sender().tell("world", self());
-        if (target != null) target.forward(msg, getContext());
-      
-      } else if (msg instanceof ActorRef) {
-        target = (ActorRef) msg;
-        sender().tell("done", self());
-      }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("hello", message -> {
+          sender().tell("world", self());
+          if (target != null) target.forward(message, getContext());
+        })
+        .match(ActorRef.class, actorRef -> {
+          target = actorRef;
+          sender().tell("done", self());
+        })
+        .build();
     }
   }
   

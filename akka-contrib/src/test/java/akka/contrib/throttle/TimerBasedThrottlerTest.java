@@ -15,8 +15,7 @@ import com.typesafe.config.ConfigFactory;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
-import akka.contrib.throttle.TimerBasedThrottler;
+import akka.actor.AbstractActor;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 public class TimerBasedThrottlerTest extends JUnitSuite {
@@ -51,10 +50,14 @@ public class TimerBasedThrottlerTest extends JUnitSuite {
 
   static//#demo-code
   //A simple actor that prints whatever it receives
-  public class Printer extends UntypedActor {
+  public class Printer extends AbstractActor {
     @Override
-    public void onReceive(Object msg) {
-      System.out.println(msg);
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchAny(message -> {
+          System.out.println(message);
+        })
+        .build();
     }
   }
 

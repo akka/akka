@@ -135,32 +135,32 @@ public class ShoppingCart extends AbstractActor {
   public ShoppingCart(String userId) {
     this.userId = userId;
     this.dataKey = LWWMapKey.create("cart-" + userId);
-
-    receive(matchGetCart()
-        .orElse(matchAddItem())
-        .orElse(matchRemoveItem())
-        .orElse(matchOther()));
   }
 
+  @Override
+  public Receive createReceive() {
+    return matchGetCart()
+      .orElse(matchAddItem())
+      .orElse(matchRemoveItem())
+      .orElse(matchOther());
+  }
 
   //#get-cart
-  private PartialFunction<Object, BoxedUnit> matchGetCart() {
-    return ReceiveBuilder
-      .matchEquals((GET_CART),
-          s -> receiveGetCart())
-      .match(GetSuccess.class, g -> isResponseToGetCart(g),
-          g -> receiveGetSuccess((GetSuccess<LWWMap<String, LineItem>>) g))
-        .match(NotFound.class, n -> isResponseToGetCart(n),
-          n -> receiveNotFound((NotFound<LWWMap<String, LineItem>>) n))
-        .match(GetFailure.class, f -> isResponseToGetCart(f),
-          f -> receiveGetFailure((GetFailure<LWWMap<String, LineItem>>) f))
+  private Receive matchGetCart() {
+    return receiveBuilder()
+      .matchEquals(GET_CART, s -> receiveGetCart())
+      .match(GetSuccess.class, this::isResponseToGetCart,
+        g -> receiveGetSuccess((GetSuccess<LWWMap<String, LineItem>>) g))
+      .match(NotFound.class, this::isResponseToGetCart,
+        n -> receiveNotFound((NotFound<LWWMap<String, LineItem>>) n))
+      .match(GetFailure.class, this::isResponseToGetCart,
+        f -> receiveGetFailure((GetFailure<LWWMap<String, LineItem>>) f))
       .build();
   }
 
-
   private void receiveGetCart() {
     Optional<Object> ctx = Optional.of(sender());
-    replicator.tell(new Replicator.Get<LWWMap<String, LineItem>>(dataKey, readMajority, ctx), 
+    replicator.tell(new Replicator.Get<LWWMap<String, LineItem>>(dataKey, readMajority, ctx),
         self());
   }
 
@@ -189,9 +189,9 @@ public class ShoppingCart extends AbstractActor {
   //#get-cart
 
   //#add-item
-  private PartialFunction<Object, BoxedUnit> matchAddItem() {
-    return ReceiveBuilder
-      .match(AddItem.class, r -> receiveAddItem(r))
+  private Receive matchAddItem() {
+    return receiveBuilder()
+      .match(AddItem.class, this::receiveAddItem)
       .build();
   }
 
@@ -214,14 +214,14 @@ public class ShoppingCart extends AbstractActor {
     }
   }
 
-  private PartialFunction<Object, BoxedUnit> matchRemoveItem() {
-    return ReceiveBuilder
-      .match(RemoveItem.class, r -> receiveRemoveItem(r))
-      .match(GetSuccess.class, g -> isResponseToRemoveItem(g),
-          g -> receiveRemoveItemGetSuccess((GetSuccess<LWWMap<String, LineItem>>) g))
-      .match(GetFailure.class, f -> isResponseToRemoveItem(f),
-          f -> receiveRemoveItemGetFailure((GetFailure<LWWMap<String, LineItem>>) f))
-      .match(NotFound.class, n -> isResponseToRemoveItem(n), n -> {/* nothing to remove */})
+  private Receive matchRemoveItem() {
+    return receiveBuilder()
+      .match(RemoveItem.class, this::receiveRemoveItem)
+      .match(GetSuccess.class, this::isResponseToRemoveItem,
+        g -> receiveRemoveItemGetSuccess((GetSuccess<LWWMap<String, LineItem>>) g))
+      .match(GetFailure.class, this::isResponseToRemoveItem,
+        f -> receiveRemoveItemGetFailure((GetFailure<LWWMap<String, LineItem>>) f))
+      .match(NotFound.class, this::isResponseToRemoveItem, n -> {/* nothing to remove */})
       .build();
   }
 
@@ -258,8 +258,8 @@ public class ShoppingCart extends AbstractActor {
   }
   //#remove-item
 
-  private PartialFunction<Object, BoxedUnit> matchOther() {
-    return ReceiveBuilder
+  private Receive matchOther() {
+    return receiveBuilder()
       .match(UpdateSuccess.class, u -> {
         // ok
       })
@@ -271,7 +271,5 @@ public class ShoppingCart extends AbstractActor {
       })
       .build();
   }
-
-
 
 }

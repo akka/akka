@@ -30,7 +30,7 @@ import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.Terminated;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.routing.ActorRefRoutee;
 import akka.routing.Routee;
 import akka.routing.Router;
@@ -90,7 +90,7 @@ public class RouterDocTest extends AbstractJavaTest {
   //#router-in-actor
   static
   //#router-in-actor
-  public class Master extends UntypedActor {
+  public class Master extends AbstractActor {
     
     Router router;
     {
@@ -103,39 +103,54 @@ public class RouterDocTest extends AbstractJavaTest {
       router = new Router(new RoundRobinRoutingLogic(), routees);
     }
 
-    public void onReceive(Object msg) {
-      if (msg instanceof Work) {
-        router.route(msg, sender());
-      } else if (msg instanceof Terminated) {
-        router = router.removeRoutee(((Terminated) msg).actor());
-        ActorRef r = getContext().actorOf(Props.create(Worker.class));
-        getContext().watch(r);
-        router = router.addRoutee(new ActorRefRoutee(r));
-      }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(Work.class, message -> {
+          router.route(message, sender());
+        })
+        .match(Terminated.class, message -> {
+          router = router.removeRoutee(message.actor());
+          ActorRef r = getContext().actorOf(Props.create(Worker.class));
+          getContext().watch(r);
+          router = router.addRoutee(new ActorRefRoutee(r));
+        })
+        .build();
     }
   }
 
   //#router-in-actor
   
-  static public class Worker extends UntypedActor {
-    public void onReceive(Object msg) {}
-  }
-  
-  static public class Echo extends UntypedActor {
-    public void onReceive(Object msg) {
-      sender().tell(msg, self());
+  static public class Worker extends AbstractActor {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder().build();
     }
   }
   
-  static public class Replier extends UntypedActor {
-    public void onReceive(Object msg) {
-      //#reply-with-self
-      sender().tell("reply", self());
-      //#reply-with-self
-      
-      //#reply-with-parent
-      sender().tell("reply", getContext().parent());
-      //#reply-with-parent
+  static public class Echo extends AbstractActor {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchAny(message -> sender().tell(message, self()))
+        .build();
+    }
+  }
+  
+  static public class Replier extends AbstractActor {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchAny(message -> {
+          //#reply-with-self
+          sender().tell("reply", self());
+          //#reply-with-self
+
+          //#reply-with-parent
+          sender().tell("reply", getContext().parent());
+          //#reply-with-parent
+        })
+        .build();
     }
   }
   
@@ -143,7 +158,7 @@ public class RouterDocTest extends AbstractJavaTest {
   
   static
   //#create-worker-actors
-  public class Workers extends UntypedActor {
+  public class Workers extends AbstractActor {
     @Override public void preStart() {
       getContext().actorOf(Props.create(Worker.class), "w1");
       getContext().actorOf(Props.create(Worker.class), "w2");
@@ -151,12 +166,14 @@ public class RouterDocTest extends AbstractJavaTest {
     }
     // ...
     //#create-worker-actors
-    
 
-    public void onReceive(Object msg) {}
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder().build();
+    }
   }
   
-  static public class Parent extends UntypedActor {
+  static public class Parent extends AbstractActor {
 
     //#paths
     List<String> paths = Arrays.asList("/user/workers/w1", "/user/workers/w2", 
@@ -346,10 +363,11 @@ public class RouterDocTest extends AbstractJavaTest {
         Props.create(Worker.class)), "router31");
     //#optimal-size-exploring-resize-pool
 
-    public void onReceive(Object msg) {}
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder().build();
+    }
   }
-
-
 
   @Test
   public void createActors() {

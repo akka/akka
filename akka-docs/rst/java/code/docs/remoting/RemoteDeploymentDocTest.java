@@ -19,13 +19,16 @@ import akka.actor.ActorSystem;
 import akka.remote.RemoteScope;
 //#import
 
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 
 public class RemoteDeploymentDocTest {
 
-  public static class SampleActor extends UntypedActor {
-    public void onReceive(Object message) {
-      sender().tell(self(), self());
+  public static class SampleActor extends AbstractActor {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchAny(message -> sender().tell(self(), self()))
+        .build();
     }
   }
 

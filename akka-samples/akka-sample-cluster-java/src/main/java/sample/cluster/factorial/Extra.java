@@ -5,7 +5,7 @@ import java.util.Collections;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.cluster.metrics.AdaptiveLoadBalancingGroup;
 import akka.cluster.metrics.AdaptiveLoadBalancingPool;
 import akka.cluster.routing.ClusterRouterGroup;
@@ -16,7 +16,7 @@ import akka.cluster.metrics.HeapMetricsSelector;
 import akka.cluster.metrics.SystemLoadAverageMetricsSelector;
 
 //not used, only for documentation
-abstract class FactorialFrontend2 extends UntypedActor {
+abstract class FactorialFrontend2 extends AbstractActor {
   //#router-lookup-in-code
   int totalInstances = 100;
   Iterable<String> routeesPaths = Arrays.asList("/user/factorialBackend", "");
@@ -31,7 +31,7 @@ abstract class FactorialFrontend2 extends UntypedActor {
 }
 
 //not used, only for documentation
-abstract class FactorialFrontend3 extends UntypedActor {
+abstract class FactorialFrontend3 extends AbstractActor {
   //#router-deploy-in-code
   int totalInstances = 100;
   int maxInstancesPerNode = 3;
