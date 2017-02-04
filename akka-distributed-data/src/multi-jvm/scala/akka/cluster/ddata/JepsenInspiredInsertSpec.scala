@@ -29,7 +29,7 @@ object JepsenInspiredInsertSpec extends MultiNodeConfig {
     akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
     akka.remote.log-remote-lifecycle-events = ERROR
-    akka.testconductor.barrier-timeout = 60 s
+    akka.testconductor.barrier-timeout = 120 s
     """))
 
   testTransport(on = true)
@@ -53,7 +53,7 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
   val replicator = DistributedData(system).replicator
   val nodes = roles.drop(1) // controller not part of active nodes
   val nodeCount = nodes.size
-  val timeout = 3.seconds.dilated
+  val timeout = 10.seconds.dilated
   val delayMillis = 0
   val totalCount = 10
   //  val delayMillis = 20

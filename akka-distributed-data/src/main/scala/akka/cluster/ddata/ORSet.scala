@@ -3,17 +3,15 @@
  */
 package akka.cluster.ddata
 
-import akka.actor.Address
-
 import scala.annotation.tailrec
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.util.HashCode
 
-import scala.collection.{ SortedMap, SortedSet, mutable }
+import scala.collection.{ SortedSet, mutable }
 
 object ORSet {
-  //  private val _empty: ORSet[Any] = new ORSet(Map.empty, VersionVector.empty) // this!
+  // FIXME: possible to return to original def. of _empty after mutability of stashUpdates and latestVersion is sorted out
   def empty[A]: ORSet[A] = new ORSet(Map.empty, VersionVector.empty)
   def apply(): ORSet[Any] = new ORSet(Map.empty, VersionVector.empty)
   /**
@@ -170,19 +168,9 @@ object ORSet {
         }
     }
   }
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] val addTag = UniqueAddress(Address("delta-add-tag", "tag", "localhostabc", 0), 1)
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] val removeTag = UniqueAddress(Address("delta-remove-tag", "tag", "localhostcde", 0), 1)
 }
 
-private[akka] case class DeltaUpdate[A](update: A, isAddition: Boolean, // if false then deletion
+private[akka] case class DeltaUpdate[A](update: A, isAddition: Boolean, // if false then deletion (for later use)
                                         node:          UniqueAddress,
                                         beforeVersion: Long, afterVersion: Long) extends Ordered[DeltaUpdate[A]] {
 
@@ -227,15 +215,7 @@ final class ORSet[A] private[akka] (
   private[akka] val _latestAppliedDeltas: Map[UniqueAddress, Long]                      = Map.empty[UniqueAddress, Long],
   private[akka] val _deltaStash:          Map[UniqueAddress, SortedSet[DeltaUpdate[A]]] = Map.empty[UniqueAddress, SortedSet[DeltaUpdate[A]]])
   extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
-
-  println("\n\n\n$$$$$$$$$$$$$$$$ VARIABLES INIT\n\n")
-  println("INITITIAL vvector " + vvector.toString)
-
-  // FIXME: Add ORSet init message with starting delta to kick off latestAppliedDelta
-  // must have special type (change the delta type tag to integer)
-  // this will kick off the process
-  // TODO: will require bumping up initial vvector on node and adding to deltas - or maybe the vvector already has init value?
-
+  // FIXME: clumsly, clean-up and move to vals to preserve immutability of ORSet
   private var latestAppliedDeltaVersionForNode: Map[UniqueAddress, Long] =
     Map[UniqueAddress, Long](_latestAppliedDeltas.toSeq: _*)
   private var deltaStash: Map[UniqueAddress, SortedSet[DeltaUpdate[A]]] =
@@ -253,7 +233,7 @@ final class ORSet[A] private[akka] (
     }
   })
 
-  //  println("latest: " + latestAppliedDeltaVersionForNode.toString)
+  // FIXME: clean-up stash from dead updates (younger than latestAppliedDelta)
 
   type T = ORSet[A]
 
@@ -296,24 +276,15 @@ final class ORSet[A] private[akka] (
     val newVersion = newVvector.versionAt(node)
     val newDot = VersionVector(node, newVersion)
     val deltaUpdate = DeltaUpdate(element, true, node, oldVersion, newVersion)
-    println("############################ ADDING: element " + element.toString + "to vector " + this.toString +
-      "orig version: " + oldVersion + " new version " + newVersion)
+    //    println("############################ ADDING: element " + element.toString + "to vector " + this.toString +
+    //      "orig version: " + oldVersion + " new version " + newVersion)
     val newDelta = _delta match {
-      case Some(d) ⇒ {
+      case Some(d) ⇒
         Some(new ORSet[A](Map.empty, VersionVector.empty, _updates = d._updates :+ deltaUpdate))
-        //        val newDeltaVvector = d.vvector + node
-        //        val newDeltaDot = VersionVector(node, newDeltaVvector.versionAt(node))
-        //        Some(new ORSet[A](d.elementsMap + (element → newDot), d.vvector.merge(newDot + ORSet.addTag)))
-      }
-      case None ⇒ {
-        //        val newDeltaVvector = VersionVector.empty + node
-        //        val newDeltaDot = VersionVector(node, newDeltaVvector.versionAt(node))
-        // Unfortunately, it might be that "the answer's not in the box, it's in the band. "
-        //        Some(new ORSet[A](Map(element → newDot), newDot + ORSet.addTag))
+      case None ⇒
         Some(new ORSet[A](Map.empty, VersionVector.empty, _updates = List(deltaUpdate)))
-      }
     }
-    new ORSet(elementsMap = elementsMap.updated(element, newDot), vvector = newVvector, _delta = newDelta)
+    assignAncestor(new ORSet(elementsMap = elementsMap.updated(element, newDot), vvector = newVvector, _delta = newDelta))
   }
 
   /**
@@ -330,18 +301,17 @@ final class ORSet[A] private[akka] (
    * INTERNAL API
    */
   private[akka] def remove(node: UniqueAddress, element: A): ORSet[A] = {
-    //    println("REMOVAL: element " + element.toString + "from vector " + this.toString)
     // delete mutator is not a delta - it must contain all non-removed elements
-    // and a full version vector, but must be marked as delta for proper merging
-    // this might be improved later, but may require wire protocol change
-    val version = vvector.versionAt(node)
-    val updateTag = DeltaUpdate(element, false, node, version, version)
-    val delta = new ORSet(elementsMap - element, vvector, _updates = List(updateTag))
+    // and a full version vector
+    // this might be improved later
+    //    val version = vvector.versionAt(node)
+    //    val updateTag = DeltaUpdate(element, false, node, version, version)
+    val delta = new ORSet(elementsMap - element, vvector)
     val newDelta = _delta match {
       case Some(d) ⇒ Some(delta.merge(d))
       case None    ⇒ Some(delta)
     }
-    copy(elementsMap = elementsMap - element, _delta = newDelta)
+    assignAncestor(copy(elementsMap = elementsMap - element, _delta = newDelta))
   }
 
   /**
@@ -358,23 +328,12 @@ final class ORSet[A] private[akka] (
     // also currently not a delta but a full state
     // probably will stay that way, even if removes are deltas
     // as this is saving bandwith
-    //    println("CLEAR on vector " + this.toString)
-
-    // FIMXE: cannot tag because DeltaUpdate requires element which I might not have
-    // this is a dirty work-around
-    if (elements.nonEmpty) {
-      val element = elements.head
-      val version = vvector.versionAt(node)
-      val updateTag = DeltaUpdate(element, false, node, version, version)
-      val delta = new ORSet(elementsMap -- elements, vvector, _updates = List(updateTag))
-      val newDelta = _delta match {
-        case Some(d) ⇒ Some(delta.merge(d))
-        case None    ⇒ Some(delta)
-      }
-      copy(elementsMap = Map.empty, _delta = newDelta)
-    } else {
-      copy(elementsMap = Map.empty)
+    val delta = new ORSet(elementsMap -- elements, vvector)
+    val newDelta = _delta match {
+      case Some(d) ⇒ Some(delta.merge(d))
+      case None    ⇒ Some(delta)
     }
+    assignAncestor(copy(elementsMap = Map.empty, _delta = newDelta))
   }
 
   /**
@@ -391,49 +350,29 @@ final class ORSet[A] private[akka] (
    * Keep only common dots, and dots that are not dominated by the other sides version vector
    */
   private def nonDeltaMerge(lhs: ORSet[A], rhs: ORSet[A]): ORSet[A] = {
-    //    if ((lhs eq rhs) || rhs.isAncestorOf(lhs)) lhs.clearAncestor()
-    //    else if (lhs.isAncestorOf(rhs)) rhs.clearAncestor()
-    //    else {
-    val commonKeys =
-      if (lhs.elementsMap.size < rhs.elementsMap.size)
-        lhs.elementsMap.keysIterator.filter(rhs.elementsMap.contains)
-      else
-        rhs.elementsMap.keysIterator.filter(lhs.elementsMap.contains)
-    val entries00 = ORSet.mergeCommonKeys(commonKeys, lhs, rhs)
-    val lhsUniqueKeys = lhs.elementsMap.keysIterator.filterNot(rhs.elementsMap.contains)
-    val entries0 = ORSet.mergeDisjointKeys(lhsUniqueKeys, lhs.elementsMap, rhs.vvector, entries00)
-    val rhsUniqueKeys = rhs.elementsMap.keysIterator.filterNot(lhs.elementsMap.contains)
-    val entries = ORSet.mergeDisjointKeys(rhsUniqueKeys, rhs.elementsMap, lhs.vvector, entries0)
-    val mergedVvector = lhs.vvector.merge(rhs.vvector)
+    if ((lhs eq rhs) || rhs.isAncestorOf(lhs)) lhs.clearAncestor()
+    else if (lhs.isAncestorOf(rhs)) rhs.clearAncestor()
+    else {
+      val commonKeys =
+        if (lhs.elementsMap.size < rhs.elementsMap.size)
+          lhs.elementsMap.keysIterator.filter(rhs.elementsMap.contains)
+        else
+          rhs.elementsMap.keysIterator.filter(lhs.elementsMap.contains)
+      val entries00 = ORSet.mergeCommonKeys(commonKeys, lhs, rhs)
+      val lhsUniqueKeys = lhs.elementsMap.keysIterator.filterNot(rhs.elementsMap.contains)
+      val entries0 = ORSet.mergeDisjointKeys(lhsUniqueKeys, lhs.elementsMap, rhs.vvector, entries00)
+      val rhsUniqueKeys = rhs.elementsMap.keysIterator.filterNot(lhs.elementsMap.contains)
+      val entries = ORSet.mergeDisjointKeys(rhsUniqueKeys, rhs.elementsMap, lhs.vvector, entries0)
+      val mergedVvector = lhs.vvector.merge(rhs.vvector)
 
-    //      lhs.clearAncestor()
-    new ORSet(entries, mergedVvector)
-    //    }
-  }
-
-  // FIXME: this might not be needed at all
-  private def coalesceDeltas(lhs: ORSet[A], rhs: ORSet[A]): ORSet[A] = {
-    val joinedMapKeys = lhs.elementsMap.keySet ++ rhs.elementsMap.keySet
-    val updateMap = joinedMapKeys.foldLeft(List.empty[(A, ORSet.Dot)]) {
-      (acc: List[(A, ORSet.Dot)], key: A) ⇒
-        {
-          val el: (A, ORSet.Dot) = if (lhs.elementsMap.contains(key) && rhs.elementsMap.contains(key)) {
-            (key, lhs.elementsMap.get(key).get.merge(rhs.elementsMap.get(key).get))
-          } else if (lhs.elementsMap.contains(key)) {
-            (key, lhs.elementsMap.get(key).get)
-          } else {
-            (key, rhs.elementsMap.get(key).get)
-          }
-          acc :+ el
-        }
+      lhs.clearAncestor()
+      new ORSet(entries, mergedVvector)
     }
-    new ORSet(updateMap.toMap, lhs.vvector.merge(rhs.vvector))
   }
 
   override def merge(that: ORSet[A]): ORSet[A] = {
-    // 1. what about joining stashes??? are delta merge symmetric???
-    // or is always this the receiving delta that will win?
-    // must be so in order to discard the stash of that if that is incoming... yes, this must be so...
+    // FIXME: introduce mutable deltaStash and latestAppliedDeltaVersionForNode that will be copies of the original vals
+    // this will help preserve immutability of original ORSet
     // 0. if both deltas (just check non-zero size of updates) just merge non-delta parts and combine lists
     // 1. this delta - that non-delta - just merge the non-delta state of that into this
     // 2. this non-delta - that delta - do following
@@ -443,32 +382,25 @@ final class ORSet[A] private[akka] (
     // e. merge result contains the result of merge in c plus the whole stash from this
     val thisDelta = this._updates.nonEmpty
     val thatDelta = that._updates.nonEmpty
-    //println("MERGE DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta)
-    //    println("MERGE\n DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta + "\n constants: " + ORSet.addTag.toString + " " + ORSet.removeTag.toString)
-    //    println("this elements: " + this.elementsMap.toString())
-    //    println("this vector " + this.vvector.toString)
-    //    println("that elements: " + that.elementsMap.toString())
-    //    println("that vector " + that.vvector.toString)
     val mergeResult =
       if (thisDelta && thatDelta) {
         val nonDeltaPart = nonDeltaMerge(this, that)
         new ORSet(nonDeltaPart.elementsMap, nonDeltaPart.vvector, _updates = this._updates ++ that._updates)
-      } else if ((!thisDelta && !thatDelta)) {
-        // FIXME: full merge should reset deltaStash and latestToApplyDeltas
-        // FIXME: in later stage - deltas from the past (below high water mark) should be discarded
+      } else if (!thisDelta && !thatDelta) {
         nonDeltaMerge(this, that)
       } else {
         if (thisDelta) { // asymmetric
           // merging with delta on left side results in delta!
+          // delta updates must flow from right to left
           val nonDeltaPart = nonDeltaMerge(this, that)
-          new ORSet(nonDeltaPart.elementsMap, nonDeltaPart.vvector, _updates = this._updates ++ that._updates)
+          val stashedUpdates = that.deltaStash.values.foldLeft(List.empty[DeltaUpdate[A]]) { (acc, set) ⇒ acc ++ set.toList }
+          new ORSet(nonDeltaPart.elementsMap, nonDeltaPart.vvector, _updates = this._updates ++ that._updates ++ stashedUpdates)
         } else {
           // most complex merge
           // filter out delete deltas as they are just tags marking update as delta, not real ops
           // stash the deltas
           val deltasToApply = mutable.ListBuffer.empty[DeltaUpdate[A]]
           val deltaUpdates = that._updates.filter(_.isAddition)
-          //          println("\n\nAPPLYING RIGHT HAND SIDE DELTAS: " + deltaUpdates.toString)
           deltaUpdates.foreach(du ⇒ {
             if (deltaStash.contains(du.node))
               deltaStash = deltaStash + (du.node → (deltaStash(du.node) + du))
@@ -479,27 +411,23 @@ final class ORSet[A] private[akka] (
           }
           )
           // coalesce that stash and apply on non-delta part of that
-          println("STASH AFTER GETTING DELTAS: " + deltaStash.toString)
+          //          println("STASH AFTER GETTING DELTAS: " + deltaStash.toString)
 
           val latestString = latestAppliedDeltaVersionForNode.toList.toString
 
-          println("LATEST BEFORE APPLYING DELTAS: " + latestString)
+          //          println("LATEST BEFORE APPLYING DELTAS: " + latestString)
 
           deltaStash foreach {
             case (node, stashSet) ⇒ {
               if (stashSet.nonEmpty) {
                 val firstDelta = stashSet.head
                 if (!latestAppliedDeltaVersionForNode.contains(node)) {
-                  //                  println("ADDING INITIAL VRESION to latest: " + node.toString + " ver: " + firstDelta.beforeVersion)
                   latestAppliedDeltaVersionForNode = latestAppliedDeltaVersionForNode + (node → 0)
                 }
               }
               val appliedDeltasForNode = mutable.ListBuffer.empty[DeltaUpdate[A]]
               stashSet.foreach { du ⇒
                 if (latestAppliedDeltaVersionForNode(du.node) == du.beforeVersion) {
-                  //                  println("!!! for node " + du.node + " latest is: " + latestAppliedDeltaVersionForNode(du.node) +
-                  //                    " so applying: " + du.toString)
-                  // add delta to applicable deltas
                   appliedDeltasForNode.append(du)
                   latestAppliedDeltaVersionForNode = latestAppliedDeltaVersionForNode + (du.node → du.afterVersion)
                 }
@@ -509,8 +437,8 @@ final class ORSet[A] private[akka] (
             }
           }
 
-          println("LATEST AFTER APPLYING DELTAS: " + latestAppliedDeltaVersionForNode.toList.toString)
-          println("WILL APPLY DELTAS " + deltasToApply.toString)
+          //          println("LATEST AFTER APPLYING DELTAS: " + latestAppliedDeltaVersionForNode.toList.toString)
+          //          println("WILL APPLY DELTAS " + deltasToApply.toString)
 
           // merge this and that, discard _updates
 
@@ -532,28 +460,18 @@ final class ORSet[A] private[akka] (
             (acc, dot) ⇒ acc.merge(dot)
           }
           val lhs = new ORSet[A](this.elementsMap ++ thisUpdateMap, this.vvector.merge(thisUpdateVector))
-          //          println("ABOUT TO DO FINAL RIGHT DELTA MERGE: " + "\n left side: " + lhs.elementsMap.toString + "\n right side: " + that.elementsMap.toString)
           val merged = nonDeltaMerge(lhs, that)
           new ORSet(merged.elementsMap, merged.vvector, _latestAppliedDeltas = latestAppliedDeltaVersionForNode, _deltaStash = deltaStash)
         }
       }
-    //    println("final elements: " + mergeResult.elementsMap.toString)
-    //    println("final vector: " + mergeResult.vvector.toString + "\n is final delta? " + mergeResult.vvector.contains(ORSet.addTag))
-    //    println("MERGE DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta + "\n merging " + this.elements.toString + "\n with: " + that.elements.toString + "\n\t geting: " + mergeResult.elements.toString)
-    println("MERGE DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta +
-      "\n\t merge " + this.toString + " + " + that.toString + " == " + mergeResult.toString +
-      "\n merging " + this.elementsMap.toString + "\n\t vvector " + this.vvector.toString +
-      "\n\t having deltas " + this._updates.toString +
-      "\n with: " + that.elementsMap.toString + "\n\t vvector " + that.vvector.toString +
-      "\n\t having deltas " + that._updates.toString +
-      "\n\t geting: " + mergeResult.elementsMap.toString + "\n\t vvector " + mergeResult.vvector.toString +
-      "\n\t latest: " + latestAppliedDeltaVersionForNode.toString + "\n\t stash " + deltaStash.toString + "\n\n")
-    //    if (mergeResult.elements.size < this.elements.size || mergeResult.elements.size < that.elements.size) {
-    //      println("NOT GOOD, debug info: deltas involved? " + thisDelta + "/" + thatDelta + "\nthis elements: " + this.elementsMap.toString + "\nthis vector " + this.vvector.toString +
-    //        "\nthat elements: " + that.elementsMap.toString + "\nthat vector " + that.vvector.toString +
-    //        "\n\tfinal elements: " + mergeResult.elementsMap.toString + "\n\t vector: " + mergeResult.vvector.toString)
-    //
-    //    }
+    //    println("MERGE DELTA STATUS: this -> " + thisDelta + " that -> " + thatDelta +
+    //      "\n\t merge " + this.toString + " + " + that.toString + " == " + mergeResult.toString +
+    //      "\n merging " + this.elementsMap.toString + "\n\t vvector " + this.vvector.toString +
+    //      "\n\t having deltas " + this._updates.toString +
+    //      "\n with: " + that.elementsMap.toString + "\n\t vvector " + that.vvector.toString +
+    //      "\n\t having deltas " + that._updates.toString +
+    //      "\n\t geting: " + mergeResult.elementsMap.toString + "\n\t vvector " + mergeResult.vvector.toString +
+    //      "\n\t latest: " + latestAppliedDeltaVersionForNode.toString + "\n\t stash " + deltaStash.toString + "\n\n")
     mergeResult
   }
 
@@ -564,7 +482,6 @@ final class ORSet[A] private[akka] (
     vvector.needPruningFrom(removedNode)
 
   override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): ORSet[A] = {
-    println("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRUNING!\n\n")
     val pruned = elementsMap.foldLeft(Map.empty[A, ORSet.Dot]) {
       case (acc, (elem, dot)) ⇒
         if (dot.needPruningFrom(removedNode)) acc.updated(elem, dot.prune(removedNode, collapseInto))
@@ -596,7 +513,7 @@ final class ORSet[A] private[akka] (
 
   override def delta: ORSet[A] = _delta match {
     case Some(d) ⇒ {
-      //      println("SENDING DELTA " + d.toString)
+      //      println("\n\n\n ***************************** SENDING DELTA " + d.toString)
       d
     }
     case None ⇒ ORSet.empty[A]
