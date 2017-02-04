@@ -74,8 +74,4 @@ class Specs2RouteTestSpec extends Specification with Specs2RouteTest {
       }(result)
     }
   }
-
-  // TODO: remove once RespondWithDirectives have been ported
-  def respondWithHeader(responseHeader: HttpHeader): Directive0 =
-    mapResponseHeaders(responseHeader +: _)
 }

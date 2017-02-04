@@ -74,8 +74,4 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
       }(result)
     }
   }
-
-  // TODO: remove once RespondWithDirectives have been ported
-  def respondWithHeader(responseHeader: HttpHeader): Directive0 =
-    mapResponseHeaders(responseHeader +: _)
 }
