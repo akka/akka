@@ -529,7 +529,7 @@ helpful to separate actors that have different QoS requirements: large messages 
 Akka remoting provides a dedicated channel for large messages if configured. Since actor message ordering must
 not be violated the channel is actually dedicated for *actors* instead of messages, to ensure all of the messages
 arrive in send order. It is possible to assign actors on given paths to use this dedicated channel by using
-path patterns::
+path patterns that have to be specified in the actor system's configuration on both the sending and the receiving side::
 
    akka.remote.artery.large-message-destinations = [
       "/user/largeMessageActor",
