@@ -71,7 +71,7 @@ public class ByteBufferSerializerDocTest {
        * Produces an object from a `ByteBuffer`, with an optional type-hint;
        * the class should be loaded using ActorSystem.dynamicAccess.
        */
-      void fromBinary(ByteBuffer buf, String manifest);
+      Object fromBinary(ByteBuffer buf, String manifest);
     }
     //#ByteBufferSerializer-interface
   }
