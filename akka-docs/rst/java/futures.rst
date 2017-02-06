@@ -30,8 +30,8 @@ by the ``ExecutionContexts`` class to wrap ``Executors`` and ``ExecutorServices`
 Use with Actors
 ---------------
 
-There are generally two ways of getting a reply from an ``UntypedActor``: the first is by a sent message (``actorRef.tell(msg, sender)``),
-which only works if the original sender was an ``UntypedActor``) and the second is through a ``Future``.
+There are generally two ways of getting a reply from an ``AbstractActor``: the first is by a sent message (``actorRef.tell(msg, sender)``),
+which only works if the original sender was an ``AbstractActor``) and the second is through a ``Future``.
 
 Using the ``ActorRef``\'s ``ask`` method to send a message will return a ``Future``.
 To wait for and retrieve the actual result the simplest method is:
@@ -42,11 +42,11 @@ To wait for and retrieve the actual result the simplest method is:
 .. includecode:: code/docs/future/FutureDocTest.java
    :include: ask-blocking
 
-This will cause the current thread to block and wait for the ``UntypedActor`` to 'complete' the ``Future`` with it's reply.
+This will cause the current thread to block and wait for the ``AbstractActor`` to 'complete' the ``Future`` with it's reply.
 Blocking is discouraged though as it can cause performance problem.
 The blocking operations are located in ``Await.result`` and ``Await.ready`` to make it easy to spot where blocking occurs.
 Alternatives to blocking are discussed further within this documentation.
-Also note that the ``Future`` returned by an ``UntypedActor`` is a ``Future<Object>`` since an ``UntypedActor`` is dynamic.
+Also note that the ``Future`` returned by an ``AbstractActor`` is a ``Future<Object>`` since an ``AbstractActor`` is dynamic.
 That is why the cast to ``String`` is used in the above sample.
 
 .. warning::
@@ -64,7 +64,7 @@ Use Directly
 ------------
 
 A common use case within Akka is to have some computation performed concurrently without needing
-the extra utility of an ``UntypedActor``. If you find yourself creating a pool of ``UntypedActor``\s for the sole reason
+the extra utility of an ``AbstractActor``. If you find yourself creating a pool of ``AbstractActor``\s for the sole reason
 of performing a calculation in parallel, there is an easier (and faster) way:
 
 .. includecode:: code/docs/future/FutureDocTest.java
@@ -75,8 +75,8 @@ of performing a calculation in parallel, there is an easier (and faster) way:
 
 In the above code the block passed to ``future`` will be executed by the default ``Dispatcher``,
 with the return value of the block used to complete the ``Future`` (in this case, the result would be the string: "HelloWorld").
-Unlike a ``Future`` that is returned from an ``UntypedActor``, this ``Future`` is properly typed,
-and we also avoid the overhead of managing an ``UntypedActor``.
+Unlike a ``Future`` that is returned from an ``AbstractActor``, this ``Future`` is properly typed,
+and we also avoid the overhead of managing an ``AbstractActor``.
 
 You can also create already completed Futures using the ``Futures`` class, which can be either successes:
 
@@ -229,7 +229,7 @@ Exceptions
 ----------
 
 Since the result of a ``Future`` is created concurrently to the rest of the program, exceptions must be handled differently.
-It doesn't matter if an ``UntypedActor`` or the dispatcher is completing the ``Future``, if an ``Exception`` is caught
+It doesn't matter if an ``AbstractActor`` or the dispatcher is completing the ``Future``, if an ``Exception`` is caught
 the ``Future`` will contain it instead of a valid result. If a ``Future`` does contain an ``Exception``,
 calling ``Await.result`` will cause it to be thrown again so it can be handled properly.
 

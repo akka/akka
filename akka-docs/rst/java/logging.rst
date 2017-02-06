@@ -402,11 +402,11 @@ MDC values defined by the application
 One useful feature available in Slf4j is `MDC <http://logback.qos.ch/manual/mdc.html>`_,
 Akka has a way for let the application specify custom values, you just need to get a
 specialized :class:`LoggingAdapter`, the :class:`DiagnosticLoggingAdapter`. In order to
-get it you will use the factory receiving an UntypedActor as logSource:
+get it you will use the factory receiving an AbstractActor as logSource:
 
 .. code-block:: scala
 
-    // Within your UntypedActor
+    // Within your AbstractActor
     final DiagnosticLoggingAdapter log = Logging.getLogger(this);
 
 Once you have the logger, you just need to add the custom values before you log something.

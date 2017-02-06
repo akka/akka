@@ -6,7 +6,7 @@ package docs.io;
 
 //#imports
 import akka.actor.ActorRef;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.io.Inet;
@@ -57,7 +57,7 @@ public class JavaUdpMulticast {
     }
     //#multicast-group
 
-    public static class Listener extends UntypedActor {
+    public static class Listener extends AbstractActor {
         LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
         ActorRef sink;
@@ -78,21 +78,22 @@ public class JavaUdpMulticast {
         }
 
         @Override
-        public void onReceive(Object msg) {
-            if (msg instanceof Udp.Bound) {
-                final Udp.Bound b = (Udp.Bound) msg;
-                log.info("Bound to {}", b.localAddress());
-                sink.tell(b, self());
-            } else if (msg instanceof Udp.Received) {
-                final Udp.Received r = (Udp.Received) msg;
-                final String txt = r.data().decodeString("utf-8");
-                log.info("Received '{}' from {}", txt, r.sender());
-                sink.tell(txt, self());
-            } else unhandled(msg);
+        public Receive createReceive() {
+            return receiveBuilder()
+                .match(Udp.Bound.class, bound -> {
+                  log.info("Bound to {}", bound.localAddress());
+                  sink.tell(bound, self());
+                })
+                .match(Udp.Received.class, received -> {
+                  final String txt = received.data().decodeString("utf-8");
+                  log.info("Received '{}' from {}", txt, received.sender());
+                  sink.tell(txt, self());
+                })
+                .build();
         }
     }
 
-    public static class Sender extends UntypedActor {
+    public static class Sender extends AbstractActor {
         LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
         String iface;
@@ -114,12 +115,14 @@ public class JavaUdpMulticast {
         }
 
         @Override
-        public void onReceive(Object msg) {
-            if (msg instanceof Udp.SimpleSenderReady) {
-                InetSocketAddress remote = new InetSocketAddress(group + "%" + iface, port);
-                log.info("Sending message to " + remote);
-                sender().tell(UdpMessage.send(ByteString.fromString(message), remote), self());
-            } else unhandled(msg);
+        public Receive createReceive() {
+            return receiveBuilder()
+                .match(Udp.SimpleSenderReady.class, x -> {
+                    InetSocketAddress remote = new InetSocketAddress(group + "%" + iface, port);
+                    log.info("Sending message to " + remote);
+                    sender().tell(UdpMessage.send(ByteString.fromString(message), remote), self());
+                })
+                .build();
         }
     }
 }

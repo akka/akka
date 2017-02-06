@@ -178,7 +178,7 @@ you can create child Typed Actors by invoking ``typedActorOf(..)`` on that.
 .. includecode:: code/docs/actor/TypedActorDocTest.java
    :include: typed-actor-hierarchy
 
-You can also create a child Typed Actor in regular Akka Actors by giving the ``UntypedActorContext``
+You can also create a child Typed Actor in regular Akka Actors by giving the ``AbstractActor.ActorContext``
 as an input parameter to TypedActor.get(…).
 
 Supervisor Strategy

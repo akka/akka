@@ -4,13 +4,13 @@ import java.util.concurrent.TimeUnit;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ReceiveTimeout;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.routing.FromConfig;
 
 //#frontend
-public class FactorialFrontend extends UntypedActor {
+public class FactorialFrontend extends AbstractActor {
   final int upToN;
   final boolean repeat;
 
@@ -31,24 +31,22 @@ public class FactorialFrontend extends UntypedActor {
   }
 
   @Override
-  public void onReceive(Object message) {
-    if (message instanceof FactorialResult) {
-      FactorialResult result = (FactorialResult) message;
-      if (result.n == upToN) {
-        log.debug("{}! = {}", result.n, result.factorial);
-        if (repeat)
-          sendJobs();
-        else
-          getContext().stop(getSelf());
-      }
-
-    } else if (message instanceof ReceiveTimeout) {
-      log.info("Timeout");
-      sendJobs();
-
-    } else {
-      unhandled(message);
-    }
+  public Receive createReceive() {
+    return receiveBuilder()
+      .match(FactorialResult.class, result -> {
+        if (result.n == upToN) {
+          log.debug("{}! = {}", result.n, result.factorial);
+          if (repeat)
+            sendJobs();
+          else
+            getContext().stop(self());
+        }
+      })
+      .match(ReceiveTimeout.class, x -> {
+        log.info("Timeout");
+        sendJobs();
+      })
+      .build();
   }
 
   void sendJobs() {

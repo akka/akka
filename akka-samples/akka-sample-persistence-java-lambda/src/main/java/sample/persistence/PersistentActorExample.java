@@ -9,11 +9,8 @@ package sample.persistence;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.AbstractPersistentActor;
 import akka.persistence.SnapshotOffer;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -88,31 +85,31 @@ class ExamplePersistentActor extends AbstractPersistentActor {
     public String persistenceId() { return "sample-id-1"; }
 
     @Override
-    public PartialFunction<Object, BoxedUnit> receiveRecover() {
-        return ReceiveBuilder.
-            match(Evt.class, state::update).
-            match(SnapshotOffer.class, ss -> state = (ExampleState) ss.snapshot()).build();
+    public Receive createReceiveRecover() {
+        return receiveBuilder()
+            .match(Evt.class, state::update)
+            .match(SnapshotOffer.class, ss -> state = (ExampleState) ss.snapshot())
+            .build();
     }
 
     @Override
-    public PartialFunction<Object, BoxedUnit> receiveCommand() {
-        return ReceiveBuilder.
-            match(Cmd.class, c -> {
-                final String data = c.getData();
-                final Evt evt1 = new Evt(data + "-" + getNumEvents());
-                final Evt evt2 = new Evt(data + "-" + (getNumEvents() + 1));
-                persistAll(asList(evt1, evt2), (Evt evt) -> {
-                    state.update(evt);
-                    if (evt.equals(evt2)) {
-                        context().system().eventStream().publish(evt);
-                    }
-                });
-            }).
-            match(String.class, s -> s.equals("snap"), s -> saveSnapshot(state.copy())).
-            match(String.class, s -> s.equals("print"), s -> System.out.println(state)).
-            build();
+    public Receive createReceive() {
+        return receiveBuilder()
+            .match(Cmd.class, c -> {
+              final String data = c.getData();
+              final Evt evt1 = new Evt(data + "-" + getNumEvents());
+              final Evt evt2 = new Evt(data + "-" + (getNumEvents() + 1));
+              persistAll(asList(evt1, evt2), (Evt evt) -> {
+                state.update(evt);
+                if (evt.equals(evt2)) {
+                  getContext().system().eventStream().publish(evt);
+                }
+              });
+            })
+            .matchEquals("snap", s -> saveSnapshot(state.copy()))
+            .matchEquals("print", s -> System.out.println(state))
+            .build();
     }
-
 }
 //#persistent-actor-example
 
