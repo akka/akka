@@ -182,10 +182,6 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   @SuppressWarnings({ "unchecked", "unused" }) // due to generic varargs
   public void demonstrateExpect() {
-    new akka.testkit.javadsl.TestKit(system) {{
-      expectMsgAnyClassOf(Arrays.asList(Integer.class, Long.class));
-
-    }};
     new TestKit(system) {{
       getRef().tell("hello", ActorRef.noSender());
       getRef().tell("hello", ActorRef.noSender());
