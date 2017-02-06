@@ -17,7 +17,7 @@ import akka.actor.Status;
 import akka.actor.SupervisorStrategy;
 import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.Terminated;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.japi.Function;
 import akka.pattern.Patterns;
 import akka.util.Timeout;
@@ -39,21 +39,21 @@ public class SupervisedAsk {
   private static class AskTimeout {
   }
 
-  public static class AskSupervisorCreator extends UntypedActor {
+  public static class AskSupervisorCreator extends AbstractActor {
 
     @Override
-    public void onReceive(Object message) throws Exception {
-      if (message instanceof AskParam) {
-        ActorRef supervisor = getContext().actorOf(
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(AskParam.class, message -> {
+          ActorRef supervisor = getContext().actorOf(
             Props.create(AskSupervisor.class));
-        supervisor.forward(message, getContext());
-      } else {
-        unhandled(message);
-      }
+          supervisor.forward(message, getContext());
+        })
+        .build();
     }
   }
 
-  public static class AskSupervisor extends UntypedActor {
+  public static class AskSupervisor extends AbstractActor {
     private ActorRef targetActor;
     private ActorRef caller;
     private AskParam askParam;
@@ -71,28 +71,31 @@ public class SupervisedAsk {
     }
 
     @Override
-    public void onReceive(Object message) throws Exception {
-      if (message instanceof AskParam) {
-        askParam = (AskParam) message;
-        caller = sender();
-        targetActor = getContext().actorOf(askParam.props);
-        getContext().watch(targetActor);
-        targetActor.forward(askParam.message, getContext());
-        Scheduler scheduler = getContext().system().scheduler();
-        timeoutMessage = scheduler.scheduleOnce(askParam.timeout.duration(),
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(AskParam.class, message -> {
+          askParam = message;
+          caller = sender();
+          targetActor = getContext().actorOf(askParam.props);
+          getContext().watch(targetActor);
+          targetActor.forward(askParam.message, getContext());
+          Scheduler scheduler = getContext().system().scheduler();
+          timeoutMessage = scheduler.scheduleOnce(askParam.timeout.duration(),
             self(), new AskTimeout(), getContext().dispatcher(), null);
-      } else if (message instanceof Terminated) {
-        Throwable ex = new ActorKilledException("Target actor terminated.");
-        caller.tell(new Status.Failure(ex), self());
-        timeoutMessage.cancel();
-        getContext().stop(self());
-      } else if (message instanceof AskTimeout) {
-        Throwable ex = new TimeoutException("Target actor timed out after "
+        })
+        .match(Terminated.class, message -> {
+          Throwable ex = new ActorKilledException("Target actor terminated.");
+          caller.tell(new Status.Failure(ex), self());
+          timeoutMessage.cancel();
+          getContext().stop(self());
+        })
+        .match(AskTimeout.class, message -> {
+          Throwable ex = new TimeoutException("Target actor timed out after "
             + askParam.timeout.toString());
-        caller.tell(new Status.Failure(ex), self());
-        getContext().stop(self());
-      } else
-        unhandled(message);
+          caller.tell(new Status.Failure(ex), self());
+          getContext().stop(self());
+        })
+        .build();
     }
   }
 

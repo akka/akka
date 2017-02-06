@@ -5,12 +5,12 @@ import scala.concurrent.Future;
 import akka.actor.ActorRef;
 import akka.actor.ActorRefFactory;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.util.Timeout;
 
 public class SupervisedAskSpec {
 
-  public Object execute(Class<? extends UntypedActor> someActor,
+  public Object execute(Class<? extends AbstractActor> someActor,
       Object message, Timeout timeout, ActorRefFactory actorSystem)
       throws Exception {
     // example usage

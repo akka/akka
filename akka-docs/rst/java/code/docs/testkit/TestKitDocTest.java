@@ -18,7 +18,7 @@ import akka.actor.Kill;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.Terminated;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import akka.testkit.TestActor.AutoPilot;
@@ -34,13 +34,17 @@ public class TestKitDocTest {
   private final ActorSystem system = actorSystemResource.getSystem();
 
   //#test-actor-ref
-  static class MyActor extends UntypedActor {
-    public void onReceive(Object o) throws Exception {
-      if (o.equals("say42")) {
-        sender().tell(42, self());
-      } else if (o instanceof Exception) {
-        throw (Exception) o;
-      }
+  static class MyActor extends AbstractActor {
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("say42", message -> {
+          sender().tell(42, self());
+        })
+        .match(Exception.class, (Exception ex) -> {
+          throw ex;
+        })
+        .build();
     }
     public boolean testMe() { return true; }
   }
@@ -259,14 +263,17 @@ public class TestKitDocTest {
     //#test-probe
     new JavaTestKit(system) {{
       // simple actor which just forwards messages
-      class Forwarder extends UntypedActor {
+      class Forwarder extends AbstractActor {
         final ActorRef target;
         @SuppressWarnings("unused")
         public Forwarder(ActorRef target) {
           this.target = target;
         }
-        public void onReceive(Object msg) {
-          target.forward(msg, getContext());
+        @Override
+        public Receive createReceive() {
+          return receiveBuilder()
+            .matchAny(message -> target.forward(message, getContext()))
+            .build();
         }
       }
       

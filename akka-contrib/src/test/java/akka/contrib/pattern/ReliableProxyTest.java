@@ -31,7 +31,7 @@ public class ReliableProxyTest extends JUnitSuite {
   private final ActorSystem system = actorSystemResource.getSystem();
 
   static//#demo-proxy
-  public class ProxyParent extends UntypedActor {
+  public class ProxyParent extends AbstractActor {
     private final ActorRef proxy;
 
     public ProxyParent(ActorPath targetPath) {
@@ -40,17 +40,20 @@ public class ReliableProxyTest extends JUnitSuite {
               Duration.create(100, TimeUnit.MILLISECONDS)));
     }
 
-    public void onReceive(Object msg) {
-      if ("hello".equals(msg)) {
-        proxy.tell("world!", getSelf());
-      }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("hello", m -> {
+          proxy.tell("world!", self());
+        })
+        .build();
     }
   }
 
   //#demo-proxy
 
   static//#demo-transition
-  public class ProxyTransitionParent extends UntypedActor {
+  public class ProxyTransitionParent extends AbstractActor {
     private final ActorRef proxy;
     private ActorRef client = null;
 
@@ -61,22 +64,24 @@ public class ReliableProxyTest extends JUnitSuite {
       proxy.tell(new FSM.SubscribeTransitionCallBack(getSelf()), getSelf());
     }
 
-    public void onReceive(Object msg) {
-      if ("hello".equals(msg)) {
-        proxy.tell("world!", getSelf());
-        client = getSender();
-      } else if (msg instanceof FSM.CurrentState<?>) {
-        // get initial state
-      } else if (msg instanceof FSM.Transition<?>) {
-        @SuppressWarnings("unchecked")
-        final FSM.Transition<ReliableProxy.State> transition =
-          (FSM.Transition<ReliableProxy.State>) msg;
-        assert transition.fsmRef().equals(proxy);
-        if (transition.from().equals(ReliableProxy.active()) &&
-                transition.to().equals(ReliableProxy.idle())) {
-          client.tell("done", getSelf());
-        }
-      }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .matchEquals("hello", message -> {
+          proxy.tell("world!", self());
+          client = sender();
+        })
+        .matchUnchecked(FSM.CurrentState.class, (FSM.CurrentState<ReliableProxy.State> state) -> {
+          // get initial state
+        })
+        .matchUnchecked(FSM.Transition.class, (FSM.Transition<ReliableProxy.State> transition) -> {
+          assert transition.fsmRef().equals(proxy);
+          if (transition.from().equals(ReliableProxy.active()) &&
+            transition.to().equals(ReliableProxy.idle())) {
+            client.tell("done", self());
+          }
+        })
+        .build();
     }
   }
 

@@ -4,7 +4,7 @@ import java.util.Collections;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.cluster.routing.ClusterRouterGroup;
 import akka.cluster.routing.ClusterRouterGroupSettings;
 import akka.cluster.routing.ClusterRouterPool;
@@ -13,7 +13,7 @@ import akka.routing.ConsistentHashingGroup;
 import akka.routing.ConsistentHashingPool;
 
 //not used, only for documentation
-abstract class StatsService2 extends UntypedActor {
+abstract class StatsService2 extends AbstractActor {
   //#router-lookup-in-code
   int totalInstances = 100;
   Iterable<String> routeesPaths = Collections
@@ -28,7 +28,7 @@ abstract class StatsService2 extends UntypedActor {
 }
 
 //not used, only for documentation
-abstract class StatsService3 extends UntypedActor {
+abstract class StatsService3 extends AbstractActor {
   //#router-deploy-in-code
   int totalInstances = 100;
   int maxInstancesPerNode = 3;
