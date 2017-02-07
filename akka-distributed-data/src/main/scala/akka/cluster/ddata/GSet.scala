@@ -29,10 +29,12 @@ object GSet {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
-final case class GSet[A] private (elements: Set[A])(_delta: Option[GSet[A]])
-  extends DeltaReplicatedData with ReplicatedDataSerialization with FastMerge {
+final case class GSet[A] private (elements: Set[A])(override val delta: Option[GSet[A]])
+  extends DeltaReplicatedData with ReplicatedDelta
+  with ReplicatedDataSerialization with FastMerge {
 
   type T = GSet[A]
+  type D = GSet[A]
 
   /**
    * Java API
@@ -57,7 +59,7 @@ final case class GSet[A] private (elements: Set[A])(_delta: Option[GSet[A]])
    * Adds an element to the set
    */
   def add(element: A): GSet[A] = {
-    val newDelta = _delta match {
+    val newDelta = delta match {
       case Some(e) ⇒ Some(new GSet(e.elements + element)(None))
       case None    ⇒ Some(new GSet[A](Set.apply[A](element))(None))
     }
@@ -72,16 +74,17 @@ final case class GSet[A] private (elements: Set[A])(_delta: Option[GSet[A]])
       new GSet[A](elements union that.elements)(None)
     }
 
-  override def delta: GSet[A] = _delta match {
-    case Some(d) ⇒ d
-    case None    ⇒ GSet.empty[A]
-  }
+  override def mergeDelta(thatDelta: GSet[A]): GSet[A] = merge(thatDelta)
 
-  override def resetDelta: GSet[A] = new GSet[A](elements)(None)
+  override def zero: GSet[A] = GSet.empty
+
+  override def resetDelta: GSet[A] =
+    if (delta.isEmpty) this
+    else assignAncestor(new GSet[A](elements)(None))
 
   override def toString: String = s"G$elements"
 
-  def copy(e: Set[A] = elements) = new GSet[A](e)(_delta)
+  def copy(e: Set[A] = elements) = new GSet[A](e)(delta)
 }
 
 object GSetKey {

@@ -3,6 +3,8 @@
  */
 package akka.cluster.ddata
 
+import akka.annotation.InternalApi
+
 /**
  * INTERNAL API
  *
@@ -19,11 +21,11 @@ package akka.cluster.ddata
  * i.e. if used outside the Replicator infrastructure, but the worst thing that can happen is that
  * a full merge is performed instead of the fast forward merge.
  */
-private[akka] trait FastMerge { self: ReplicatedData ⇒
+@InternalApi private[akka] trait FastMerge { self: ReplicatedData ⇒
 
   private var ancestor: FastMerge = null
 
-  /** INTERNAL API: should be called from "updating" methods */
+  /** INTERNAL API: should be called from "updating" methods, and `resetDelta` */
   private[akka] def assignAncestor(newData: T with FastMerge): T = {
     newData.ancestor = if (this.ancestor eq null) this else this.ancestor
     this.ancestor = null // only one level, for GC

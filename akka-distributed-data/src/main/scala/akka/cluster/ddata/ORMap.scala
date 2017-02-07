@@ -6,6 +6,7 @@ package akka.cluster.ddata
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.util.HashCode
+import akka.annotation.InternalApi
 
 object ORMap {
   private val _empty: ORMap[Any, ReplicatedData] = new ORMap(ORSet.empty, Map.empty)
@@ -93,7 +94,7 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   /**
    * INTERNAL API
    */
-  private[akka] def put(node: UniqueAddress, key: A, value: B): ORMap[A, B] =
+  @InternalApi private[akka] def put(node: UniqueAddress, key: A, value: B): ORMap[A, B] =
     if (value.isInstanceOf[ORSet[_]] && values.contains(key))
       throw new IllegalArgumentException(
         "`ORMap.put` must not be used to replace an existing `ORSet` " +
@@ -123,7 +124,7 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   /**
    * INTERNAL API
    */
-  private[akka] def updated(node: UniqueAddress, key: A, initial: B)(modify: B ⇒ B): ORMap[A, B] = {
+  @InternalApi private[akka] def updated(node: UniqueAddress, key: A, initial: B)(modify: B ⇒ B): ORMap[A, B] = {
     val newValue = values.get(key) match {
       case Some(old) ⇒ modify(old)
       case _         ⇒ modify(initial)
@@ -148,7 +149,7 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   /**
    * INTERNAL API
    */
-  private[akka] def remove(node: UniqueAddress, key: A): ORMap[A, B] = {
+  @InternalApi private[akka] def remove(node: UniqueAddress, key: A): ORMap[A, B] = {
     new ORMap(keys.remove(node, key), values - key)
   }
 

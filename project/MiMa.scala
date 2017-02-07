@@ -101,7 +101,15 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GSet.this"), // constructor supplied by companion object
 
       // #21875 delta-CRDT
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GCounter.this"), 
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GCounter.this"),
+      
+      // #22188 ORSet delta-CRDT
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ORSet.this"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.SerializationSupport.versionVectorToProto"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.SerializationSupport.versionVectorFromProto"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.SerializationSupport.versionVectorFromBinary"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.protobuf.ReplicatedDataSerializer.versionVectorToProto"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.protobuf.ReplicatedDataSerializer.versionVectorFromProto"),
       
       // #22141 sharding minCap
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.updatingStateTimeout"),
