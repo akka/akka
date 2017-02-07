@@ -25,6 +25,7 @@ import scala.collection.immutable.TreeMap
 import akka.cluster.UniqueAddress
 import java.io.NotSerializableException
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
+import akka.cluster.ddata.ORSet.DeltaOp
 
 private object ReplicatedDataSerializer {
   /*
@@ -163,6 +164,10 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
   private val GSetKeyManifest = "b"
   private val ORSetManifest = "C"
   private val ORSetKeyManifest = "c"
+  private val ORSetAddManifest = "Ca"
+  private val ORSetRemoveManifest = "Cr"
+  private val ORSetFullManifest = "Cf"
+  private val ORSetDeltaGroupManifest = "Cg"
   private val FlagManifest = "D"
   private val FlagKeyManifest = "d"
   private val LWWRegisterManifest = "E"
@@ -184,6 +189,10 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
     GSetManifest → gsetFromBinary,
     ORSetManifest → orsetFromBinary,
+    ORSetAddManifest → orsetAddFromBinary,
+    ORSetRemoveManifest → orsetRemoveFromBinary,
+    ORSetFullManifest → orsetFullFromBinary,
+    ORSetDeltaGroupManifest → orsetDeltaGroupFromBinary,
     FlagManifest → flagFromBinary,
     LWWRegisterManifest → lwwRegisterFromBinary,
     GCounterManifest → gcounterFromBinary,
@@ -207,48 +216,57 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     ORMultiMapKeyManifest → (bytes ⇒ ORMultiMapKey(keyIdFromBinary(bytes))))
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: ORSet[_]            ⇒ ORSetManifest
-    case _: GSet[_]             ⇒ GSetManifest
-    case _: GCounter            ⇒ GCounterManifest
-    case _: PNCounter           ⇒ PNCounterManifest
-    case _: Flag                ⇒ FlagManifest
-    case _: LWWRegister[_]      ⇒ LWWRegisterManifest
-    case _: ORMap[_, _]         ⇒ ORMapManifest
-    case _: LWWMap[_, _]        ⇒ LWWMapManifest
-    case _: PNCounterMap[_]     ⇒ PNCounterMapManifest
-    case _: ORMultiMap[_, _]    ⇒ ORMultiMapManifest
-    case DeletedData            ⇒ DeletedDataManifest
-    case _: VersionVector       ⇒ VersionVectorManifest
+    case _: ORSet[_]                  ⇒ ORSetManifest
+    case _: ORSet.AddDeltaOp[_]       ⇒ ORSetAddManifest
+    case _: ORSet.RemoveDeltaOp[_]    ⇒ ORSetRemoveManifest
+    case _: GSet[_]                   ⇒ GSetManifest
+    case _: GCounter                  ⇒ GCounterManifest
+    case _: PNCounter                 ⇒ PNCounterManifest
+    case _: Flag                      ⇒ FlagManifest
+    case _: LWWRegister[_]            ⇒ LWWRegisterManifest
+    case _: ORMap[_, _]               ⇒ ORMapManifest
+    case _: LWWMap[_, _]              ⇒ LWWMapManifest
+    case _: PNCounterMap[_]           ⇒ PNCounterMapManifest
+    case _: ORMultiMap[_, _]          ⇒ ORMultiMapManifest
+    case DeletedData                  ⇒ DeletedDataManifest
+    case _: VersionVector             ⇒ VersionVectorManifest
 
-    case _: ORSetKey[_]         ⇒ ORSetKeyManifest
-    case _: GSetKey[_]          ⇒ GSetKeyManifest
-    case _: GCounterKey         ⇒ GCounterKeyManifest
-    case _: PNCounterKey        ⇒ PNCounterKeyManifest
-    case _: FlagKey             ⇒ FlagKeyManifest
-    case _: LWWRegisterKey[_]   ⇒ LWWRegisterKeyManifest
-    case _: ORMapKey[_, _]      ⇒ ORMapKeyManifest
-    case _: LWWMapKey[_, _]     ⇒ LWWMapKeyManifest
-    case _: PNCounterMapKey[_]  ⇒ PNCounterMapKeyManifest
-    case _: ORMultiMapKey[_, _] ⇒ ORMultiMapKeyManifest
+    case _: ORSetKey[_]               ⇒ ORSetKeyManifest
+    case _: GSetKey[_]                ⇒ GSetKeyManifest
+    case _: GCounterKey               ⇒ GCounterKeyManifest
+    case _: PNCounterKey              ⇒ PNCounterKeyManifest
+    case _: FlagKey                   ⇒ FlagKeyManifest
+    case _: LWWRegisterKey[_]         ⇒ LWWRegisterKeyManifest
+    case _: ORMapKey[_, _]            ⇒ ORMapKeyManifest
+    case _: LWWMapKey[_, _]           ⇒ LWWMapKeyManifest
+    case _: PNCounterMapKey[_]        ⇒ PNCounterMapKeyManifest
+    case _: ORMultiMapKey[_, _]       ⇒ ORMultiMapKeyManifest
+
+    case _: ORSet.DeltaGroup[_]       ⇒ ORSetDeltaGroupManifest
+    case _: ORSet.FullStateDeltaOp[_] ⇒ ORSetFullManifest
 
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: ORSet[_]         ⇒ compress(orsetToProto(m))
-    case m: GSet[_]          ⇒ gsetToProto(m).toByteArray
-    case m: GCounter         ⇒ gcounterToProto(m).toByteArray
-    case m: PNCounter        ⇒ pncounterToProto(m).toByteArray
-    case m: Flag             ⇒ flagToProto(m).toByteArray
-    case m: LWWRegister[_]   ⇒ lwwRegisterToProto(m).toByteArray
-    case m: ORMap[_, _]      ⇒ compress(ormapToProto(m))
-    case m: LWWMap[_, _]     ⇒ compress(lwwmapToProto(m))
-    case m: PNCounterMap[_]  ⇒ compress(pncountermapToProto(m))
-    case m: ORMultiMap[_, _] ⇒ compress(multimapToProto(m))
-    case DeletedData         ⇒ dm.Empty.getDefaultInstance.toByteArray
-    case m: VersionVector    ⇒ versionVectorToProto(m).toByteArray
-    case Key(id)             ⇒ keyIdToBinary(id)
+    case m: ORSet[_]                  ⇒ compress(orsetToProto(m))
+    case m: ORSet.AddDeltaOp[_]       ⇒ orsetToProto(m.underlying).toByteArray
+    case m: ORSet.RemoveDeltaOp[_]    ⇒ orsetToProto(m.underlying).toByteArray
+    case m: GSet[_]                   ⇒ gsetToProto(m).toByteArray
+    case m: GCounter                  ⇒ gcounterToProto(m).toByteArray
+    case m: PNCounter                 ⇒ pncounterToProto(m).toByteArray
+    case m: Flag                      ⇒ flagToProto(m).toByteArray
+    case m: LWWRegister[_]            ⇒ lwwRegisterToProto(m).toByteArray
+    case m: ORMap[_, _]               ⇒ compress(ormapToProto(m))
+    case m: LWWMap[_, _]              ⇒ compress(lwwmapToProto(m))
+    case m: PNCounterMap[_]           ⇒ compress(pncountermapToProto(m))
+    case m: ORMultiMap[_, _]          ⇒ compress(multimapToProto(m))
+    case DeletedData                  ⇒ dm.Empty.getDefaultInstance.toByteArray
+    case m: VersionVector             ⇒ versionVectorToProto(m).toByteArray
+    case Key(id)                      ⇒ keyIdToBinary(id)
+    case m: ORSet.DeltaGroup[_]       ⇒ orsetDeltaGroupToProto(m).toByteArray
+    case m: ORSet.FullStateDeltaOp[_] ⇒ orsetToProto(m.underlying).toByteArray
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -362,6 +380,52 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
   def orsetFromBinary(bytes: Array[Byte]): ORSet[Any] =
     orsetFromProto(rd.ORSet.parseFrom(decompress(bytes)))
 
+  private def orsetAddFromBinary(bytes: Array[Byte]): ORSet.AddDeltaOp[Any] =
+    new ORSet.AddDeltaOp(orsetFromProto(rd.ORSet.parseFrom(bytes)))
+
+  private def orsetRemoveFromBinary(bytes: Array[Byte]): ORSet.RemoveDeltaOp[Any] =
+    new ORSet.RemoveDeltaOp(orsetFromProto(rd.ORSet.parseFrom(bytes)))
+
+  private def orsetFullFromBinary(bytes: Array[Byte]): ORSet.FullStateDeltaOp[Any] =
+    new ORSet.FullStateDeltaOp(orsetFromProto(rd.ORSet.parseFrom(bytes)))
+
+  private def orsetDeltaGroupToProto(deltaGroup: ORSet.DeltaGroup[_]): rd.ORSetDeltaGroup = {
+    def createEntry(opType: rd.ORSetDeltaOp, u: ORSet[_]) = {
+      rd.ORSetDeltaGroup.Entry.newBuilder()
+        .setOperation(opType)
+        .setUnderlying(orsetToProto(u))
+    }
+
+    val b = rd.ORSetDeltaGroup.newBuilder()
+    deltaGroup.ops.foreach {
+      case ORSet.AddDeltaOp(u) ⇒
+        b.addEntries(createEntry(rd.ORSetDeltaOp.Add, u))
+      case ORSet.RemoveDeltaOp(u) ⇒
+        b.addEntries(createEntry(rd.ORSetDeltaOp.Remove, u))
+      case ORSet.FullStateDeltaOp(u) ⇒
+        b.addEntries(createEntry(rd.ORSetDeltaOp.Full, u))
+      case ORSet.DeltaGroup(u) ⇒
+        throw new IllegalArgumentException("ORSet.DeltaGroup should not be nested")
+    }
+    b.build()
+  }
+
+  private def orsetDeltaGroupFromBinary(bytes: Array[Byte]): ORSet.DeltaGroup[Any] = {
+    val deltaGroup = rd.ORSetDeltaGroup.parseFrom(bytes)
+    val ops: Vector[ORSet.DeltaOp] =
+      deltaGroup.getEntriesList.asScala.map { entry ⇒
+        if (entry.getOperation == rd.ORSetDeltaOp.Add)
+          ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying))
+        else if (entry.getOperation == rd.ORSetDeltaOp.Remove)
+          ORSet.RemoveDeltaOp(orsetFromProto(entry.getUnderlying))
+        else if (entry.getOperation == rd.ORSetDeltaOp.Full)
+          ORSet.FullStateDeltaOp(orsetFromProto(entry.getUnderlying))
+        else
+          throw new NotSerializableException(s"Unknow ORSet delta operation ${entry.getOperation}")
+      }(collection.breakOut)
+    ORSet.DeltaGroup(ops)
+  }
+
   def orsetFromProto(orset: rd.ORSet): ORSet[Any] = {
     val elements: Iterator[Any] =
       (orset.getStringElementsList.iterator.asScala ++
@@ -430,31 +494,6 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     new PNCounter(
       increments = gcounterFromProto(pncounter.getIncrements),
       decrements = gcounterFromProto(pncounter.getDecrements))
-  }
-
-  def versionVectorToProto(versionVector: VersionVector): rd.VersionVector = {
-    val b = rd.VersionVector.newBuilder()
-    versionVector.versionsIterator.foreach {
-      case (node, value) ⇒ b.addEntries(rd.VersionVector.Entry.newBuilder().
-        setNode(uniqueAddressToProto(node)).setVersion(value))
-    }
-    b.build()
-  }
-
-  def versionVectorFromBinary(bytes: Array[Byte]): VersionVector =
-    versionVectorFromProto(rd.VersionVector.parseFrom(bytes))
-
-  def versionVectorFromProto(versionVector: rd.VersionVector): VersionVector = {
-    val entries = versionVector.getEntriesList
-    if (entries.isEmpty)
-      VersionVector.empty
-    else if (entries.size == 1)
-      VersionVector(uniqueAddressFromProto(entries.get(0).getNode), entries.get(0).getVersion)
-    else {
-      val versions: TreeMap[UniqueAddress, Long] = versionVector.getEntriesList.asScala.map(entry ⇒
-        uniqueAddressFromProto(entry.getNode) → entry.getVersion)(breakOut)
-      VersionVector(versions)
-    }
   }
 
   /*

@@ -39,9 +39,11 @@ object PNCounter {
 @SerialVersionUID(1L)
 final class PNCounter private[akka] (
   private[akka] val increments: GCounter, private[akka] val decrements: GCounter)
-  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+  extends DeltaReplicatedData with ReplicatedDelta
+  with ReplicatedDataSerialization with RemovedNodePruning {
 
   type T = PNCounter
+  type D = PNCounter
 
   /**
    * Scala API: Current total value of the counter.
@@ -94,9 +96,29 @@ final class PNCounter private[akka] (
       increments = that.increments.merge(this.increments),
       decrements = that.decrements.merge(this.decrements))
 
-  override def delta: PNCounter = new PNCounter(increments.delta, decrements.delta)
+  override def delta: Option[PNCounter] = {
+    if (increments.delta.isEmpty && decrements.delta.isEmpty)
+      None
+    else {
+      val incrementsDelta = increments.delta match {
+        case Some(d) ⇒ d
+        case None    ⇒ GCounter.empty
+      }
+      val decrementsDelta = decrements.delta match {
+        case Some(d) ⇒ d
+        case None    ⇒ GCounter.empty
+      }
+      Some(new PNCounter(incrementsDelta, decrementsDelta))
+    }
+  }
 
-  override def resetDelta: PNCounter = new PNCounter(increments.resetDelta, decrements.resetDelta)
+  override def mergeDelta(thatDelta: PNCounter): PNCounter = merge(thatDelta)
+
+  override def zero: PNCounter = PNCounter.empty
+
+  override def resetDelta: PNCounter =
+    if (increments.delta.isEmpty && decrements.delta.isEmpty) this
+    else new PNCounter(increments.resetDelta, decrements.resetDelta)
 
   override def modifiedByNodes: Set[UniqueAddress] =
     increments.modifiedByNodes union decrements.modifiedByNodes

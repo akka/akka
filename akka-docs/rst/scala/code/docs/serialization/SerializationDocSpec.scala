@@ -4,7 +4,7 @@
 
 package docs.serialization {
 
-  import akka.actor.{ExtensionId, ExtensionIdProvider}
+  import akka.actor.{ ExtensionId, ExtensionIdProvider }
   import akka.testkit._
   //#imports
   import akka.actor.{ ActorRef, ActorSystem }
