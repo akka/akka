@@ -268,12 +268,6 @@ object Source {
     fromGraph(new FutureSource(future.toScala))
 
   /**
-   * Starts a new `Source` from a `future` source.
-   * The stream will consist of the elements of the given source,
-   * once it successfully completes.
-   */
-
-  /**
    * Starts a new `Source` from another `future` source.
    * The stream will consist of the elements of the given source,
    * once it successfully completes.

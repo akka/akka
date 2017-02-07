@@ -151,10 +151,13 @@ class FutureFlattenSpec extends StreamSpec {
         val sub = probe.expectSubscription()
 
         promise.success(Source.fromIterator(() ⇒ underlying))
-        first.future.futureValue should ===({})
 
         sub.request(5)
+
+        // First value
         probe.expectNext(11)
+        first.future.futureValue should ===({})
+
         probe.expectNext(21)
         probe.expectNext(31)
         probe.expectComplete()
