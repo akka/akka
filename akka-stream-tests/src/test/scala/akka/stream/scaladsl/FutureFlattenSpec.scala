@@ -137,15 +137,15 @@ class FutureFlattenSpec extends StreamSpec {
       implicit def m = materializer
 
       assertAllStagesStopped {
-        val probe = TestSubscriber.probe[Float]()
-        val underlying = Iterator.iterate(0.1F)(_ + 0.1F).take(3)
-        val promise = Promise[Source[Float, NotUsed]]()
+        val probe = TestSubscriber.probe[Int]()
+        val underlying = Iterator.iterate(1)(_ + 1).take(3)
+        val promise = Promise[Source[Int, NotUsed]]()
         val first = Promise[Unit]()
         lazy val futureSource =
           Source.fromFutureSource(promise.future).map {
-            case 0.1F ⇒
-              first.success({}); 1.1F
-            case f ⇒ (f * 10F) + 0.1F
+            case 1 ⇒
+              first.success({}); 11
+            case f ⇒ (f * 10) + 1
           }
 
         futureSource.runWith(Sink asPublisher true).subscribe(probe)
@@ -157,9 +157,9 @@ class FutureFlattenSpec extends StreamSpec {
         first.isCompleted should ===(false)
 
         sub.request(5)
-        probe.expectNext(1.1F)
-        probe.expectNext(2.1F)
-        probe.expectNext(3.1F)
+        probe.expectNext(11)
+        probe.expectNext(21)
+        probe.expectNext(31)
         probe.expectComplete()
 
         first.isCompleted should ===(true)
