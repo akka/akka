@@ -24,9 +24,6 @@ import akka.stream.testkit.Utils.assertAllStagesStopped
 class FutureFlattenSpec extends StreamSpec {
   val materializer = ActorMaterializer()
 
-  // Seen tests run in 9-10 seconds, these test cases are heavy on the GC
-  val veryPatient = Timeout(20.seconds)
-
   "Future source" must {
     "use default materializer" when {
       implicit def m = materializer
@@ -78,8 +75,8 @@ class FutureFlattenSpec extends StreamSpec {
         })
 
         val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
-        mat.futureValue(veryPatient) should ===(1)
-        fut.futureValue(veryPatient) should ===(List(42))
+        mat.futureValue should ===(1)
+        fut.futureValue should ===(List(42))
       }
 
       "flattening from a completion stage" in assertAllStagesStopped {
@@ -92,8 +89,8 @@ class FutureFlattenSpec extends StreamSpec {
         val g = Source.fromSourceCompletionStage(stage)
 
         val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
-        mat.toScala.futureValue(veryPatient) should ===(1)
-        fut.futureValue(veryPatient) should ===(List(43))
+        mat.toScala.futureValue should ===(1)
+        fut.futureValue should ===(List(43))
       }
     }
 
@@ -154,7 +151,7 @@ class FutureFlattenSpec extends StreamSpec {
         val sub = probe.expectSubscription()
 
         promise.success(Source.fromIterator(() ⇒ underlying))
-        first.isCompleted should ===(false)
+        first.future.futureValue should ===({})
 
         sub.request(5)
         probe.expectNext(11)
@@ -166,7 +163,7 @@ class FutureFlattenSpec extends StreamSpec {
       }
     }
 
-    "be materialized with a failure" in {
+    "fail when the future source materialization fails" in {
       implicit def m = materializer
       implicit def ec = m.executionContext
 
