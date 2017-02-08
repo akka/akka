@@ -5,13 +5,12 @@ package akka.event
 
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.logging
 
 import akka.actor.ActorSystem.Settings
 import akka.actor._
 import akka.dispatch.RequiresMessageQueue
-import akka.event.Logging.{ Extension ⇒ _, _ }
-import akka.util.{ OptionVal, ReentrantGuard }
+import akka.event.Logging._
+import akka.util.ReentrantGuard
 import akka.util.Helpers.toRootLowerCase
 import akka.{ AkkaException, ConfigurationException }
 
@@ -175,7 +174,7 @@ trait LoggingBus extends ActorEventBus {
    * INTERNAL API
    */
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel, logName: String): ActorRef = {
-    val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
+    val name = "log" + LogExt(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz).withDispatcher(system.settings.LoggersDispatcher), name)
     implicit def timeout = system.settings.LoggerStartTimeout
     import akka.pattern.ask
@@ -409,7 +408,10 @@ object Logging {
   /**
    * INTERNAL API
    */
-  private[akka] object Extension extends ExtensionKey[LogExt]
+  private[akka] object LogExt extends ExtensionId[LogExt] {
+    override def createExtension(system: ExtendedActorSystem): LogExt =
+      new LogExt(system)
+  }
 
   /**
    * INTERNAL API

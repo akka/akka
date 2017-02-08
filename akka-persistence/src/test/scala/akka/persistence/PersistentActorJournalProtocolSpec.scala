@@ -74,7 +74,10 @@ akka.persistence.snapshot-store.plugin = "akka.persistence.no-snapshot-store"
   }
 }
 
-object JournalPuppet extends ExtensionKey[JournalProbe]
+object JournalPuppet extends ExtensionId[JournalProbe] {
+  override def createExtension(system: ExtendedActorSystem): JournalProbe =
+    new JournalProbe()(system)
+}
 class JournalProbe(implicit private val system: ExtendedActorSystem) extends Extension {
   val probe = TestProbe()
   val ref = probe.ref
