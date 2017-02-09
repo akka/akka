@@ -86,8 +86,8 @@ If the future fails the stream is failed with that exception.
 
 fromFutureSource
 ^^^^^^^^^^^^^^^^
-Starts a new `Source` from another `future` source.
-The stream will consist of the elements of the given source, once it successfully completes.
+Streams the elements of the given future source once it successfully completes. 
+If the future fails the stream is failed.
 
 **emits** the next value from the `future` source, once it has completed
 
@@ -95,8 +95,8 @@ The stream will consist of the elements of the given source, once it successfull
 
 fromSourceCompletionStage
 ^^^^^^^^^^^^^^^^^^^^^^^^^
-Starts a new `Source` from a `completion` stage of an asynchronous source.
-The stream will consist of the elements of the given source, once it successfully completes.
+Streams the elements of an asynchronous source once its given `completion` stage completes.
+If the `completion` fails the stream is failed with that exception.
 
 **emits** the next value from the asynchronous source, once its `completion stage` has completed
 

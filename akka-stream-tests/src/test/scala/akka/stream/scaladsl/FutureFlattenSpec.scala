@@ -186,34 +186,4 @@ class FutureFlattenSpec extends StreamSpec {
       }
     }
   }
-
-  "ActorGraphInterpreter" must {
-    implicit def m = materializer
-    implicit def ec = materializer.executionContext
-
-    "be able to properly report errors if an error happens for an already completed stage" in {
-
-      val failyStage = new GraphStage[SourceShape[Int]] {
-        override val shape: SourceShape[Int] =
-          new SourceShape(Outlet[Int]("test.out"))
-
-        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-
-          setHandler(shape.out, new OutHandler {
-            override def onPull(): Unit = {
-              completeStage()
-              // This cannot be propagated now since the stage is already closed
-              push(shape.out, -1)
-            }
-          })
-        }
-      }
-
-      EventFilter[IllegalArgumentException](
-        pattern = "Error in stage.*", occurrences = 1).intercept {
-        Await.result(Source.fromFutureSource(Future(failyStage)).
-          runWith(Sink.ignore), 3.seconds)
-      }
-    }
-  }
 }

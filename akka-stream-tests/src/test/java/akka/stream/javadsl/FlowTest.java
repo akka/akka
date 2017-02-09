@@ -383,7 +383,7 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
-  public void mustBeAbleToUseAsyncMerge() throws Exception {
+  public void mustBeAbleToUsefromSourceCompletionStage() throws Exception {
     final Flow<String, String, NotUsed> f1 =
         Flow.of(String.class).via(FlowTest.this.<String> op()).named("f1");
 

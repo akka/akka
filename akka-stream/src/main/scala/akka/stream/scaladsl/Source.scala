@@ -268,16 +268,14 @@ object Source {
     fromGraph(new FutureSource(future.toScala))
 
   /**
-   * Starts a new `Source` from another `future` source.
-   * The stream will consist of the elements of the given source,
-   * once it successfully completes.
+   * Streams the elements of the given future source once it successfully completes. 
+   * If the future fails the stream is failed.
    */
   def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): Source[T, Future[M]] = fromGraph(new FutureFlattenSource(future))
 
   /**
-   * Starts a new `Source` from a `completion` stage of an asynchronous source.
-   * The stream will consist of the elements of the given source,
-   * once it successfully completes.
+   * Streams the elements of an asynchronous source once its given `completion` stage completes.
+   * If the `completion` fails the stream is failed with that exception.
    */
   def fromSourceCompletionStage[T, M](completion: CompletionStage[Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
 
