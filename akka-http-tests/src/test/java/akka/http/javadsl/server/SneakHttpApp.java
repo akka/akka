@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.server;
 
+import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ServerBinding;
 import scala.runtime.BoxedUnit;
@@ -27,6 +28,7 @@ public class SneakHttpApp extends MinimalHttpApp {
   @Override
   protected void postHttpBinding(ServerBinding binding) {
     postBindingCalled.set(true);
+    bindingPromise.complete(Done.getInstance());
   }
 
   @Override

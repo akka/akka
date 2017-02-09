@@ -6,6 +6,7 @@ package akka.http.javadsl.server
 
 import java.util.concurrent.TimeUnit
 
+import akka.Done
 import akka.http.javadsl.settings.ServerSettings
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.client.RequestBuilding
@@ -17,23 +18,37 @@ import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
-import scala.runtime.BoxedUnit
 
 class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
   import system.dispatcher
 
-  "HttpApp" should {
+  def withMinimal(testCode: (MinimalHttpApp, String, Int) ⇒ Any): Unit = {
+    val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+    val minimal = new MinimalHttpApp()
+    try testCode(minimal, host, port)
+    finally {
+      if (!minimal.shutdownTrigger.isDone()) minimal.shutdownTrigger.complete(Done)
+    }
+  }
 
-    "start without ActorSystem" in {
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+  def withSneaky(testCode: (SneakHttpApp, String, Int) ⇒ Any): Unit = {
+    val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+    val sneaky = new SneakHttpApp()
+    try testCode(sneaky, host, port)
+    finally {
+      if (!sneaky.shutdownTrigger.isDone()) sneaky.shutdownTrigger.complete(Done)
+    }
+  }
 
-      val minimal = new MinimalHttpApp()
+  "HttpApp Java" should {
+
+    "start without ActorSystem" in withMinimal { (minimal, host, port) ⇒
 
       val server = Future {
         minimal.startServer(host, port, ServerSettings.create(ConfigFactory.load))
       }
 
-      callAndVerify(host, port, "foo")
+      minimal.bindingPromise.get(5, TimeUnit.SECONDS)
 
       // Requesting the server to shutdown
       callAndVerify(host, port, "shutdown")
@@ -43,16 +58,13 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     }
 
-    "start providing an ActorSystem" in {
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-
-      val minimal = new MinimalHttpApp()
+    "start providing an ActorSystem" in withMinimal { (minimal, host, port) ⇒
 
       val server = Future {
         minimal.startServer(host, port, ServerSettings.create(system), system)
       }
 
-      callAndVerify(host, port, "foo")
+      minimal.bindingPromise.get(5, TimeUnit.SECONDS)
 
       // Requesting the server to shutdown
       callAndVerify(host, port, "shutdown")
@@ -60,12 +72,10 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
       system.whenTerminated.isCompleted should ===(false)
+
     }
 
-    "provide binding if available" in {
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-
-      val minimal = new MinimalHttpApp()
+    "provide binding if available" in withMinimal { (minimal, host, port) ⇒
 
       intercept[IllegalStateException] {
         minimal.binding()
@@ -75,7 +85,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
         minimal.startServer(host, port, ServerSettings.create(ConfigFactory.load))
       }
 
-      callAndVerify(host, port, "foo")
+      minimal.bindingPromise.get(5, TimeUnit.SECONDS)
 
       minimal.binding().localAddress.getPort should ===(port)
       minimal.binding().localAddress.getHostName should ===(host)
@@ -84,20 +94,20 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
       callAndVerify(host, port, "shutdown")
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
+
     }
 
     "let get notified" when {
 
-      "shutting down" in {
-        val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-
-        val sneaky = new SneakHttpApp()
+      "shutting down" in withSneaky { (sneaky, host, port) ⇒
 
         val server = Future {
           sneaky.startServer(host, port, ServerSettings.create(ConfigFactory.load))
         }
 
         sneaky.postServerShutdownCalled.get() should ===(false)
+
+        sneaky.bindingPromise.get(5, TimeUnit.SECONDS)
 
         // Requesting the server to shutdown
         callAndVerify(host, port, "shutdown")
@@ -106,18 +116,16 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
         eventually {
           sneaky.postServerShutdownCalled.get() should ===(true)
         }
+
       }
 
-      "after binding is successful" in {
-        val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
-
-        val sneaky = new SneakHttpApp()
+      "after binding is successful" in withSneaky { (sneaky, host, port) ⇒
 
         val server = Future {
           sneaky.startServer(host, port, ServerSettings.create(ConfigFactory.load))
         }
 
-        callAndVerify(host, port, "foo")
+        sneaky.bindingPromise.get(5, TimeUnit.SECONDS)
 
         sneaky.postBindingCalled.get() should ===(true)
 
@@ -125,12 +133,12 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
         callAndVerify(host, port, "shutdown")
         Await.ready(server, Duration(1, TimeUnit.SECONDS))
         server.isCompleted should ===(true)
+
       }
 
-      "after binding is unsuccessful" in {
-        val sneaky = new SneakHttpApp()
+      "after binding is unsuccessful" in withSneaky { (sneaky, host, _) ⇒
 
-        sneaky.startServer("localhost", 1, ServerSettings.create(ConfigFactory.load))
+        sneaky.startServer(host, 1, ServerSettings.create(ConfigFactory.load))
 
         eventually {
           sneaky.postBindingFailureCalled.get() should ===(true)
@@ -143,14 +151,11 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
   private def callAndVerify(host: String, port: Int, path: String) = {
 
-    val request = HttpRequest(uri = s"http://$host:$port/$path")
-
     implicit val mat = ActorMaterializer()
 
-    eventually {
-      val response = Http().singleRequest(request)
-      response.futureValue.status should ===(StatusCodes.OK)
-    }
+    val request = HttpRequest(uri = s"http://$host:$port/$path")
+    val response = Http().singleRequest(request)
+    response.futureValue.status should ===(StatusCodes.OK)
   }
 
 }
