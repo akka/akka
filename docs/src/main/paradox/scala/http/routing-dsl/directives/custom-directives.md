@@ -31,7 +31,7 @@ The second option for creating new directives is to transform an existing one us
 “transformation methods”, which are defined on the @github[Directive](/akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) class, the base class of all “regular” directives.
 
 Apart from the combinator operators (`|` and `&`) and the case-class extractor (`as[T]`)
-there following transformations is also defined on all `Directive` instances:
+the following transformations are also defined on all `Directive` instances:
 
 >
  * [map/tmap](#map-tmap)
@@ -93,7 +93,7 @@ of the method directive:
 
 @@signature [MethodDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #method }
 
-The explicit type parameter `[Unit]` on the flatMap i`s needed in this case
+The explicit type parameter `[Unit]` on the flatMap is needed in this case
 because the result of the flatMap is directly concatenated with the
 `cancelAllRejections` directive, thereby preventing “outside-in”
 inference of the type parameter value.
@@ -153,7 +153,7 @@ by directly subclassing the Directive class. The Directive is defined like this
 
 It only has one abstract member that you need to implement, the `tapply` method, which creates
 the Route the directives presents to the outside from its inner Route building function
-(taking the extractions as parameter).
+(taking the extractions as parameters).
 
 Extractions are kept as a Tuple. Here are a few examples:
 
