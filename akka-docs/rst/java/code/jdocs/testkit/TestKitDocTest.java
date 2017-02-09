@@ -150,7 +150,9 @@ public class TestKitDocTest extends AbstractJavaTest {
     new TestKit(system) {{
       //#test-receivewhile-full
       receiveWhile(duration("100 millis"), duration("50 millis"), 12, in -> {
+        //#match-elided
         throw JavaPartialFunction.noMatch();
+        //#match-elided
       });
       //#test-receivewhile-full
     }};

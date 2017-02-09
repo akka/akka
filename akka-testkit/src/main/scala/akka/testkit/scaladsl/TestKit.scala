@@ -5,6 +5,7 @@ package akka.testkit.scaladsl
 
 import akka.actor._
 import akka.testkit._
+import akka.util.Timeout
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -78,4 +79,12 @@ object TestKit {
     TestKitBase.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }
 
+}
+
+trait ImplicitSender { this: TestKitBase ⇒
+  implicit def self = testActor
+}
+
+trait DefaultTimeout { this: TestKitBase ⇒
+  implicit val timeout: Timeout = testKitSettings.DefaultTimeout
 }

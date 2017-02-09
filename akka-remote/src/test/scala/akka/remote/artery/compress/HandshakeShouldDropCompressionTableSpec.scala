@@ -9,7 +9,6 @@ import akka.pattern.ask
 import akka.remote.RARP
 import akka.remote.artery.compress.CompressionProtocol.Events.{ Event, ReceivedActorRefCompressionTable }
 import akka.remote.artery.{ ArteryMultiNodeSpec, ArterySpecSupport, ArteryTransport }
-import akka.testkit.scaladsl._
 import akka.testkit._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory

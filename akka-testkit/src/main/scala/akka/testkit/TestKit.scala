@@ -878,10 +878,10 @@ object TestKitBase {
  *
  * @since 1.1
  */
-@deprecated("Use akka.testkit.scaladsl.TestKit instead", since = "2.5.0")
+@deprecated("Use akka.testkit.scaladsl.TestKit instead.", since = "2.5.0")
 class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
 
-@deprecated("Use akka.testkit.scaladsl.TestKit instead", since = "2.5.0")
+@deprecated("Use akka.testkit.scaladsl.TestKit instead.", since = "2.5.0")
 object TestKit {
   private[testkit] val testActorId = new AtomicInteger(0)
 
@@ -957,10 +957,12 @@ object TestProbe {
   def apply(name: String)(implicit system: ActorSystem) = new TestProbe(system, name)
 }
 
+@deprecated("Use akka.testkit.scaladsl.ImplicitSender instead.", since = "2.5.0")
 trait ImplicitSender { this: TestKitBase ⇒
   implicit def self = testActor
 }
 
+@deprecated("Use akka.testkit.scaladsl.DefaultTimeout instead.", since = "2.5.0")
 trait DefaultTimeout { this: TestKitBase ⇒
   implicit val timeout: Timeout = testKitSettings.DefaultTimeout
 }
@@ -979,6 +981,7 @@ trait DefaultTimeout { this: TestKitBase ⇒
  * This class is used internal to JavaTestKit and should not be extended
  * by client code directly.
  */
+@deprecated(message = "The only usage is in JavaTestKit which is deprecated.", since = "2.5.0")
 private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractPartialFunction[A, B] {
   import akka.japi.JavaPartialFunction._
 
