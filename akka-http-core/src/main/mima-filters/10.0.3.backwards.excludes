@@ -1,0 +1,10 @@
+# Added new method to interface to be extended only internally.
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings#Timeouts.withLingerTimeout")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings#Timeouts.lingerTimeout")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings#Timeouts.withLingerTimeout")
+
+# internal class
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ServerSettingsImpl$Timeouts$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl#Timeouts.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl#Timeouts.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl#Timeouts.this")

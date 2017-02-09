@@ -5,6 +5,7 @@
 package akka.http.impl.util
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
+
 import akka.NotUsed
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -14,6 +15,7 @@ import akka.stream.stage._
 import akka.util.ByteString
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
@@ -237,22 +239,38 @@ private[http] object StreamUtils {
   /**
    * INTERNAL API
    *
-   * Returns a flow that is almost identity but doesn't propagate cancellation from downstream to upstream.
-   *
-   * Note: This might create a resource leak if the upstream never completes. External measures
-   * need to be taken to ensure that the upstream will always complete.
+   * Returns a flow that is almost identity but delays propagation of cancellation from downstream to upstream.
    */
-  def absorbCancellation[T]: Flow[T, T, NotUsed] = Flow.fromGraph(new AbsorbCancellationStage)
-  final class AbsorbCancellationStage[T] extends SimpleLinearGraphStage[T] {
-    def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+  def delayCancellation[T](cancelAfter: Duration): Flow[T, T, NotUsed] = Flow.fromGraph(new DelayCancellationStage(cancelAfter))
+  final class DelayCancellationStage[T](cancelAfter: Duration) extends SimpleLinearGraphStage[T] {
+    def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with ScheduleSupport with InHandler with OutHandler with StageLogging {
       setHandlers(in, out, this)
 
       def onPush(): Unit = push(out, grab(in)) // using `passAlong` was considered but it seems to need some boilerplate to make it work
       def onPull(): Unit = pull(in)
 
       override def onDownstreamFinish(): Unit = {
-        // don't pass cancellation to upstream, and ignore eventually outstanding future element
-        setHandler(in, new InHandler { def onPush(): Unit = log.debug("Ignoring unexpected data received after cancellation was ignored.") })
+        cancelAfter match {
+          case finite: FiniteDuration ⇒
+            scheduleOnce(finite) {
+              log.debug(s"Stage was canceled after delay of $cancelAfter")
+              completeStage()
+            }
+          case _ ⇒ // do nothing
+        }
+
+        // don't pass cancellation to upstream but keep pulling until we get completion or failure
+        setHandler(
+          in,
+          new InHandler {
+            if (!hasBeenPulled(in)) pull(in)
+
+            def onPush(): Unit = {
+              grab(in) // ignore further elements
+              pull(in)
+            }
+          }
+        )
       }
     }
   }
@@ -265,6 +283,16 @@ private[http] object StreamUtils {
       val f = functionConstructor()
       i ⇒ f(i) :: Nil
     }
+
+  trait ScheduleSupport { self: GraphStageLogic ⇒
+    /**
+     * Schedule a block to be run once after the given duration in the context of this graph stage.
+     */
+    def scheduleOnce(delay: FiniteDuration)(block: ⇒ Unit): Unit =
+      materializer.scheduleOnce(delay, new Runnable { def run() = runInContext(block) })
+
+    def runInContext(block: ⇒ Unit): Unit = getAsyncCallback[AnyRef](_ ⇒ block).invoke(null)
+  }
 }
 
 /**

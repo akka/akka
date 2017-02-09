@@ -18,7 +18,7 @@ import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters
-import scala.concurrent.duration.{ FiniteDuration, Duration }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.language.implicitConversions
 
 /**
@@ -90,9 +90,10 @@ object ServerSettings extends SettingsCompanion[ServerSettings] {
   trait Timeouts extends akka.http.javadsl.settings.ServerSettings.Timeouts {
     // ---
     // override for more specific return types
-    override def withIdleTimeout(newValue: Duration): ServerSettings.Timeouts = self.copy(idleTimeout = newValue)
-    override def withRequestTimeout(newValue: Duration): ServerSettings.Timeouts = self.copy(requestTimeout = newValue)
-    override def withBindTimeout(newValue: FiniteDuration): ServerSettings.Timeouts = self.copy(bindTimeout = newValue)
+    override def withIdleTimeout(newValue: Duration): Timeouts = self.copy(idleTimeout = newValue)
+    override def withRequestTimeout(newValue: Duration): Timeouts = self.copy(requestTimeout = newValue)
+    override def withBindTimeout(newValue: FiniteDuration): Timeouts = self.copy(bindTimeout = newValue)
+    override def withLingerTimeout(newValue: Duration): Timeouts = self.copy(lingerTimeout = newValue)
   }
 
   implicit def timeoutsShortcut(s: ServerSettings): Timeouts = s.timeouts
