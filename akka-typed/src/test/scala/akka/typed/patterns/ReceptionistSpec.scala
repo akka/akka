@@ -125,6 +125,17 @@ class ReceptionistSpec extends TypedSpec {
       }
     })
 
+    def `must be present in the system`(): Unit = sync(runTest("systemReceptionist") {
+      StepWise[Listing[ServiceA]] { (ctx, startWith) ⇒
+        val self = ctx.self
+        startWith.withKeepTraces(true) {
+          ctx.system.receptionist ! Find(ServiceKeyA)(self)
+        }.expectMessage(1.second) { (msg, _) ⇒
+          msg.addresses should ===(Set())
+        }
+      }
+    })
+
   }
 
   object `A Receptionist (native)` extends CommonTests with NativeSystem
