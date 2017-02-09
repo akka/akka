@@ -3,7 +3,7 @@
  */
 package akka.typed
 
-import org.scalatest.Spec
+import org.scalatest.refspec.RefSpec
 import org.scalatest.Matchers
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit.AkkaSpec
@@ -19,17 +19,18 @@ import language.existentials
 import akka.testkit.EventFilter
 import akka.testkit.TestEvent.Mute
 import org.scalatest.concurrent.ScalaFutures
-import org.scalactic.ConversionCheckedTripleEquals
-import org.scalactic.Constraint
+import org.scalactic.TypeCheckedTripleEquals
+import org.scalactic.CanEqual
 import org.junit.runner.RunWith
 import scala.util.control.NonFatal
 import org.scalatest.exceptions.TestFailedException
+import akka.util.TypedMultiMap
 
 /**
  * Helper class for writing tests for typed Actors with ScalaTest.
  */
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TypedSpecSetup extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with ConversionCheckedTripleEquals
+class TypedSpecSetup extends RefSpec with Matchers with BeforeAndAfterAll with ScalaFutures with TypeCheckedTripleEquals
 
 /**
  * Helper class for writing tests against both ActorSystemImpl and ActorSystemAdapter.
@@ -116,13 +117,13 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
   }
 
   // for ScalaTest === compare of Class objects
-  implicit def classEqualityConstraint[A, B]: Constraint[Class[A], Class[B]] =
-    new Constraint[Class[A], Class[B]] {
+  implicit def classEqualityConstraint[A, B]: CanEqual[Class[A], Class[B]] =
+    new CanEqual[Class[A], Class[B]] {
       def areEqual(a: Class[A], b: Class[B]) = a == b
     }
 
-  implicit def setEqualityConstraint[A, T <: Set[_ <: A]]: Constraint[Set[A], T] =
-    new Constraint[Set[A], T] {
+  implicit def setEqualityConstraint[A, T <: Set[_ <: A]]: CanEqual[Set[A], T] =
+    new CanEqual[Set[A], T] {
       def areEqual(a: Set[A], b: T) = a == b
     }
 }
@@ -180,6 +181,7 @@ object TypedSpec {
 }
 
 class TypedSpecSpec extends TypedSpec {
+
   object `A TypedSpec` {
 
     trait CommonTests {
