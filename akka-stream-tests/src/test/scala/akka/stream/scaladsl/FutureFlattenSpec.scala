@@ -25,11 +25,11 @@ class FutureFlattenSpec extends StreamSpec {
   val materializer = ActorMaterializer()
 
   "Future source" must {
-    "use default materializer" when {
+    {
       implicit def m = materializer
       implicit def ec = materializer.executionContext
 
-      "flattening elements" in assertAllStagesStopped {
+      "flatten elements" in assertAllStagesStopped {
         val subSource: Source[Int, String] =
           Source(List(1, 2, 3)).mapMaterializedValue(_ ⇒ "foo")
 

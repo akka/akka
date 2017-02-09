@@ -268,7 +268,7 @@ object Source {
     fromGraph(new FutureSource(future.toScala))
 
   /**
-   * Streams the elements of the given future source once it successfully completes. 
+   * Streams the elements of the given future source once it successfully completes.
    * If the future fails the stream is failed.
    */
   def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): Source[T, Future[M]] = fromGraph(new FutureFlattenSource(future))
