@@ -278,24 +278,33 @@ those actors are serializable. Failing to do so will cause the system to behave 
 
 For more information please see :ref:`serialization-java`.
 
+.. _disable-java-serializer-java:
+
 Disabling the Java Serializer
 -----------------------------
 
-It is possible to completely disable Java Serialization for the entire Actor system.
+Java serialization is known to be slow and `prone to attacks 
+<https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_ 
+of various kinds - it never was designed for high throughput messaging after all. However, it is very 
+convenient to use, thus it remained the default serialization mechanism that Akka used to 
+serialize user messages as well as some of its internal messages in previous versions.
+Since the release of Artery, Akka internals do not rely on Java serialization anymore (one exception being ``java.lang.Throwable``).
 
-Java serialization is known to be slow and prone to attacks of various kinds - it never was designed for high 
-throughput messaging after all. However it is very convenient to use, thus it remained the default serialization 
-mechanism that Akka used to serialize user messages as well as some of its internal messages in previous versions.
-
-Akka internals do not rely on Java serialization (exceptions to that being ``java.lang.Throwable`` and "remote deployment").
+.. warning:: 
+  Please note Akka 2.5 by default does not use any Java Serialization for its own internal messages, unlike 2.4 where
+  by default it sill did for a few of the messages. If you want an 2.4.x system to communicate with a 2.5.x series, for
+  example during a rolling deployment you should first enable ``additional-serialization-bindings`` on the old systems. 
+  You must do so on all nodes participating in a cluster, otherwise the mis-aligned serialization
+  configurations will cause deserialization errors on the receiving nodes. These additional serialization bindings are
+  enabled by default in Akka 2.5.x.
 
 .. note:: 
-  Akka does not use Java Serialization for any of it's internal messages.
+  When using the new remoting implementation (codename Artery), Akka does not use Java Serialization for any of its internal messages.  
   It is highly encouraged to disable java serialization, so please plan to do so at the earliest possibility you have in your project.
 
   One may think that network bandwidth and latency limit the performance of remote messaging, but serialization is a more typical bottleneck.
-  
-For user messages the default serializer implemented using Java serialization remains available and enabled by default.
+
+For user messages, the default serializer, implemented using Java serialization, remains available and enabled.
 We do however recommend to disable it entirely and utilise a proper serialization library instead in order effectively utilise 
 the improved performance and ability for rolling deployments using Artery. Libraries that we recommend to use include, 
 but are not limited to, `Kryo`_ by using the `akka-kryo-serialization`_ library or `Google Protocol Buffers`_ if you want
@@ -306,16 +315,21 @@ your ``application.conf``:
 
 .. code-block:: ruby
 
-  akka {
-    actor {
-      serialization-bindings {
-        "java.io.Serializable" = none
-      }
-    }
-  } 
+  akka.actor.allow-java-serialization = off
+
+This will completely disable the use of ``akka.serialization.JavaSerialization`` by the 
+Akka Serialization extension, instead ``DisabledJavaSerializer`` will 
+be inserted which will fail explicitly if attempts to use java serialization are made.
+
+The log messages emitted by such serializer SHOULD be be treated as potential 
+attacks which the serializer prevented, as they MAY indicate an external operator 
+attempting to send malicious messages intending to use java serialization as attack vector.
+The attempts are logged with the SECURITY marker.
+
+Please note that this option does not stop you from manually invoking java serialization.
 
 Please note that this means that you will have to configure different serializers which will able to handle all of your
-remote messages. Please refer to the :ref:`serialization-scala` documentation as well as :ref:`ByteBuffer based serialization <remote-bytebuffer-serialization-scala>` to learn how to do this.
+remote messages. Please refer to the :ref:`serialization-java` documentation as well as :ref:`ByteBuffer based serialization <remote-bytebuffer-serialization-java>` to learn how to do this.
 
 .. _Kryo: https://github.com/EsotericSoftware/kryo
 .. _akka-kryo-serialization: https://github.com/romix/akka-kryo-serialization
@@ -401,58 +415,19 @@ which includes the addresses of local and remote ActorSystems.
 
 To intercept generic remoting related errors, listen to ``RemotingErrorEvent`` which holds the ``Throwable`` cause.
 
+.. _remote-security-java:
+
 Remote Security
 ^^^^^^^^^^^^^^^
 
-Untrusted Mode
---------------
+An ``ActorSystem`` should not be exposed via Akka Remote over plain TCP to an untrusted network (e.g. internet).
+It should be protected by network security, such as a firewall. If that is not considered as enough protection
+:ref:`TLS with mutual authentication <remote-tls-java>`  should be enabled.
 
-As soon as an actor system can connect to another remotely, it may in principle
-send any possible message to any actor contained within that remote system. One
-example may be sending a :class:`PoisonPill` to the system guardian, shutting
-that system down. This is not always desired, and it can be disabled with the
-following setting::
+It is also security best-practice to :ref:`disable the Java serializer <disable-java-serializer-java>` because of 
+its multiple `known attack surfaces <https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_.
 
-    akka.remote.untrusted-mode = on
-
-This disallows sending of system messages (actor life-cycle commands,
-DeathWatch, etc.) and any message extending :class:`PossiblyHarmful` to the
-system on which this flag is set. Should a client send them nonetheless they
-are dropped and logged (at DEBUG level in order to reduce the possibilities for
-a denial of service attack). :class:`PossiblyHarmful` covers the predefined
-messages like :class:`PoisonPill` and :class:`Kill`, but it can also be added
-as a marker trait to user-defined messages.
-
-Messages sent with actor selection are by default discarded in untrusted mode, but
-permission to receive actor selection messages can be granted to specific actors
-defined in configuration::
-
-    akka.remote.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
-
-The actual message must still not be of type :class:`PossiblyHarmful`.
-
-In summary, the following operations are ignored by a system configured in
-untrusted mode when incoming via the remoting layer:
-
-* remote deployment (which also means no remote supervision)
-* remote DeathWatch
-* ``system.stop()``, :class:`PoisonPill`, :class:`Kill`
-* sending any message which extends from the :class:`PossiblyHarmful` marker
-  interface, which includes :class:`Terminated`
-* messages sent with actor selection, unless destination defined in ``trusted-selection-paths``.
-
-.. note::
-
-  Enabling the untrusted mode does not remove the capability of the client to
-  freely choose the target of its message sends, which means that messages not
-  prohibited by the above rules can be sent to any actor in the remote system.
-  It is good practice for a client-facing system to only contain a well-defined
-  set of entry point actors, which then forward requests (possibly after
-  performing validation) to another actor system containing the actual worker
-  actors. If messaging between these two server-side systems is done using
-  local :class:`ActorRef` (they can be exchanged safely between actor systems
-  within the same JVM), you can restrict the messages on this interface by
-  marking them :class:`PossiblyHarmful` so that a client cannot forge them.
+.. _remote-tls-java:
 
 Configuring SSL/TLS for Akka Remoting
 -------------------------------------
@@ -506,12 +481,78 @@ as well as the `Oracle documentation on creating KeyStore and TrustStores <https
 are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
 and configuring SSL.
 
+Since Akka 2.5.0 mutual authentication between TLS peers is enabled by default. 
+
+Mutual authentication means that the the passive side (the TLS server side) of a connection will also request and verify 
+a certificate from the connecting peer. Without this mode only the client side is requesting and verifying certificates.
+While Akka is a peer-to-peer technology, each connection between nodes starts out from one side (the "client") towards 
+the other (the "server").
+
 See also a description of the settings in the :ref:`remote-configuration-scala` section.
 
 .. note::
 
   When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/urandom`` as argument
   to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
+
+Untrusted Mode
+--------------
+
+As soon as an actor system can connect to another remotely, it may in principle
+send any possible message to any actor contained within that remote system. One
+example may be sending a :class:`PoisonPill` to the system guardian, shutting
+that system down. This is not always desired, and it can be disabled with the
+following setting::
+
+    akka.remote.untrusted-mode = on
+
+This disallows sending of system messages (actor life-cycle commands,
+DeathWatch, etc.) and any message extending :class:`PossiblyHarmful` to the
+system on which this flag is set. Should a client send them nonetheless they
+are dropped and logged (at DEBUG level in order to reduce the possibilities for
+a denial of service attack). :class:`PossiblyHarmful` covers the predefined
+messages like :class:`PoisonPill` and :class:`Kill`, but it can also be added
+as a marker trait to user-defined messages.
+
+.. warning:: 
+  
+  Untrusted mode does not give full protection against attacks by itself.
+  It makes it slightly harder to perform malicious or unintended actions but
+  it should be complemented with :ref:`disabled Java serializer <disable-java-serializer-java>`.
+  Additional protection can be achieved when running in an untrusted network by 
+  network security (e.g. firewalls) and/or enabling 
+  :ref:`TLS with mutual authentication <remote-tls-java>`.
+
+Messages sent with actor selection are by default discarded in untrusted mode, but
+permission to receive actor selection messages can be granted to specific actors
+defined in configuration::
+
+    akka.remote.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
+
+The actual message must still not be of type :class:`PossiblyHarmful`.
+
+In summary, the following operations are ignored by a system configured in
+untrusted mode when incoming via the remoting layer:
+
+* remote deployment (which also means no remote supervision)
+* remote DeathWatch
+* ``system.stop()``, :class:`PoisonPill`, :class:`Kill`
+* sending any message which extends from the :class:`PossiblyHarmful` marker
+  interface, which includes :class:`Terminated`
+* messages sent with actor selection, unless destination defined in ``trusted-selection-paths``.
+
+.. note::
+
+  Enabling the untrusted mode does not remove the capability of the client to
+  freely choose the target of its message sends, which means that messages not
+  prohibited by the above rules can be sent to any actor in the remote system.
+  It is good practice for a client-facing system to only contain a well-defined
+  set of entry point actors, which then forward requests (possibly after
+  performing validation) to another actor system containing the actual worker
+  actors. If messaging between these two server-side systems is done using
+  local :class:`ActorRef` (they can be exchanged safely between actor systems
+  within the same JVM), you can restrict the messages on this interface by
+  marking them :class:`PossiblyHarmful` so that a client cannot forge them.
 
 .. _remote-configuration-java:
 

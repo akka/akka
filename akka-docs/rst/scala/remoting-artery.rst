@@ -236,6 +236,37 @@ you can advise the system to create a child on that remote node like so:
 
 .. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
 
+Remote deployment whitelist
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As remote deployment can potentially be abused by both users and even attackers a whitelist feature
+is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
+is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
+remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
+only a specific set of known actors by enabling the whitelist feature.
+
+To enable remote deployment whitelisting set the ``akka.remote.deployment.enable-whitelist`` value to ``on``.
+The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which 
+others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or 
+should not allow others to remote deploy onto it. The full settings section may for example look like this:
+
+.. includecode:: ../../../akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala#whitelist-config
+
+Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
+
+.. _remote-security-scala-artery:
+
+Remote Security
+---------------
+
+An ``ActorSystem`` should not be exposed via Akka Remote (Artery) over plain Aeron/UDP to an untrusted network (e.g. internet).
+It should be protected by network security, such as a firewall. There is currently no support for encryption with Artery
+so if network security is not considered as enough protection the classic remoting with
+:ref:`TLS and mutual authentication <remote-tls-scala>`  should be used.
+
+It is also security best-practice to :ref:`disable the Java serializer <disable-java-serializer-java-artery>` because of 
+its multiple `known attack surfaces <https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_.
+
 Untrusted Mode
 ^^^^^^^^^^^^^^
 
@@ -254,6 +285,14 @@ are dropped and logged (at DEBUG level in order to reduce the possibilities for
 a denial of service attack). :class:`PossiblyHarmful` covers the predefined
 messages like :class:`PoisonPill` and :class:`Kill`, but it can also be added
 as a marker trait to user-defined messages.
+
+.. warning:: 
+  
+  Untrusted mode does not give full protection against attacks by itself.
+  It makes it slightly harder to perform malicious or unintended actions but
+  it should be complemented with :ref:`disabled Java serializer <disable-java-serializer-scala-artery>`.
+  Additional protection can be achieved when running in an untrusted network by 
+  network security (e.g. firewalls).
 
 Messages sent with actor selection are by default discarded in untrusted mode, but
 permission to receive actor selection messages can be granted to specific actors
@@ -441,24 +480,27 @@ Note that the array based methods can be implemented by delegation like this:
 
 .. includecode:: code/docs/actor/ByteBufferSerializerDocSpec.scala#bytebufserializer-with-manifest
 
+.. _disable-java-serializer-scala-artery:
+
 Disabling the Java Serializer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 It is possible to completely disable Java Serialization for the entire Actor system.
 
-Java serialization is known to be slow and prone to attacks of various kinds - it never was designed for high 
-throughput messaging after all. However it is very convenient to use, thus it remained the default serialization 
-mechanism that Akka used to serialize user messages as well as some of its internal messages in previous versions.
-
-Akka internals do not rely on Java serialization (exceptions to that being ``java.lang.Throwable`` and "remote deployment").
+Java serialization is known to be slow and `prone to attacks 
+<https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_ 
+of various kinds - it never was designed for high throughput messaging after all. However, it is very 
+convenient to use, thus it remained the default serialization mechanism that Akka used to 
+serialize user messages as well as some of its internal messages in previous versions.
+Since the release of Artery, Akka internals do not rely on Java serialization anymore (exceptions to that being ``java.lang.Throwable`` and "remote deployment").
 
 .. note:: 
-  Akka does not use Java Serialization for any of it's internal messages.
+  Akka does not use Java Serialization for any of its internal messages.
   It is highly encouraged to disable java serialization, so please plan to do so at the earliest possibility you have in your project.
 
   One may think that network bandwidth and latency limit the performance of remote messaging, but serialization is a more typical bottleneck.
   
-For user messages the default serializer implemented using Java serialization remains available and enabled by default.
+For user messages, the default serializer, implemented using Java serialization, remains available and enabled.
 We do however recommend to disable it entirely and utilise a proper serialization library instead in order effectively utilise 
 the improved performance and ability for rolling deployments using Artery. Libraries that we recommend to use include, 
 but are not limited to, `Kryo`_ by using the `akka-kryo-serialization`_ library or `Google Protocol Buffers`_ if you want
@@ -469,13 +511,20 @@ your ``application.conf``:
 
 .. code-block:: ruby
 
-  akka {
-    actor {
-      serialization-bindings {
-        "java.io.Serializable" = none
-      }
-    }
-  } 
+  akka.actor.allow-java-serialization = off
+
+This will completely disable the use of ``akka.serialization.JavaSerialization`` by the 
+Akka Serialization extension, instead ``DisabledJavaSerializer`` will 
+be inserted which will fail explicitly if attempts to use java serialization are made.
+
+It will also enable the above mentioned `enable-additional-serialization-bindings`.
+
+The log messages emitted by such serializer SHOULD be be treated as potential 
+attacks which the serializer prevented, as they MAY indicate an external operator 
+attempting to send malicious messages intending to use java serialization as attack vector.
+The attempts are logged with the SECURITY marker.
+
+Please note that this option does not stop you from manually invoking java serialization.
 
 Please note that this means that you will have to configure different serializers which will able to handle all of your
 remote messages. Please refer to the :ref:`serialization-scala` documentation as well as :ref:`ByteBuffer based serialization <remote-bytebuffer-serialization-scala>` to learn how to do this.
