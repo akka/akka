@@ -92,7 +92,7 @@ private[akka] object EventAdapters {
     val bindings: immutable.Seq[ClassHandler] = {
       val bs = for ((k: FQN, as: BoundAdapters) ← adapterBindings)
         yield if (as.size == 1) (system.dynamicAccess.getClassFor[Any](k).get, handlers(as.head))
-      else (system.dynamicAccess.getClassFor[Any](k).get, CombinedReadEventAdapter(as.map(handlers)))
+      else (system.dynamicAccess.getClassFor[Any](k).get, NoopWriteEventAdapter(CombinedReadEventAdapter(as.map(handlers))))
 
       sort(bs)
     }
