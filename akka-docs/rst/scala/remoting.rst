@@ -284,6 +284,8 @@ those actors are serializable. Failing to do so will cause the system to behave 
 
 For more information please see :ref:`serialization-scala`.
 
+.. _disable-java-serializer-scala:
+
 Disabling the Java Serializer
 -----------------------------
 
@@ -316,9 +318,11 @@ enable this setting. When using :ref:`remoting-artery-scala` these serializers a
   you must do so on all nodes participating in a cluster, otherwise the mis-aligned serialization
   configurations will cause deserialization errors on the receiving nodes.
 
-Java serialization is known to be slow and prone to attacks of various kinds - it never was designed for high 
-throughput messaging after all. However it is very convenient to use, thus it remained the default serialization 
-mechanism that Akka used to serialize user messages as well as some of its internal messages in previous versions.
+Java serialization is known to be slow and `prone to attacks 
+<https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_ 
+of various kinds - it never was designed for high throughput messaging after all. However, it is very 
+convenient to use, thus it remained the default serialization mechanism that Akka used to 
+serialize user messages as well as some of its internal messages in previous versions.
 Since the release of Artery, Akka internals do not rely on Java serialization anymore (one exception being ``java.lang.Throwable``).
 
 .. note:: 
@@ -338,13 +342,20 @@ your ``application.conf``:
 
 .. code-block:: ruby
 
-  akka {
-    actor {
-      serialization-bindings {
-        "java.io.Serializable" = none
-      }
-    }
-  } 
+  akka.actor.allow-java-serialization = off
+
+This will completely disable the use of ``akka.serialization.JavaSerialization`` by the 
+Akka Serialization extension, instead ``DisabledJavaSerializer`` will 
+be inserted which will fail explicitly if attempts to use java serialization are made.
+
+It will also enable the above mentioned ``enable-additional-serialization-bindings``.
+
+The log messages emitted by such serializer SHOULD be be treated as potential 
+attacks which the serializer prevented, as they MAY indicate an external operator 
+attempting to send malicious messages intending to use java serialization as attack vector.
+The attempts are logged with the SECURITY marker.
+
+Please note that this option does not stop you from manually invoking java serialization.
 
 Please note that this means that you will have to configure different serializers which will able to handle all of your
 remote messages. Please refer to the :ref:`serialization-scala` documentation as well as :ref:`ByteBuffer based serialization <remote-bytebuffer-serialization-scala>` to learn how to do this.
@@ -433,58 +444,19 @@ To be notified  when the remoting subsystem has been shut down, listen to ``Remo
 
 To intercept generic remoting related errors, listen to ``RemotingErrorEvent`` which holds the ``Throwable`` cause.
 
+.. _remote-security-scala:
+
 Remote Security
 ^^^^^^^^^^^^^^^
 
-Untrusted Mode
---------------
+An ``ActorSystem`` should not be exposed via Akka Remote over plain TCP to an untrusted network (e.g. internet).
+It should be protected by network security, such as a firewall. If that is not considered as enough protection
+:ref:`TLS with mutual authentication <remote-tls-scala>`  should be enabled.
 
-As soon as an actor system can connect to another remotely, it may in principle
-send any possible message to any actor contained within that remote system. One
-example may be sending a :class:`PoisonPill` to the system guardian, shutting
-that system down. This is not always desired, and it can be disabled with the
-following setting::
+It is also security best-practice to :ref:`disabled Java serializer <disable-java-serializer-scala>` because of 
+its multiple `known attack surfaces <https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_.
 
-    akka.remote.untrusted-mode = on
-
-This disallows sending of system messages (actor life-cycle commands,
-DeathWatch, etc.) and any message extending :class:`PossiblyHarmful` to the
-system on which this flag is set. Should a client send them nonetheless they
-are dropped and logged (at DEBUG level in order to reduce the possibilities for
-a denial of service attack). :class:`PossiblyHarmful` covers the predefined
-messages like :class:`PoisonPill` and :class:`Kill`, but it can also be added
-as a marker trait to user-defined messages.
-
-Messages sent with actor selection are by default discarded in untrusted mode, but
-permission to receive actor selection messages can be granted to specific actors
-defined in configuration::
-
-    akka.remote.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
-
-The actual message must still not be of type :class:`PossiblyHarmful`.
-
-In summary, the following operations are ignored by a system configured in
-untrusted mode when incoming via the remoting layer:
-
-* remote deployment (which also means no remote supervision)
-* remote DeathWatch
-* ``system.stop()``, :class:`PoisonPill`, :class:`Kill`
-* sending any message which extends from the :class:`PossiblyHarmful` marker
-  interface, which includes :class:`Terminated`
-* messages sent with actor selection, unless destination defined in ``trusted-selection-paths``.
-
-.. note::
-
-  Enabling the untrusted mode does not remove the capability of the client to
-  freely choose the target of its message sends, which means that messages not
-  prohibited by the above rules can be sent to any actor in the remote system.
-  It is good practice for a client-facing system to only contain a well-defined
-  set of entry point actors, which then forward requests (possibly after
-  performing validation) to another actor system containing the actual worker
-  actors. If messaging between these two server-side systems is done using
-  local :class:`ActorRef` (they can be exchanged safely between actor systems
-  within the same JVM), you can restrict the messages on this interface by
-  marking them :class:`PossiblyHarmful` so that a client cannot forge them.
+.. _remote-tls-scala:
 
 Configuring SSL/TLS for Akka Remoting
 -------------------------------------
@@ -540,12 +512,96 @@ as well as the `Oracle documentation on creating KeyStore and TrustStores <https
 are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
 and configuring SSL.
 
+It is strongly recommended to require mutual authentication between TLS peers and the only reason it is
+not enabled by default is for backwards compatibility reasons. Enable mutual authentication with configuration property::
+
+  akka.remote.netty.ssl.security.require-mutual-authentication = on
+
+Without mutual authentication only the peer that actively establishes a connection (TLS client side)
+checks if the passive side (TLS server side) sends over a trusted certificate. With the flag turned on,
+the passive side will also request and verify a certificate from the connecting peer.
+
+To prevent man-in-the-middle attacks you should enable this setting. For compatibility reasons it is
+still set to 'off' per default.
+
+Nodes that are configured with this setting to 'on' might not be able to receive messages from nodes that
+run on older versions of akka-remote. This is because in older versions of Akka the active side of the remoting
+connection will not send over certificates.
+
+However, even with this setting "off", the active side (TLS client side) will use the given key-store to 
+send over a certificate if asked. A rolling upgrades from older versions of Akka can therefore work like this:
+   
+* upgrade all nodes to an Akka version supporting this flag, keeping it off
+* then switch the flag on and do again a rolling upgrade of all nodes
+ 
+The first step ensures that all nodes will send over a certificate when asked to. The second
+step will ensure that all nodes finally enforce the secure checking of client certificates.
+
 See also a description of the settings in the :ref:`remote-configuration-scala` section.
 
 .. note::
 
   When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/urandom`` as argument
   to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
+
+Untrusted Mode
+--------------
+
+As soon as an actor system can connect to another remotely, it may in principle
+send any possible message to any actor contained within that remote system. One
+example may be sending a :class:`PoisonPill` to the system guardian, shutting
+that system down. This is not always desired, and it can be disabled with the
+following setting::
+
+    akka.remote.untrusted-mode = on
+
+This disallows sending of system messages (actor life-cycle commands,
+DeathWatch, etc.) and any message extending :class:`PossiblyHarmful` to the
+system on which this flag is set. Should a client send them nonetheless they
+are dropped and logged (at DEBUG level in order to reduce the possibilities for
+a denial of service attack). :class:`PossiblyHarmful` covers the predefined
+messages like :class:`PoisonPill` and :class:`Kill`, but it can also be added
+as a marker trait to user-defined messages.
+
+.. warning::
+  
+  Untrusted mode does not give full protection against attacks by itself.
+  It makes it slightly harder to perform malicious or unintended actions but
+  it should be complemented with :ref:`disabled Java serializer <disable-java-serializer-scala>`.
+  Additional protection can be achieved when running in an untrusted network by 
+  network security (e.g. firewalls) and/or enabling :ref:`TLS with mutual 
+  authentication <remote-tls-scala>`.
+
+Messages sent with actor selection are by default discarded in untrusted mode, but
+permission to receive actor selection messages can be granted to specific actors
+defined in configuration::
+
+    akka.remote.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
+
+The actual message must still not be of type :class:`PossiblyHarmful`.
+
+In summary, the following operations are ignored by a system configured in
+untrusted mode when incoming via the remoting layer:
+
+* remote deployment (which also means no remote supervision)
+* remote DeathWatch
+* ``system.stop()``, :class:`PoisonPill`, :class:`Kill`
+* sending any message which extends from the :class:`PossiblyHarmful` marker
+  interface, which includes :class:`Terminated`
+* messages sent with actor selection, unless destination defined in ``trusted-selection-paths``.
+
+.. note::
+
+  Enabling the untrusted mode does not remove the capability of the client to
+  freely choose the target of its message sends, which means that messages not
+  prohibited by the above rules can be sent to any actor in the remote system.
+  It is good practice for a client-facing system to only contain a well-defined
+  set of entry point actors, which then forward requests (possibly after
+  performing validation) to another actor system containing the actual worker
+  actors. If messaging between these two server-side systems is done using
+  local :class:`ActorRef` (they can be exchanged safely between actor systems
+  within the same JVM), you can restrict the messages on this interface by
+  marking them :class:`PossiblyHarmful` so that a client cannot forge them.
 
 .. _remote-configuration-scala:
 
