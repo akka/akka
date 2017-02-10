@@ -370,14 +370,14 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "close the underlying stream when completed" in {
       var closed = false
 
-      final class DummyStream[A] extends BaseStream[A, DummyStream[A]] {
-        override def unordered(): DummyStream[A] = this
-        override def sequential(): DummyStream[A] = this
-        override def parallel(): DummyStream[A] = this
+      final class EmptyStream[A] extends BaseStream[A, EmptyStream[A]] {
+        override def unordered(): EmptyStream[A] = this
+        override def sequential(): EmptyStream[A] = this
+        override def parallel(): EmptyStream[A] = this
         override def isParallel: Boolean = false
 
         override def spliterator(): util.Spliterator[A] = ???
-        override def onClose(closeHandler: Runnable): DummyStream[A] = ???
+        override def onClose(closeHandler: Runnable): EmptyStream[A] = ???
 
         override def iterator(): util.Iterator[A] = new util.Iterator[A] {
           override def next(): A = ???
@@ -387,7 +387,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         override def close(): Unit = closed = true
       }
 
-      Await.ready(StreamConverters.fromJavaStream(() ⇒ new DummyStream[Unit]).runWith(Sink.ignore), 3.seconds)
+      Await.ready(StreamConverters.fromJavaStream(() ⇒ new EmptyStream[Unit]).runWith(Sink.ignore), 3.seconds)
 
       closed should ===(true)
     }
@@ -395,14 +395,14 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "close the underlying stream when failed" in {
       var closed = false
 
-      final class DummyStream[A] extends BaseStream[A, DummyStream[A]] {
-        override def unordered(): DummyStream[A] = this
-        override def sequential(): DummyStream[A] = this
-        override def parallel(): DummyStream[A] = this
+      final class FailingStream[A] extends BaseStream[A, FailingStream[A]] {
+        override def unordered(): FailingStream[A] = this
+        override def sequential(): FailingStream[A] = this
+        override def parallel(): FailingStream[A] = this
         override def isParallel: Boolean = false
 
         override def spliterator(): util.Spliterator[A] = ???
-        override def onClose(closeHandler: Runnable): DummyStream[A] = ???
+        override def onClose(closeHandler: Runnable): FailingStream[A] = ???
 
         override def iterator(): util.Iterator[A] = new util.Iterator[A] {
           override def next(): A = throw new RuntimeException("ouch")
@@ -412,7 +412,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         override def close(): Unit = closed = true
       }
 
-      Await.ready(StreamConverters.fromJavaStream(() ⇒ new DummyStream[Unit]).runWith(Sink.ignore), 3.seconds)
+      Await.ready(StreamConverters.fromJavaStream(() ⇒ new FailingStream[Unit]).runWith(Sink.ignore), 3.seconds)
 
       closed should ===(true)
     }
