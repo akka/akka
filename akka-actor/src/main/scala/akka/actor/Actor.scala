@@ -98,6 +98,7 @@ final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
   @BeanProperty val addressTerminated:  Boolean)
   extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
+  with NoSerializationVerificationNeeded // local message, the remote one is DeathWatchNotification
 
 /**
  * INTERNAL API

@@ -630,9 +630,13 @@ private[remote] class Deserializer(
           push(out, envelopeWithMessage)
         } catch {
           case NonFatal(e) ⇒
+            val from = envelope.association match {
+              case OptionVal.Some(a) ⇒ a.remoteAddress
+              case OptionVal.None    ⇒ "unknown"
+            }
             log.warning(
-              "Failed to deserialize message with serializer id [{}] and manifest [{}]. {}",
-              envelope.serializer, envelope.classManifest, e.getMessage)
+              "Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}]. {}",
+              from, envelope.serializer, envelope.classManifest, e.getMessage)
             pull(in)
         } finally {
           val buf = envelope.envelopeBuffer

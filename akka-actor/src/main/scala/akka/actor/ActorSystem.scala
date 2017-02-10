@@ -328,6 +328,9 @@ object ActorSystem {
     final val CreationTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.creation-timeout"))
     final val UnstartedPushTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.unstarted-push-timeout"))
 
+    final val AllowJavaSerialization: Boolean = getBoolean("akka.actor.allow-java-serialization")
+    final val EnableAdditionalSerializationBindings: Boolean =
+      !AllowJavaSerialization || getBoolean("akka.actor.enable-additional-serialization-bindings")
     final val SerializeAllMessages: Boolean = getBoolean("akka.actor.serialize-messages")
     final val SerializeAllCreators: Boolean = getBoolean("akka.actor.serialize-creators")
 
