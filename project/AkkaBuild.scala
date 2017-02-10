@@ -24,8 +24,6 @@ object AkkaBuild extends Build {
   // Load system properties from a file to make configuration from Jenkins easier
   loadSystemProperties("project/akka-build.properties")
 
-  override def buildLoaders = BuildLoader.transform(Sample.buildTransformer) :: Nil
-
   val enableMiMa = true
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
@@ -83,7 +81,6 @@ object AkkaBuild extends Build {
     id = "akka-scala-nightly",
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM)
-    // samples don't work with dbuild right now
     aggregate = aggregatedProjects diff List[ProjectReference](agent, docs)
   ).disablePlugins(ValidatePullRequest, MimaPlugin)
 
@@ -274,70 +271,6 @@ object AkkaBuild extends Build {
     base = file("akka-contrib"),
     dependencies = Seq(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile;test->provided")
   ).configs(MultiJvm)
-
-  lazy val samplesSettings = parentSettings
-
-  lazy val samples = Project(
-      id = "akka-samples",
-      base = file("akka-samples"),
-      // FIXME osgiDiningHakkersSampleMavenTest temporarily removed from aggregate due to #16703
-      aggregate = if (!Sample.CliOptions.aggregateSamples) Nil else
-        Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala, sampleFsmJavaLambda,
-          sampleMainJava, sampleMainScala, sampleMainJavaLambda, sampleMultiNodeScala,
-          samplePersistenceJava, samplePersistenceScala, samplePersistenceJavaLambda,
-          sampleRemoteJava, sampleRemoteScala, sampleSupervisionJavaLambda,
-          sampleDistributedDataScala, sampleDistributedDataJava)
-    )
-    .settings(samplesSettings: _*)
-    .disablePlugins(MimaPlugin)
-
-  lazy val sampleCamelJava = Sample.project("akka-sample-camel-java")
-  lazy val sampleCamelScala = Sample.project("akka-sample-camel-scala")
-
-  lazy val sampleClusterJava = Sample.project("akka-sample-cluster-java")
-  lazy val sampleClusterScala = Sample.project("akka-sample-cluster-scala")
-
-  lazy val sampleFsmScala = Sample.project("akka-sample-fsm-scala")
-  lazy val sampleFsmJavaLambda = Sample.project("akka-sample-fsm-java-lambda")
-
-  lazy val sampleMainJava = Sample.project("akka-sample-main-java")
-  lazy val sampleMainScala = Sample.project("akka-sample-main-scala")
-  lazy val sampleMainJavaLambda = Sample.project("akka-sample-main-java-lambda")
-
-  lazy val sampleMultiNodeScala = Sample.project("akka-sample-multi-node-scala")
-
-  lazy val samplePersistenceJava = Sample.project("akka-sample-persistence-java")
-  lazy val samplePersistenceScala = Sample.project("akka-sample-persistence-scala")
-  lazy val samplePersistenceJavaLambda = Sample.project("akka-sample-persistence-java-lambda")
-
-  lazy val sampleRemoteJava = Sample.project("akka-sample-remote-java")
-  lazy val sampleRemoteScala = Sample.project("akka-sample-remote-scala")
-
-  lazy val sampleSupervisionJavaLambda = Sample.project("akka-sample-supervision-java-lambda")
-
-  lazy val sampleDistributedDataScala = Sample.project("akka-sample-distributed-data-scala")
-  lazy val sampleDistributedDataJava = Sample.project("akka-sample-distributed-data-java")
-
-  lazy val osgiDiningHakkersSampleMavenTest = Project(
-    id = "akka-sample-osgi-dining-hakkers-maven-test",
-    base = file("akka-samples/akka-sample-osgi-dining-hakkers-maven-test")
-  )
-  .settings(
-    publishArtifact := false,
-    // force publication of artifacts to local maven repo, so latest versions can be used when running maven tests
-    compile in Compile <<=
-      (publishM2 in actor, publishM2 in testkit, publishM2 in remote, publishM2 in cluster, publishM2 in osgi,
-        publishM2 in slf4j, publishM2 in persistence, publishM2 in stream, publishM2 in protobuf, compile in Compile) map
-        ((_, _, _, _, _, _, _, _, _, c) => c),
-    test in Test ~= { x => {
-      def executeMvnCommands(failureMessage: String, commands: String*) = {
-        if ({List("sh", "-c", commands.mkString("cd akka-samples/akka-sample-osgi-dining-hakkers; mvn ", " ", "")) !} != 0)
-          throw new Exception(failureMessage)
-      }
-      executeMvnCommands("Osgi sample Dining hakkers test failed", "clean", "install")
-    }}
-  )
-  .settings(dontPublishSettings: _*)
 
   val dontPublishSettings = Seq(
     publishSigned := (),

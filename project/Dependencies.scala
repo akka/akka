@@ -48,7 +48,7 @@ object Dependencies {
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.16"       // MIT
 
-    // mirrored in OSGi sample
+    // mirrored in OSGi sample https://github.com/akka/akka-samples/tree/master/akka-sample-osgi-dining-hakkers
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.3.1"       // ApacheV2
 
