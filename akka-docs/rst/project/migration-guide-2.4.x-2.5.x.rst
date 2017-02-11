@@ -230,7 +230,7 @@ Old::
 New::
 
   object MyExtension extends ExtensionId[MyExtension] {
-    override def createExtension(system: ExtendedActorSystem) =
+    override def createExtension(system: ExtendedActorSystem): MyExtension =
       new MyExtension(system)
   }
 

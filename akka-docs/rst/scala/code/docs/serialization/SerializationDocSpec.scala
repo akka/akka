@@ -219,7 +219,7 @@ package docs.serialization {
 
       //#external-address
       object ExternalAddress extends ExtensionId[ExternalAddressExt] {
-        override def createExtension(system: ExtendedActorSystem) =
+        override def createExtension(system: ExtendedActorSystem): ExternalAddressExt =
           new ExternalAddressExt(system)
       }
 
@@ -240,7 +240,7 @@ package docs.serialization {
 
       //#external-address-default
       object ExternalAddress extends ExtensionId[ExternalAddressExt] {
-        override def createExtension(system: ExtendedActorSystem) =
+        override def createExtension(system: ExtendedActorSystem): ExternalAddressExt =
           new ExternalAddressExt(system)
       }
 
