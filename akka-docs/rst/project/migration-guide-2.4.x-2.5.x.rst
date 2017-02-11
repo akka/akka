@@ -216,6 +216,24 @@ Actor DSL deprecation
 Actor DSL is a rarely used feature and thus will be deprecated and removed.
 Use plain ``system.actorOf`` instead of the DSL to create Actors if you have been using it.
 
+ExtensionKey Deprecation
+------------------------
+
+``ExtensionKey`` is a shortcut for writing :ref:`extending-akka-scala` but extensions created with it
+can not be used from Java and it does in fact not save many lines of code over directly implementing ``ExtensionId``.
+
+
+Old::
+
+  object MyExtension extends ExtensionKey[MyExtension]
+
+New::
+
+  object MyExtension extends ExtensionId[MyExtension] {
+    override def createExtension(system: ExtendedActorSystem) =
+      new MyExtension(system)
+  }
+
 Streams
 =======
 
