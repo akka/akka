@@ -59,6 +59,13 @@ private[io] trait WithUdpSend {
                 pendingCommander = null
             }
           case None ⇒
+            sender() ! CommandFailed(send)
+            log.debug(
+              "Name resolution failed for remote address [{}]",
+              send.target)
+            retriedSend = false
+            pendingSend = null
+            pendingCommander = null
         }
       } else {
         doSend(registration)
