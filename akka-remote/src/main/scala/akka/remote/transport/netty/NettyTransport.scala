@@ -351,7 +351,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
       val pipeline = newPipeline
       if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = false))
       val handler = if (isDatagram) new UdpServerHandler(NettyTransport.this, associationListenerPromise.future)
-      else new TcpServerHandler(NettyTransport.this, associationListenerPromise.future)
+      else new TcpServerHandler(NettyTransport.this, associationListenerPromise.future, log)
       pipeline.addLast("ServerHandler", handler)
       pipeline
     }
@@ -363,7 +363,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         val pipeline = newPipeline
         if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = true))
         val handler = if (isDatagram) new UdpClientHandler(NettyTransport.this, remoteAddress)
-        else new TcpClientHandler(NettyTransport.this, remoteAddress)
+        else new TcpClientHandler(NettyTransport.this, remoteAddress, log)
         pipeline.addLast("clienthandler", handler)
         pipeline
       }

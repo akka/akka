@@ -1165,7 +1165,12 @@ object MiMa extends AutoPlugin {
         // internal classes
         FilterAnyProblemStartingWith("akka.remote.artery")
       ),
-      "2.4.17" -> Seq()
+      "2.4.17" -> Seq(
+        // #22277 changes to internal classes
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpServerHandler.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpClientHandler.this"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.netty.TcpHandlers.log")
+      )
       // make sure that
       //  * this list ends with the latest released version number
       //  * is kept in sync with the master branch
