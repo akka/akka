@@ -73,7 +73,7 @@ final case class Identify(messageId: Any) extends AutoReceivedMessage with NotIn
  */
 @SerialVersionUID(1L)
 final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
-  if (ref.isEmpty || ref.get != null) {
+  if (ref.isDefined && ref.get == null) {
     throw new IllegalArgumentException("ActorIdentity created with ref = Some(null) is not allowed, " +
       "this could happen when serializing with Scala 2.12 and deserializing with Scala 2.11 which is not supported.")
   }
