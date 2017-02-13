@@ -15,6 +15,7 @@ object Dependencies {
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
   val sslConfigVersion = "0.2.1"
+  val slf4jVersion = "1.7.22"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.8", "2.12.1"),
@@ -39,14 +40,14 @@ object Dependencies {
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.4" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
-    val config        = "com.typesafe"                % "config"                       % "1.3.0"       // ApacheV2
+    val config        = "com.typesafe"                % "config"                       % "1.3.1"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.10.6.Final" // ApacheV2
     val scalaStm      = Def.setting { "org.scala-stm" %% "scala-stm" % scalaStmVersion.value } // Modified BSD (Scala)
 
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.5" // Scala License
     val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
-    val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.16"       // MIT
+    val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % slf4jVersion       // MIT
 
     // mirrored in OSGi sample
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
@@ -103,8 +104,8 @@ object Dependencies {
       val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // sigar logging
-      val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"    % "test"    // MIT
-      val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"    % "test"    // MIT
+      val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % slf4jVersion    % "test"    // MIT
+      val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % slf4jVersion    % "test"    // MIT
 
       // reactive streams tck
       val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.0" % "test" // CC0
