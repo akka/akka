@@ -131,3 +131,6 @@ Details can be found in sections @ref[Low-Level Server-Side API](server-side/low
 
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations
+
+akka-http-jackson
+: Predefined glue-code for (de)serializing custom types from/to JSON with [jackson](https://github.com/FasterXML/jackson)
