@@ -118,25 +118,44 @@ Let's take a look at this router in action. What can be more demanding than calc
 
 The backend worker that performs the factorial calculation:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/FactorialBackend.scala#backend
+.. includecode:: code/docs/cluster/FactorialBackend.scala#backend
 
 The frontend that receives user jobs and delegates to the backends via the router:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/FactorialFrontend.scala#frontend
+.. includecode:: code/docs/cluster/FactorialFrontend.scala#frontend
 
 
 As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/resources/factorial.conf#adaptive-router
+::
+
+  akka.actor.deployment {
+    /factorialFrontend/factorialBackendRouter = {
+      # Router type provided by metrics extension.
+      router = cluster-metrics-adaptive-group
+      # Router parameter specific for metrics extension.
+      # metrics-selector = heap
+      # metrics-selector = load
+      # metrics-selector = cpu
+      metrics-selector = mix
+      #
+      routees.paths = ["/user/factorialBackend"]
+      cluster {
+        enabled = on
+        use-role = backend
+        allow-local-routees = off
+      }
+    }
+  }
 
 It is only ``router`` type and the ``metrics-selector`` parameter that is specific to this router,
 other things work in the same way as other routers.
 
 The same type of router could also have been defined in code:
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/Extra.scala#router-lookup-in-code
+.. includecode:: code/docs/cluster/FactorialFrontend.scala#router-lookup-in-code
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/Extra.scala#router-deploy-in-code
+.. includecode:: code/docs/cluster/FactorialFrontend.scala#router-deploy-in-code
 
 The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ tutorial named
 `Akka Cluster Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-cluster-scala>`_.
@@ -147,7 +166,7 @@ Subscribe to Metrics Events
 
 It is possible to subscribe to the metrics events directly to implement other functionality.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/MetricsListener.scala#metrics-listener
+.. includecode:: code/docs/cluster/MetricsListener.scala#metrics-listener
 
 Custom Metrics Collector
 ------------------------

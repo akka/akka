@@ -202,11 +202,11 @@ the total size of the cluster.
 
 Here is an example of using ``WriteMajority`` and ``ReadMajority``:
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#read-write-majority
+.. includecode:: code/docs/ddata/ShoppingCart.scala#read-write-majority
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#get-cart
+.. includecode:: code/docs/ddata/ShoppingCart.scala#get-cart
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#add-item
+.. includecode:: code/docs/ddata/ShoppingCart.scala#add-item
 
 In some rare cases, when performing an ``Update`` it is needed to first try to fetch latest data from
 other nodes. That can be done by first sending a ``Get`` with ``ReadMajority`` and then continue with
@@ -218,7 +218,7 @@ performed (hence the name observed-removed set).
 
 The following example illustrates how to do that:
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-scala/src/main/scala/sample/distributeddata/ShoppingCart.scala#remove-item 
+.. includecode:: code/docs/ddata/ShoppingCart.scala#remove-item
 
 .. warning::
 

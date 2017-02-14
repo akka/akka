@@ -193,11 +193,11 @@ the total size of the cluster.
 
 Here is an example of using ``writeMajority`` and ``readMajority``:
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#read-write-majority
+.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#read-write-majority
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#get-cart
+.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#get-cart
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#add-item
+.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#add-item
 
 In some rare cases, when performing an ``Update`` it is needed to first try to fetch latest data from
 other nodes. That can be done by first sending a ``Get`` with ``ReadMajority`` and then continue with
@@ -209,7 +209,7 @@ performed (hence the name observed-removed set).
 
 The following example illustrates how to do that:
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#remove-item 
+.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#remove-item
 
 .. warning::
 
