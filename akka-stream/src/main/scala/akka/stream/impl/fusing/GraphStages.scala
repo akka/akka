@@ -331,10 +331,8 @@ object GraphStages {
             val runnable = src.to(sinkIn.sink)
 
             try {
-              def materialize = interpreter.subFusingMaterializer.
-                materialize(runnable, initialAttributes = attr)
-
-              materialized.success(materialize)
+              materialized.success(interpreter.subFusingMaterializer.
+                materialize(runnable, initialAttributes = attr))
             } catch {
               case cause: Throwable ⇒
                 materialized.failure(cause)

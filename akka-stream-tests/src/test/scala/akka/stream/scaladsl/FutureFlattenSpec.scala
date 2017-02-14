@@ -57,40 +57,18 @@ class FutureFlattenSpec extends StreamSpec {
 
         materialized.future.futureValue(Timeout(3.seconds)) should ===("foo")
       }
-    }
 
-    "use a materializer without auto-fusing" when {
-      implicit val noFusing = ActorMaterializer(
-        ActorMaterializerSettings(system).withAutoFusing(false))
-      implicit def ec = noFusing.executionContext
+      "flatten elements from a completion stage" in assertAllStagesStopped {
+        val subSource: Graph[SourceShape[Int], Int] =
+          Source(List(1, 2, 3)).mapMaterializedValue(_ ⇒ 1)
 
-      val tooDeepForStack = 50000
-
-      "flattening from a future graph" in assertAllStagesStopped {
-        val g = Source.fromFutureSource(Future {
-          Thread.sleep(2000)
-          Fusing.aggressive((1 to tooDeepForStack).
-            foldLeft(Source.single(42).mapMaterializedValue(_ ⇒ 1))(
-              (f, i) ⇒ f.map(identity)))
-        })
-
-        val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
-        mat.futureValue should ===(1)
-        fut.futureValue should ===(List(42))
-      }
-
-      "flattening from a completion stage" in assertAllStagesStopped {
-        val future: Future[Graph[SourceShape[Int], Int]] = Future {
-          Fusing.aggressive((1 to tooDeepForStack).
-            foldLeft(Source.single(43).mapMaterializedValue(_ ⇒ 1))(
-              (f, i) ⇒ f.map(identity)))
-        }
+        val future = Future(subSource)
         val stage: CompletionStage[Graph[SourceShape[Int], Int]] = future.toJava
         val g = Source.fromSourceCompletionStage(stage)
 
         val (mat, fut) = g.toMat(Sink.seq)(Keep.both).run()
         mat.toScala.futureValue should ===(1)
-        fut.futureValue should ===(List(43))
+        fut.futureValue should ===(List(1, 2, 3))
       }
     }
 
@@ -150,9 +128,9 @@ class FutureFlattenSpec extends StreamSpec {
 
         val sub = probe.expectSubscription()
 
-        promise.success(Source.fromIterator(() ⇒ underlying))
-
         sub.request(5)
+
+        promise.success(Source.fromIterator(() ⇒ underlying))
 
         // First value
         probe.expectNext(11)
