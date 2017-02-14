@@ -18,10 +18,10 @@ import scala.reflect.ClassTag
  *     override def logDepth = 12
  *     startWith(1, null)
  *     when(1) {
- *       case Ev("hello") =&gt; goto(2)
+ *       case Event("hello", _) =&gt; goto(2)
  *     }
  *     when(2) {
- *       case Ev("world") =&gt; goto(1)
+ *       case Event("world", _) =&gt; goto(1)
  *     }
  *   }
  * assert (fsm.stateName == 1)

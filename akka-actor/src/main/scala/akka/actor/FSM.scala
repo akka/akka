@@ -238,7 +238,7 @@ object FSM {
  *     startWith(One, Data(42))
  *     when(One) {
  *         case Event(SomeMsg, Data(x)) => ...
- *         case Ev(SomeMsg) => ... // convenience when data not needed
+ *         case Event(SomeOtherMsg, _) => ... // when data not needed
  *     }
  *     when(Two, stateTimeout = 5 seconds) { ... }
  *     initialize()
