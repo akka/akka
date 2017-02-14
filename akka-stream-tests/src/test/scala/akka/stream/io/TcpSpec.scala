@@ -520,19 +520,18 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       """)
       val serverSystem = ActorSystem("server", config)
       val clientSystem = ActorSystem("client", config)
+      val serverMaterializer = ActorMaterializer(ActorMaterializerSettings(serverSystem)
+        .withSubscriptionTimeoutSettings(StreamSubscriptionTimeoutSettings(
+          StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(serverSystem)
+      val clientMaterializer = ActorMaterializer(ActorMaterializerSettings(clientSystem)
+        .withSubscriptionTimeoutSettings(StreamSubscriptionTimeoutSettings(
+          StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(clientSystem)
 
       try {
-        val serverMaterializer = ActorMaterializer(ActorMaterializerSettings(serverSystem)
-          .withSubscriptionTimeoutSettings(StreamSubscriptionTimeoutSettings(
-            StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(serverSystem)
-
-        val clientMaterializer = ActorMaterializer(ActorMaterializerSettings(clientSystem)
-          .withSubscriptionTimeoutSettings(StreamSubscriptionTimeoutSettings(
-            StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(clientSystem)
 
         val address = temporaryServerAddress()
         val completeRequest = TestLatch()(serverSystem)
-        val gotRequest = Promise[Done]()
+        val serverGotRequest = Promise[Done]()
 
         def portClosed(): Boolean =
           try {
@@ -549,9 +548,14 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
             .take(1)
             // keep the accepted request hanging
             .map { connection ⇒
-              gotRequest.success(Done)
-              Await.ready(completeRequest, remainingOrDefault)
+              serverGotRequest.success(Done)
+              Await.ready(completeRequest, 25.seconds) // depends on the port close below
               connection.flow.join(Flow[ByteString]).run()
+            }
+            .watchTermination() { (binding, termination) ⇒
+              // just to get som info when it fails
+              termination.onComplete(_.failed.foreach(ex ⇒ serverSystem.log.error(ex, "Connection source stream failure")))
+              binding
             }
             .to(Sink.ignore)
             .run()(serverMaterializer)
@@ -566,11 +570,14 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
 
         // wait for request arrive and then server stop accepting incoming connections
         // before letting the request through
-        gotRequest.future.futureValue
-        awaitCond(portClosed())
+        serverGotRequest.future.futureValue
+        // this can take a bit of time worst case but is often swift
+        serverSystem.log.info("Waiting for port to close")
+        awaitCond(portClosed(), 20.seconds)
+        serverSystem.log.info("Port to closed, allowing accepted connection to continue")
         completeRequest.open()
 
-        total.futureValue should ===(100)
+        total.futureValue should ===(100) // connection
 
       } finally {
         TestKit.shutdownActorSystem(serverSystem)

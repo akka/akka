@@ -54,6 +54,7 @@ private[stream] class ConnectionSourceStage(
       val connectionFlowsAwaitingInitialization = new AtomicLong()
       var listener: ActorRef = _
       var unbindPromise = Promise[Unit]()
+      var unbindStarted = false
 
       override def preStart(): Unit = {
         getStageActor(receive)
@@ -84,11 +85,14 @@ private[stream] class ConnectionSourceStage(
             push(out, connectionFor(c, sender))
           case Unbind ⇒
             if (!isClosed(out) && (listener ne null)) tryUnbind()
-          case Unbound ⇒ // If we're unbound then just shut down
-            if (connectionFlowsAwaitingInitialization.get() == 0) completeStage()
-            else scheduleOnce(BindShutdownTimer, bindShutdownTimeout)
+          case Unbound ⇒
+            unbindCompleted()
           case Terminated(ref) if ref == listener ⇒
-            failStage(new IllegalStateException("IO Listener actor terminated unexpectedly"))
+            if (unbindStarted) {
+              unbindCompleted()
+            } else {
+              failStage(new IllegalStateException("IO Listener actor terminated unexpectedly"))
+            }
         }
       }
 
@@ -125,11 +129,17 @@ private[stream] class ConnectionSourceStage(
       }
 
       private def tryUnbind(): Unit = {
-        if (listener ne null) {
-          stageActor.unwatch(listener)
+        if ((listener ne null) && !unbindStarted) {
+          unbindStarted = true
           setKeepGoing(true)
           listener ! Unbind
         }
+      }
+
+      private def unbindCompleted(): Unit = {
+        stageActor.unwatch(listener)
+        if (connectionFlowsAwaitingInitialization.get() == 0) completeStage()
+        else scheduleOnce(BindShutdownTimer, bindShutdownTimeout)
       }
 
       override def onTimer(timerKey: Any): Unit = timerKey match {
