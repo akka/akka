@@ -280,29 +280,34 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
     }
 
     val maxTableVersions = 130 // so table version wraps around at least once
-    var lastTableVersion = 0
+    var lastVersion = 0
+    var lastTable: CompressionTable[ActorRef] = null
+    var allRefs: List[ActorRef] = Nil
 
     for (iteration ← 1 to maxTableVersions) {
       val echoWrap = createAndIdentify(iteration) // create a different actor for every iteration
+      allRefs ::= echoWrap
 
       // cause echo to become a heavy hitter
       (1 to messagesToExchange).foreach { i ⇒ echoWrap ! TestMessage("hello") }
       receiveN(messagesToExchange) // the replies
 
-      receivedActorRefCompressionTableProbe.within(5.seconds) {
-        var currentTableVersion = -1
-        // discard duplicates with awaitAssert until we receive next version
-        receivedActorRefCompressionTableProbe.awaitAssert {
-          val a1 = receivedActorRefCompressionTableProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds)
-          currentTableVersion = a1.table.version.toInt
-          // until we get next version, discard duplicates
-          currentTableVersion should !==(lastTableVersion)
-        }
-        lastTableVersion = currentTableVersion
-        currentTableVersion should ===(iteration & 0x7F)
+      // discard duplicates with awaitAssert until we receive next version
+      var currentTable: CompressionTable[ActorRef] = null
+      receivedActorRefCompressionTableProbe.awaitAssert {
+        currentTable =
+          receivedActorRefCompressionTableProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](2.seconds).table
+        // Until we get a new version, discard duplicates or old advertisements.
+        // Please note that we might not get the advertisements in order
+        allRefs.forall(ref ⇒ currentTable.dictionary.contains(ref)) should be(true)
       }
-
+      currentTable.version should !==(lastVersion)
+      lastTable = currentTable
+      (((currentTable.version - lastTable.version) & 0x7F) <= 2) should be(true)
+      lastVersion = lastTable.version
     }
+
+    lastTable.version.toInt should be < (128)
   }
 
 }
