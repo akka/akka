@@ -396,7 +396,7 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#ReadMajority.apply"),
       ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ddata.Replicator$WriteMajority$"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.copy"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.apply")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.apply"),
 
       // #21854 Remove manual hostname verifier support
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.scaladsl.TLS.apply"),
@@ -405,7 +405,23 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.addFunctionRef"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef$default$2")
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef$default$2"),
+
+      // implementation classes
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.andThen"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$SymbolicGraphStage$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$SymbolicStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$SymbolicGraphStage"),
+
+      // ddata
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ClusterEvent#ReachabilityEvent.member"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.DurableStore#Store.apply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.DurableStore#Store.copy$default$2"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.DurableStore#Store.data"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.DurableStore#Store.copy"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.DurableStore#Store.this"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.LmdbDurableStore.dbPut")
 
       // NOTE: filters that will be backported to 2.4 should go to the latest 2.4 version below
     )
