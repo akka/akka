@@ -15,7 +15,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.1")
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.13")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.14")
 
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
 
