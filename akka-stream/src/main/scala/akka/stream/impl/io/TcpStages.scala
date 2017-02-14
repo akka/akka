@@ -91,7 +91,8 @@ private[stream] class ConnectionSourceStage(
             if (unbindStarted) {
               unbindCompleted()
             } else {
-              failStage(new IllegalStateException("IO Listener actor terminated unexpectedly"))
+              failStage(new IllegalStateException("IO Listener actor terminated unexpectedly for remote endpoint [" +
+                endpoint.getHostString + ":" + endpoint.getPort + "]"))
             }
         }
       }
