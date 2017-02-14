@@ -368,7 +368,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "close the underlying stream when completed" in {
-      var closed = false
+      @volatile var closed = false
 
       final class EmptyStream[A] extends BaseStream[A, EmptyStream[A]] {
         override def unordered(): EmptyStream[A] = this
@@ -393,7 +393,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "close the underlying stream when failed" in {
-      var closed = false
+      @volatile var closed = false
 
       final class FailingStream[A] extends BaseStream[A, FailingStream[A]] {
         override def unordered(): FailingStream[A] = this
