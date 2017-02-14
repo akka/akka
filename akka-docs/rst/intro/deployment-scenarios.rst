@@ -12,52 +12,32 @@ Akka can be used in different ways:
 - As a library: used as a regular JAR on the classpath and/or in a web app, to
   be put into ``WEB-INF/lib``
 
-- Package with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_
+- As an application packaged with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_
 
-- Package and deploy using `Lightbend ConductR <http://www.lightbend.com/products/conductr>`_.
+- As an application packaged and deployed using `Lightbend ConductR <http://www.lightbend.com/products/conductr>`_.
 
 
 Native Packager
 ===============
 
 `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ is a tool for creating
-distributions of any type of application, including an Akka applications.
+distributions of any type of application, including Akka applications.
 
 Define sbt version in ``project/build.properties`` file: 
 
 .. code-block:: none
 
-    sbt.version=0.13.7
+    sbt.version=0.13.13
 
 Add `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ in ``project/plugins.sbt`` file:
 
 .. code-block:: none
 
-   addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
+   addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.1.5")
 
-Use the package settings and optionally specify the mainClass in ``build.sbt`` file:
+Follow the instructions for the ``JavaAppPackaging`` in the `sbt-native-packager plugin documentation`_.
 
-.. includecode:: ../../../akka-samples/akka-sample-main-scala/build.sbt
-
-
-.. note:: Use the ``JavaServerAppPackaging``. Don't use the deprecated ``AkkaAppPackaging`` (previously named 
-   ``packageArchetype.akka_application``), since it doesn't have the same flexibility and quality
-   as the ``JavaServerAppPackaging``.
-
-Use sbt task ``dist`` package the application.
-
-To start the application (on a unix-based system):
-
-.. code-block:: none
-
-   cd target/universal/
-   unzip akka-sample-main-scala-2.5-SNAPSHOT.zip
-   chmod u+x akka-sample-main-scala-2.5-SNAPSHOT/bin/akka-sample-main-scala
-   akka-sample-main-scala-2.5-SNAPSHOT/bin/akka-sample-main-scala sample.hello.Main
-
-Use ``Ctrl-C`` to interrupt and exit the application.
-
-On a Windows machine you can also use the ``bin\akka-sample-main-scala.bat`` script.
+.. _sbt-native-packager plugin documentation: http://sbt-native-packager.readthedocs.io/en/latest/archetypes/java_app/index.html
 
 
 In a Docker container

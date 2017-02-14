@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package docs.cluster
+package scala.docs.cluster
 
 import akka.cluster.Cluster
 import akka.testkit.AkkaSpec
