@@ -411,7 +411,8 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef$default$2")
     )
 
-    Map(
+
+    val Release24Filters = Seq(
       "2.4.0" -> Seq(
         FilterAnyProblem("akka.remote.transport.ProtocolStateActor"),
 
@@ -910,7 +911,7 @@ object MiMa extends AutoPlugin {
         // isEmpty()Boolean in class akka.remote.artery.compress.TopHeavyHitters#HashCodeVal does not have a correspondent in current version
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.TopHeavyHitters#HashCodeVal.isEmpty")
       ),
-      "2.4.14" -> (Seq(
+      "2.4.14" -> Seq(
         // # 21944
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ClusterEvent#ReachabilityEvent.member"),
 
@@ -943,8 +944,14 @@ object MiMa extends AutoPlugin {
         // #21894 Programmatic configuration of the ActorSystem
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")
 
-      ) ++ bcIssuesBetween24and25)
+      )
       // Entries should be added to a section keyed with the latest released version before the change
     )
+
+    val Latest24Filters = Release24Filters.last
+    val AllFilters =
+      Release24Filters.dropRight(1) :+ (Latest24Filters._1 -> (Latest24Filters._2 ++ bcIssuesBetween24and25))
+
+    Map(AllFilters: _*)
   }
 }
