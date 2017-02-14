@@ -33,7 +33,11 @@ object MiMa extends AutoPlugin {
       val akka23Versions = Seq("2.3.11", "2.3.12", "2.3.13", "2.3.14", "2.3.15")
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
       val akka24StreamVersions = (2 to 12) map ("2.4." + _)
-      val akka24WithScala212 = (13 to latestMinorVersionOf("2.4.")) map ("2.4." + _)
+      val akka24WithScala212 =
+        (13 to latestMinorVersionOf("2.4."))
+          .map ("2.4." + _)
+          .filterNot(_ == "2.4.15") // 2.4.15 was released from the wrong branch and never announced
+
       val akka24NewArtifacts = Seq(
         "akka-cluster-sharding",
         "akka-cluster-tools",
@@ -47,12 +51,6 @@ object MiMa extends AutoPlugin {
         "akka-http-core",
         "akka-http-testkit",
         "akka-stream-testkit"
-
-        // TODO enable once not experimental anymore
-        // "akka-http-experimental",
-        // "akka-http-jackson-experimental",
-        // "akka-http-spray-json-experimental",
-        // "akka-http-xml-experimental"
       )
       scalaBinaryVersion match {
         case "2.12" => akka24WithScala212
@@ -1130,7 +1128,7 @@ object MiMa extends AutoPlugin {
         // isEmpty()Boolean in class akka.remote.artery.compress.TopHeavyHitters#HashCodeVal does not have a correspondent in current version
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.TopHeavyHitters#HashCodeVal.isEmpty")
       ),
-      "2.4.14" -> (Seq(
+      "2.4.14" -> Seq(
         // # 21944
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ClusterEvent#ReachabilityEvent.member"),
 
@@ -1162,7 +1160,15 @@ object MiMa extends AutoPlugin {
 
         // #21894 Programmatic configuration of the ActorSystem
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")
-      ))
+      ),
+      "2.4.16" -> Seq(
+        // internal classes
+        FilterAnyProblemStartingWith("akka.remote.artery")
+      ),
+      "2.4.17" -> Seq()
+      // make sure that
+      //  * this list ends with the latest released version number
+      //  * is kept in sync with the master branch
     )
   }
 }
