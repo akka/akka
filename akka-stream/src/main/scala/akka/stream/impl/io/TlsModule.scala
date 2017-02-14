@@ -18,11 +18,10 @@ private[stream] final case class TlsModule(plainIn: Inlet[SslTlsOutbound], plain
                                            cipherIn: Inlet[ByteString], cipherOut: Outlet[ByteString],
                                            shape: Shape, attributes: Attributes,
                                            createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-                                           verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
                                            closing:         TLSClosing) extends AtomicModule {
 
   override def withAttributes(att: Attributes): TlsModule = copy(attributes = att)
-  override def carbonCopy: TlsModule = TlsModule(attributes, createSSLEngine, verifySession, closing)
+  override def carbonCopy: TlsModule = TlsModule(attributes, createSSLEngine, closing)
 
   override def replaceShape(s: Shape) =
     if (s != shape) {
@@ -40,7 +39,6 @@ private[stream] object TlsModule {
   def apply(
     attributes:      Attributes,
     createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-    verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
     closing:         TLSClosing): TlsModule = {
     val name = attributes.nameOrDefault(s"StreamTls()")
     val cipherIn = Inlet[ByteString](s"$name.cipherIn")
@@ -48,6 +46,6 @@ private[stream] object TlsModule {
     val plainIn = Inlet[SslTlsOutbound](s"$name.transportIn")
     val plainOut = Outlet[SslTlsInbound](s"$name.transportOut")
     val shape = new BidiShape(plainIn, cipherOut, cipherIn, plainOut)
-    TlsModule(plainIn, plainOut, cipherIn, cipherOut, shape, attributes, createSSLEngine, verifySession, closing)
+    TlsModule(plainIn, plainOut, cipherIn, cipherOut, shape, attributes, createSSLEngine, closing)
   }
 }
