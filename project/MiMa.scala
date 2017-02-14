@@ -34,7 +34,11 @@ object MiMa extends AutoPlugin {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
       val akka25Versions = Seq.empty[String] // FIXME enable once 2.5.0 is out (0 to latestMinorVersionOf("2.5.")).map(patch => s"2.5.$patch")
       val akka24StreamVersions = (2 to 12) map ("2.4." + _)
-      val akka24WithScala212 = (13 to latestMinorVersionOf("2.4.")) map ("2.4." + _)
+      val akka24WithScala212 =
+        (13 to latestMinorVersionOf("2.4."))
+          .map ("2.4." + _)
+          .filterNot(_ == "2.4.15") // 2.4.15 was released from the wrong branch and never announced
+
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
@@ -943,9 +947,15 @@ object MiMa extends AutoPlugin {
 
         // #21894 Programmatic configuration of the ActorSystem
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")
-
-      )
-      // Entries should be added to a section keyed with the latest released version before the change
+      ),
+      "2.4.16" -> Seq(
+        // internal classes
+        FilterAnyProblemStartingWith("akka.remote.artery")
+      ),
+      "2.4.17" -> Seq()
+      // make sure that
+      //  * this list ends with the latest released version number
+      //  * is kept in sync between release-2.4 and master branch
     )
 
     val Latest24Filters = Release24Filters.last
