@@ -396,21 +396,18 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#ReadMajority.apply"),
       ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ddata.Replicator$WriteMajority$"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.copy"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.apply")
 
       // #21854 Remove manual hostname verifier support
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.scaladsl.TLS.apply"),
-
-      // #22277 changes to internal classes
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpServerHandler.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpClientHandler.this"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.netty.TcpHandlers.log"),
 
       // #22105 Akka Typed process DSL
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.addFunctionRef"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef$default$2")
+
+      // NOTE: filters that will be backported to 2.4 should go to the latest 2.4 version below
     )
 
 
@@ -950,7 +947,12 @@ object MiMa extends AutoPlugin {
         // internal classes
         FilterAnyProblemStartingWith("akka.remote.artery")
       ),
-      "2.4.17" -> Seq()
+      "2.4.17" -> Seq(
+        // #22277 changes to internal classes
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpServerHandler.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpClientHandler.this"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.netty.TcpHandlers.log")
+      )
       // make sure that
       //  * this list ends with the latest released version number
       //  * is kept in sync between release-2.4 and master branch
