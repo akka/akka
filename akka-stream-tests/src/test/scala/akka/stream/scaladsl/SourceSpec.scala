@@ -15,6 +15,8 @@ import akka.stream.testkit._
 import akka.NotUsed
 import akka.testkit.EventFilter
 import scala.collection.immutable
+import java.util
+import java.util.stream.BaseStream
 
 class SourceSpec extends StreamSpec with DefaultTimeout {
 
@@ -365,6 +367,55 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       }
     }
 
+    "close the underlying stream when completed" in {
+      @volatile var closed = false
+
+      final class EmptyStream[A] extends BaseStream[A, EmptyStream[A]] {
+        override def unordered(): EmptyStream[A] = this
+        override def sequential(): EmptyStream[A] = this
+        override def parallel(): EmptyStream[A] = this
+        override def isParallel: Boolean = false
+
+        override def spliterator(): util.Spliterator[A] = ???
+        override def onClose(closeHandler: Runnable): EmptyStream[A] = ???
+
+        override def iterator(): util.Iterator[A] = new util.Iterator[A] {
+          override def next(): A = ???
+          override def hasNext: Boolean = false
+        }
+
+        override def close(): Unit = closed = true
+      }
+
+      Await.ready(StreamConverters.fromJavaStream(() ⇒ new EmptyStream[Unit]).runWith(Sink.ignore), 3.seconds)
+
+      closed should ===(true)
+    }
+
+    "close the underlying stream when failed" in {
+      @volatile var closed = false
+
+      final class FailingStream[A] extends BaseStream[A, FailingStream[A]] {
+        override def unordered(): FailingStream[A] = this
+        override def sequential(): FailingStream[A] = this
+        override def parallel(): FailingStream[A] = this
+        override def isParallel: Boolean = false
+
+        override def spliterator(): util.Spliterator[A] = ???
+        override def onClose(closeHandler: Runnable): FailingStream[A] = ???
+
+        override def iterator(): util.Iterator[A] = new util.Iterator[A] {
+          override def next(): A = throw new RuntimeException("ouch")
+          override def hasNext: Boolean = true
+        }
+
+        override def close(): Unit = closed = true
+      }
+
+      Await.ready(StreamConverters.fromJavaStream(() ⇒ new FailingStream[Unit]).runWith(Sink.ignore), 3.seconds)
+
+      closed should ===(true)
+    }
   }
 
 }
