@@ -19,7 +19,7 @@ import akka.util.{ ByteString, Helpers }
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
-import java.net.{ BindException, InetSocketAddress, Socket, SocketException }
+import java.net._
 
 import akka.testkit.{ EventFilter, TestKit, TestLatch }
 import com.typesafe.config.ConfigFactory
@@ -513,10 +513,8 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
 
       // configure a few timeouts we do not want to hit
       val config = ConfigFactory.parseString("""
-        akka.loglevel=debug
         akka.actor.serializer-messages = off
         akka.io.tcp.register-timeout = 42s
-        akka.io.tcp.trace-logging = on
       """)
       val serverSystem = ActorSystem("server", config)
       val clientSystem = ActorSystem("client", config)
@@ -535,10 +533,14 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
 
         def portClosed(): Boolean =
           try {
-            new Socket(address.getHostString, address.getPort).close()
+            val socket = new Socket()
+            socket.connect(address, 250)
+            socket.close()
+            serverSystem.log.info("port open")
             false
           } catch {
-            case _: SocketException ⇒ true
+            case _: SocketTimeoutException ⇒ true
+            case _: SocketException        ⇒ true
           }
 
         import serverSystem.dispatcher
@@ -549,13 +551,12 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
             // keep the accepted request hanging
             .map { connection ⇒
               serverGotRequest.success(Done)
-              Await.ready(completeRequest, 25.seconds) // depends on the port close below
-              connection.flow.join(Flow[ByteString]).run()
-            }
-            .watchTermination() { (binding, termination) ⇒
-              // just to get som info when it fails
-              termination.onComplete(_.failed.foreach(ex ⇒ serverSystem.log.error(ex, "Connection source stream failure")))
-              binding
+              Future {
+                Await.ready(completeRequest, remainingOrDefault) // wait for the port close below
+                // when the server has closed the port and stopped accepting incoming
+                // connections, complete the one accepted connection
+                connection.flow.join(Flow[ByteString]).run()
+              }
             }
             .to(Sink.ignore)
             .run()(serverMaterializer)
@@ -568,13 +569,9 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
           .via(Tcp(clientSystem).outgoingConnection(address))
           .runFold(0)(_ + _.size)(clientMaterializer)
 
-        // wait for request arrive and then server stop accepting incoming connections
-        // before letting the request through
         serverGotRequest.future.futureValue
         // this can take a bit of time worst case but is often swift
-        serverSystem.log.info("Waiting for port to close")
-        awaitCond(portClosed(), 20.seconds)
-        serverSystem.log.info("Port to closed, allowing accepted connection to continue")
+        awaitCond(portClosed())
         completeRequest.open()
 
         total.futureValue should ===(100) // connection
