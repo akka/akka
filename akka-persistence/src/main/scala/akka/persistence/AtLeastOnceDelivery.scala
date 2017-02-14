@@ -75,7 +75,7 @@ object AtLeastOnceDelivery {
 }
 
 /**
- * Mix-in this trait with your `PersistentActor` to send messages with at-least-once
+ * Scala API: Mix-in this trait with your `PersistentActor` to send messages with at-least-once
  * delivery semantics to destinations. It takes care of re-sending messages when they
  * have not been confirmed within a configurable timeout. Use the [[AtLeastOnceDeliveryLike#deliver]] method to
  * send a message to a destination. Call the [[AtLeastOnceDeliveryLike#confirmDelivery]] method when the destination
@@ -106,6 +106,7 @@ object AtLeastOnceDelivery {
  * as a blob in your custom snapshot.
  *
  * @see [[AtLeastOnceDeliveryLike]]
+ * @see [[AbstractPersistentActorWithAtLeastOnceDelivery]] for Java API
  */
 trait AtLeastOnceDelivery extends PersistentActor with AtLeastOnceDeliveryLike {
 
@@ -436,9 +437,9 @@ abstract class UntypedPersistentActorWithAtLeastOnceDelivery extends UntypedPers
 }
 
 /**
- * Java API compatible with lambda expressions
+ * Java API: compatible with lambda expressions
  *
- * Use this class instead of `UntypedPersistentActor` to send messages
+ * Use this class instead of `AbstractPersistentActor` to send messages
  * with at-least-once delivery semantics to destinations.
  * Full documentation in [[AtLeastOnceDelivery]].
  *

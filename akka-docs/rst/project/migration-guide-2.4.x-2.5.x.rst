@@ -447,9 +447,9 @@ Binary incompatibility of PersistentActor and AtLeastOneDelivery
 
 To be able to evolve the Java APIs of ``PersistentActor`` and ``AtLeastOneDelivery`` to work with Scala 2.12
 we could find no other solution but to break the binary compatibility of the Scala versions (which the Java ones
-were based on). T
+were based on).
 
-his means that the Akka 2.5 artifact cannot be a class path drop in replacement of Akka 2.4 and earlierif you use
+This means that the Akka 2.5 artifact cannot be a class path drop in replacement of Akka 2.4 if you use
 ``PersistentActor`` or ``AtLeastOnceDelivery``, to do this upgrade you _must_ recompile your project with the new
 version of Akka.
 

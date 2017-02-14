@@ -158,7 +158,7 @@ final class DiscardConfigurator extends StashOverflowStrategyConfigurator {
 }
 
 /**
- * An persistent Actor - can be used to implement command or event sourcing.
+ * Scala API: A persistent Actor - can be used to implement command or event sourcing.
  */
 trait PersistentActor extends Eventsourced with PersistenceIdentity {
   def receive = receiveCommand
