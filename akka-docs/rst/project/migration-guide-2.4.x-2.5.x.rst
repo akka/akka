@@ -315,6 +315,8 @@ Wire Protocol Compatibility
 It is possible to use Akka Remoting between nodes running Akka 2.4.16 and 2.5-M1, but some settings have changed so you might need
 to adjust some configuration as described in :ref:`mig25_rolling`.
 
+Note however that if using Java serialization it will not be possible to mix nodes using Scala 2.11 and 2.12.
+
 Cluster
 =======
 
