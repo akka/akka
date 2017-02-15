@@ -6,7 +6,7 @@ Modules marked "May Change"
 ###########################
 
 To be able to introduce new modules and APIs without freezing them the moment they
-are released because of our :ref:`BinCompatRules <binary compatibility guarantees>` we have introduced
+are released because of our :ref:`binary compatibility guarantees <BinCompatRules>` we have introduced
 the term **may change**.
 
 Concretely **may change** means that an API or module is in early access mode and that it:

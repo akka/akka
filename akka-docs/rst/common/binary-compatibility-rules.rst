@@ -47,7 +47,7 @@ Some modules are excluded from the binary compatibility guarantees, such as:
   - ``*-tck`` modules     - since they may want to add new tests (or force configuring something), in order to discover possible 
                             failures in an existing implementation that the TCK is supposed to be testing. 
                             Compatibility here is not *guaranteed*, however it is attempted to make the upgrade prosess as smooth as possible.
-  - all :ref:`may-change <may change>` modules - which by definition are subject to rapid iteration and change. Read more about that in :ref:`may-change`
+  - all :ref:`may change <may-change>` modules - which by definition are subject to rapid iteration and change. Read more about that in :ref:`may-change`
 
 .. _24versioningChange:
 
