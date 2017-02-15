@@ -423,7 +423,7 @@ changing your serializers to use this new mechanism.
 This new API also plays well with new versions of Google Protocol Buffers and other serialization libraries, which gained 
 the ability to serialize directly into and from ByteBuffers.
 
-As the new feature only changes how bytes are read and written, and the rest of the serializatio infrastructure
+As the new feature only changes how bytes are read and written, and the rest of the serialization infrastructure
 remained the same, we recommend reading the :ref:`serialization-java` documentation first.
 
 Implementing an :class:`akka.serialization.ByteBufferSerializer` works the same way as any other serializer,
