@@ -70,7 +70,7 @@ object ActorContextSpec {
   final case class BecomeCareless(replyTo: ActorRef[BecameCareless.type]) extends Command
   case object BecameCareless extends Event
 
-  final case class GetAdapter(replyTo: ActorRef[Adapter]) extends Command
+  final case class GetAdapter(replyTo: ActorRef[Adapter], name: String = "") extends Command
   final case class Adapter(a: ActorRef[Command]) extends Event
 
   def subject(monitor: ActorRef[Monitor]): Behavior[Command] =
@@ -151,14 +151,13 @@ object ActorContextSpec {
               monitor ! GotSignal(sig)
               Same
           }
-        case GetAdapter(replyTo) ⇒
-          replyTo ! Adapter(ctx.spawnAdapter(identity))
+        case GetAdapter(replyTo, name) ⇒
+          replyTo ! Adapter(ctx.spawnAdapter(identity, name))
           Same
       }
     }
 }
 
-/* Kept failing on CI-server, disabled until someone has time to investigate more closely
 class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   """|akka {
      |  loglevel = WARNING
@@ -495,7 +494,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       val self = ctx.self
       startWith
         .stimulate(_ ! SetTimeout(1.minute, self), _ ⇒ TimeoutSet)
-        .stimulate(_ ⇒ ctx.schedule(1.second, self, Pong2), _ ⇒ Pong2, 1.5.seconds)
+        .stimulate(_ ⇒ ctx.schedule(1.second, self, Pong2), _ ⇒ Pong2)
         .stimulate(_ ! Ping(self), _ ⇒ Pong1)
     })
 
@@ -521,6 +520,15 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           adapter
       }.expectMulti(expectTimeout, 2) { (msgs, adapter) ⇒
         msgs.toSet should ===(Set(Left(Terminated(adapter)(null)), Right(GotSignal(PostStop))))
+      }
+    })
+
+    def `41 must create a named adapter`(): Unit = sync(setup("ctx41") { (ctx, startWith) ⇒
+      startWith.keep { subj ⇒
+        subj ! GetAdapter(ctx.self, "named")
+      }.expectMessage(expectTimeout) { (msg, subj) ⇒
+        val Adapter(adapter) = msg
+        adapter.path.name should include("named")
       }
     })
   }
@@ -603,4 +611,3 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   object `An ActorContext with Or (right, adapted)` extends OrRight with AdaptedSystem
 
 }
-*/

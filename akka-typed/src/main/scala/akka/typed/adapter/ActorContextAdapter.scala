@@ -52,9 +52,9 @@ private[typed] class ActorContextAdapter[T](ctx: a.ActorContext) extends ActorCo
     import ctx.dispatcher
     ctx.system.scheduler.scheduleOnce(delay, toUntyped(target), msg)
   }
-  override def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = {
+  override def spawnAdapter[U](f: U ⇒ T, name: String = ""): ActorRef[U] = {
     val cell = ctx.asInstanceOf[akka.actor.ActorCell]
-    val ref = cell.addFunctionRef((_, msg) ⇒ ctx.self ! f(msg.asInstanceOf[U]))
+    val ref = cell.addFunctionRef((_, msg) ⇒ ctx.self ! f(msg.asInstanceOf[U]), name)
     ActorRefAdapter[U](ref)
   }
 
