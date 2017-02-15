@@ -15,6 +15,7 @@ capabilities in the context of the JVM process that runs the ActorSystem if:
 * ``JavaSerializer`` is enabled (default in Akka 2.4.x)
 * and TLS is disabled *or* TLS is enabled with ``akka.remote.netty.ssl.security.require-mutual-authentication = false``
   (which is still the default in Akka 2.4.x)
+* or if TLS is enabled with mutual authentication and the authentication keys of a host that is allowed to connect have been compromised, an attacker gained access to a valid certificate (e.g. by compromising a node with certificates issued by the same internal PKI tree to get access of the certificate)
 * regardless of whether ``untrusted`` mode is enabled or not
 
 Java deserialization is `known to be vulnerable <https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_ to attacks when attacker can provide arbitrary types.
@@ -30,13 +31,13 @@ Please subscribe to the `akka-security <https://groups.google.com/forum/#!forum/
 Severity
 ~~~~~~~~
 
-The `CVSS <https://en.wikipedia.org/wiki/CVSS>`_ score of this vulnerability is 3.6 (Low), based on vector `AV:A/AC:H/Au:N/C:P/I:P/A:P/E:F/RL:OF/RC:C <https://nvd.nist.gov/cvss.cfm?calculator&version=2&vector=%28AV:A/AC:H/Au:N/C:P/I:P/A:P/E:F/RL:OF/RC:C%29>`_.
+The `CVSS <https://en.wikipedia.org/wiki/CVSS>`_ score of this vulnerability is 6.8 (Medium), based on vector `AV:A/AC:M/Au:N/C:C/I:C/A:C/E:F/RL:TF/RC:C <https://nvd.nist.gov/cvss.cfm?calculator&version=2&vector=(AV:A/AC:M/Au:N/C:C/I:C/A:C/E:F/RL:TF/RC:C)>`_.
 
 Rationale for the score:
 
 * AV:A - Best practice is that Akka remoting nodes should only be accessible from the adjacent network, so in good setups, this will be adjacent.
-* AC:H - In order to exploit, you first need to be able to connect to the Akka system.  This will usually mean exploiting some other system that connects to it first.
-* C:P, I:P, A:P - Partial impact for each of confidentiality, integrity and availability, due to the already high impact to these that being able to connect to a remote actor system in the first place has.
+* AC:M - Any one in the adjacent network can launch the attack with non-special access privileges.
+* C:C, I:C, A:C - Remote Code Execution vulnerabilities are by definition CIA:C.
 
 Affected Versions
 ~~~~~~~~~~~~~~~~~
@@ -58,4 +59,4 @@ It will also be fixed in 2.5-M2 or 2.5.0-RC1.
 Acknowledgements
 ~~~~~~~~~~~~~~~~
 
-We would like to thank Alvaro Munoz & Adrian Bravo for their thorough investigation and bringing this issue to our attention.
+We would like to thank Alvaro Munoz at Hewlett Packard Enterprise Security & Adrian Bravo at Workday for their thorough investigation and bringing this issue to our attention.
