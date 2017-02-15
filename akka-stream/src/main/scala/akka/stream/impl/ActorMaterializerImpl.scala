@@ -197,7 +197,7 @@ private[akka] case class ActorMaterializerImpl(
           case tls: TlsModule ⇒ // TODO solve this so TlsModule doesn't need special treatment here
             val es = effectiveSettings(effectiveAttributes)
             val props =
-              TLSActor.props(es, tls.createSSLEngine, tls.verifySession, tls.closing)
+              TLSActor.props(es, tls.createSSLEngine, tls.closing)
             val impl = actorOf(props, stageName(effectiveAttributes), es.dispatcher)
             def factory(id: Int) = new ActorPublisher[Any](impl) {
               override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
