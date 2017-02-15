@@ -494,7 +494,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       val self = ctx.self
       startWith
         .stimulate(_ ! SetTimeout(1.minute, self), _ ⇒ TimeoutSet)
-        .stimulate(_ ⇒ ctx.schedule(1.second, self, Pong2), _ ⇒ Pong2, 1.5.seconds)
+        .stimulate(_ ⇒ ctx.schedule(1.second, self, Pong2), _ ⇒ Pong2)
         .stimulate(_ ! Ping(self), _ ⇒ Pong1)
     })
 
