@@ -894,7 +894,7 @@ Similar to ``Flow.fromSinkAndSource`` however couples the termination of these t
 E.g. if the emitted ``Flow`` gets a cancellation, the ``Source`` of course is cancelled,
 however the Sink will also be completed. The table below illustrates the effects in detail:
 
-+-------------------------------------------------+-----------------------------+---------------------------------+
++=================================================+=============================+=================================+
 | Returned Flow                                   | Sink (in)                   | Source (out)                    |
 +=================================================+=============================+=================================+
 | cause: upstream (sink-side) receives completion | effect: receives completion | effect: receives cancel         | 
