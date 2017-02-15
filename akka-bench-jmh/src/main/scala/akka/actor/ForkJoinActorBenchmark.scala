@@ -72,6 +72,56 @@ class ForkJoinActorBenchmark {
 
   @Benchmark
   @Measurement(timeUnit = TimeUnit.MILLISECONDS)
+  @OperationsPerInvocation(totalMessagesLessThanCores)
+  def pingPongLessActorsThanCores(): Unit = {
+    val pingPongs =
+      for {
+        i <- 1 to lessThanCoresActorPairs
+      } yield {
+        val ping = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+        val pong = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+        (ping, pong)
+      }
+
+    pingPongs.foreach { case (ping, pong) => ping.tell(message, pong) }
+
+    pingPongs.foreach {
+      case (ping, pong) =>
+        val p = TestProbe()
+        p.watch(ping)
+        p.expectTerminated(ping, timeout)
+        p.watch(pong)
+        p.expectTerminated(pong, timeout)
+    }
+  }
+
+  @Benchmark
+  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
+  @OperationsPerInvocation(totalMessagesMoreThanCores)
+  def pingPongMoreActorsThanCores(): Unit = {
+    val pingPongs =
+      for {
+        i <- 1 to moreThanCoresActorPairs
+      } yield {
+        val ping = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+        val pong = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+        (ping, pong)
+      }
+
+    pingPongs.foreach { case (ping, pong) => ping.tell(message, pong) }
+
+    pingPongs.foreach {
+      case (ping, pong) =>
+        val p = TestProbe()
+        p.watch(ping)
+        p.expectTerminated(ping, timeout)
+        p.watch(pong)
+        p.expectTerminated(pong, timeout)
+    }
+  }
+
+  @Benchmark
+  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
   @OperationsPerInvocation(messages)
   def floodPipe(): Unit = {
 
@@ -102,6 +152,15 @@ object ForkJoinActorBenchmark {
   final val message = "message"
   final val timeout = 15.seconds
   final val messages = 400000
+
+  // update according to cpu
+  final val cores = 8
+  // 2 actors per
+  final val moreThanCoresActorPairs = cores * 2 
+  final val lessThanCoresActorPairs = (cores / 2) - 1
+  final val totalMessagesMoreThanCores = moreThanCoresActorPairs * messages
+  final val totalMessagesLessThanCores = lessThanCoresActorPairs * messages
+
   class Pipe(next: Option[ActorRef]) extends Actor {
     def receive = {
       case m @ `message` =>
