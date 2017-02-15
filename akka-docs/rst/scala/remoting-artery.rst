@@ -264,7 +264,9 @@ It should be protected by network security, such as a firewall. There is current
 so if network security is not considered as enough protection the classic remoting with
 :ref:`TLS and mutual authentication <remote-tls-scala>`  should be used.
 
-It is also security best-practice to :ref:`disable the Java serializer <disable-java-serializer-java-artery>` because of 
+Best practice is that Akka remoting nodes should only be accessible from the adjacent network.
+
+It is also security best practice to :ref:`disable the Java serializer <disable-java-serializer-java-artery>` because of 
 its multiple `known attack surfaces <https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_.
 
 Untrusted Mode
