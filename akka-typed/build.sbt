@@ -1,7 +1,7 @@
 import akka.{ AkkaBuild, Formatting }
 
 AkkaBuild.defaultSettings
-AkkaBuild.experimentalSettings
+AkkaBuild.mayChangeSettings
 Formatting.formatSettings
 
 disablePlugins(MimaPlugin)
