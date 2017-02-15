@@ -447,7 +447,9 @@ An ``ActorSystem`` should not be exposed via Akka Remote over plain TCP to an un
 It should be protected by network security, such as a firewall. If that is not considered as enough protection
 :ref:`TLS with mutual authentication <remote-tls-java>`  should be enabled.
 
-It is also security best-practice to :ref:`disabled Java serializer <disable-java-serializer-java>` because of 
+Best practice is that Akka remoting nodes should only be accessible from the adjacent network. Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by by compromising any node with certificates issued by the same internal PKI tree.
+
+It is also security best practice to :ref:`disable the Java serializer <disable-java-serializer-java>` because of 
 its multiple `known attack surfaces <https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_.
 
 .. _remote-tls-java:
@@ -512,6 +514,8 @@ not enabled by default is for backwards compatibility reasons. Enable mutual aut
 Without mutual authentication only the peer that actively establishes a connection (TLS client side)
 checks if the passive side (TLS server side) sends over a trusted certificate. With the flag turned on,
 the passive side will also request and verify a certificate from the connecting peer.
+
+Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by by compromising any node with certificates issued by the same internal PKI tree.
 
 To prevent man-in-the-middle attacks you should enable this setting. For compatibility reasons it is
 still set to 'off' per default.
