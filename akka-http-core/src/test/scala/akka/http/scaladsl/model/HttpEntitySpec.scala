@@ -19,7 +19,7 @@ import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.impl.util.StreamUtils
-import akka.testkit.TestKit
+import akka.testkit._
 
 import scala.util.Random
 
@@ -38,7 +38,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   implicit val materializer = ActorMaterializer()
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
-  val awaitAtMost = 3.seconds
+  val awaitAtMost = 3.seconds.dilated
 
   "HttpEntity" - {
     "support dataBytes" - {

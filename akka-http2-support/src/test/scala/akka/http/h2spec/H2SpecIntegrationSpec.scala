@@ -12,7 +12,7 @@ import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.{ Http2, TestUtils }
 import akka.stream.ActorMaterializer
-import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.exceptions.TestPendingException
 
@@ -39,7 +39,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
   override def expectedTestDuration = 5.minutes // because slow jenkins, generally finishes below 1 or 2 minutes
 
   val echo = (req: HttpRequest) ⇒ {
-    req.entity.toStrict(1.second).map { entity ⇒
+    req.entity.toStrict(1.second.dilated).map { entity ⇒
       HttpResponse().withEntity(HttpEntity(entity.data))
     }
   }

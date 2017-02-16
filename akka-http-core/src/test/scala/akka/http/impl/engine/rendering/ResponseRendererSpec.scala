@@ -19,7 +19,7 @@ import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import HttpEntity._
-import akka.testkit.TestKit
+import akka.testkit._
 
 import scala.util.control.NonFatal
 
@@ -596,7 +596,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
   class TestSetup(val serverHeader: Option[Server] = Some(Server("akka-http/1.0.0")))
     extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging) {
 
-    def awaitAtMost: FiniteDuration = 3.seconds
+    def awaitAtMost: FiniteDuration = 3.seconds.dilated
 
     def renderTo(expected: String): Matcher[HttpResponse] =
       renderToImpl(expected, checkClose = None) compose (ResponseRenderingContext(_))
@@ -613,7 +613,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               case ResponseRenderingOutput.HttpData(bytes)      ⇒ bytes
               case _: ResponseRenderingOutput.SwitchToWebSocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
             }
-            .groupedWithin(1000, 200.millis)
+            .groupedWithin(1000, 200.millis.dilated)
             .watchTermination()(Keep.right)
             .toMat(Sink.head)(Keep.both).run()
 
@@ -625,7 +625,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               // note how this relates to the groupedWithin timeout above which will always
               // close the stream, so only streams closed before that was _actually_ closed
               // by the server blueprint
-              Await.ready(wasCompletedFuture, 150.millis)
+              Await.ready(wasCompletedFuture, 150.millis.dilated)
               Some(true)
             } catch {
               case NonFatal(_) ⇒ Some(false)

@@ -14,7 +14,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import akka.testkit.TestKit
+import akka.testkit._
 import headers._
 
 /**
@@ -88,7 +88,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
 
       // Finally convert the body into an Array[Byte].
 
-      val entityBytes: Array[Byte] = Await.result(request.entity.toStrict(1.second), 2.seconds).data.toArray
+      val entityBytes: Array[Byte] = Await.result(request.entity.toStrict(1.second.dilated), 2.seconds.dilated).data.toArray
       entityBytes.to[Seq] shouldEqual ByteString("hello").to[Seq]
     }
 

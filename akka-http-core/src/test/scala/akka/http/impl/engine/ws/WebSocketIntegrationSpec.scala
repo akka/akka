@@ -21,7 +21,7 @@ import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.util.ByteString
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.testkit._
 
 import scala.util.{ Failure, Success }
 
@@ -39,7 +39,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
           val upgrade = headers.collectFirst { case u: UpgradeToWebSocket ⇒ u }.get
           upgrade.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
       }, interface = "localhost", port = 0)
-      val binding = Await.result(bindingFuture, 3.seconds)
+      val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
       val (response, sink) = Http().singleWebSocketRequest(
@@ -49,7 +49,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       response.futureValue.response.status.isSuccess should ===(true)
       sink
         .request(10)
-        .expectNoMsg(500.millis)
+        .expectNoMsg(500.millis.dilated)
 
       source
         .sendNext(TextMessage("hello"))
@@ -68,7 +68,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
           val upgrade = headers.collectFirst { case u: UpgradeToWebSocket ⇒ u }.get
           upgrade.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
       }, interface = "localhost", port = 0)
-      val binding = Await.result(bindingFuture, 3.seconds)
+      val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
       val completeOnlySwitch: Flow[ByteString, ByteString, Promise[Done]] = Flow.fromGraph(
@@ -129,7 +129,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
           val upgrade = headers.collectFirst { case u: UpgradeToWebSocket ⇒ u }.get
           upgrade.handleMessages(Flow.apply, None)
       }, interface = "localhost", port = 0)
-      val binding = Await.result(bindingFuture, 3.seconds)
+      val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
       val N = 100
@@ -170,7 +170,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
           val upgrade = headers.collectFirst { case u: UpgradeToWebSocket ⇒ u }.get
           upgrade.handleMessages(handler, None)
       }, interface = "localhost", port = 0)
-      val binding = Await.result(bindingFuture, 3.seconds)
+      val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
       @volatile var messages = 0
@@ -199,7 +199,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
     "fail the materialized future if the request fails" in {
       val flow = Http().webSocketClientFlow(
         WebSocketRequest("ws://127.0.0.1:65535/no/server/here"),
-        settings = ClientConnectionSettings(system).withConnectingTimeout(250.millis))
+        settings = ClientConnectionSettings(system).withConnectingTimeout(250.millis.dilated))
 
       val future = Source.maybe[Message].viaMat(flow)(Keep.right).toMat(Sink.ignore)(Keep.left).run()
       import system.dispatcher

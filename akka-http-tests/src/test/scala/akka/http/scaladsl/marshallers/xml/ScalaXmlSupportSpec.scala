@@ -16,6 +16,7 @@ import akka.util.ByteString
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.{ Unmarshaller, Unmarshal }
 import akka.http.scaladsl.model._
+import akka.testkit._
 import MediaTypes._
 
 class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest with Inside {
@@ -88,7 +89,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
   }
 
   def shouldHaveFailedWithSAXParseException(result: Future[NodeSeq]) =
-    inside(Await.result(result.failed, 1.second)) {
+    inside(Await.result(result.failed, 1.second.dilated)) {
       case _: SAXParseException ⇒
     }
 

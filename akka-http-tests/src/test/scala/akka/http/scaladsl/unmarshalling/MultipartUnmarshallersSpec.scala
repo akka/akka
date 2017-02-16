@@ -18,7 +18,7 @@ import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers._
 import MediaTypes._
-import akka.testkit.TestKit
+import akka.testkit._
 
 class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
@@ -176,8 +176,8 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
 
         Unmarshal(HttpEntity.Default(`multipart/mixed` withBoundary "12345", content.length, Source.single(content)))
           .to[Multipart.General]
-          .flatMap(_.toStrict(1.second))
-          .awaitResult(5.second)
+          .flatMap(_.toStrict(1.second.dilated))
+          .awaitResult(5.second.dilated)
           .strictParts.size shouldBe num
       }
     }
@@ -185,14 +185,14 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
     "multipartGeneralUnmarshaller should reject illegal multipart content with" - {
       "an empty entity" in {
         Await.result(Unmarshal(HttpEntity(`multipart/mixed` withBoundary "XYZABC", ByteString.empty))
-          .to[Multipart.General].failed, 1.second).getMessage shouldEqual "Unexpected end of multipart entity"
+          .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual "Unexpected end of multipart entity"
       }
       "an entity without initial boundary" in {
         Await.result(Unmarshal(HttpEntity(
           `multipart/mixed` withBoundary "XYZABC",
           ByteString("""this is
                        |just preamble text""".stripMarginWithNewline("\r\n"))))
-          .to[Multipart.General].failed, 1.second).getMessage shouldEqual "Unexpected end of multipart entity"
+          .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual "Unexpected end of multipart entity"
       }
       "a stray boundary" in {
         Await.result(Unmarshal(HttpEntity(
@@ -202,7 +202,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |--ABCContent-type: application/json
                        |content-disposition: form-data; name="email"
                        |-----""".stripMarginWithNewline("\r\n"))))
-          .to[Multipart.General].failed, 1.second).getMessage shouldEqual "Illegal multipart boundary in message content"
+          .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual "Illegal multipart boundary in message content"
       }
       "duplicate Content-Type header" in {
         Await.result(Unmarshal(HttpEntity(
@@ -214,7 +214,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |
                        |test@there.com
                        |-----""".stripMarginWithNewline("\r\n"))))
-          .to[Multipart.General].failed, 1.second).getMessage shouldEqual
+          .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual
           "multipart part must not contain more than one Content-Type header"
       }
       "a missing header-separating CRLF (in Strict entity)" in {
@@ -223,7 +223,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
           ByteString("""---
                        |not good here
                        |-----""".stripMarginWithNewline("\r\n"))))
-          .to[Multipart.General].failed, 1.second).getMessage shouldEqual "Illegal character ' ' in header name"
+          .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual "Illegal character ' ' in header name"
       }
       "a missing header-separating CRLF (in Default entity)" in {
         val content = """---
@@ -236,18 +236,18 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
         val contentType = `multipart/form-data` withBoundary "-"
         Await.result(Unmarshal(HttpEntity.Default(contentType, content.length, Source(byteStrings)))
           .to[Multipart.General]
-          .flatMap(_ toStrict 1.second).failed, 1.second).getMessage shouldEqual "Illegal character ' ' in header name"
+          .flatMap(_ toStrict 1.second.dilated).failed, 1.second.dilated).getMessage shouldEqual "Illegal character ' ' in header name"
       }
       "a boundary with a trailing space" in {
         Await.result(
           Unmarshal(HttpEntity(`multipart/mixed` withBoundary "simple boundary ", ByteString.empty))
-          .to[Multipart.General].failed, 1.second).getMessage shouldEqual
+          .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual
           "requirement failed: 'boundary' parameter of multipart Content-Type must not end with a space char"
       }
       "a boundary with an illegal character" in {
         Await.result(
           Unmarshal(HttpEntity(`multipart/mixed` withBoundary "simple&boundary", ByteString.empty))
-          .to[Multipart.General].failed, 1.second).getMessage shouldEqual
+          .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual
           "requirement failed: 'boundary' parameter of multipart Content-Type contains illegal character '&'"
       }
     }
@@ -330,7 +330,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                     |--XYZABC--""".stripMarginWithNewline("\r\n")
                 })
             })
-        }.to[Multipart.FormData].flatMap(_.toStrict(1.second)) should haveParts(
+        }.to[Multipart.FormData].flatMap(_.toStrict(1.second.dilated)) should haveParts(
           Multipart.FormData.BodyPart.Strict("email", HttpEntity(`application/octet-stream`, ByteString("test@there.com"))),
           Multipart.FormData.BodyPart.Strict("userfile", HttpEntity(`application/pdf`, ByteString("filecontent")), Map("filename" → "test€.dat"),
             List(
@@ -364,10 +364,10 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
       Await.result(x
         .fast.flatMap {
           _.parts
-            .mapAsync(Int.MaxValue)(_ toStrict 1.second)
+            .mapAsync(Int.MaxValue)(_ toStrict 1.second.dilated)
             .grouped(100)
             .runWith(Sink.head)
         }
-        .fast.recover { case _: NoSuchElementException ⇒ Nil }, 1.second)
+        .fast.recover { case _: NoSuchElementException ⇒ Nil }, 1.second.dilated)
     }
 }

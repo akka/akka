@@ -14,7 +14,7 @@ import org.scalatest.{ BeforeAndAfterAll, Inside, Matchers, WordSpec }
 import akka.stream.ActorMaterializer
 import akka.actor.ActorSystem
 import akka.stream.javadsl.Source
-import akka.testkit.TestKit
+import akka.testkit._
 
 import scala.compat.java8.FutureConverters
 
@@ -33,7 +33,7 @@ class MultipartsSpec extends WordSpec with Matchers with Inside with BeforeAndAf
         Multiparts.createFormDataBodyPart("foo", HttpEntities.create("FOO")),
         Multiparts.createFormDataBodyPart("bar", HttpEntities.create("BAR")))
       val strictCS = streamed.toStrict(1000, materializer)
-      val strict = Await.result(FutureConverters.toScala(strictCS), 1.second)
+      val strict = Await.result(FutureConverters.toScala(strictCS), 1.second.dilated)
 
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
         Map("foo" → akka.http.scaladsl.model.HttpEntity("FOO"), "bar" → akka.http.scaladsl.model.HttpEntity("BAR")))
@@ -44,7 +44,7 @@ class MultipartsSpec extends WordSpec with Matchers with Inside with BeforeAndAf
         Multiparts.createFormDataBodyPart("bar", HttpEntities.create("BAR"))
       )))
       val strictCS = streamed.toStrict(1000, materializer)
-      val strict = Await.result(FutureConverters.toScala(strictCS), 1.second)
+      val strict = Await.result(FutureConverters.toScala(strictCS), 1.second.dilated)
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
         Map("foo" → akka.http.scaladsl.model.HttpEntity("FOO"), "bar" → akka.http.scaladsl.model.HttpEntity("BAR")))
     }
@@ -56,7 +56,7 @@ class MultipartsSpec extends WordSpec with Matchers with Inside with BeforeAndAf
       fields.put("foo", HttpEntities.create("FOO"))
       val streamed = Multiparts.createFormDataFromFields(fields)
       val strictCS = streamed.toStrict(1000, materializer)
-      val strict = Await.result(FutureConverters.toScala(strictCS), 1.second)
+      val strict = Await.result(FutureConverters.toScala(strictCS), 1.second.dilated)
 
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
         Map("foo" → akka.http.scaladsl.model.HttpEntity("FOO")))

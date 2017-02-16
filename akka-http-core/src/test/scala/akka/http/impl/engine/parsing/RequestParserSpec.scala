@@ -29,7 +29,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.testkit.TestKit
+import akka.testkit._
 
 class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -271,7 +271,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "don't overflow the stack for large buffers of chunks" in new Test {
-        override val awaitAtMost = 10000.millis
+        override val awaitAtMost = 10000.millis.dilated
 
         val x = NotEnoughDataException
         val numChunks = 12000 // failed starting from 4000 with sbt started with `-Xss2m`
@@ -513,7 +513,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
   private class Test {
-    def awaitAtMost: FiniteDuration = 3.seconds
+    def awaitAtMost: FiniteDuration = 3.seconds.dilated
     var closeAfterResponseCompletion = Seq.empty[Boolean]
 
     class StrictEqualHttpRequest(val req: HttpRequest) {

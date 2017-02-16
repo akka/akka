@@ -26,7 +26,7 @@ import akka.stream.scaladsl._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.testkit._
 import akka.stream._
-import akka.testkit.{ EventFilter, TestKit }
+import akka.testkit._
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
@@ -44,7 +44,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
-  implicit val patience = PatienceConfig(3.seconds)
+  implicit val patience = PatienceConfig(3.seconds.dilated)
 
   val testConf2: Config =
     ConfigFactory.parseString("akka.stream.materializer.subscription-timeout.timeout = 1 s")
@@ -59,7 +59,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val binding = Http().bind(hostname, port).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
       val sub = probe.expectSubscription() // if we get it we are bound
-      val address = Await.result(binding, 1.second).localAddress
+      val address = Await.result(binding, 1.second.dilated).localAddress
       sub.cancel()
     }
 
@@ -68,29 +68,29 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val binding = Http().bind(hostname, port)
       val probe1 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // Bind succeeded, we have a local address
-      val b1 = Await.result(binding.to(Sink.fromSubscriber(probe1)).run(), 3.seconds)
+      val b1 = Await.result(binding.to(Sink.fromSubscriber(probe1)).run(), 3.seconds.dilated)
       probe1.expectSubscription()
 
       val probe2 = TestSubscriber.manualProbe[Http.IncomingConnection]()
-      an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink.fromSubscriber(probe2)).run(), 3.seconds) }
+      an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink.fromSubscriber(probe2)).run(), 3.seconds.dilated) }
       probe2.expectSubscriptionAndError()
 
       val probe3 = TestSubscriber.manualProbe[Http.IncomingConnection]()
-      an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink.fromSubscriber(probe3)).run(), 3.seconds) }
+      an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink.fromSubscriber(probe3)).run(), 3.seconds.dilated) }
       probe3.expectSubscriptionAndError()
 
       // Now unbind the first
-      Await.result(b1.unbind(), 1.second)
+      Await.result(b1.unbind(), 1.second.dilated)
       probe1.expectComplete()
 
       if (!akka.util.Helpers.isWindows) {
         val probe4 = TestSubscriber.manualProbe[Http.IncomingConnection]()
         // Bind succeeded, we have a local address
-        val b2 = Await.result(binding.to(Sink.fromSubscriber(probe4)).run(), 3.seconds)
+        val b2 = Await.result(binding.to(Sink.fromSubscriber(probe4)).run(), 3.seconds.dilated)
         probe4.expectSubscription()
 
         // clean up
-        Await.result(b2.unbind(), 1.second)
+        Await.result(b2.unbind(), 1.second.dilated)
       }
     }
 
@@ -108,13 +108,13 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     "run with bindAndHandleSync" in {
       val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
       val binding = Http().bindAndHandleSync(_ ⇒ HttpResponse(), hostname, port)
-      val b1 = Await.result(binding, 3.seconds)
+      val b1 = Await.result(binding, 3.seconds.dilated)
 
       val (_, f) = Http().outgoingConnection(hostname, port)
         .runWith(Source.single(HttpRequest(uri = "/abc")), Sink.head)
 
-      Await.result(f, 1.second)
-      Await.result(b1.unbind(), 1.second)
+      Await.result(f, 1.second.dilated)
+      Await.result(b1.unbind(), 1.second.dilated)
     }
 
     "prevent more than the configured number of max-connections with bindAndHandle" in {
@@ -128,7 +128,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         req.uri.path.toString match {
           case "/slow" ⇒
             receivedSlow.complete(Success(System.nanoTime()))
-            akka.pattern.after(1.seconds, system.scheduler)(Future.successful(HttpResponse()))
+            akka.pattern.after(1.seconds.dilated, system.scheduler)(Future.successful(HttpResponse()))
           case "/fast" ⇒
             receivedFast.complete(Success(System.nanoTime()))
             Future.successful(HttpResponse())
@@ -136,7 +136,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       }
 
       val binding = Http().bindAndHandleAsync(handle, hostname, port, settings = settings)
-      val b1 = Await.result(binding, 3.seconds)
+      val b1 = Await.result(binding, 3.seconds.dilated)
 
       def runRequest(uri: Uri): Unit =
         Http().outgoingConnection(hostname, port)
@@ -145,16 +145,16 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       runRequest("/slow")
 
       // wait until first request was received (but not yet answered)
-      val slowTime = Await.result(receivedSlow.future, 2.second)
+      val slowTime = Await.result(receivedSlow.future, 2.second.dilated)
 
       // should be blocked by the slow connection still being open
       runRequest("/fast")
 
-      val fastTime = Await.result(receivedFast.future, 2.second)
+      val fastTime = Await.result(receivedFast.future, 2.second.dilated)
       val diff = fastTime - slowTime
       diff should be > 1000000000L // the diff must be at least the time to complete the first request and to close the first connection
 
-      Await.result(b1.unbind(), 1.second)
+      Await.result(b1.unbind(), 1.second.dilated)
     }
 
     "Remote-Address header" should {
@@ -188,7 +188,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         def createBinding(): Future[ServerBinding]
 
         val binding = createBinding()
-        val b1 = Await.result(binding, 3.seconds)
+        val b1 = Await.result(binding, 3.seconds.dilated)
 
         val (conn, response) =
           Source.single(HttpRequest(uri = "/abc"))
@@ -196,9 +196,9 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
             .toMat(Sink.head)(Keep.both)
             .run()
 
-        val r = Await.result(response, 1.second)
-        val c = Await.result(conn, 1.second)
-        Await.result(b1.unbind(), 1.second)
+        val r = Await.result(response, 1.second.dilated)
+        val c = Await.result(conn, 1.second.dilated)
+        Await.result(b1.unbind(), 1.second.dilated)
 
         toStrict(r.entity).data.utf8String shouldBe s"Some(${c.localAddress.getPort})"
       }
@@ -217,13 +217,13 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         }
 
         val binding = Http().bindAndHandleAsync(handle, hostname, port, settings = settings)
-        val b1 = Await.result(binding, 3.seconds)
+        val b1 = Await.result(binding, 3.seconds.dilated)
         (receivedRequest, b1)
       }
 
       "support server timeouts" should {
         "close connection with idle client after idleTimeout" in {
-          val serverTimeout = 300.millis
+          val serverTimeout = 300.millis.dilated
           val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
 
@@ -238,24 +238,24 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
             val clientsResponseFuture = runIdleRequest("/")
 
             // await for the server to get the request
-            val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds)
+            val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds.dilated)
 
             // waiting for the timeout to happen on the client
             intercept[StreamTcpException] {
-              Await.result(clientsResponseFuture, 2.second)
+              Await.result(clientsResponseFuture, 2.second.dilated)
             }
 
-            (System.nanoTime() - serverReceivedRequestAtNanos).millis should be >= serverTimeout
-          } finally Await.result(b1.unbind(), 1.second)
+            (System.nanoTime() - serverReceivedRequestAtNanos).millis.dilated should be >= serverTimeout
+          } finally Await.result(b1.unbind(), 1.second.dilated)
         }
       }
 
       "support client timeouts" should {
         "close connection with idle server after idleTimeout (using connection level client API)" in {
-          val serverTimeout = 10.seconds
+          val serverTimeout = 10.seconds.dilated
 
           val cs = ClientConnectionSettings(system)
-          val clientTimeout = 345.millis
+          val clientTimeout = 345.millis.dilated
           val clientSettings = cs.withIdleTimeout(clientTimeout)
 
           val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
@@ -272,23 +272,23 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
             val clientsResponseFuture = runRequest("/")
 
             // await for the server to get the request
-            val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds)
+            val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds.dilated)
 
             // waiting for the timeout to happen on the client
             intercept[TimeoutException] {
-              Await.result(clientsResponseFuture, 2.second)
+              Await.result(clientsResponseFuture, 2.second.dilated)
             }
             val actualTimeout = System.nanoTime() - serverReceivedRequestAtNanos
             actualTimeout.nanos should be >= clientTimeout
             actualTimeout.nanos should be < serverTimeout
-          } finally Await.result(b1.unbind(), 1.second)
+          } finally Await.result(b1.unbind(), 1.second.dilated)
         }
 
         "close connection with idle server after idleTimeout (using pool level client API)" in {
-          val serverTimeout = 10.seconds
+          val serverTimeout = 10.seconds.dilated
 
           val cs = ConnectionPoolSettings(system)
-          val clientTimeout = 345.millis
+          val clientTimeout = 345.millis.dilated
           val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
           val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
@@ -307,23 +307,23 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
             val clientsResponseFuture = runRequest("/")
 
             // await for the server to get the request
-            val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds)
+            val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds.dilated)
 
             // waiting for the timeout to happen on the client
             intercept[TimeoutException] {
-              Await.result(clientsResponseFuture, 2.second)
+              Await.result(clientsResponseFuture, 2.second.dilated)
             }
             val actualTimeout = System.nanoTime() - serverReceivedRequestAtNanos
             actualTimeout.nanos should be >= clientTimeout
             actualTimeout.nanos should be < serverTimeout
-          } finally Await.result(b1.unbind(), 1.second)
+          } finally Await.result(b1.unbind(), 1.second.dilated)
         }
 
         "close connection with idle server after idleTimeout (using request level client API)" in {
-          val serverTimeout = 10.seconds
+          val serverTimeout = 10.seconds.dilated
 
           val cs = ConnectionPoolSettings(system)
-          val clientTimeout = 345.millis
+          val clientTimeout = 345.millis.dilated
           val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
           val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
@@ -338,16 +338,16 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
             val clientsResponseFuture = runRequest(s"http://$hostname:$port/")
 
             // await for the server to get the request
-            val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds)
+            val serverReceivedRequestAtNanos = Await.result(receivedRequest.future, 2.seconds.dilated)
 
             // waiting for the timeout to happen on the client
             intercept[TimeoutException] {
-              Await.result(clientsResponseFuture, 3.second)
+              Await.result(clientsResponseFuture, 3.second.dilated)
             }
             val actualTimeout = System.nanoTime() - serverReceivedRequestAtNanos
             actualTimeout.nanos should be >= clientTimeout
             actualTimeout.nanos should be < serverTimeout
-          } finally Await.result(b1.unbind(), 1.second)
+          } finally Await.result(b1.unbind(), 1.second.dilated)
         }
       }
     }
@@ -359,19 +359,19 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
         val flow = Flow[HttpRequest].map(_ ⇒ HttpResponse()).mapMaterializedValue(_ ⇒ sys.error("BOOM"))
         val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
-        val b1 = Await.result(binding, 1.seconds)
+        val b1 = Await.result(binding, 1.seconds.dilated)
 
         EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
           val (_, responseFuture) =
             Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
-          try Await.result(responseFuture, 5.seconds).status should ===(StatusCodes.InternalServerError)
+          try Await.result(responseFuture, 5.seconds.dilated).status should ===(StatusCodes.InternalServerError)
           catch {
             case _: StreamTcpException ⇒
             // Also fine, depends on the race between abort and 500, caused by materialization panic which
             // tries to tear down everything, but the order is nondeterministic
           }
         }(system2)
-        Await.result(b1.unbind(), 1.second)
+        Await.result(b1.unbind(), 1.second.dilated)
       }(materializer2)
 
       "stop stages on failure" in Utils.assertAllStagesStopped {
@@ -407,12 +407,12 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
         def performValidRequest() = Http().outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.ignore)
 
-        def assertCounters(stage: Int, cancel: Int) = eventually(timeout(1.second)) {
+        def assertCounters(stage: Int, cancel: Int) = eventually(timeout(1.second.dilated)) {
           stageCounter.get shouldEqual stage
           cancelCounter.get shouldEqual cancel
         }
 
-        val bind = Await.result(Http().bindAndHandle(Flow.fromGraph(stage), hostname, port)(materializer2), 1.seconds)
+        val bind = Await.result(Http().bindAndHandle(Flow.fromGraph(stage), hostname, port)(materializer2), 1.seconds.dilated)
 
         performValidRequest()
         assertCounters(0, 1)
@@ -423,7 +423,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         performValidRequest()
         assertCounters(0, 3)
 
-        Await.result(bind.unbind(), 1.second)
+        Await.result(bind.unbind(), 1.second.dilated)
       }(materializer2)
     }
 
@@ -475,7 +475,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         private val HttpRequest(POST, uri, List(Accept(Seq(MediaRanges.`*/*`)), Host(_, _), `User-Agent`(_)),
           Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext() mapHeaders (_.filterNot(_.is("timeout-access")))
         uri shouldEqual Uri(s"http://$hostname:$port/chunked")
-        Await.result(chunkStream.limit(5).runWith(Sink.seq), 100.millis) shouldEqual chunks
+        Await.result(chunkStream.limit(5).runWith(Sink.seq), 100.millis.dilated) shouldEqual chunks
 
         val serverOutSub = serverOut.expectSubscription()
         serverOutSub.expectRequest()
@@ -485,7 +485,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         clientInSub.request(1)
         val HttpResponse(StatusCodes.PartialContent, List(Age(42), Server(_), Date(_)),
           Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`) = clientIn.expectNext()
-        Await.result(chunkStream2.limit(1000).runWith(Sink.seq), 100.millis) shouldEqual chunks
+        Await.result(chunkStream2.limit(1000).runWith(Sink.seq), 100.millis.dilated) shouldEqual chunks
 
         clientOutSub.sendComplete()
         serverInSub.request(1)
@@ -595,7 +595,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         .viaMat(Http().outgoingConnection(hostname, port, settings = settings))(Keep.right)
         .to(Sink.fromSubscriber(responseSubscriberProbe)).run()
 
-      val connection = Await.result(connectionFuture, 3.seconds)
+      val connection = Await.result(connectionFuture, 3.seconds.dilated)
 
       connection.remoteAddress.getHostName shouldEqual hostname
       connection.remoteAddress.getPort shouldEqual port
@@ -639,5 +639,5 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
   }
 
-  def toStrict(entity: HttpEntity): HttpEntity.Strict = Await.result(entity.toStrict(500.millis), 1.second)
+  def toStrict(entity: HttpEntity): HttpEntity.Strict = Await.result(entity.toStrict(500.millis.dilated), 1.second.dilated)
 }

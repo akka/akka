@@ -8,7 +8,7 @@ import akka.Done
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import akka.testkit.AkkaSpec
+import akka.testkit._
 import scala.concurrent.duration._
 import akka.util.ByteString
 
@@ -71,7 +71,7 @@ class EntityDiscardingSpec extends AkkaSpec {
         de.future.futureValue should ===(Done)
 
         val de2 = response.discardEntityBytes()
-        val secondRunException = intercept[IllegalStateException] { Await.result(de2.future, 3.seconds) }
+        val secondRunException = intercept[IllegalStateException] { Await.result(de2.future, 3.seconds.dilated) }
         secondRunException.getMessage should include("Source cannot be materialized more than once")
       } finally bound.unbind().futureValue
     }

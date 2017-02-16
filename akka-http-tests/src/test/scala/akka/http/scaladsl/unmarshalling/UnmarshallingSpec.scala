@@ -10,7 +10,7 @@ import akka.http.scaladsl.testkit.ScalatestUtils
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model._
-import akka.testkit.TestKit
+import akka.testkit._
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -37,8 +37,8 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
   }
 
   "The GenericUnmarshallers" - {
-    implicit val rawInt: FromEntityUnmarshaller[Int] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second).map(_.data.utf8String.toInt))
-    implicit val rawlong: FromEntityUnmarshaller[Long] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second).map(_.data.utf8String.toLong))
+    implicit val rawInt: FromEntityUnmarshaller[Int] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second.dilated).map(_.data.utf8String.toInt))
+    implicit val rawlong: FromEntityUnmarshaller[Long] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second.dilated).map(_.data.utf8String.toLong))
 
     "eitherUnmarshaller should unmarshal its Right value" in {
       // we'll find:
@@ -50,19 +50,19 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
       //   stringUnmarshaller: FromEntityUnmarshaller[String]
 
       val testRight = Unmarshal(HttpEntity("42")).to[Either[String, Int]]
-      Await.result(testRight, 1.second) should ===(Right(42))
+      Await.result(testRight, 1.second.dilated) should ===(Right(42))
     }
 
     "eitherUnmarshaller should unmarshal its Left value" in {
       val testLeft = Unmarshal(HttpEntity("I'm not a number, I'm a free man!")).to[Either[String, Int]]
-      Await.result(testLeft, 1.second) should ===(Left("I'm not a number, I'm a free man!"))
+      Await.result(testLeft, 1.second.dilated) should ===(Left("I'm not a number, I'm a free man!"))
     }
 
     "eitherUnmarshaller report both error messages if unmarshalling failed" in {
       type ImmenseChoice = Either[Long, Int]
       val testLeft = Unmarshal(HttpEntity("I'm not a number, I'm a free man!")).to[ImmenseChoice]
       val ex = intercept[EitherUnmarshallingException] {
-        Await.result(testLeft, 1.second)
+        Await.result(testLeft, 1.second.dilated)
       }
 
       ex.getMessage should include("Either[long, int]")

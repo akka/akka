@@ -14,7 +14,7 @@ import akka.stream.testkit._
 import akka.util.ByteString
 import akka.http.scaladsl.model.ws._
 import Protocol.Opcode
-import akka.testkit.EventFilter
+import akka.testkit._
 import akka.stream.OverflowStrategy
 import org.scalatest.concurrent.{ Eventually, PatienceConfiguration }
 
@@ -202,7 +202,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
           parts.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(4)
-          sub.expectNoMsg(100.millis)
+          sub.expectNoMsg(100.millis.dilated)
 
           val header1 = frameHeader(Opcode.Continuation, data1.size, fin = true)
           pushInput(header1 ++ data1)
@@ -244,7 +244,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
 
         // push single-byte ByteStrings without reading anything until it fails
         // this should be after the internal input buffers have filled up
-        eventually(PatienceConfiguration.Timeout(500.millis), PatienceConfiguration.Interval(1.milli)) {
+        eventually(PatienceConfiguration.Timeout(500.millis.dilated), PatienceConfiguration.Interval(1.milli.dilated)) {
           the[AssertionError] thrownBy pushInput(ByteString("a"))
         }
       }
@@ -453,7 +453,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
 
-        netIn.expectNoMsg(100.millis) // especially the cancellation not yet
+        netIn.expectNoMsg(100.millis.dilated) // especially the cancellation not yet
         expectNoNetworkData()
         messageOut.sendComplete()
 
@@ -482,7 +482,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
 
-        netIn.expectNoMsg(100.millis) // especially the cancellation not yet
+        netIn.expectNoMsg(100.millis.dilated) // especially the cancellation not yet
         expectNoNetworkData()
         messageOut.sendComplete()
 
@@ -672,7 +672,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         }
       }
       "timeout if user handler closes and peer doesn't send a close frame" in new ServerTestSetup {
-        override protected def closeTimeout: FiniteDuration = 100.millis
+        override protected def closeTimeout: FiniteDuration = 100.millis.dilated
 
         messageOut.sendComplete()
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
@@ -681,7 +681,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         netIn.expectCancellation()
       }
       "timeout after we close after error and peer doesn't send a close frame" in new ServerTestSetup {
-        override protected def closeTimeout: FiniteDuration = 100.millis
+        override protected def closeTimeout: FiniteDuration = 100.millis.dilated
 
         pushInput(frameHeader(Opcode.Binary, 0, fin = true, rsv1 = true))
         expectProtocolErrorOnNetwork()
@@ -846,7 +846,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
   }
   abstract class TestSetup {
     protected def serverSide: Boolean
-    protected def closeTimeout: FiniteDuration = 1.second
+    protected def closeTimeout: FiniteDuration = 1.second.dilated
 
     val netIn = TestPublisher.probe[ByteString]()
     val netOut = ByteStringSinkProbe()
@@ -956,7 +956,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
       code shouldEqual expectedCode
     }
 
-    def expectNoNetworkData(): Unit = netOut.expectNoBytes(100.millis)
+    def expectNoNetworkData(): Unit = netOut.expectNoBytes(100.millis.dilated)
 
     def expectComplete[T](probe: TestSubscriber.Probe[T]): Unit = {
       probe.ensureSubscription()

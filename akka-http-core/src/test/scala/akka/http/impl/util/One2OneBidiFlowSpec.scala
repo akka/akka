@@ -13,7 +13,7 @@ import akka.stream.testkit._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
+import akka.testkit._
 import org.scalatest.concurrent.Eventually
 
 class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
@@ -26,12 +26,12 @@ class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
 
     "be fully transparent for valid one-to-one streams" in assertAllStagesStopped {
       val f = One2OneBidiFlow[Int, Int](-1) join Flow[Int].map(_ * 2)
-      Await.result(test(f), 1.second) should ===(Seq(2, 4, 6))
+      Await.result(test(f), 1.second.dilated) should ===(Seq(2, 4, 6))
     }
 
     "be fully transparent to errors" in {
       val f = One2OneBidiFlow[Int, Int](-1) join Flow[Int].map(x ⇒ 10 / (x - 2))
-      an[ArithmeticException] should be thrownBy Await.result(test(f), 1.second)
+      an[ArithmeticException] should be thrownBy Await.result(test(f), 1.second.dilated)
     }
 
     "trigger an `OutputTruncationException` if the wrapped stream completes early" in assertAllStagesStopped {
@@ -111,7 +111,7 @@ class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
       // wait for pending elements to be filled
       // This test (and the one below) depends on the absence of input buffers
       // between the counting stage (`log(...)`) and the One2OneBidiFlow.
-      eventually(timeout(1.second)) {
+      eventually(timeout(1.second.dilated)) {
         seen.get should be(MAX_PENDING)
       }
 
@@ -121,7 +121,7 @@ class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
       // then make sure that again only as many elements are pulled in
       // as were resolved before so that again only MAX_PENDING elements
       // are pending (= MAX_PENDING + EMIT_ELEMENTS should have been pulled in)
-      eventually(timeout(1.second)) {
+      eventually(timeout(1.second.dilated)) {
         seen.get should be(MAX_PENDING + EMIT_ELEMENTS)
       }
 
