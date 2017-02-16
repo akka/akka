@@ -31,7 +31,7 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.testkit._
 
-class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
+abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING
@@ -44,7 +44,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val BOLT = HttpMethod.custom("BOLT", safe = false, idempotent = true, requestEntityAcceptance = Expected)
   implicit val materializer = ActorMaterializer()
 
-  "The request parsing logic should" - {
+  s"The request parsing logic should (mode: $mode)" - {
     "properly parse a request" - {
       "with no headers and no body" in new Test {
         """GET / HTTP/1.0
@@ -275,8 +275,8 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
         val x = NotEnoughDataException
         val numChunks = 12000 // failed starting from 4000 with sbt started with `-Xss2m`
-        val oneChunk = "1\r\nz\n"
-        val manyChunks = (oneChunk * numChunks) + "0\r\n"
+        val oneChunk = s"1${newLine}z\n"
+        val manyChunks = (oneChunk * numChunks) + s"0${newLine}"
 
         val parser = newParser
         val result = multiParse(newParser)(Seq(prep(start + manyChunks)))
@@ -596,8 +596,12 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       data.limit(100000).runWith(Sink.seq)
         .fast.recover { case _: NoSuchElementException ⇒ Nil }
 
-    def prep(response: String) = response.stripMarginWithNewline("\r\n")
+    def prep(response: String) = response.stripMarginWithNewline(newLine)
   }
 
   def source[T](elems: T*): Source[T, NotUsed] = Source(elems.toList)
 }
+
+class RequestParserCRLFSpec extends RequestParserSpec("CRLF", "\r\n")
+
+class RequestParserLFSpec extends RequestParserSpec("LF", "\n")

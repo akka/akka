@@ -73,6 +73,8 @@ private[http] final class HttpRequestParser(
       cursor = parseProtocol(input, cursor)
       if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n')
         parseHeaderLines(input, cursor + 2)
+      else if (byteChar(input, cursor) == '\n')
+        parseHeaderLines(input, cursor + 1)
       else onBadProtocol
     }
 
