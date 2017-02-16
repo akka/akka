@@ -11,6 +11,7 @@ import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.model.headers.Server
 import akka.io.Inet.SocketOption
 import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.scaladsl.settings
 import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
@@ -63,11 +64,13 @@ object ServerSettings extends SettingsCompanion[ServerSettings] {
     def idleTimeout: Duration
     def requestTimeout: Duration
     def bindTimeout: FiniteDuration
+    def lingerTimeout: Duration
 
     // ---
-    def withIdleTimeout(newValue: Duration): ServerSettings.Timeouts = self.copy(idleTimeout = newValue)
-    def withRequestTimeout(newValue: Duration): ServerSettings.Timeouts = self.copy(requestTimeout = newValue)
-    def withBindTimeout(newValue: FiniteDuration): ServerSettings.Timeouts = self.copy(bindTimeout = newValue)
+    def withIdleTimeout(newValue: Duration): Timeouts = self.copy(idleTimeout = newValue)
+    def withRequestTimeout(newValue: Duration): Timeouts = self.copy(requestTimeout = newValue)
+    def withBindTimeout(newValue: FiniteDuration): Timeouts = self.copy(bindTimeout = newValue)
+    def withLingerTimeout(newValue: Duration): Timeouts = self.copy(lingerTimeout = newValue)
 
     /** INTERNAL API */
     protected def self = this.asInstanceOf[ServerSettingsImpl.Timeouts]

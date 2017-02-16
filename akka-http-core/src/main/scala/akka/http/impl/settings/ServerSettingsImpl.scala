@@ -54,10 +54,12 @@ object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.ht
   final case class Timeouts(
     idleTimeout:    Duration,
     requestTimeout: Duration,
-    bindTimeout:    FiniteDuration) extends ServerSettings.Timeouts {
+    bindTimeout:    FiniteDuration,
+    lingerTimeout:  Duration) extends ServerSettings.Timeouts {
     require(idleTimeout > Duration.Zero, "idleTimeout must be infinite or > 0")
     require(requestTimeout > Duration.Zero, "requestTimeout must be infinite or > 0")
     require(bindTimeout > Duration.Zero, "bindTimeout must be > 0")
+    require(lingerTimeout > Duration.Zero, "lingerTimeout must be infinite or > 0")
   }
 
   def fromSubConfig(root: Config, c: Config) = new ServerSettingsImpl(
@@ -65,7 +67,8 @@ object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.ht
     Timeouts(
       c getPotentiallyInfiniteDuration "idle-timeout",
       c getPotentiallyInfiniteDuration "request-timeout",
-      c getFiniteDuration "bind-timeout"),
+      c getFiniteDuration "bind-timeout",
+      c getPotentiallyInfiniteDuration "linger-timeout"),
     c getInt "max-connections",
     c getInt "pipelining-limit",
     c getBoolean "remote-address-header",
@@ -85,8 +88,4 @@ object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.ht
       },
     Randoms.SecureRandomInstances, // can currently only be overridden from code
     ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")))
-
-  //  def apply(optionalSettings: Option[ServerSettings])(implicit actorRefFactory: ActorRefFactory): ServerSettings =
-  //    optionalSettings getOrElse apply(actorSystem)
-
 }

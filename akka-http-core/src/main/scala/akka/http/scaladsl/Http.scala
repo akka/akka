@@ -111,12 +111,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
           incoming.flow
             // Prevent cancellation from the Http implementation to reach the TCP streams to prevent
             // completion / cancellation race towards TCP streams. See #459.
-            //
-            // This could create a potential resource leak, if, e.g. because of a bug, the HTTP implementation doesn't
-            // close the write-side of the connection at the same time as it cancels the read side and if the client
-            // never closes the connection after or while reading the response. Fortunately, this will be handled by
-            // the idle-timeout which will forcibly close the connection after a defined amount of inactivity.
-            .via(StreamUtils.absorbCancellation)
+            .via(StreamUtils.delayCancellation(settings.lingerTimeout))
         incoming.copy(flow = newFlow)
       }
   }
