@@ -400,6 +400,16 @@ object MiMa extends AutoPlugin {
 
       // #21854 Remove manual hostname verifier support
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.scaladsl.TLS.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TlsModule.copy$default$9"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.TlsModule.copy$default$8"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TlsModule.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TlsModule.verifySession"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TlsModule.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TLSActor.props$default$5"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TLSActor.props"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TLSActor.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TlsModule.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TlsModule.apply"),
 
       // #22105 Akka Typed process DSL
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.addFunctionRef"),
