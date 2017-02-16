@@ -517,8 +517,8 @@ Akka Typed
 ==========
 
 With the new term :ref:`may change <may-change>` we will no longer have a different artifact for modules that are not
-stable, and ``akka-typed-experimental`` has therefore been renamed to ``akka-typed``. Note that it is still promoted to
-a stable module.
+stable, and ``akka-typed-experimental`` has therefore been renamed to ``akka-typed``. Note that it is still not
+promoted to a stable module.
 
 Experimental modules
 ====================

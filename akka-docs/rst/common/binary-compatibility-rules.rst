@@ -82,7 +82,7 @@ thus such change is considered safe.
 
 The meaning of "may change"
 ===========================
-**may change** is used in module descriptions and docs in order to signify that the API that they contain
+**May change** is used in module descriptions and docs in order to signify that the API that they contain
 is subject to change without any prior warning and is not covered by the binary compatibility promise.
 Read more in :ref:`may-change`.
 
