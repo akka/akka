@@ -6,6 +6,7 @@ package akka.http.impl.engine.server
 
 import java.net.{ InetAddress, InetSocketAddress }
 
+import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.ServerLayer
 import akka.http.scaladsl.model.HttpEntity._
@@ -687,6 +688,92 @@ class HttpServerSpec extends AkkaSpec(
       // client then closes the connection
       netIn.sendComplete()
       requests.expectComplete()
+      netOut.expectComplete()
+    })
+
+    "not fail with 'Cannot pull port (ControllerStage.requestParsingIn) twice' for early response to `100 Continue` request (after 100-Continue has been sent)" in assertAllStagesStopped(new TestSetup {
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Expect: 100-continue
+             |Content-Length: 16
+             |
+             |""")
+      val req = expectRequest()
+      netOut.expectNoBytes(50.millis)
+      val dataProbe = ByteStringSinkProbe()
+      req.entity.dataBytes.to(dataProbe.sink).run()
+      dataProbe.ensureSubscription()
+      dataProbe.request(1) // trigger 100-Continue response
+
+      expectResponseWithWipedDate(
+        """HTTP/1.1 100 Continue
+          |Server: akka-http/test
+          |Date: XXXX
+          |
+          |""")
+
+      val dataOutProbe = TestPublisher.probe[ByteString]()
+      val outEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, 4, Source.fromPublisher(dataOutProbe))
+
+      // send early response
+      responses.sendNext(HttpResponse(entity = outEntity))
+      expectResponseWithWipedDate(
+        """HTTP/1.1 200 OK
+          |Server: akka-http/test
+          |Date: XXXX
+          |Connection: close
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 4
+          |
+          |""")
+
+      // interleave sending of response with actual reception of request entity
+      send("abc")
+      dataProbe.expectUtf8EncodedString("abc")
+      dataOutProbe.sendNext(ByteString("Yeah"))
+      netOut.expectUtf8EncodedString("Yeah")
+      dataOutProbe.sendComplete()
+
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
+
+    "not fail with 'Cannot pull port (ControllerStage.requestParsingIn) twice' for early response to `100 Continue` request (before 100-Continue has been sent)" in assertAllStagesStopped(new TestSetup {
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Expect: 100-continue
+             |Content-Length: 16
+             |
+             |""")
+      val req = expectRequest()
+
+      val dataOutProbe = TestPublisher.probe[ByteString]()
+      val outEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, 4, Source.fromPublisher(dataOutProbe))
+
+      // send early response without waiting for 100 Continue to be sent (classical use case of 100 Continue in the first place)
+      responses.sendNext(HttpResponse(entity = outEntity))
+      expectResponseWithWipedDate(
+        """HTTP/1.1 200 OK
+          |Server: akka-http/test
+          |Date: XXXX
+          |Connection: close
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 4
+          |
+          |""")
+
+      // client chose to send data anyways (which is allowed by the spec)
+      send("abc")
+      val dataProbe = ByteStringSinkProbe()
+      req.entity.dataBytes.to(dataProbe.sink).run()
+      dataProbe.expectUtf8EncodedString("abc")
+
+      // then finish response
+      dataOutProbe.sendNext(ByteString("Yeah"))
+      netOut.expectUtf8EncodedString("Yeah")
+      dataOutProbe.sendComplete()
+
+      netIn.sendComplete()
       netOut.expectComplete()
     })
 

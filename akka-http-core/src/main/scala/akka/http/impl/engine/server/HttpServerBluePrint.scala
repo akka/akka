@@ -417,7 +417,7 @@ private[http] object HttpServerBluePrint {
 
           emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
             pullHttpResponseIn)
-          if (!isClosed(requestParsingIn) && close && requestStart.expect100Continue) pull(requestParsingIn)
+          if (!isClosed(requestParsingIn) && close && requestStart.expect100Continue) maybePullRequestParsingIn()
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()
@@ -461,6 +461,12 @@ private[http] object HttpServerBluePrint {
       def emitErrorResponse(response: HttpResponse): Unit =
         emit(responseCtxOut, ResponseRenderingContext(response, closeRequested = true), () ⇒ completeStage())
 
+      def maybePullRequestParsingIn(): Unit =
+        if (pullSuppressed) {
+          pullSuppressed = false
+          pull(requestParsingIn)
+        }
+
       /**
        * The `Expect: 100-continue` header has a special status in HTTP.
        * It allows the client to send an `Expect: 100-continue` header with the request and then pause request sending
@@ -498,10 +504,7 @@ private[http] object HttpServerBluePrint {
         getAsyncCallback[Unit] { _ ⇒
           oneHundredContinueResponsePending = false
           emit(responseCtxOut, ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
-          if (pullSuppressed) {
-            pullSuppressed = false
-            pull(requestParsingIn)
-          }
+          maybePullRequestParsingIn()
         }
 
       case object OneHundredContinueStage extends GraphStage[FlowShape[ParserOutput, ParserOutput]] {
