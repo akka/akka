@@ -79,7 +79,9 @@ public class TwoPhaseSetSerializer extends AbstractSerializationSupport {
       for (String elem : msg.getRemovalsList()) {
         removals = removals.add(elem);
       }
-      return new TwoPhaseSet(adds, removals);
+      // GSet will accumulate deltas when adding elements,
+      // but those are not of interest in the result of the deserialization
+      return new TwoPhaseSet(adds.resetDelta(), removals.resetDelta());
     } catch (Exception e) {
       throw new RuntimeException(e.getMessage(), e);
     }
