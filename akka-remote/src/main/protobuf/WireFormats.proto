@@ -64,7 +64,13 @@ message PropsData {
   required DeployData deploy = 2;
   required string clazz = 3;
   repeated bytes args = 4;
+  // old wire protocol, needed for backwards wire comp
+  // these two fields will be empty in emitted messages
+  // but may contain args in messages from old nodes
+
   repeated string classes = 5;
+  // new nodes emit these
+  repeated SerializedMessage propsArgs = 6;
 }
 
 /**

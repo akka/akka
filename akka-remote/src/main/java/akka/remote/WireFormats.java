@@ -4674,14 +4674,32 @@ public final class WireFormats {
     // repeated bytes args = 4;
     /**
      * <code>repeated bytes args = 4;</code>
+     *
+     * <pre>
+     * old wire protocol, needed for backwards wire comp
+     * these two fields will be empty in emitted messages
+     * but may contain args in messages from old nodes
+     * </pre>
      */
     java.util.List<akka.protobuf.ByteString> getArgsList();
     /**
      * <code>repeated bytes args = 4;</code>
+     *
+     * <pre>
+     * old wire protocol, needed for backwards wire comp
+     * these two fields will be empty in emitted messages
+     * but may contain args in messages from old nodes
+     * </pre>
      */
     int getArgsCount();
     /**
      * <code>repeated bytes args = 4;</code>
+     *
+     * <pre>
+     * old wire protocol, needed for backwards wire comp
+     * these two fields will be empty in emitted messages
+     * but may contain args in messages from old nodes
+     * </pre>
      */
     akka.protobuf.ByteString getArgs(int index);
 
@@ -4704,6 +4722,51 @@ public final class WireFormats {
      */
     akka.protobuf.ByteString
         getClassesBytes(int index);
+
+    // repeated .SerializedMessage propsArgs = 6;
+    /**
+     * <code>repeated .SerializedMessage propsArgs = 6;</code>
+     *
+     * <pre>
+     * new nodes emit these
+     * </pre>
+     */
+    java.util.List<akka.remote.WireFormats.SerializedMessage> 
+        getPropsArgsList();
+    /**
+     * <code>repeated .SerializedMessage propsArgs = 6;</code>
+     *
+     * <pre>
+     * new nodes emit these
+     * </pre>
+     */
+    akka.remote.WireFormats.SerializedMessage getPropsArgs(int index);
+    /**
+     * <code>repeated .SerializedMessage propsArgs = 6;</code>
+     *
+     * <pre>
+     * new nodes emit these
+     * </pre>
+     */
+    int getPropsArgsCount();
+    /**
+     * <code>repeated .SerializedMessage propsArgs = 6;</code>
+     *
+     * <pre>
+     * new nodes emit these
+     * </pre>
+     */
+    java.util.List<? extends akka.remote.WireFormats.SerializedMessageOrBuilder> 
+        getPropsArgsOrBuilderList();
+    /**
+     * <code>repeated .SerializedMessage propsArgs = 6;</code>
+     *
+     * <pre>
+     * new nodes emit these
+     * </pre>
+     */
+    akka.remote.WireFormats.SerializedMessageOrBuilder getPropsArgsOrBuilder(
+        int index);
   }
   /**
    * Protobuf type {@code PropsData}
@@ -4795,6 +4858,14 @@ public final class WireFormats {
               classes_.add(input.readBytes());
               break;
             }
+            case 50: {
+              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+                propsArgs_ = new java.util.ArrayList<akka.remote.WireFormats.SerializedMessage>();
+                mutable_bitField0_ |= 0x00000010;
+              }
+              propsArgs_.add(input.readMessage(akka.remote.WireFormats.SerializedMessage.PARSER, extensionRegistry));
+              break;
+            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
@@ -4808,6 +4879,9 @@ public final class WireFormats {
         }
         if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
           classes_ = new akka.protobuf.UnmodifiableLazyStringList(classes_);
+        }
+        if (((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+          propsArgs_ = java.util.Collections.unmodifiableList(propsArgs_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -4911,6 +4985,12 @@ public final class WireFormats {
     private java.util.List<akka.protobuf.ByteString> args_;
     /**
      * <code>repeated bytes args = 4;</code>
+     *
+     * <pre>
+     * old wire protocol, needed for backwards wire comp
+     * these two fields will be empty in emitted messages
+     * but may contain args in messages from old nodes
+     * </pre>
      */
     public java.util.List<akka.protobuf.ByteString>
         getArgsList() {
@@ -4918,12 +4998,24 @@ public final class WireFormats {
     }
     /**
      * <code>repeated bytes args = 4;</code>
+     *
+     * <pre>
+     * old wire protocol, needed for backwards wire comp
+     * these two fields will be empty in emitted messages
+     * but may contain args in messages from old nodes
+     * </pre>
      */
     public int getArgsCount() {
       return args_.size();
     }
     /**
      * <code>repeated bytes args = 4;</code>
+     *
+     * <pre>
+     * old wire protocol, needed for backwards wire comp
+     * these two fields will be empty in emitted messages
+     * but may contain args in messages from old nodes
+     * </pre>
      */
     public akka.protobuf.ByteString getArgs(int index) {
       return args_.get(index);
@@ -4959,11 +5051,68 @@ public final class WireFormats {
       return classes_.getByteString(index);
     }
 
+    // repeated .SerializedMessage propsArgs = 6;
+    public static final int PROPSARGS_FIELD_NUMBER = 6;
+    private java.util.List<akka.remote.WireFormats.SerializedMessage> propsArgs_;
+    /**
+     * <code>repeated .SerializedMessage propsArgs = 6;</code>
+     *
+     * <pre>
+     * new nodes emit these
+     * </pre>
+     */
+    public java.util.List<akka.remote.WireFormats.SerializedMessage> getPropsArgsList() {
+      return propsArgs_;
+    }
+    /**
+     * <code>repeated .SerializedMessage propsArgs = 6;</code>
+     *
+     * <pre>
+     * new nodes emit these
+     * </pre>
+     */
+    public java.util.List<? extends akka.remote.WireFormats.SerializedMessageOrBuilder> 
+        getPropsArgsOrBuilderList() {
+      return propsArgs_;
+    }
+    /**
+     * <code>repeated .SerializedMessage propsArgs = 6;</code>
+     *
+     * <pre>
+     * new nodes emit these
+     * </pre>
+     */
+    public int getPropsArgsCount() {
+      return propsArgs_.size();
+    }
+    /**
+     * <code>repeated .SerializedMessage propsArgs = 6;</code>
+     *
+     * <pre>
+     * new nodes emit these
+     * </pre>
+     */
+    public akka.remote.WireFormats.SerializedMessage getPropsArgs(int index) {
+      return propsArgs_.get(index);
+    }
+    /**
+     * <code>repeated .SerializedMessage propsArgs = 6;</code>
+     *
+     * <pre>
+     * new nodes emit these
+     * </pre>
+     */
+    public akka.remote.WireFormats.SerializedMessageOrBuilder getPropsArgsOrBuilder(
+        int index) {
+      return propsArgs_.get(index);
+    }
+
     private void initFields() {
       deploy_ = akka.remote.WireFormats.DeployData.getDefaultInstance();
       clazz_ = "";
       args_ = java.util.Collections.emptyList();
       classes_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      propsArgs_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -4981,6 +5130,12 @@ public final class WireFormats {
       if (!getDeploy().isInitialized()) {
         memoizedIsInitialized = 0;
         return false;
+      }
+      for (int i = 0; i < getPropsArgsCount(); i++) {
+        if (!getPropsArgs(i).isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
       }
       memoizedIsInitialized = 1;
       return true;
@@ -5000,6 +5155,9 @@ public final class WireFormats {
       }
       for (int i = 0; i < classes_.size(); i++) {
         output.writeBytes(5, classes_.getByteString(i));
+      }
+      for (int i = 0; i < propsArgs_.size(); i++) {
+        output.writeMessage(6, propsArgs_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -5035,6 +5193,10 @@ public final class WireFormats {
         }
         size += dataSize;
         size += 1 * getClassesList().size();
+      }
+      for (int i = 0; i < propsArgs_.size(); i++) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(6, propsArgs_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -5150,6 +5312,7 @@ public final class WireFormats {
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getDeployFieldBuilder();
+          getPropsArgsFieldBuilder();
         }
       }
       private static Builder create() {
@@ -5170,6 +5333,12 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000004);
         classes_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
+        if (propsArgsBuilder_ == null) {
+          propsArgs_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000010);
+        } else {
+          propsArgsBuilder_.clear();
+        }
         return this;
       }
 
@@ -5221,6 +5390,15 @@ public final class WireFormats {
           bitField0_ = (bitField0_ & ~0x00000008);
         }
         result.classes_ = classes_;
+        if (propsArgsBuilder_ == null) {
+          if (((bitField0_ & 0x00000010) == 0x00000010)) {
+            propsArgs_ = java.util.Collections.unmodifiableList(propsArgs_);
+            bitField0_ = (bitField0_ & ~0x00000010);
+          }
+          result.propsArgs_ = propsArgs_;
+        } else {
+          result.propsArgs_ = propsArgsBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -5265,6 +5443,32 @@ public final class WireFormats {
           }
           onChanged();
         }
+        if (propsArgsBuilder_ == null) {
+          if (!other.propsArgs_.isEmpty()) {
+            if (propsArgs_.isEmpty()) {
+              propsArgs_ = other.propsArgs_;
+              bitField0_ = (bitField0_ & ~0x00000010);
+            } else {
+              ensurePropsArgsIsMutable();
+              propsArgs_.addAll(other.propsArgs_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.propsArgs_.isEmpty()) {
+            if (propsArgsBuilder_.isEmpty()) {
+              propsArgsBuilder_.dispose();
+              propsArgsBuilder_ = null;
+              propsArgs_ = other.propsArgs_;
+              bitField0_ = (bitField0_ & ~0x00000010);
+              propsArgsBuilder_ = 
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getPropsArgsFieldBuilder() : null;
+            } else {
+              propsArgsBuilder_.addAllMessages(other.propsArgs_);
+            }
+          }
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -5281,6 +5485,12 @@ public final class WireFormats {
         if (!getDeploy().isInitialized()) {
           
           return false;
+        }
+        for (int i = 0; i < getPropsArgsCount(); i++) {
+          if (!getPropsArgs(i).isInitialized()) {
+            
+            return false;
+          }
         }
         return true;
       }
@@ -5505,6 +5715,12 @@ public final class WireFormats {
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       *
+       * <pre>
+       * old wire protocol, needed for backwards wire comp
+       * these two fields will be empty in emitted messages
+       * but may contain args in messages from old nodes
+       * </pre>
        */
       public java.util.List<akka.protobuf.ByteString>
           getArgsList() {
@@ -5512,18 +5728,36 @@ public final class WireFormats {
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       *
+       * <pre>
+       * old wire protocol, needed for backwards wire comp
+       * these two fields will be empty in emitted messages
+       * but may contain args in messages from old nodes
+       * </pre>
        */
       public int getArgsCount() {
         return args_.size();
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       *
+       * <pre>
+       * old wire protocol, needed for backwards wire comp
+       * these two fields will be empty in emitted messages
+       * but may contain args in messages from old nodes
+       * </pre>
        */
       public akka.protobuf.ByteString getArgs(int index) {
         return args_.get(index);
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       *
+       * <pre>
+       * old wire protocol, needed for backwards wire comp
+       * these two fields will be empty in emitted messages
+       * but may contain args in messages from old nodes
+       * </pre>
        */
       public Builder setArgs(
           int index, akka.protobuf.ByteString value) {
@@ -5537,6 +5771,12 @@ public final class WireFormats {
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       *
+       * <pre>
+       * old wire protocol, needed for backwards wire comp
+       * these two fields will be empty in emitted messages
+       * but may contain args in messages from old nodes
+       * </pre>
        */
       public Builder addArgs(akka.protobuf.ByteString value) {
         if (value == null) {
@@ -5549,6 +5789,12 @@ public final class WireFormats {
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       *
+       * <pre>
+       * old wire protocol, needed for backwards wire comp
+       * these two fields will be empty in emitted messages
+       * but may contain args in messages from old nodes
+       * </pre>
        */
       public Builder addAllArgs(
           java.lang.Iterable<? extends akka.protobuf.ByteString> values) {
@@ -5559,6 +5805,12 @@ public final class WireFormats {
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       *
+       * <pre>
+       * old wire protocol, needed for backwards wire comp
+       * these two fields will be empty in emitted messages
+       * but may contain args in messages from old nodes
+       * </pre>
        */
       public Builder clearArgs() {
         args_ = java.util.Collections.emptyList();
@@ -5658,6 +5910,318 @@ public final class WireFormats {
         classes_.add(value);
         onChanged();
         return this;
+      }
+
+      // repeated .SerializedMessage propsArgs = 6;
+      private java.util.List<akka.remote.WireFormats.SerializedMessage> propsArgs_ =
+        java.util.Collections.emptyList();
+      private void ensurePropsArgsIsMutable() {
+        if (!((bitField0_ & 0x00000010) == 0x00000010)) {
+          propsArgs_ = new java.util.ArrayList<akka.remote.WireFormats.SerializedMessage>(propsArgs_);
+          bitField0_ |= 0x00000010;
+         }
+      }
+
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.remote.WireFormats.SerializedMessage, akka.remote.WireFormats.SerializedMessage.Builder, akka.remote.WireFormats.SerializedMessageOrBuilder> propsArgsBuilder_;
+
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public java.util.List<akka.remote.WireFormats.SerializedMessage> getPropsArgsList() {
+        if (propsArgsBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(propsArgs_);
+        } else {
+          return propsArgsBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public int getPropsArgsCount() {
+        if (propsArgsBuilder_ == null) {
+          return propsArgs_.size();
+        } else {
+          return propsArgsBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public akka.remote.WireFormats.SerializedMessage getPropsArgs(int index) {
+        if (propsArgsBuilder_ == null) {
+          return propsArgs_.get(index);
+        } else {
+          return propsArgsBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public Builder setPropsArgs(
+          int index, akka.remote.WireFormats.SerializedMessage value) {
+        if (propsArgsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensurePropsArgsIsMutable();
+          propsArgs_.set(index, value);
+          onChanged();
+        } else {
+          propsArgsBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public Builder setPropsArgs(
+          int index, akka.remote.WireFormats.SerializedMessage.Builder builderForValue) {
+        if (propsArgsBuilder_ == null) {
+          ensurePropsArgsIsMutable();
+          propsArgs_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          propsArgsBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public Builder addPropsArgs(akka.remote.WireFormats.SerializedMessage value) {
+        if (propsArgsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensurePropsArgsIsMutable();
+          propsArgs_.add(value);
+          onChanged();
+        } else {
+          propsArgsBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public Builder addPropsArgs(
+          int index, akka.remote.WireFormats.SerializedMessage value) {
+        if (propsArgsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensurePropsArgsIsMutable();
+          propsArgs_.add(index, value);
+          onChanged();
+        } else {
+          propsArgsBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public Builder addPropsArgs(
+          akka.remote.WireFormats.SerializedMessage.Builder builderForValue) {
+        if (propsArgsBuilder_ == null) {
+          ensurePropsArgsIsMutable();
+          propsArgs_.add(builderForValue.build());
+          onChanged();
+        } else {
+          propsArgsBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public Builder addPropsArgs(
+          int index, akka.remote.WireFormats.SerializedMessage.Builder builderForValue) {
+        if (propsArgsBuilder_ == null) {
+          ensurePropsArgsIsMutable();
+          propsArgs_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          propsArgsBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public Builder addAllPropsArgs(
+          java.lang.Iterable<? extends akka.remote.WireFormats.SerializedMessage> values) {
+        if (propsArgsBuilder_ == null) {
+          ensurePropsArgsIsMutable();
+          super.addAll(values, propsArgs_);
+          onChanged();
+        } else {
+          propsArgsBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public Builder clearPropsArgs() {
+        if (propsArgsBuilder_ == null) {
+          propsArgs_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000010);
+          onChanged();
+        } else {
+          propsArgsBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public Builder removePropsArgs(int index) {
+        if (propsArgsBuilder_ == null) {
+          ensurePropsArgsIsMutable();
+          propsArgs_.remove(index);
+          onChanged();
+        } else {
+          propsArgsBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public akka.remote.WireFormats.SerializedMessage.Builder getPropsArgsBuilder(
+          int index) {
+        return getPropsArgsFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public akka.remote.WireFormats.SerializedMessageOrBuilder getPropsArgsOrBuilder(
+          int index) {
+        if (propsArgsBuilder_ == null) {
+          return propsArgs_.get(index);  } else {
+          return propsArgsBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public java.util.List<? extends akka.remote.WireFormats.SerializedMessageOrBuilder> 
+           getPropsArgsOrBuilderList() {
+        if (propsArgsBuilder_ != null) {
+          return propsArgsBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(propsArgs_);
+        }
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public akka.remote.WireFormats.SerializedMessage.Builder addPropsArgsBuilder() {
+        return getPropsArgsFieldBuilder().addBuilder(
+            akka.remote.WireFormats.SerializedMessage.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public akka.remote.WireFormats.SerializedMessage.Builder addPropsArgsBuilder(
+          int index) {
+        return getPropsArgsFieldBuilder().addBuilder(
+            index, akka.remote.WireFormats.SerializedMessage.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .SerializedMessage propsArgs = 6;</code>
+       *
+       * <pre>
+       * new nodes emit these
+       * </pre>
+       */
+      public java.util.List<akka.remote.WireFormats.SerializedMessage.Builder> 
+           getPropsArgsBuilderList() {
+        return getPropsArgsFieldBuilder().getBuilderList();
+      }
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.remote.WireFormats.SerializedMessage, akka.remote.WireFormats.SerializedMessage.Builder, akka.remote.WireFormats.SerializedMessageOrBuilder> 
+          getPropsArgsFieldBuilder() {
+        if (propsArgsBuilder_ == null) {
+          propsArgsBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
+              akka.remote.WireFormats.SerializedMessage, akka.remote.WireFormats.SerializedMessage.Builder, akka.remote.WireFormats.SerializedMessageOrBuilder>(
+                  propsArgs_,
+                  ((bitField0_ & 0x00000010) == 0x00000010),
+                  getParentForChildren(),
+                  isClean());
+          propsArgs_ = null;
+        }
+        return propsArgsBuilder_;
       }
 
       // @@protoc_insertion_point(builder_scope:PropsData)
@@ -9558,24 +10122,25 @@ public final class WireFormats {
       "\005\022\027\n\017messageManifest\030\003 \001(\014\"~\n\023DaemonMsgC" +
       "reateData\022\031\n\005props\030\001 \002(\0132\n.PropsData\022\033\n\006" +
       "deploy\030\002 \002(\0132\013.DeployData\022\014\n\004path\030\003 \002(\t\022" +
-      "!\n\nsupervisor\030\004 \002(\0132\r.ActorRefData\"V\n\tPr" +
+      "!\n\nsupervisor\030\004 \002(\0132\r.ActorRefData\"}\n\tPr" +
       "opsData\022\033\n\006deploy\030\002 \002(\0132\013.DeployData\022\r\n\005" +
       "clazz\030\003 \002(\t\022\014\n\004args\030\004 \003(\014\022\017\n\007classes\030\005 \003" +
-      "(\t\"c\n\nDeployData\022\014\n\004path\030\001 \002(\t\022\016\n\006config" +
-      "\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 " +
-      "\001(\014\022\022\n\ndispatcher\030\005 \001(\t\"P\n\023AkkaProtocolM" +
-      "essage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002",
-      " \001(\0132\023.AkkaControlMessage\"b\n\022AkkaControl" +
-      "Message\022!\n\013commandType\030\001 \002(\0162\014.CommandTy" +
-      "pe\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshak" +
-      "eInfo\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002" +
-      "(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030" +
-      "\003 \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 \002(\t\022\020\n\010" +
-      "hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010protocol" +
-      "\030\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIATE\020\001\022\020\n\014" +
-      "DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DISASSO" +
-      "CIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIATE_QU",
-      "ARANTINED\020\005B\017\n\013akka.remoteH\001"
+      "(\t\022%\n\tpropsArgs\030\006 \003(\0132\022.SerializedMessag" +
+      "e\"c\n\nDeployData\022\014\n\004path\030\001 \002(\t\022\016\n\006config\030" +
+      "\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 \001" +
+      "(\014\022\022\n\ndispatcher\030\005 \001(\t\"P\n\023AkkaProtocolMe",
+      "ssage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002 " +
+      "\001(\0132\023.AkkaControlMessage\"b\n\022AkkaControlM" +
+      "essage\022!\n\013commandType\030\001 \002(\0162\014.CommandTyp" +
+      "e\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshake" +
+      "Info\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002(" +
+      "\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030\003" +
+      " \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 \002(\t\022\020\n\010h" +
+      "ostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010protocol\030" +
+      "\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIATE\020\001\022\020\n\014D" +
+      "ISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DISASSOC",
+      "IATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIATE_QUA" +
+      "RANTINED\020\005B\017\n\013akka.remoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -9623,7 +10188,7 @@ public final class WireFormats {
           internal_static_PropsData_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PropsData_descriptor,
-              new java.lang.String[] { "Deploy", "Clazz", "Args", "Classes", });
+              new java.lang.String[] { "Deploy", "Clazz", "Args", "Classes", "PropsArgs", });
           internal_static_DeployData_descriptor =
             getDescriptor().getMessageTypes().get(7);
           internal_static_DeployData_fieldAccessorTable = new

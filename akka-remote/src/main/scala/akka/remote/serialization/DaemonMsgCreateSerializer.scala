@@ -4,13 +4,14 @@
 
 package akka.remote.serialization
 
-import akka.serialization.{ BaseSerializer, SerializationExtension }
+import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.protobuf.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.remote.DaemonMsgCreate
-import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
+import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData, SerializedMessage }
 import akka.routing.{ NoRouter, RouterConfig }
+
 import scala.reflect.ClassTag
 import util.{ Failure, Success }
 import java.io.Serializable
@@ -63,23 +64,7 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
         val builder = PropsData.newBuilder
           .setClazz(props.clazz.getName)
           .setDeploy(deployProto(props.deploy))
-        props.args map serialize foreach builder.addArgs
-        props.args.map { a ⇒
-          val argClassName =
-            if (a == null) "null"
-            else {
-              val className = a.getClass.getName
-              if (scala212OrLater && a.getClass.isInstanceOf[Serializable] && a.getClass.isSynthetic &&
-                className.contains("$Lambda$")) {
-                // The serialization of the parameters is based on passing class name instead of
-                // serializerId and manifest as we usually do. With Scala 2.12 the functions are generated as
-                // lambdas and we can't use that load class from that name when deserializing.
-                classOf[Serializable].getName
-              } else
-                className
-            }
-          builder.addClasses(argClassName)
-        }
+        props.args.map(serializeToSerializedMessage).foreach(builder.addPropsArgs)
         builder.build
       }
 
@@ -116,10 +101,17 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
 
     def props = {
       import scala.collection.JavaConverters._
-      val clazz = system.dynamicAccess.getClassFor[AnyRef](proto.getProps.getClazz).get
-      val args: Vector[AnyRef] = (proto.getProps.getArgsList.asScala zip proto.getProps.getClassesList.asScala)
-        .map(deserialize)(collection.breakOut)
-      Props(deploy(proto.getProps.getDeploy), clazz, args)
+      val actorClass = system.dynamicAccess.getClassFor[AnyRef](proto.getProps.getClazz).get
+      val args: Vector[AnyRef] =
+        if (proto.getProps.getPropsArgsCount > 0) {
+          // message from a 2.5+ node, which includes string manifest and serializer id
+          proto.getProps.getPropsArgsList.asScala.map(deSerializeFromSerializedMessage)(collection.breakOut)
+        } else {
+          // message from an old node, which only provides data and class name
+          (proto.getProps.getArgsList.asScala zip proto.getProps.getClassesList.asScala)
+            .map(deserialize)(collection.breakOut)
+        }
+      Props(deploy(proto.getProps.getDeploy), actorClass, args)
     }
 
     DaemonMsgCreate(
@@ -130,6 +122,25 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
   }
 
   protected def serialize(any: Any): ByteString = ByteString.copyFrom(serialization.serialize(any.asInstanceOf[AnyRef]).get)
+
+  private def serializeToSerializedMessage(any: Any): SerializedMessage = {
+    val m = any.asInstanceOf[AnyRef]
+
+    val serializer = serialization.findSerializerFor(m)
+    val builder = SerializedMessage.newBuilder()
+
+    serializer match {
+      case ser: SerializerWithStringManifest ⇒
+        val manifest = ser.manifest(m)
+        if (manifest != "")
+          builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
+      case _ ⇒
+    }
+
+    builder.setSerializerId(serializer.identifier)
+      .setMessage(ByteString.copyFrom(serializer.toBinary(m)))
+    builder.build()
+  }
 
   protected def deserialize(p: (ByteString, String)): AnyRef =
     if (p._1.isEmpty && p._2 == "null") null
@@ -151,5 +162,9 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
           case _             ⇒ throw e // the first exception
         }
     }
+  }
+
+  private def deSerializeFromSerializedMessage(m: SerializedMessage): AnyRef = {
+    serialization.deserialize(m.getMessage.toByteArray, m.getSerializerId, m.getMessageManifest.toStringUtf8).get
   }
 }
