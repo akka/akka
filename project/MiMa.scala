@@ -436,7 +436,20 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.LmdbDurableStore.dbPut"),
 
       // #22208 remove extension key
-      ProblemFilters.exclude[MissingClassProblem]("akka.event.Logging$Extension$")
+      ProblemFilters.exclude[MissingClassProblem]("akka.event.Logging$Extension$"),
+
+      // #22224 DaemonMsgCreateSerializer using manifests
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifest"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifestCount"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIdsList"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIds"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifestList"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIdsCount"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.serialize"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.deserialize"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.deserialize"),
+      ProblemFilters.exclude[FinalClassProblem]("akka.remote.serialization.DaemonMsgCreateSerializer"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.serialization")
 
       // NOTE: filters that will be backported to 2.4 should go to the latest 2.4 version below
     )

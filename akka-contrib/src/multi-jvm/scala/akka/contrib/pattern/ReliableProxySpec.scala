@@ -12,12 +12,14 @@ import org.scalatest.BeforeAndAfterEach
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.actor._
 import akka.testkit.ImplicitSender
+
 import scala.concurrent.duration._
 import akka.actor.FSM
 import akka.actor.ActorRef
 import akka.testkit.TestKitExtension
 import akka.actor.ActorIdentity
 import akka.actor.Identify
+import com.typesafe.config.ConfigValueFactory
 
 object ReliableProxySpec extends MultiNodeConfig {
   val local = role("local")

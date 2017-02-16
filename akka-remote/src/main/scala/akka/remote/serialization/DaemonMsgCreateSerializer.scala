@@ -25,24 +25,16 @@ import java.io.Serializable
  *
  * INTERNAL API
  */
-private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
+private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   import ProtobufSerializer.serializeActorRef
   import ProtobufSerializer.deserializeActorRef
   import Deploy.NoDispatcherGiven
 
-  @deprecated("Use constructor with ExtendedActorSystem", "2.4")
-  def this() = this(null)
-
   private val scala212OrLater = !scala.util.Properties.versionNumberString.startsWith("2.11")
 
-  // TODO remove this when deprecated this() is removed
-  override val identifier: Int =
-    if (system eq null) 3
-    else identifierFromConfig
+  private lazy val serialization = SerializationExtension(system)
 
-  def includeManifest: Boolean = false
-
-  lazy val serialization = SerializationExtension(system)
+  override val includeManifest: Boolean = false
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case DaemonMsgCreate(props, deploy, path, supervisor) ⇒
@@ -50,11 +42,11 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
       def deployProto(d: Deploy): DeployData = {
         val builder = DeployData.newBuilder.setPath(d.path)
         if (d.config != ConfigFactory.empty)
-          builder.setConfig(serialize(d.config))
+          builder.setConfig(oldSerialize(d.config))
         if (d.routerConfig != NoRouter)
-          builder.setRouterConfig(serialize(d.routerConfig))
+          builder.setRouterConfig(oldSerialize(d.routerConfig))
         if (d.scope != NoScopeGiven)
-          builder.setScope(serialize(d.scope))
+          builder.setScope(oldSerialize(d.scope))
         if (d.dispatcher != NoDispatcherGiven)
           builder.setDispatcher(d.dispatcher)
         builder.build
@@ -64,7 +56,13 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
         val builder = PropsData.newBuilder
           .setClazz(props.clazz.getName)
           .setDeploy(deployProto(props.deploy))
-        props.args.map(serializeToSerializedMessage).foreach(builder.addPropsArgs)
+        props.args.foreach { arg ⇒
+          val (serializerId, hasManifest, manifest, bytes) = serialize(arg)
+          builder.addArgs(ByteString.copyFrom(bytes))
+          builder.addClasses(manifest)
+          builder.addSerializerIds(serializerId)
+          builder.addHasManifest(hasManifest)
+        }
         builder.build
       }
 
@@ -85,13 +83,13 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
 
     def deploy(protoDeploy: DeployData): Deploy = {
       val config =
-        if (protoDeploy.hasConfig) deserialize(protoDeploy.getConfig, classOf[Config])
+        if (protoDeploy.hasConfig) oldDeserialize(protoDeploy.getConfig, classOf[Config])
         else ConfigFactory.empty
       val routerConfig =
-        if (protoDeploy.hasRouterConfig) deserialize(protoDeploy.getRouterConfig, classOf[RouterConfig])
+        if (protoDeploy.hasRouterConfig) oldDeserialize(protoDeploy.getRouterConfig, classOf[RouterConfig])
         else NoRouter
       val scope =
-        if (protoDeploy.hasScope) deserialize(protoDeploy.getScope, classOf[Scope])
+        if (protoDeploy.hasScope) oldDeserialize(protoDeploy.getScope, classOf[Scope])
         else NoScopeGiven
       val dispatcher =
         if (protoDeploy.hasDispatcher) protoDeploy.getDispatcher
@@ -101,15 +99,28 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
 
     def props = {
       import scala.collection.JavaConverters._
-      val actorClass = system.dynamicAccess.getClassFor[AnyRef](proto.getProps.getClazz).get
+      val protoProps = proto.getProps
+      val actorClass = system.dynamicAccess.getClassFor[AnyRef](protoProps.getClazz).get
       val args: Vector[AnyRef] =
-        if (proto.getProps.getPropsArgsCount > 0) {
-          // message from a 2.5+ node, which includes string manifest and serializer id
-          proto.getProps.getPropsArgsList.asScala.map(deSerializeFromSerializedMessage)(collection.breakOut)
+        if (protoProps.getSerializerIdsCount > 0) {
+          // message from a 2.5+ node, which (may) includes string manifest and serializer id
+          for {
+            idx ← (0 until protoProps.getSerializerIdsCount).toVector
+          } yield {
+            val manifest = protoProps.getClasses(idx)
+            // we have info per position if a string manifest serializer was used or not
+            if (protoProps.getHasManifest(idx)) {
+              serialization.deserializeByteBuffer(
+                protoProps.getArgs(idx).asReadOnlyByteBuffer(),
+                protoProps.getSerializerIds(idx), manifest)
+            } else {
+              oldDeserialize(protoProps.getArgs(idx), protoProps.getClasses(idx))
+            }
+          }
         } else {
-          // message from an old node, which only provides data and class name
+          // message from an older node, which only provides data and class name
           (proto.getProps.getArgsList.asScala zip proto.getProps.getClassesList.asScala)
-            .map(deserialize)(collection.breakOut)
+            .map(oldDeserialize)(collection.breakOut)
         }
       Props(deploy(proto.getProps.getDeploy), actorClass, args)
     }
@@ -121,32 +132,44 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
       supervisor = deserializeActorRef(system, proto.getSupervisor))
   }
 
-  protected def serialize(any: Any): ByteString = ByteString.copyFrom(serialization.serialize(any.asInstanceOf[AnyRef]).get)
+  private def oldSerialize(any: Any): ByteString = ByteString.copyFrom(serialization.serialize(any.asInstanceOf[AnyRef]).get)
 
-  private def serializeToSerializedMessage(any: Any): SerializedMessage = {
+  private def serialize(any: Any): (Int, Boolean, String, Array[Byte]) = {
     val m = any.asInstanceOf[AnyRef]
-
     val serializer = serialization.findSerializerFor(m)
-    val builder = SerializedMessage.newBuilder()
 
-    serializer match {
+    // this trixery is to retain backwards wire compatibility while at the same time
+    // allowing for usage of string manifests when enable-additional-serialization-bindings = on
+    var hasManifest = false
+    val manifest = serializer match {
       case ser: SerializerWithStringManifest ⇒
-        val manifest = ser.manifest(m)
-        if (manifest != "")
-          builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
+        hasManifest = true
+        ser.manifest(m)
+      case _ if m eq null ⇒ "null"
       case _ ⇒
+        val className = m.getClass.getName
+        if (scala212OrLater && m.isInstanceOf[Serializable] && m.getClass.isSynthetic && className.contains("$Lambda$")) {
+          // When the additional-protobuf serializers are not enabled
+          // the serialization of the parameters is based on passing class name instead of
+          // serializerId and manifest as we usually do. With Scala 2.12 the functions are generated as
+          // lambdas and we can't use that load class from that name when deserializing
+          classOf[Serializable].getName
+        } else {
+          className
+        }
     }
 
-    builder.setSerializerId(serializer.identifier)
-      .setMessage(ByteString.copyFrom(serializer.toBinary(m)))
-    builder.build()
+    (serializer.identifier, hasManifest, manifest, serializer.toBinary(m))
   }
 
-  protected def deserialize(p: (ByteString, String)): AnyRef =
-    if (p._1.isEmpty && p._2 == "null") null
-    else deserialize(p._1, system.dynamicAccess.getClassFor[AnyRef](p._2).get)
+  private def oldDeserialize(p: (ByteString, String)): AnyRef =
+    oldDeserialize(p._1, p._2)
 
-  protected def deserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
+  private def oldDeserialize(data: ByteString, className: String): AnyRef =
+    if (data.isEmpty && className == "null") null
+    else oldDeserialize(data, system.dynamicAccess.getClassFor[AnyRef](className).get)
+
+  private def oldDeserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray
     serialization.deserialize(bytes, clazz) match {
       case Success(x: T)  ⇒ x
@@ -164,7 +187,4 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
     }
   }
 
-  private def deSerializeFromSerializedMessage(m: SerializedMessage): AnyRef = {
-    serialization.deserialize(m.getMessage.toByteArray, m.getSerializerId, m.getMessageManifest.toStringUtf8).get
-  }
 }

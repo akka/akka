@@ -8,7 +8,7 @@ import language.postfixOps
 import akka.serialization.SerializationExtension
 import com.typesafe.config.ConfigFactory
 import akka.testkit.AkkaSpec
-import akka.actor.{ Actor, Address, Deploy, ExtendedActorSystem, OneForOneStrategy, Props, SupervisorStrategy }
+import akka.actor.{ Actor, ActorRef, Address, Deploy, ExtendedActorSystem, OneForOneStrategy, Props, SupervisorStrategy }
 import akka.remote.{ DaemonMsgCreate, RemoteScope }
 import akka.routing.{ FromConfig, RoundRobinPool }
 import akka.util.ByteString
@@ -16,18 +16,17 @@ import akka.util.ByteString
 import scala.concurrent.duration._
 
 object DaemonMsgCreateSerializerSpec {
-  class MyActor extends Actor {
-    def receive = Actor.emptyBehavior
-  }
 
-  class MyActorWithParam(ignore: String) extends Actor {
+  trait EmptyActor extends Actor {
     def receive = Actor.emptyBehavior
   }
-
-  class MyActorWithFunParam(fun: Function1[Int, Int]) extends Actor {
-    def receive = Actor.emptyBehavior
-  }
+  class MyActor extends EmptyActor
+  class MyActorWithParam(ignore: String) extends EmptyActor
+  class MyActorWithFunParam(fun: Function1[Int, Int]) extends EmptyActor
+  class ActorWithDummyParameter(javaSerialized: DummyParameter, protoSerialized: ActorRef) extends EmptyActor
 }
+
+case class DummyParameter(val inner: String) extends Serializable
 
 class DaemonMsgCreateSerializerSpec extends AkkaSpec {
 
@@ -133,6 +132,17 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
         DaemonMsgCreate(
           props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
           deploy = deploy2,
+          path = "foo",
+          supervisor = supervisor)
+      }
+    }
+
+    "allows for mixing serializers with and without manifests for props parameters" in {
+      verifySerialization {
+        DaemonMsgCreate(
+          // parameters should trigger JavaSerializer for the first one and additional protobuf for the second (?)
+          props = Props(classOf[ActorWithDummyParameter], new DummyParameter("dummy"), system.deadLetters),
+          deploy = Deploy(),
           path = "foo",
           supervisor = supervisor)
       }
