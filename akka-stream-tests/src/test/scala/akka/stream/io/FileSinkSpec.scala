@@ -6,21 +6,20 @@ package akka.stream.io
 import java.nio.file.{ Files, Path, StandardOpenOption }
 
 import akka.actor.ActorSystem
+import akka.dispatch.ExecutionContexts
 import akka.stream.impl.ActorMaterializerImpl
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.scaladsl.{ FileIO, Source }
+import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.ActorAttributes
+import akka.stream.{ ActorAttributes, ActorMaterializer, ActorMaterializerSettings, IOResult }
 import akka.util.{ ByteString, Timeout }
 import com.google.common.jimfs.{ Configuration, Jimfs }
 import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
@@ -135,6 +134,20 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
           val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
           assertDispatcher(ref, "akka.actor.default-dispatcher")
         } finally shutdown(sys)
+      }
+    }
+
+    "write single line to a file from lazy sink" in assertAllStagesStopped {
+      //LazySink must wait for result of initialization even if got upstreamComplete
+      targetFile { f ⇒
+        val completion = Source(List(TestByteStrings.head))
+          .runWith(Sink.lazyInit[ByteString, Future[IOResult]](
+            _ ⇒ Future.successful(FileIO.toPath(f)), () ⇒ Future.successful(IOResult.createSuccessful(0)))
+            .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext)))
+
+        Await.result(completion, 3.seconds)
+
+        checkFileContents(f, TestLines.head)
       }
     }
 
