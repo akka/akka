@@ -18,7 +18,7 @@ case class SerializableDummy() // since case classes are serializable
 
 object AllowJavaSerializationOffSpec {
 
-  val testSerializer = new TestSerializer
+  val testSerializer = new UselessSerializer
 
   val serializationSettings = SerializationSetup { _ ⇒
     List(

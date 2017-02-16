@@ -15,13 +15,21 @@ class ProgrammaticDummy
 case class ProgrammaticJavaDummy()
 case class SerializableDummy() // since case classes are serializable
 
+final class ProgrammaticDummySerializer extends Serializer {
+  val includeManifest = false
+  val identifier = 666
+  def toBinary(o: AnyRef) = Array.emptyByteArray
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]) = new ProgrammaticDummy
+}
+
 object SerializationSetupSpec {
 
-  val testSerializer = new TestSerializer
+  val programmaticDummySerializer = new ProgrammaticDummySerializer
+  val testSerializer = new UselessSerializer
 
   val serializationSettings = SerializationSetup { _ ⇒
     List(
-      SerializerDetails("test", testSerializer, List(classOf[ProgrammaticDummy])))
+      SerializerDetails("test", programmaticDummySerializer, List(classOf[ProgrammaticDummy])))
   }
   val bootstrapSettings = BootstrapSetup(None, Some(ConfigFactory.parseString("""
     akka {
@@ -57,12 +65,12 @@ class SerializationSetupSpec extends AkkaSpec(
 
     "allow for programmatic configuration of serializers" in {
       val serializer = SerializationExtension(system).findSerializerFor(new ProgrammaticDummy)
-      serializer shouldBe theSameInstanceAs(testSerializer)
+      serializer shouldBe theSameInstanceAs(programmaticDummySerializer)
     }
 
     "allow a configured binding to hook up to a programmatic serializer" in {
       val serializer = SerializationExtension(system).findSerializerFor(new ConfigurationDummy)
-      serializer shouldBe theSameInstanceAs(testSerializer)
+      serializer shouldBe theSameInstanceAs(programmaticDummySerializer)
     }
 
   }
@@ -73,7 +81,7 @@ class SerializationSetupSpec extends AkkaSpec(
   // in another system with allow-java-serialization=off
   val addedJavaSerializationSettings = SerializationSetup { _ ⇒
     List(
-      SerializerDetails("test", testSerializer, List(classOf[ProgrammaticDummy])),
+      SerializerDetails("test", programmaticDummySerializer, List(classOf[ProgrammaticDummy])),
       SerializerDetails("java-manual", new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]), List(classOf[ProgrammaticJavaDummy])))
   }
   val addedJavaSerializationProgramaticallyButDisabledSettings = BootstrapSetup(None, Some(ConfigFactory.parseString("""
@@ -86,7 +94,11 @@ class SerializationSetupSpec extends AkkaSpec(
     """)), None)
 
   val addedJavaSerializationViaSettingsSystem =
-    ActorSystem("addedJavaSerializationSystem", ActorSystemSetup(addedJavaSerializationProgramaticallyButDisabledSettings, addedJavaSerializationSettings))
+    ActorSystem(
+      "addedJavaSerializationSystem",
+      ActorSystemSetup(
+        addedJavaSerializationProgramaticallyButDisabledSettings,
+        addedJavaSerializationSettings))
 
   "Disabling java serialization" should {
 
