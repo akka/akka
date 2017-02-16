@@ -123,26 +123,47 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   def sendMessage(msg: Envelope): Unit =
     try {
-      if (system.settings.SerializeAllMessages) {
-        val unwrapped = (msg.message match {
-          case DeadLetter(wrapped, _, _) ⇒ wrapped
-          case other                     ⇒ other
-        }).asInstanceOf[AnyRef]
-        if (!unwrapped.isInstanceOf[NoSerializationVerificationNeeded]) {
-          val s = SerializationExtension(system)
-          val serializer = s.findSerializerFor(unwrapped)
-          val bytes = serializer.toBinary(unwrapped)
-          serializer match {
-            case ser2: SerializerWithStringManifest ⇒
-              val manifest = ser2.manifest(unwrapped)
-              s.deserialize(bytes, serializer.identifier, manifest).get != null
-            case _ ⇒
-              s.deserialize(bytes, unwrapped.getClass).get
-          }
+      val msgToDispatch =
+        if (!system.settings.SerializeAllMessages) {
+          msg
+        } else {
+          serializeAndDeserialize(msg)
         }
-      }
-      dispatcher.dispatch(this, msg)
+
+      dispatcher.dispatch(this, msgToDispatch)
     } catch handleException
+
+  private def serializeAndDeserialize(envelope: Envelope): Envelope = {
+
+    val unwrappedMessage =
+      (envelope.message match {
+        case DeadLetter(wrapped, _, _) ⇒ wrapped
+        case other                     ⇒ other
+      }).asInstanceOf[AnyRef]
+
+    unwrappedMessage match {
+      case _: NoSerializationVerificationNeeded ⇒ envelope
+      case msg ⇒
+        val deserializedMsg = serializeAndDeserializePayload(msg)
+        envelope.message match {
+          case dl: DeadLetter ⇒ envelope.copy(message = dl.copy(message = deserializedMsg))
+          case _              ⇒ envelope.copy(message = deserializedMsg)
+        }
+    }
+  }
+
+  private def serializeAndDeserializePayload(obj: AnyRef): AnyRef = {
+    val s = SerializationExtension(system)
+    val serializer = s.findSerializerFor(obj)
+    val bytes = serializer.toBinary(obj)
+    serializer match {
+      case ser2: SerializerWithStringManifest ⇒
+        val manifest = ser2.manifest(obj)
+        s.deserialize(bytes, serializer.identifier, manifest).get
+      case _ ⇒
+        s.deserialize(bytes, obj.getClass).get
+    }
+  }
 
   override def sendSystemMessage(message: SystemMessage): Unit = try dispatcher.systemDispatch(this, message) catch handleException
 
