@@ -33,7 +33,24 @@ with the futures completion. For example you should not access the Actors state 
 (such as `map`, `onComplete`, ...) and instead you should use the `pipe` pattern to pipe the result back
 to the Actor as a message:
 
-@@snip [HttpClientExampleDocTest.java](../../../../../test/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #single-request-in-actor-example }
+```java
+class Myself extends AbstractActor {
+  final Http http = Http.get(context().system());
+  final ExecutionContextExecutor dispatcher = context().dispatcher();
+  final Materializer materializer = ActorMaterializer.create(context());
+
+  public Myself() { // syntax changes slightly in Akka 2.5, see the migration guide
+    receive(ReceiveBuilder
+     .match(String.class, url -> {
+       pipe(fetch (url), dispatcher).to(self());
+     }).build());
+  }
+
+  CompletionStage<HttpResponse> fetch(String url) {
+    return http.singleRequest(HttpRequest.create(url), materializer);
+  }
+}
+```
 
 @@@ warning
 

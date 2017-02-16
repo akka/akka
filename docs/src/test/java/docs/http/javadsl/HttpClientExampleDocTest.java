@@ -5,29 +5,20 @@
 package docs.http.javadsl;
 
 import akka.Done;
-import akka.actor.AbstractActor;
-import akka.http.javadsl.ConnectHttp;
-import akka.http.javadsl.HostConnectionPool;
-import akka.japi.Pair;
-
-import akka.japi.pf.ReceiveBuilder;
+import akka.actor.*;
 import akka.stream.Materializer;
 import akka.util.ByteString;
-import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContextExecutor;
-import scala.concurrent.Future;
 import akka.stream.javadsl.*;
 import akka.http.javadsl.OutgoingConnection;
 import akka.http.javadsl.Http;
 
 import static akka.http.javadsl.ConnectHttp.toHost;
-import static akka.pattern.PatternsCS.*;
 
 import java.util.concurrent.CompletionStage;
 
 //#manual-entity-consume-example-1
 import java.io.File;
-import akka.actor.ActorSystem;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function; 
@@ -35,7 +26,6 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Framing;
 import akka.http.javadsl.model.*;
 import scala.concurrent.duration.FiniteDuration;
-import scala.util.Try;
 //#manual-entity-consume-example-1
 
 @SuppressWarnings("unused")
@@ -169,25 +159,4 @@ public class HttpClientExampleDocTest {
           .singleRequest(HttpRequest.create("http://akka.io"), materializer);
     //#single-request-example
   }
-
-  static
-      //#single-request-in-actor-example
-    class Myself extends AbstractActor {
-      final Http http = Http.get(context().system());
-      final ExecutionContextExecutor dispatcher = context().dispatcher();
-      final Materializer materializer = ActorMaterializer.create(context());
-
-      public Myself() {
-        receive(ReceiveBuilder
-         .match(String.class, url -> {
-           pipe(fetch (url), dispatcher).to(self());
-         }).build());
-      }
-
-      CompletionStage<HttpResponse> fetch(String url) {
-        return http.singleRequest(HttpRequest.create(url), materializer);
-      }
-    }
-    //#single-request-in-actor-example
-
 }
