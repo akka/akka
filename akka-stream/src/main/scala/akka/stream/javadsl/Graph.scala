@@ -263,20 +263,34 @@ object Partition {
  *
  * '''Completes when''' upstream completes
  *
- * '''Cancels when''' all downstreams cancel
+ * '''Cancels when''' If eagerCancel is enabled: when any downstream cancels; otherwise: when all downstreams cancel
  */
 object Balance {
   /**
    * Create a new `Balance` stage with the specified input type.
    *
+   * @param outputCount number of output ports
+   * @param waitForAllDownstreams if `true` it will not start emitting
+   *   elements to downstream outputs until all of them have requested at least one element
+   * @param eagerCancel if true, balance cancels upstream if any of its downstreams cancel
+   */
+  def create[T](outputCount: Int, waitForAllDownstreams: Boolean, eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+    scaladsl.Balance(outputCount, waitForAllDownstreams, eagerCancel)
+
+  /**
+   * Create a new `Balance` stage with the specified input type.
+   *
+   * @param outputCount number of output ports
    * @param waitForAllDownstreams if `true` it will not start emitting
    *   elements to downstream outputs until all of them have requested at least one element
    */
   def create[T](outputCount: Int, waitForAllDownstreams: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
-    scaladsl.Balance(outputCount, waitForAllDownstreams)
+    create(outputCount, waitForAllDownstreams, eagerCancel = false)
 
   /**
    * Create a new `Balance` stage with the specified input type.
+   *
+   * @param outputCount number of output ports
    */
   def create[T](outputCount: Int): Graph[UniformFanOutShape[T, T], NotUsed] =
     create(outputCount, waitForAllDownstreams = false)

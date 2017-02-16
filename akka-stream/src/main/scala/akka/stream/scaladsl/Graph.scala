@@ -831,9 +831,10 @@ object Balance {
    * @param waitForAllDownstreams if you use `waitForAllDownstreams = true` it will not start emitting
    *   elements to downstream outputs until all of them have requested at least one element,
    *   default value is `false`
+   * @param eagerCancel if true, balance cancels upstream if any of its downstreams cancel
    */
-  def apply[T](outputPorts: Int, waitForAllDownstreams: Boolean = false): Balance[T] =
-    new Balance(outputPorts, waitForAllDownstreams)
+  def apply[T](outputPorts: Int, waitForAllDownstreams: Boolean = false, eagerCancel: Boolean = false): Balance[T] =
+    new Balance(outputPorts, waitForAllDownstreams, eagerCancel)
 }
 
 /**
@@ -849,9 +850,9 @@ object Balance {
  *
  * '''Completes when''' upstream completes
  *
- * '''Cancels when''' all downstreams cancel
+ * '''Cancels when''' If eagerCancel is enabled: when any downstream cancels; otherwise: when all downstreams cancel
  */
-final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean, eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
   // one output might seem counter intuitive but saves us from special handling in other places
   require(outputPorts >= 1, "A Balance must have one or more output ports")
   val in: Inlet[T] = Inlet[T]("Balance.in")
@@ -908,11 +909,14 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean)
         }
 
         override def onDownstreamFinish() = {
-          downstreamsRunning -= 1
-          if (downstreamsRunning == 0) completeStage()
-          else if (!hasPulled && needDownstreamPulls > 0) {
-            needDownstreamPulls -= 1
-            if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)
+          if (eagerCancel) completeStage()
+          else {
+            downstreamsRunning -= 1
+            if (downstreamsRunning == 0) completeStage()
+            else if (!hasPulled && needDownstreamPulls > 0) {
+              needDownstreamPulls -= 1
+              if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)
+            }
           }
         }
       })
