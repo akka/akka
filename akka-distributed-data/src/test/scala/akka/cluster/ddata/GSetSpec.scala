@@ -39,8 +39,7 @@ class GSetSpec extends WordSpec with Matchers {
       val c12 = c11 + user1
       val c13 = c12 + user2
 
-      c13.elements should contain(user1)
-      c13.elements should contain(user2)
+      c13.elements should ===(Set(user1, user2))
 
       // set 2
       val c21 = GSet.empty[String]
@@ -48,21 +47,54 @@ class GSetSpec extends WordSpec with Matchers {
       val c22 = c21 + user3
       val c23 = c22 + user4
 
-      c23.elements should contain(user3)
-      c23.elements should contain(user4)
+      c23.elements should ===(Set(user3, user4))
 
       // merge both ways
       val merged1 = c13 merge c23
-      merged1.elements should contain(user1)
-      merged1.elements should contain(user2)
-      merged1.elements should contain(user3)
-      merged1.elements should contain(user4)
+      merged1.elements should ===(Set(user1, user2, user3, user4))
 
       val merged2 = c23 merge c13
-      merged2.elements should contain(user1)
-      merged2.elements should contain(user2)
-      merged2.elements should contain(user3)
-      merged2.elements should contain(user4)
+      merged2.elements should ===(Set(user1, user2, user3, user4))
+    }
+
+    "be able to work with deltas" in {
+      // set 1
+      val c11 = GSet.empty[String]
+
+      val c12 = c11 + user1
+      val c13 = c12 + user2
+
+      c12.delta.elements should ===(Set(user1))
+      c13.delta.elements should ===(Set(user1, user2))
+
+      // deltas build state
+      (c12 merge c13.delta) should ===(c13)
+
+      // own deltas are idempotent
+      (c13 merge c13.delta) should ===(c13)
+
+      // set 2
+      val c21 = GSet.empty[String]
+
+      val c22 = c21 + user3
+      val c23 = c22.resetDelta + user4
+
+      c22.delta.elements should ===(Set(user3))
+      c23.delta.elements should ===(Set(user4))
+
+      c23.elements should ===(Set(user3, user4))
+
+      val c33 = c13 merge c23
+
+      // merge both ways
+      val merged1 = GSet.empty[String] merge c12.delta merge c13.delta merge c22.delta merge c23.delta
+      merged1.elements should ===(Set(user1, user2, user3, user4))
+
+      val merged2 = GSet.empty[String] merge c23.delta merge c13.delta merge c22.delta
+      merged2.elements should ===(Set(user1, user2, user3, user4))
+
+      merged1 should ===(c33)
+      merged2 should ===(c33)
     }
 
     "be able to have its user set correctly merged with another GSet with overlapping user sets" in {
