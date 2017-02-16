@@ -26,7 +26,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   }
 
   case class Resolved(name: String, ipv4: immutable.Seq[Inet4Address], ipv6: immutable.Seq[Inet6Address]) extends Command {
-    val addrOption: Option[InetAddress] = ipv4.headOption orElse ipv6.headOption
+    val addrOption: Option[InetAddress] = IpVersionSelector.getInetAddress(ipv4.headOption, ipv6.headOption)
 
     @throws[UnknownHostException]
     def addr: InetAddress = addrOption match {
@@ -88,4 +88,12 @@ class DnsExt(system: ExtendedActorSystem) extends IO.Extension {
   }
 
   def getResolver: ActorRef = manager
+}
+
+object IpVersionSelector {
+  def getInetAddress(ipv4: Option[Inet4Address], ipv6: Option[Inet6Address]): Option[InetAddress] =
+    sys.props.get("java.net.preferIPv6Addresses") match {
+      case Some(value: String) if ("true".equals(value)) ⇒ ipv6 orElse ipv4
+      case _ ⇒ ipv4 orElse ipv6
+    }
 }
