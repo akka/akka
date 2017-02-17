@@ -18,11 +18,11 @@ case class SerializableDummy() // since case classes are serializable
 
 object AllowJavaSerializationOffSpec {
 
-  val testSerializer = new TestSerializer
+  val dummySerializer = new FakeSerializer
 
   val serializationSettings = SerializationSetup { _ ⇒
     List(
-      SerializerDetails("test", testSerializer, List(classOf[ProgrammaticDummy])))
+      SerializerDetails("test", dummySerializer, List(classOf[ProgrammaticDummy])))
   }
   val bootstrapSettings = BootstrapSetup(None, Some(ConfigFactory.parseString("""
     akka {
@@ -60,7 +60,7 @@ class AllowJavaSerializationOffSpec extends AkkaSpec(
   // in another system with allow-java-serialization=off
   val addedJavaSerializationSettings = SerializationSetup { _ ⇒
     List(
-      SerializerDetails("test", testSerializer, List(classOf[ProgrammaticDummy])),
+      SerializerDetails("test", dummySerializer, List(classOf[ProgrammaticDummy])),
       SerializerDetails("java-manual", new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]), List(classOf[ProgrammaticJavaDummy])))
   }
   val addedJavaSerializationProgramaticallyButDisabledSettings = BootstrapSetup(None, Some(ConfigFactory.parseString("""

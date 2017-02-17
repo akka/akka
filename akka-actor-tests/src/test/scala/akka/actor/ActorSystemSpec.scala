@@ -153,13 +153,15 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "log dead letters" in {
       val sys = ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
       try {
+        val probe = TestProbe()(sys)
         val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
-        watch(a)
-        a ! "run"
-        expectTerminated(a)
+        probe.watch(a)
+        a.tell("run", probe.ref)
+        probe.expectTerminated(a)
         EventFilter.info(pattern = "not delivered", occurrences = 1).intercept {
-          a ! "boom"
+          a.tell("boom", probe.ref)
         }(sys)
+
       } finally shutdown(sys)
     }
 

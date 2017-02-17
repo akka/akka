@@ -309,6 +309,18 @@ it is possible to disable the additional serializers and continue using Java ser
 Please note that this setting must be the same on all nodes participating in a cluster, otherwise
 the mis-aligned serialization configurations will cause deserialization errors on the receiving nodes.
 
+With serialize-messages the deserialized message is actually sent
+-----------------------------------------------------------------
+
+The flag ``akka.actor.serialize-message = on`` triggers serialization and deserialization of each message sent in the
+``ActorSystem``. With this setting enabled the message actually passed on to the actor previously was the original
+message instance, this has now changed to be the deserialized message instance.
+
+This may cause tests that rely on messages being the same instance (for example by having mutable messages with attributes
+that are asserted in the tests) to not work any more with this setting enabled. For such cases the recommendation is to
+either not rely on messages being the same instance or turn the setting off.
+
+
 Wire Protocol Compatibility
 ---------------------------
 
@@ -323,7 +335,7 @@ Cluster
 .. _mig25_rolling:
 
 Rolling Update
-----------------
+--------------
 
 It is possible to do a rolling update from Akka 2.4.16 to 2.5-M1, i.e. running a cluster of 2.4.16 nodes and
 join nodes running 2.5-M1 followed by shutting down the old nodes.
