@@ -28,7 +28,7 @@ object SerializationTests {
       actor {
         serialize-messages = off
         serializers {
-          test = "akka.serialization.TestSerializer"
+          test = "akka.serialization.NoopSerializer"
         }
 
         serialization-bindings {
@@ -112,7 +112,7 @@ object SerializationTests {
     akka {
       actor {
         serializers {
-          test = "akka.serialization.TestSerializer"
+          test = "akka.serialization.NoopSerializer"
         }
 
         serialization-bindings {
@@ -148,7 +148,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 
     "have correct bindings" in {
       ser.bindings.collectFirst { case (c, s) if c == addr.getClass ⇒ s.getClass } should ===(Some(classOf[JavaSerializer]))
-      ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] ⇒ s.getClass } should ===(Some(classOf[UselessSerializer]))
+      ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] ⇒ s.getClass } should ===(Some(classOf[NoopSerializer]))
     }
 
     "serialize Address" in {
@@ -196,47 +196,47 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
     }
 
     "resolve serializer by direct interface" in {
-      ser.serializerFor(classOf[SimpleMessage]).getClass should ===(classOf[UselessSerializer])
+      ser.serializerFor(classOf[SimpleMessage]).getClass should ===(classOf[NoopSerializer])
     }
 
     "resolve serializer by interface implemented by super class" in {
-      ser.serializerFor(classOf[ExtendedSimpleMessage]).getClass should ===(classOf[UselessSerializer])
+      ser.serializerFor(classOf[ExtendedSimpleMessage]).getClass should ===(classOf[NoopSerializer])
     }
 
     "resolve serializer by indirect interface" in {
-      ser.serializerFor(classOf[AnotherMessage]).getClass should ===(classOf[UselessSerializer])
+      ser.serializerFor(classOf[AnotherMessage]).getClass should ===(classOf[NoopSerializer])
     }
 
     "resolve serializer by indirect interface implemented by super class" in {
-      ser.serializerFor(classOf[ExtendedAnotherMessage]).getClass should ===(classOf[UselessSerializer])
+      ser.serializerFor(classOf[ExtendedAnotherMessage]).getClass should ===(classOf[NoopSerializer])
     }
 
     "resolve serializer for message with binding" in {
-      ser.serializerFor(classOf[PlainMessage]).getClass should ===(classOf[UselessSerializer])
+      ser.serializerFor(classOf[PlainMessage]).getClass should ===(classOf[NoopSerializer])
     }
 
     "resolve serializer for message extending class with with binding" in {
-      ser.serializerFor(classOf[ExtendedPlainMessage]).getClass should ===(classOf[UselessSerializer])
+      ser.serializerFor(classOf[ExtendedPlainMessage]).getClass should ===(classOf[NoopSerializer])
     }
 
     "give warning for message with several bindings" in {
       EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
-        ser.serializerFor(classOf[Both]).getClass should (be(classOf[UselessSerializer]) or be(classOf[JavaSerializer]))
+        ser.serializerFor(classOf[Both]).getClass should (be(classOf[NoopSerializer]) or be(classOf[JavaSerializer]))
       }
     }
 
     "resolve serializer in the order of the bindings" in {
       ser.serializerFor(classOf[A]).getClass should ===(classOf[JavaSerializer])
-      ser.serializerFor(classOf[B]).getClass should ===(classOf[UselessSerializer])
+      ser.serializerFor(classOf[B]).getClass should ===(classOf[NoopSerializer])
       EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
-        ser.serializerFor(classOf[C]).getClass should (be(classOf[UselessSerializer]) or be(classOf[JavaSerializer]))
+        ser.serializerFor(classOf[C]).getClass should (be(classOf[NoopSerializer]) or be(classOf[JavaSerializer]))
       }
     }
 
     "resolve serializer in the order of most specific binding first" in {
       ser.serializerFor(classOf[A]).getClass should ===(classOf[JavaSerializer])
-      ser.serializerFor(classOf[D]).getClass should ===(classOf[UselessSerializer])
-      ser.serializerFor(classOf[E]).getClass should ===(classOf[UselessSerializer])
+      ser.serializerFor(classOf[D]).getClass should ===(classOf[NoopSerializer])
+      ser.serializerFor(classOf[E]).getClass should ===(classOf[NoopSerializer])
     }
 
     "throw java.io.NotSerializableException when no binding" in {
@@ -451,7 +451,7 @@ class OverriddenSystemMessageSerializationSpec extends AkkaSpec(SerializationTes
     "resolve to a single serializer" in {
       EventFilter.warning(start = "Multiple serializers found", occurrences = 0) intercept {
         for (smc ← systemMessageClasses) {
-          ser.serializerFor(smc).getClass should ===(classOf[UselessSerializer])
+          ser.serializerFor(smc).getClass should ===(classOf[NoopSerializer])
         }
       }
     }
@@ -533,7 +533,7 @@ class NoVerificationWarningOffSpec extends AkkaSpec(
 
 protected[akka] trait TestSerializable
 
-protected[akka] class UselessSerializer extends Serializer {
+protected[akka] class NoopSerializer extends Serializer {
   def includeManifest: Boolean = false
 
   def identifier = 9999

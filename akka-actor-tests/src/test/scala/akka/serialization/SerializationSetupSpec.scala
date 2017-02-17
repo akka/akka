@@ -3,6 +3,9 @@
  */
 package akka.serialization
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem, Terminated }
 import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
@@ -15,17 +18,35 @@ class ProgrammaticDummy
 case class ProgrammaticJavaDummy()
 case class SerializableDummy() // since case classes are serializable
 
-final class ProgrammaticDummySerializer extends Serializer {
+/**
+ * Keeps a registry of each object "serialized", returns an identifier, for every "deserialization" the original object
+ * is returned. Useful for tests needing serialization back and forth but that must avoid java serialization for some
+ * reason.
+ */
+final class FakeSerializer extends Serializer {
   val includeManifest = false
   val identifier = 666
-  def toBinary(o: AnyRef) = Array.emptyByteArray
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]) = new ProgrammaticDummy
+  private val registry = new ConcurrentHashMap[Integer, AnyRef]()
+  private val counter = new AtomicInteger(0)
+
+  def toBinary(o: AnyRef) = {
+    val id = counter.addAndGet(1)
+    require(id < Byte.MaxValue)
+    registry.put(id, o)
+    Array(id.toByte)
+  }
+
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]) = {
+    require(bytes.length == 1)
+    val id = bytes(0).toInt
+    registry.get(id)
+  }
 }
 
 object SerializationSetupSpec {
 
-  val programmaticDummySerializer = new ProgrammaticDummySerializer
-  val testSerializer = new UselessSerializer
+  val programmaticDummySerializer = new FakeSerializer
+  val testSerializer = new NoopSerializer
 
   val serializationSettings = SerializationSetup { _ ⇒
     List(

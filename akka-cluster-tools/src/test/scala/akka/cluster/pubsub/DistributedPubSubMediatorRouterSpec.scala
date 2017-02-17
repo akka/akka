@@ -16,6 +16,7 @@ object DistributedPubSubMediatorRouterSpec {
   def config(routingLogic: String) = s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
+    akka.actor.serialize-messages = off
     akka.remote.netty.tcp.port=0
     akka.remote.artery.canonical.port=0
     akka.remote.log-remote-lifecycle-events = off
