@@ -4,7 +4,7 @@
 package akka.testkit
 
 import language.postfixOps
-import scala.annotation.tailrec
+import scala.annotation.{ tailrec }
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import akka.util.{ Timeout, BoxedType }
 import scala.util.control.NonFatal
+import scala.Some
 import java.util.concurrent.TimeUnit
 import akka.actor.IllegalActorStateException
 import akka.actor.DeadLetter
@@ -122,7 +123,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
 }
 
 /**
- * Implementation trait behind the [[akka.testkit.scaladsl.TestKit]] class: you may use
+ * Implementation trait behind the [[akka.testkit.TestKit]] class: you may use
  * this if inheriting from a concrete class is not possible.
  *
  * This trait requires the concrete class mixing it in to provide an
@@ -162,7 +163,7 @@ trait TestKitBase {
     val ref = impl.systemActorOf(
       TestActor.props(queue)
         .withDispatcher(CallingThreadDispatcher.Id),
-      "%s-%d".format(testActorName, TestKitBase.testActorId.incrementAndGet))
+      "%s-%d".format(testActorName, TestKit.testActorId.incrementAndGet))
     awaitCond(ref match {
       case r: RepointableRef ⇒ r.isStarted
       case _                 ⇒ true
@@ -736,7 +737,7 @@ trait TestKitBase {
     actorSystem:          ActorSystem = system,
     duration:             Duration    = 5.seconds.dilated.min(10.seconds),
     verifySystemShutdown: Boolean     = false) {
-    TestKitBase.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
+    TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }
 
   /**
@@ -782,7 +783,52 @@ trait TestKitBase {
   private def format(u: TimeUnit, d: Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
 }
 
-object TestKitBase {
+/**
+ * Test kit for testing actors. Inheriting from this class enables reception of
+ * replies from actors, which are queued by an internal actor and can be
+ * examined using the `expectMsg...` methods. Assertions and bounds concerning
+ * timing are available in the form of `within` blocks.
+ *
+ * {{{
+ * class Test extends TestKit(ActorSystem()) {
+ *   try {
+ *
+ *     val test = system.actorOf(Props[SomeActor])
+ *
+ *       within (1.second) {
+ *         test ! SomeWork
+ *         expectMsg(Result1) // bounded to 1 second
+ *         expectMsg(Result2) // bounded to the remainder of the 1 second
+ *       }
+ *
+ *     } finally {
+ *       system.terminate()
+ *     }
+ *
+ *   } finally {
+ *     system.terminate()
+ *   }
+ * }
+ * }}}
+ *
+ * Beware of two points:
+ *
+ *  - the ActorSystem passed into the constructor needs to be shutdown,
+ *    otherwise thread pools and memory will be leaked
+ *  - this class is not thread-safe (only one actor with one queue, one stack
+ *    of `within` blocks); it is expected that the code is executed from a
+ *    constructor as shown above, which makes this a non-issue, otherwise take
+ *    care not to run tests within a single test class instance in parallel.
+ *
+ * It should be noted that for CI servers and the like all maximum Durations
+ * are scaled using their Duration.dilated method, which uses the
+ * TestKitExtension.Settings.TestTimeFactor settable via akka.conf entry "akka.test.timefactor".
+ *
+ * @since 1.1
+ */
+class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
+
+object TestKit {
   private[testkit] val testActorId = new AtomicInteger(0)
 
   /**
@@ -836,88 +882,9 @@ object TestKitBase {
 }
 
 /**
- * Test kit for testing actors. Inheriting from this class enables reception of
- * replies from actors, which are queued by an internal actor and can be
- * examined using the `expectMsg...` methods. Assertions and bounds concerning
- * timing are available in the form of `within` blocks.
- *
- * {{{
- * class Test extends TestKit(ActorSystem()) {
- *   try {
- *
- *     val test = system.actorOf(Props[SomeActor])
- *
- *       within (1.second) {
- *         test ! SomeWork
- *         expectMsg(Result1) // bounded to 1 second
- *         expectMsg(Result2) // bounded to the remainder of the 1 second
- *       }
- *
- *     } finally {
- *       system.terminate()
- *     }
- *
- *   } finally {
- *     system.terminate()
- *   }
- * }
- * }}}
- *
- * Beware of two points:
- *
- *  - the ActorSystem passed into the constructor needs to be shutdown,
- *    otherwise thread pools and memory will be leaked
- *  - this class is not thread-safe (only one actor with one queue, one stack
- *    of `within` blocks); it is expected that the code is executed from a
- *    constructor as shown above, which makes this a non-issue, otherwise take
- *    care not to run tests within a single test class instance in parallel.
- *
- * It should be noted that for CI servers and the like all maximum Durations
- * are scaled using their Duration.dilated method, which uses the
- * TestKitExtension.Settings.TestTimeFactor settable via akka.conf entry "akka.test.timefactor".
- *
- * @since 1.1
- */
-@deprecated("Use akka.testkit.scaladsl.TestKit instead.", since = "2.5.0")
-class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
-
-@deprecated("Use akka.testkit.scaladsl.TestKit instead.", since = "2.5.0")
-object TestKit {
-  private[testkit] val testActorId = new AtomicInteger(0)
-
-  /**
-   * Await until the given condition evaluates to `true` or the timeout
-   * expires, whichever comes first.
-   */
-  def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis, noThrow: Boolean = false): Boolean = {
-    TestKitBase.awaitCond(p, max, interval, noThrow)
-  }
-
-  /**
-   * Obtain current timestamp as Duration for relative measurements (using System.nanoTime).
-   */
-  def now: Duration = System.nanoTime().nanos
-
-  /**
-   * Shut down an actor system and wait for termination.
-   * On failure debug output will be logged about the remaining actors in the system.
-   *
-   * If verifySystemShutdown is true, then an exception will be thrown on failure.
-   */
-  def shutdownActorSystem(
-    actorSystem:          ActorSystem,
-    duration:             Duration    = 10.seconds,
-    verifySystemShutdown: Boolean     = false): Unit = {
-
-    TestKitBase.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
-  }
-
-}
-
-/**
  * TestKit-based probe which allows sending, reception and reply.
  */
-class TestProbe(_system: ActorSystem, name: String) extends { implicit val system = _system } with TestKitBase {
+class TestProbe(_application: ActorSystem, name: String) extends TestKit(_application) {
 
   def this(_application: ActorSystem) = this(_application, "testProbe")
 
@@ -957,12 +924,10 @@ object TestProbe {
   def apply(name: String)(implicit system: ActorSystem) = new TestProbe(system, name)
 }
 
-@deprecated("Use akka.testkit.scaladsl.ImplicitSender instead.", since = "2.5.0")
 trait ImplicitSender { this: TestKitBase ⇒
   implicit def self = testActor
 }
 
-@deprecated("Use akka.testkit.scaladsl.DefaultTimeout instead.", since = "2.5.0")
 trait DefaultTimeout { this: TestKitBase ⇒
   implicit val timeout: Timeout = testKitSettings.DefaultTimeout
 }
@@ -992,4 +957,3 @@ private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends s
   final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
   final override def apply(x: A): B = cache
 }
-

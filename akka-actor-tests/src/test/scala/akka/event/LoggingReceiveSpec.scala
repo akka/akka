@@ -3,13 +3,11 @@
  */
 package akka.event
 
-import akka.testkit._
-import akka.testkit.scaladsl.TestKit
-
 import language.postfixOps
 
 import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.duration._
+import akka.testkit._
 import org.scalatest.WordSpec
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._

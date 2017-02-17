@@ -11,7 +11,6 @@ import scala.concurrent.{ Promise, Await }
 import scala.concurrent.duration._
 import akka.pattern.ask
 import akka.dispatch.Dispatcher
-import akka.testkit.scaladsl._
 
 /**
  * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.

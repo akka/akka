@@ -9,7 +9,7 @@ import java.util.Date
 import java.util.concurrent.{ CountDownLatch, TimeoutException }
 
 import akka.testkit.TestDuration
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Awaitable, CanAwait, Promise }

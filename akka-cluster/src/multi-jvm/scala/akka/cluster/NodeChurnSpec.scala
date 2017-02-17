@@ -8,7 +8,7 @@ import akka.event.Logging.Info
 import akka.remote.RARP
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.immutable

@@ -16,7 +16,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.testkit.scaladsl.TestKit
 import com.typesafe.config.ConfigFactory
 
 final case class DurableDataSpecConfig(writeBehind: Boolean) extends MultiNodeConfig {

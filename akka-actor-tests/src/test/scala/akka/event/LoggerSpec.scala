@@ -4,7 +4,6 @@
 package akka.event
 
 import akka.testkit._
-import akka.testkit.scaladsl.TestKit
 import scala.concurrent.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
@@ -15,7 +14,6 @@ import akka.serialization.SerializationExtension
 import akka.event.Logging._
 import akka.util.Helpers
 import akka.event.Logging.InitializeLogger
-import scala.Some
 import akka.event.Logging.Warning
 
 object LoggerSpec {

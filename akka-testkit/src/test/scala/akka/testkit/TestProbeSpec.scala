@@ -1,7 +1,5 @@
 package akka.testkit
 
-import akka.testkit.scaladsl._
-
 import language.postfixOps
 
 import akka.actor._

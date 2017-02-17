@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.actor.Actor
 import akka.actor.Props
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 import akka.contrib.throttle.Throttler._
 import org.scalatest.WordSpecLike
 import org.scalatest.Matchers

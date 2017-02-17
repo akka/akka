@@ -26,7 +26,7 @@ class AkkaSpecSpec extends WordSpec with Matchers {
           a ! 42
         }
       } finally {
-        TestKitBase.shutdownActorSystem(system)
+        TestKit.shutdownActorSystem(system)
       }
     }
 
@@ -40,7 +40,7 @@ class AkkaSpecSpec extends WordSpec with Matchers {
       var refs = Seq.empty[ActorRef]
       val spec = new AkkaSpec(system) { refs = Seq(testActor, system.actorOf(Props.empty, "name")) }
       refs foreach (_.isTerminated should not be true)
-      TestKitBase.shutdownActorSystem(system)
+      TestKit.shutdownActorSystem(system)
       spec.awaitCond(refs forall (_.isTerminated), 2 seconds)
     }
 
@@ -83,15 +83,15 @@ class AkkaSpecSpec extends WordSpec with Matchers {
 
         val latch = new TestLatch(1)(system)
         system.registerOnTermination(latch.countDown())
-        TestKitBase.shutdownActorSystem(system)
+        TestKit.shutdownActorSystem(system)
         Await.ready(latch, 2 seconds)
         Await.result(davyJones ? "Die!", timeout.duration) should ===("finally gone")
 
         // this will typically also contain log messages which were sent after the logger shutdown
         locker should contain(DeadLetter(42, davyJones, probe.ref))
       } finally {
-        TestKitBase.shutdownActorSystem(system)
-        TestKitBase.shutdownActorSystem(otherSystem)
+        TestKit.shutdownActorSystem(system)
+        TestKit.shutdownActorSystem(otherSystem)
       }
     }
   }

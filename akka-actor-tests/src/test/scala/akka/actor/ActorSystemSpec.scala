@@ -10,7 +10,7 @@ import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.pattern.ask
 import akka.testkit._
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 import akka.util.Helpers.ConfigOps
 import akka.util.{ Switch, Timeout }
 import com.typesafe.config.{ Config, ConfigFactory }

@@ -4,9 +4,7 @@ import org.scalatest.Matchers
 import scala.concurrent.duration._
 import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpecLike }
 import akka.actor.{ Props, ActorSystem }
-import akka.testkit.TimingTest
-import akka.testkit.scaladsl.TestKit
-import akka.testkit.TestProbe
+import akka.testkit.{ TimingTest, TestProbe, TestKit }
 import akka.camel.internal.ActivationProtocol._
 
 class ActivationTrackerTest extends TestKit(ActorSystem("ActivationTrackerTest")) with WordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {

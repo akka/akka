@@ -15,7 +15,7 @@ import akka.actor._
 import akka.util.Timeout
 import akka.remote.testconductor.{ RoleName, TestConductor, TestConductorExt }
 import akka.testkit._
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 import akka.testkit.TestEvent._
 
 import scala.concurrent.duration._

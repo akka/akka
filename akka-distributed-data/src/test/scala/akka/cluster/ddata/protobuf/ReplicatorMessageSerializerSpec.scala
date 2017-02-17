@@ -18,7 +18,7 @@ import akka.cluster.ddata.PruningState.PruningInitialized
 import akka.cluster.ddata.PruningState.PruningPerformed
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 import akka.util.ByteString
 import akka.cluster.UniqueAddress
 import akka.remote.RARP

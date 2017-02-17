@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import org.scalatest.WordSpec
 import akka.actor.ActorSystem
 import akka.serialization.{ Serializer, SerializationExtension }
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 
 class PersistenceSerializerDocSpec extends WordSpec {
 

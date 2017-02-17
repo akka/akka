@@ -409,7 +409,7 @@ object TestKit {
     duration:             Duration,
     verifySystemShutdown: Boolean): Unit = {
 
-    akka.testkit.TestKitBase.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
+    akka.testkit.TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }
 
   def shutdownActorSystem(actorSystem: ActorSystem): Unit = {

@@ -11,7 +11,7 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.testkit.TestActorRef
 import akka.actor.ActorRefFactory
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
 
 /**

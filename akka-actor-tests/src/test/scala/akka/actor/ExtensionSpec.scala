@@ -6,7 +6,7 @@ package akka.actor
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.testkit.EventFilter
-import akka.testkit.scaladsl.TestKit._
+import akka.testkit.TestKit._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
 import org.scalatest.junit.JUnitSuiteLike

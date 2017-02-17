@@ -9,7 +9,7 @@ import java.nio.channels.DatagramChannel
 import scala.util.Random
 import akka.actor.{ ActorSystem, Props }
 import akka.io.Udp
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 import org.scalatest.{ BeforeAndAfter, WordSpecLike }
 import scala.collection.JavaConversions.enumerationAsScalaIterator
 import org.scalatest.BeforeAndAfterAll

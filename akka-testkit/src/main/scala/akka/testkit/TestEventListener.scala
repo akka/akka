@@ -86,7 +86,7 @@ abstract class EventFilter(occurrences: Int) {
   }
 
   def awaitDone(max: Duration): Boolean = {
-    if (todo != Int.MaxValue && todo > 0) TestKitBase.awaitCond(todo <= 0, max, noThrow = true)
+    if (todo != Int.MaxValue && todo > 0) TestKit.awaitCond(todo <= 0, max, noThrow = true)
     todo == Int.MaxValue || todo == 0
   }
 

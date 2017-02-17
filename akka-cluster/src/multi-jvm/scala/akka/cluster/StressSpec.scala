@@ -3,8 +3,6 @@
  */
 package akka.cluster
 
-import akka.testkit.scaladsl.TestKit
-
 import language.postfixOps
 import scala.annotation.tailrec
 import scala.collection.immutable

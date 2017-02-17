@@ -10,7 +10,7 @@ import akka.actor.Props
 import akka.actor.Stash
 import akka.cluster.Cluster
 import akka.testkit.ImplicitSender
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers

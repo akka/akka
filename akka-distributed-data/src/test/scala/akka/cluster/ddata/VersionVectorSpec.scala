@@ -7,7 +7,7 @@ package akka.cluster.ddata
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.cluster.UniqueAddress
-import akka.testkit.scaladsl.TestKit
+import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike

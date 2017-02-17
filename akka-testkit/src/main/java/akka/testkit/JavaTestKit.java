@@ -4,8 +4,6 @@
 package akka.testkit;
 
 import akka.actor.Terminated;
-import akka.testkit.scaladsl.TestKit;
-import scala.Option;
 import scala.runtime.AbstractFunction0;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
