@@ -216,7 +216,7 @@ For clusters larger than 400 nodes (configurable, and suggested by empirical evi
 the 0.8 probability is gradually reduced to avoid overwhelming single stragglers with
 too many concurrent gossip requests. The gossip receiver also has a mechanism to
 protect itself from too many simultaneous gossip messages by dropping messages that
-have been enqueued in the mailbox for too long time.
+have been enqueued in the mailbox for too long of a time.
 
 While the cluster is in a converged state the gossiper only sends a small gossip status message containing the gossip
 version to the chosen node. As soon as there is a change to the cluster (meaning non-convergence)
