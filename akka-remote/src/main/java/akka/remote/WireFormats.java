@@ -4685,56 +4685,56 @@ public final class WireFormats {
      */
     akka.protobuf.ByteString getArgs(int index);
 
-    // repeated string classes = 5;
+    // repeated string manifests = 5;
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
      *
      * <pre>
      * serialized props parameters
-     * pre 2.5 wire protocol: contains class name for each arg
-     * 2.5+ wire protocol: contains string manifest for each arg
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
     java.util.List<java.lang.String>
-    getClassesList();
+    getManifestsList();
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
      *
      * <pre>
      * serialized props parameters
-     * pre 2.5 wire protocol: contains class name for each arg
-     * 2.5+ wire protocol: contains string manifest for each arg
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
-    int getClassesCount();
+    int getManifestsCount();
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
      *
      * <pre>
      * serialized props parameters
-     * pre 2.5 wire protocol: contains class name for each arg
-     * 2.5+ wire protocol: contains string manifest for each arg
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
-    java.lang.String getClasses(int index);
+    java.lang.String getManifests(int index);
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
      *
      * <pre>
      * serialized props parameters
-     * pre 2.5 wire protocol: contains class name for each arg
-     * 2.5+ wire protocol: contains string manifest for each arg
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
     akka.protobuf.ByteString
-        getClassesBytes(int index);
+        getManifestsBytes(int index);
 
     // repeated int32 serializerIds = 6;
     /**
      * <code>repeated int32 serializerIds = 6;</code>
      *
      * <pre>
-     * 2.5+ wire protocol: serializer id for each arg
+     * newer wire protocol: serializer id for each arg
      * </pre>
      */
     java.util.List<java.lang.Integer> getSerializerIdsList();
@@ -4742,7 +4742,7 @@ public final class WireFormats {
      * <code>repeated int32 serializerIds = 6;</code>
      *
      * <pre>
-     * 2.5+ wire protocol: serializer id for each arg
+     * newer wire protocol: serializer id for each arg
      * </pre>
      */
     int getSerializerIdsCount();
@@ -4750,7 +4750,7 @@ public final class WireFormats {
      * <code>repeated int32 serializerIds = 6;</code>
      *
      * <pre>
-     * 2.5+ wire protocol: serializer id for each arg
+     * newer wire protocol: serializer id for each arg
      * </pre>
      */
     int getSerializerIds(int index);
@@ -4868,10 +4868,10 @@ public final class WireFormats {
             }
             case 42: {
               if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-                classes_ = new akka.protobuf.LazyStringArrayList();
+                manifests_ = new akka.protobuf.LazyStringArrayList();
                 mutable_bitField0_ |= 0x00000008;
               }
-              classes_.add(input.readBytes());
+              manifests_.add(input.readBytes());
               break;
             }
             case 48: {
@@ -4928,7 +4928,7 @@ public final class WireFormats {
           args_ = java.util.Collections.unmodifiableList(args_);
         }
         if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-          classes_ = new akka.protobuf.UnmodifiableLazyStringList(classes_);
+          manifests_ = new akka.protobuf.UnmodifiableLazyStringList(manifests_);
         }
         if (((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
           serializerIds_ = java.util.Collections.unmodifiableList(serializerIds_);
@@ -5056,58 +5056,58 @@ public final class WireFormats {
       return args_.get(index);
     }
 
-    // repeated string classes = 5;
-    public static final int CLASSES_FIELD_NUMBER = 5;
-    private akka.protobuf.LazyStringList classes_;
+    // repeated string manifests = 5;
+    public static final int MANIFESTS_FIELD_NUMBER = 5;
+    private akka.protobuf.LazyStringList manifests_;
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
      *
      * <pre>
      * serialized props parameters
-     * pre 2.5 wire protocol: contains class name for each arg
-     * 2.5+ wire protocol: contains string manifest for each arg
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
     public java.util.List<java.lang.String>
-        getClassesList() {
-      return classes_;
+        getManifestsList() {
+      return manifests_;
     }
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
      *
      * <pre>
      * serialized props parameters
-     * pre 2.5 wire protocol: contains class name for each arg
-     * 2.5+ wire protocol: contains string manifest for each arg
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
-    public int getClassesCount() {
-      return classes_.size();
+    public int getManifestsCount() {
+      return manifests_.size();
     }
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
      *
      * <pre>
      * serialized props parameters
-     * pre 2.5 wire protocol: contains class name for each arg
-     * 2.5+ wire protocol: contains string manifest for each arg
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
-    public java.lang.String getClasses(int index) {
-      return classes_.get(index);
+    public java.lang.String getManifests(int index) {
+      return manifests_.get(index);
     }
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
      *
      * <pre>
      * serialized props parameters
-     * pre 2.5 wire protocol: contains class name for each arg
-     * 2.5+ wire protocol: contains string manifest for each arg
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
     public akka.protobuf.ByteString
-        getClassesBytes(int index) {
-      return classes_.getByteString(index);
+        getManifestsBytes(int index) {
+      return manifests_.getByteString(index);
     }
 
     // repeated int32 serializerIds = 6;
@@ -5117,7 +5117,7 @@ public final class WireFormats {
      * <code>repeated int32 serializerIds = 6;</code>
      *
      * <pre>
-     * 2.5+ wire protocol: serializer id for each arg
+     * newer wire protocol: serializer id for each arg
      * </pre>
      */
     public java.util.List<java.lang.Integer>
@@ -5128,7 +5128,7 @@ public final class WireFormats {
      * <code>repeated int32 serializerIds = 6;</code>
      *
      * <pre>
-     * 2.5+ wire protocol: serializer id for each arg
+     * newer wire protocol: serializer id for each arg
      * </pre>
      */
     public int getSerializerIdsCount() {
@@ -5138,7 +5138,7 @@ public final class WireFormats {
      * <code>repeated int32 serializerIds = 6;</code>
      *
      * <pre>
-     * 2.5+ wire protocol: serializer id for each arg
+     * newer wire protocol: serializer id for each arg
      * </pre>
      */
     public int getSerializerIds(int index) {
@@ -5187,7 +5187,7 @@ public final class WireFormats {
       deploy_ = akka.remote.WireFormats.DeployData.getDefaultInstance();
       clazz_ = "";
       args_ = java.util.Collections.emptyList();
-      classes_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      manifests_ = akka.protobuf.LazyStringArrayList.EMPTY;
       serializerIds_ = java.util.Collections.emptyList();
       hasManifest_ = java.util.Collections.emptyList();
     }
@@ -5224,8 +5224,8 @@ public final class WireFormats {
       for (int i = 0; i < args_.size(); i++) {
         output.writeBytes(4, args_.get(i));
       }
-      for (int i = 0; i < classes_.size(); i++) {
-        output.writeBytes(5, classes_.getByteString(i));
+      for (int i = 0; i < manifests_.size(); i++) {
+        output.writeBytes(5, manifests_.getByteString(i));
       }
       for (int i = 0; i < serializerIds_.size(); i++) {
         output.writeInt32(6, serializerIds_.get(i));
@@ -5261,12 +5261,12 @@ public final class WireFormats {
       }
       {
         int dataSize = 0;
-        for (int i = 0; i < classes_.size(); i++) {
+        for (int i = 0; i < manifests_.size(); i++) {
           dataSize += akka.protobuf.CodedOutputStream
-            .computeBytesSizeNoTag(classes_.getByteString(i));
+            .computeBytesSizeNoTag(manifests_.getByteString(i));
         }
         size += dataSize;
-        size += 1 * getClassesList().size();
+        size += 1 * getManifestsList().size();
       }
       {
         int dataSize = 0;
@@ -5415,7 +5415,7 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         args_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x00000004);
-        classes_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        manifests_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
         serializerIds_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -5467,11 +5467,11 @@ public final class WireFormats {
         }
         result.args_ = args_;
         if (((bitField0_ & 0x00000008) == 0x00000008)) {
-          classes_ = new akka.protobuf.UnmodifiableLazyStringList(
-              classes_);
+          manifests_ = new akka.protobuf.UnmodifiableLazyStringList(
+              manifests_);
           bitField0_ = (bitField0_ & ~0x00000008);
         }
-        result.classes_ = classes_;
+        result.manifests_ = manifests_;
         if (((bitField0_ & 0x00000010) == 0x00000010)) {
           serializerIds_ = java.util.Collections.unmodifiableList(serializerIds_);
           bitField0_ = (bitField0_ & ~0x00000010);
@@ -5516,13 +5516,13 @@ public final class WireFormats {
           }
           onChanged();
         }
-        if (!other.classes_.isEmpty()) {
-          if (classes_.isEmpty()) {
-            classes_ = other.classes_;
+        if (!other.manifests_.isEmpty()) {
+          if (manifests_.isEmpty()) {
+            manifests_ = other.manifests_;
             bitField0_ = (bitField0_ & ~0x00000008);
           } else {
-            ensureClassesIsMutable();
-            classes_.addAll(other.classes_);
+            ensureManifestsIsMutable();
+            manifests_.addAll(other.manifests_);
           }
           onChanged();
         }
@@ -5848,149 +5848,149 @@ public final class WireFormats {
         return this;
       }
 
-      // repeated string classes = 5;
-      private akka.protobuf.LazyStringList classes_ = akka.protobuf.LazyStringArrayList.EMPTY;
-      private void ensureClassesIsMutable() {
+      // repeated string manifests = 5;
+      private akka.protobuf.LazyStringList manifests_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      private void ensureManifestsIsMutable() {
         if (!((bitField0_ & 0x00000008) == 0x00000008)) {
-          classes_ = new akka.protobuf.LazyStringArrayList(classes_);
+          manifests_ = new akka.protobuf.LazyStringArrayList(manifests_);
           bitField0_ |= 0x00000008;
          }
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
        *
        * <pre>
        * serialized props parameters
-       * pre 2.5 wire protocol: contains class name for each arg
-       * 2.5+ wire protocol: contains string manifest for each arg
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
       public java.util.List<java.lang.String>
-          getClassesList() {
-        return java.util.Collections.unmodifiableList(classes_);
+          getManifestsList() {
+        return java.util.Collections.unmodifiableList(manifests_);
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
        *
        * <pre>
        * serialized props parameters
-       * pre 2.5 wire protocol: contains class name for each arg
-       * 2.5+ wire protocol: contains string manifest for each arg
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public int getClassesCount() {
-        return classes_.size();
+      public int getManifestsCount() {
+        return manifests_.size();
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
        *
        * <pre>
        * serialized props parameters
-       * pre 2.5 wire protocol: contains class name for each arg
-       * 2.5+ wire protocol: contains string manifest for each arg
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public java.lang.String getClasses(int index) {
-        return classes_.get(index);
+      public java.lang.String getManifests(int index) {
+        return manifests_.get(index);
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
        *
        * <pre>
        * serialized props parameters
-       * pre 2.5 wire protocol: contains class name for each arg
-       * 2.5+ wire protocol: contains string manifest for each arg
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
       public akka.protobuf.ByteString
-          getClassesBytes(int index) {
-        return classes_.getByteString(index);
+          getManifestsBytes(int index) {
+        return manifests_.getByteString(index);
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
        *
        * <pre>
        * serialized props parameters
-       * pre 2.5 wire protocol: contains class name for each arg
-       * 2.5+ wire protocol: contains string manifest for each arg
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public Builder setClasses(
+      public Builder setManifests(
           int index, java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  ensureClassesIsMutable();
-        classes_.set(index, value);
+  ensureManifestsIsMutable();
+        manifests_.set(index, value);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
        *
        * <pre>
        * serialized props parameters
-       * pre 2.5 wire protocol: contains class name for each arg
-       * 2.5+ wire protocol: contains string manifest for each arg
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public Builder addClasses(
+      public Builder addManifests(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  ensureClassesIsMutable();
-        classes_.add(value);
+  ensureManifestsIsMutable();
+        manifests_.add(value);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
        *
        * <pre>
        * serialized props parameters
-       * pre 2.5 wire protocol: contains class name for each arg
-       * 2.5+ wire protocol: contains string manifest for each arg
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public Builder addAllClasses(
+      public Builder addAllManifests(
           java.lang.Iterable<java.lang.String> values) {
-        ensureClassesIsMutable();
-        super.addAll(values, classes_);
+        ensureManifestsIsMutable();
+        super.addAll(values, manifests_);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
        *
        * <pre>
        * serialized props parameters
-       * pre 2.5 wire protocol: contains class name for each arg
-       * 2.5+ wire protocol: contains string manifest for each arg
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public Builder clearClasses() {
-        classes_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      public Builder clearManifests() {
+        manifests_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
        *
        * <pre>
        * serialized props parameters
-       * pre 2.5 wire protocol: contains class name for each arg
-       * 2.5+ wire protocol: contains string manifest for each arg
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public Builder addClassesBytes(
+      public Builder addManifestsBytes(
           akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  ensureClassesIsMutable();
-        classes_.add(value);
+  ensureManifestsIsMutable();
+        manifests_.add(value);
         onChanged();
         return this;
       }
@@ -6007,7 +6007,7 @@ public final class WireFormats {
        * <code>repeated int32 serializerIds = 6;</code>
        *
        * <pre>
-       * 2.5+ wire protocol: serializer id for each arg
+       * newer wire protocol: serializer id for each arg
        * </pre>
        */
       public java.util.List<java.lang.Integer>
@@ -6018,7 +6018,7 @@ public final class WireFormats {
        * <code>repeated int32 serializerIds = 6;</code>
        *
        * <pre>
-       * 2.5+ wire protocol: serializer id for each arg
+       * newer wire protocol: serializer id for each arg
        * </pre>
        */
       public int getSerializerIdsCount() {
@@ -6028,7 +6028,7 @@ public final class WireFormats {
        * <code>repeated int32 serializerIds = 6;</code>
        *
        * <pre>
-       * 2.5+ wire protocol: serializer id for each arg
+       * newer wire protocol: serializer id for each arg
        * </pre>
        */
       public int getSerializerIds(int index) {
@@ -6038,7 +6038,7 @@ public final class WireFormats {
        * <code>repeated int32 serializerIds = 6;</code>
        *
        * <pre>
-       * 2.5+ wire protocol: serializer id for each arg
+       * newer wire protocol: serializer id for each arg
        * </pre>
        */
       public Builder setSerializerIds(
@@ -6052,7 +6052,7 @@ public final class WireFormats {
        * <code>repeated int32 serializerIds = 6;</code>
        *
        * <pre>
-       * 2.5+ wire protocol: serializer id for each arg
+       * newer wire protocol: serializer id for each arg
        * </pre>
        */
       public Builder addSerializerIds(int value) {
@@ -6065,7 +6065,7 @@ public final class WireFormats {
        * <code>repeated int32 serializerIds = 6;</code>
        *
        * <pre>
-       * 2.5+ wire protocol: serializer id for each arg
+       * newer wire protocol: serializer id for each arg
        * </pre>
        */
       public Builder addAllSerializerIds(
@@ -6079,7 +6079,7 @@ public final class WireFormats {
        * <code>repeated int32 serializerIds = 6;</code>
        *
        * <pre>
-       * 2.5+ wire protocol: serializer id for each arg
+       * newer wire protocol: serializer id for each arg
        * </pre>
        */
       public Builder clearSerializerIds() {
@@ -10088,25 +10088,25 @@ public final class WireFormats {
       "\005\022\027\n\017messageManifest\030\003 \001(\014\"~\n\023DaemonMsgC" +
       "reateData\022\031\n\005props\030\001 \002(\0132\n.PropsData\022\033\n\006" +
       "deploy\030\002 \002(\0132\013.DeployData\022\014\n\004path\030\003 \002(\t\022" +
-      "!\n\nsupervisor\030\004 \002(\0132\r.ActorRefData\"\202\001\n\tP" +
+      "!\n\nsupervisor\030\004 \002(\0132\r.ActorRefData\"\204\001\n\tP" +
       "ropsData\022\033\n\006deploy\030\002 \002(\0132\013.DeployData\022\r\n" +
-      "\005clazz\030\003 \002(\t\022\014\n\004args\030\004 \003(\014\022\017\n\007classes\030\005 " +
-      "\003(\t\022\025\n\rserializerIds\030\006 \003(\005\022\023\n\013hasManifes" +
-      "t\030\007 \003(\010\"c\n\nDeployData\022\014\n\004path\030\001 \002(\t\022\016\n\006c" +
-      "onfig\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005sco" +
-      "pe\030\004 \001(\014\022\022\n\ndispatcher\030\005 \001(\t\"P\n\023AkkaProt",
-      "ocolMessage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruct" +
-      "ion\030\002 \001(\0132\023.AkkaControlMessage\"b\n\022AkkaCo" +
-      "ntrolMessage\022!\n\013commandType\030\001 \002(\0162\014.Comm" +
-      "andType\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHan" +
-      "dshakeInfo\"N\n\021AkkaHandshakeInfo\022\034\n\006origi" +
-      "n\030\001 \002(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006co" +
-      "okie\030\003 \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 \002(" +
-      "\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010pro" +
-      "tocol\030\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIATE\020" +
-      "\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DI",
-      "SASSOCIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIA" +
-      "TE_QUARANTINED\020\005B\017\n\013akka.remoteH\001"
+      "\005clazz\030\003 \002(\t\022\014\n\004args\030\004 \003(\014\022\021\n\tmanifests\030" +
+      "\005 \003(\t\022\025\n\rserializerIds\030\006 \003(\005\022\023\n\013hasManif" +
+      "est\030\007 \003(\010\"c\n\nDeployData\022\014\n\004path\030\001 \002(\t\022\016\n" +
+      "\006config\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005s" +
+      "cope\030\004 \001(\014\022\022\n\ndispatcher\030\005 \001(\t\"P\n\023AkkaPr",
+      "otocolMessage\022\017\n\007payload\030\001 \001(\014\022(\n\013instru" +
+      "ction\030\002 \001(\0132\023.AkkaControlMessage\"b\n\022Akka" +
+      "ControlMessage\022!\n\013commandType\030\001 \002(\0162\014.Co" +
+      "mmandType\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaH" +
+      "andshakeInfo\"N\n\021AkkaHandshakeInfo\022\034\n\006ori" +
+      "gin\030\001 \002(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006" +
+      "cookie\030\003 \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 " +
+      "\002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010p" +
+      "rotocol\030\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIAT" +
+      "E\020\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032",
+      "DISASSOCIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOC" +
+      "IATE_QUARANTINED\020\005B\017\n\013akka.remoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -10154,7 +10154,7 @@ public final class WireFormats {
           internal_static_PropsData_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PropsData_descriptor,
-              new java.lang.String[] { "Deploy", "Clazz", "Args", "Classes", "SerializerIds", "HasManifest", });
+              new java.lang.String[] { "Deploy", "Clazz", "Args", "Manifests", "SerializerIds", "HasManifest", });
           internal_static_DeployData_descriptor =
             getDescriptor().getMessageTypes().get(7);
           internal_static_DeployData_fieldAccessorTable = new

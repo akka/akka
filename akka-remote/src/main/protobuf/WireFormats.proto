@@ -65,10 +65,10 @@ message PropsData {
   required string clazz = 3;
   repeated bytes args = 4;
   // serialized props parameters
-  // pre 2.5 wire protocol: contains class name for each arg
-  // 2.5+ wire protocol: contains string manifest for each arg
-  repeated string classes = 5;
-  // 2.5+ wire protocol: serializer id for each arg
+  // older wire protocol: contains class name for each arg
+  // newer wire protocol: contains string manifest for each arg
+  repeated string manifests = 5;
+  // newer wire protocol: serializer id for each arg
   repeated int32 serializerIds = 6;
   // additionally a flag per position to indicate if it was
   // serialized with manifest or not

@@ -59,7 +59,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         props.args.foreach { arg ⇒
           val (serializerId, hasManifest, manifest, bytes) = serialize(arg)
           builder.addArgs(ByteString.copyFrom(bytes))
-          builder.addClasses(manifest)
+          builder.addManifests(manifest)
           builder.addSerializerIds(serializerId)
           builder.addHasManifest(hasManifest)
         }
@@ -107,19 +107,19 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
           for {
             idx ← (0 until protoProps.getSerializerIdsCount).toVector
           } yield {
-            val manifest = protoProps.getClasses(idx)
+            val manifest = protoProps.getManifests(idx)
             // we have info per position if a string manifest serializer was used or not
             if (protoProps.getHasManifest(idx)) {
               serialization.deserializeByteBuffer(
                 protoProps.getArgs(idx).asReadOnlyByteBuffer(),
                 protoProps.getSerializerIds(idx), manifest)
             } else {
-              oldDeserialize(protoProps.getArgs(idx), protoProps.getClasses(idx))
+              oldDeserialize(protoProps.getArgs(idx), protoProps.getManifests(idx))
             }
           }
         } else {
           // message from an older node, which only provides data and class name
-          (proto.getProps.getArgsList.asScala zip proto.getProps.getClassesList.asScala)
+          (proto.getProps.getArgsList.asScala zip proto.getProps.getManifestsList.asScala)
             .map(oldDeserialize)(collection.breakOut)
         }
       Props(deploy(proto.getProps.getDeploy), actorClass, args)
@@ -139,14 +139,19 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
     val serializer = serialization.findSerializerFor(m)
 
     // this trixery is to retain backwards wire compatibility while at the same time
-    // allowing for usage of string manifests when enable-additional-serialization-bindings = on
+    // allowing for usage of serializers with string manifests
     var hasManifest = false
     val manifest = serializer match {
       case ser: SerializerWithStringManifest ⇒
         hasManifest = true
         ser.manifest(m)
       case _ if m eq null ⇒ "null"
-      case _ ⇒
+      case ser ⇒
+        if (ser.includeManifest)
+          hasManifest = true
+
+        // we do include class name regardless to retain wire compatibility
+        // with older nodes who expect manifest to be the class name
         val className = m.getClass.getName
         if (scala212OrLater && m.isInstanceOf[Serializable] && m.getClass.isSynthetic && className.contains("$Lambda$")) {
           // When the additional-protobuf serializers are not enabled
