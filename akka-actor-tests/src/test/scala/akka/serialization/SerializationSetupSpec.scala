@@ -3,6 +3,9 @@
  */
 package akka.serialization
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem, Terminated }
 import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
@@ -15,13 +18,39 @@ class ProgrammaticDummy
 case class ProgrammaticJavaDummy()
 case class SerializableDummy() // since case classes are serializable
 
+/**
+ * Keeps a registry of each object "serialized", returns an identifier, for every "deserialization" the original object
+ * is returned. Useful for tests needing serialization back and forth but that must avoid java serialization for some
+ * reason.
+ */
+final class FakeSerializer extends Serializer {
+  val includeManifest = false
+  val identifier = 666
+  private val registry = new ConcurrentHashMap[Integer, AnyRef]()
+  private val counter = new AtomicInteger(0)
+
+  def toBinary(o: AnyRef) = {
+    val id = counter.addAndGet(1)
+    require(id < Byte.MaxValue)
+    registry.put(id, o)
+    Array(id.toByte)
+  }
+
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]) = {
+    require(bytes.length == 1)
+    val id = bytes(0).toInt
+    registry.get(id)
+  }
+}
+
 object SerializationSetupSpec {
 
-  val testSerializer = new TestSerializer
+  val programmaticDummySerializer = new FakeSerializer
+  val testSerializer = new NoopSerializer
 
   val serializationSettings = SerializationSetup { _ ⇒
     List(
-      SerializerDetails("test", testSerializer, List(classOf[ProgrammaticDummy])))
+      SerializerDetails("test", programmaticDummySerializer, List(classOf[ProgrammaticDummy])))
   }
   val bootstrapSettings = BootstrapSetup(None, Some(ConfigFactory.parseString("""
     akka {
@@ -57,12 +86,12 @@ class SerializationSetupSpec extends AkkaSpec(
 
     "allow for programmatic configuration of serializers" in {
       val serializer = SerializationExtension(system).findSerializerFor(new ProgrammaticDummy)
-      serializer shouldBe theSameInstanceAs(testSerializer)
+      serializer shouldBe theSameInstanceAs(programmaticDummySerializer)
     }
 
     "allow a configured binding to hook up to a programmatic serializer" in {
       val serializer = SerializationExtension(system).findSerializerFor(new ConfigurationDummy)
-      serializer shouldBe theSameInstanceAs(testSerializer)
+      serializer shouldBe theSameInstanceAs(programmaticDummySerializer)
     }
 
   }
@@ -73,7 +102,7 @@ class SerializationSetupSpec extends AkkaSpec(
   // in another system with allow-java-serialization=off
   val addedJavaSerializationSettings = SerializationSetup { _ ⇒
     List(
-      SerializerDetails("test", testSerializer, List(classOf[ProgrammaticDummy])),
+      SerializerDetails("test", programmaticDummySerializer, List(classOf[ProgrammaticDummy])),
       SerializerDetails("java-manual", new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]), List(classOf[ProgrammaticJavaDummy])))
   }
   val addedJavaSerializationProgramaticallyButDisabledSettings = BootstrapSetup(None, Some(ConfigFactory.parseString("""
@@ -86,7 +115,11 @@ class SerializationSetupSpec extends AkkaSpec(
     """)), None)
 
   val addedJavaSerializationViaSettingsSystem =
-    ActorSystem("addedJavaSerializationSystem", ActorSystemSetup(addedJavaSerializationProgramaticallyButDisabledSettings, addedJavaSerializationSettings))
+    ActorSystem(
+      "addedJavaSerializationSystem",
+      ActorSystemSetup(
+        addedJavaSerializationProgramaticallyButDisabledSettings,
+        addedJavaSerializationSettings))
 
   "Disabling java serialization" should {
 
