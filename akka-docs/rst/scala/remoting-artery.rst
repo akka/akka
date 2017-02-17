@@ -87,6 +87,9 @@ As you can see in the example above there are four things you need to add to get
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
 All settings are described in :ref:`remote-configuration-artery-scala`.
 
+.. note::
+  Aeron requires 64bit JVM to work reliably. 
+
 Canonical address
 ^^^^^^^^^^^^^^^^^
 
