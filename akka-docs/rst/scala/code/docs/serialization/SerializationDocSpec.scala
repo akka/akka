@@ -4,7 +4,7 @@
 
 package docs.serialization {
 
-  import akka.actor.ExtensionId
+  import akka.actor.{ExtensionId, ExtensionIdProvider}
   import akka.testkit._
   //#imports
   import akka.actor.{ ActorRef, ActorSystem }
@@ -218,9 +218,13 @@ package docs.serialization {
       //#actorref-serializer
 
       //#external-address
-      object ExternalAddress extends ExtensionId[ExternalAddressExt] {
+      object ExternalAddress extends ExtensionId[ExternalAddressExt] with ExtensionIdProvider {
+        override def lookup() = ExternalAddress
+
         override def createExtension(system: ExtendedActorSystem): ExternalAddressExt =
           new ExternalAddressExt(system)
+
+        override def get(system: ActorSystem): ExternalAddressExt = super.get(system)
       }
 
       class ExternalAddressExt(system: ExtendedActorSystem) extends Extension {
@@ -239,9 +243,13 @@ package docs.serialization {
       val theActorSystem: ActorSystem = system
 
       //#external-address-default
-      object ExternalAddress extends ExtensionId[ExternalAddressExt] {
+      object ExternalAddress extends ExtensionId[ExternalAddressExt] with ExtensionIdProvider {
+        override def lookup() = ExternalAddress
+
         override def createExtension(system: ExtendedActorSystem): ExternalAddressExt =
           new ExternalAddressExt(system)
+
+        override def get(system: ActorSystem): ExternalAddressExt = super.get(system)
       }
 
       class ExternalAddressExt(system: ExtendedActorSystem) extends Extension {
