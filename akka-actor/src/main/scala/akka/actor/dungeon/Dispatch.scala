@@ -124,11 +124,8 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   def sendMessage(msg: Envelope): Unit =
     try {
       val msgToDispatch =
-        if (!system.settings.SerializeAllMessages) {
-          msg
-        } else {
-          serializeAndDeserialize(msg)
-        }
+        if (system.settings.SerializeAllMessages) serializeAndDeserialize(msg)
+        else msg
 
       dispatcher.dispatch(this, msgToDispatch)
     } catch handleException
