@@ -1,0 +1,11 @@
+# Mima filters needed to check newer versions against 10.0.2
+
+# Method is currently only called from akka-http-spray-json-marshaller on a known marshaller under our control.
+# It could be a problem if code compiled with 10.0.1 calls `andThen` on a general `Unmarshaller`. If someone
+# passes in such an Unmarshaller that was compiled with 10.0.0 it would then fail. The likelihood is small
+# so we are ignoring that for now.
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.unmarshalling.Unmarshaller.andThen")
+
+# =core #424 fix stream marshalling, better errors, more examples 
+# added new implicit marshaller provider; old method became non-implicit so binary compatibility is kept, but new code will use the new implicit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.LowPriorityToResponseMarshallerImplicits.fromEntityStreamingSupportAndEntityMarshaller")

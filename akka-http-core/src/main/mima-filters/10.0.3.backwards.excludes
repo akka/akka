@@ -8,3 +8,5 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ServerSetti
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl#Timeouts.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl#Timeouts.copy")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl#Timeouts.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.absorbCancellation")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$AbsorbCancellationStage")
