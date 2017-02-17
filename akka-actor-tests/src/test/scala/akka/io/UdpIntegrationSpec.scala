@@ -4,7 +4,8 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
+
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.util.ByteString
 import akka.actor.ActorRef
 import akka.io.Udp._
@@ -14,6 +15,8 @@ import java.net.DatagramSocket
 
 class UdpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
+    # tests expect to be able to mutate messages
+    akka.actor.serialize-messages = off
     akka.actor.serialize-creators = on""") with ImplicitSender {
 
   val addresses = temporaryServerAddresses(7, udp = true)
@@ -119,6 +122,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
 }
 
 private case class AssertBeforeBind() extends SocketOption {
+  @volatile
   var beforeCalled = 0
 
   override def beforeDatagramBind(ds: DatagramSocket): Unit = {
@@ -128,6 +132,7 @@ private case class AssertBeforeBind() extends SocketOption {
 }
 
 private case class AssertAfterChannelBind() extends SocketOptionV2 {
+  @volatile
   var afterCalled = 0
 
   override def afterBind(s: DatagramSocket) = {
@@ -137,6 +142,7 @@ private case class AssertAfterChannelBind() extends SocketOptionV2 {
 }
 
 private case class AssertOpenDatagramChannel() extends DatagramChannelCreator {
+  @volatile
   var openCalled = 0
 
   override def create() = {

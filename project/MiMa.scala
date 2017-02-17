@@ -459,7 +459,10 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingTypesProblem]("akka.persistence.AbstractPersistentActor"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.deferAsync"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAllAsync"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAll")
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAll"),
+
+      // #22208 remove extension key
+      ProblemFilters.exclude[MissingClassProblem]("akka.event.Logging$Extension$")
 
       // NOTE: filters that will be backported to 2.4 should go to the latest 2.4 version below
     )

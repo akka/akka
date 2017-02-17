@@ -80,6 +80,7 @@ object RemotingSpec {
 
     akka {
       actor.provider = remote
+      actor.serialize-messages = off
 
       remote {
         retry-gate-closed-for = 1 s
