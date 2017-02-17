@@ -243,7 +243,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
   }
 
   /**
-   * Internal API
+   * INTERNAL API
    */
   @InternalApi
   private[akka] final def internalDeliver(destination: ActorPath)(deliveryIdToMessage: Long ⇒ Any): Unit = {
@@ -262,7 +262,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
   }
 
   /**
-   * Internal API
+   * INTERNAL API
    */
   @InternalApi
   private[akka] final def internalDeliver(destination: ActorSelection)(deliveryIdToMessage: Long ⇒ Any): Unit = {
