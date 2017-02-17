@@ -433,7 +433,10 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.DurableStore#Store.data"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.DurableStore#Store.copy"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.DurableStore#Store.this"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.LmdbDurableStore.dbPut")
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.LmdbDurableStore.dbPut"),
+
+      // #22208 remove extension key
+      ProblemFilters.exclude[MissingClassProblem]("akka.event.Logging$Extension$")
 
       // NOTE: filters that will be backported to 2.4 should go to the latest 2.4 version below
     )
