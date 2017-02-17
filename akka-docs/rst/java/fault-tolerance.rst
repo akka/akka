@@ -63,6 +63,7 @@ exceptions are handled by default:
 
 * ``ActorInitializationException`` will stop the failing child actor
 * ``ActorKilledException`` will stop the failing child actor
+* ``DeathPactException`` will stop the failing child actor
 * ``Exception`` will restart the failing child actor
 * Other types of ``Throwable`` will be escalated to parent actor
 
