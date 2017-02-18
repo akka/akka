@@ -12,7 +12,6 @@ class HttpAppExampleSpec extends WordSpec with Matchers
   "minimal-routing-example" in compileOnlySpec {
     //#minimal-routing-example
     import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
-    import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
     
@@ -34,7 +33,6 @@ class HttpAppExampleSpec extends WordSpec with Matchers
   "with-settings-routing-example" in compileOnlySpec {
     //#with-settings-routing-example
     import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
-    import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.settings.ServerSettings
@@ -58,7 +56,6 @@ class HttpAppExampleSpec extends WordSpec with Matchers
   "failed-binding" in compileOnlySpec {
     //#failed-binding-example
     import akka.http.scaladsl.model._
-    import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.settings.ServerSettings
@@ -88,7 +85,6 @@ class HttpAppExampleSpec extends WordSpec with Matchers
     import akka.Done
     import akka.actor.ActorSystem
     import akka.http.scaladsl.model._
-    import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.pattern
     import akka.http.scaladsl.server.Route
@@ -121,7 +117,6 @@ class HttpAppExampleSpec extends WordSpec with Matchers
     //#with-actor-system
     import akka.actor.ActorSystem
     import akka.http.scaladsl.model._
-    import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.settings.ServerSettings
@@ -148,7 +143,6 @@ class HttpAppExampleSpec extends WordSpec with Matchers
     import akka.Done
     import akka.actor.ActorSystem
     import akka.http.scaladsl.model._
-    import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.settings.ServerSettings

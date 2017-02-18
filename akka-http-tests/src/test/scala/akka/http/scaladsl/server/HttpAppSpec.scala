@@ -23,7 +23,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.Try
 
-class HttpAppSpec extends AkkaSpec with Directives with RequestBuilding with Eventually {
+class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
   import system.dispatcher
 
   class MinimalApp extends HttpApp {
