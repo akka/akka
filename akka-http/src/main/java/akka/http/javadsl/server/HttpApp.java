@@ -11,6 +11,7 @@ import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.settings.ServerSettings;
 import akka.stream.ActorMaterializer;
+import com.typesafe.config.ConfigFactory;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -32,6 +33,14 @@ public abstract class HttpApp extends AllDirectives {
    * Holds a reference to the {@link ActorSystem} used to start this server. Stopping this system will interfere with the proper functioning condition of the server.
    */
   protected AtomicReference<ActorSystem> systemReference = new AtomicReference<>();
+
+  /**
+   * Start a server on the specified host and port.
+   * Note that this method is blocking.
+   */
+  public void startServer(String host, int port) throws ExecutionException, InterruptedException {
+      startServer(host, port, ServerSettings.create(ConfigFactory.load()));
+  }
 
   /**
    * Start a server on the specified host and port, using provided settings.

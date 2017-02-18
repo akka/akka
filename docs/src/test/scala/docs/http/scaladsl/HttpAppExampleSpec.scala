@@ -15,6 +15,28 @@ class HttpAppExampleSpec extends WordSpec with Matchers
     import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
+    
+    // Server definition
+    object WebServer extends HttpApp {
+      def route: Route =
+        path("hello") {
+          get {
+            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
+          }
+        }
+    }
+
+    // Starting the server
+    WebServer.startServer("localhost", 8080)
+    //#minimal-routing-example
+  }
+
+  "with-settings-routing-example" in compileOnlySpec {
+    //#with-settings-routing-example
+    import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
+    import akka.http.scaladsl.server.Directives._
+    import akka.http.scaladsl.server.HttpApp
+    import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.settings.ServerSettings
     import com.typesafe.config.ConfigFactory
 
@@ -30,7 +52,7 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Starting the server
     WebServer.startServer("localhost", 8080, ServerSettings(ConfigFactory.load))
-    //#minimal-routing-example
+    //#with-settings-routing-example
   }
 
   "failed-binding" in compileOnlySpec {

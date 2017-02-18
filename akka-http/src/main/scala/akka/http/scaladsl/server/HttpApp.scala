@@ -13,6 +13,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.settings.ServerSettings
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, ExecutionContext, Future }
@@ -32,6 +33,14 @@ trait HttpApp {
    * [[ActorSystem]] used to start this server. Stopping this system will interfere with the proper functioning condition of the server.
    */
   protected val systemReference = new AtomicReference[ActorSystem]()
+
+  /**
+   * Start a server on the specified host and port.
+   * Note that this method is blocking
+   */
+  def startServer(host: String, port: Int): Unit = {
+    startServer(host, port, ServerSettings(ConfigFactory.load))
+  }
 
   /**
    * Start a server on the specified host and port, using provided settings.

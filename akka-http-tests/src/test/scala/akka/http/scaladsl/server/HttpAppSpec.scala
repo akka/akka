@@ -89,6 +89,19 @@ class HttpAppSpec extends AkkaSpec with Directives with RequestBuilding with Eve
 
   "HttpApp" should {
 
+    "start only with host and port" in withMinimal { (minimal, host, port) ⇒
+      val server = Future {
+        minimal.startServer(host, port)
+      }
+
+      Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+
+      // Requesting the server to shutdown
+      callAndVerify(host, port, "shutdown")
+      Await.ready(server, Duration(1, TimeUnit.SECONDS))
+      server.isCompleted should ===(true)
+    }
+
     "start without ActorSystem" in withMinimal { (minimal, host, port) ⇒
 
       val server = Future {
