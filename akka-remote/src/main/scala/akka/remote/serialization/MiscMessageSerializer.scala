@@ -4,8 +4,7 @@
 package akka.remote.serialization
 
 import akka.actor._
-import akka.protobuf.ByteString
-import akka.remote.{ ContainerFormats, RemoteWatcher }
+import akka.remote.{ ContainerFormats, RemoteScope, RemoteWatcher }
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
 import java.util.Optional
 import java.io.NotSerializableException
@@ -34,6 +33,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case Kill                              ⇒ ParameterlessSerializedMessage
     case RemoteWatcher.Heartbeat           ⇒ ParameterlessSerializedMessage
     case hbrsp: RemoteWatcher.HeartbeatRsp ⇒ serializeHeartbeatRsp(hbrsp)
+    case RemoteScope                       ⇒ ParameterlessSerializedMessage
+    case LocalScope                        ⇒ ParameterlessSerializedMessage
     case _                                 ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${obj.getClass.getName}]")
   }
 
@@ -114,6 +115,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val RemoteWatcherHBManifest = "RWHB"
   private val RemoteWatcherHBRespManifest = "RWHR"
   private val ActorInitializationExceptionManifest = "AIEX"
+  private val LocalScopeManifest = "LS"
+  private val RemoteScopeManifest = "RS"
 
   private val fromBinaryMap = Map[String, Array[Byte] ⇒ AnyRef](
     IdentifyManifest → deserializeIdentify,
@@ -129,7 +132,10 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     KillManifest → ((_) ⇒ Kill),
     RemoteWatcherHBManifest → ((_) ⇒ RemoteWatcher.Heartbeat),
     RemoteWatcherHBRespManifest → deserializeHeartbeatRsp,
-    ActorInitializationExceptionManifest → deserializeActorInitializationException)
+    ActorInitializationExceptionManifest → deserializeActorInitializationException,
+    LocalScopeManifest → ((_) ⇒ LocalScope),
+    RemoteScopeManifest → ((_) ⇒ RemoteScope)
+  )
 
   override def manifest(o: AnyRef): String =
     o match {
@@ -146,6 +152,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       case Kill                            ⇒ KillManifest
       case RemoteWatcher.Heartbeat         ⇒ RemoteWatcherHBManifest
       case _: RemoteWatcher.HeartbeatRsp   ⇒ RemoteWatcherHBRespManifest
+      case LocalScope                      ⇒ LocalScopeManifest
+      case RemoteScope                     ⇒ RemoteScopeManifest
       case _ ⇒
         throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
     }

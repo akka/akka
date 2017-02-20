@@ -5,7 +5,7 @@
 package akka.remote.serialization
 
 import akka.actor._
-import akka.remote.{ MessageSerializer, RemoteWatcher }
+import akka.remote.{ MessageSerializer, RemoteScope, RemoteWatcher }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
@@ -80,7 +80,10 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "Kill" → Kill,
       "PoisonPill" → PoisonPill,
       "RemoteWatcher.Heartbeat" → RemoteWatcher.Heartbeat,
-      "RemoteWatcher.HertbeatRsp" → RemoteWatcher.HeartbeatRsp(65537)).foreach {
+      "RemoteWatcher.HertbeatRsp" → RemoteWatcher.HeartbeatRsp(65537),
+      "LocalScope" → LocalScope,
+      "RemoteScope" → RemoteScope
+    ).foreach {
         case (scenario, item) ⇒
           s"resolve serializer for $scenario" in {
             val serializer = SerializationExtension(system)
