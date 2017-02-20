@@ -22,11 +22,10 @@ import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.testkit.Utils.assertAllStagesStopped
 
 class FutureFlattenSpec extends StreamSpec {
-  val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()
 
   "Future source" must {
     {
-      implicit def m = materializer
       implicit def ec = materializer.executionContext
 
       "flatten elements" in assertAllStagesStopped {
@@ -73,8 +72,6 @@ class FutureFlattenSpec extends StreamSpec {
     }
 
     "be cancelled before the underlying Future completes" in {
-      implicit def m = materializer
-
       assertAllStagesStopped {
         val promise = Promise[Source[Int, Int]]()
         val aside = Promise[Int]()
@@ -93,8 +90,6 @@ class FutureFlattenSpec extends StreamSpec {
     }
 
     "fails as the underlying Future is failed" in {
-      implicit def m = materializer
-
       assertAllStagesStopped {
         val promise = Promise[Source[Int, Int]]()
         val result = Promise[akka.Done]()
@@ -103,14 +98,12 @@ class FutureFlattenSpec extends StreamSpec {
 
         promise.failure(new Exception("Foo"))
 
-        futureSource.runWith(sink).failed.
-          map(_.getMessage)(m.executionContext).futureValue should ===("Foo")
+        futureSource.runWith(sink).failed.map(_.getMessage)(
+          materializer.executionContext).futureValue should ===("Foo")
       }
     }
 
     "applies back-pressure according future completion" in {
-      implicit def m = materializer
-
       assertAllStagesStopped {
         val probe = TestSubscriber.probe[Int]()
         val underlying = Iterator.iterate(1)(_ + 1).take(3)
@@ -145,8 +138,7 @@ class FutureFlattenSpec extends StreamSpec {
     }
 
     "fail when the future source materialization fails" in {
-      implicit def m = materializer
-      implicit def ec = m.executionContext
+      implicit def ec = materializer.executionContext
 
       assertAllStagesStopped {
         def underlying = Future(Source.single(100L).
