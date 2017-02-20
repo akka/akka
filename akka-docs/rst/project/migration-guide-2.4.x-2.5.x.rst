@@ -216,6 +216,30 @@ Actor DSL deprecation
 Actor DSL is a rarely used feature and thus will be deprecated and removed.
 Use plain ``system.actorOf`` instead of the DSL to create Actors if you have been using it.
 
+ExtensionKey Deprecation
+------------------------
+
+``ExtensionKey`` is a shortcut for writing :ref:`extending-akka-scala` but extensions created with it
+cannot be used from Java and it does in fact not save many lines of code over directly implementing ``ExtensionId``.
+
+
+Old::
+
+  object MyExtension extends ExtensionKey[MyExtension]
+
+New::
+
+  object MyExtension extends extends ExtensionId[MyExtension] with ExtensionIdProvider {
+
+    override def lookup = MyExtension
+
+    override def createExtension(system: ExtendedActorSystem): MyExtension =
+      new MyExtension(system)
+
+    // needed to get the type right when used from Java
+    override def get(system: ActorSystem): MyExtension = super.get(system)
+  }
+
 Streams
 =======
 
@@ -309,11 +333,25 @@ it is possible to disable the additional serializers and continue using Java ser
 Please note that this setting must be the same on all nodes participating in a cluster, otherwise
 the mis-aligned serialization configurations will cause deserialization errors on the receiving nodes.
 
+With serialize-messages the deserialized message is actually sent
+-----------------------------------------------------------------
+
+The flag ``akka.actor.serialize-message = on`` triggers serialization and deserialization of each message sent in the
+``ActorSystem``. With this setting enabled the message actually passed on to the actor previously was the original
+message instance, this has now changed to be the deserialized message instance.
+
+This may cause tests that rely on messages being the same instance (for example by having mutable messages with attributes
+that are asserted in the tests) to not work any more with this setting enabled. For such cases the recommendation is to
+either not rely on messages being the same instance or turn the setting off.
+
+
 Wire Protocol Compatibility
 ---------------------------
 
 It is possible to use Akka Remoting between nodes running Akka 2.4.16 and 2.5-M1, but some settings have changed so you might need
 to adjust some configuration as described in :ref:`mig25_rolling`.
+
+Note however that if using Java serialization it will not be possible to mix nodes using Scala 2.11 and 2.12.
 
 Cluster
 =======
@@ -321,7 +359,7 @@ Cluster
 .. _mig25_rolling:
 
 Rolling Update
-----------------
+--------------
 
 It is possible to do a rolling update from Akka 2.4.16 to 2.5-M1, i.e. running a cluster of 2.4.16 nodes and
 join nodes running 2.5-M1 followed by shutting down the old nodes.

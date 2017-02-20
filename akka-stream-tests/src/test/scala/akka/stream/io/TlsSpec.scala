@@ -471,6 +471,25 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
       Await.result(f, 8.second).utf8String should be(scenario.output.utf8String)
     }
 
+    "verify hostname" in assertAllStagesStopped {
+      def run(hostName: String): Future[akka.Done] = {
+        val rhs = Flow[SslTlsInbound]
+          .map {
+            case SessionTruncated   ⇒ SendBytes(ByteString.empty)
+            case SessionBytes(_, b) ⇒ SendBytes(b)
+          }
+        val clientTls = TLS(sslContext, None, cipherSuites, Client, EagerClose, Some((hostName, 80)))
+        val flow = clientTls atop serverTls(EagerClose).reversed join rhs
+
+        Source.single(SendBytes(ByteString.empty)).via(flow).runWith(Sink.ignore)
+      }
+      Await.result(run("akka-remote"), 3.seconds) // CN=akka-remote
+      val cause = intercept[SSLHandshakeException] {
+        Await.result(run("akka-stream"), 3.seconds)
+      }
+      cause.getCause.getCause.getMessage should startWith("No name matching akka-stream found")
+    }
+
   }
 
   "A SslTlsPlacebo" must {

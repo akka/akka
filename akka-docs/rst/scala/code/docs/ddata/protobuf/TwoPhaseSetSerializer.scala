@@ -51,9 +51,13 @@ class TwoPhaseSetSerializer(val system: ExtendedActorSystem)
 
   def twoPhaseSetFromBinary(bytes: Array[Byte]): TwoPhaseSet = {
     val msg = TwoPhaseSetMessages.TwoPhaseSet.parseFrom(bytes)
-    TwoPhaseSet(
-      adds = GSet(msg.getAddsList.iterator.asScala.toSet),
-      removals = GSet(msg.getRemovalsList.iterator.asScala.toSet))
+    val addsSet = msg.getAddsList.iterator.asScala.toSet
+    val removalsSet = msg.getRemovalsList.iterator.asScala.toSet
+    val adds = addsSet.foldLeft(GSet.empty[String])((acc, el) => acc.add(el))
+    val removals = removalsSet.foldLeft(GSet.empty[String])((acc, el) => acc.add(el))
+    // GSet will accumulate deltas when adding elements,
+    // but those are not of interest in the result of the deserialization
+    TwoPhaseSet(adds.resetDelta, removals.resetDelta)
   }
 }
 //#serializer

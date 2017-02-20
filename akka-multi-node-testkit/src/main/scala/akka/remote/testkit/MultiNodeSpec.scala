@@ -256,9 +256,16 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
 
   import MultiNodeSpec._
 
+  /**
+   * Constructor for using arbitrary logic to create the actor system used in
+   * the multi node spec (the `Config` passed to the creator must be used in
+   * the created actor system for the multi node tests to work)
+   */
+  def this(config: MultiNodeConfig, actorSystemCreator: Config ⇒ ActorSystem) =
+    this(config.myself, actorSystemCreator(ConfigFactory.load(config.config)), config.roles, config.deployments)
+
   def this(config: MultiNodeConfig) =
-    this(config.myself, ActorSystem(MultiNodeSpec.getCallerName(classOf[MultiNodeSpec]), ConfigFactory.load(config.config)),
-      config.roles, config.deployments)
+    this(config, config ⇒ ActorSystem(MultiNodeSpec.getCallerName(classOf[MultiNodeSpec]), config))
 
   val log: LoggingAdapter = Logging(system, this.getClass)
 

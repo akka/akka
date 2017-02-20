@@ -181,18 +181,18 @@ A Multi Node Testing Example
 First we need some scaffolding to hook up the ``MultiNodeSpec`` with your favorite test framework. Lets define a trait
 ``STMultiNodeSpec`` that uses ScalaTest to start and stop ``MultiNodeSpec``.
 
-.. includecode:: ../../../akka-samples/akka-sample-multi-node-scala/src/test/scala/sample/multinode/STMultiNodeSpec.scala#example
+.. includecode:: ../../../akka-remote-tests/src/test/scala/akka/remote/testkit/STMultiNodeSpec.scala#example
 
 Then we need to define a configuration. Lets use two nodes ``"node1`` and ``"node2"`` and call it
 ``MultiNodeSampleConfig``.
 
-.. includecode:: ../../../akka-samples/akka-sample-multi-node-scala/src/multi-jvm/scala/sample/multinode/MultiNodeSample.scala
+.. includecode:: ../../../akka-remote-tests/src/multi-jvm/scala/akka/remote/sample/MultiNodeSample.scala
   :include: package,config
 
 And then finally to the node test code. That starts the two nodes, and demonstrates a barrier, and a remote actor
 message send/receive.
 
-.. includecode:: ../../../akka-samples/akka-sample-multi-node-scala/src/multi-jvm/scala/sample/multinode/MultiNodeSample.scala
+.. includecode:: ../../../akka-remote-tests/src/multi-jvm/scala/akka/remote/sample/MultiNodeSample.scala
   :include: package,spec
 
 The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_

@@ -151,3 +151,13 @@ called ``MiMa`` for short, for enforcing binary compatibility is kept where it w
 
 All Pull Requests must pass MiMa validation (which happens automatically), and if failures are detected,
 manual exception overrides may be put in place if the change happened to be in an Internal API for example.
+
+Serialization compatibility across Scala versions
+=================================================
+
+Scala does not maintain serialization compatibility across major versions. This means that if Java serialization is used
+there is no guarantee objects can be cleanly deserialized if serialized with a different version of Scala.
+
+The internal Akka Protobuf serializers that can be enabled explicitly with ``enable-additional-serialization-bindings``
+or implicitly with ``akka.actor.allow-java-serialization = off`` (which is preferable from a security standpoint)
+does not suffer from this problem.

@@ -782,12 +782,11 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
 
     case SnapshotOffer(_, st: State) ⇒
       log.debug("receiveRecover SnapshotOffer {}", st)
+      state = st.withRememberEntities(settings.rememberEntities)
       //Old versions of the state object may not have unallocatedShard set,
       // thus it will be null.
-      if (st.unallocatedShards == null)
-        state = st.copy(unallocatedShards = Set.empty)
-      else
-        state = st
+      if (state.unallocatedShards == null)
+        state = state.copy(unallocatedShards = Set.empty)
 
     case RecoveryCompleted ⇒
       state = state.withRememberEntities(settings.rememberEntities)

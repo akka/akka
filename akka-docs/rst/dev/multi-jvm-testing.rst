@@ -11,7 +11,7 @@ Useful for integration testing where multiple systems communicate with each othe
 Setup
 =====
 
-The multi-JVM testing is an sbt plugin that you can find at `<http://github.com/typesafehub/sbt-multi-jvm>`_.
+The multi-JVM testing is an sbt plugin that you can find at `<http://github.com/sbt/sbt-multi-jvm>`_.
 
 You can add it as a plugin by adding the following to your project/plugins.sbt:
 
@@ -21,14 +21,11 @@ You can then add multi-JVM testing to ``build.sbt`` or ``project/Build.scala`` b
 settings and config. Please note that MultiJvm test sources are located in ``src/multi-jvm/...``,
 and not in ``src/test/...``.
 
-Here is an example ``build.sbt`` file for sbt 0.13 that uses the MultiJvm plugin:
-
-.. includecode:: ../../../akka-samples/akka-sample-multi-node-scala/build.sbt
-
 You can specify JVM options for the forked JVMs::
 
     jvmOptions in MultiJvm := Seq("-Xmx256M")
 
+Here is an example of a `sample project`_ that uses the ``sbt-multi-jvm`` plugin.
 
 Running tests
 =============
@@ -206,3 +203,5 @@ Multi Node Additions
 There has also been some additions made to the ``SbtMultiJvm`` plugin to accommodate the
 :ref:`experimental <experimental>` module :ref:`multi node testing <multi-node-testing>`,
 described in that section.
+
+.. _sample project: @samples@/tree/master/akka-sample-multi-node-scala

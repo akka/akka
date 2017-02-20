@@ -174,7 +174,7 @@ public class FSMDocTest extends AbstractJavaTest {
       expectMsgEquals(Active);
       expectMsgEquals(Data.Foo);
       String msg = expectMsgClass(String.class);
-      assertThat(msg, CoreMatchers.startsWith("LogEntry(SomeState,Foo,Actor[akka://FSMDocTest/system/"));
+      assertTrue(msg.startsWith("LogEntry(SomeState,Foo,Actor[akka://FSMDocTest/system/"));
     }};
   }
 }

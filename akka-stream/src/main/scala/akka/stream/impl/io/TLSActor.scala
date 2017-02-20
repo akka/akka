@@ -30,10 +30,9 @@ private[stream] object TLSActor {
   def props(
     settings:        ActorMaterializerSettings,
     createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-    verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
     closing:         TLSClosing,
-    tracing:         Boolean                               = false): Props =
-    Props(new TLSActor(settings, createSSLEngine, verifySession, closing, tracing)).withDeploy(Deploy.local)
+    tracing:         Boolean                   = false): Props =
+    Props(new TLSActor(settings, createSSLEngine, closing, tracing)).withDeploy(Deploy.local)
 
   final val TransportIn = 0
   final val TransportOut = 0
@@ -48,7 +47,6 @@ private[stream] object TLSActor {
 private[stream] class TLSActor(
   settings:        ActorMaterializerSettings,
   createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-  verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
   closing:         TLSClosing,
   tracing:         Boolean)
   extends Actor with ActorLogging with Pump {
@@ -410,15 +408,8 @@ private[stream] class TLSActor(
 
   private def handshakeFinished(): Unit = {
     if (tracing) log.debug("handshake finished")
-    val session = engine.getSession
-
-    verifySession(context.system, session) match {
-      case Success(()) ⇒
-        currentSession = session
-        corkUser = false
-      case Failure(ex) ⇒
-        fail(ex, closeTransport = true)
-    }
+    currentSession = engine.getSession
+    corkUser = false
   }
 
   override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive)

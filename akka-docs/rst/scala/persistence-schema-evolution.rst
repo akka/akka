@@ -193,7 +193,7 @@ Add fields
 ----------
 
 **Situation:**
-You need to add a field to an existing message type. For example, a ``SeatReservation(letter:String, row:Int)`` now
+You need to add a field to an existing message type. For example, a ``SeatReserved(letter:String, row:Int)`` now
 needs to have an associated code which indicates if it is a window or aisle seat.
 
 **Solution:**
@@ -229,7 +229,7 @@ Rename fields
 -------------
 
 **Situation:**
-When first designing the system the ``SeatReverved`` event featured an ``code`` field.
+When first designing the system the ``SeatReserved`` event featured a ``code`` field.
 After some time you discover that what was originally called ``code`` actually means ``seatNr``, thus the model
 should be changed to reflect this concept more accurately.
 

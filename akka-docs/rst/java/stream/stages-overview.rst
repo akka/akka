@@ -870,6 +870,48 @@ number of times. Each time a failure is fed into the partial function and a new 
 **completes** when upstream completes or upstream failed with exception partial function can handle
 
 
+Flow stages composed of Sinks and Sources
+-----------------------------------------
+
+Flow.fromSinkAndSource
+^^^^^^^^^^^^^^^^^^^^^^
+
+Creates a ``Flow`` from a ``Sink`` and a ``Source`` where the Flow's input will be sent to the ``Sink`` 
+and the ``Flow`` 's output will come from the Source.
+
+Note that termination events, like completion and cancelation is not automatically propagated through to the "other-side"
+of the such-composed Flow. Use ``CoupledTerminationFlow`` if you want to couple termination of both of the ends,
+for example most useful in handling websocket connections.
+
+CoupledTerminationFlow.fromSinkAndSource
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow them them.
+Similar to ``Flow.fromSinkAndSource`` however that API does not connect the completion signals of the wrapped stages.
+
+Similar to ``Flow.fromSinkAndSource`` however couples the termination of these two stages.
+
+E.g. if the emitted ``Flow`` gets a cancellation, the ``Source`` of course is cancelled,
+however the Sink will also be completed. The table below illustrates the effects in detail:
+
++-------------------------------------------------+-----------------------------+---------------------------------+
+| Returned Flow                                   | Sink (in)                   | Source (out)                    |
++=================================================+=============================+=================================+
+| cause: upstream (sink-side) receives completion | effect: receives completion | effect: receives cancel         | 
++-------------------------------------------------+-----------------------------+---------------------------------+
+| cause: upstream (sink-side) receives error      | effect: receives error      | effect: receives cancel         |
++-------------------------------------------------+-----------------------------+---------------------------------+
+| cause: downstream (source-side) receives cancel | effect: completes           | effect: receives cancel         |
++-------------------------------------------------+-----------------------------+---------------------------------+
+| effect: cancels upstream, completes downstream  | effect: completes           | cause: signals complete         |
++-------------------------------------------------+-----------------------------+---------------------------------+
+| effect: cancels upstream, errors downstream     | effect: receives error      | cause: signals error or throws  |
++-------------------------------------------------+-----------------------------+---------------------------------+
+| effect: cancels upstream, completes downstream  | cause: cancels              | effect: receives cancel         |
++=================================================+=============================+=================================+
+
+The order in which the `in` and `out` sides receive their respective completion signals is not defined, do not rely on its ordering.
+
 Asynchronous processing stages
 ------------------------------
 

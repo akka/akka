@@ -81,7 +81,7 @@ Akka persistence supports event sourcing with the ``PersistentActor`` trait. An 
 ``persist`` method to persist and handle events. The behavior of a ``PersistentActor``
 is defined by implementing ``receiveRecover`` and ``receiveCommand``. This is demonstrated in the following example.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-scala/src/main/scala/sample/persistence/PersistentActorExample.scala#persistent-actor-example
+.. includecode:: code/docs/persistence/PersistentActorExample.scala#persistent-actor-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExamplePersistentActor`` is a list of persisted event data contained in ``ExampleState``.
