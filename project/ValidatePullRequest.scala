@@ -83,7 +83,6 @@ object ValidatePullRequest extends AutoPlugin {
   def changedDirectoryIsDependency(changedDirs: Set[String],
                                     name: String,
                                     graphsToTest: Seq[(Configuration, ModuleGraph)])(log: Logger): Boolean = {
-    val dirsOrExperimental = changedDirs.flatMap(dir => Set(dir, s"$dir-experimental"))
     graphsToTest exists { case (ivyScope, deps) =>
       log.debug(s"Analysing [$ivyScope] scoped dependencies...")
 
@@ -92,7 +91,7 @@ object ValidatePullRequest extends AutoPlugin {
       // if this project depends on a modified module, we must test it
       deps.nodes.exists { m =>
         // match just by name, we'd rather include too much than too little
-        val dependsOnModule = dirsOrExperimental.find(m.id.name contains _)
+        val dependsOnModule = changedDirs.find(m.id.name contains _)
         val depends = dependsOnModule.isDefined
         if (depends) log.info(s"Project [$name] must be verified, because depends on [${dependsOnModule.get}]")
         depends

@@ -201,7 +201,7 @@ Multi Node Additions
 ====================
 
 There has also been some additions made to the ``SbtMultiJvm`` plugin to accommodate the
-:ref:`experimental <experimental>` module :ref:`multi node testing <multi-node-testing>`,
+:ref:`may change <may-change>` module :ref:`multi node testing <multi-node-testing>`,
 described in that section.
 
 .. _sample project: @samples@/tree/master/akka-sample-multi-node-scala

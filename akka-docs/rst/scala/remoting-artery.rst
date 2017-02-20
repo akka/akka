@@ -6,7 +6,7 @@ Remoting (codename Artery)
 
 .. note::
 
-  This page describes the experimental remoting subsystem, codenamed *Artery* that will eventually replace the
+  This page describes the :ref:`may change <may-change>` remoting subsystem, codenamed *Artery* that will eventually replace the
   old remoting implementation. For the current stable remoting system please refer to :ref:`remoting-scala`.
 
 Remoting enables Actor systems on different hosts or JVMs to communicate with each other. By enabling remoting

@@ -17,7 +17,6 @@ Java Documentation
    java/http/index
    java/howto
    java/scala-compat
-   experimental/index-java
    dev/index
    project/index
    additional/index

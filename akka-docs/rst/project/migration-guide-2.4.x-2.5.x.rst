@@ -10,7 +10,7 @@ Actor (Java)
 AbstractActor
 -------------
 
-``AbstractActor`` has been promoted from its experimental state and while doing this we
+``AbstractActor`` has been promoted from its experimental/may change state and while doing this we
 did some small, but important, improvements to the API that will require some mechanical
 changes of your source code.
 
@@ -491,7 +491,7 @@ for Scala and :ref:`Java <stream-integrations-java>`.
 
 The consuming actor may be a plain ``Actor`` or an ``PersistentActor`` if it needs to store its own state (e.g. ``fromSequenceNr`` offset).
 
-Please note that Persistence Query is not experimental anymore in Akka ``2.5.0``, so you can safely upgrade to it.
+Please note that Persistence Query is not experimental/may-change anymore in Akka ``2.5.0``, so you can safely upgrade to it.
 
 Persistence Plugin Proxy
 ------------------------
@@ -548,3 +548,16 @@ the Agents, as they rarely are really enough and do not fit the Akka spirit of t
 We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so in preparation thereof the Agents have been deprecated in 2.5.
 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
+
+Akka Typed
+==========
+
+With the new term :ref:`may change <may-change>` we will no longer have a different artifact for modules that are not
+stable, and ``akka-typed-experimental`` has therefore been renamed to ``akka-typed``. Note that it is still not
+promoted to a stable module.
+
+Experimental modules
+====================
+
+We have previously marked modules that we did not want to freeze the APIs of a **experimental**, such modules will
+instead be marked as :ref:`may change <may-change>` from now on.
