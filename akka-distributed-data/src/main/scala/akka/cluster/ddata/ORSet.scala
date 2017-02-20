@@ -432,17 +432,20 @@ final class ORSet[A] private[akka] (
   private def mergeRemoveDelta(thatDelta: ORSet.RemoveDeltaOp[A]): ORSet[A] = {
     val that = thatDelta.underlying
     val (elem, thatDot) = that.elementsMap.head
+    def deleteDots = that.vvector.versionsIterator
+    def deleteDotsNodes = deleteDots.map { case (dotNode, _) ⇒ dotNode }
     val newElementsMap =
-      if (that.vvector > vvector || that.vvector == vvector)
-        elementsMap - elem
-      else {
+      if (deleteDots.forall { case (dotNode, dotV) ⇒ this.vvector.versionAt(dotNode) <= dotV }) {
         elementsMap.get(elem) match {
           case Some(thisDot) ⇒
-            if (thatDot == thisDot || thatDot > thisDot) elementsMap - elem
+            if (thisDot.versionsIterator.forall { case (thisDotNode, _) ⇒ deleteDotsNodes.contains(thisDotNode) })
+              elementsMap - elem
             else elementsMap
           case None ⇒
             elementsMap
         }
+      } else {
+        elementsMap
       }
     clearAncestor()
     val newVvector = vvector.merge(that.vvector)
