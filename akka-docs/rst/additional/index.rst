@@ -5,6 +5,7 @@ Additional Information
    :maxdepth: 2
 
    ../common/binary-compatibility-rules
+   ../common/may-change
    faq
    books
    osgi

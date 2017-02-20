@@ -300,11 +300,12 @@ You can read up on `remaining` and friends in [TestKit.scala](https://github.com
 
 For external contributions of entire features, the normal way is to establish it
 as a stand-alone feature first, to show that there is a need for the feature. The
-next step would be to add it to Akka as an "experimental feature" (in the
-akka-contrib subproject), then when the feature is hardened, well documented and
+next step would be to add it to Akka as an "may change"-feature (in the
+akka-contrib subproject) and marking it's public api with the `ApiMayChange` annotation, 
+then when the feature is hardened, well documented and
 tested it becomes an officially supported Akka feature.
 
-[List of experimental Akka features](http://doc.akka.io/docs/akka/current/experimental/index.html)
+[List of Akka features marked as may change](http://doc.akka.io/docs/akka/current/common/may-change.html)
 
 # Supporting infrastructure
 
