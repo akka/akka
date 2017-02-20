@@ -72,7 +72,7 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
     val serializerId = readInt(in)
 
     if ((serializerId & 0xEDAC) == 0xEDAC) // Java Serialization magic value
-      throw new NotSerializableException(s"Replaying events from akka 2.3.x version is not supported or do not use serializerId[$serializerId].")
+      throw new NotSerializableException(s"Replaying snapshot from akka 2.3.x version is not supported any more")
 
     val remaining = in.available
     val manifest =
