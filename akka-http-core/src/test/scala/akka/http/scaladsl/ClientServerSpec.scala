@@ -223,7 +223,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       "support server timeouts" should {
         "close connection with idle client after idleTimeout" in {
-          val serverTimeout = 300.millis.dilated
+          val serverTimeout = 300.millis
           val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
 
@@ -245,7 +245,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
               Await.result(clientsResponseFuture, 2.second.dilated)
             }
 
-            (System.nanoTime() - serverReceivedRequestAtNanos).millis.dilated should be >= serverTimeout
+            (System.nanoTime() - serverReceivedRequestAtNanos).millis should be >= serverTimeout
           } finally Await.result(b1.unbind(), 1.second.dilated)
         }
       }
