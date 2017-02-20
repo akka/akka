@@ -435,6 +435,32 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.DurableStore#Store.this"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.LmdbDurableStore.dbPut"),
 
+      // #22218 Java Ambiguity in AbstractPersistentActor with Scala 2.12
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.deferAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persistAllAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persistAll"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Eventsourced.deferAsync"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Eventsourced.persistAllAsync"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Eventsourced.persistAll"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalPersistAsync"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalPersist"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalPersistAll"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalDeferAsync"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalPersistAllAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActorWithAtLeastOnceDelivery.deliver"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActorWithAtLeastOnceDelivery.deliver"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.AtLeastOnceDeliveryLike.deliver"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.AtLeastOnceDeliveryLike.deliver"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AtLeastOnceDeliveryLike.internalDeliver"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AtLeastOnceDeliveryLike.internalDeliver"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.persistence.AbstractPersistentActorWithAtLeastOnceDelivery"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActorWithAtLeastOnceDelivery.deliver"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActorWithAtLeastOnceDelivery.deliver"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.persistence.AbstractPersistentActor"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.deferAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAllAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAll"),
+
       // #22208 remove extension key
       ProblemFilters.exclude[MissingClassProblem]("akka.event.Logging$Extension$")
 

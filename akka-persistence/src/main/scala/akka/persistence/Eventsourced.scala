@@ -10,6 +10,7 @@ import java.util.UUID
 import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.actor.{ DeadLetter, StashOverflowException }
+import akka.annotation.InternalApi
 import akka.util.Helpers.ConfigOps
 import akka.event.Logging
 import akka.event.LoggingAdapter
@@ -292,31 +293,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   def receiveCommand: Receive
 
   /**
-   * Asynchronously persists `event`. On successful persistence, `handler` is called with the
-   * persisted event. It is guaranteed that no new commands will be received by a persistent actor
-   * between a call to `persist` and the execution of its `handler`. This also holds for
-   * multiple `persist` calls per received command. Internally, this is achieved by stashing new
-   * commands and unstashing them when the `event` has been persisted and handled. The stash used
-   * for that is an internal stash which doesn't interfere with the inherited user stash.
-   *
-   * An event `handler` may close over persistent actor state and modify it. The `sender` of a persisted
-   * event is the sender of the corresponding command. This means that one can reply to a command
-   * sender within an event `handler`.
-   *
-   * Within an event handler, applications usually update persistent actor state using persisted event
-   * data, notify listeners and reply to command senders.
-   *
-   * If persistence of an event fails, [[#onPersistFailure]] will be invoked and the actor will
-   * unconditionally be stopped. The reason that it cannot resume when persist fails is that it
-   * is unknown if the even was actually persisted or not, and therefore it is in an inconsistent
-   * state. Restarting on persistent failures will most likely fail anyway, since the journal
-   * is probably unavailable. It is better to stop the actor and after a back-off timeout start
-   * it again.
-   *
-   * @param event event to be persisted
-   * @param handler handler for each persisted `event`
+   * Internal API
    */
-  def persist[A](event: A)(handler: A ⇒ Unit): Unit = {
+  @InternalApi
+  final private[akka] def internalPersist[A](event: A)(handler: A ⇒ Unit): Unit = {
     if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     pendingStashingPersistInvocations += 1
     pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
@@ -325,14 +305,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   }
 
   /**
-   * Asynchronously persists `events` in specified order. This is equivalent to calling
-   * `persist[A](event: A)(handler: A => Unit)` multiple times with the same `handler`,
-   * except that `events` are persisted atomically with this method.
-   *
-   * @param events events to be persisted
-   * @param handler handler for each persisted `events`
+   * Internal API
    */
-  def persistAll[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
+  @InternalApi
+  final private[akka] def internalPersistAll[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
     if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     if (events.nonEmpty) {
       events.foreach { event ⇒
@@ -345,29 +321,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   }
 
   /**
-   * Asynchronously persists `event`. On successful persistence, `handler` is called with the
-   * persisted event.
-   *
-   * Unlike `persist` the persistent actor will continue to receive incoming commands between the
-   * call to `persist` and executing it's `handler`. This asynchronous, non-stashing, version of
-   * of persist should be used when you favor throughput over the "command-2 only processed after
-   * command-1 effects' have been applied" guarantee, which is provided by the plain `persist` method.
-   *
-   * An event `handler` may close over persistent actor state and modify it. The `sender` of a persisted
-   * event is the sender of the corresponding command. This means that one can reply to a command
-   * sender within an event `handler`.
-   *
-   * If persistence of an event fails, [[#onPersistFailure]] will be invoked and the actor will
-   * unconditionally be stopped. The reason that it cannot resume when persist fails is that it
-   * is unknown if the even was actually persisted or not, and therefore it is in an inconsistent
-   * state. Restarting on persistent failures will most likely fail anyway, since the journal
-   * is probably unavailable. It is better to stop the actor and after a back-off timeout start
-   * it again.
-   *
-   * @param event event to be persisted
-   * @param handler handler for each persisted `event`
+   * Internal API
    */
-  def persistAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
+  @InternalApi
+  final private[akka] def internalPersistAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
     if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
     eventBatch ::= AtomicWrite(PersistentRepr(event, persistenceId = persistenceId,
@@ -375,14 +332,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   }
 
   /**
-   * Asynchronously persists `events` in specified order. This is equivalent to calling
-   * `persistAsync[A](event: A)(handler: A => Unit)` multiple times with the same `handler`,
-   * except that `events` are persisted atomically with this method.
-   *
-   * @param events events to be persisted
-   * @param handler handler for each persisted `events`
+   * Internal API
    */
-  def persistAllAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
+  @InternalApi
+  final private[akka] def internalPersistAllAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit = {
     if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     if (events.nonEmpty) {
       events.foreach { event ⇒
@@ -394,23 +347,10 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   }
 
   /**
-   * Defer the handler execution until all pending handlers have been executed.
-   * Allows to define logic within the actor, which will respect the invocation-order-guarantee
-   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before `deferAsync`,
-   * the corresponding handlers will be invoked in the same order as they were registered in.
-   *
-   * This call will NOT result in `event` being persisted, use `persist` or `persistAsync` instead
-   * if the given event should possible to replay.
-   *
-   * If there are no pending persist handler calls, the handler will be called immediately.
-   *
-   * If persistence of an earlier event fails, the persistent actor will stop, and the `handler`
-   * will not be run.
-   *
-   * @param event event to be handled in the future, when preceding persist operations have been processes
-   * @param handler handler for the given `event`
+   * Internal API
    */
-  def deferAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
+  @InternalApi
+  final private[akka] def internalDeferAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
     if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
     if (pendingInvocations.isEmpty) {
       handler(event)
