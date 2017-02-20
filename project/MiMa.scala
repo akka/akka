@@ -29,7 +29,9 @@ object MiMa extends AutoPlugin {
       // manually maintained list of previous versions to make sure all incompatibilities are found
       // even if so far no files have been been created in this project's mima-filters directory
       Set("10.0.0",
-          "10.0.1")
+          "10.0.1",
+          "10.0.2",
+          "10.0.3")
         .map((version: String) => organization.value %% name.value % version)
   )
 
