@@ -149,31 +149,26 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
         val members = clusterView.members.toSeq.sorted(Member.ordering).map { m ⇒
           s"""{
               |      "address": "${m.address}",
-              |      "status": "${m.status}",
-              |      "roles": [
-              |        ${m.roles.map("\"" + _ + "\"").mkString(",\n        ")}
-              |      ]
+              |      "roles": [${if (m.roles.isEmpty) "" else m.roles.map("\"" + _ + "\"").mkString("\n        ", ",\n        ", "\n      ")}],
+              |      "status": "${m.status}"
               |    }""".stripMargin
         } mkString (",\n    ")
 
         val unreachable = clusterView.reachability.observersGroupedByUnreachable.toSeq.sortBy(_._1).map {
-          case (subject, observers) ⇒
+          case (subject, observers) ⇒ {
+            val observerAddresses = observers.toSeq.sorted.map("\"" + _.address + "\"")
             s"""{
               |      "node": "${subject.address}",
-              |      "observed-by": [
-              |        ${observers.toSeq.sorted.map(_.address).mkString("\"", "\",\n        \"", "\"")}
-              |      ]
+              |      "observed-by": [${if (observerAddresses.isEmpty) "" else observerAddresses.mkString("\n        ", ",\n        ", "\n      ")}]
               |    }""".stripMargin
-        } mkString (",\n")
+          }
+
+        } mkString (",\n    ")
 
         s"""{
+        |  "members": [${if (members.isEmpty) "" else "\n    " + members + "\n  "}],
         |  "self-address": "${clusterView.selfAddress}",
-        |  "members": [
-        |    ${members}
-        |  ],
-        |  "unreachable": [
-        |    ${unreachable}
-        |  ]
+        |  "unreachable": [${if (unreachable.isEmpty) "" else "\n    " + unreachable + "\n  "}]
         |}
         |""".stripMargin
       }

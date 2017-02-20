@@ -45,7 +45,7 @@ function ensureNodeIsRunningAndAvailable {
     fi
 }
 
-echo "This tool is deprecated use curl and https://github.com/akka/akka-cluster-management instead, since 2.5.0"
+echo "This jmx-client/akka-cluster tool is deprecated use curl and https://github.com/akka/akka-cluster-management instead, since 2.5.0." >&2
 
 # switch on command
 case "$1" in
