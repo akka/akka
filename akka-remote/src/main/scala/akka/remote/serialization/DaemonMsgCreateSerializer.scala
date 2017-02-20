@@ -103,19 +103,17 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
       val actorClass = system.dynamicAccess.getClassFor[AnyRef](protoProps.getClazz).get
       val args: Vector[AnyRef] =
         if (protoProps.getSerializerIdsCount > 0) {
-          // message from a 2.5+ node, which (may) includes string manifest and serializer id
+          // message from a newer node, which (may) includes string manifest and serializer id
           for {
             idx ← (0 until protoProps.getSerializerIdsCount).toVector
           } yield {
-            val manifest = protoProps.getManifests(idx)
-            // we have info per position if a string manifest serializer was used or not
-            if (protoProps.getHasManifest(idx)) {
-              serialization.deserializeByteBuffer(
-                protoProps.getArgs(idx).asReadOnlyByteBuffer(),
-                protoProps.getSerializerIds(idx), manifest)
-            } else {
-              oldDeserialize(protoProps.getArgs(idx), protoProps.getManifests(idx))
-            }
+            val manifest =
+              if (protoProps.getHasManifest(idx)) protoProps.getManifests(idx)
+              else ""
+            serialization.deserializeByteBuffer(
+              protoProps.getArgs(idx).asReadOnlyByteBuffer(),
+              protoProps.getSerializerIds(idx),
+              manifest)
           }
         } else {
           // message from an older node, which only provides data and class name
@@ -145,22 +143,24 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
       case ser: SerializerWithStringManifest ⇒
         hasManifest = true
         ser.manifest(m)
-      case _ if m eq null ⇒ "null"
       case ser ⇒
-        if (ser.includeManifest)
-          hasManifest = true
+        hasManifest = ser.includeManifest
 
         // we do include class name regardless to retain wire compatibility
         // with older nodes who expect manifest to be the class name
-        val className = m.getClass.getName
-        if (scala212OrLater && m.isInstanceOf[Serializable] && m.getClass.isSynthetic && className.contains("$Lambda$")) {
-          // When the additional-protobuf serializers are not enabled
-          // the serialization of the parameters is based on passing class name instead of
-          // serializerId and manifest as we usually do. With Scala 2.12 the functions are generated as
-          // lambdas and we can't use that load class from that name when deserializing
-          classOf[Serializable].getName
+        if (m eq null) {
+          "null"
         } else {
-          className
+          val className = m.getClass.getName
+          if (scala212OrLater && m.isInstanceOf[Serializable] && m.getClass.isSynthetic && className.contains("$Lambda$")) {
+            // When the additional-protobuf serializers are not enabled
+            // the serialization of the parameters is based on passing class name instead of
+            // serializerId and manifest as we usually do. With Scala 2.12 the functions are generated as
+            // lambdas and we can't use that load class from that name when deserializing
+            classOf[Serializable].getName
+          } else {
+            className
+          }
         }
     }
 
