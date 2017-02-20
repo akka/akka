@@ -16,6 +16,7 @@ class ORSetSpec extends WordSpec with Matchers {
 
   val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
+  val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
 
   val nodeA = UniqueAddress(Address("akka.tcp", "Sys", "a", 2552), 1L)
   val nodeB = UniqueAddress(nodeA.address.copy(host = Some("b")), 2L)
@@ -372,6 +373,50 @@ class ORSetSpec extends WordSpec with Matchers {
       val s8 = s2.resetDelta.add(node2, "z") // concurrent update from node2
       val s9 = s8 mergeDelta deltaGroup1
       s9.elements should ===(Set("a", "z"))
+    }
+
+    "handle a mixed add/remove scenario 2" in {
+      val s1 = ORSet.empty[String]
+      val s2 = s1.resetDelta.add(node1, "a")
+      val s3 = s2.resetDelta.add(node1, "b")
+      val s4 = s3.resetDelta.add(node2, "a")
+      val s5 = s4.resetDelta.remove(node1, "a")
+
+      s5.elements should ===(Set("b"))
+
+      val delta1 = s2.delta.get merge s3.delta.get
+      val delta2 = s4.delta.get
+
+      val t1 = ORSet.empty[String]
+      val t2 = t1.mergeDelta(delta1).mergeDelta(delta2)
+      t2.elements should ===(Set("a", "b"))
+      val t3 = t2.resetDelta.add(node3, "z")
+
+      val t4 = t3.mergeDelta(s5.delta.get)
+
+      t4.elements should ===(Set("b", "z"))
+    }
+
+    "handle a mixed add/remove scenario 3" in {
+      val s1 = ORSet.empty[String]
+      val s2 = s1.resetDelta.add(node1, "a")
+      val s3 = s2.resetDelta.add(node1, "b")
+      val s4 = s3.resetDelta.add(node2, "a")
+      val s5 = s4.resetDelta.remove(node1, "a")
+
+      s5.elements should ===(Set("b"))
+
+      val delta1 = s2.delta.get merge s3.delta.get
+
+      val t1 = ORSet.empty[String]
+
+      val t2 = t1.mergeDelta(delta1)
+      t2.elements should ===(Set("a", "b"))
+      val t3 = t2.resetDelta.add(node3, "a")
+
+      val t4 = t3.mergeDelta(s5.delta.get)
+
+      t4.elements should ===(Set("b", "a"))
     }
 
     "require causal delivery of deltas" in {
