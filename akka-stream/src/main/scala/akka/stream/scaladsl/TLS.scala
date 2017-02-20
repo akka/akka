@@ -167,6 +167,20 @@ object TLS {
     closing:         TLSClosing
   ): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     new scaladsl.BidiFlow(TlsModule(Attributes.none, _ ⇒ createSSLEngine(), (_, session) ⇒ verifySession(session), closing))
+
+  /**
+   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. This is a low-level interface.
+   *
+   * You can specify a constructor to create an SSLEngine that must already be configured for
+   * client and server mode and with all the parameters for the first session.
+   *
+   * For a description of the `closing` parameter please refer to [[TLSClosing]].
+   */
+  def apply(
+    createSSLEngine: () ⇒ SSLEngine, // we don't offer the internal `ActorSystem => SSLEngine` API here, see #21753
+    closing:         TLSClosing
+  ): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    new scaladsl.BidiFlow(TlsModule(Attributes.none, _ ⇒ createSSLEngine(), (_, _) ⇒ Success(()), closing))
 }
 
 /**
