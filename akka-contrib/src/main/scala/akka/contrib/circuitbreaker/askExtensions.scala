@@ -10,6 +10,7 @@ import scala.language.implicitConversions
 
 import scala.concurrent.{ ExecutionContext, Future }
 
+@deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 sealed class OpenCircuitException(message: String) extends RuntimeException(message)
 private[circuitbreaker] final object OpenCircuitException extends OpenCircuitException("Unable to complete operation since the Circuit Breaker Actor Proxy is in Open State")
 
@@ -19,6 +20,7 @@ private[circuitbreaker] final object OpenCircuitException extends OpenCircuitExc
  * `Future` result of an `ask` pattern to fail in case of
  * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] response
  */
+@deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 object Implicits {
   /**
    * Import this implicit to enable the methods `failForOpenCircuit` and `failForOpenCircuitWith`
@@ -61,6 +63,7 @@ object Implicits {
  * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] failure responses throwing
  * an exception built with the given exception builder
  */
+@deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
   @throws[OpenCircuitException]
   def failForOpenCircuit(implicit executionContext: ExecutionContext): Future[Any] = failForOpenCircuitWith(OpenCircuitException)
@@ -75,6 +78,7 @@ final class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
   }
 }
 
+@deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class AskeableWithCircuitBreakerActor(val actorRef: ActorRef) extends AnyVal {
   def askWithCircuitBreaker(message: Any)(implicit executionContext: ExecutionContext, timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAskWithCircuitBreaker(message, timeout, sender)
@@ -88,6 +92,7 @@ final class AskeableWithCircuitBreakerActor(val actorRef: ActorRef) extends AnyV
   }
 }
 
+@deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class AskeableWithCircuitBreakerActorSelection(val actorSelection: ActorSelection) extends AnyVal {
   def askWithCircuitBreaker(message: Any)(implicit executionContext: ExecutionContext, timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAskWithCircuitBreaker(message, timeout, sender)

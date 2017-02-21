@@ -561,6 +561,15 @@ We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so 
 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
 
+
+Contrib
+=======
+
+CircuitBreakerProxy
+-------------------
+
+:ref:`circuit-breaker-proxy` is deprecated in favor of ``akka.pattern.CircuitBreaker`` with explicit ``ask`` requests.
+
 Akka Typed
 ==========
 
