@@ -4,6 +4,7 @@
 package akka.cluster.sharding
 
 import java.net.URLEncoder
+
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -11,12 +12,9 @@ import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.cluster.sharding.Shard.ShardCommand
-import akka.persistence.PersistentActor
-import akka.persistence.SnapshotOffer
+import akka.persistence._
 import akka.actor.Actor
-import akka.persistence.RecoveryCompleted
-import akka.persistence.SaveSnapshotFailure
-import akka.persistence.SaveSnapshotSuccess
+
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.cluster.Cluster
@@ -210,7 +208,7 @@ private[akka] class Shard(
   }
 
   def receiveTerminated(ref: ActorRef): Unit = {
-    if (handOffStopper.exists(_ == ref))
+    if (handOffStopper.contains(ref))
       context stop self
     else if (idByRef.contains(ref) && handOffStopper.isEmpty)
       entityTerminated(ref)
@@ -401,7 +399,7 @@ private[akka] class PersistentShard(
   import Shard._
   import settings.tuningParameters._
 
-  override def persistenceId = s"/sharding/${typeName}Shard/${shardId}"
+  override def persistenceId = s"/sharding/${typeName}Shard/$shardId"
 
   override def journalPluginId: String = settings.journalPluginId
 
@@ -435,10 +433,38 @@ private[akka] class PersistentShard(
   }
 
   override def receiveCommand: Receive = ({
-    case _: SaveSnapshotSuccess ⇒
+    case SaveSnapshotSuccess(m) ⇒
       log.debug("PersistentShard snapshot saved successfully")
+      /*
+       * delete old events but keep the latest around because
+       *
+       * it's not safe to delete all events immediate because snapshots are typically stored with a weaker consistency
+       * level which means that a replay might "see" the deleted events before it sees the stored snapshot,
+       * i.e. it will use an older snapshot and then not replay the full sequence of events
+       *
+       * for debugging if something goes wrong in production it's very useful to be able to inspect the events
+       */
+      val deleteToSequenceNr = m.sequenceNr - keepNrOfBatches * snapshotAfter
+      if (deleteToSequenceNr > 0) {
+        deleteMessages(deleteToSequenceNr)
+      }
+
     case SaveSnapshotFailure(_, reason) ⇒
       log.warning("PersistentShard snapshot failure: {}", reason.getMessage)
+
+    case DeleteMessagesSuccess(toSequenceNr) ⇒
+      log.debug("PersistentShard messages to {} deleted successfully", toSequenceNr)
+      deleteSnapshots(SnapshotSelectionCriteria(maxSequenceNr = toSequenceNr - 1))
+
+    case DeleteMessagesFailure(reason, toSequenceNr) ⇒
+      log.warning("PersistentShard messages to {} deletion failure: {}", toSequenceNr, reason.getMessage)
+
+    case DeleteSnapshotSuccess(m) ⇒
+      log.debug("PersistentShard snapshots matching {} deleted successfully", m)
+
+    case DeleteSnapshotFailure(m, reason) ⇒
+      log.warning("PersistentShard snapshots matching {} deletion falure: {}", m, reason.getMessage)
+
   }: Receive).orElse(super.receiveCommand)
 
 }
@@ -617,8 +643,8 @@ final class AllAtOnceEntityRecoveryStrategy extends EntityRecoveryStrategy {
 
 final class ConstantRateEntityRecoveryStrategy(actorSystem: ActorSystem, frequency: FiniteDuration, numberOfEntities: Int) extends EntityRecoveryStrategy {
   import ShardRegion.EntityId
-  import akka.pattern.after
   import actorSystem.dispatcher
+  import akka.pattern.after
 
   override def recoverEntities(entities: Set[EntityId]): Set[Future[Set[EntityId]]] =
     entities.grouped(numberOfEntities).foldLeft((frequency, Set[Future[Set[EntityId]]]())) {

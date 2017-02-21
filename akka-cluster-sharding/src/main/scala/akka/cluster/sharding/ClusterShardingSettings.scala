@@ -37,6 +37,7 @@ object ClusterShardingSettings {
       entityRestartBackoff = config.getDuration("entity-restart-backoff", MILLISECONDS).millis,
       rebalanceInterval = config.getDuration("rebalance-interval", MILLISECONDS).millis,
       snapshotAfter = config.getInt("snapshot-after"),
+      keepNrOfBatches = config.getInt("keep-nr-of-batches"),
       leastShardAllocationRebalanceThreshold =
         config.getInt("least-shard-allocation-strategy.rebalance-threshold"),
       leastShardAllocationMaxSimultaneousRebalance =
@@ -87,6 +88,7 @@ object ClusterShardingSettings {
     val entityRestartBackoff:                               FiniteDuration,
     val rebalanceInterval:                                  FiniteDuration,
     val snapshotAfter:                                      Int,
+    val keepNrOfBatches:                                    Int,
     val leastShardAllocationRebalanceThreshold:             Int,
     val leastShardAllocationMaxSimultaneousRebalance:       Int,
     val waitingForStateTimeout:                             FiniteDuration,
@@ -98,6 +100,44 @@ object ClusterShardingSettings {
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
       s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
+
+    // included for binary compatibility
+    def this(
+      coordinatorFailureBackoff:                          FiniteDuration,
+      retryInterval:                                      FiniteDuration,
+      bufferSize:                                         Int,
+      handOffTimeout:                                     FiniteDuration,
+      shardStartTimeout:                                  FiniteDuration,
+      shardFailureBackoff:                                FiniteDuration,
+      entityRestartBackoff:                               FiniteDuration,
+      rebalanceInterval:                                  FiniteDuration,
+      snapshotAfter:                                      Int,
+      leastShardAllocationRebalanceThreshold:             Int,
+      leastShardAllocationMaxSimultaneousRebalance:       Int,
+      waitingForStateTimeout:                             FiniteDuration,
+      updatingStateTimeout:                               FiniteDuration,
+      entityRecoveryStrategy:                             String,
+      entityRecoveryConstantRateStrategyFrequency:        FiniteDuration,
+      entityRecoveryConstantRateStrategyNumberOfEntities: Int) = {
+      this(
+        coordinatorFailureBackoff,
+        retryInterval,
+        bufferSize,
+        handOffTimeout,
+        shardStartTimeout,
+        shardFailureBackoff,
+        entityRestartBackoff,
+        rebalanceInterval,
+        snapshotAfter,
+        2,
+        leastShardAllocationRebalanceThreshold,
+        leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout,
+        updatingStateTimeout,
+        entityRecoveryStrategy,
+        entityRecoveryConstantRateStrategyFrequency,
+        entityRecoveryConstantRateStrategyNumberOfEntities)
+    }
 
     // included for binary compatibility
     def this(
