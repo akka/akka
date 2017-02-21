@@ -568,7 +568,12 @@ Contrib
 CircuitBreakerProxy
 -------------------
 
-:ref:`circuit-breaker-proxy` is deprecated in favor of ``akka.pattern.CircuitBreaker`` with explicit ``ask`` requests.
+``CircuitBreakerProxy`` is deprecated in favor of ``akka.pattern.CircuitBreaker`` with explicit ``ask`` requests.
+
+PeekMailbox
+-----------
+
+``PeekMailbox`` is deprecated. Use an explicit supervisor or proxy actor instead.
 
 Akka Typed
 ==========

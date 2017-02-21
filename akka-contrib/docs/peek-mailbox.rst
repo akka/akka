@@ -3,6 +3,10 @@
 Mailbox with Explicit Acknowledgement
 =====================================
 
+.. warning::
+  **Deprecation warning** - ``PeekMailbox`` has been deprecated and is scheduled for removal 
+  in the next major version. Use an explicit supervisor or proxy actor instead.
+
 When an Akka actor is processing a message and an exception occurs, the normal
 behavior is for the actor to drop that message, and then continue with the next
 message after it has been restarted.  This is in some cases not the desired
