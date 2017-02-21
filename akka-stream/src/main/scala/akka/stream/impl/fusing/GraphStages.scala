@@ -282,57 +282,69 @@ object GraphStages {
 
     ReactiveStreamsCompliance.requireNonNullElement(future)
 
-    val out = Outlet[T]("futureFlatten.out")
-    val shape = SourceShape(out)
+    val out = Outlet[T]("FutureFlattenSource.out")
+    override val shape = SourceShape(out)
 
     override def initialAttributes = DefaultAttributes.futureSource
 
-    def createLogicAndMaterializedValue(attr: Attributes): (GraphStageLogic, Future[M]) = {
+    override def createLogicAndMaterializedValue(attr: Attributes): (GraphStageLogic, Future[M]) = {
       val materialized = Promise[M]()
 
       val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
-        private val sinkIn = new SubSinkInlet[T]("FlattenMergeSink")
+        private val sinkIn = new SubSinkInlet[T]("FutureFlattenSource.in")
 
-        private val cb = getAsyncCallback[Try[Graph[SourceShape[T], M]]] {
-          case scala.util.Success(graph) ⇒ {
-            setHandler(out, this)
-            sinkIn.setHandler(this)
+        override def preStart(): Unit = {
+          val cb = getAsyncCallback[Try[Graph[SourceShape[T], M]]](onFutureSourceCompleted).invoke _
+          future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+        }
 
-            sinkIn.pull()
-
-            val src = Source.fromGraph(graph)
-            val runnable = src.to(sinkIn.sink)
-
-            try {
-              materialized.success(interpreter.subFusingMaterializer.
-                materialize(runnable, initialAttributes = attr))
-            } catch {
-              case cause: Throwable ⇒
-                materialized.failure(cause)
-            }
-          }
-
-          case scala.util.Failure(t) ⇒ failStage(t)
-        }.invoke _
-
+        // initial handler (until future completes)
         setHandler(out, new OutHandler {
-          def onPull(): Unit =
-            future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+          def onPull(): Unit = {}
+
+          override def onDownstreamFinish(): Unit = {
+            materialized.tryFailure(new RuntimeException("Downstream cancelled before future source completed"))
+            super.onDownstreamFinish()
+          }
         })
 
         def onPush(): Unit = {
-          if (isAvailable(out)) {
-            push(out, sinkIn.grab())
-            sinkIn.pull()
-          }
+          push(out, sinkIn.grab())
         }
 
-        def onPull(): Unit = {}
+        def onPull(): Unit = {
+          sinkIn.pull()
+        }
 
         override def onUpstreamFinish(): Unit =
-          if (!sinkIn.isAvailable) completeStage()
+          completeStage()
 
-        override def postStop(): Unit = sinkIn.cancel()
+        override def postStop(): Unit = {
+          // I don't think this can happen, but just to be sure we don't leave the matval promise unfulfilled
+          materialized.tryFailure(new RuntimeException("FutureFlattenSource stage stopped without materialization of inner source completing"))
+          if (!sinkIn.isClosed) sinkIn.cancel()
+        }
+
+        def onFutureSourceCompleted(result: Try[Graph[SourceShape[T], M]]): Unit = {
+          result.map { graph ⇒
+            val runnable = Source.fromGraph(graph).toMat(sinkIn.sink)(Keep.left)
+            val matVal = interpreter.subFusingMaterializer.materialize(runnable, initialAttributes = attr)
+            materialized.success(matVal)
+
+            setHandler(out, this)
+            sinkIn.setHandler(this)
+
+            if (isAvailable(out)) {
+              sinkIn.pull()
+            }
+
+          }.recover {
+            case t ⇒
+              sinkIn.cancel()
+              materialized.failure(t)
+              failStage(t)
+          }
+        }
       }
 
       (logic, materialized.future)
