@@ -20,7 +20,7 @@ private[akka] object LogByteStringTools {
       logByteString(s"$name UP  ", maxBytes)
     )
 
-  def logToStringBidi[A](name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[A, A, A, A, NotUsed] =
+  def logToStringBidi[A, B](name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[A, A, B, B, NotUsed] =
     BidiFlow.fromFlows(
       logToString(s"$name DOWN", maxBytes),
       logToString(s"$name UP  ", maxBytes)
