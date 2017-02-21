@@ -48,6 +48,127 @@ class ORSetSpec extends WordSpec with Matchers {
       c5.elements should contain(user4)
     }
 
+    "be able to work with deltas" in {
+      val c1 = ORSet()
+
+      val c2 = c1.add(node1, user1)
+      val c2a = c2.add(node1, user2)
+      val c2aDelta = c2a.delta
+      val c2b = c2a.resetDelta.remove(node1, user2)
+      val c2bDelta = c2b.delta
+      val c3 = c2b.add(node1, user1).add(node2, user2)
+
+      val c3Delta = c3.delta
+
+      val c4 = c3.resetDelta.add(node2, user3)
+
+      val c4Delta = c4.delta
+
+      val c5 = ORSet()
+
+      //      val c6 = c5 merge c2a merge c2b merge c3 merge c4
+      val c6 = c5 merge c2aDelta merge c2bDelta merge c3Delta merge c4Delta
+
+      c6.elements should contain(user1)
+      c6.elements should contain(user2)
+      c6.elements should contain(user3)
+    }
+
+    "be able to merge deltas independent of order" in {
+      val c1 = ORSet()
+
+      val c2 = c1.add(node1, user1)
+      val c2a = c2.add(node1, user2)
+      val c2aDelta = c2a.delta
+      val c2b = c2a.resetDelta.remove(node1, user2)
+      val c2bDelta = c2b.delta
+      val c3 = c2b.add(node2, user2)
+
+      val c3Delta = c3.delta
+
+      val c4 = c3.resetDelta.add(node2, user3)
+
+      val c4Delta = c4.delta
+
+      val c5 = ORSet()
+
+      val c6 = c5 merge c3Delta merge c2aDelta merge c4Delta merge c2bDelta
+
+      c6.elements should contain(user1)
+      c6.elements should contain(user2)
+      c6.elements should contain(user3)
+    }
+
+    // not good enough test, improve :)
+    "be able to coalesce deltas" in {
+      val c1 = ORSet()
+
+      val c2 = c1.add(node1, user1)
+      val c2Delta = c2.delta
+
+      val c2a = c2.resetDelta.add(node1, user2)
+      val c2aDelta = c2a.delta
+      val c2b = c2a.resetDelta.remove(node1, user2)
+      val c2bDelta = c2b.delta
+      val c3 = c2b.add(node2, user2)
+
+      val c3Delta = c3.delta
+
+      val c4 = c3.resetDelta.add(node2, user3)
+
+      val c4Delta = c4.delta
+
+      val c5 = ORSet()
+
+      val addDelta = c3Delta merge c2aDelta
+
+      val c6 = c5 merge c2Delta merge addDelta merge c2bDelta merge c4Delta
+
+      c6.elements should contain(user1)
+      c6.elements should contain(user3)
+    }
+
+    "not have holes due to out of order operations" in {
+      val c1a = ORSet()
+
+      val c1b = ORSet()
+
+      val c2a = c1a.add(node1, user1)
+
+      val c2aDelta = c2a.delta
+
+      val c2b = c1b.add(node2, user1)
+
+      val c2bDelta = c2b.delta
+
+      val c3a = c2a.resetDelta.add(node1, user2)
+
+      val c3aDelta = c3a.delta
+
+      val c3b = c2b.resetDelta.add(node2, user2)
+
+      val c3bDelta = c3b.delta
+
+      val c4a = c3a.resetDelta.add(node1, user3)
+
+      val c4aDelta = c4a.delta
+
+      val c4b = c3b.resetDelta.add(node2, user3)
+
+      val c4bDelta = c4b.delta
+
+      val deltaA = ORSet() merge c2aDelta merge c2bDelta merge c4bDelta merge c4aDelta
+
+      val deltaB = ORSet() merge c2aDelta merge c2bDelta merge c3aDelta merge c3bDelta merge c4bDelta merge c4aDelta
+
+      val c9 = deltaA merge deltaB
+
+      c9.elements should contain(user1)
+      c9.elements should contain(user2)
+      c9.elements should contain(user3)
+
+    }
+
     "be able to remove added user" in {
       val c1 = ORSet()
 

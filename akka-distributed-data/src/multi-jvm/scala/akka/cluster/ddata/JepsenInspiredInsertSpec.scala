@@ -23,12 +23,13 @@ object JepsenInspiredInsertSpec extends MultiNodeConfig {
   val n5 = role("n5")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = "OFF"
+    akka.stdout-loglevel = "OFF"
     akka.actor.provider = "cluster"
     akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
     akka.remote.log-remote-lifecycle-events = ERROR
-    akka.testconductor.barrier-timeout = 60 s
+    akka.testconductor.barrier-timeout = 120 s
     """))
 
   testTransport(on = true)
@@ -52,9 +53,9 @@ class JepsenInspiredInsertSpec extends MultiNodeSpec(JepsenInspiredInsertSpec) w
   val replicator = DistributedData(system).replicator
   val nodes = roles.drop(1) // controller not part of active nodes
   val nodeCount = nodes.size
-  val timeout = 3.seconds.dilated
+  val timeout = 10.seconds.dilated
   val delayMillis = 0
-  val totalCount = 200
+  val totalCount = 30
   //  val delayMillis = 20
   //  val totalCount = 2000
   val expectedData = (0 until totalCount).toSet
