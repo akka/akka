@@ -33,6 +33,8 @@ Akka HTTP is provided in a separate jar file, to use it make sure to include the
 ```
 @@@
 
+Dependency declarations for other build tools (like Gradle or Maven) can be found [here](http://akka.io/docs/#akka-http).
+
 Mind that `akka-http` comes in two modules: `akka-http` and `akka-http-core`. Because `akka-http`
 depends on `akka-http-core` you don't need to bring the latter explicitly. Still you may need to this in case you rely
 solely on low-level API.
