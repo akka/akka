@@ -92,8 +92,8 @@ class DnsExt(system: ExtendedActorSystem) extends IO.Extension {
 
 object IpVersionSelector {
   def getInetAddress(ipv4: Option[Inet4Address], ipv6: Option[Inet6Address]): Option[InetAddress] =
-    sys.props.get("java.net.preferIPv6Addresses") match {
-      case Some(value: String) if ("true".equals(value)) ⇒ ipv6 orElse ipv4
-      case _ ⇒ ipv4 orElse ipv6
+    System.getProperty("java.net.preferIPv6Addresses") match {
+      case "true" ⇒ ipv6 orElse ipv4
+      case _      ⇒ ipv4 orElse ipv6
     }
 }
