@@ -64,7 +64,15 @@ message PropsData {
   required DeployData deploy = 2;
   required string clazz = 3;
   repeated bytes args = 4;
-  repeated string classes = 5;
+  // serialized props parameters
+  // older wire protocol: contains class name for each arg
+  // newer wire protocol: contains string manifest for each arg
+  repeated string manifests = 5;
+  // newer wire protocol: serializer id for each arg
+  repeated int32 serializerIds = 6;
+  // additionally a flag per position to indicate if it was
+  // serialized with manifest or not
+  repeated bool hasManifest = 7;
 }
 
 /**
