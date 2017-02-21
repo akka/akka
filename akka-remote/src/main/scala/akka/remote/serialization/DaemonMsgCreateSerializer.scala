@@ -102,8 +102,8 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
       val protoProps = proto.getProps
       val actorClass = system.dynamicAccess.getClassFor[AnyRef](protoProps.getClazz).get
       val args: Vector[AnyRef] =
+        // message from a newer node always contains serializer ids and possibly a string manifest for each position
         if (protoProps.getSerializerIdsCount > 0) {
-          // message from a newer node, which (may) includes string manifest and serializer id
           for {
             idx ← (0 until protoProps.getSerializerIdsCount).toVector
           } yield {
@@ -117,6 +117,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
           }
         } else {
           // message from an older node, which only provides data and class name
+          // and never any serializer ids
           (proto.getProps.getArgsList.asScala zip proto.getProps.getManifestsList.asScala)
             .map(oldDeserialize)(collection.breakOut)
         }
