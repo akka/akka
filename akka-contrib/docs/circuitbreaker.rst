@@ -7,8 +7,12 @@ This is an alternative implementation of the :ref:`Akka Circuit Breaker Pattern 
 The main difference is that it is intended to be used only for request-reply interactions with an actor using the Circuit-Breaker as a proxy of the target one
 in order to provide the same failfast functionalities and a protocol similar to the circuit-breaker implementation in Akka.
 
+.. warning::
+  **Deprecation warning** - ``CircuitBreakerProxy`` has been deprecated and is scheduled for removal 
+  in the next major version. ``akka.pattern.CircuitBreaker`` with explicit ``ask`` requests can be used instead.
 
-### Usage
+Usage
+-----
 
 Let's assume we have an actor wrapping a back-end service and able to respond to ``Request`` calls with a ``Response`` object
 containing an ``Either[String, String]`` to map successful and failed responses. The service is also potentially slowing down
@@ -45,7 +49,8 @@ enabled by importing ``import akka.contrib.circuitbreaker.Implicits.futureExtens
 
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/circuitbreaker/sample/CircuitBreaker.scala#ask-with-failure-sample
 
-#### Direct Communication With The Target Actor
+Direct Communication With The Target Actor
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To send messages to the `target` actor without expecting any response you can wrap your message in a ``TellOnly`` or a ``Passthrough``
 envelope. The difference between the two is that ``TellOnly`` will forward the message only when in closed mode and
