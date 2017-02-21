@@ -1,10 +1,12 @@
 package docs.http.javadsl.server;
 
 //#imports
+//#minimal-imports
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
+//#minimal-imports
 import akka.http.javadsl.settings.ServerSettings;
 import com.typesafe.config.ConfigFactory;
 //#imports
@@ -16,8 +18,10 @@ import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
 //#selfClosing
 //#imports
+//#minimal-imports
 import java.util.Optional;
 import java.util.concurrent.*;
+//#minimal-imports
 //#imports
 //#selfClosing
 
@@ -55,10 +59,18 @@ public class HttpAppExampleTest extends JUnitSuite {
     //#minimal-routing-example
     // Starting the server
     final MinimalHttpApp myServer = new MinimalHttpApp();
-    myServer.startServer("localhost", 8080, ServerSettings.create(ConfigFactory.load()));
+    myServer.startServer("localhost", 8080);
     //#minimal-routing-example
   }
 
+
+  void withSettingsServer() throws ExecutionException, InterruptedException {
+    //#with-settings-routing-example
+    // Starting the server
+    final MinimalHttpApp myServer = new MinimalHttpApp();
+    myServer.startServer("localhost", 8080, ServerSettings.create(ConfigFactory.load()));
+    //#with-settings-routing-example
+  }
 
   static
   //#serverTerminationSignal

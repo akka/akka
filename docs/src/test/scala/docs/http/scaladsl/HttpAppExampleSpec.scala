@@ -12,7 +12,27 @@ class HttpAppExampleSpec extends WordSpec with Matchers
   "minimal-routing-example" in compileOnlySpec {
     //#minimal-routing-example
     import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
-    import akka.http.scaladsl.server.Directives._
+    import akka.http.scaladsl.server.HttpApp
+    import akka.http.scaladsl.server.Route
+    
+    // Server definition
+    object WebServer extends HttpApp {
+      def route: Route =
+        path("hello") {
+          get {
+            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
+          }
+        }
+    }
+
+    // Starting the server
+    WebServer.startServer("localhost", 8080)
+    //#minimal-routing-example
+  }
+
+  "with-settings-routing-example" in compileOnlySpec {
+    //#with-settings-routing-example
+    import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.settings.ServerSettings
@@ -30,13 +50,12 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Starting the server
     WebServer.startServer("localhost", 8080, ServerSettings(ConfigFactory.load))
-    //#minimal-routing-example
+    //#with-settings-routing-example
   }
 
   "failed-binding" in compileOnlySpec {
     //#failed-binding-example
     import akka.http.scaladsl.model._
-    import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.settings.ServerSettings
@@ -66,7 +85,6 @@ class HttpAppExampleSpec extends WordSpec with Matchers
     import akka.Done
     import akka.actor.ActorSystem
     import akka.http.scaladsl.model._
-    import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.pattern
     import akka.http.scaladsl.server.Route
@@ -99,7 +117,6 @@ class HttpAppExampleSpec extends WordSpec with Matchers
     //#with-actor-system
     import akka.actor.ActorSystem
     import akka.http.scaladsl.model._
-    import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.settings.ServerSettings
@@ -126,7 +143,6 @@ class HttpAppExampleSpec extends WordSpec with Matchers
     import akka.Done
     import akka.actor.ActorSystem
     import akka.http.scaladsl.model._
-    import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.settings.ServerSettings

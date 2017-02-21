@@ -22,7 +22,7 @@ The following example shows how to start a server:
 @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #minimal-routing-example }
 
 Firstly we define an `object` (it can also be a `class`) that extends `HttpApp` and we just implement the routes this server will handle.
-After that, we can start a server just by providing a `host`, `port` and `ServerProperties`. Calling `startServer` blocks the current thread until the server is signaled for termination.
+After that, we can start a server just by providing a `host` and a `port`. Calling `startServer` blocks the current thread until the server is signaled for termination.
 The default behavior of `HttpApp` is to start a server, and shut it down after `ENTER` is pressed. When the call to `startServer` returns the server is properly shut down.
 
 ## Reacting to Bind Failures
@@ -35,6 +35,14 @@ Here you can see an example server that overrides the `postHttpBindingFailure` h
 @@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #failed-binding-example }
 
 So if the port `80` would be already taken by another app, the call to `startServer` returns immediately and the `postHttpBindingFailure` hook will be called.
+
+## Providing your own Server Settings
+
+`HttpApp` reads the default `ServerSettings` when one is not provided.
+In case you want to provide different settings, you can simply pass it to `startServer` as illustrated in the following example:
+
+@@snip [HttpAppExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #with-settings-routing-example }
+
 
 ## Providing your own Actor System
 

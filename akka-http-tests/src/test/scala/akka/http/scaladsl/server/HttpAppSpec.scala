@@ -23,7 +23,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.Try
 
-class HttpAppSpec extends AkkaSpec with Directives with RequestBuilding with Eventually {
+class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
   import system.dispatcher
 
   class MinimalApp extends HttpApp {
@@ -88,6 +88,19 @@ class HttpAppSpec extends AkkaSpec with Directives with RequestBuilding with Eve
   }
 
   "HttpApp" should {
+
+    "start only with host and port" in withMinimal { (minimal, host, port) ⇒
+      val server = Future {
+        minimal.startServer(host, port)
+      }
+
+      Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+
+      // Requesting the server to shutdown
+      callAndVerify(host, port, "shutdown")
+      Await.ready(server, Duration(1, TimeUnit.SECONDS))
+      server.isCompleted should ===(true)
+    }
 
     "start without ActorSystem" in withMinimal { (minimal, host, port) ⇒
 
