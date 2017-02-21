@@ -26,7 +26,7 @@ import scala.util.{ Failure, Success, Try }
  * It offers additional hooks to modify the default behavior.
  */
 // @akka.annotation.ApiMayChange // FIXME replace with real annotation once Akka dependency bumped
-trait HttpApp extends Directives {
+abstract class HttpApp extends Directives {
 
   private val serverBinding = new AtomicReference[ServerBinding]()
   /**
