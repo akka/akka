@@ -13,7 +13,7 @@ Reporting Vulnerabilities
 
 We strongly encourage people to report such problems to our private security mailing list first, before disclosing them in a public forum.
 
-Following best-practice, we strongly encourage anyone to report potential security 
+Following best practice, we strongly encourage anyone to report potential security 
 vulnerabilities to security@akka.io before disclosing them in a public forum like the mailing list or as a Github issue.
 
 Reports to this email address will be handled by our security team, who will work together with you
