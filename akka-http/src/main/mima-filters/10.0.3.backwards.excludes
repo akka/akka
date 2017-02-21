@@ -9,3 +9,6 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.unmarsh
 # =core #424 fix stream marshalling, better errors, more examples 
 # added new implicit marshaller provider; old method became non-implicit so binary compatibility is kept, but new code will use the new implicit
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.LowPriorityToResponseMarshallerImplicits.fromEntityStreamingSupportAndEntityMarshaller")
+
+# make httpApp abstract class
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.http.scaladsl.server.HttpApp")
