@@ -51,6 +51,12 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
   private[this] val inputBuffer = Buffer[PoolRequest](hcps.setup.settings.maxOpenRequests, fm)
   private[this] var activeIdleTimeout: Option[Cancellable] = None
 
+  private[this] val PoolOverflowException = new BufferOverflowException( // stack trace cannot be prevented here because `BufferOverflowException` is final
+    s"Exceeded configured max-open-requests value of [${inputBuffer.capacity}]. This means that the request queue of this pool (${gateway.hcps}) " +
+      s"has completely filled up because the pool currently does not process requests fast enough to handle the incoming request load. " +
+      "Please retry the request later. See http://doc.akka.io/docs/akka-http/current/scala/http/client-side/pool-overflow.html for " +
+      "more information.")
+
   log.debug("(Re-)starting host connection pool to {}:{}", hcps.host, hcps.port)
 
   initConnectionFlow()
@@ -110,10 +116,8 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
       }
       if (totalDemand == 0) {
         // if we can't dispatch right now we buffer and dispatch when demand from the pool arrives
-        if (inputBuffer.isFull) {
-          x.responsePromise.failure(
-            new BufferOverflowException(s"Exceeded configured max-open-requests value of [${inputBuffer.capacity}]"))
-        } else inputBuffer.enqueue(x)
+        if (inputBuffer.isFull) x.responsePromise.failure(PoolOverflowException)
+        else inputBuffer.enqueue(x)
       } else dispatchRequest(x) // if we can dispatch right now, do it
       request(1) // for every incoming request we demand one response from the pool
 

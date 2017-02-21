@@ -28,6 +28,7 @@ Akka HTTP will happily handle many thousand concurrent connections to a single o
 * [request-level](request-level.md)
 * [host-level](host-level.md)
 * [connection-level](connection-level.md)
+* [pool-overflow](pool-overflow.md)
 * [client-https-support](client-https-support.md)
 * [websocket-support](websocket-support.md)
 
