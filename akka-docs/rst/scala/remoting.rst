@@ -519,6 +519,9 @@ a certificate from the connecting peer. Without this mode only the client side i
 While Akka is a peer-to-peer technology, each connection between nodes starts out from one side (the "client") towards 
 the other (the "server").
 
+Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate
+by compromising any node with certificates issued by the same internal PKI tree.
+
 See also a description of the settings in the :ref:`remote-configuration-scala` section.
 
 .. note::
