@@ -746,13 +746,27 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
     case StreamSupervisor.PrintDebugDump ⇒
       val builder = new java.lang.StringBuilder(s"activeShells (actor: $self):\n")
       activeInterpreters.foreach { shell ⇒
-        builder.append("  " + shell.toString.replace("\n", "\n  "))
-        builder.append(shell.interpreter.toString)
+        builder.append("  ")
+          .append(shell.toString.replace("\n", "\n  "))
+          .append("\n")
+        if (shell.isInitialized) {
+          builder.append(shell.interpreter.toString)
+        } else {
+          builder.append("    Not initialized")
+        }
+        builder.append("\n")
       }
-      builder.append(s"newShells:")
+      builder.append(s"newShells:\n")
       newShells.foreach { shell ⇒
-        builder.append("  " + shell.toString.replace("\n", "\n  "))
-        builder.append(shell.interpreter.toString)
+        builder.append("  ")
+          .append(shell.toString.replace("\n", "\n  "))
+          .append("\n")
+        if (shell.isInitialized) {
+          builder.append(shell.interpreter.toString)
+        } else {
+          builder.append("    Not initialized")
+        }
+        builder.append("\n")
       }
       println(builder)
   }
