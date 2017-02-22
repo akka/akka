@@ -12,6 +12,10 @@ import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 
 import scala.util.Random
+import java.nio.ByteOrder
+import akka.serialization.Serialization
+import akka.serialization.ByteBufferSerializer
+import akka.serialization.Serializer
 
 object PrimitivesSerializationSpec {
   val serializationTestOverrides =
@@ -23,7 +27,34 @@ object PrimitivesSerializationSpec {
 
 class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.testConfig) {
 
-  val buffer = ByteBuffer.allocate(1024)
+  val buffer = {
+    val b = ByteBuffer.allocate(1024)
+    b.order(ByteOrder.LITTLE_ENDIAN)
+    b
+  }
+
+  val serialization = SerializationExtension(system)
+
+  def verifySerialization(msg: AnyRef): Unit = {
+    val serializer = serialization.serializerFor(msg.getClass)
+    serializer.fromBinary(serializer.toBinary(msg), None) should ===(msg)
+  }
+
+  def verifySerializationByteBuffer(msg: AnyRef): Unit = {
+    val serializer = serialization.serializerFor(msg.getClass).asInstanceOf[Serializer with ByteBufferSerializer]
+    buffer.clear()
+    serializer.toBinary(msg, buffer)
+    buffer.flip()
+
+    // also make sure that the Array and ByteBuffer formats are equal, given LITTLE_ENDIAN
+    val array1 = Array.ofDim[Byte](buffer.remaining())
+    buffer.get(array1)
+    val array2 = serializer.toBinary(msg)
+    ByteString(array1) should ===(ByteString(array2))
+
+    buffer.rewind()
+    serializer.fromBinary(buffer, "") should ===(msg)
+  }
 
   "LongSerializer" must {
     Seq(0L, 1L, -1L, Long.MinValue, Long.MinValue + 1L, Long.MaxValue, Long.MaxValue - 1L).map(_.asInstanceOf[AnyRef]).foreach {
@@ -42,18 +73,6 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
         }
     }
 
-    def verifySerialization(msg: AnyRef): Unit = {
-      val serializer = new LongSerializer(system.asInstanceOf[ExtendedActorSystem])
-      serializer.fromBinary(serializer.toBinary(msg), None) should ===(msg)
-    }
-
-    def verifySerializationByteBuffer(msg: AnyRef): Unit = {
-      val serializer = new LongSerializer(system.asInstanceOf[ExtendedActorSystem])
-      buffer.clear()
-      serializer.toBinary(msg, buffer)
-      buffer.flip()
-      serializer.fromBinary(buffer, "") should ===(msg)
-    }
   }
 
   "IntSerializer" must {
@@ -71,19 +90,6 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
         s"serialize and de-serialize value $item using ByteBuffers" in {
           verifySerializationByteBuffer(item)
         }
-    }
-
-    def verifySerialization(msg: AnyRef): Unit = {
-      val serializer = new IntSerializer(system.asInstanceOf[ExtendedActorSystem])
-      serializer.fromBinary(serializer.toBinary(msg), None) should ===(msg)
-    }
-
-    def verifySerializationByteBuffer(msg: AnyRef): Unit = {
-      val serializer = new IntSerializer(system.asInstanceOf[ExtendedActorSystem])
-      buffer.clear()
-      serializer.toBinary(msg, buffer)
-      buffer.flip()
-      serializer.fromBinary(buffer, "") should ===(msg)
     }
   }
 
@@ -109,18 +115,6 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
           }
       }
 
-    def verifySerialization(msg: AnyRef): Unit = {
-      val serializer = new StringSerializer(system.asInstanceOf[ExtendedActorSystem])
-      serializer.fromBinary(serializer.toBinary(msg), None) should ===(msg)
-    }
-
-    def verifySerializationByteBuffer(msg: AnyRef): Unit = {
-      val serializer = new StringSerializer(system.asInstanceOf[ExtendedActorSystem])
-      buffer.clear()
-      serializer.toBinary(msg, buffer)
-      buffer.flip()
-      serializer.fromBinary(buffer, "") should ===(msg)
-    }
   }
 
   "ByteStringSerializer" must {
@@ -144,18 +138,6 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
           }
       }
 
-    def verifySerialization(msg: AnyRef): Unit = {
-      val serializer = new ByteStringSerializer(system.asInstanceOf[ExtendedActorSystem])
-      serializer.fromBinary(serializer.toBinary(msg), None) should ===(msg)
-    }
-
-    def verifySerializationByteBuffer(msg: AnyRef): Unit = {
-      val serializer = new ByteStringSerializer(system.asInstanceOf[ExtendedActorSystem])
-      buffer.clear()
-      serializer.toBinary(msg, buffer)
-      buffer.flip()
-      serializer.fromBinary(buffer, "") should ===(msg)
-    }
   }
 
 }
