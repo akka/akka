@@ -565,50 +565,57 @@ If you use Agents and would like to take over the maintanance thereof, please co
 Contrib
 =======
 
+``akka-contrib`` has been deprecated and is scheduled for removal in the next major version. 
+The reason is to reduce the amount of things to maintain in the core Akka projects. 
+Contributions to the core of Akka or its satellite projects are welcome. Contributions 
+that don't fit into existing modules can be hosted in new Akka Github repositories in the 
+``akka`` Github organization or outside of it depending on what kind of library it is.
+Please ask.
+
 Aggregator
 ----------
 
-``Aggregator`` is deprecated. Feel free to copy the source into your project or create
-a separate library outside of Akka.
+``Aggregator`` has been deprecated. Feel free to copy the source into your project or create a 
+separate library outside of Akka.
 
 CircuitBreakerProxy
 -------------------
 
-``CircuitBreakerProxy`` is deprecated in favor of ``akka.pattern.CircuitBreaker`` with explicit ``ask`` requests.
+``CircuitBreakerProxy`` has been deprecated in favor of ``akka.pattern.CircuitBreaker`` with explicit ``ask`` requests.
 
 JavaLogger
 ----------
 
-``akka.contrib.jul.JavaLogger`` is deprecated and and included in ``akka-actor`` instead as
+``akka.contrib.jul.JavaLogger`` has been deprecated and included in ``akka-actor`` instead as
 ``akka.event.jul.JavaLogger``. See :ref:`documentation <jul-scala>`.
 
-The ``JavaLoggingAdapter`` is also deprecated, but not included in ``akka-actor``. 
+The ``JavaLoggingAdapter`` has also been deprecated, but not included in ``akka-actor``. 
 Feel free to copy the source into your project or create a separate library outside of Akka.
 
 PeekMailbox
 -----------
 
-``PeekMailbox`` is deprecated. Use an explicit supervisor or proxy actor instead.
+``PeekMailbox`` has been deprecated. Use an explicit supervisor or proxy actor instead.
 
 .. _migration-guide-TimerBasedThrottler:
 
 ReceivePipeline
 ---------------
 
-``ReceivePipeline`` is deprecated. Feel free to copy the source into your project or create
+``ReceivePipeline`` has been deprecated. Feel free to copy the source into your project or create
 a separate library outside of Akka.
 
 ReliableProxy
 -------------
 
-``ReliableProxy`` is deprecated. Use :ref:`at-least-once-delivery-scala` instead. ``ReliableProxy``
+``ReliableProxy`` has been deprecated. Use :ref:`at-least-once-delivery-scala` instead. ``ReliableProxy``
 was only intended as an example and doesn't have full production quality. If there is demand
 for a lightweight (non-durable) at-least once delivery mechanism we are open for a design discussion.
 
 TimerBasedThrottler
 -------------------
 
-``TimerBasedThrottler`` is deprecated. Use the ``throttle`` stage in Akka Streams instead.
+``TimerBasedThrottler`` has been deprecated. Use the ``throttle`` stage in Akka Streams instead.
 
 Example in Scala::
 
