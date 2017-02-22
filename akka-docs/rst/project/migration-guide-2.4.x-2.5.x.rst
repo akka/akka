@@ -583,6 +583,12 @@ PeekMailbox
 
 .. _migration-guide-TimerBasedThrottler:
 
+ReceivePipeline
+---------------
+
+``ReceivePipeline`` is deprecated. Feel free to copy the source into your project or create
+a separate library outside of Akka.
+
 ReliableProxy
 -------------
 
