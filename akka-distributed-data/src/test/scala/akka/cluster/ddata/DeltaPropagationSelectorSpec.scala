@@ -4,17 +4,24 @@
 package akka.cluster.ddata
 
 import akka.actor.Address
+import akka.cluster.UniqueAddress
+import akka.cluster.ddata.Key.KeyId
 import akka.cluster.ddata.Replicator.Internal.DataEnvelope
+import akka.cluster.ddata.Replicator.Internal.Delta
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
 object DeltaPropagationSelectorSpec {
-  class TestSelector(override val allNodes: Vector[Address]) extends DeltaPropagationSelector {
-    override val divisor = 5
-    override def createDeltaPropagation(deltas: Map[String, ReplicatedData]): DeltaPropagation =
-      DeltaPropagation(deltas.mapValues(d ⇒ DataEnvelope(d)))
+  class TestSelector(
+    val selfUniqueAddress: UniqueAddress,
+    override val allNodes: Vector[Address]) extends DeltaPropagationSelector {
+    override val gossipIntervalDivisor = 5
+    override def createDeltaPropagation(deltas: Map[KeyId, (ReplicatedData, Long, Long)]): DeltaPropagation =
+      DeltaPropagation(selfUniqueAddress, deltas.mapValues {
+        case (d, fromSeqNr, toSeqNr) ⇒ Delta(DataEnvelope(d), fromSeqNr, toSeqNr)
+      })
   }
 
   val deltaA = GSet.empty[String] + "a"
@@ -24,11 +31,12 @@ object DeltaPropagationSelectorSpec {
 
 class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheckedTripleEquals {
   import DeltaPropagationSelectorSpec._
+  val selfUniqueAddress = UniqueAddress(Address("akka", "Sys", "localhost", 4999), 1L)
   val nodes = (2500 until 2600).map(n ⇒ Address("akka", "Sys", "localhost", n)).toVector
 
   "DeltaPropagationSelector" must {
     "collect none when no nodes" in {
-      val selector = new TestSelector(Vector.empty)
+      val selector = new TestSelector(selfUniqueAddress, Vector.empty)
       selector.update("A", deltaA)
       selector.collectPropagations() should ===(Map.empty[Address, DeltaPropagation])
       selector.cleanupDeltaEntries()
@@ -36,13 +44,15 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
     }
 
     "collect 1 when one node" in {
-      val selector = new TestSelector(nodes.take(1))
+      val selector = new TestSelector(selfUniqueAddress, nodes.take(1))
       selector.update("A", deltaA)
       selector.update("B", deltaB)
       selector.cleanupDeltaEntries()
       selector.hasDeltaEntries("A") should ===(true)
       selector.hasDeltaEntries("B") should ===(true)
-      val expected = DeltaPropagation(Map("A" → DataEnvelope(deltaA), "B" → DataEnvelope(deltaB)))
+      val expected = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(deltaA), 1L, 1L),
+        "B" → Delta(DataEnvelope(deltaB), 1L, 1L)))
       selector.collectPropagations() should ===(Map(nodes(0) → expected))
       selector.collectPropagations() should ===(Map.empty[Address, DeltaPropagation])
       selector.cleanupDeltaEntries()
@@ -51,10 +61,12 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
     }
 
     "collect 2+1 when three nodes" in {
-      val selector = new TestSelector(nodes.take(3))
+      val selector = new TestSelector(selfUniqueAddress, nodes.take(3))
       selector.update("A", deltaA)
       selector.update("B", deltaB)
-      val expected = DeltaPropagation(Map("A" → DataEnvelope(deltaA), "B" → DataEnvelope(deltaB)))
+      val expected = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(deltaA), 1L, 1L),
+        "B" → Delta(DataEnvelope(deltaB), 1L, 1L)))
       selector.collectPropagations() should ===(Map(nodes(0) → expected, nodes(1) → expected))
       selector.cleanupDeltaEntries()
       selector.hasDeltaEntries("A") should ===(true)
@@ -67,16 +79,21 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
     }
 
     "keep track of deltas per node" in {
-      val selector = new TestSelector(nodes.take(3))
+      val selector = new TestSelector(selfUniqueAddress, nodes.take(3))
       selector.update("A", deltaA)
       selector.update("B", deltaB)
-      val expected1 = DeltaPropagation(Map("A" → DataEnvelope(deltaA), "B" → DataEnvelope(deltaB)))
+      val expected1 = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(deltaA), 1L, 1L),
+        "B" → Delta(DataEnvelope(deltaB), 1L, 1L)))
       selector.collectPropagations() should ===(Map(nodes(0) → expected1, nodes(1) → expected1))
       // new update before previous was propagated to all nodes
       selector.update("C", deltaC)
-      val expected2 = DeltaPropagation(Map("A" → DataEnvelope(deltaA), "B" → DataEnvelope(deltaB),
-        "C" → DataEnvelope(deltaC)))
-      val expected3 = DeltaPropagation(Map("C" → DataEnvelope(deltaC)))
+      val expected2 = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(deltaA), 1L, 1L),
+        "B" → Delta(DataEnvelope(deltaB), 1L, 1L),
+        "C" → Delta(DataEnvelope(deltaC), 1L, 1L)))
+      val expected3 = DeltaPropagation(selfUniqueAddress, Map(
+        "C" → Delta(DataEnvelope(deltaC), 1L, 1L)))
       selector.collectPropagations() should ===(Map(nodes(2) → expected2, nodes(0) → expected3))
       selector.cleanupDeltaEntries()
       selector.hasDeltaEntries("A") should ===(false)
@@ -88,17 +105,22 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
       selector.hasDeltaEntries("C") should ===(false)
     }
 
-    "merge updates that occur within same tick" in {
+    "bump version for each update" in {
       val delta1 = GSet.empty[String] + "a1"
       val delta2 = GSet.empty[String] + "a2"
       val delta3 = GSet.empty[String] + "a3"
-      val selector = new TestSelector(nodes.take(1))
+      val selector = new TestSelector(selfUniqueAddress, nodes.take(1))
       selector.update("A", delta1)
+      selector.currentVersion("A") should ===(1L)
       selector.update("A", delta2)
-      val expected1 = DeltaPropagation(Map("A" → DataEnvelope(delta1.merge(delta2))))
+      selector.currentVersion("A") should ===(2L)
+      val expected1 = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(delta1.merge(delta2)), 1L, 2L)))
       selector.collectPropagations() should ===(Map(nodes(0) → expected1))
       selector.update("A", delta3)
-      val expected2 = DeltaPropagation(Map("A" → DataEnvelope(delta3)))
+      selector.currentVersion("A") should ===(3L)
+      val expected2 = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(delta3), 3L, 3L)))
       selector.collectPropagations() should ===(Map(nodes(0) → expected2))
       selector.collectPropagations() should ===(Map.empty[Address, DeltaPropagation])
     }
@@ -107,32 +129,37 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
       val delta1 = GSet.empty[String] + "a1"
       val delta2 = GSet.empty[String] + "a2"
       val delta3 = GSet.empty[String] + "a3"
-      val selector = new TestSelector(nodes.take(3)) {
+      val selector = new TestSelector(selfUniqueAddress, nodes.take(3)) {
         override def nodesSliceSize(allNodesSize: Int): Int = 1
       }
       selector.update("A", delta1)
-      val expected1 = DeltaPropagation(Map("A" → DataEnvelope(delta1)))
+      val expected1 = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(delta1), 1L, 1L)))
       selector.collectPropagations() should ===(Map(nodes(0) → expected1))
 
       selector.update("A", delta2)
-      val expected2 = DeltaPropagation(Map("A" → DataEnvelope(delta1.merge(delta2))))
+      val expected2 = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(delta1.merge(delta2)), 1L, 2L)))
       selector.collectPropagations() should ===(Map(nodes(1) → expected2))
 
       selector.update("A", delta3)
-      val expected3 = DeltaPropagation(Map("A" → DataEnvelope(delta1.merge(delta2).merge(delta3))))
+      val expected3 = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(delta1.merge(delta2).merge(delta3)), 1L, 3L)))
       selector.collectPropagations() should ===(Map(nodes(2) → expected3))
 
-      val expected4 = DeltaPropagation(Map("A" → DataEnvelope(delta2.merge(delta3))))
+      val expected4 = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(delta2.merge(delta3)), 2L, 3L)))
       selector.collectPropagations() should ===(Map(nodes(0) → expected4))
 
-      val expected5 = DeltaPropagation(Map("A" → DataEnvelope(delta3)))
+      val expected5 = DeltaPropagation(selfUniqueAddress, Map(
+        "A" → Delta(DataEnvelope(delta3), 3L, 3L)))
       selector.collectPropagations() should ===(Map(nodes(1) → expected5))
 
       selector.collectPropagations() should ===(Map.empty[Address, DeltaPropagation])
     }
 
     "calcualte right slice size" in {
-      val selector = new TestSelector(nodes)
+      val selector = new TestSelector(selfUniqueAddress, nodes)
       selector.nodesSliceSize(0) should ===(0)
       selector.nodesSliceSize(1) should ===(1)
       (2 to 9).foreach { n ⇒

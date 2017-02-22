@@ -87,9 +87,9 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(Gossip(Map(
         "A" → DataEnvelope(data1),
         "B" → DataEnvelope(GSet() + "b" + "c")), sendBack = true))
-      checkSerialization(DeltaPropagation(Map(
-        "A" → DataEnvelope(delta1),
-        "B" → DataEnvelope(delta2))))
+      checkSerialization(DeltaPropagation(address1, Map(
+        "A" → Delta(DataEnvelope(delta1), 1L, 1L),
+        "B" → Delta(DataEnvelope(delta2), 3L, 5L))))
       checkSerialization(new DurableDataEnvelope(data1))
       checkSerialization(new DurableDataEnvelope(DataEnvelope(data1, pruning = Map(
         address1 → PruningPerformed(System.currentTimeMillis()),

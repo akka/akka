@@ -73,6 +73,7 @@ message DataEnvelope {
   
   required OtherMessage data = 1;
   repeated PruningEntry pruning = 2;
+  optional VersionVector deltaVersions = 3;
 }
 
 message Status {
@@ -100,9 +101,12 @@ message DeltaPropagation {
   message Entry {
     required string key = 1;
     required DataEnvelope envelope = 2;
+    required int64 fromSeqNr = 3;
+    optional int64 toSeqNr = 4; // if not set then same as fromSequenceNr
   }
   
-  repeated Entry entries = 1;
+  required UniqueAddress fromNode = 1;
+  repeated Entry entries = 2;
 }
 
 message UniqueAddress {
@@ -115,6 +119,14 @@ message UniqueAddress {
 message Address {
   required string hostname = 1;
   required uint32 port = 2;
+}
+
+message VersionVector {
+  message Entry {
+    required UniqueAddress node = 1;
+    required int64 version = 2;
+  }
+  repeated Entry entries = 1;
 }
 
 message OtherMessage {

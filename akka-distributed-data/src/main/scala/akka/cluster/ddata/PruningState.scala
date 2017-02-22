@@ -6,11 +6,12 @@ package akka.cluster.ddata
 import akka.actor.Address
 import akka.cluster.Member
 import akka.cluster.UniqueAddress
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
-private[akka] object PruningState {
+@InternalApi private[akka] object PruningState {
   final case class PruningInitialized(owner: UniqueAddress, seen: Set[Address]) extends PruningState {
     override def addSeen(node: Address): PruningState = {
       if (seen(node) || owner.address == node) this
@@ -25,7 +26,7 @@ private[akka] object PruningState {
 /**
  * INTERNAL API
  */
-private[akka] sealed trait PruningState {
+@InternalApi private[akka] sealed trait PruningState {
   import PruningState._
 
   def merge(that: PruningState): PruningState =

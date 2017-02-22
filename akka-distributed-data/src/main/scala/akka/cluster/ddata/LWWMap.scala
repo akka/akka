@@ -5,6 +5,7 @@ package akka.cluster.ddata
 
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
+import akka.annotation.InternalApi
 
 object LWWMap {
   private val _empty: LWWMap[Any, Any] = new LWWMap(ORMap.empty)
@@ -111,7 +112,7 @@ final class LWWMap[A, B] private[akka] (
   /**
    * INTERNAL API
    */
-  private[akka] def put(node: UniqueAddress, key: A, value: B, clock: Clock[B]): LWWMap[A, B] = {
+  @InternalApi private[akka] def put(node: UniqueAddress, key: A, value: B, clock: Clock[B]): LWWMap[A, B] = {
     val newRegister = underlying.get(key) match {
       case Some(r) ⇒ r.withValue(node, value, clock)
       case None    ⇒ LWWRegister(node, value, clock)
@@ -137,7 +138,7 @@ final class LWWMap[A, B] private[akka] (
   /**
    * INTERNAL API
    */
-  private[akka] def remove(node: UniqueAddress, key: A): LWWMap[A, B] =
+  @InternalApi private[akka] def remove(node: UniqueAddress, key: A): LWWMap[A, B] =
     new LWWMap(underlying.remove(node, key))
 
   override def merge(that: LWWMap[A, B]): LWWMap[A, B] =
