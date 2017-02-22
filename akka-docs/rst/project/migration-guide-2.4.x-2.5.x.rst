@@ -565,6 +565,12 @@ If you use Agents and would like to take over the maintanance thereof, please co
 Contrib
 =======
 
+Aggregator
+----------
+
+``Aggregator`` is deprecated. Feel free to copy the source into your project or create
+a separate library outside of Akka.
+
 CircuitBreakerProxy
 -------------------
 
