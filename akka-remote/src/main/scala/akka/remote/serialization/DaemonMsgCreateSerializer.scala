@@ -110,10 +110,10 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
             val manifest =
               if (protoProps.getHasManifest(idx)) protoProps.getManifests(idx)
               else ""
-            serialization.deserializeByteBuffer(
-              protoProps.getArgs(idx).asReadOnlyByteBuffer(),
+            serialization.deserialize(
+              protoProps.getArgs(idx).toByteArray(),
               protoProps.getSerializerIds(idx),
-              manifest)
+              manifest).get
           }
         } else {
           // message from an older node, which only provides data and class name
