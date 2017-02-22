@@ -30,6 +30,7 @@ import java.io.NotSerializableException
 import akka.actor.Address
 import akka.cluster.ddata.VersionVector
 import akka.annotation.InternalApi
+import akka.cluster.ddata.PruningState.PruningPerformed
 
 /**
  * INTERNAL API
@@ -424,10 +425,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     Changed(key)(data)
   }
 
-  private def dataEnvelopeToProto(dataEnvelope: DataEnvelope): dm.DataEnvelope = {
-    val dataEnvelopeBuilder = dm.DataEnvelope.newBuilder().
-      setData(otherMessageToProto(dataEnvelope.data))
-    dataEnvelope.pruning.foreach {
+  private def pruningToProto(entries: Map[UniqueAddress, PruningState]): Iterable[dm.DataEnvelope.PruningEntry] = {
+    entries.map {
       case (removedAddress, state) ⇒
         val b = dm.DataEnvelope.PruningEntry.newBuilder().
           setRemovedAddress(uniqueAddressToProto(removedAddress))
@@ -442,8 +441,15 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
             // wire backwards compatibility with 2.4.16 (required field)
             b.setOwnerAddress(uniqueAddressToProto(dummyAddress))
         }
-        dataEnvelopeBuilder.addPruning(b)
+        b.build()
     }
+  }
+
+  private def dataEnvelopeToProto(dataEnvelope: DataEnvelope): dm.DataEnvelope = {
+    val dataEnvelopeBuilder = dm.DataEnvelope.newBuilder().
+      setData(otherMessageToProto(dataEnvelope.data))
+
+    dataEnvelopeBuilder.addAllPruning(pruningToProto(dataEnvelope.pruning).asJava)
 
     if (!dataEnvelope.deltaVersions.isEmpty)
       dataEnvelopeBuilder.setDeltaVersions(versionVectorToProto(dataEnvelope.deltaVersions))
@@ -517,9 +523,18 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   }
 
   private def durableDataEnvelopeToProto(durableDataEnvelope: DurableDataEnvelope): dm.DurableDataEnvelope = {
-    dm.DurableDataEnvelope.newBuilder()
+    // only keep the PruningPerformed entries
+    val pruning = durableDataEnvelope.dataEnvelope.pruning.filter {
+      case (_, _: PruningPerformed) ⇒ true
+      case _                        ⇒ false
+    }
+
+    val builder = dm.DurableDataEnvelope.newBuilder()
       .setData(otherMessageToProto(durableDataEnvelope.data))
-      .build()
+
+    builder.addAllPruning(pruningToProto(pruning).asJava)
+
+    builder.build()
   }
 
   private def durableDataEnvelopeFromBinary(bytes: Array[Byte]): DurableDataEnvelope =
@@ -529,7 +544,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val data = otherMessageFromProto(durableDataEnvelope.getData).asInstanceOf[ReplicatedData]
     val pruning = pruningFromProto(durableDataEnvelope.getPruningList)
 
-    new DurableDataEnvelope(data)
+    new DurableDataEnvelope(DataEnvelope(data, pruning))
   }
 
 }
