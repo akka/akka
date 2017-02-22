@@ -561,6 +561,16 @@ We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so 
 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
 
+Camel
+=====
+
+``akka-camel`` has been deprecated in favour of `Alpakka <https://github.com/akka/alpakka>`_ , 
+the Akka Streams based collection of integrations to various endpoints (including Camel)
+
+We acknowledge that Akka Camel is a very useful and important module. It will not be removed until
+Alpakka has reached the needed production quality to be a full replacement. The deprecation of
+Akka Camel should be seen as a signal that new development is to be invested in Alpakka instead
+of Akka Camel.
 
 Contrib
 =======
