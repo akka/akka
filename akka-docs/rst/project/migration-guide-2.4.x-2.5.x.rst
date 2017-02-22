@@ -577,6 +577,13 @@ PeekMailbox
 
 .. _migration-guide-TimerBasedThrottler:
 
+ReliableProxy
+-------------
+
+``ReliableProxy`` is deprecated. Use :ref:`at-least-once-delivery-scala` instead. ``ReliableProxy``
+was only intended as an example and doesn't have full production quality. If there is demand
+for a lightweight (non-durable) at-least once delivery mechanism we are open for a design discussion.
+
 TimerBasedThrottler
 -------------------
 
