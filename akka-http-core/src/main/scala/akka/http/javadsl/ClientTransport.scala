@@ -4,6 +4,7 @@
 
 package akka.http.javadsl
 
+import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
 
 import akka.actor.ActorSystem
@@ -32,6 +33,9 @@ abstract class ClientTransport { outer ⇒
 @ApiMayChange
 object ClientTransport {
   def TCP: ClientTransport = scaladsl.ClientTransport.TCP.asJava
+
+  def proxy(proxyAddress: InetSocketAddress): ClientTransport =
+    scaladsl.ClientTransport.proxy(proxyAddress).asJava
 
   def fromScala(scalaTransport: scaladsl.ClientTransport): ClientTransport =
     scalaTransport match {

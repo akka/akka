@@ -167,6 +167,8 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
             startNewMessage(input, bodyStart)
           case _ ⇒ finishEmptyResponse()
         }
+        case HttpMethods.CONNECT ⇒
+          finishEmptyResponse()
         case _ ⇒ teh match {
           case None ⇒ clh match {
             case Some(`Content-Length`(contentLength)) ⇒
