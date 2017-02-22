@@ -160,8 +160,12 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Unknown stream id: " + e.streamId)
 
             case h: ParsedHeadersFrame ⇒
-              // TODO: probably a trailing header frame here which we currently don't support but which we should ignore. 
-              pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Unexpected internal frame reached Demux! Was: " + h)
+              if (h.endStream)
+                incomingStreams(h.streamId).outlet match {
+                  case Some(outlet) ⇒ outlet.complete()
+                  case None         ⇒ failSubstream(h.streamId, ErrorCode.STREAM_CLOSED, "Got HEADERS frame on closed stream")
+                }
+            // else just ignore intermediate HEADERS frames
 
             case DataFrame(streamId, endStream, payload) ⇒
               // technically this case is the same as StreamFrameEvent, however we're handling it earlier in the match here for efficiency
@@ -170,7 +174,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                 case Some(outlet) ⇒
                   outlet.push(payload)
                   if (endStream) outlet.complete()
-                case None ⇒ throw new RuntimeException("Got data after endStream = true")
+                case None ⇒ failSubstream(streamId, ErrorCode.STREAM_CLOSED, "Got DATA frame on closed stream")
               }
 
             case RstStreamFrame(streamId, errorCode) ⇒
@@ -244,6 +248,11 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
       def dispatchSubstream(sub: Http2SubStream): Unit = bufferedSubStreamOutput.push(sub)
+
+      def failSubstream(streamId: Int, errorCode: ErrorCode, description: String): Unit = {
+        log.debug(s"Substream $streamId failed with $errorCode: $description")
+        multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
+      }
 
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
