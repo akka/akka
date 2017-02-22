@@ -576,6 +576,15 @@ CircuitBreakerProxy
 
 ``CircuitBreakerProxy`` is deprecated in favor of ``akka.pattern.CircuitBreaker`` with explicit ``ask`` requests.
 
+JavaLogger
+----------
+
+``akka.contrib.jul.JavaLogger`` is deprecated and and included in ``akka-actor`` instead as
+``akka.event.jul.JavaLogger``. See :ref:`documentation <jul-scala>`.
+
+The ``JavaLoggingAdapter`` is also deprecated, but not included in ``akka-actor``. 
+Feel free to copy the source into your project or create a separate library outside of Akka.
+
 PeekMailbox
 -----------
 
