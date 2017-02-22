@@ -326,7 +326,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
         entityDataOut.expectCancellation()
       }
 
-      "send RST_STREAM when entity data stream fails" inPendingUntilFixed new WaitingForResponseDataSetup {
+      "send RST_STREAM when entity data stream fails" in new WaitingForResponseDataSetup {
         val data1 = ByteString("abcd")
         entityDataOut.sendNext(data1)
         expectDATA(TheStreamId, endStream = false, data1)
@@ -407,7 +407,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
         // we must get at least a bit of demand
         entityDataOut.sendNext(bytes(1000, 0x23))
       }
-      "give control frames priority over pending data frames" inPendingUntilFixed new WaitingForResponseDataSetup {
+      "give control frames priority over pending data frames" in new WaitingForResponseDataSetup {
         val responseDataChunk = bytes(1000, 0x42)
 
         // send data first but expect it to be queued because of missing demand

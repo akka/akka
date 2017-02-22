@@ -53,8 +53,8 @@ private[http2] object PriorityTree {
       else insert(streamId, streamDependency, weight, exclusive)
 
     private def insert(streamId: Int, streamDependency: Int, weight: Int, exclusive: Boolean): PriorityTreeImpl = {
-      require(!nodes.isDefinedAt(streamId))
-      require(streamId != streamDependency)
+      require(!nodes.isDefinedAt(streamId), s"Cannot insert node twice: $streamId")
+      require(streamId != streamDependency, s"Stream cannot depend on itself: $streamId")
 
       if (nodes.isDefinedAt(streamDependency)) {
         val dependencyInfo = nodes(streamDependency)
@@ -69,8 +69,8 @@ private[http2] object PriorityTree {
           .insert(streamId, streamDependency, weight, exclusive)
     }
     private def update(streamId: Int, newStreamDependency: Int, newWeight: Int, newlyExclusive: Boolean): PriorityTree = {
-      require(nodes.isDefinedAt(streamId))
-      require(streamId != newStreamDependency)
+      require(nodes.isDefinedAt(streamId), s"Not must exist to be updated: $streamId")
+      require(streamId != newStreamDependency, s"Stream cannot depend on itself: $streamId")
 
       if (nodes.isDefinedAt(newStreamDependency)) {
         val oldInfo = nodes(streamId)
@@ -90,8 +90,8 @@ private[http2] object PriorityTree {
     }
 
     private def remove(streamId: Int): PriorityTreeImpl = {
-      require(nodes.isDefinedAt(streamId))
-      require(streamId != 0)
+      require(nodes.isDefinedAt(streamId), s"Node must exist to be removed")
+      require(streamId != 0, "Cannot remove root node")
 
       val info = nodes(streamId)
       val dependencyInfo = nodes(info.streamDependency)

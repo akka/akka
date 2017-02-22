@@ -90,7 +90,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         outlet:   Option[BufferedOutlet[ByteString]]
       )
 
-      val multiplexer = createMultiplexer(frameOut)
+      val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
       override def preStart(): Unit = {
         pull(frameIn)
@@ -127,6 +127,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           in match {
             case WindowUpdateFrame(streamId, increment) ⇒ multiplexer.updateWindow(streamId, increment)
 
+            case priorityInfo: PriorityFrame ⇒
+              multiplexer.updatePriority(priorityInfo)
+
             case e: StreamFrameEvent if !Http2Compliance.isClientInitiatedStreamId(e.streamId) ⇒
               pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Not a valid client initiated stream id! Was: " + e.streamId)
 
@@ -151,9 +154,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
               dispatchSubstream(Http2SubStream(frame, data))
 
-            case PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
-              // must be before the "unknown stream id" case, since can be sent eagerly (e.g. firefox does so)
-              debug(s"Received PriorityFrame for stream $streamId with ${if (exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
+              prioInfo.foreach(multiplexer.updatePriority)
 
             case e: StreamFrameEvent if !incomingStreams.contains(e.streamId) ⇒
               // if a stream is invalid we will GO_AWAY
@@ -192,7 +193,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                     settingsAppliedOk = false
                   }
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
-                  multiplexer.updateFrameSize(value)
+                  multiplexer.updateMaxFrameSize(value)
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) ⇒
                   debug(s"Setting max concurrent streams to $value (not enforced)")
                   maxConcurrentStreams = Some(value)
