@@ -86,7 +86,7 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
       case s: String ⇒
         log.info("Got {}", s)
       case SubscribeAck(Subscribe("content", None, `self`)) ⇒
-        log.info("subscribing");
+        log.info("subscribing")
     }
   }
   //#subscriber
