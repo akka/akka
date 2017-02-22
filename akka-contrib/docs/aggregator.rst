@@ -2,6 +2,12 @@
 
 Aggregator Pattern
 ==================
+
+.. warning::
+  **Deprecation warning** - ``Aggregator`` has been deprecated and is scheduled for removal 
+  in the next major version. Feel free to copy the source into your project or create
+  a separate library outside of Akka.
+
 The aggregator pattern supports writing actors that aggregate data from multiple
 other actors and updates its state based on those responses. It is even harder to
 optionally aggregate more data based on the runtime state of the actor or take
