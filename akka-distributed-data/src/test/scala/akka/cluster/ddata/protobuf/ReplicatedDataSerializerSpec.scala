@@ -101,9 +101,17 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       checkSameContent(s3.merge(s4), s4.merge(s3))
     }
 
+    "serialize ORSet delta" in {
+      checkSerialization(ORSet().add(address1, "a").delta.get)
+      checkSerialization(ORSet().add(address1, "a").resetDelta.remove(address2, "a").delta.get)
+      checkSerialization(ORSet().add(address1, "a").remove(address2, "a").delta.get)
+      checkSerialization(ORSet().add(address1, "a").resetDelta.clear(address2).delta.get)
+      checkSerialization(ORSet().add(address1, "a").clear(address2).delta.get)
+    }
+
     "serialize large GSet" in {
       val largeSet = (10000 until 20000).foldLeft(GSet.empty[String]) {
-        case (acc, n) ⇒ acc.add(n.toString)
+        case (acc, n) ⇒ acc.resetDelta.add(n.toString)
       }
       val numberOfBytes = checkSerialization(largeSet)
       info(s"size of GSet with ${largeSet.size} elements: $numberOfBytes bytes")
@@ -118,7 +126,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
             case 1 ⇒ address2
             case 2 ⇒ address3
           }
-          acc.add(address, n.toString)
+          acc.resetDelta.add(address, n.toString)
       }
       val numberOfBytes = checkSerialization(largeSet)
       // note that ORSet is compressed, and therefore smaller than GSet

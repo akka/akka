@@ -3,10 +3,12 @@
  */
 package akka.cluster.ddata;
 
-import akka.cluster.UniqueAddress;
 
-public class JavaImplOfDeltaReplicatedData extends AbstractDeltaReplicatedData<JavaImplOfDeltaReplicatedData> implements
-    RemovedNodePruning {
+import java.util.Optional;
+
+// same delta type
+public class JavaImplOfDeltaReplicatedData extends AbstractDeltaReplicatedData<JavaImplOfDeltaReplicatedData, JavaImplOfDeltaReplicatedData>
+  implements ReplicatedDelta {
 
   @Override
   public JavaImplOfDeltaReplicatedData mergeData(JavaImplOfDeltaReplicatedData other) {
@@ -14,8 +16,13 @@ public class JavaImplOfDeltaReplicatedData extends AbstractDeltaReplicatedData<J
   }
 
   @Override
-  public JavaImplOfDeltaReplicatedData delta() {
+  public JavaImplOfDeltaReplicatedData mergeDeltaData(JavaImplOfDeltaReplicatedData other) {
     return this;
+  }
+
+  @Override
+  public Optional<JavaImplOfDeltaReplicatedData> deltaData() {
+    return Optional.empty();
   }
 
   @Override
@@ -24,22 +31,8 @@ public class JavaImplOfDeltaReplicatedData extends AbstractDeltaReplicatedData<J
   }
 
   @Override
-  public scala.collection.immutable.Set<UniqueAddress> modifiedByNodes() {
-    return akka.japi.Util.immutableSeq(new java.util.ArrayList<UniqueAddress>()).toSet();
+  public JavaImplOfDeltaReplicatedData zero() {
+    return new JavaImplOfDeltaReplicatedData();
   }
 
-  @Override
-  public boolean needPruningFrom(UniqueAddress removedNode) {
-    return false;
-  }
-
-  @Override
-  public JavaImplOfDeltaReplicatedData prune(UniqueAddress removedNode, UniqueAddress collapseInto) {
-    return this;
-  }
-
-  @Override
-  public JavaImplOfDeltaReplicatedData pruningCleanup(UniqueAddress removedNode) {
-    return this;
-  }
 }

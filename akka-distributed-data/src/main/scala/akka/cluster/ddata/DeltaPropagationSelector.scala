@@ -4,48 +4,53 @@
 package akka.cluster.ddata
 
 import scala.collection.immutable.TreeMap
-import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
+
 import akka.actor.Address
-import akka.cluster.ddata.Replicator.Internal.DataEnvelope
+import akka.annotation.InternalApi
+import akka.cluster.ddata.Key.KeyId
+import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
 
 /**
  * INTERNAL API: Used by the Replicator actor.
  * Extracted to separate trait to make it easy to test.
  */
-private[akka] trait DeltaPropagationSelector {
+@InternalApi private[akka] trait DeltaPropagationSelector {
 
   private var _propagationCount = 0L
   def propagationCount: Long = _propagationCount
-  private var deltaCounter = Map.empty[String, Long]
-  private var deltaEntries = Map.empty[String, TreeMap[Long, ReplicatedData]]
-  private var deltaSentToNode = Map.empty[String, Map[Address, Long]]
+  private var deltaCounter = Map.empty[KeyId, Long]
+  private var deltaEntries = Map.empty[KeyId, TreeMap[Long, ReplicatedData]]
+  private var deltaSentToNode = Map.empty[KeyId, Map[Address, Long]]
   private var deltaNodeRoundRobinCounter = 0L
 
-  def divisor: Int
+  def gossipIntervalDivisor: Int
 
   def allNodes: Vector[Address]
 
-  def createDeltaPropagation(deltas: Map[String, ReplicatedData]): DeltaPropagation
+  def createDeltaPropagation(deltas: Map[KeyId, (ReplicatedData, Long, Long)]): DeltaPropagation
 
-  def update(key: String, delta: ReplicatedData): Unit = {
-    val c = deltaCounter.get(key) match {
-      case Some(c) ⇒ c
-      case None ⇒
-        deltaCounter = deltaCounter.updated(key, 1L)
-        1L
-    }
-    val deltaEntriesForKey = deltaEntries.getOrElse(key, TreeMap.empty[Long, ReplicatedData])
-    val updatedEntriesForKey =
-      deltaEntriesForKey.get(c) match {
-        case Some(existingDelta) ⇒
-          deltaEntriesForKey.updated(c, existingDelta.merge(delta.asInstanceOf[existingDelta.T]))
-        case None ⇒
-          deltaEntriesForKey.updated(c, delta)
-      }
-    deltaEntries = deltaEntries.updated(key, updatedEntriesForKey)
+  def currentVersion(key: KeyId): Long = deltaCounter.get(key) match {
+    case Some(v) ⇒ v
+    case None    ⇒ 0L
   }
 
-  def delete(key: String): Unit = {
+  def update(key: KeyId, delta: ReplicatedData): Unit = {
+    // bump the counter for each update
+    val version = deltaCounter.get(key) match {
+      case Some(c) ⇒ c + 1
+      case None    ⇒ 1L
+    }
+    deltaCounter = deltaCounter.updated(key, version)
+
+    val deltaEntriesForKey = deltaEntries.get(key) match {
+      case Some(m) ⇒ m
+      case None    ⇒ TreeMap.empty[Long, ReplicatedData]
+    }
+
+    deltaEntries = deltaEntries.updated(key, deltaEntriesForKey.updated(version, delta))
+  }
+
+  def delete(key: KeyId): Unit = {
     deltaEntries -= key
     deltaCounter -= key
     deltaSentToNode -= key
@@ -53,7 +58,7 @@ private[akka] trait DeltaPropagationSelector {
 
   def nodesSliceSize(allNodesSize: Int): Int = {
     // 2 - 10 nodes
-    math.min(math.max((allNodesSize / divisor) + 1, 2), math.min(allNodesSize, 10))
+    math.min(math.max((allNodesSize / gossipIntervalDivisor) + 1, 2), math.min(allNodesSize, 10))
   }
 
   def collectPropagations(): Map[Address, DeltaPropagation] = {
@@ -80,20 +85,32 @@ private[akka] trait DeltaPropagationSelector {
 
       var result = Map.empty[Address, DeltaPropagation]
 
+      var cache = Map.empty[(KeyId, Long, Long), ReplicatedData]
       slice.foreach { node ⇒
         // collect the deltas that have not already been sent to the node and merge
         // them into a delta group
-        var deltas = Map.empty[String, ReplicatedData]
+        var deltas = Map.empty[KeyId, (ReplicatedData, Long, Long)]
         deltaEntries.foreach {
           case (key, entries) ⇒
             val deltaSentToNodeForKey = deltaSentToNode.getOrElse(key, TreeMap.empty[Address, Long])
             val j = deltaSentToNodeForKey.getOrElse(node, 0L)
             val deltaEntriesAfterJ = deltaEntriesAfter(entries, j)
             if (deltaEntriesAfterJ.nonEmpty) {
-              val deltaGroup = deltaEntriesAfterJ.valuesIterator.reduceLeft {
-                (d1, d2) ⇒ d1.merge(d2.asInstanceOf[d1.T])
+              val fromSeqNr = deltaEntriesAfterJ.head._1
+              val toSeqNr = deltaEntriesAfterJ.last._1
+              // in most cases the delta group merging will be the same for each node,
+              // so we cache the merged results
+              val cacheKey = (key, fromSeqNr, toSeqNr)
+              val deltaGroup = cache.get(cacheKey) match {
+                case None ⇒
+                  val group = deltaEntriesAfterJ.valuesIterator.reduceLeft {
+                    (d1, d2) ⇒ d1.merge(d2.asInstanceOf[d1.T])
+                  }
+                  cache = cache.updated(cacheKey, group)
+                  group
+                case Some(group) ⇒ group
               }
-              deltas = deltas.updated(key, deltaGroup)
+              deltas = deltas.updated(key, (deltaGroup, fromSeqNr, toSeqNr))
               deltaSentToNode = deltaSentToNode.updated(key, deltaSentToNodeForKey.updated(node, deltaEntriesAfterJ.lastKey))
             }
         }
@@ -104,15 +121,6 @@ private[akka] trait DeltaPropagationSelector {
           val deltaPropagation = createDeltaPropagation(deltas)
           result = result.updated(node, deltaPropagation)
         }
-      }
-
-      // increase the counter
-      deltaCounter = deltaCounter.map {
-        case (key, value) ⇒
-          if (deltaEntries.contains(key))
-            key → (value + 1)
-          else
-            key → value
       }
 
       result
@@ -126,14 +134,14 @@ private[akka] trait DeltaPropagationSelector {
       case ntrs                             ⇒ ntrs
     }
 
-  def hasDeltaEntries(key: String): Boolean = {
+  def hasDeltaEntries(key: KeyId): Boolean = {
     deltaEntries.get(key) match {
       case Some(m) ⇒ m.nonEmpty
       case None    ⇒ false
     }
   }
 
-  private def findSmallestVersionPropagatedToAllNodes(key: String, all: Vector[Address]): Long = {
+  private def findSmallestVersionPropagatedToAllNodes(key: KeyId, all: Vector[Address]): Long = {
     deltaSentToNode.get(key) match {
       case None ⇒ 0L
       case Some(deltaSentToNodeForKey) ⇒
@@ -154,7 +162,7 @@ private[akka] trait DeltaPropagationSelector {
 
           val deltaEntriesAfterMin = deltaEntriesAfter(entries, minVersion)
 
-          // TODO perhaps also remove oldest when deltaCounter are too far ahead (e.g. 10 cylces)
+          // TODO perhaps also remove oldest when deltaCounter is too far ahead (e.g. 10 cycles)
 
           key → deltaEntriesAfterMin
       }

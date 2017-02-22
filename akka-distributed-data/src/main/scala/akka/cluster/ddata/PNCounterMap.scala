@@ -6,6 +6,7 @@ package akka.cluster.ddata
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import java.math.BigInteger
+import akka.annotation.InternalApi
 
 object PNCounterMap {
   def empty[A]: PNCounterMap[A] = new PNCounterMap(ORMap.empty)
@@ -75,7 +76,7 @@ final class PNCounterMap[A] private[akka] (
   /**
    * INTERNAL API
    */
-  private[akka] def increment(node: UniqueAddress, key: A, delta: Long): PNCounterMap[A] =
+  @InternalApi private[akka] def increment(node: UniqueAddress, key: A, delta: Long): PNCounterMap[A] =
     new PNCounterMap(underlying.updated(node, key, PNCounter())(_.increment(node, delta)))
 
   /**
@@ -95,7 +96,7 @@ final class PNCounterMap[A] private[akka] (
   /**
    * INTERNAL API
    */
-  private[akka] def decrement(node: UniqueAddress, key: A, delta: Long): PNCounterMap[A] = {
+  @InternalApi private[akka] def decrement(node: UniqueAddress, key: A, delta: Long): PNCounterMap[A] = {
     new PNCounterMap(underlying.updated(node, key, PNCounter())(_.decrement(node, delta)))
   }
 
@@ -117,7 +118,7 @@ final class PNCounterMap[A] private[akka] (
   /**
    * INTERNAL API
    */
-  private[akka] def remove(node: UniqueAddress, key: A): PNCounterMap[A] =
+  @InternalApi private[akka] def remove(node: UniqueAddress, key: A): PNCounterMap[A] =
     new PNCounterMap(underlying.remove(node, key))
 
   override def merge(that: PNCounterMap[A]): PNCounterMap[A] =

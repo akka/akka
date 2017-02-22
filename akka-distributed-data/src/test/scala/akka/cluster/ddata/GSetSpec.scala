@@ -64,14 +64,14 @@ class GSetSpec extends WordSpec with Matchers {
       val c12 = c11 + user1
       val c13 = c12 + user2
 
-      c12.delta.elements should ===(Set(user1))
-      c13.delta.elements should ===(Set(user1, user2))
+      c12.delta.get.elements should ===(Set(user1))
+      c13.delta.get.elements should ===(Set(user1, user2))
 
       // deltas build state
-      (c12 merge c13.delta) should ===(c13)
+      (c12 mergeDelta c13.delta.get) should ===(c13)
 
       // own deltas are idempotent
-      (c13 merge c13.delta) should ===(c13)
+      (c13 mergeDelta c13.delta.get) should ===(c13)
 
       // set 2
       val c21 = GSet.empty[String]
@@ -79,18 +79,18 @@ class GSetSpec extends WordSpec with Matchers {
       val c22 = c21 + user3
       val c23 = c22.resetDelta + user4
 
-      c22.delta.elements should ===(Set(user3))
-      c23.delta.elements should ===(Set(user4))
+      c22.delta.get.elements should ===(Set(user3))
+      c23.delta.get.elements should ===(Set(user4))
 
       c23.elements should ===(Set(user3, user4))
 
       val c33 = c13 merge c23
 
       // merge both ways
-      val merged1 = GSet.empty[String] merge c12.delta merge c13.delta merge c22.delta merge c23.delta
+      val merged1 = GSet.empty[String] mergeDelta c12.delta.get mergeDelta c13.delta.get mergeDelta c22.delta.get mergeDelta c23.delta.get
       merged1.elements should ===(Set(user1, user2, user3, user4))
 
-      val merged2 = GSet.empty[String] merge c23.delta merge c13.delta merge c22.delta
+      val merged2 = GSet.empty[String] mergeDelta c23.delta.get mergeDelta c13.delta.get mergeDelta c22.delta.get
       merged2.elements should ===(Set(user1, user2, user3, user4))
 
       merged1 should ===(c33)

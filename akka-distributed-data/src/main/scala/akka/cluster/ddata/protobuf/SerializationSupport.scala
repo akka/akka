@@ -8,6 +8,9 @@ import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import scala.annotation.tailrec
+import scala.collection.immutable.TreeMap
+import scala.collection.JavaConverters._
+import scala.collection.breakOut
 import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
@@ -19,6 +22,7 @@ import akka.serialization.SerializationExtension
 import akka.protobuf.ByteString
 import akka.protobuf.MessageLite
 import akka.serialization.SerializerWithStringManifest
+import akka.cluster.ddata.VersionVector
 
 /**
  * Some useful serialization helper methods.
@@ -101,8 +105,32 @@ trait SerializationSupport {
       } else {
         // old remote node
         uniqueAddress.getUid.toLong
-      }
-    )
+      })
+
+  def versionVectorToProto(versionVector: VersionVector): dm.VersionVector = {
+    val b = dm.VersionVector.newBuilder()
+    versionVector.versionsIterator.foreach {
+      case (node, value) ⇒ b.addEntries(dm.VersionVector.Entry.newBuilder().
+        setNode(uniqueAddressToProto(node)).setVersion(value))
+    }
+    b.build()
+  }
+
+  def versionVectorFromBinary(bytes: Array[Byte]): VersionVector =
+    versionVectorFromProto(dm.VersionVector.parseFrom(bytes))
+
+  def versionVectorFromProto(versionVector: dm.VersionVector): VersionVector = {
+    val entries = versionVector.getEntriesList
+    if (entries.isEmpty)
+      VersionVector.empty
+    else if (entries.size == 1)
+      VersionVector(uniqueAddressFromProto(entries.get(0).getNode), entries.get(0).getVersion)
+    else {
+      val versions: TreeMap[UniqueAddress, Long] = versionVector.getEntriesList.asScala.map(entry ⇒
+        uniqueAddressFromProto(entry.getNode) → entry.getVersion)(breakOut)
+      VersionVector(versions)
+    }
+  }
 
   def resolveActorRef(path: String): ActorRef =
     system.provider.resolveActorRef(path)

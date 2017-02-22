@@ -18,8 +18,9 @@ import akka.actor.ActorRef
 import akka.actor.DeadLetterSuppression
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.cluster.ddata.Replicator.ReplicatorMessage
+import akka.cluster.ddata.Key.KeyId
 import akka.cluster.ddata.Replicator.Internal.DataEnvelope
+import akka.cluster.ddata.Replicator.ReplicatorMessage
 import akka.io.DirectByteBufferPool
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
@@ -53,7 +54,7 @@ object DurableStore {
    * should be used to signal success or failure of the operation to the contained
    * `replyTo` actor.
    */
-  final case class Store(key: String, data: DurableDataEnvelope, reply: Option[StoreReply])
+  final case class Store(key: KeyId, data: DurableDataEnvelope, reply: Option[StoreReply])
   final case class StoreReply(successMsg: Any, failureMsg: Any, replyTo: ActorRef)
 
   /**
@@ -66,7 +67,7 @@ object DurableStore {
    * will stop itself and the durable store.
    */
   case object LoadAll
-  final case class LoadData(data: Map[String, DurableDataEnvelope])
+  final case class LoadData(data: Map[KeyId, DurableDataEnvelope])
   case object LoadAllCompleted
   class LoadFailed(message: String, cause: Throwable) extends RuntimeException(message, cause) {
     def this(message: String) = this(message, null)
@@ -143,7 +144,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   }
 
   // pending write behind
-  val pending = new java.util.HashMap[String, DurableDataEnvelope]
+  val pending = new java.util.HashMap[KeyId, DurableDataEnvelope]
 
   override def postRestart(reason: Throwable): Unit = {
     super.postRestart(reason)
@@ -227,7 +228,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       writeBehind()
   }
 
-  def dbPut(tx: OptionVal[Txn[ByteBuffer]], key: String, data: DurableDataEnvelope): Unit = {
+  def dbPut(tx: OptionVal[Txn[ByteBuffer]], key: KeyId, data: DurableDataEnvelope): Unit = {
     try {
       keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
       val value = serializer.toBinary(data)

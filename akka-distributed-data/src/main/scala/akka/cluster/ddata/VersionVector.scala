@@ -9,6 +9,7 @@ import scala.collection.immutable.TreeMap
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.cluster.UniqueAddress
+import akka.annotation.InternalApi
 
 /**
  * VersionVector module with helper classes and methods.
@@ -28,7 +29,7 @@ object VersionVector {
   def apply(node: UniqueAddress, version: Long): VersionVector = OneVersionVector(node, version)
 
   /** INTERNAL API */
-  private[akka] def apply(versions: List[(UniqueAddress, Long)]): VersionVector =
+  @InternalApi private[akka] def apply(versions: List[(UniqueAddress, Long)]): VersionVector =
     if (versions.isEmpty) empty
     else if (versions.tail.isEmpty) apply(versions.head._1, versions.head._2)
     else apply(emptyVersions ++ versions)
@@ -69,7 +70,7 @@ object VersionVector {
   def ConcurrentInstance = Concurrent
 
   /** INTERNAL API */
-  private[akka] object Timestamp {
+  @InternalApi private[akka] object Timestamp {
     final val Zero = 0L
     final val EndMarker = Long.MinValue
     val counter = new AtomicLong(1L)
@@ -111,7 +112,7 @@ sealed abstract class VersionVector
    * INTERNAL API
    * Increment the version for the node passed as argument. Returns a new VersionVector.
    */
-  private[akka] def +(node: UniqueAddress): VersionVector = increment(node)
+  @InternalApi private[akka] def +(node: UniqueAddress): VersionVector = increment(node)
 
   /**
    * Increment the version for the node passed as argument. Returns a new VersionVector.
@@ -123,23 +124,23 @@ sealed abstract class VersionVector
   /**
    * INTERNAL API
    */
-  private[akka] def size: Int
+  @InternalApi private[akka] def size: Int
 
   /**
    * INTERNAL API
    * Increment the version for the node passed as argument. Returns a new VersionVector.
    */
-  private[akka] def increment(node: UniqueAddress): VersionVector
+  @InternalApi private[akka] def increment(node: UniqueAddress): VersionVector
 
   /**
    * INTERNAL API
    */
-  private[akka] def versionAt(node: UniqueAddress): Long
+  @InternalApi private[akka] def versionAt(node: UniqueAddress): Long
 
   /**
    * INTERNAL API
    */
-  private[akka] def contains(node: UniqueAddress): Boolean
+  @InternalApi private[akka] def contains(node: UniqueAddress): Boolean
 
   /**
    * Returns true if <code>this</code> and <code>that</code> are concurrent else false.
@@ -221,7 +222,7 @@ sealed abstract class VersionVector
   /**
    * INTERNAL API
    */
-  private[akka] def versionsIterator: Iterator[(UniqueAddress, Long)]
+  @InternalApi private[akka] def versionsIterator: Iterator[(UniqueAddress, Long)]
 
   /**
    * Compare two version vectors. The outcome will be one of the following:
@@ -256,26 +257,26 @@ final case class OneVersionVector private[akka] (node: UniqueAddress, version: L
   override def isEmpty: Boolean = false
 
   /** INTERNAL API */
-  private[akka] override def size: Int = 1
+  @InternalApi private[akka] override def size: Int = 1
 
   /** INTERNAL API */
-  private[akka] override def increment(n: UniqueAddress): VersionVector = {
+  @InternalApi private[akka] override def increment(n: UniqueAddress): VersionVector = {
     val v = Timestamp.counter.getAndIncrement()
     if (n == node) copy(version = v)
     else ManyVersionVector(TreeMap(node → version, n → v))
   }
 
   /** INTERNAL API */
-  private[akka] override def versionAt(n: UniqueAddress): Long =
+  @InternalApi private[akka] override def versionAt(n: UniqueAddress): Long =
     if (n == node) version
     else Timestamp.Zero
 
   /** INTERNAL API */
-  private[akka] override def contains(n: UniqueAddress): Boolean =
+  @InternalApi private[akka] override def contains(n: UniqueAddress): Boolean =
     n == node
 
   /** INTERNAL API */
-  private[akka] override def versionsIterator: Iterator[(UniqueAddress, Long)] =
+  @InternalApi private[akka] override def versionsIterator: Iterator[(UniqueAddress, Long)] =
     Iterator.single((node, version))
 
   override def merge(that: VersionVector): VersionVector = {
@@ -315,30 +316,32 @@ final case class ManyVersionVector(versions: TreeMap[UniqueAddress, Long]) exten
   override def isEmpty: Boolean = versions.isEmpty
 
   /** INTERNAL API */
-  private[akka] override def size: Int = versions.size
+  @InternalApi private[akka] override def size: Int = versions.size
 
   /** INTERNAL API */
-  private[akka] override def increment(node: UniqueAddress): VersionVector = {
+  @InternalApi private[akka] override def increment(node: UniqueAddress): VersionVector = {
     val v = Timestamp.counter.getAndIncrement()
     VersionVector(versions.updated(node, v))
   }
 
   /** INTERNAL API */
-  private[akka] override def versionAt(node: UniqueAddress): Long = versions.get(node) match {
+  @InternalApi private[akka] override def versionAt(node: UniqueAddress): Long = versions.get(node) match {
     case Some(v) ⇒ v
     case None    ⇒ Timestamp.Zero
   }
 
   /** INTERNAL API */
-  private[akka] override def contains(node: UniqueAddress): Boolean =
+  @InternalApi private[akka] override def contains(node: UniqueAddress): Boolean =
     versions.contains(node)
 
   /** INTERNAL API */
-  private[akka] override def versionsIterator: Iterator[(UniqueAddress, Long)] =
+  @InternalApi private[akka] override def versionsIterator: Iterator[(UniqueAddress, Long)] =
     versions.iterator
 
   override def merge(that: VersionVector): VersionVector = {
-    that match {
+    if (that.isEmpty) this
+    else if (this.isEmpty) that
+    else that match {
       case ManyVersionVector(vs2) ⇒
         var mergedVersions = vs2
         for ((node, time) ← versions) {
@@ -366,7 +369,8 @@ final case class ManyVersionVector(versions: TreeMap[UniqueAddress, Long]) exten
     VersionVector(versions = versions - removedNode) + collapseInto
 
   override def pruningCleanup(removedNode: UniqueAddress): VersionVector =
-    VersionVector(versions = versions - removedNode)
+    if (versions.contains(removedNode)) VersionVector(versions = versions - removedNode)
+    else this
 
   override def toString: String =
     versions.map { case ((n, v)) ⇒ n + " -> " + v }.mkString("VersionVector(", ", ", ")")
