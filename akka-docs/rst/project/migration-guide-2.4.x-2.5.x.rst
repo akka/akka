@@ -575,6 +575,59 @@ PeekMailbox
 
 ``PeekMailbox`` is deprecated. Use an explicit supervisor or proxy actor instead.
 
+.. _migration-guide-TimerBasedThrottler:
+
+TimerBasedThrottler
+-------------------
+
+``TimerBasedThrottler`` is deprecated. Use the ``throttle`` stage in Akka Streams instead.
+
+Example in Scala::
+
+  import scala.concurrent.duration._
+  import akka.NotUsed
+  import akka.actor.ActorRef
+  import akka.actor.ActorSystem
+  import akka.stream.ActorMaterializer
+  import akka.stream.OverflowStrategy
+  import akka.stream.ThrottleMode
+  import akka.stream.scaladsl.Sink
+  import akka.stream.scaladsl.Source
+  
+  val system: ActorSystem = ??? // TODO real ActorSystem here
+  val target: ActorRef = ??? // TODO real target ActorRef here
+  implicit val materializer = ActorMaterializer.create(system)
+  
+  val throttler: ActorRef =
+    Source.actorRef(bufferSize = 1000, OverflowStrategy.dropNew)
+      .throttle(100, 1.second, 10, ThrottleMode.Shaping)
+      .to(Sink.actorRef(target, NotUsed))
+      .run()
+
+Example in Java::
+
+  import java.util.concurrent.TimeUnit;
+  import scala.concurrent.duration.FiniteDuration;
+  import akka.NotUsed;
+  import akka.actor.ActorRef;
+  import akka.actor.ActorSystem;
+  import akka.stream.ActorMaterializer;
+  import akka.stream.Materializer;
+  import akka.stream.OverflowStrategy;
+  import akka.stream.ThrottleMode;
+  import akka.stream.javadsl.Sink;
+  import akka.stream.javadsl.Source;
+  
+  final ActorSystem system = null; // TODO real ActorSystem here
+  final ActorRef target = null; // TODO real target ActorRef here
+  final Materializer materializer = ActorMaterializer.create(system);
+
+  final ActorRef throttler =
+    Source.actorRef(1000, OverflowStrategy.dropNew())
+      .throttle(100,  FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.shaping())
+      .to(Sink.actorRef(target, NotUsed.getInstance()))
+      .run(materializer);
+
 Akka Typed
 ==========
 
