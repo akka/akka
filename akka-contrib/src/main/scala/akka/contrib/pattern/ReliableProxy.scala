@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import scala.util.Try
 import java.util.concurrent.TimeUnit
 
+@deprecated("Use AtLeastOnceDelivery instead", "2.5.0")
 object ReliableProxy {
   /**
    * Scala API Props.  Arguments are detailed in the [[akka.contrib.pattern.ReliableProxy]]
@@ -224,6 +225,7 @@ import ReliableProxy._
  * @param maxConnectAttempts &nbsp;is an optional maximum number of attempts to connect to the
  *   target actor. Use `None` for no limit. If `reconnectAfter` is `None` this value is ignored.
  */
+@deprecated("Use AtLeastOnceDelivery instead", "2.5.0")
 class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
                     reconnectAfter: Option[FiniteDuration], maxConnectAttempts: Option[Int])
   extends Actor with LoggingFSM[State, Vector[Message]] with ReliableProxyDebugLogging {
