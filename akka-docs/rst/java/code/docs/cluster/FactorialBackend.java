@@ -1,38 +1,33 @@
 package docs.cluster;
 
 import java.math.BigInteger;
-import java.util.concurrent.Callable;
 import scala.concurrent.Future;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.dispatch.Mapper;
 import static akka.dispatch.Futures.future;
 import static akka.pattern.Patterns.pipe;
 
 //#backend
-public class FactorialBackend extends UntypedActor {
+public class FactorialBackend extends AbstractActor {
 
   @Override
-  public void onReceive(Object message) {
-    if (message instanceof Integer) {
-      final Integer n = (Integer) message;
-      Future<BigInteger> f = future(new Callable<BigInteger>() {
-        public BigInteger call() {
-          return factorial(n);
-        }
-      }, getContext().dispatcher());
+  public Receive createReceive() {
+    return receiveBuilder()
+      .match(Integer.class, n -> {
+        Future<BigInteger> f = future(() -> factorial(n),
+          getContext().dispatcher());
 
-      Future<FactorialResult> result = f.map(
+        Future<FactorialResult> result = f.map(
           new Mapper<BigInteger, FactorialResult>() {
             public FactorialResult apply(BigInteger factorial) {
               return new FactorialResult(n, factorial);
             }
           }, getContext().dispatcher());
 
-      pipe(result, getContext().dispatcher()).to(getSender());
+        pipe(result, getContext().dispatcher()).to(sender());
 
-    } else {
-      unhandled(message);
-    }
+      })
+      .build();
   }
 
   BigInteger factorial(int n) {

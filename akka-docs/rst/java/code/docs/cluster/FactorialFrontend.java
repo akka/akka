@@ -13,18 +13,16 @@ import akka.cluster.routing.ClusterRouterGroup;
 import akka.cluster.routing.ClusterRouterGroupSettings;
 import akka.cluster.routing.ClusterRouterPool;
 import akka.cluster.routing.ClusterRouterPoolSettings;
-import akka.routing.ConsistentHashingGroup;
-import akka.routing.ConsistentHashingPool;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ReceiveTimeout;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.routing.FromConfig;
 
 //#frontend
-public class FactorialFrontend extends UntypedActor {
+public class FactorialFrontend extends AbstractActor {
   final int upToN;
   final boolean repeat;
 
@@ -45,30 +43,28 @@ public class FactorialFrontend extends UntypedActor {
   }
 
   @Override
-  public void onReceive(Object message) {
-    if (message instanceof FactorialResult) {
-      FactorialResult result = (FactorialResult) message;
-      if (result.n == upToN) {
-        log.debug("{}! = {}", result.n, result.factorial);
-        if (repeat)
-          sendJobs();
-        else
-          getContext().stop(getSelf());
-      }
-
-    } else if (message instanceof ReceiveTimeout) {
-      log.info("Timeout");
-      sendJobs();
-
-    } else {
-      unhandled(message);
-    }
+  public Receive createReceive() {
+    return receiveBuilder()
+      .match(FactorialResult.class, result -> {
+        if (result.n == upToN) {
+          log.debug("{}! = {}", result.n, result.factorial);
+          if (repeat)
+            sendJobs();
+          else
+            getContext().stop(self());
+        }
+      })
+      .match(ReceiveTimeout.class, x -> {
+        log.info("Timeout");
+        sendJobs();
+      })
+      .build();
   }
 
   void sendJobs() {
     log.info("Starting batch of factorials up to [{}]", upToN);
     for (int n = 1; n <= upToN; n++) {
-      backend.tell(n, getSelf());
+      backend.tell(n, self());
     }
   }
 
@@ -76,7 +72,7 @@ public class FactorialFrontend extends UntypedActor {
 //#frontend
 
 //not used, only for documentation
-abstract class FactorialFrontend2 extends UntypedActor {
+abstract class FactorialFrontend2 extends AbstractActor {
   //#router-lookup-in-code
   int totalInstances = 100;
   Iterable<String> routeesPaths = Arrays.asList("/user/factorialBackend", "");
@@ -91,7 +87,7 @@ abstract class FactorialFrontend2 extends UntypedActor {
 }
 
 //not used, only for documentation
-abstract class FactorialFrontend3 extends UntypedActor {
+abstract class FactorialFrontend3 extends AbstractActor {
   //#router-deploy-in-code
   int totalInstances = 100;
   int maxInstancesPerNode = 3;
