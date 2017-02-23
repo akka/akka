@@ -5,7 +5,13 @@
 2. Create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description including notable changes mentioning external contributors.
 3. Travis CI will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray and will sync them to Maven Central.
 4. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.0 deployRsync repo.akka.io"` to deploy API and reference documentation.
-5. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
+5. Go to https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 and select the just released version
+6. Go to the Maven Central tab and sync with Sonatype
+7. Log in to Sonatype to Close the staging repository
+8. Run a test against the staging repository to make sure the release went well
+9. Release the staging repository to Maven Central.
+10. Create a news item on https://github.com/akka/akka.github.com
+11. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
 
 ### Under the Travis hood
 
