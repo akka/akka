@@ -623,7 +623,7 @@ Learn More about CRDTs
   paper by Mark Shapiro et. al.
 
 Dependencies
-------------
+============
 
 To use Distributed Data you must add the following dependency in your project.
 
