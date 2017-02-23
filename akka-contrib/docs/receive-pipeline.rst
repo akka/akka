@@ -2,6 +2,12 @@
 
 Receive Pipeline Pattern
 ========================
+
+.. warning::
+  **Deprecation warning** - ``ReceivePipeline`` has been deprecated and is scheduled for removal 
+  in the next major version. Feel free to copy the source into your project or create
+  a separate library outside of Akka.
+
 The Receive Pipeline Pattern lets you define general interceptors for your messages
 and plug an arbitrary amount of them into your Actors.
 It's useful for defining cross aspects to be applied to all or many of your Actors.

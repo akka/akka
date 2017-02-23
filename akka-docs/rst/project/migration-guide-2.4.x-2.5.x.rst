@@ -561,6 +561,118 @@ We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so 
 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
 
+Camel
+=====
+
+``akka-camel`` has been deprecated in favour of `Alpakka <https://github.com/akka/alpakka>`_ , 
+the Akka Streams based collection of integrations to various endpoints (including Camel)
+
+We acknowledge that Akka Camel is a very useful and important module. It will not be removed until
+Alpakka has reached the needed production quality to be a full replacement. The deprecation of
+Akka Camel should be seen as a signal that new development is to be invested in Alpakka instead
+of Akka Camel.
+
+Contrib
+=======
+
+``akka-contrib`` has been deprecated and is scheduled for removal in the next major version. 
+The reason is to reduce the amount of things to maintain in the core Akka projects. 
+Contributions to the core of Akka or its satellite projects are welcome. Contributions 
+that don't fit into existing modules can be hosted in new Akka Github repositories in the 
+``akka`` Github organization or outside of it depending on what kind of library it is.
+Please ask.
+
+Aggregator
+----------
+
+``Aggregator`` has been deprecated. Feel free to copy the source into your project or create a 
+separate library outside of Akka.
+
+CircuitBreakerProxy
+-------------------
+
+``CircuitBreakerProxy`` has been deprecated in favor of ``akka.pattern.CircuitBreaker`` with explicit ``ask`` requests.
+
+JavaLogger
+----------
+
+``akka.contrib.jul.JavaLogger`` has been deprecated and included in ``akka-actor`` instead as
+``akka.event.jul.JavaLogger``. See :ref:`documentation <jul-scala>`.
+
+The ``JavaLoggingAdapter`` has also been deprecated, but not included in ``akka-actor``. 
+Feel free to copy the source into your project or create a separate library outside of Akka.
+
+PeekMailbox
+-----------
+
+``PeekMailbox`` has been deprecated. Use an explicit supervisor or proxy actor instead.
+
+.. _migration-guide-TimerBasedThrottler:
+
+ReceivePipeline
+---------------
+
+``ReceivePipeline`` has been deprecated. Feel free to copy the source into your project or create
+a separate library outside of Akka.
+
+ReliableProxy
+-------------
+
+``ReliableProxy`` has been deprecated. Use :ref:`at-least-once-delivery-scala` instead. ``ReliableProxy``
+was only intended as an example and doesn't have full production quality. If there is demand
+for a lightweight (non-durable) at-least once delivery mechanism we are open for a design discussion.
+
+TimerBasedThrottler
+-------------------
+
+``TimerBasedThrottler`` has been deprecated. Use the ``throttle`` stage in Akka Streams instead.
+
+Example in Scala::
+
+  import scala.concurrent.duration._
+  import akka.NotUsed
+  import akka.actor.ActorRef
+  import akka.actor.ActorSystem
+  import akka.stream.ActorMaterializer
+  import akka.stream.OverflowStrategy
+  import akka.stream.ThrottleMode
+  import akka.stream.scaladsl.Sink
+  import akka.stream.scaladsl.Source
+  
+  val system: ActorSystem = ??? // TODO real ActorSystem here
+  val target: ActorRef = ??? // TODO real target ActorRef here
+  implicit val materializer = ActorMaterializer.create(system)
+  
+  val throttler: ActorRef =
+    Source.actorRef(bufferSize = 1000, OverflowStrategy.dropNew)
+      .throttle(100, 1.second, 10, ThrottleMode.Shaping)
+      .to(Sink.actorRef(target, NotUsed))
+      .run()
+
+Example in Java::
+
+  import java.util.concurrent.TimeUnit;
+  import scala.concurrent.duration.FiniteDuration;
+  import akka.NotUsed;
+  import akka.actor.ActorRef;
+  import akka.actor.ActorSystem;
+  import akka.stream.ActorMaterializer;
+  import akka.stream.Materializer;
+  import akka.stream.OverflowStrategy;
+  import akka.stream.ThrottleMode;
+  import akka.stream.javadsl.Sink;
+  import akka.stream.javadsl.Source;
+  
+  final ActorSystem system = null; // TODO real ActorSystem here
+  final ActorRef target = null; // TODO real target ActorRef here
+  final Materializer materializer = ActorMaterializer.create(system);
+
+  final ActorRef throttler =
+    Source.actorRef(1000, OverflowStrategy.dropNew())
+      .throttle(100,  FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.shaping())
+      .to(Sink.actorRef(target, NotUsed.getInstance()))
+      .run(materializer);
+
 Akka Typed
 ==========
 

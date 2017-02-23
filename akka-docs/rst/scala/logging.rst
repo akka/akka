@@ -494,3 +494,48 @@ A more advanced (including most Akka added information) example pattern would be
 
   <pattern>%date{ISO8601} level=[%level] marker=[%marker] logger=[%logger] akkaSource=[%X{akkaSource}] sourceActorSystem=[%X{sourceActorSystem}] sourceThread=[%X{sourceThread}] mdc=[ticket-#%X{ticketNumber}: %X{ticketDesc}] - msg=[%msg]%n----%n</pattern>
 
+.. _jul-scala:
+
+java.util.logging
+=================
+
+Akka includes a logger for `java.util.logging <https://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html#package.description>`_.
+
+You need to enable the ``akka.event.jul.JavaLogger`` in the ``loggers`` element in
+the :ref:`configuration`. Here you can also define the log level of the event bus.
+More fine grained log levels can be defined in the configuration of the logging backend. 
+You should also define ``akka.event.jul.JavaLoggingFilter`` in
+the ``logging-filter`` configuration property. It will filter the log events using the backend
+configuration before they are published to the event bus.
+
+.. warning::
+  If you set the ``loglevel`` to a higher level than "DEBUG", any DEBUG events will be filtered
+  out already at the source and will never reach the logging backend, regardless of how the backend
+  is configured.
+
+.. code-block:: ruby
+
+  akka {
+    loglevel = DEBUG
+    loggers = ["akka.event.jul.JavaLogger"]
+    logging-filter = "akka.event.jul.JavaLoggingFilter"
+  }
+
+One gotcha is that the timestamp is attributed in the event handler, not when actually doing the logging.
+
+The ``java.util.logging.Logger`` selected for each log event is chosen based on the
+:class:`Class[_]` of the log source specified when creating the
+:class:`LoggingAdapter`, unless that was given directly as a string in which
+case that string is used (i.e. ``LoggerFactory.getLogger(c: Class[_])`` is used in
+the first case and ``LoggerFactory.getLogger(s: String)`` in the second).
+
+.. note::
+
+  Beware that the actor system’s name is appended to a :class:`String` log
+  source if the LoggingAdapter was created giving an :class:`ActorSystem` to
+  the factory. If this is not intended, give a :class:`LoggingBus` instead as
+  shown below:
+
+.. code-block:: scala
+
+  val log = Logging(system.eventStream, "my.nice.string")
