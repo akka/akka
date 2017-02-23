@@ -3,6 +3,10 @@
 Reliable Proxy Pattern
 ======================
 
+.. warning::
+  **Deprecation warning** - ``ReliableProxy`` has been deprecated and is scheduled for removal 
+  in the next major version. Use :ref:`at-least-once-delivery-scala` instead. 
+
 Looking at :ref:`message-delivery-reliability` one might come to the conclusion that
 Akka actors are made for blue-sky scenarios: sending messages is the only way
 for actors to communicate, and then that is not even guaranteed to work. Is the

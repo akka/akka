@@ -4,6 +4,11 @@ Throttling Actor Messages
 Introduction
 ------------
 
+.. warning::
+  **Deprecation warning** - ``TimerBasedThrottler`` has been deprecated and is scheduled for removal 
+  in the next major version. Use Akka Streams instead, see 
+  :ref:`migration guide <migration-guide-TimerBasedThrottler>`.
+
 Suppose you are writing an application that makes HTTP requests to an external
 web service and that this web service has a restriction in place: you may not
 make more than 10 requests in 1 minute. You will get blocked or need to pay if
