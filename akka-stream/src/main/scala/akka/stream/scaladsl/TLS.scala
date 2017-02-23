@@ -84,12 +84,6 @@ object TLS {
       config.sslEngineConfigurator.configure(engine, sslContext)
       engine.setUseClientMode(role == Client)
 
-      if (!config.config.loose.disableHostnameVerification && engine.getUseClientMode && hostInfo.isDefined) {
-        val parameters = engine.getSSLParameters
-        parameters.setEndpointIdentificationAlgorithm("HTTPS")
-        engine.setSSLParameters(parameters)
-      }
-
       val finalSessionParameters =
         if (firstSession.sslParameters.isDefined && hostInfo.isDefined && !config.config.loose.disableSNI) {
           val newParams = TlsUtils.cloneParameters(firstSession.sslParameters.get)
@@ -105,8 +99,19 @@ object TLS {
       TlsUtils.applySessionParameters(engine, finalSessionParameters)
       engine
     }
+    def verifySession: (ActorSystem, SSLSession) ⇒ Try[Unit] =
+      hostInfo match {
+        case Some((hostname, _)) ⇒ { (system, session) ⇒
+          val hostnameVerifier = theSslConfig(system).hostnameVerifier
+          if (!hostnameVerifier.verify(hostname, session))
+            Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $hostname"))
+          else
+            Success(())
+        }
+        case None ⇒ (_, _) ⇒ Success(())
+      }
 
-    new scaladsl.BidiFlow(TlsModule(Attributes.none, createSSLEngine, closing))
+    new scaladsl.BidiFlow(TlsModule(Attributes.none, createSSLEngine, verifySession, closing))
   }
 
   /**
@@ -151,13 +156,17 @@ object TLS {
    * You can specify a constructor to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
+   * You can specify a verification function that will be called after every successful handshake
+   * to verify additional session information.
+   *
    * For a description of the `closing` parameter please refer to [[TLSClosing]].
    */
   def apply(
     createSSLEngine: () ⇒ SSLEngine, // we don't offer the internal `ActorSystem => SSLEngine` API here, see #21753
+    verifySession:   SSLSession ⇒ Try[Unit], // we don't offer the internal API that provides `ActorSystem` here, see #21753
     closing:         TLSClosing
   ): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    new scaladsl.BidiFlow(TlsModule(Attributes.none, _ ⇒ createSSLEngine(), closing))
+    new scaladsl.BidiFlow(TlsModule(Attributes.none, _ ⇒ createSSLEngine(), (_, session) ⇒ verifySession(session), closing))
 }
 
 /**
