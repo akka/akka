@@ -22,7 +22,7 @@ object ReplicatorDeltaSpec extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.log-dead-letters-during-shutdown = off
     """))
@@ -129,6 +129,8 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
     r
   }
 
+  val writeAll = WriteAll(5.seconds)
+
   var afterCounter = 0
   def enterBarrierAfterTestStep(): Unit = {
     afterCounter += 1
@@ -197,11 +199,53 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
         awaitAssert {
           val p = TestProbe()
           List(KeyD, KeyE, KeyF).foreach { key ⇒
-            fullStateReplicator.tell(Get(key, ReadLocal), p.ref)
+            deltaReplicator.tell(Get(key, ReadLocal), p.ref)
             p.expectMsgType[GetSuccess[ORSet[String]]].dataValue.elements should ===(Set("a"))
           }
         }
       }
+
+      enterBarrierAfterTestStep()
+    }
+
+    "work with write consistency" in {
+      runOn(first) {
+        val p1 = TestProbe()
+        fullStateReplicator.tell(Update(KeyD, ORSet.empty[String], writeAll)(_ + "A"), p1.ref)
+        deltaReplicator.tell(Update(KeyD, ORSet.empty[String], writeAll)(_ + "A"), p1.ref)
+        p1.expectMsgType[UpdateSuccess[_]]
+        p1.expectMsgType[UpdateSuccess[_]]
+      }
+      enterBarrier("write-1")
+
+      val p = TestProbe()
+      deltaReplicator.tell(Get(KeyD, ReadLocal), p.ref)
+      p.expectMsgType[GetSuccess[ORSet[String]]].dataValue.elements should ===(Set("a", "A"))
+
+      // and also when doing several at the same time (deltas may be reordered) and then we
+      // retry with full state to sort it out
+      runOn(first) {
+        val p1 = TestProbe()
+        deltaReplicator.tell(Update(KeyD, ORSet.empty[String], writeAll)(_ + "B"), p1.ref)
+        deltaReplicator.tell(Update(KeyD, ORSet.empty[String], writeAll)(_ + "C"), p1.ref)
+        deltaReplicator.tell(Update(KeyD, ORSet.empty[String], writeAll)(_ + "D"), p1.ref)
+        p1.expectMsgType[UpdateSuccess[_]]
+        p1.expectMsgType[UpdateSuccess[_]]
+        p1.expectMsgType[UpdateSuccess[_]]
+      }
+      enterBarrier("write-2")
+      deltaReplicator.tell(Get(KeyD, ReadLocal), p.ref)
+      p.expectMsgType[GetSuccess[ORSet[String]]].dataValue.elements should ===(Set("a", "A", "B", "C", "D"))
+
+      // add same to the fullStateReplicator so they are in sync
+      runOn(first) {
+        val p1 = TestProbe()
+        fullStateReplicator.tell(Update(KeyD, ORSet.empty[String], writeAll)(_ + "A" + "B" + "C" + "D"), p1.ref)
+        p1.expectMsgType[UpdateSuccess[_]]
+      }
+      enterBarrier("write-3")
+      fullStateReplicator.tell(Get(KeyD, ReadLocal), p.ref)
+      p.expectMsgType[GetSuccess[ORSet[String]]].dataValue.elements should ===(Set("a", "A", "B", "C", "D"))
 
       enterBarrierAfterTestStep()
     }
