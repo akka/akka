@@ -176,6 +176,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   val WriteNackManifest = "O"
   val DurableDataEnvelopeManifest = "P"
   val DeltaPropagationManifest = "Q"
+  val DeltaNackManifest = "R"
 
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] ⇒ AnyRef](
     GetManifest → getFromBinary,
@@ -194,6 +195,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     GossipManifest → gossipFromBinary,
     DeltaPropagationManifest → deltaPropagationFromBinary,
     WriteNackManifest → (_ ⇒ WriteNack),
+    DeltaNackManifest → (_ ⇒ DeltaNack),
     DurableDataEnvelopeManifest → durableDataEnvelopeFromBinary)
 
   override def manifest(obj: AnyRef): String = obj match {
@@ -214,6 +216,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     case _: Unsubscribe[_]      ⇒ UnsubscribeManifest
     case _: Gossip              ⇒ GossipManifest
     case WriteNack              ⇒ WriteNackManifest
+    case DeltaNack              ⇒ DeltaNackManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -236,6 +239,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     case m: Unsubscribe[_]      ⇒ unsubscribeToProto(m).toByteArray
     case m: Gossip              ⇒ compress(gossipToProto(m))
     case WriteNack              ⇒ dm.Empty.getDefaultInstance.toByteArray
+    case DeltaNack              ⇒ dm.Empty.getDefaultInstance.toByteArray
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -289,6 +293,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def deltaPropagationToProto(deltaPropagation: DeltaPropagation): dm.DeltaPropagation = {
     val b = dm.DeltaPropagation.newBuilder()
       .setFromNode(uniqueAddressToProto(deltaPropagation.fromNode))
+    if (deltaPropagation.reply)
+      b.setReply(deltaPropagation.reply)
     val entries = deltaPropagation.deltas.foreach {
       case (key, Delta(data, fromSeqNr, toSeqNr)) ⇒
         val b2 = dm.DeltaPropagation.Entry.newBuilder()
@@ -304,8 +310,10 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
 
   private def deltaPropagationFromBinary(bytes: Array[Byte]): DeltaPropagation = {
     val deltaPropagation = dm.DeltaPropagation.parseFrom(bytes)
+    val reply = deltaPropagation.hasReply && deltaPropagation.getReply
     DeltaPropagation(
       uniqueAddressFromProto(deltaPropagation.getFromNode),
+      reply,
       deltaPropagation.getEntriesList.asScala.map { e ⇒
         val fromSeqNr = e.getFromSeqNr
         val toSeqNr = if (e.hasToSeqNr) e.getToSeqNr else fromSeqNr
