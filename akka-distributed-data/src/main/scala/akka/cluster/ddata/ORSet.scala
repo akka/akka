@@ -91,7 +91,10 @@ object ORSet {
     }
   }
 
-  final case class DeltaGroup[A](ops: immutable.IndexedSeq[DeltaOp]) extends DeltaOp {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] final case class DeltaGroup[A](ops: immutable.IndexedSeq[DeltaOp]) extends DeltaOp {
     override def merge(that: DeltaOp): DeltaOp = that match {
       case thatAdd: AddDeltaOp[A] ⇒
         // merge AddDeltaOp into last AddDeltaOp in the group, if possible

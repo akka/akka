@@ -6,9 +6,10 @@ package akka.cluster.ddata
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.annotation.InternalApi
+import akka.cluster.ddata.ORMap.LWWMapTag
 
 object LWWMap {
-  private val _empty: LWWMap[Any, Any] = new LWWMap(ORMap.empty)
+  private val _empty: LWWMap[Any, Any] = new LWWMap(ORMap.emptyWithLWWMapTag)
   def empty[A, B]: LWWMap[A, B] = _empty.asInstanceOf[LWWMap[A, B]]
   def apply(): LWWMap[Any, Any] = _empty
   /**
@@ -47,10 +48,11 @@ object LWWMap {
 @SerialVersionUID(1L)
 final class LWWMap[A, B] private[akka] (
   private[akka] val underlying: ORMap[A, LWWRegister[B]])
-  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
   import LWWRegister.{ Clock, defaultClock }
 
   type T = LWWMap[A, B]
+  type D = ORMap.DeltaOp
 
   /**
    * Scala API: All entries of the map.
@@ -140,6 +142,14 @@ final class LWWMap[A, B] private[akka] (
    */
   @InternalApi private[akka] def remove(node: UniqueAddress, key: A): LWWMap[A, B] =
     new LWWMap(underlying.remove(node, key))
+
+  override def resetDelta: LWWMap[A, B] =
+    new LWWMap(underlying.resetDelta)
+
+  override def delta: Option[D] = underlying.delta
+
+  override def mergeDelta(thatDelta: D): LWWMap[A, B] =
+    new LWWMap(underlying.mergeDelta(thatDelta))
 
   override def merge(that: LWWMap[A, B]): LWWMap[A, B] =
     new LWWMap(underlying.merge(that.underlying))
