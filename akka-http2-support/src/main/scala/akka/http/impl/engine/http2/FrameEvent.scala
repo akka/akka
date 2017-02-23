@@ -45,7 +45,9 @@ final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends Str
 final case class SettingsFrame(settings: immutable.Seq[Setting]) extends FrameEvent
 final case class SettingsAckFrame(acked: immutable.Seq[Setting]) extends FrameEvent
 
-case class PingFrame(ack: Boolean, data: ByteString) extends FrameEvent
+case class PingFrame(ack: Boolean, data: ByteString) extends FrameEvent {
+  require(data.size == 8, s"PingFrame payload must be of size 8 but was ${data.size}")
+}
 final case class WindowUpdateFrame(
   streamId:            Int,
   windowSizeIncrement: Int) extends StreamFrameEvent

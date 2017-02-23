@@ -276,7 +276,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
         expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
       }
 
-      "properly encode Content-Length and Content-Type headers" in new WaitingForResponseSetup {
+      "encode Content-Length and Content-Type headers" in new WaitingForResponseSetup {
         val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, ByteString("abcde")))
         emitResponse(TheStreamId, response)
         val pairs = expectDecodedResponseHEADERSPairs(streamId = TheStreamId, endStream = false).toMap
@@ -326,7 +326,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
         entityDataOut.expectCancellation()
       }
 
-      "send RST_STREAM when entity data stream fails" inPendingUntilFixed new WaitingForResponseDataSetup {
+      "send RST_STREAM when entity data stream fails" in new WaitingForResponseDataSetup {
         val data1 = ByteString("abcd")
         entityDataOut.sendNext(data1)
         expectDATA(TheStreamId, endStream = false, data1)
@@ -406,6 +406,20 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
 
         // we must get at least a bit of demand
         entityDataOut.sendNext(bytes(1000, 0x23))
+      }
+      "give control frames priority over pending data frames" in new WaitingForResponseDataSetup {
+        val responseDataChunk = bytes(1000, 0x42)
+
+        // send data first but expect it to be queued because of missing demand
+        entityDataOut.sendNext(responseDataChunk)
+
+        // no receive a PING frame which should be answered with a PING(ack = true) frame
+        val pingData = bytes(8, 0x23)
+        sendFrame(PingFrame(ack = false, pingData))
+
+        // now expect PING ack frame to "overtake" the data frame
+        expectFrame(FrameType.PING, Flags.ACK, 0, pingData)
+        expectDATA(TheStreamId, endStream = false, responseDataChunk)
       }
     }
 
