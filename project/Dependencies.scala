@@ -15,7 +15,9 @@ object Dependencies {
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
   val sslConfigVersion = "0.2.1"
-  val slf4jVersion = "1.7.22"
+  val slf4jVersion = "1.7.23"
+  val scalaXmlVersion = "1.0.6"
+  val aeronVersion = "1.2.0"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.8", "2.12.1"),
@@ -44,7 +46,7 @@ object Dependencies {
     val netty         = "io.netty"                    % "netty"                        % "3.10.6.Final" // ApacheV2
     val scalaStm      = Def.setting { "org.scala-stm" %% "scala-stm" % scalaStmVersion.value } // Modified BSD (Scala)
 
-    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.5" // Scala License
+    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % scalaXmlVersion // Scala License
     val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % slf4jVersion       // MIT
@@ -60,38 +62,38 @@ object Dependencies {
 
     // ssl-config
     val sslConfigCore = "com.typesafe"                %% "ssl-config-core"             % sslConfigVersion // ApacheV2
-    
-    val lmdb          = "org.lmdbjava"                % "lmdbjava"                     % "0.0.4" // ApacheV2, OpenLDAP Public License
-    
+
+    val lmdb          = "org.lmdbjava"                % "lmdbjava"                     % "0.0.5" // ApacheV2, OpenLDAP Public License
+
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
     // For Java 8 Conversions
     val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
-    
-    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.1.0"       // ApacheV2
-    val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.1.0"       // ApacheV2
+
+    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % aeronVersion       // ApacheV2
+    val aeronClient = "io.aeron"                      % "aeron-client"                 % aeronVersion       // ApacheV2
 
     object Docs {
-      val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
-      val gson        = "com.google.code.gson"        % "gson"                         % "2.3.1"             % "test"
+      val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.3"             % "test"
+      val gson        = "com.google.code.gson"        % "gson"                         % "2.8.0"             % "test"
     }
 
     object Test {
       val commonsMath  = "org.apache.commons"          % "commons-math"                 % "2.2"              % "test" // ApacheV2
-      val commonsIo    = "commons-io"                  % "commons-io"                   % "2.4"              % "test" // ApacheV2
+      val commonsIo    = "commons-io"                  % "commons-io"                   % "2.5"              % "test" // ApacheV2
       val commonsCodec = "commons-codec"               % "commons-codec"                % "1.10"             % "test" // ApacheV2
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
-      val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
+      val logback      = "ch.qos.logback"              % "logback-classic"              % "1.2.1"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"  % scalaTestVersion.value   % "test" } // ApacheV2
       val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value  % "test" } // New BSD
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.2.1"            % "test" // ApacheV2
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
-      val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
+      val log4j        = "log4j"                       % "log4j"                        % "1.2.17"           % "test" // ApacheV2
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.11"             % "test" // MIT
-      val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.4"            % "test"
+      val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % scalaXmlVersion    % "test"
 
       // in-memory filesystem for file related tests
       val jimfs        = "com.google.jimfs"            % "jimfs"                        % "1.1"              % "test" // ApacheV2
