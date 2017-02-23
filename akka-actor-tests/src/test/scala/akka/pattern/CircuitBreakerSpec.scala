@@ -178,9 +178,11 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       "even number is considered failure" in {
         val breaker = CircuitBreakerSpec.longCallTimeoutCb()
         breaker().currentFailureCount should ===(0)
-        breaker().withSyncCircuitBreaker(2, CircuitBreakerSpec.evenNumberIsFailure)
+        val result = breaker().withSyncCircuitBreaker(2, CircuitBreakerSpec.evenNumberIsFailure)
         checkLatch(breaker.openLatch)
+
         breaker().currentFailureCount should ===(1)
+        result should ===(2)
       }
     }
 
@@ -371,9 +373,10 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       "even number is considered failure" in {
         val breaker = CircuitBreakerSpec.longCallTimeoutCb()
         breaker().currentFailureCount should ===(0)
-        Await.result(breaker().withCircuitBreaker(Future(2), CircuitBreakerSpec.evenNumberIsFailure), awaitTimeout)
+        val result = Await.result(breaker().withCircuitBreaker(Future(2), CircuitBreakerSpec.evenNumberIsFailure), awaitTimeout)
         checkLatch(breaker.openLatch)
         breaker().currentFailureCount should ===(1)
+        result should ===(2)
       }
     }
 
