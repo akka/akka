@@ -121,6 +121,7 @@ abstract class Inbox {
    * up to the specified duration to await reception of a message. If no message
    * is received a [[java.util.concurrent.TimeoutException]] will be raised.
    */
+  @throws(classOf[java.util.concurrent.TimeoutException])
   def receive(max: FiniteDuration): Any
 
   /**
