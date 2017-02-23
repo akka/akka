@@ -6,6 +6,7 @@ package akka.http.javadsl
 import java.util.Locale
 import java.util.Optional
 
+import akka.annotation.InternalApi
 import akka.http.javadsl.model.Uri
 
 abstract class ConnectHttp {
@@ -125,6 +126,7 @@ abstract class ConnectWithHttps extends ConnectHttp {
 }
 
 /** INTERNAL API */
+@InternalApi
 final class ConnectHttpImpl(val host: String, val port: Int) extends ConnectHttp {
   def isHttps: Boolean = false
 

@@ -6,6 +6,7 @@
  */
 package akka.http.impl.util
 
+import akka.annotation.InternalApi
 import akka.stream.stage.GraphStageLogic
 import akka.event.LoggingAdapter
 import akka.stream.ActorMaterializer
@@ -17,6 +18,7 @@ import akka.event.NoLogging
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] trait StageLoggingWithOverride { self: GraphStageLogic ⇒
   def logOverride: LoggingAdapter = DefaultNoLogging
 

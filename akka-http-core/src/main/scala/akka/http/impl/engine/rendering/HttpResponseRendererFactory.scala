@@ -18,6 +18,7 @@ import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import RenderSupport._
 import HttpProtocols._
+import akka.annotation.InternalApi
 import headers._
 
 import scala.concurrent.duration._
@@ -25,6 +26,7 @@ import scala.concurrent.duration._
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class HttpResponseRendererFactory(
   serverHeader:           Option[headers.Server],
   responseHeaderSizeHint: Int,
@@ -279,6 +281,7 @@ private[http] class HttpResponseRendererFactory(
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] final case class ResponseRenderingContext(
   response:        HttpResponse,
   requestMethod:   HttpMethod   = HttpMethods.GET,
@@ -286,8 +289,10 @@ private[http] final case class ResponseRenderingContext(
   closeRequested:  Boolean      = false)
 
 /** INTERNAL API */
+@InternalApi
 private[http] sealed trait ResponseRenderingOutput
 /** INTERNAL API */
+@InternalApi
 private[http] object ResponseRenderingOutput {
   private[http] case class HttpData(bytes: ByteString) extends ResponseRenderingOutput
   private[http] case class SwitchToWebSocket(httpResponseBytes: ByteString, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends ResponseRenderingOutput

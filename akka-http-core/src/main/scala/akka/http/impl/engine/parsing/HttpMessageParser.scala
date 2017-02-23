@@ -19,6 +19,7 @@ import akka.http.scaladsl.model._
 import headers._
 import HttpProtocols._
 import ParserOutput._
+import akka.annotation.InternalApi
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
 /**
@@ -26,6 +27,7 @@ import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
  *
  * Common logic for http request and response message parsing
  */
+@InternalApi
 private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
 
   import HttpMessageParser._
@@ -345,6 +347,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object HttpMessageParser {
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
   final case class Trampoline(f: ByteString ⇒ StateResult) extends StateResult

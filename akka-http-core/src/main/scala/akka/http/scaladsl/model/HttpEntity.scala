@@ -32,6 +32,8 @@ import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.{ DoNotInherit, InternalApi }
+
 import scala.compat.java8.FutureConverters
 
 /**
@@ -405,6 +407,7 @@ object HttpEntity {
    *
    * INTERNAL API
    */
+  @DoNotInherit
   private[http] sealed trait WithoutKnownLength extends HttpEntity {
     type Self <: HttpEntity.WithoutKnownLength
     def contentType: ContentType
@@ -581,9 +584,6 @@ object HttpEntity {
   def limitableChunkSource[Mat](source: Source[ChunkStreamPart, Mat]): Source[ChunkStreamPart, Mat] =
     source.via(new Limitable(sizeOfChunkStreamPart))
 
-  /**
-   * INTERNAL API
-   */
   private val sizeOfByteString: ByteString ⇒ Int = _.size
   private val sizeOfChunkStreamPart: ChunkStreamPart ⇒ Int = _.data.size
 
@@ -628,9 +628,6 @@ object HttpEntity {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
   private final case class SizeLimit(maxBytes: Long, contentLength: Option[Long] = None) extends Attributes.Attribute {
     def isDisabled = maxBytes < 0
   }
@@ -641,6 +638,7 @@ object HttpEntity {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[http] def captureTermination[T <: HttpEntity](entity: T): (T, Future[Unit]) =
     entity match {
       case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] → FastFuture.successful(())

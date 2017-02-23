@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.rendering
 
+import akka.annotation.InternalApi
 import akka.parboiled2.CharUtils
 import akka.stream.{ Attributes, SourceShape }
 import akka.util.ByteString
@@ -13,13 +14,13 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
-
 import akka.stream.stage.GraphStage
 import akka.stream._
-import akka.stream.scaladsl.{ Sink, Source, Flow }
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 /**
  * INTERNAL API
  */
+@InternalApi
 private object RenderSupport {
   val DefaultStatusLineBytes = "HTTP/1.1 200 OK\r\n".asciiBytes
   val StatusLineStartBytes = "HTTP/1.1 ".asciiBytes

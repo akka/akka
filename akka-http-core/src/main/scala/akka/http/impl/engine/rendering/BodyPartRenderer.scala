@@ -17,12 +17,14 @@ import akka.stream.stage._
 import akka.util.ByteString
 import HttpEntity._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
-
 import java.util.concurrent.ThreadLocalRandom
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object BodyPartRenderer {
 
   def streamed(

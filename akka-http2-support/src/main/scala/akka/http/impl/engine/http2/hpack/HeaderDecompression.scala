@@ -7,6 +7,7 @@ package akka.http.impl.engine.http2.hpack
 import java.io.IOException
 import java.nio.charset.{ Charset, StandardCharsets }
 
+import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.COMPRESSION_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, SettingIdentifier }
 import akka.http.impl.engine.http2._
@@ -22,6 +23,7 @@ import scala.collection.immutable.VectorBuilder
  *
  * Can be used on server and client side.
  */
+@InternalApi
 private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
   val UTF8 = StandardCharsets.UTF_8
 

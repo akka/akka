@@ -4,6 +4,7 @@
 package akka.http.javadsl.server;
 
 import akka.Done;
+import akka.annotation.ApiMayChange;
 import akka.actor.ActorSystem;
 import akka.event.Logging;
 import akka.http.javadsl.ConnectHttp;
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * Bootstrap trait for Http Server. It helps booting up an akka-http server by only defining the desired routes.
  * It offers additional hooks to modify the default behavior.
  */
-// @akka.annotation.ApiMayChange // FIXME replace with real annotation once Akka dependency bumped
+@ApiMayChange
 public abstract class HttpApp extends AllDirectives {
 
   private AtomicReference<ServerBinding> serverBinding = new AtomicReference<>();

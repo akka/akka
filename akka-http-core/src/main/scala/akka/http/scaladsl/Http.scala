@@ -9,6 +9,7 @@ import java.util.concurrent.CompletionStage
 import javax.net.ssl._
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.{ Logging, LoggingAdapter }
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
@@ -412,6 +413,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
    * object of type `T` from the application which is emitted together with the corresponding response.
    */
+  @InternalApi
   private[akka] def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
     implicit
     fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
@@ -694,6 +696,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    *
    * For testing only
    */
+  @InternalApi
   private[scaladsl] def poolSize: Future[Int] = {
     val sizePromise = Promise[Int]()
     poolMasterActorRef ! PoolSize(sizePromise)

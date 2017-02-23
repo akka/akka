@@ -6,19 +6,23 @@ package akka.http.impl.util
 
 import java.nio.CharBuffer
 import java.nio.charset.Charset
-import java.text.{ DecimalFormatSymbols, DecimalFormat }
+import java.text.{ DecimalFormat, DecimalFormatSymbols }
 import java.util.Locale
+
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
-import scala.collection.{ immutable, LinearSeq }
+import scala.collection.{ LinearSeq, immutable }
 import akka.parboiled2.{ CharPredicate, CharUtils }
 import akka.http.impl.model.parser.CharacterClasses
-import akka.util.{ ByteStringBuilder, ByteString }
+import akka.util.{ ByteString, ByteStringBuilder }
 
 /**
  * INTERNAL API
  *
  * An entity that can render itself
  */
+@InternalApi
 private[http] trait Renderable {
   private[http] def render[R <: Rendering](r: R): r.type
 }
@@ -28,6 +32,7 @@ private[http] trait Renderable {
  *
  * An entity that can render itself and implements toString in terms of its rendering
  */
+@InternalApi
 private[http] trait ToStringRenderable extends Renderable {
   override def toString = render(new StringRendering).get
 }
@@ -37,6 +42,7 @@ private[http] trait ToStringRenderable extends Renderable {
  *
  * An entity that has a rendered value (like an HttpHeader)
  */
+@InternalApi
 private[http] trait ValueRenderable extends ToStringRenderable {
   def value: String = toString
 }
@@ -46,6 +52,7 @@ private[http] trait ValueRenderable extends ToStringRenderable {
  *
  * An entity whose rendering result is cached in an unsynchronized and non-volatile lazy.
  */
+@InternalApi
 private[http] trait LazyValueBytesRenderable extends Renderable {
   // unsynchronized and non-volatile lazy init, worst case: we init once per core
   // which, since instances of derived classes are usually long-lived, is still better
@@ -65,6 +72,7 @@ private[http] trait LazyValueBytesRenderable extends Renderable {
  * An entity whose rendering result is determined eagerly at instantiation (and then is cached).
  * Useful for common predefined singleton values.
  */
+@InternalApi
 private[http] trait SingletonValueRenderable extends Product with Renderable {
   private[this] val valueBytes = value.asciiBytes
   def value = productPrefix
@@ -76,6 +84,7 @@ private[http] trait SingletonValueRenderable extends Product with Renderable {
  *
  * A typeclass for rendering values.
  */
+@InternalApi
 private[http] trait Renderer[-T] {
   def render[R <: Rendering](r: R, value: T): r.type
 }
@@ -140,6 +149,7 @@ private[http] object Renderer {
  *
  * The interface for a rendering sink. Implemented for several serialization targets.
  */
+@InternalApi
 private[http] trait Rendering {
   def ~~(ch: Char): this.type
   def ~~(bytes: Array[Byte]): this.type
@@ -224,6 +234,7 @@ private[http] object Rendering {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class StringRendering extends Rendering {
   private[this] val sb = new java.lang.StringBuilder
   def ~~(ch: Char): this.type = { sb.append(ch); this }
@@ -239,6 +250,7 @@ private[http] class StringRendering extends Rendering {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class ByteArrayRendering(sizeHint: Int) extends Rendering {
   private[this] var array = new Array[Byte](sizeHint)
   private[this] var size = 0
@@ -287,6 +299,7 @@ private[http] class ByteArrayRendering(sizeHint: Int) extends Rendering {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class ByteStringRendering(sizeHint: Int) extends Rendering {
   private[this] val builder = new ByteStringBuilder
   builder.sizeHint(sizeHint)
@@ -312,6 +325,7 @@ private[http] class ByteStringRendering(sizeHint: Int) extends Rendering {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class CustomCharsetByteStringRendering(nioCharset: Charset, sizeHint: Int) extends Rendering {
   private[this] val charBuffer = CharBuffer.allocate(64)
   private[this] val builder = new ByteStringBuilder

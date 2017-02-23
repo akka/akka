@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.Done
 import akka.actor.ActorRef
+import akka.annotation.InternalApi
 import akka.http.impl.engine.client.PoolGateway.{ GatewayIdentifier, SharedGateway }
 import akka.http.impl.engine.client.PoolMasterActor._
 import akka.http.impl.settings.HostConnectionPoolSetup
@@ -65,6 +66,7 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
   override def toString = s"PoolGateway(hcps = $hcps)"
 
   // INTERNAL API (testing only)
+  @InternalApi
   private[client] def poolStatus(): Future[Option[PoolInterfaceStatus]] = {
     val statusPromise = Promise[Option[PoolInterfaceStatus]]()
     gatewayRef ! PoolStatus(this, statusPromise)

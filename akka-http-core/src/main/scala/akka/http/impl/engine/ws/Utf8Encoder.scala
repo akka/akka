@@ -4,15 +4,17 @@
 
 package akka.http.impl.engine.ws
 
-import akka.stream.{ Outlet, Inlet, FlowShape, Attributes }
+import akka.annotation.InternalApi
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.stage._
-import akka.util.{ ByteStringBuilder, ByteString }
+import akka.util.{ ByteString, ByteStringBuilder }
 
 /**
  * A utf16 (= Java char) to utf8 encoder.
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] object Utf8Encoder extends GraphStage[FlowShape[String, ByteString]] {
   val SurrogateFirst = 0xd800
   val SurrogateSecond = 0xdc00

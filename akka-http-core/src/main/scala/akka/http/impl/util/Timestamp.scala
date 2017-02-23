@@ -4,6 +4,8 @@
 
 package akka.http.impl.util
 
+import akka.annotation.InternalApi
+
 import scala.concurrent.duration._
 
 /**
@@ -12,6 +14,7 @@ import scala.concurrent.duration._
  * Helper for dealing with points in time rather than durations.
  * We mark it private[http] because we don't want to support it as public API.
  */
+@InternalApi
 private[http] class Timestamp private (val timestampNanos: Long) extends AnyVal {
 
   def +(period: Duration): Timestamp =

@@ -5,6 +5,7 @@
 package akka.http.impl.engine.parsing
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -13,11 +14,13 @@ import akka.stream.impl.fusing.SubSource
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] sealed trait ParserOutput
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object ParserOutput {
   sealed trait RequestOutput extends ParserOutput
   sealed trait ResponseOutput extends ParserOutput

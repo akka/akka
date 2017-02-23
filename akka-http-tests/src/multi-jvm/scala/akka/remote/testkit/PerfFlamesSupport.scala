@@ -12,7 +12,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /**
- * INTERNAL API: Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
+ * Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
  */
 private[akka] trait PerfFlamesSupport { _: MultiNodeSpec ⇒
 

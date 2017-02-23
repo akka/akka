@@ -6,6 +6,8 @@ package akka.http.javadsl.unmarshalling
 
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.InternalApi
+
 object StringUnmarshaller {
   /**
    * Turns the given asynchronous function into an unmarshaller from String to B.
@@ -21,6 +23,7 @@ object StringUnmarshaller {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[unmarshalling] object StringUnmarshallerPredef extends akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers {
 
 }

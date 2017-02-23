@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.ws
 
+import akka.annotation.InternalApi
 import akka.util.ByteString
 
 import scala.util.Try
@@ -38,6 +39,7 @@ import scala.util.Try
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] object Utf8Decoder extends StreamingCharsetDecoder {
   private[this] val Utf8Accept = 0
   private[this] val Utf8Reject = 12

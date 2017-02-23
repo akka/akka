@@ -6,6 +6,7 @@ package akka.http.javadsl.settings
 import java.util.{ Optional, Random }
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.model.headers.Server
@@ -73,6 +74,7 @@ object ServerSettings extends SettingsCompanion[ServerSettings] {
     def withLingerTimeout(newValue: Duration): Timeouts = self.copy(lingerTimeout = newValue)
 
     /** INTERNAL API */
+    @InternalApi
     protected def self = this.asInstanceOf[ServerSettingsImpl.Timeouts]
   }
 

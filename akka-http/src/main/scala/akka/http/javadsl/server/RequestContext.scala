@@ -20,6 +20,7 @@ import akka.http.javadsl.model.headers.Location
 import java.util.concurrent.CompletionStage
 import java.util.function.{ Function ⇒ JFunction }
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
@@ -27,7 +28,6 @@ import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import scala.compat.java8.FutureConverters._
 import scala.annotation.varargs
 import akka.http.scaladsl.model.Uri.Path
-
 import akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers
 
 class RequestContext private (val delegate: scaladsl.server.RequestContext) {
@@ -87,5 +87,6 @@ class RequestContext private (val delegate: scaladsl.server.RequestContext) {
 
 object RequestContext {
   /** INTERNAL API */
+  @InternalApi
   private[http] def wrap(delegate: scaladsl.server.RequestContext) = new RequestContext(delegate)
 }

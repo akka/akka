@@ -6,6 +6,7 @@ package akka.http.javadsl.unmarshalling
 
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.InternalApi
 import akka.http.impl.model.JavaQuery
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -119,6 +120,7 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
   implicit def asScala: akka.http.scaladsl.unmarshalling.Unmarshaller[A, B]
 
   /** INTERNAL API */
+  @InternalApi
   private[akka] def asScalaCastInput[I]: unmarshalling.Unmarshaller[I, B] = asScala.asInstanceOf[unmarshalling.Unmarshaller[I, B]]
 
   /**

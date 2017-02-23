@@ -5,6 +5,7 @@ package akka.http.javadsl.server
 
 import java.util.List
 import java.util.function.{BiFunction, Function}
+import akka.annotation.InternalApi
 import akka.http.scaladsl.server.{ PathMatcher ⇒ SPathMatcher }
 import akka.http.scaladsl.server.{ PathMatchers ⇒ SPathMatchers }
 import akka.http.scaladsl.server.PathMatcher
@@ -46,10 +47,12 @@ object JavaPathMatchers {
   type PathMatcherTwoMoreThan20[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20] = PathMatcher22[A, B, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20]
 
   /** INTERNAL API */
+  @InternalApi
   private[server] implicit def fromScala0(scalaMatcher: SPathMatcher[Unit]): PathMatcher0 =
     new PathMatcher0(scalaMatcher)
 
   [..22#/** INTERNAL API */
+  @InternalApi
   private[server] def fromScala1[[#T1#]](scalaMatcher: SPathMatcher[Tuple1[[#T1#]]]): PathMatcher1[[#T1#]] =
     new PathMatcher1(scalaMatcher)
   #
@@ -57,6 +60,7 @@ object JavaPathMatchers {
 
 
   [..20#/** INTERNAL API */
+  @InternalApi
   private[server] def fromScalaTwoMoreThan1[A, B, [#T1#]](scalaMatcher: SPathMatcher[(A, B, [#T1#])]) =
     new PathMatcherTwoMoreThan1[A, B, [#T1#]](scalaMatcher)
   #

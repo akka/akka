@@ -12,6 +12,7 @@ import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.NotUsed
 import akka.actor.Cancellable
+import akka.annotation.InternalApi
 import akka.japi.Function
 import akka.event.LoggingAdapter
 import akka.util.ByteString
@@ -54,6 +55,7 @@ import akka.http.impl.util.LogByteStringTools._
  *                 |          |                                   |             |  Rendering- |           |
  *                 +----------+                                   +-------------+  Context    +-----------+
  */
+@InternalApi
 private[http] object HttpServerBluePrint {
   def apply(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): Http.ServerLayer =
     userHandlerGuard(settings.pipeliningLimit) atop

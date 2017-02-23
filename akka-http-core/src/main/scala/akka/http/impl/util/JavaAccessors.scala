@@ -8,6 +8,7 @@ import java.io.File
 import java.nio.file.Path
 
 import JavaMapping.Implicits._
+import akka.annotation.InternalApi
 import akka.http.javadsl.model._
 import akka.http.scaladsl.model
 
@@ -16,6 +17,7 @@ import akka.http.scaladsl.model
  *
  *  Accessors for constructors with default arguments to be used from the Java implementation
  */
+@InternalApi
 object JavaAccessors {
   /** INTERNAL API */
   def HttpRequest(): HttpRequest = model.HttpRequest()

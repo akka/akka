@@ -3,7 +3,6 @@ package akka.http.javadsl.settings
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 
-/** INTERNAL API */
 trait SettingsCompanion[T] {
 
   /**

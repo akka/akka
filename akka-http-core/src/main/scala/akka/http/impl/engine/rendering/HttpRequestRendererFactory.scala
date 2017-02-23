@@ -17,11 +17,13 @@ import akka.stream.scaladsl.Source
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import RenderSupport._
+import akka.annotation.InternalApi
 import headers._
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class HttpRequestRendererFactory(
   userAgentHeader:       Option[headers.`User-Agent`],
   requestHeaderSizeHint: Int,
@@ -175,6 +177,7 @@ private[http] object HttpRequestRendererFactory {
  *                          be completed successfully when the request entity is allowed to go out onto the wire;
  *                          if the future is completed with an error the connection is to be closed.
  */
+@InternalApi
 private[http] final case class RequestRenderingContext(
   request:           HttpRequest,
   hostHeader:        Host,

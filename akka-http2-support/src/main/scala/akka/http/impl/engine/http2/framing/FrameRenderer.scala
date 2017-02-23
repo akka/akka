@@ -9,12 +9,13 @@ import java.nio.ByteOrder
 
 import akka.util.ByteString.ByteString1C
 import akka.util.{ ByteString, ByteStringBuilder }
-
 import Http2Protocol.FrameType
+import akka.annotation.InternalApi
 
 import scala.annotation.tailrec
 
 /** INTERNAL API */
+@InternalApi
 private[http2] object FrameRenderer {
   implicit val byteOrder = ByteOrder.BIG_ENDIAN
 

@@ -7,6 +7,7 @@ package akka.http.scaladsl.server
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.Done
+import akka.annotation.ApiMayChange
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
@@ -25,7 +26,7 @@ import scala.util.{ Failure, Success, Try }
  * Bootstrap trait for Http Server. It helps booting up an akka-http server by only defining the desired routes.
  * It offers additional hooks to modify the default behavior.
  */
-// @akka.annotation.ApiMayChange // FIXME replace with real annotation once Akka dependency bumped
+@ApiMayChange
 abstract class HttpApp extends Directives {
 
   private val serverBinding = new AtomicReference[ServerBinding]()

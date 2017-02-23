@@ -11,6 +11,7 @@ import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import ByteStringParser.{ ParseResult, ParseStep }
+import akka.annotation.InternalApi
 import akka.util.ByteString
 
 class Gzip(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {
@@ -112,6 +113,7 @@ class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) 
 }
 
 /** INTERNAL API */
+@InternalApi
 private[http] object GzipDecompressor {
   // RFC 1952: http://tools.ietf.org/html/rfc1952 section 2.2
   val Header = ByteString(

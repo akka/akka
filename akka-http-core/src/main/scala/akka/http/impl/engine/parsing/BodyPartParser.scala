@@ -5,6 +5,7 @@
 package akka.http.impl.engine.parsing
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
@@ -25,6 +26,7 @@ import akka.stream.impl.fusing.SubSource
  *
  * see: http://tools.ietf.org/html/rfc2046#section-5.1.1
  */
+@InternalApi
 private[http] final class BodyPartParser(
   defaultContentType: ContentType,
   boundary:           String,

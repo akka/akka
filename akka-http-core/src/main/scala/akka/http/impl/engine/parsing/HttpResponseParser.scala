@@ -13,10 +13,12 @@ import akka.util.ByteString
 import akka.http.scaladsl.model._
 import headers._
 import ParserOutput._
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class HttpResponseParser(protected val settings: ParserSettings, protected val headerParser: HttpHeaderParser)
   extends HttpMessageParser[ResponseOutput] { self ⇒
   import HttpResponseParser._

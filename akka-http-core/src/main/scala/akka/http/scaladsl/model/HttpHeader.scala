@@ -6,6 +6,8 @@ package akka.http.scaladsl.model
 
 import java.nio.charset.StandardCharsets
 
+import akka.annotation.InternalApi
+
 import scala.util.{ Failure, Success }
 import akka.parboiled2.{ ParseError, ParserInput }
 import akka.http.impl.util.ToStringRenderable
@@ -86,6 +88,7 @@ object HttpHeader {
     } else ParsingResult.Error(ErrorInfo(s"Illegal HTTP header name", name))
 
   /** INTERNAL API */
+  @InternalApi
   private[akka] def fastFind[T >: Null <: jm.HttpHeader](clazz: Class[T], headers: immutable.Seq[HttpHeader]): OptionVal[T] = {
     val it = headers.iterator
     while (it.hasNext) it.next() match {

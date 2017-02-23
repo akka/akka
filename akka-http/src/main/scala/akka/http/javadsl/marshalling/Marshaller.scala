@@ -6,6 +6,7 @@ package akka.http.javadsl.marshalling
 
 import java.util.function
 
+import akka.annotation.InternalApi
 import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.model.{ ContentType, HttpHeader, HttpResponse, MediaType, RequestEntity, StatusCode }
 import akka.http.scaladsl
@@ -146,6 +147,7 @@ class Marshaller[-A, +B] private (implicit val asScala: marshalling.Marshaller[A
 
   /** INTERNAL API: involves unsafe cast (however is very fast) */
   // TODO would be nice to not need this special case
+  @InternalApi
   private[akka] def asScalaCastOutput[C]: marshalling.Marshaller[A, C] = asScala.asInstanceOf[marshalling.Marshaller[A, C]]
 
   def map[C](f: function.Function[B @uncheckedVariance, C]): Marshaller[A, C] = fromScala(asScala.map(f.apply))

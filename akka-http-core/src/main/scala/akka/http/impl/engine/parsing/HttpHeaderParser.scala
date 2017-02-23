@@ -4,9 +4,11 @@
 
 package akka.http.impl.engine.parsing
 
-import java.nio.{ CharBuffer, ByteBuffer }
+import java.nio.{ ByteBuffer, CharBuffer }
 import java.util.Arrays.copyOf
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
+
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
 import akka.http.scaladsl.settings.ParserSettings
@@ -62,6 +64,7 @@ import akka.http.impl.model.parser.CharacterClasses._
  * Since we address them via the nodes MSB and zero is reserved the trie
  * cannot hold more then 255 items, so this array has a fixed size of 255.
  */
+@InternalApi
 private[engine] final class HttpHeaderParser private (
   val settings:                      HttpHeaderParser.Settings,
   val log:                           LoggingAdapter,
@@ -412,6 +415,7 @@ private[engine] final class HttpHeaderParser private (
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object HttpHeaderParser {
   import SpecializedHeaderValueParsers._
 

@@ -6,6 +6,7 @@ package akka.http.impl.engine.client
 
 import akka.Done
 import akka.actor.{ Actor, ActorLogging, ActorRef, DeadLetterSuppression, Deploy, NoSerializationVerificationNeeded, Props, Terminated }
+import akka.annotation.InternalApi
 import akka.http.impl.engine.client.PoolInterfaceActor.PoolRequest
 import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.http.scaladsl.HttpExt
@@ -32,6 +33,7 @@ import scala.concurrent.{ Future, Promise }
  * [[HttpExt.newHostConnectionPool]], and will have their dedicated restartable pool.
  *
  */
+@InternalApi
 private[http] final class PoolMasterActor extends Actor with ActorLogging {
 
   import PoolMasterActor._
@@ -150,7 +152,6 @@ private[http] object PoolMasterActor {
   final case class Shutdown(gateway: PoolGateway, shutdownCompletedPromise: Promise[Done]) extends NoSerializationVerificationNeeded with DeadLetterSuppression
   final case class ShutdownAll(shutdownCompletedPromise: Promise[Done]) extends NoSerializationVerificationNeeded with DeadLetterSuppression
 
-  // INTERNAL API (for testing only)
   final case class PoolStatus(gateway: PoolGateway, statusPromise: Promise[Option[PoolInterfaceStatus]]) extends NoSerializationVerificationNeeded
   final case class PoolSize(sizePromise: Promise[Int]) extends NoSerializationVerificationNeeded
 

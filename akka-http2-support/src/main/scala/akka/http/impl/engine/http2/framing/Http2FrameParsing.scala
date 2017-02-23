@@ -6,15 +6,15 @@ package akka.http.impl.engine.http2
 package framing
 
 import scala.collection.immutable
-
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
-
 import Http2Protocol.FrameType._
 import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
+import akka.annotation.InternalApi
 
 /** INTERNAL API */
+@InternalApi
 private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteStringParser[FrameEvent] {
   import ByteStringParser._
 

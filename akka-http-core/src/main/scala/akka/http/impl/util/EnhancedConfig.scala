@@ -5,12 +5,15 @@
 package akka.http.impl.util
 
 import com.typesafe.config.Config
-import scala.concurrent.duration.{ FiniteDuration, Duration }
+
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.ConfigurationException
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class EnhancedConfig(val underlying: Config) extends AnyVal {
 
   def getPotentiallyInfiniteDuration(path: String): Duration = underlying.getString(path) match {

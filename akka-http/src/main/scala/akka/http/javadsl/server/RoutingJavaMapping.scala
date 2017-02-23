@@ -6,6 +6,7 @@ package akka.http.javadsl.server
 
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.InternalApi
 import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util._
 import akka.http.javadsl.common.EntityStreamingSupport
@@ -20,6 +21,7 @@ import scala.collection.immutable
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object RoutingJavaMapping {
 
   object Implicits {

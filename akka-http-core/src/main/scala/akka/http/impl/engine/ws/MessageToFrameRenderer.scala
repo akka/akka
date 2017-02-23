@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.util.ByteString
 import akka.stream.scaladsl.{ Flow, Source }
 import Protocol.Opcode
+import akka.annotation.InternalApi
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model.ws._
 
@@ -16,6 +17,7 @@ import akka.http.scaladsl.model.ws._
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] object MessageToFrameRenderer {
   def create(serverSide: Boolean): Flow[Message, FrameStart, NotUsed] = {
     def strictFrames(opcode: Opcode, data: ByteString): Source[FrameStart, _] =

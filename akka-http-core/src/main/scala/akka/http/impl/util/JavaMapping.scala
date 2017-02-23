@@ -6,30 +6,33 @@ package akka.http.impl.util
 
 import java.net.InetAddress
 import java.util.Optional
-import java.{ util ⇒ ju, lang ⇒ jl }
+import java.{ lang ⇒ jl, util ⇒ ju }
+
 import akka.japi.Pair
-import akka.stream.{ Graph, FlowShape, javadsl, scaladsl }
+import akka.stream.{ FlowShape, Graph, javadsl, scaladsl }
 
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters
 import scala.reflect.ClassTag
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.impl.model.{ JavaQuery, JavaUri }
-import akka.http.javadsl.{ model ⇒ jm, HttpConnectionContext, ConnectionContext, HttpsConnectionContext }
+import akka.http.javadsl.{ ConnectionContext, HttpConnectionContext, HttpsConnectionContext, model ⇒ jm }
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.javadsl.{ settings ⇒ js }
-
 import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.util.Try
 
 /** INTERNAL API */
+@InternalApi
 private[http] trait J2SMapping[J] {
   type S
   def toScala(javaObject: J): S
 }
 
 /** INTERNAL API */
+@InternalApi
 private[http] object J2SMapping {
   implicit def fromJavaMapping[J](implicit mapping: JavaMapping[J, _]): J2SMapping[J] { type S = mapping.S } = mapping
 
@@ -41,23 +44,27 @@ private[http] object J2SMapping {
 }
 
 /** INTERNAL API */
+@InternalApi
 private[http] trait S2JMapping[S] {
   type J
   def toJava(scalaObject: S): J
 }
 
 /** INTERNAL API */
+@InternalApi
 private[http] object S2JMapping {
   implicit def fromScalaMapping[S](implicit mapping: JavaMapping[_, S]): S2JMapping[S] { type J = mapping.J } = mapping
 }
 
 /** INTERNAL API */
+@InternalApi
 private[http] trait JavaMapping[_J, _S] extends J2SMapping[_J] with S2JMapping[_S] {
   type J = _J
   type S = _S
 }
 
 /** INTERNAL API */
+@InternalApi
 private[http] object JavaMapping {
   trait AsScala[S] {
     def asScala: S

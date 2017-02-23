@@ -4,11 +4,14 @@
 
 package akka.http.impl.util
 
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class EnhancedByteArray(val underlying: Array[Byte]) extends AnyVal {
 
   /**

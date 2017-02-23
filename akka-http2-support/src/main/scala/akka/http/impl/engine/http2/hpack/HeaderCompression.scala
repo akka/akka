@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2.hpack
 
 import java.io.ByteArrayOutputStream
 
+import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
@@ -17,6 +18,7 @@ import scala.collection.immutable
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
   val eventsIn = Inlet[FrameEvent]("HeaderCompression.eventsIn")
   val eventsOut = Outlet[FrameEvent]("HeaderCompression.eventsOut")

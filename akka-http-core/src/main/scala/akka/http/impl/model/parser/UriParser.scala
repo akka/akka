@@ -5,12 +5,14 @@
 package akka.http.impl.model.parser
 
 import java.nio.charset.Charset
+
 import akka.parboiled2._
 import akka.http.impl.util.enhanceString_
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.HttpOrigin
 import Parser.DeliveryScheme.Either
 import Uri._
+import akka.annotation.InternalApi
 
 // format: OFF
 /**
@@ -18,6 +20,7 @@ import Uri._
  *
  * http://tools.ietf.org/html/rfc3986
  */
+@InternalApi
 private[http] final class UriParser(val input: ParserInput,
                               val uriParsingCharset: Charset,
                               val uriParsingMode: Uri.ParsingMode,

@@ -4,8 +4,10 @@
 
 package akka.http.impl.engine.ws
 
+import akka.annotation.InternalApi
 import akka.stream.impl.io.ByteStringParser
 import akka.util.ByteString
+
 import scala.annotation.tailrec
 import akka.stream.Attributes
 
@@ -35,6 +37,7 @@ import akka.stream.Attributes
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] object FrameEventParser extends ByteStringParser[FrameEvent] {
   import ByteStringParser._
 

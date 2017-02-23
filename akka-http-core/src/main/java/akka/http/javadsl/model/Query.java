@@ -5,6 +5,7 @@
 package akka.http.javadsl.model;
 
 import akka.http.impl.model.JavaQuery;
+import akka.http.impl.model.UriJavaAccessor;
 import akka.http.scaladsl.model.*;
 import akka.japi.Pair;
 import akka.parboiled2.CharPredicate;

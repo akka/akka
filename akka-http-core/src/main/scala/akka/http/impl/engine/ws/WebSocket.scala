@@ -5,9 +5,12 @@
 package akka.http.impl.engine.ws
 
 import java.util.Random
+
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.util.ByteString
+
 import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.scaladsl._
@@ -20,6 +23,7 @@ import akka.stream.impl.fusing.SubSource
  *
  * Defines components of the websocket stack.
  */
+@InternalApi
 private[http] object WebSocket {
   import FrameHandler._
 

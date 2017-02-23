@@ -7,6 +7,7 @@ package akka.http.impl.engine.http2
 import java.{ util ⇒ ju }
 import javax.net.ssl.{ SSLEngine, SSLParameters }
 
+import akka.annotation.InternalApi
 import akka.stream.TLSClientAuth
 import akka.stream.TLSProtocol.NegotiateNewSession
 import org.eclipse.jetty.alpn.ALPN
@@ -17,6 +18,7 @@ import org.eclipse.jetty.alpn.ALPN.ServerProvider
  *
  * Will add support to an engine either using jetty alpn or using netty APIs (later).
  */
+@InternalApi
 private[http] object Http2AlpnSupport {
   /**
    * Enables server-side Http/2 ALPN support for the given engine.

@@ -1,6 +1,7 @@
 package akka.http.impl.util
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl
 import akka.stream.scaladsl.{ BidiFlow, Flow }
@@ -11,6 +12,7 @@ import akka.util.ByteString
  *
  * Flow and BidiFlow stages to log streams of ByteString.
  */
+@InternalApi
 private[akka] object LogByteStringTools {
   val MaxBytesPrinted = 16 * 5
 

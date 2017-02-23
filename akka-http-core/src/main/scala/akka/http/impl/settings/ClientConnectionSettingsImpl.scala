@@ -6,6 +6,7 @@ package akka.http.impl.settings
 
 import java.util.Random
 
+import akka.annotation.InternalApi
 import akka.http.impl.engine.ws.Randoms
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers.`User-Agent`
@@ -18,6 +19,7 @@ import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /** INTERNAL API */
+@InternalApi
 private[akka] final case class ClientConnectionSettingsImpl(
   userAgentHeader:            Option[`User-Agent`],
   connectingTimeout:          FiniteDuration,

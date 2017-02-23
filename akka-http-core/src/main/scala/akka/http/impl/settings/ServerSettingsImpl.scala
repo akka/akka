@@ -15,6 +15,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.http.javadsl.{ settings ⇒ js }
 import akka.ConfigurationException
+import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpHeader
@@ -22,6 +23,7 @@ import akka.http.scaladsl.model.headers.{ Host, Server }
 import akka.http.scaladsl.settings.ServerSettings.LogUnencryptedNetworkBytes
 
 /** INTERNAL API */
+@InternalApi
 private[akka] final case class ServerSettingsImpl(
   serverHeader:               Option[Server],
   timeouts:                   ServerSettings.Timeouts,
@@ -47,10 +49,11 @@ private[akka] final case class ServerSettingsImpl(
   override def productPrefix = "ServerSettings"
 }
 
-object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.http.server") {
+/** INTERNAL API */
+@InternalApi
+private[http] object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.http.server") {
   implicit def timeoutsShortcut(s: js.ServerSettings): js.ServerSettings.Timeouts = s.getTimeouts
 
-  /** INTERNAL API */
   final case class Timeouts(
     idleTimeout:    Duration,
     requestTimeout: Duration,

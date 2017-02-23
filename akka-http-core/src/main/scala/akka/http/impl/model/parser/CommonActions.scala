@@ -4,12 +4,14 @@
 
 package akka.http.impl.model.parser
 
+import akka.annotation.InternalApi
 import akka.http.impl.util._
 import akka.http.scaladsl.model.MediaType.Binary
 import akka.http.scaladsl.model._
 import akka.stream.impl.ConstantFun
 
 /** INTERNAL API */
+@InternalApi
 private[parser] trait CommonActions {
 
   def customMediaTypes: MediaTypes.FindCustom

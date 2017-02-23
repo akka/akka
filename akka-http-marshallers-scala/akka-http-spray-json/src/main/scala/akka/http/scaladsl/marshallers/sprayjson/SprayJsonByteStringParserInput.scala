@@ -6,6 +6,7 @@ package akka.http.scaladsl.marshallers.sprayjson
 
 import java.nio.charset.StandardCharsets
 
+import akka.annotation.InternalApi
 import akka.util.ByteString
 import spray.json.ParserInput.IndexedBytesParserInput
 
@@ -18,6 +19,7 @@ import spray.json.ParserInput.IndexedBytesParserInput
  * TODO: make private before next major version
  */
 @deprecated("Will be made private.", "10.0.2")
+@InternalApi
 final class SprayJsonByteStringParserInput(bytes: ByteString) extends IndexedBytesParserInput {
   protected def byteAt(offset: Int): Byte = bytes(offset)
 

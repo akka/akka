@@ -6,17 +6,19 @@ package akka.http.scaladsl.model
 
 import language.implicitConversions
 import java.net.{ Inet4Address, Inet6Address, InetAddress }
-import java.lang.{ StringBuilder ⇒ JStringBuilder, Iterable }
+import java.lang.{ Iterable, StringBuilder ⇒ JStringBuilder }
 import java.nio.charset.Charset
+
 import scala.annotation.tailrec
-import scala.collection.{ immutable, mutable, LinearSeqOptimized }
+import scala.collection.{ LinearSeqOptimized, immutable, mutable }
 import scala.collection.immutable.LinearSeq
-import akka.parboiled2.{ CharUtils, CharPredicate, ParserInput }
+import akka.parboiled2.{ CharPredicate, CharUtils, ParserInput }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.model.parser.UriParser
 import akka.http.impl.model.parser.CharacterClasses._
 import akka.http.impl.util._
 import Uri._
+import akka.annotation.DoNotInherit
 
 /**
  * An immutable model of an internet URI as defined by http://tools.ietf.org/html/rfc3986.
@@ -873,27 +875,3 @@ object UriRendering {
   private[http] def isAsciiCompatible(cs: Charset) = cs == UTF8 || cs == ISO88591 || cs == ASCII
 }
 
-/**
- * INTERNAL API.
- */
-abstract class UriJavaAccessor
-/**
- * INTERNAL API.
- */
-object UriJavaAccessor {
-  import collection.JavaConverters._
-
-  def hostApply(string: String): Host = Uri.Host(string)
-  def hostApply(string: String, mode: Uri.ParsingMode): Host = Uri.Host(string, mode = mode)
-  def hostApply(string: String, charset: Charset): Host = Uri.Host(string, charset = charset)
-  def emptyHost: Uri.Host = Uri.Host.Empty
-
-  def queryApply(params: Array[akka.japi.Pair[String, String]]): Uri.Query = Uri.Query(params.map(_.toScala): _*)
-  def queryApply(params: java.util.Map[String, String]): Uri.Query = Uri.Query(params.asScala.toSeq: _*)
-  def queryApply(string: String, mode: Uri.ParsingMode): Uri.Query = Uri.Query(string, mode = mode)
-  def queryApply(string: String, charset: Charset): Uri.Query = Uri.Query(string, charset = charset)
-  def emptyQuery: Uri.Query = Uri.Query.Empty
-
-  def pmStrict: Uri.ParsingMode = Uri.ParsingMode.Strict
-  def pmRelaxed: Uri.ParsingMode = Uri.ParsingMode.Relaxed
-}

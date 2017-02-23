@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2.framing
 
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2._
@@ -14,6 +15,7 @@ import akka.util.ByteString
 import scala.collection.immutable
 
 /** INTERNAL API */
+@InternalApi
 private[http] class Http2FrameRendering extends GraphStage[FlowShape[FrameEvent, ByteString]] {
 
   val frameIn = Inlet[FrameEvent]("Http2FrameRendering.frameIn")

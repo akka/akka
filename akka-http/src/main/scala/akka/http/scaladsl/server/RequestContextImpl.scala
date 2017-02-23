@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.server
 
+import akka.annotation.InternalApi
+
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.stream.{ ActorMaterializer, ActorMaterializerHelper, Materializer }
 import akka.event.LoggingAdapter
@@ -17,6 +19,7 @@ import akka.http.scaladsl.util.FastFuture._
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class RequestContextImpl(
   val request:          HttpRequest,
   val unmatchedPath:    Uri.Path,

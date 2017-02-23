@@ -5,12 +5,16 @@
 package akka.http.impl.util
 
 import java.util.Locale
+
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class EnhancedString(val underlying: String) extends AnyVal {
 
   /**

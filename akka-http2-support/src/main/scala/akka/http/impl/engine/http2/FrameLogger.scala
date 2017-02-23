@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.util.ByteString
 
@@ -13,6 +14,7 @@ import scala.collection.immutable.Seq
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http2] object FrameLogger {
   final val maxBytes = 16
 

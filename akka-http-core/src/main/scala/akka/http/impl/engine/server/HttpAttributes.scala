@@ -6,6 +6,7 @@ package akka.http.impl.engine.server
 
 import java.net.InetSocketAddress
 
+import akka.annotation.InternalApi
 import akka.stream.Attributes
 
 /**
@@ -13,6 +14,7 @@ import akka.stream.Attributes
  * Internally used attributes set in the HTTP pipeline.
  * May potentially be opened up in the future.
  */
+@InternalApi
 private[akka] object HttpAttributes {
   import Attributes._
 

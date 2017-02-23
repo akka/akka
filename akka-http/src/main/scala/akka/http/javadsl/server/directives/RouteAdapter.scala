@@ -10,6 +10,7 @@ import akka.http.javadsl.model.HttpResponse
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.server.{ ExceptionHandler, RejectionHandler, Route, RoutingJavaMapping }
 import RoutingJavaMapping._
+import akka.annotation.InternalApi
 import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl
 import akka.http.scaladsl.server.RouteConcatenation._
@@ -17,6 +18,7 @@ import akka.stream.{ Materializer, javadsl }
 import akka.stream.scaladsl.Flow
 
 /** INTERNAL API */
+@InternalApi
 final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends Route {
   import RouteAdapter._
 

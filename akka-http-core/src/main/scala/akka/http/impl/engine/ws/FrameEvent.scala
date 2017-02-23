@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.ws
 
+import akka.annotation.InternalApi
 import akka.http.impl.engine.ws.Protocol.Opcode
 import akka.util.ByteString
 
@@ -16,6 +17,7 @@ private[http] final case class FrameError(p: ProtocolException) extends FrameEve
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] sealed trait FrameEvent extends FrameEventOrError {
   def data: ByteString
   def lastPart: Boolean

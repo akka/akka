@@ -5,6 +5,7 @@
 package akka.http.impl.engine.ws
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.ws.FrameHandler.{ UserHandlerErredOut, _ }
 import akka.http.impl.engine.ws.WebSocket.Tick
@@ -21,6 +22,7 @@ import scala.concurrent.duration.FiniteDuration
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDuration, log: LoggingAdapter)
   extends GraphStage[FlowShape[FrameOutHandler.Input, FrameStart]] {
   val in = Inlet[FrameOutHandler.Input]("FrameOutHandler.in")

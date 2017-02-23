@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2
 
+import akka.annotation.InternalApi
 import akka.stream.Attributes
 
 import scala.collection.mutable
@@ -16,6 +17,7 @@ import akka.util.{ ByteString, OptionVal }
  *
  * The internal interface Http2ServerDemux uses to drive the multiplexer.
  */
+@InternalApi
 private[http2] trait Http2Multiplexer {
   def pushControlFrame(frame: FrameEvent): Unit
   def registerSubStream(sub: Http2SubStream): Unit
@@ -35,6 +37,7 @@ private[http2] trait Http2Multiplexer {
  *
  * The current default multiplexer.
  */
+@InternalApi
 private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with StageLogging ⇒
   def createMultiplexer(outlet: GenericOutlet[FrameEvent], prioritizer: StreamPrioritizer): Http2Multiplexer =
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogSupport {

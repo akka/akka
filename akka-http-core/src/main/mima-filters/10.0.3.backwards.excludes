@@ -10,3 +10,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.Serv
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl#Timeouts.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.absorbCancellation")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$AbsorbCancellationStage")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.model.UriJavaAccessor$")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.model.UriJavaAccessor")
+ProblemFilters.exclude[FinalClassProblem]("akka.http.impl.model.JavaQuery")

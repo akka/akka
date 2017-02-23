@@ -4,10 +4,12 @@
 
 package akka.http.impl.settings
 
+import akka.annotation.InternalApi
 import akka.http.impl.util._
 import com.typesafe.config.Config
 
 /** INTERNAL API */
+@InternalApi
 final case class RoutingSettingsImpl(
   verboseErrorMessages:     Boolean,
   fileGetConditional:       Boolean,

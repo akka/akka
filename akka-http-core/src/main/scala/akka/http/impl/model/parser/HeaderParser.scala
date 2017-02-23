@@ -4,11 +4,13 @@
 
 package akka.http.impl.model.parser
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
 import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
 import akka.http.scaladsl.model.headers.HttpCookiePair
 import akka.stream.impl.ConstantFun
+
 import scala.util.control.NonFatal
 import akka.http.impl.util.SingletonException
 import akka.parboiled2._
@@ -18,6 +20,7 @@ import akka.http.scaladsl.model._
 /**
  * INTERNAL API.
  */
+@InternalApi
 private[http] class HeaderParser(
   val input: ParserInput,
   settings:  HeaderParser.Settings = HeaderParser.DefaultSettings)
@@ -89,6 +92,7 @@ private[http] class HeaderParser(
 /**
  * INTERNAL API.
  */
+@InternalApi
 private[http] object HeaderParser {
   object RuleNotFoundException extends SingletonException
   object EmptyCookieException extends SingletonException("Cookie header contained no parsable cookie values.")

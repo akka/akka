@@ -4,12 +4,15 @@
 
 package akka.http.impl.util
 
+import akka.annotation.InternalApi
+
 /**
  * INTERNAL API
  *
  * A unsynchronized registry to keep track of singleton instances similar to what
  * java.lang.Enum provides. `registry` should therefore only be used inside of singleton constructors.
  */
+@InternalApi
 private[http] trait ObjectRegistry[K, V <: AnyRef] {
   private[this] var _registry = Map.empty[K, V]
 

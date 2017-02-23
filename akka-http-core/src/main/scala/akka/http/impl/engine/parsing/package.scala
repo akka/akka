@@ -48,9 +48,12 @@ package object parsing {
 
 package parsing {
 
+  import akka.annotation.InternalApi
+
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[parsing] class ParsingException(
     val status: StatusCode,
     val info:   ErrorInfo) extends RuntimeException(info.formatPretty) {
@@ -63,6 +66,7 @@ package parsing {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[parsing] object NotEnoughDataException extends SingletonException
 }
 

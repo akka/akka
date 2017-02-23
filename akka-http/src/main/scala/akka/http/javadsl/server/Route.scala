@@ -11,6 +11,7 @@ import akka.http.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
 
 /**
@@ -35,6 +36,7 @@ import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
  */
 trait Route {
   /** INTERNAL API */
+  @InternalApi
   private[http] def delegate: scaladsl.server.Route
 
   def flow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed]

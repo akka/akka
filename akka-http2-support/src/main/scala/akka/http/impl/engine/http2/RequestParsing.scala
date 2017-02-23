@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2
 
+import akka.annotation.InternalApi
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
@@ -16,6 +17,7 @@ import scala.collection.immutable.VectorBuilder
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http2] object RequestParsing {
   def parseRequest(httpHeaderParser: HttpHeaderParser)(subStream: Http2SubStream): HttpRequest = {
     @tailrec

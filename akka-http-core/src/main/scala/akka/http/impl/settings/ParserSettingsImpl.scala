@@ -4,15 +4,18 @@
 
 package akka.http.impl.settings
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.settings.ParserSettings
-import akka.http.scaladsl.settings.ParserSettings.{ IllegalResponseHeaderValueProcessingMode, ErrorLoggingVerbosity, CookieParsingMode }
+import akka.http.scaladsl.settings.ParserSettings.{ CookieParsingMode, ErrorLoggingVerbosity, IllegalResponseHeaderValueProcessingMode }
 import akka.stream.impl.ConstantFun
 import com.typesafe.config.Config
+
 import scala.collection.JavaConverters._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 
 /** INTERNAL API */
+@InternalApi
 private[akka] final case class ParserSettingsImpl(
   maxUriLength:                             Int,
   maxMethodLength:                          Int,

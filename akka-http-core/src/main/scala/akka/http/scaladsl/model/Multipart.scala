@@ -29,6 +29,8 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.InternalApi
+
 /**
  * The model of multipart content for media-types `multipart/\*` (general multipart content),
  * `multipart/form-data` and `multipart/byteranges`.
@@ -382,14 +384,18 @@ object Multipart {
 
     // FIXME: SI-2991 workaround - two functions below. Remove when (hopefully) this issue is fixed
     /** INTERNAL API */
+    @InternalApi
     private[akka] def createStrict(parts: Multipart.FormData.BodyPart.Strict*): Multipart.FormData.Strict = Strict(parts.toVector)
     /** INTERNAL API */
+    @InternalApi
     private[akka] def createNonStrict(parts: Multipart.FormData.BodyPart*): Multipart.FormData = Multipart.FormData(Source(parts.toVector))
     /** INTERNAL API */
+    @InternalApi
     private[akka] def createStrict(fields: Map[String, akka.http.javadsl.model.HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
       fields.map { case (name, entity: akka.http.scaladsl.model.HttpEntity.Strict) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }(collection.breakOut)
     }
     /** INTERNAL API */
+    @InternalApi
     private[akka] def createSource(parts: Source[akka.http.javadsl.model.Multipart.FormData.BodyPart, Any]): Multipart.FormData = {
       apply(parts.asInstanceOf[Source[Multipart.FormData.BodyPart, Any]])
     }
@@ -534,6 +540,7 @@ object Multipart {
       }
 
       /** INTERNAL API */
+      @InternalApi
       private[akka] object Builder {
         def create(_name: String, _entity: BodyPartEntity,
                    _additionalDispositionParams: Map[String, String],
@@ -544,6 +551,7 @@ object Multipart {
       }
 
       /** INTERNAL API */
+      @InternalApi
       private[akka] object StrictBuilder {
         def createStrict(_name: String, _entity: HttpEntity.Strict,
                          _additionalDispositionParams: Map[String, String],

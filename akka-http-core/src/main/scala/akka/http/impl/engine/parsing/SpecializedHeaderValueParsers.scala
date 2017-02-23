@@ -4,15 +4,18 @@
 
 package akka.http.impl.engine.parsing
 
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import akka.util.ByteString
 import akka.http.impl.model.parser.CharacterClasses._
-import akka.http.scaladsl.model.{ HttpHeader, ErrorInfo }
+import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader }
 import akka.http.scaladsl.model.headers.`Content-Length`
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private object SpecializedHeaderValueParsers {
   import HttpHeaderParser._
 

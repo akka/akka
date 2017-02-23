@@ -7,8 +7,9 @@ package akka.http.impl.engine.ws
 import java.util.Random
 
 import akka.NotUsed
-import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
-import akka.stream.scaladsl.{ Keep, BidiFlow, Flow }
+import akka.annotation.InternalApi
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep }
 import akka.stream.stage._
 
 /**
@@ -16,6 +17,7 @@ import akka.stream.stage._
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] object Masking {
   def apply(serverSide: Boolean, maskRandom: () ⇒ Random): BidiFlow[ /* net in */ FrameEvent, /* app out */ FrameEventOrError, /* app in */ FrameEvent, /* net out */ FrameEvent, NotUsed] =
     BidiFlow.fromFlowsMat(unmaskIf(serverSide), maskIf(!serverSide, maskRandom))(Keep.none)

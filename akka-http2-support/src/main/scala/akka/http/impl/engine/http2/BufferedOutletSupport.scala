@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2
 
+import akka.annotation.InternalApi
 import akka.stream.Outlet
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.OutHandler
@@ -11,6 +12,7 @@ import akka.stream.stage.OutHandler
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http2] trait GenericOutlet[T] {
   def setHandler(handler: OutHandler): Unit
   def push(elem: T): Unit
@@ -21,6 +23,7 @@ private[http2] trait GenericOutlet[T] {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http2] class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHandler {
   val buffer: java.util.ArrayDeque[T] = new java.util.ArrayDeque[T]
   var completed = false
@@ -55,6 +58,7 @@ private[http2] class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHand
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http2] class BufferedOutletExtended[T](outlet: GenericOutlet[T]) extends OutHandler {
   case class ElementAndTrigger(element: T, trigger: () ⇒ Unit)
   final val buffer: java.util.ArrayDeque[ElementAndTrigger] = new java.util.ArrayDeque[ElementAndTrigger]
@@ -86,6 +90,7 @@ private[http2] class BufferedOutletExtended[T](outlet: GenericOutlet[T]) extends
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http2] trait GenericOutletSupport { logic: GraphStageLogic ⇒
   implicit def fromSubSourceOutlet[T](subSourceOutlet: SubSourceOutlet[T]): GenericOutlet[T] =
     new GenericOutlet[T] {

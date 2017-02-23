@@ -6,6 +6,8 @@ package akka.http.impl.engine.ws
 
 import java.util.Random
 
+import akka.annotation.InternalApi
+
 import scala.collection.immutable
 import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
@@ -21,6 +23,7 @@ import akka.util.OptionVal
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] object Handshake {
   val CurrentWebSocketVersion = 13
 

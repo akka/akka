@@ -4,9 +4,11 @@
 
 package akka.http.impl.engine.http2
 
+import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 
 /** INTERNAL API */
+@InternalApi
 private[akka] object Http2Compliance {
 
   final class IllegalHttp2StreamIdException(id: Int, expected: String)
@@ -23,7 +25,6 @@ private[akka] object Http2Compliance {
 
   final def missingHttpIdHeaderException = throw new MissingHttpIdHeaderException
 
-  // @DoNotInherit
   private[akka] sealed class IllegalHttp2FrameSize(size: Int, expected: String)
     extends Http2ProtocolException(ErrorCode.FRAME_SIZE_ERROR, s"Illegal HTTP/2 frame size: [$size]. $expected!")
 

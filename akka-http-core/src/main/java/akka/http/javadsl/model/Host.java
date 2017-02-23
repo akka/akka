@@ -5,7 +5,7 @@
 package akka.http.javadsl.model;
 
 import akka.http.scaladsl.model.Uri;
-import akka.http.scaladsl.model.UriJavaAccessor;
+import akka.http.impl.model.UriJavaAccessor;
 
 import java.net.InetAddress;
 import java.nio.charset.Charset;

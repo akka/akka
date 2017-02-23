@@ -12,7 +12,7 @@ import akka.testkit.{ AkkaSpec, TestKit }
 import org.scalatest.concurrent.{ IntegrationPatience, ScalaFutures }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
-/** INTERNAL API - not (yet?) ready for public consuption */
+/** not (yet?) ready for public consuption */
 private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers with BeforeAndAfterAll
   with Directives with RequestBuilding
   with ScalaFutures with IntegrationPatience {
