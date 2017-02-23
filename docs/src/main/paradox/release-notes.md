@@ -21,10 +21,10 @@ See [#851](https://github.com/akka/akka-http/issues/851) for more information.
  * Added `HttpApp.startServer(host, port)` for even simpler startup. ([#873](https://github.com/akka/akka-http/issues/873))
 
 ##### akka-http2-support
- * Multiplexer infrastructure was rewritten to support plugable `StreamPrioritizer` (not yet surfaced in user API) (f06ab40)
+ * Multiplexer infrastructure was rewritten to support plugable `StreamPrioritizer` (not yet surfaced in user API) ([f06ab40](https://github.com/akka/akka-http/commit/f06ab40))
 
 ##### Documentation
- * New documentation page about how to deal with the client-side `max-open-requests` exception (39f36dd)
+ * New documentation page about how to deal with the client-side `max-open-requests` exception ([39f36dd](https://github.com/akka/akka-http/commit/39f36dd))
  * Lots of small cleanups and improvements
 
 #### Bug fixes
