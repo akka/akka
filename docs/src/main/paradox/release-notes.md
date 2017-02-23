@@ -1,5 +1,46 @@
 # Release Notes
 
+## 10.0.4
+
+See the [announcement](http://akka.io/news/2017/01/26/akka-http-10.0.4-released.html) and
+closed tickets on the [10.0.4 milestone](https://github.com/akka/akka-http/milestone/21?closed=1).
+
+This release contains mostly bug fixes and smaller improvements. We strongly recommend updating from 10.0.3 which
+introduced a regression that an Akka HTTP server can leak memory over time which will lead to OOM eventually.
+See [#851](https://github.com/akka/akka-http/issues/851) for more information.
+
+### List of Changes
+
+#### Improvements
+
+##### akka-http-core
+ * Http message and header parser now also accepts LF as end of line (as recommended in the spec) ([#106](https://github.com/akka/akka-http/issues/106))
+
+##### akka-http
+ * `HttpApp` now directly extends from Directives ([#875](https://github.com/akka/akka-http/issues/875))
+ * Added `HttpApp.startServer(host, port)` for even simpler startup. ([#873](https://github.com/akka/akka-http/issues/873))
+
+##### akka-http2-support
+ * Multiplexer infrastructure was rewritten to support plugable `StreamPrioritizer` (not yet surfaced in user API) (f06ab40)
+
+##### Documentation
+ * New documentation page about how to deal with the client-side `max-open-requests` exception (39f36dd)
+ * Lots of small cleanups and improvements
+
+#### Bug fixes
+
+##### akka-http-core
+ * Fix a regression introduced in 10.0.3 that might lead to memory leaking after a server connection has been closed. ([#851](https://github.com/akka/akka-http/issues/851))
+ * Fix the infamous "Cannot push/pull twice" bug which occurred in relation with 100-Continue requests (like any kind
+   of uploads of POST requests done with `curl`) ([#516](https://github.com/akka/akka-http/issues/516))
+
+##### Build + Testing Infrastructure
+ * Updated Akka dependency to Akka 2.4.17. ([#858](https://github.com/akka/akka-http/issues/858))
+ * Use `.dilated` for tests for better stability. ([#194](https://github.com/akka/akka-http/issues/194))
+ * Fix MiMa to actually check compatibility against the latest released versions. ([#870](https://github.com/akka/akka-http/issues/870))
+ * Throughout the code base `@InternalApi`, `@ApiMayChange`, and `@DoNotInherit` annotations have been added
+   to give hints about the stability of interfaces. ([#727](https://github.com/akka/akka-http/issues/727))
+
 ## 10.0.3
 
 See the [announcement](http://akka.io/news/2017/01/26/akka-http-10.0.3-released.html) and
