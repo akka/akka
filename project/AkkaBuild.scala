@@ -214,8 +214,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(
       stream,
       persistence % "compile;provided->provided;test->test",
-      testkit % "compile;test->test",
-      streamTestkit % "compile;test->test")
+      streamTestkit % "test")
   )
 
   lazy val persistenceTck = Project(
