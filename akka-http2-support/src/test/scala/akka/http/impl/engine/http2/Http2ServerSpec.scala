@@ -156,7 +156,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
           headers = Vector(`Cache-Control`(`no-cache`), `Cache-Control`(`max-age`(1000)), `Access-Control-Allow-Origin`.`*`),
           protocol = HttpProtocols.`HTTP/2.0`)
         val streamId = 1
-        val requestHeaderBlock = encodeHeaders(HttpRequest(
+        val requestHeaderBlock = encodeRequestHeaders(HttpRequest(
           method = HttpMethods.GET,
           uri = "http://www.example.com/",
           headers = Vector(
@@ -256,6 +256,14 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
         eventually(Timeout(1.second.dilated)) {
           remainingToServerWindowFor(TheStreamId) should be > 0
         }
+      }
+      "send data frames to entity stream and ignore trailing headers" in new WaitingForRequestData {
+        val data1 = ByteString("abcdef")
+        sendDATA(TheStreamId, endStream = false, data1)
+        entityDataIn.expectBytes(data1)
+
+        sendHEADERS(TheStreamId, endStream = true, Seq(headers.`Cache-Control`(CacheDirectives.`no-cache`)))
+        entityDataIn.expectComplete()
       }
 
       "fail entity stream if advertised content-length doesn't match" in pending
@@ -806,6 +814,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
 
     def sendHEADERS(streamId: Int, endStream: Boolean, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment, None)))
+
     def sendCONTINUATION(streamId: Int, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(ContinuationFrame(streamId, endHeaders, headerBlockFragment)))
 
@@ -869,12 +878,15 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
 
   /** Helper that allows automatic HPACK encoding/decoding for wire sends / expectations */
   trait AutomaticHpackWireSupport extends TestSetupWithoutHandshake {
-    def sendRequestHEADERS(streamId: Int, request: HttpRequest, endStream: Boolean)(implicit mat: Materializer): Unit =
-      sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeHeaders(request))
+    def sendRequestHEADERS(streamId: Int, request: HttpRequest, endStream: Boolean): Unit =
+      sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeRequestHeaders(request))
+
+    def sendHEADERS(streamId: Int, endStream: Boolean, headers: Seq[HttpHeader]): Unit =
+      sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeHeaders(headers))
 
     def sendRequest(streamId: Int, request: HttpRequest)(implicit mat: Materializer): Unit = {
       val isEmpty = request.entity.isKnownEmpty
-      sendHEADERS(streamId, endStream = isEmpty, endHeaders = true, encodeHeaders(request))
+      sendHEADERS(streamId, endStream = isEmpty, endHeaders = true, encodeRequestHeaders(request))
 
       if (!isEmpty)
         sendDATA(streamId, endStream = true, request.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue)
@@ -894,24 +906,35 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
 
     val encoder = new Encoder(Http2Protocol.InitialMaxHeaderTableSize)
 
-    def encodeHeaders(request: HttpRequest): ByteString = {
+    def encodeRequestHeaders(request: HttpRequest): ByteString =
+      encodeHeaderPairs(headerPairsForRequest(request))
+
+    def encodeHeaders(headers: Seq[HttpHeader]): ByteString =
+      encodeHeaderPairs(headerPairsForHeaders(headers))
+
+    def headerPairsForRequest(request: HttpRequest): Seq[(String, String)] =
+      Seq(
+        ":method" → request.method.value,
+        ":scheme" → request.uri.scheme.toString,
+        ":path" → request.uri.path.toString,
+        ":authority" → request.uri.authority.toString.drop(2),
+        "content-type" → request.entity.contentType.render(new StringRendering).get
+      ) ++
+        request.entity.contentLengthOption.flatMap {
+          case len if len != 0 ⇒ Some("content-length" → len.toString)
+          case _               ⇒ None
+        }.toSeq ++
+        headerPairsForHeaders(request.headers.filter(_.renderInRequests))
+
+    def headerPairsForHeaders(headers: Seq[HttpHeader]): Seq[(String, String)] =
+      headers.map(h ⇒ h.lowercaseName → h.value)
+
+    def encodeHeaderPairs(headerPairs: Seq[(String, String)]): ByteString = {
       val bos = new ByteArrayOutputStream()
 
       def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
 
-      encode(":method", request.method.value)
-      encode(":scheme", request.uri.scheme.toString)
-      encode(":path", request.uri.path.toString)
-      encode(":authority", request.uri.authority.toString.drop(2) /* Authority.toString prefixes two slashes */ )
-
-      encode("content-type", request.entity.contentType.render(new StringRendering).get)
-      request.entity.contentLengthOption.collect {
-        case len if len != 0 ⇒ encode("content-length", len.toString)
-      }
-
-      request.headers.filter(_.renderInRequests()).foreach { h ⇒
-        encode(h.lowercaseName, h.value)
-      }
+      headerPairs.foreach((encode _).tupled)
 
       ByteString(bos.toByteArray)
     }
