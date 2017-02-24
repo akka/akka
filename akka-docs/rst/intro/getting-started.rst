@@ -56,7 +56,7 @@ Akka is very modular and consists of several JARs containing different features.
 - ``akka-testkit`` – Toolkit for testing Actor systems
 
 In addition to these stable modules there are several which are on their way
-into the stable core but are still marked “experimental” at this point. This
+into the stable core but are still marked :ref:`may change <may-change>` at this point. This
 does not mean that they do not function as intended, it primarily means that
 their API has not yet solidified enough in order to be considered frozen. You
 can help accelerating this process by giving feedback on these modules on our

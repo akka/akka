@@ -33,9 +33,24 @@ public class JavaExtension extends JUnitSuite {
     }
   }
 
+  static class OtherExtensionId extends AbstractExtensionId<OtherExtension> implements ExtensionIdProvider {
+
+    public final static OtherExtensionId OtherExtensionProvider = new OtherExtensionId();
+
+    @Override
+    public ExtensionId<OtherExtension> lookup() {
+      return OtherExtensionId.OtherExtensionProvider;
+    }
+
+    @Override
+    public OtherExtension createExtension(ExtendedActorSystem system) {
+      return new OtherExtension(system);
+    }
+
+  }
+
   static class OtherExtension implements Extension {
-    static final ExtensionKey<OtherExtension> key = new ExtensionKey<OtherExtension>(OtherExtension.class) {
-    };
+    static final ExtensionId<OtherExtension> key = OtherExtensionId.OtherExtensionProvider;
 
     public final ExtendedActorSystem system;
 

@@ -68,7 +68,8 @@ object SphinxDoc {
         }),
         "sigarVersion" -> Dependencies.Compile.sigar.revision,
         "sigarLoaderVersion" -> Dependencies.Compile.Provided.sigarLoader.revision,
-        "github" -> GitHub.url(v)
+        "github" -> GitHub.url(v),
+        "samples" -> "http://github.com/akka/akka-samples"
       )
     },
     preprocess <<= (sourceDirectory, target in preprocess, cacheDirectory, preprocessExts, preprocessVars, streams) map {

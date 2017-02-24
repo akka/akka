@@ -6,10 +6,10 @@ Akka Typed
 
 .. warning::
 
-  This module is currently experimental in the sense of being the subject of
-  active research. This means that API or semantics can change without warning
-  or deprecation period and it is not recommended to use this module in
-  production just yet—you have been warned.
+  This module is currently marked as :ref:`may change <may-change>` in the sense
+  of being the subject of active research. This means that API or semantics can
+  change without warning or deprecation period and it is not recommended to use
+  this module in production just yet—you have been warned.
 
 As discussed in :ref:`actor-systems` (and following chapters) Actors are about
 sending messages between independent units of computation, but how does that
@@ -283,9 +283,9 @@ Status of this Project and Relation to Akka Actors
 Akka Typed is the result of many years of research and previous attempts
 (including Typed Channels in the 2.2.x series) and it is on its way to
 stabilization, but maturing such a profound change to the core concept of Akka
-will take a long time. We expect that this module will stay experimental for
-multiple major releases of Akka and the plain ``akka.actor.Actor`` will not be
-deprecated or go away anytime soon.
+will take a long time. We expect that this module will stay marked
+:ref:`may change <may-change>` for multiple major releases of Akka and the
+plain ``akka.actor.Actor`` will not be deprecated or go away anytime soon.
 
 Being a research project also entails that the reference documentation is not
 as detailed as it will be for a final version, please refer to the API

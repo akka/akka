@@ -6,6 +6,7 @@ Scala Documentation
 .. toctree::
    :maxdepth: 2
 
+   security/index
    intro/index-scala
    general/index
    scala/index-actors
@@ -15,7 +16,6 @@ Scala Documentation
    scala/stream/index
    scala/http/index
    scala/howto
-   experimental/index
    dev/index
    project/index
    additional/index

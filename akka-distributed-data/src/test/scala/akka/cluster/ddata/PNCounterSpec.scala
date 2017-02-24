@@ -29,13 +29,13 @@ class PNCounterSpec extends WordSpec with Matchers {
       c6.increments.state(node1) should be(2)
       c6.increments.state(node2) should be(3)
 
-      c2.delta.value.toLong should be(1)
-      c2.delta.increments.state(node1) should be(1)
-      c3.delta.value should be(2)
-      c3.delta.increments.state(node1) should be(2)
+      c2.delta.get.value.toLong should be(1)
+      c2.delta.get.increments.state(node1) should be(1)
+      c3.delta.get.value should be(2)
+      c3.delta.get.increments.state(node1) should be(2)
 
-      c6.delta.value should be(3)
-      c6.delta.increments.state(node2) should be(3)
+      c6.delta.get.value should be(3)
+      c6.delta.get.increments.state(node2) should be(3)
     }
 
     "be able to decrement each node's record by one" in {
@@ -51,11 +51,11 @@ class PNCounterSpec extends WordSpec with Matchers {
       c6.decrements.state(node1) should be(2)
       c6.decrements.state(node2) should be(3)
 
-      c3.delta.value should be(-2)
-      c3.delta.decrements.state(node1) should be(2)
+      c3.delta.get.value should be(-2)
+      c3.delta.get.decrements.state(node1) should be(2)
 
-      c6.delta.value should be(-3)
-      c6.delta.decrements.state(node2) should be(3)
+      c6.delta.get.value should be(-3)
+      c6.delta.get.decrements.state(node2) should be(3)
     }
 
     "be able to increment each node's record by arbitrary delta" in {

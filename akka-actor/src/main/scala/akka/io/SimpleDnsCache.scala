@@ -54,7 +54,8 @@ object SimpleDnsCache {
     }
 
     def put(answer: Resolved, ttlMillis: Long): Cache = {
-      val until = clock() + ttlMillis
+      val until0 = clock() + ttlMillis
+      val until = if (until0 < 0) Long.MaxValue else until0
 
       new Cache(
         queue + new ExpiryEntry(answer.name, until),

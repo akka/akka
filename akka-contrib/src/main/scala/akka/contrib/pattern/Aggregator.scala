@@ -9,6 +9,7 @@ import scala.annotation.tailrec
 /**
  * The aggregator is to be mixed into an actor for the aggregator behavior.
  */
+@deprecated("Feel free to copy", "2.5.0")
 trait Aggregator {
   this: Actor ⇒
 
@@ -80,6 +81,7 @@ trait Aggregator {
 /**
  * Provides the utility methods and constructors to the WorkList class.
  */
+@deprecated("Feel free to copy", "2.5.0")
 object WorkList {
 
   def empty[T] = new WorkList[T]
@@ -101,6 +103,7 @@ object WorkList {
  * entries from the list while processing. Most important, a processing function can remove its own entry from the list.
  * The first remove must return true and any subsequent removes must return false.
  */
+@deprecated("Feel free to copy", "2.5.0")
 class WorkList[T] {
 
   import WorkList._

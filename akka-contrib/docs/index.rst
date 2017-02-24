@@ -3,6 +3,14 @@
 External Contributions
 ======================
 
+.. warning::
+  **Deprecation warning** - ``akka-contrib`` has been deprecated and is scheduled for removal 
+  in the next major version. The reason is to reduce the amount of things to maintain in
+  the core Akka projects. Contributions to the core of Akka or its satellite projects
+  are welcome. Contributions that don't fit into existing modules can be hosted in
+  new Akka Github repositories in the ``akka`` Github organization or outside of it
+  depending on what kind of library it is. Please ask.
+
 This subproject provides a home to modules contributed by external developers
 which may or may not move into the officially supported code base over time.
 The conditions under which this transition can occur include:

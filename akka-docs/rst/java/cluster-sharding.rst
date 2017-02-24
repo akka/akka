@@ -296,6 +296,10 @@ using a ``Passivate``.
 Note that the state of the entities themselves will not be restored unless they have been made persistent,
 e.g. with :ref:`persistence-java`.
 
+The performance cost of ``rememberEntities`` is rather high when starting/stopping entities and when 
+shards are rebalanced. This cost increases with number of entities per shard and we currently don't
+recommend using it with more than 10000 entities per shard. 
+
 Supervision
 -----------
 

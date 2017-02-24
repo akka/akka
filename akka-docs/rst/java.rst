@@ -6,6 +6,7 @@ Java Documentation
 .. toctree::
    :maxdepth: 2
 
+   security/index
    intro/index-java
    general/index
    java/index-actors
@@ -16,7 +17,6 @@ Java Documentation
    java/http/index
    java/howto
    java/scala-compat
-   experimental/index-java
    dev/index
    project/index
    additional/index

@@ -4,6 +4,7 @@
 package akka.cluster.sharding
 
 import java.net.URLEncoder
+
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -11,12 +12,9 @@ import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.cluster.sharding.Shard.ShardCommand
-import akka.persistence.PersistentActor
-import akka.persistence.SnapshotOffer
+import akka.persistence._
 import akka.actor.Actor
-import akka.persistence.RecoveryCompleted
-import akka.persistence.SaveSnapshotFailure
-import akka.persistence.SaveSnapshotSuccess
+
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.cluster.Cluster
@@ -210,7 +208,7 @@ private[akka] class Shard(
   }
 
   def receiveTerminated(ref: ActorRef): Unit = {
-    if (handOffStopper.exists(_ == ref))
+    if (handOffStopper.contains(ref))
       context stop self
     else if (idByRef.contains(ref) && handOffStopper.isEmpty)
       entityTerminated(ref)
@@ -230,14 +228,16 @@ private[akka] class Shard(
 
   def passivate(entity: ActorRef, stopMessage: Any): Unit = {
     idByRef.get(entity) match {
-      case Some(id) if !messageBuffers.contains(id) ⇒
+      case Some(id) => if (!messageBuffers.contains(id)) {
         log.debug("Passivating started on entity {}", id)
 
         passivating = passivating + entity
         messageBuffers = messageBuffers.updated(id, Vector.empty)
         entity ! stopMessage
-
-      case _ ⇒ //ignored
+      } else {
+        log.debug("Passivation already in progress for {}. Not sending stopMessage back to entity.", entity)
+      }
+      case None    => log.debug("Unknown entity {}. Not sending stopMessage back to entity.", entity)
     }
   }
 
@@ -399,7 +399,7 @@ private[akka] class PersistentShard(
   import Shard._
   import settings.tuningParameters._
 
-  override def persistenceId = s"/sharding/${typeName}Shard/${shardId}"
+  override def persistenceId = s"/sharding/${typeName}Shard/$shardId"
 
   override def journalPluginId: String = settings.journalPluginId
 
@@ -433,10 +433,38 @@ private[akka] class PersistentShard(
   }
 
   override def receiveCommand: Receive = ({
-    case _: SaveSnapshotSuccess ⇒
+    case SaveSnapshotSuccess(m) ⇒
       log.debug("PersistentShard snapshot saved successfully")
+      /*
+       * delete old events but keep the latest around because
+       *
+       * it's not safe to delete all events immediate because snapshots are typically stored with a weaker consistency
+       * level which means that a replay might "see" the deleted events before it sees the stored snapshot,
+       * i.e. it will use an older snapshot and then not replay the full sequence of events
+       *
+       * for debugging if something goes wrong in production it's very useful to be able to inspect the events
+       */
+      val deleteToSequenceNr = m.sequenceNr - keepNrOfBatches * snapshotAfter
+      if (deleteToSequenceNr > 0) {
+        deleteMessages(deleteToSequenceNr)
+      }
+
     case SaveSnapshotFailure(_, reason) ⇒
       log.warning("PersistentShard snapshot failure: {}", reason.getMessage)
+
+    case DeleteMessagesSuccess(toSequenceNr) ⇒
+      log.debug("PersistentShard messages to {} deleted successfully", toSequenceNr)
+      deleteSnapshots(SnapshotSelectionCriteria(maxSequenceNr = toSequenceNr - 1))
+
+    case DeleteMessagesFailure(reason, toSequenceNr) ⇒
+      log.warning("PersistentShard messages to {} deletion failure: {}", toSequenceNr, reason.getMessage)
+
+    case DeleteSnapshotSuccess(m) ⇒
+      log.debug("PersistentShard snapshots matching {} deleted successfully", m)
+
+    case DeleteSnapshotFailure(m, reason) ⇒
+      log.warning("PersistentShard snapshots matching {} deletion falure: {}", m, reason.getMessage)
+
   }: Receive).orElse(super.receiveCommand)
 
 }
@@ -476,8 +504,9 @@ private[akka] class DDataShard(
   implicit private val node = Cluster(context.system)
 
   // The default maximum-frame-size is 256 KiB with Artery.
-  // ORSet with 40000 elements has a size of ~ 200000 bytes.
-  // By splitting the elements over 5 keys we can safely support 200000 entities per shard.
+  // When using entity identifiers with 36 character strings (e.g. UUID.randomUUID).
+  // By splitting the elements over 5 keys we can support 10000 entities per shard.
+  // The Gossip message size of 5 ORSet with 2000 ids is around 200 KiB.
   // This is by intention not configurable because it's important to have the same
   // configuration on each node.
   private val numberOfKeys = 5
@@ -615,8 +644,8 @@ final class AllAtOnceEntityRecoveryStrategy extends EntityRecoveryStrategy {
 
 final class ConstantRateEntityRecoveryStrategy(actorSystem: ActorSystem, frequency: FiniteDuration, numberOfEntities: Int) extends EntityRecoveryStrategy {
   import ShardRegion.EntityId
-  import akka.pattern.after
   import actorSystem.dispatcher
+  import akka.pattern.after
 
   override def recoverEntities(entities: Set[EntityId]): Set[Future[Set[EntityId]]] =
     entities.grouped(numberOfEntities).foldLeft((frequency, Set[Future[Set[EntityId]]]())) {

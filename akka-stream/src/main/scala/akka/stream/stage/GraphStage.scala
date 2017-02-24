@@ -3,15 +3,19 @@
  */
 package akka.stream.stage
 
-import java.util.concurrent.atomic.{ AtomicReference }
+import java.util.concurrent.atomic.AtomicReference
+
 import akka.NotUsed
 import java.util.concurrent.locks.ReentrantLock
+
 import akka.actor._
+import akka.annotation.ApiMayChange
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSource, SubSink }
+import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
 import akka.stream.impl.ReactiveStreamsCompliance
+
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
@@ -921,6 +925,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * @return minimal actor with watch method
    */
   // FIXME: I don't like the Pair allocation :(
+  @ApiMayChange
   final protected def getStageActor(receive: ((ActorRef, Any)) ⇒ Unit): StageActor = {
     _stageActor match {
       case null ⇒

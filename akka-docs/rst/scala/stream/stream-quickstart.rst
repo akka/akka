@@ -223,7 +223,7 @@ combinator:
   due to the risk of deadlock (with merge being the preferred strategy), and second, the monad laws would not hold for
   our implementation of flatMap (due to the liveness issues).
 
-  Please note that the ``mapConcat`` requires the supplied function to return a strict collection (``f:Out=>immutable.Seq[T]``),
+  Please note that the ``mapConcat`` requires the supplied function to return an iterable (``f: Out => immutable.Iterable[T]``),
   whereas ``flatMap`` would have to operate on streams all the way through.
 
 Broadcasting a stream

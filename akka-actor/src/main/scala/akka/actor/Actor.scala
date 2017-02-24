@@ -73,6 +73,11 @@ final case class Identify(messageId: Any) extends AutoReceivedMessage with NotIn
  */
 @SerialVersionUID(1L)
 final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
+  if (ref.isDefined && ref.get == null) {
+    throw new IllegalArgumentException("ActorIdentity created with ref = Some(null) is not allowed, " +
+      "this could happen when serializing with Scala 2.12 and deserializing with Scala 2.11 which is not supported.")
+  }
+
   /**
    * Java API: `ActorRef` of the actor replying to the request or
    * null if no actor matched the request.
@@ -109,6 +114,7 @@ final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
   @BeanProperty val addressTerminated:  Boolean)
   extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
+  with NoSerializationVerificationNeeded // local message, the remote one is DeathWatchNotification
 
 /**
  * INTERNAL API
@@ -542,7 +548,7 @@ trait Actor {
    * Actors are automatically started asynchronously when created.
    * Empty default implementation.
    */
-  @throws(classOf[Exception]) // when changing this you MUST also change UntypedActorDocTest
+  @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
   //#lifecycle-hooks
   def preStart(): Unit = ()
 
@@ -554,7 +560,7 @@ trait Actor {
    * Is called asynchronously after 'actor.stop()' is invoked.
    * Empty default implementation.
    */
-  @throws(classOf[Exception]) // when changing this you MUST also change UntypedActorDocTest
+  @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
   //#lifecycle-hooks
   def postStop(): Unit = ()
 
@@ -568,7 +574,7 @@ trait Actor {
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
    */
-  @throws(classOf[Exception]) // when changing this you MUST also change UntypedActorDocTest
+  @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
   //#lifecycle-hooks
   def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     context.children foreach { child ⇒
@@ -586,7 +592,7 @@ trait Actor {
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
-  @throws(classOf[Exception]) // when changing this you MUST also change UntypedActorDocTest
+  @throws(classOf[Exception]) // when changing this you MUST also change ActorDocTest
   //#lifecycle-hooks
   def postRestart(reason: Throwable): Unit = {
     preStart()

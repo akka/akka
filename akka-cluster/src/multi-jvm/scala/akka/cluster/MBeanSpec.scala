@@ -116,37 +116,37 @@ abstract class MBeanSpec
         val unreachableObservedBy = Vector(first, second, third).sorted.map(address(_))
         val expectedJson =
           s"""{
-             |  "self-address": "${address(first)}",
              |  "members": [
              |    {
              |      "address": "${sortedNodes(0)}",
-             |      "status": "Up",
              |      "roles": [
              |        "testNode"
-             |      ]
+             |      ],
+             |      "status": "Up"
              |    },
              |    {
              |      "address": "${sortedNodes(1)}",
-             |      "status": "Up",
              |      "roles": [
              |        "testNode"
-             |      ]
+             |      ],
+             |      "status": "Up"
              |    },
              |    {
              |      "address": "${sortedNodes(2)}",
-             |      "status": "Up",
              |      "roles": [
              |        "testNode"
-             |      ]
+             |      ],
+             |      "status": "Up"
              |    },
              |    {
              |      "address": "${sortedNodes(3)}",
-             |      "status": "Up",
              |      "roles": [
              |        "testNode"
-             |      ]
+             |      ],
+             |      "status": "Up"
              |    }
              |  ],
+             |  "self-address": "${address(first)}",
              |  "unreachable": [
              |    {
              |      "node": "${address(fourth)}",

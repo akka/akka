@@ -61,8 +61,6 @@ import scala.reflect.ClassTag
  *    ...
  * }
  * }}}
- *
- * See also [[akka.actor.ExtensionKey]] for a concise way of formulating extensions.
  */
 trait Extension
 
@@ -146,6 +144,7 @@ trait ExtensionIdProvider {
  * `get` method.
  *
  */
+@deprecated(message = "Use a regular Extension instead", since = "2.5.0")
 abstract class ExtensionKey[T <: Extension](implicit m: ClassTag[T]) extends ExtensionId[T] with ExtensionIdProvider {
   def this(clazz: Class[T]) = this()(ClassTag(clazz))
 

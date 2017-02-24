@@ -21,6 +21,7 @@ import akka.event.LoggerMessageQueueSemantics
  *
  * For `Actor`s, use `ActorLogging` instead.
  */
+@deprecated("Feel free to copy", "2.5.0")
 trait JavaLogging {
 
   @transient
@@ -32,6 +33,7 @@ trait JavaLogging {
 /**
  * `java.util.logging` logger.
  */
+@deprecated("Use akka.event.jul.JavaLogger in akka-actor instead", "2.5.0")
 class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSemantics] {
 
   def receive = {
@@ -55,6 +57,7 @@ class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSeman
   }
 }
 
+@deprecated("Feel free to copy", "2.5.0")
 trait JavaLoggingAdapter extends LoggingAdapter {
 
   def logger: logging.Logger

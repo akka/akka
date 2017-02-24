@@ -215,6 +215,18 @@ thread-local variable, so be sure to have it set while deserializing anything
 which might contain actor references.
 
 
+Serialization compatibility
+===========================
+
+It is not safe to mix major Scala versions when using the Java serialization as Scala does not guarantee compatibility
+and this could lead to very surprising errors.
+
+If using the Akka Protobuf serializers (implicitly with ``akka.actor.allow-java-serialization = off`` or explicitly with
+``enable-additional-serialization-bindings = true``) for the internal Akka messages those will not require the same major
+Scala version however you must also ensure the serializers used for your own types does not introduce the same
+incompatibility as Java serialization does.
+
+
 External Akka Serializers
 =========================
 

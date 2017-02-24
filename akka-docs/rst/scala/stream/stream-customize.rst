@@ -367,7 +367,7 @@ Integration with actors
 -----------------------
 
 **This section is a stub and will be extended in the next release**
-**This is an experimental feature***
+**This is a :ref:`may change <may-change>` feature***
 
 It is possible to acquire an ActorRef that can be addressed from the outside of the stage, similarly how
 :class:`AsyncCallback` allows injecting asynchronous events into a stage logic. This reference can be obtained

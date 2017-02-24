@@ -34,7 +34,11 @@ object MiMa extends AutoPlugin {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
       val akka25Versions = Seq.empty[String] // FIXME enable once 2.5.0 is out (0 to latestMinorVersionOf("2.5.")).map(patch => s"2.5.$patch")
       val akka24StreamVersions = (2 to 12) map ("2.4." + _)
-      val akka24WithScala212 = (13 to latestMinorVersionOf("2.4.")) map ("2.4." + _)
+      val akka24WithScala212 =
+        (13 to latestMinorVersionOf("2.4."))
+          .map ("2.4." + _)
+          .filterNot(_ == "2.4.15") // 2.4.15 was released from the wrong branch and never announced
+
       val akka242NewArtifacts = Seq(
         "akka-stream",
         "akka-http-core",
@@ -93,9 +97,19 @@ object MiMa extends AutoPlugin {
     import com.typesafe.tools.mima.core._
 
     val bcIssuesBetween24and25 = Seq(
+      // ##22269 GSet as delta-CRDT
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GSet.this"), // constructor supplied by companion object
 
       // #21875 delta-CRDT
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GCounter.this"), 
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GCounter.this"),
+      
+      // #22188 ORSet delta-CRDT
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ORSet.this"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.SerializationSupport.versionVectorToProto"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.SerializationSupport.versionVectorFromProto"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.SerializationSupport.versionVectorFromBinary"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.protobuf.ReplicatedDataSerializer.versionVectorToProto"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.protobuf.ReplicatedDataSerializer.versionVectorFromProto"),
       
       // #22141 sharding minCap
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.updatingStateTimeout"),
@@ -386,16 +400,110 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#DataDeleted.this"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#Delete.copy"),
 
+      // #16197 Remove backwards compatible workaround in SnapshotSerializer
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.serialization.SnapshotSerializer$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.serialization.SnapshotHeader"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.serialization.SnapshotHeader$"),
+
       // #21618 distributed data
       ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ddata.Replicator$ReadMajority$"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#ReadMajority.copy"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#ReadMajority.apply"),
       ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ddata.Replicator$WriteMajority$"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.copy"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.apply")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#WriteMajority.apply"),
+
+      // #22105 Akka Typed process DSL
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.addFunctionRef"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.Children.addFunctionRef$default$2"),
+
+      // implementation classes
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.transform"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.andThen"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$SymbolicGraphStage$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$SymbolicStage"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Stages$SymbolicGraphStage"),
+
+      // ddata
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ClusterEvent#ReachabilityEvent.member"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.DurableStore#Store.apply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.DurableStore#Store.copy$default$2"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.DurableStore#Store.data"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.DurableStore#Store.copy"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.DurableStore#Store.this"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.LmdbDurableStore.dbPut"),
+
+      // #22218 Java Ambiguity in AbstractPersistentActor with Scala 2.12
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.deferAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persistAllAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persistAll"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Eventsourced.deferAsync"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Eventsourced.persistAllAsync"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Eventsourced.persistAll"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalPersistAsync"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalPersist"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalPersistAll"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalDeferAsync"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalPersistAllAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActorWithAtLeastOnceDelivery.deliver"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActorWithAtLeastOnceDelivery.deliver"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.AtLeastOnceDeliveryLike.deliver"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.AtLeastOnceDeliveryLike.deliver"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AtLeastOnceDeliveryLike.internalDeliver"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AtLeastOnceDeliveryLike.internalDeliver"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.persistence.AbstractPersistentActorWithAtLeastOnceDelivery"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActorWithAtLeastOnceDelivery.deliver"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActorWithAtLeastOnceDelivery.deliver"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.persistence.AbstractPersistentActor"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.deferAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAllAsync"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.AbstractPersistentActor.persistAll"),
+
+      // #22208 remove extension key
+      ProblemFilters.exclude[MissingClassProblem]("akka.event.Logging$Extension$"),
+
+      // #22224 DaemonMsgCreateSerializer using manifests
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesBytes"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesList"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesCount"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClasses"),
+      ProblemFilters.exclude[MissingFieldProblem]("akka.remote.WireFormats#PropsData.CLASSES_FIELD_NUMBER"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifest"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifestCount"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIdsList"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIds"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifestList"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIdsCount"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClassesBytes"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClassesList"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClassesCount"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClasses"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifestsBytes"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifests"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifestsList"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifestsCount"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClassesBytes"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClassesList"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.addClassesBytes"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClassesCount"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.clearClasses"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.addClasses"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClasses"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.addAllClasses"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.setClasses"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.serialize"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.deserialize"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.deserialize"),
+      ProblemFilters.exclude[FinalClassProblem]("akka.remote.serialization.DaemonMsgCreateSerializer"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.serialization")
+
+      // NOTE: filters that will be backported to 2.4 should go to the latest 2.4 version below
     )
 
-    Map(
+
+    val Release24Filters = Seq(
       "2.4.0" -> Seq(
         FilterAnyProblem("akka.remote.transport.ProtocolStateActor"),
 
@@ -894,7 +1002,7 @@ object MiMa extends AutoPlugin {
         // isEmpty()Boolean in class akka.remote.artery.compress.TopHeavyHitters#HashCodeVal does not have a correspondent in current version
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.TopHeavyHitters#HashCodeVal.isEmpty")
       ),
-      "2.4.14" -> (Seq(
+      "2.4.14" -> Seq(
         // # 21944
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ClusterEvent#ReachabilityEvent.member"),
 
@@ -926,9 +1034,26 @@ object MiMa extends AutoPlugin {
 
         // #21894 Programmatic configuration of the ActorSystem
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.this")
-
-      ) ++ bcIssuesBetween24and25)
-      // Entries should be added to a section keyed with the latest released version before the change
+      ),
+      "2.4.16" -> Seq(
+        // internal classes
+        FilterAnyProblemStartingWith("akka.remote.artery")
+      ),
+      "2.4.17" -> Seq(
+        // #22277 changes to internal classes
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpServerHandler.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpClientHandler.this"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.netty.TcpHandlers.log")
+      )
+      // make sure that
+      //  * this list ends with the latest released version number
+      //  * is kept in sync between release-2.4 and master branch
     )
+
+    val Latest24Filters = Release24Filters.last
+    val AllFilters =
+      Release24Filters.dropRight(1) :+ (Latest24Filters._1 -> (Latest24Filters._2 ++ bcIssuesBetween24and25))
+
+    Map(AllFilters: _*)
   }
 }

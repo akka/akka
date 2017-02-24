@@ -4685,25 +4685,104 @@ public final class WireFormats {
      */
     akka.protobuf.ByteString getArgs(int index);
 
-    // repeated string classes = 5;
+    // repeated string manifests = 5;
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
+     *
+     * <pre>
+     * serialized props parameters
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
+     * </pre>
      */
     java.util.List<java.lang.String>
-    getClassesList();
+    getManifestsList();
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
+     *
+     * <pre>
+     * serialized props parameters
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
+     * </pre>
      */
-    int getClassesCount();
+    int getManifestsCount();
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
+     *
+     * <pre>
+     * serialized props parameters
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
+     * </pre>
      */
-    java.lang.String getClasses(int index);
+    java.lang.String getManifests(int index);
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
+     *
+     * <pre>
+     * serialized props parameters
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
+     * </pre>
      */
     akka.protobuf.ByteString
-        getClassesBytes(int index);
+        getManifestsBytes(int index);
+
+    // repeated int32 serializerIds = 6;
+    /**
+     * <code>repeated int32 serializerIds = 6;</code>
+     *
+     * <pre>
+     * newer wire protocol: serializer id for each arg
+     * </pre>
+     */
+    java.util.List<java.lang.Integer> getSerializerIdsList();
+    /**
+     * <code>repeated int32 serializerIds = 6;</code>
+     *
+     * <pre>
+     * newer wire protocol: serializer id for each arg
+     * </pre>
+     */
+    int getSerializerIdsCount();
+    /**
+     * <code>repeated int32 serializerIds = 6;</code>
+     *
+     * <pre>
+     * newer wire protocol: serializer id for each arg
+     * </pre>
+     */
+    int getSerializerIds(int index);
+
+    // repeated bool hasManifest = 7;
+    /**
+     * <code>repeated bool hasManifest = 7;</code>
+     *
+     * <pre>
+     * additionally a flag per position to indicate if it was
+     * serialized with manifest or not
+     * </pre>
+     */
+    java.util.List<java.lang.Boolean> getHasManifestList();
+    /**
+     * <code>repeated bool hasManifest = 7;</code>
+     *
+     * <pre>
+     * additionally a flag per position to indicate if it was
+     * serialized with manifest or not
+     * </pre>
+     */
+    int getHasManifestCount();
+    /**
+     * <code>repeated bool hasManifest = 7;</code>
+     *
+     * <pre>
+     * additionally a flag per position to indicate if it was
+     * serialized with manifest or not
+     * </pre>
+     */
+    boolean getHasManifest(int index);
   }
   /**
    * Protobuf type {@code PropsData}
@@ -4789,10 +4868,52 @@ public final class WireFormats {
             }
             case 42: {
               if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-                classes_ = new akka.protobuf.LazyStringArrayList();
+                manifests_ = new akka.protobuf.LazyStringArrayList();
                 mutable_bitField0_ |= 0x00000008;
               }
-              classes_.add(input.readBytes());
+              manifests_.add(input.readBytes());
+              break;
+            }
+            case 48: {
+              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+                serializerIds_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000010;
+              }
+              serializerIds_.add(input.readInt32());
+              break;
+            }
+            case 50: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010) && input.getBytesUntilLimit() > 0) {
+                serializerIds_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000010;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                serializerIds_.add(input.readInt32());
+              }
+              input.popLimit(limit);
+              break;
+            }
+            case 56: {
+              if (!((mutable_bitField0_ & 0x00000020) == 0x00000020)) {
+                hasManifest_ = new java.util.ArrayList<java.lang.Boolean>();
+                mutable_bitField0_ |= 0x00000020;
+              }
+              hasManifest_.add(input.readBool());
+              break;
+            }
+            case 58: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000020) == 0x00000020) && input.getBytesUntilLimit() > 0) {
+                hasManifest_ = new java.util.ArrayList<java.lang.Boolean>();
+                mutable_bitField0_ |= 0x00000020;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                hasManifest_.add(input.readBool());
+              }
+              input.popLimit(limit);
               break;
             }
           }
@@ -4807,7 +4928,13 @@ public final class WireFormats {
           args_ = java.util.Collections.unmodifiableList(args_);
         }
         if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-          classes_ = new akka.protobuf.UnmodifiableLazyStringList(classes_);
+          manifests_ = new akka.protobuf.UnmodifiableLazyStringList(manifests_);
+        }
+        if (((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+          serializerIds_ = java.util.Collections.unmodifiableList(serializerIds_);
+        }
+        if (((mutable_bitField0_ & 0x00000020) == 0x00000020)) {
+          hasManifest_ = java.util.Collections.unmodifiableList(hasManifest_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -4929,41 +5056,140 @@ public final class WireFormats {
       return args_.get(index);
     }
 
-    // repeated string classes = 5;
-    public static final int CLASSES_FIELD_NUMBER = 5;
-    private akka.protobuf.LazyStringList classes_;
+    // repeated string manifests = 5;
+    public static final int MANIFESTS_FIELD_NUMBER = 5;
+    private akka.protobuf.LazyStringList manifests_;
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
+     *
+     * <pre>
+     * serialized props parameters
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
+     * </pre>
      */
     public java.util.List<java.lang.String>
-        getClassesList() {
-      return classes_;
+        getManifestsList() {
+      return manifests_;
     }
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
+     *
+     * <pre>
+     * serialized props parameters
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
+     * </pre>
      */
-    public int getClassesCount() {
-      return classes_.size();
+    public int getManifestsCount() {
+      return manifests_.size();
     }
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
+     *
+     * <pre>
+     * serialized props parameters
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
+     * </pre>
      */
-    public java.lang.String getClasses(int index) {
-      return classes_.get(index);
+    public java.lang.String getManifests(int index) {
+      return manifests_.get(index);
     }
     /**
-     * <code>repeated string classes = 5;</code>
+     * <code>repeated string manifests = 5;</code>
+     *
+     * <pre>
+     * serialized props parameters
+     * older wire protocol: contains class name for each arg
+     * newer wire protocol: contains string manifest for each arg
+     * </pre>
      */
     public akka.protobuf.ByteString
-        getClassesBytes(int index) {
-      return classes_.getByteString(index);
+        getManifestsBytes(int index) {
+      return manifests_.getByteString(index);
+    }
+
+    // repeated int32 serializerIds = 6;
+    public static final int SERIALIZERIDS_FIELD_NUMBER = 6;
+    private java.util.List<java.lang.Integer> serializerIds_;
+    /**
+     * <code>repeated int32 serializerIds = 6;</code>
+     *
+     * <pre>
+     * newer wire protocol: serializer id for each arg
+     * </pre>
+     */
+    public java.util.List<java.lang.Integer>
+        getSerializerIdsList() {
+      return serializerIds_;
+    }
+    /**
+     * <code>repeated int32 serializerIds = 6;</code>
+     *
+     * <pre>
+     * newer wire protocol: serializer id for each arg
+     * </pre>
+     */
+    public int getSerializerIdsCount() {
+      return serializerIds_.size();
+    }
+    /**
+     * <code>repeated int32 serializerIds = 6;</code>
+     *
+     * <pre>
+     * newer wire protocol: serializer id for each arg
+     * </pre>
+     */
+    public int getSerializerIds(int index) {
+      return serializerIds_.get(index);
+    }
+
+    // repeated bool hasManifest = 7;
+    public static final int HASMANIFEST_FIELD_NUMBER = 7;
+    private java.util.List<java.lang.Boolean> hasManifest_;
+    /**
+     * <code>repeated bool hasManifest = 7;</code>
+     *
+     * <pre>
+     * additionally a flag per position to indicate if it was
+     * serialized with manifest or not
+     * </pre>
+     */
+    public java.util.List<java.lang.Boolean>
+        getHasManifestList() {
+      return hasManifest_;
+    }
+    /**
+     * <code>repeated bool hasManifest = 7;</code>
+     *
+     * <pre>
+     * additionally a flag per position to indicate if it was
+     * serialized with manifest or not
+     * </pre>
+     */
+    public int getHasManifestCount() {
+      return hasManifest_.size();
+    }
+    /**
+     * <code>repeated bool hasManifest = 7;</code>
+     *
+     * <pre>
+     * additionally a flag per position to indicate if it was
+     * serialized with manifest or not
+     * </pre>
+     */
+    public boolean getHasManifest(int index) {
+      return hasManifest_.get(index);
     }
 
     private void initFields() {
       deploy_ = akka.remote.WireFormats.DeployData.getDefaultInstance();
       clazz_ = "";
       args_ = java.util.Collections.emptyList();
-      classes_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      manifests_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      serializerIds_ = java.util.Collections.emptyList();
+      hasManifest_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -4998,8 +5224,14 @@ public final class WireFormats {
       for (int i = 0; i < args_.size(); i++) {
         output.writeBytes(4, args_.get(i));
       }
-      for (int i = 0; i < classes_.size(); i++) {
-        output.writeBytes(5, classes_.getByteString(i));
+      for (int i = 0; i < manifests_.size(); i++) {
+        output.writeBytes(5, manifests_.getByteString(i));
+      }
+      for (int i = 0; i < serializerIds_.size(); i++) {
+        output.writeInt32(6, serializerIds_.get(i));
+      }
+      for (int i = 0; i < hasManifest_.size(); i++) {
+        output.writeBool(7, hasManifest_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -5029,12 +5261,27 @@ public final class WireFormats {
       }
       {
         int dataSize = 0;
-        for (int i = 0; i < classes_.size(); i++) {
+        for (int i = 0; i < manifests_.size(); i++) {
           dataSize += akka.protobuf.CodedOutputStream
-            .computeBytesSizeNoTag(classes_.getByteString(i));
+            .computeBytesSizeNoTag(manifests_.getByteString(i));
         }
         size += dataSize;
-        size += 1 * getClassesList().size();
+        size += 1 * getManifestsList().size();
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < serializerIds_.size(); i++) {
+          dataSize += akka.protobuf.CodedOutputStream
+            .computeInt32SizeNoTag(serializerIds_.get(i));
+        }
+        size += dataSize;
+        size += 1 * getSerializerIdsList().size();
+      }
+      {
+        int dataSize = 0;
+        dataSize = 1 * getHasManifestList().size();
+        size += dataSize;
+        size += 1 * getHasManifestList().size();
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -5168,8 +5415,12 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         args_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x00000004);
-        classes_ = akka.protobuf.LazyStringArrayList.EMPTY;
+        manifests_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
+        serializerIds_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000010);
+        hasManifest_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -5216,11 +5467,21 @@ public final class WireFormats {
         }
         result.args_ = args_;
         if (((bitField0_ & 0x00000008) == 0x00000008)) {
-          classes_ = new akka.protobuf.UnmodifiableLazyStringList(
-              classes_);
+          manifests_ = new akka.protobuf.UnmodifiableLazyStringList(
+              manifests_);
           bitField0_ = (bitField0_ & ~0x00000008);
         }
-        result.classes_ = classes_;
+        result.manifests_ = manifests_;
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          serializerIds_ = java.util.Collections.unmodifiableList(serializerIds_);
+          bitField0_ = (bitField0_ & ~0x00000010);
+        }
+        result.serializerIds_ = serializerIds_;
+        if (((bitField0_ & 0x00000020) == 0x00000020)) {
+          hasManifest_ = java.util.Collections.unmodifiableList(hasManifest_);
+          bitField0_ = (bitField0_ & ~0x00000020);
+        }
+        result.hasManifest_ = hasManifest_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -5255,13 +5516,33 @@ public final class WireFormats {
           }
           onChanged();
         }
-        if (!other.classes_.isEmpty()) {
-          if (classes_.isEmpty()) {
-            classes_ = other.classes_;
+        if (!other.manifests_.isEmpty()) {
+          if (manifests_.isEmpty()) {
+            manifests_ = other.manifests_;
             bitField0_ = (bitField0_ & ~0x00000008);
           } else {
-            ensureClassesIsMutable();
-            classes_.addAll(other.classes_);
+            ensureManifestsIsMutable();
+            manifests_.addAll(other.manifests_);
+          }
+          onChanged();
+        }
+        if (!other.serializerIds_.isEmpty()) {
+          if (serializerIds_.isEmpty()) {
+            serializerIds_ = other.serializerIds_;
+            bitField0_ = (bitField0_ & ~0x00000010);
+          } else {
+            ensureSerializerIdsIsMutable();
+            serializerIds_.addAll(other.serializerIds_);
+          }
+          onChanged();
+        }
+        if (!other.hasManifest_.isEmpty()) {
+          if (hasManifest_.isEmpty()) {
+            hasManifest_ = other.hasManifest_;
+            bitField0_ = (bitField0_ & ~0x00000020);
+          } else {
+            ensureHasManifestIsMutable();
+            hasManifest_.addAll(other.hasManifest_);
           }
           onChanged();
         }
@@ -5567,95 +5848,344 @@ public final class WireFormats {
         return this;
       }
 
-      // repeated string classes = 5;
-      private akka.protobuf.LazyStringList classes_ = akka.protobuf.LazyStringArrayList.EMPTY;
-      private void ensureClassesIsMutable() {
+      // repeated string manifests = 5;
+      private akka.protobuf.LazyStringList manifests_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      private void ensureManifestsIsMutable() {
         if (!((bitField0_ & 0x00000008) == 0x00000008)) {
-          classes_ = new akka.protobuf.LazyStringArrayList(classes_);
+          manifests_ = new akka.protobuf.LazyStringArrayList(manifests_);
           bitField0_ |= 0x00000008;
          }
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
+       *
+       * <pre>
+       * serialized props parameters
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
+       * </pre>
        */
       public java.util.List<java.lang.String>
-          getClassesList() {
-        return java.util.Collections.unmodifiableList(classes_);
+          getManifestsList() {
+        return java.util.Collections.unmodifiableList(manifests_);
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
+       *
+       * <pre>
+       * serialized props parameters
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
+       * </pre>
        */
-      public int getClassesCount() {
-        return classes_.size();
+      public int getManifestsCount() {
+        return manifests_.size();
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
+       *
+       * <pre>
+       * serialized props parameters
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
+       * </pre>
        */
-      public java.lang.String getClasses(int index) {
-        return classes_.get(index);
+      public java.lang.String getManifests(int index) {
+        return manifests_.get(index);
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
+       *
+       * <pre>
+       * serialized props parameters
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
+       * </pre>
        */
       public akka.protobuf.ByteString
-          getClassesBytes(int index) {
-        return classes_.getByteString(index);
+          getManifestsBytes(int index) {
+        return manifests_.getByteString(index);
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
+       *
+       * <pre>
+       * serialized props parameters
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
+       * </pre>
        */
-      public Builder setClasses(
+      public Builder setManifests(
           int index, java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  ensureClassesIsMutable();
-        classes_.set(index, value);
+  ensureManifestsIsMutable();
+        manifests_.set(index, value);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
+       *
+       * <pre>
+       * serialized props parameters
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
+       * </pre>
        */
-      public Builder addClasses(
+      public Builder addManifests(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  ensureClassesIsMutable();
-        classes_.add(value);
+  ensureManifestsIsMutable();
+        manifests_.add(value);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
+       *
+       * <pre>
+       * serialized props parameters
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
+       * </pre>
        */
-      public Builder addAllClasses(
+      public Builder addAllManifests(
           java.lang.Iterable<java.lang.String> values) {
-        ensureClassesIsMutable();
-        super.addAll(values, classes_);
+        ensureManifestsIsMutable();
+        super.addAll(values, manifests_);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
+       *
+       * <pre>
+       * serialized props parameters
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
+       * </pre>
        */
-      public Builder clearClasses() {
-        classes_ = akka.protobuf.LazyStringArrayList.EMPTY;
+      public Builder clearManifests() {
+        manifests_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
         onChanged();
         return this;
       }
       /**
-       * <code>repeated string classes = 5;</code>
+       * <code>repeated string manifests = 5;</code>
+       *
+       * <pre>
+       * serialized props parameters
+       * older wire protocol: contains class name for each arg
+       * newer wire protocol: contains string manifest for each arg
+       * </pre>
        */
-      public Builder addClassesBytes(
+      public Builder addManifestsBytes(
           akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
-  ensureClassesIsMutable();
-        classes_.add(value);
+  ensureManifestsIsMutable();
+        manifests_.add(value);
+        onChanged();
+        return this;
+      }
+
+      // repeated int32 serializerIds = 6;
+      private java.util.List<java.lang.Integer> serializerIds_ = java.util.Collections.emptyList();
+      private void ensureSerializerIdsIsMutable() {
+        if (!((bitField0_ & 0x00000010) == 0x00000010)) {
+          serializerIds_ = new java.util.ArrayList<java.lang.Integer>(serializerIds_);
+          bitField0_ |= 0x00000010;
+         }
+      }
+      /**
+       * <code>repeated int32 serializerIds = 6;</code>
+       *
+       * <pre>
+       * newer wire protocol: serializer id for each arg
+       * </pre>
+       */
+      public java.util.List<java.lang.Integer>
+          getSerializerIdsList() {
+        return java.util.Collections.unmodifiableList(serializerIds_);
+      }
+      /**
+       * <code>repeated int32 serializerIds = 6;</code>
+       *
+       * <pre>
+       * newer wire protocol: serializer id for each arg
+       * </pre>
+       */
+      public int getSerializerIdsCount() {
+        return serializerIds_.size();
+      }
+      /**
+       * <code>repeated int32 serializerIds = 6;</code>
+       *
+       * <pre>
+       * newer wire protocol: serializer id for each arg
+       * </pre>
+       */
+      public int getSerializerIds(int index) {
+        return serializerIds_.get(index);
+      }
+      /**
+       * <code>repeated int32 serializerIds = 6;</code>
+       *
+       * <pre>
+       * newer wire protocol: serializer id for each arg
+       * </pre>
+       */
+      public Builder setSerializerIds(
+          int index, int value) {
+        ensureSerializerIdsIsMutable();
+        serializerIds_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated int32 serializerIds = 6;</code>
+       *
+       * <pre>
+       * newer wire protocol: serializer id for each arg
+       * </pre>
+       */
+      public Builder addSerializerIds(int value) {
+        ensureSerializerIdsIsMutable();
+        serializerIds_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated int32 serializerIds = 6;</code>
+       *
+       * <pre>
+       * newer wire protocol: serializer id for each arg
+       * </pre>
+       */
+      public Builder addAllSerializerIds(
+          java.lang.Iterable<? extends java.lang.Integer> values) {
+        ensureSerializerIdsIsMutable();
+        super.addAll(values, serializerIds_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated int32 serializerIds = 6;</code>
+       *
+       * <pre>
+       * newer wire protocol: serializer id for each arg
+       * </pre>
+       */
+      public Builder clearSerializerIds() {
+        serializerIds_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000010);
+        onChanged();
+        return this;
+      }
+
+      // repeated bool hasManifest = 7;
+      private java.util.List<java.lang.Boolean> hasManifest_ = java.util.Collections.emptyList();
+      private void ensureHasManifestIsMutable() {
+        if (!((bitField0_ & 0x00000020) == 0x00000020)) {
+          hasManifest_ = new java.util.ArrayList<java.lang.Boolean>(hasManifest_);
+          bitField0_ |= 0x00000020;
+         }
+      }
+      /**
+       * <code>repeated bool hasManifest = 7;</code>
+       *
+       * <pre>
+       * additionally a flag per position to indicate if it was
+       * serialized with manifest or not
+       * </pre>
+       */
+      public java.util.List<java.lang.Boolean>
+          getHasManifestList() {
+        return java.util.Collections.unmodifiableList(hasManifest_);
+      }
+      /**
+       * <code>repeated bool hasManifest = 7;</code>
+       *
+       * <pre>
+       * additionally a flag per position to indicate if it was
+       * serialized with manifest or not
+       * </pre>
+       */
+      public int getHasManifestCount() {
+        return hasManifest_.size();
+      }
+      /**
+       * <code>repeated bool hasManifest = 7;</code>
+       *
+       * <pre>
+       * additionally a flag per position to indicate if it was
+       * serialized with manifest or not
+       * </pre>
+       */
+      public boolean getHasManifest(int index) {
+        return hasManifest_.get(index);
+      }
+      /**
+       * <code>repeated bool hasManifest = 7;</code>
+       *
+       * <pre>
+       * additionally a flag per position to indicate if it was
+       * serialized with manifest or not
+       * </pre>
+       */
+      public Builder setHasManifest(
+          int index, boolean value) {
+        ensureHasManifestIsMutable();
+        hasManifest_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bool hasManifest = 7;</code>
+       *
+       * <pre>
+       * additionally a flag per position to indicate if it was
+       * serialized with manifest or not
+       * </pre>
+       */
+      public Builder addHasManifest(boolean value) {
+        ensureHasManifestIsMutable();
+        hasManifest_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bool hasManifest = 7;</code>
+       *
+       * <pre>
+       * additionally a flag per position to indicate if it was
+       * serialized with manifest or not
+       * </pre>
+       */
+      public Builder addAllHasManifest(
+          java.lang.Iterable<? extends java.lang.Boolean> values) {
+        ensureHasManifestIsMutable();
+        super.addAll(values, hasManifest_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated bool hasManifest = 7;</code>
+       *
+       * <pre>
+       * additionally a flag per position to indicate if it was
+       * serialized with manifest or not
+       * </pre>
+       */
+      public Builder clearHasManifest() {
+        hasManifest_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000020);
         onChanged();
         return this;
       }
@@ -9558,24 +10088,25 @@ public final class WireFormats {
       "\005\022\027\n\017messageManifest\030\003 \001(\014\"~\n\023DaemonMsgC" +
       "reateData\022\031\n\005props\030\001 \002(\0132\n.PropsData\022\033\n\006" +
       "deploy\030\002 \002(\0132\013.DeployData\022\014\n\004path\030\003 \002(\t\022" +
-      "!\n\nsupervisor\030\004 \002(\0132\r.ActorRefData\"V\n\tPr" +
-      "opsData\022\033\n\006deploy\030\002 \002(\0132\013.DeployData\022\r\n\005" +
-      "clazz\030\003 \002(\t\022\014\n\004args\030\004 \003(\014\022\017\n\007classes\030\005 \003" +
-      "(\t\"c\n\nDeployData\022\014\n\004path\030\001 \002(\t\022\016\n\006config" +
-      "\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 " +
-      "\001(\014\022\022\n\ndispatcher\030\005 \001(\t\"P\n\023AkkaProtocolM" +
-      "essage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002",
-      " \001(\0132\023.AkkaControlMessage\"b\n\022AkkaControl" +
-      "Message\022!\n\013commandType\030\001 \002(\0162\014.CommandTy" +
-      "pe\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshak" +
-      "eInfo\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002" +
-      "(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030" +
-      "\003 \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 \002(\t\022\020\n\010" +
-      "hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010protocol" +
-      "\030\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIATE\020\001\022\020\n\014" +
-      "DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DISASSO" +
-      "CIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIATE_QU",
-      "ARANTINED\020\005B\017\n\013akka.remoteH\001"
+      "!\n\nsupervisor\030\004 \002(\0132\r.ActorRefData\"\204\001\n\tP" +
+      "ropsData\022\033\n\006deploy\030\002 \002(\0132\013.DeployData\022\r\n" +
+      "\005clazz\030\003 \002(\t\022\014\n\004args\030\004 \003(\014\022\021\n\tmanifests\030" +
+      "\005 \003(\t\022\025\n\rserializerIds\030\006 \003(\005\022\023\n\013hasManif" +
+      "est\030\007 \003(\010\"c\n\nDeployData\022\014\n\004path\030\001 \002(\t\022\016\n" +
+      "\006config\030\002 \001(\014\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005s" +
+      "cope\030\004 \001(\014\022\022\n\ndispatcher\030\005 \001(\t\"P\n\023AkkaPr",
+      "otocolMessage\022\017\n\007payload\030\001 \001(\014\022(\n\013instru" +
+      "ction\030\002 \001(\0132\023.AkkaControlMessage\"b\n\022Akka" +
+      "ControlMessage\022!\n\013commandType\030\001 \002(\0162\014.Co" +
+      "mmandType\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaH" +
+      "andshakeInfo\"N\n\021AkkaHandshakeInfo\022\034\n\006ori" +
+      "gin\030\001 \002(\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006" +
+      "cookie\030\003 \001(\t\"O\n\013AddressData\022\016\n\006system\030\001 " +
+      "\002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010p" +
+      "rotocol\030\004 \001(\t*{\n\013CommandType\022\r\n\tASSOCIAT" +
+      "E\020\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032",
+      "DISASSOCIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOC" +
+      "IATE_QUARANTINED\020\005B\017\n\013akka.remoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -9623,7 +10154,7 @@ public final class WireFormats {
           internal_static_PropsData_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PropsData_descriptor,
-              new java.lang.String[] { "Deploy", "Clazz", "Args", "Classes", });
+              new java.lang.String[] { "Deploy", "Clazz", "Args", "Manifests", "SerializerIds", "HasManifest", });
           internal_static_DeployData_descriptor =
             getDescriptor().getMessageTypes().get(7);
           internal_static_DeployData_fieldAccessorTable = new

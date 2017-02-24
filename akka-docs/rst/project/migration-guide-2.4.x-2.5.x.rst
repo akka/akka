@@ -10,12 +10,12 @@ Actor (Java)
 AbstractActor
 -------------
 
-``AbstractActor`` has been promoted from its experimental state and while doing this we
+``AbstractActor`` has been promoted from its experimental/may change state and while doing this we
 did some small, but important, improvements to the API that will require some mechanical
 changes of your source code.
 
 Previously the receive behavior was set with the ``receive`` method, but now an actor has
-to define its initial receive behavior by implementing the ``createReceive`` method in 
+to define its initial receive behavior by implementing the ``createReceive`` method in
 the ``AbstractActor``. This has the advantages:
 
 * It gives a clear entry point of what to implement. The compiler tells you that the
@@ -30,11 +30,11 @@ You can build such behavior with a builder named ``ReceiveBuilder``.
 ``AbstractActor.Receive`` can also be used in ``getContext().become``.
 
 The old ``receive`` method exposed Scala's ``PartialFunction`` and ``BoxedUnit`` in the signature,
-which are unnecessary concepts for newcomers to learn. The new ``createReceive`` requires no 
+which are unnecessary concepts for newcomers to learn. The new ``createReceive`` requires no
 additional imports.
 
 Note that The ``Receive`` can still be implemented in other ways than using the ``ReceiveBuilder``
-since it in the end is just a wrapper around a Scala ``PartialFunction``. For example, one could 
+since it in the end is just a wrapper around a Scala ``PartialFunction``. For example, one could
 implement an adapter to `Javaslang Pattern Matching DSL <http://www.javaslang.io/javaslang-docs/#_pattern_matching>`_.
 
 The mechanical source code change for migration to the new ``AbstractActor`` is to implement the
@@ -54,11 +54,11 @@ Old::
         .build());
     }
   }
-  
+
 New::
 
   import akka.actor.AbstractActor;
-  
+
   public class SomeActor extends AbstractActor {
     @Override
     public Receive createReceive() {
@@ -67,7 +67,7 @@ New::
         .build();
     }
   }
-  
+
 See :ref:`actors-receive-java` documentation for more advice about how to implement
 ``createReceive``.
 
@@ -79,7 +79,7 @@ Old::
   public void preRestart(Throwable reason, scala.Option<Object> message) {
     super.preRestart(reason, message);
   }
-  
+
 New::
 
   @Override
@@ -120,7 +120,7 @@ New::
         return receiveBuilder().
             match(String.class, evt -> {/* ... */}).build();
       }
-      
+
 UntypedActor
 ------------
 
@@ -132,9 +132,9 @@ Old::
   import akka.actor.UntypedActor;
 
   public class SomeActor extends UntypedActor {
-    
+
     public static class Msg1 {}
-    
+
     @Override
     public void onReceive(Object msg) throws Exception {
       if (msg instanceof Msg1) {
@@ -152,9 +152,9 @@ New::
   import akka.actor.UntypedAbstractActor;
 
   public class SomeActor extends UntypedAbstractActor {
-    
+
     public static class Msg1 {}
-    
+
     @Override
     public void onReceive(Object msg) throws Exception {
       if (msg instanceof Msg1) {
@@ -165,19 +165,19 @@ New::
       }
     }
   }
-  
+
 It's recommended to migrate ``UntypedActor`` to ``AbstractActor`` by implementing
-``createReceive`` instead of ``onMessage``.
+``createReceive`` instead of ``onReceive``.
 
 Old::
 
   import akka.actor.UntypedActor;
 
   public class SomeActor extends UntypedActor {
-    
+
     @Override
     public void onReceive(Object msg) throws Exception {
-      if (msg instanceof String) {    
+      if (msg instanceof String) {
         String s = (String) msg;
         System.out.println(s.toLowerCase());
       } else {
@@ -189,7 +189,7 @@ Old::
 New::
 
   import akka.actor.AbstractActor;
-  
+
   public class SomeActor extends AbstractActor {
     @Override
     public Receive createReceive() {
@@ -216,14 +216,38 @@ Actor DSL deprecation
 Actor DSL is a rarely used feature and thus will be deprecated and removed.
 Use plain ``system.actorOf`` instead of the DSL to create Actors if you have been using it.
 
+ExtensionKey Deprecation
+------------------------
+
+``ExtensionKey`` is a shortcut for writing :ref:`extending-akka-scala` but extensions created with it
+cannot be used from Java and it does in fact not save many lines of code over directly implementing ``ExtensionId``.
+
+
+Old::
+
+  object MyExtension extends ExtensionKey[MyExtension]
+
+New::
+
+  object MyExtension extends extends ExtensionId[MyExtension] with ExtensionIdProvider {
+
+    override def lookup = MyExtension
+
+    override def createExtension(system: ExtendedActorSystem): MyExtension =
+      new MyExtension(system)
+
+    // needed to get the type right when used from Java
+    override def get(system: ActorSystem): MyExtension = super.get(system)
+  }
+
 Streams
 =======
 
 Removal of StatefulStage, PushPullStage
 ---------------------------------------
 
-``StatefulStage`` and ``PushPullStage`` were first introduced in Akka Streams 1.0, and later deprecated 
-and replaced by ``GraphStage`` in 2.0-M2. The ``GraphStage`` API has all features (and even more) as the 
+``StatefulStage`` and ``PushPullStage`` were first introduced in Akka Streams 1.0, and later deprecated
+and replaced by ``GraphStage`` in 2.0-M2. The ``GraphStage`` API has all features (and even more) as the
 previous APIs and is even nicer to use.
 
 Please refer to the GraphStage documentation :ref:` for Scala <graphstage-scala>` or
@@ -239,7 +263,7 @@ Along with the removal of ``Stage`` (as described above), the ``transform`` meth
 from ``Stage`` have been removed. They are replaced by using ``GraphStage`` instances with ``via``, e.g.::
 
    exampleFlow.transform(() => new MyStage())
-   
+
 would now be::
 
    myFlow.via(new MyGraphStage)
@@ -254,9 +278,9 @@ API that we provided for end-users. Akka Streams APIs have evolved and improved 
 there is no need to use these low-level abstractions anymore. It is easy to get things wrong when implementing them,
 and one would have to validate each implementation of such Actor using the Reactive Streams Technology Compatibility Kit.
 
-The replacement API is the powerful ``GraphStage``. It has all features that raw Actors provided for implementing Stream 
-stages and adds additional protocol and type-safety. You can learn all about it in the documentation: 
-:ref:`stream-customize-scala`and :ref:`Custom stream processing in JavaDSL <stream-customize-java>`. 
+The replacement API is the powerful ``GraphStage``. It has all features that raw Actors provided for implementing Stream
+stages and adds additional protocol and type-safety. You can learn all about it in the documentation:
+:ref:`stream-customize-scala`and :ref:`Custom stream processing in JavaDSL <stream-customize-java>`.
 
 You should also read the blog post series on the official team blog, starting with `Mastering GraphStages, part I`_,
 which explains using and implementing GraphStages in more practical terms than the reference documentation.
@@ -290,24 +314,36 @@ in :ref:`akka-remote's reference.conf <config-akka-remote>`.
 additional-serialization-bindings
 ---------------------------------
 
-From Akka 2.5.0 the ``additional-serialization-bindings`` are enabled by default. That defines 
+From Akka 2.5.0 the ``additional-serialization-bindings`` are enabled by default. That defines
 serializers that are replacing some Java serialization that were used in 2.4. This setting was disabled
-by default in Akka 2.4.16 but can also be enabled in an Akka 2.4 system. 
+by default in Akka 2.4.16 but can also be enabled in an Akka 2.4 system.
 
 To still be able to support rolling upgrade from a system with this setting disabled, e.g. default for 2.4.16,
-it is possible to disable the additional serializers and continue using Java serialization for those messages. 
- 
+it is possible to disable the additional serializers and continue using Java serialization for those messages.
+
 .. code-block:: ruby
 
   akka.actor {
     # Set this to off to disable serialization-bindings define in
     # additional-serialization-bindings. That should only be needed
-    # for backwards compatibility reasons. 
+    # for backwards compatibility reasons.
     enable-additional-serialization-bindings = off
   }
 
-Please note that this setting must be the same on all nodes participating in a cluster, otherwise 
+Please note that this setting must be the same on all nodes participating in a cluster, otherwise
 the mis-aligned serialization configurations will cause deserialization errors on the receiving nodes.
+
+With serialize-messages the deserialized message is actually sent
+-----------------------------------------------------------------
+
+The flag ``akka.actor.serialize-message = on`` triggers serialization and deserialization of each message sent in the
+``ActorSystem``. With this setting enabled the message actually passed on to the actor previously was the original
+message instance, this has now changed to be the deserialized message instance.
+
+This may cause tests that rely on messages being the same instance (for example by having mutable messages with attributes
+that are asserted in the tests) to not work any more with this setting enabled. For such cases the recommendation is to
+either not rely on messages being the same instance or turn the setting off.
+
 
 Wire Protocol Compatibility
 ---------------------------
@@ -315,13 +351,15 @@ Wire Protocol Compatibility
 It is possible to use Akka Remoting between nodes running Akka 2.4.16 and 2.5-M1, but some settings have changed so you might need
 to adjust some configuration as described in :ref:`mig25_rolling`.
 
+Note however that if using Java serialization it will not be possible to mix nodes using Scala 2.11 and 2.12.
+
 Cluster
 =======
 
 .. _mig25_rolling:
 
 Rolling Update
-----------------
+--------------
 
 It is possible to do a rolling update from Akka 2.4.16 to 2.5-M1, i.e. running a cluster of 2.4.16 nodes and
 join nodes running 2.5-M1 followed by shutting down the old nodes.
@@ -343,30 +381,30 @@ and here is a summary of things to consider.
 Coordinated Shutdown
 --------------------
 
-There is a new extension named ``CoordinatedShutdown`` that will stop certain actors and 
+There is a new extension named ``CoordinatedShutdown`` that will stop certain actors and
 services in a specific order and perform registered tasks during the shutdown process.
 
-When using Akka Cluster, tasks for graceful leaving of cluster including graceful 
+When using Akka Cluster, tasks for graceful leaving of cluster including graceful
 shutdown of Cluster Singletons and Cluster Sharding are now performed automatically.
 
 Previously it was documented that things like terminating the ``ActorSystem`` should be
 done when the cluster member was removed, but this was very difficult to get right.
 That is now taken care of automatically. This might result in changed behavior, hopefully
-to the better. It might also be in conflict with your previous shutdown code so please 
-read the documentation for the Coordinated Shutdown and revisit your own implementations. 
+to the better. It might also be in conflict with your previous shutdown code so please
+read the documentation for the Coordinated Shutdown and revisit your own implementations.
 Most likely your implementation will not be needed any more or it can be simplified.
 
 More information can be found in the :ref:`documentation for Scala <coordinated-shutdown-scala>` or
 :ref:`documentation for Java <coordinated-shutdown-java>`
 
 For some tests it might be undesired to terminate the ``ActorSystem`` via ``CoordinatedShutdown``.
-You can disable that by adding the following to the configuration of the ``ActorSystem`` that is 
+You can disable that by adding the following to the configuration of the ``ActorSystem`` that is
 used in the test::
 
   # Don't terminate ActorSystem via CoordinatedShutdown in tests
   akka.coordinated-shutdown.terminate-actor-system = off
   akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
-  akka.cluster.run-coordinated-shutdown-when-down = off 
+  akka.cluster.run-coordinated-shutdown-when-down = off
 
 .. _mig25_weaklyup:
 
@@ -395,8 +433,8 @@ in 2.4.x)::
 
   akka.cluster.sharding.state-store-mode = persistence
 
-Note that the stored :ref:`cluster_sharding_remembering_java` data with ``persistence`` mode cannot 
-be migrated to the ``data`` mode. Such entities must be started again in some other way when using 
+Note that the stored :ref:`cluster_sharding_remembering_java` data with ``persistence`` mode cannot
+be migrated to the ``data`` mode. Such entities must be started again in some other way when using
 ``ddata`` mode.
 
 Cluster Management Command Line Tool
@@ -413,6 +451,10 @@ in the next major version. Use the HTTP API with `curl <https://curl.haxx.se/>`_
 
 Distributed Data
 ================
+
+Distributed Data has been promoted to a stable module. This means that we will keep the API stable from this point. As a result
+the module name is changed from `akka-distributed-data-experimental` to `akka-distributed-data` and you need to change that in your
+build tool (sbt/mvn/...).
 
 Map allow generic type for the keys
 -----------------------------------
@@ -436,6 +478,18 @@ They will receive ``Replicator.Deleted`` instead.
 Persistence
 ===========
 
+Binary incompatibility of PersistentActor and AtLeastOneDelivery
+----------------------------------------------------------------
+
+To be able to evolve the Java APIs ``AbstractPersistentActor`` and ``AbstractPersistentActorWithAtLeastOnceDelivery``
+to work with Scala 2.12 we could find no other solution but to break the binary compatibility of the Scala versions
+(which the Java ones were based on).
+
+This means that the Akka 2.5 artifact cannot be a class path drop in replacement of Akka 2.4 if you use
+``PersistentActor`` or ``AtLeastOnceDelivery``, to do this upgrade you _must_ recompile your project with the new
+version of Akka.
+
+
 Removal of PersistentView
 -------------------------
 
@@ -449,7 +503,7 @@ for Scala and :ref:`Java <stream-integrations-java>`.
 
 The consuming actor may be a plain ``Actor`` or an ``PersistentActor`` if it needs to store its own state (e.g. ``fromSequenceNr`` offset).
 
-Please note that Persistence Query is not experimental anymore in Akka ``2.5.0``, so you can safely upgrade to it.
+Please note that Persistence Query is not experimental/may-change anymore in Akka ``2.5.0``, so you can safely upgrade to it.
 
 Persistence Plugin Proxy
 ------------------------
@@ -462,7 +516,8 @@ respectively. The proxy supplants the :ref:`Shared LevelDB journal<shared-leveld
 Persistence Query
 =================
 
-Persistence Query has been promoted to a stable module.
+Persistence Query has been promoted to a stable module. As a result the module name is changed from `akka-persistence-query-experimental`
+to `akka-persistence-query` and you need to change that in your build tool (sbt/mvn/...).
 Only slight API changes were made since the module was introduced:
 
 Query naming consistency improved
@@ -506,3 +561,127 @@ We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so 
 
 If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
 
+Camel
+=====
+
+``akka-camel`` has been deprecated in favour of `Alpakka <https://github.com/akka/alpakka>`_ , 
+the Akka Streams based collection of integrations to various endpoints (including Camel)
+
+We acknowledge that Akka Camel is a very useful and important module. It will not be removed until
+Alpakka has reached the needed production quality to be a full replacement. The deprecation of
+Akka Camel should be seen as a signal that new development is to be invested in Alpakka instead
+of Akka Camel.
+
+Contrib
+=======
+
+``akka-contrib`` has been deprecated and is scheduled for removal in the next major version. 
+The reason is to reduce the amount of things to maintain in the core Akka projects. 
+Contributions to the core of Akka or its satellite projects are welcome. Contributions 
+that don't fit into existing modules can be hosted in new Akka Github repositories in the 
+``akka`` Github organization or outside of it depending on what kind of library it is.
+Please ask.
+
+Aggregator
+----------
+
+``Aggregator`` has been deprecated. Feel free to copy the source into your project or create a 
+separate library outside of Akka.
+
+CircuitBreakerProxy
+-------------------
+
+``CircuitBreakerProxy`` has been deprecated in favor of ``akka.pattern.CircuitBreaker`` with explicit ``ask`` requests.
+
+JavaLogger
+----------
+
+``akka.contrib.jul.JavaLogger`` has been deprecated and included in ``akka-actor`` instead as
+``akka.event.jul.JavaLogger``. See :ref:`documentation <jul-scala>`.
+
+The ``JavaLoggingAdapter`` has also been deprecated, but not included in ``akka-actor``. 
+Feel free to copy the source into your project or create a separate library outside of Akka.
+
+PeekMailbox
+-----------
+
+``PeekMailbox`` has been deprecated. Use an explicit supervisor or proxy actor instead.
+
+.. _migration-guide-TimerBasedThrottler:
+
+ReceivePipeline
+---------------
+
+``ReceivePipeline`` has been deprecated. Feel free to copy the source into your project or create
+a separate library outside of Akka.
+
+ReliableProxy
+-------------
+
+``ReliableProxy`` has been deprecated. Use :ref:`at-least-once-delivery-scala` instead. ``ReliableProxy``
+was only intended as an example and doesn't have full production quality. If there is demand
+for a lightweight (non-durable) at-least once delivery mechanism we are open for a design discussion.
+
+TimerBasedThrottler
+-------------------
+
+``TimerBasedThrottler`` has been deprecated. Use the ``throttle`` stage in Akka Streams instead.
+
+Example in Scala::
+
+  import scala.concurrent.duration._
+  import akka.NotUsed
+  import akka.actor.ActorRef
+  import akka.actor.ActorSystem
+  import akka.stream.ActorMaterializer
+  import akka.stream.OverflowStrategy
+  import akka.stream.ThrottleMode
+  import akka.stream.scaladsl.Sink
+  import akka.stream.scaladsl.Source
+  
+  val system: ActorSystem = ??? // TODO real ActorSystem here
+  val target: ActorRef = ??? // TODO real target ActorRef here
+  implicit val materializer = ActorMaterializer.create(system)
+  
+  val throttler: ActorRef =
+    Source.actorRef(bufferSize = 1000, OverflowStrategy.dropNew)
+      .throttle(100, 1.second, 10, ThrottleMode.Shaping)
+      .to(Sink.actorRef(target, NotUsed))
+      .run()
+
+Example in Java::
+
+  import java.util.concurrent.TimeUnit;
+  import scala.concurrent.duration.FiniteDuration;
+  import akka.NotUsed;
+  import akka.actor.ActorRef;
+  import akka.actor.ActorSystem;
+  import akka.stream.ActorMaterializer;
+  import akka.stream.Materializer;
+  import akka.stream.OverflowStrategy;
+  import akka.stream.ThrottleMode;
+  import akka.stream.javadsl.Sink;
+  import akka.stream.javadsl.Source;
+  
+  final ActorSystem system = null; // TODO real ActorSystem here
+  final ActorRef target = null; // TODO real target ActorRef here
+  final Materializer materializer = ActorMaterializer.create(system);
+
+  final ActorRef throttler =
+    Source.actorRef(1000, OverflowStrategy.dropNew())
+      .throttle(100,  FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.shaping())
+      .to(Sink.actorRef(target, NotUsed.getInstance()))
+      .run(materializer);
+
+Akka Typed
+==========
+
+With the new term :ref:`may change <may-change>` we will no longer have a different artifact for modules that are not
+stable, and ``akka-typed-experimental`` has therefore been renamed to ``akka-typed``. Note that it is still not
+promoted to a stable module.
+
+Experimental modules
+====================
+
+We have previously marked modules that we did not want to freeze the APIs of a **experimental**, such modules will
+instead be marked as :ref:`may change <may-change>` from now on.

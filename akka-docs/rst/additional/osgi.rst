@@ -136,5 +136,4 @@ Sample
 
 A complete sample project is provided in `akka-sample-osgi-dining-hakkers`_
 
-.. _akka-sample-osgi-dining-hakkers: @github@/akka-samples/akka-sample-osgi-dining-hakkers
- 
+.. _akka-sample-osgi-dining-hakkers: @samples@/tree/master/akka-sample-osgi-dining-hakkers

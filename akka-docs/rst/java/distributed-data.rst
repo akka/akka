@@ -193,11 +193,11 @@ the total size of the cluster.
 
 Here is an example of using ``writeMajority`` and ``readMajority``:
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#read-write-majority
+.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#read-write-majority
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#get-cart
+.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#get-cart
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#add-item
+.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#add-item
 
 In some rare cases, when performing an ``Update`` it is needed to first try to fetch latest data from
 other nodes. That can be done by first sending a ``Get`` with ``ReadMajority`` and then continue with
@@ -209,7 +209,7 @@ performed (hence the name observed-removed set).
 
 The following example illustrates how to do that:
 
-.. includecode:: ../../../akka-samples/akka-sample-distributed-data-java/src/main/java/sample/distributeddata/ShoppingCart.java#remove-item 
+.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#remove-item
 
 .. warning::
 
@@ -272,18 +272,21 @@ for updates. For example adding element ``'c'`` and ``'d'`` to set ``{'a', 'b'}`
 result in sending the delta ``{'c', 'd'}`` and merge that with the state on the
 receiving side, resulting in set ``{'a', 'b', 'c', 'd'}``.
 
-Current protocol for replicating the deltas does not support causal consistency.
-It is only eventually consistent. This means that if elements ``'c'`` and ``'d'`` are
+The protocol for replicating the deltas supports causal consistency if the data type
+is marked with ``RequiresCausalDeliveryOfDeltas``. Otherwise it is only eventually
+consistent. Without causal consistency it means that if elements ``'c'`` and ``'d'`` are
 added in two separate `Update` operations these deltas may occasionally be propagated
 to nodes in different order than the causal order of the updates. For this example it
 can result in that set ``{'a', 'b', 'd'}`` can be seen before element 'c' is seen. Eventually
-it will be ``{'a', 'b', 'c', 'd'}``. If causal consistency is needed the delta propagation
-should be disabled with configuration property
-``akka.cluster.distributed-data.delta-crdt.enabled=off``.
+it will be ``{'a', 'b', 'c', 'd'}``.
 
 Note that the full state is occasionally also replicated for delta-CRDTs, for example when 
 new nodes are added to the cluster or when deltas could not be propagated because
 of network partitions or similar problems.
+
+The the delta propagation can be disabled with configuration property::
+
+  akka.cluster.distributed-data.delta-crdt.enabled=off
 
 Data Types
 ==========
@@ -316,7 +319,8 @@ The value of the counter is the value of the P counter minus the value of the N 
 
 .. includecode:: code/docs/ddata/DistributedDataDocTest.java#pncounter
 
-``GCounter`` and ``PNCounter`` have support for :ref:`delta_crdt_java`.
+``GCounter`` and ``PNCounter`` have support for :ref:`delta_crdt_java` and don't need causal
+delivery of deltas.
 
 Several related counters can be managed in a map with the ``PNCounterMap`` data type.
 When the counters are placed in a ``PNCounterMap`` as opposed to placing them as separate top level
@@ -334,6 +338,8 @@ Merge is simply the union of the two sets.
 
 .. includecode:: code/docs/ddata/DistributedDataDocTest.java#gset
 
+``GSet`` has support for :ref:`delta_crdt_java` and it doesn't require causal delivery of deltas.
+
 If you need add and remove operations you should use the ``ORSet`` (observed-remove set).
 Elements can be added and removed any number of times. If an element is concurrently added and
 removed, the add will win. You cannot remove an element that you have not seen.
@@ -344,6 +350,8 @@ called "birth dot". The version vector and the dots are used by the ``merge`` fu
 track causality of the operations and resolve concurrent updates.
 
 .. includecode:: code/docs/ddata/DistributedDataDocTest.java#orset
+
+``ORSet`` has support for :ref:`delta_crdt_java` and it requires causal delivery of deltas.
 
 Maps
 ----
@@ -615,7 +623,7 @@ Learn More about CRDTs
   paper by Mark Shapiro et. al.
 
 Dependencies
-------------
+============
 
 To use Distributed Data you must add the following dependency in your project.
 
