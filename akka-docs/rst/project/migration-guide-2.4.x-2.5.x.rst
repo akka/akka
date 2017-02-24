@@ -167,7 +167,7 @@ New::
   }
 
 It's recommended to migrate ``UntypedActor`` to ``AbstractActor`` by implementing
-``createReceive`` instead of ``onMessage``.
+``createReceive`` instead of ``onReceive``.
 
 Old::
 

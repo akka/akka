@@ -9,39 +9,35 @@ import docs.cluster.TransformationMessages.JobFailed;
 import docs.cluster.TransformationMessages.TransformationJob;
 import akka.actor.ActorRef;
 import akka.actor.Terminated;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 
 //#frontend
-public class TransformationFrontend extends UntypedActor {
+public class TransformationFrontend extends AbstractActor {
 
   List<ActorRef> backends = new ArrayList<ActorRef>();
   int jobCounter = 0;
 
   @Override
-  public void onReceive(Object message) {
-    if ((message instanceof TransformationJob) && backends.isEmpty()) {
-      TransformationJob job = (TransformationJob) message;
-      getSender().tell(
+  public Receive createReceive() {
+    return receiveBuilder()
+      .match(TransformationJob.class, job -> backends.isEmpty(), job -> {
+        sender().tell(
           new JobFailed("Service unavailable, try again later", job),
-          getSender());
-
-    } else if (message instanceof TransformationJob) {
-      TransformationJob job = (TransformationJob) message;
-      jobCounter++;
-      backends.get(jobCounter % backends.size())
+          sender());
+      })
+      .match(TransformationJob.class, job -> {
+        jobCounter++;
+        backends.get(jobCounter % backends.size())
           .forward(job, getContext());
-
-    } else if (message.equals(BACKEND_REGISTRATION)) {
-      getContext().watch(getSender());
-      backends.add(getSender());
-
-    } else if (message instanceof Terminated) {
-      Terminated terminated = (Terminated) message;
-      backends.remove(terminated.getActor());
-
-    } else {
-      unhandled(message);
-    }
+      })
+      .matchEquals(BACKEND_REGISTRATION, x -> {
+        getContext().watch(sender());
+        backends.add(sender());
+      })
+      .match(Terminated.class, terminated -> {
+        backends.remove(terminated.getActor());
+      })
+      .build();
   }
 
 }
