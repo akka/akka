@@ -228,7 +228,7 @@ private[akka] class Shard(
 
   def passivate(entity: ActorRef, stopMessage: Any): Unit = {
     idByRef.get(entity) match {
-      case Some(id) => if (!messageBuffers.contains(id)) {
+      case Some(id) ⇒ if (!messageBuffers.contains(id)) {
         log.debug("Passivating started on entity {}", id)
 
         passivating = passivating + entity
@@ -237,7 +237,7 @@ private[akka] class Shard(
       } else {
         log.debug("Passivation already in progress for {}. Not sending stopMessage back to entity.", entity)
       }
-      case None    => log.debug("Unknown entity {}. Not sending stopMessage back to entity.", entity)
+      case None ⇒ log.debug("Unknown entity {}. Not sending stopMessage back to entity.", entity)
     }
   }
 
