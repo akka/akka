@@ -504,8 +504,9 @@ private[akka] class DDataShard(
   implicit private val node = Cluster(context.system)
 
   // The default maximum-frame-size is 256 KiB with Artery.
-  // ORSet with 40000 elements has a size of ~ 200000 bytes.
-  // By splitting the elements over 5 keys we can safely support 200000 entities per shard.
+  // When using entity identifiers with 36 character strings (e.g. UUID.randomUUID).
+  // By splitting the elements over 5 keys we can support 10000 entities per shard.
+  // The Gossip message size of 5 ORSet with 2000 ids is around 200 KiB.
   // This is by intention not configurable because it's important to have the same
   // configuration on each node.
   private val numberOfKeys = 5
