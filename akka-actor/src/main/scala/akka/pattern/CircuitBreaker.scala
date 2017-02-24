@@ -442,9 +442,10 @@ class CircuitBreaker(
   /**
    * Invokes all onSuccess callback handlers.
    *
-   * @param elapsed time in nanoseconds of call invocation
+   * @param start time in nanoseconds of call invocation
    */
-  private def notifyCallSuccessListeners(elapsed: Long): Unit = if (!successListeners.isEmpty) {
+  private def notifyCallSuccessListeners(start: Long): Unit = if (!successListeners.isEmpty) {
+    val elapsed = System.nanoTime() - start
     val iterator = successListeners.iterator()
     while (iterator.hasNext) {
       val listener = iterator.next()
@@ -457,9 +458,10 @@ class CircuitBreaker(
   /**
    * Invokes all onCallFailure callback handlers.
    *
-   * @param elapsed time in nanoseconds of call invocation
+   * @param start time in nanoseconds of call invocation
    */
-  private def notifyCallFailureListeners(elapsed: Long): Unit = if (!callFailureListeners.isEmpty) {
+  private def notifyCallFailureListeners(start: Long): Unit = if (!callFailureListeners.isEmpty) {
+    val elapsed = System.nanoTime() - start
     val iterator = callFailureListeners.iterator()
     while (iterator.hasNext) {
       val listener = iterator.next()
@@ -472,9 +474,10 @@ class CircuitBreaker(
   /**
    * Invokes all onCallTimeout callback handlers.
    *
-   * @param elapsed time in nanoseconds of call invocation
+   * @param start time in nanoseconds of call invocation
    */
-  private def notifyCallTimeoutListeners(elapsed: Long): Unit = if (!callTimeoutListeners.isEmpty) {
+  private def notifyCallTimeoutListeners(start: Long): Unit = if (!callTimeoutListeners.isEmpty) {
+    val elapsed = System.nanoTime() - start
     val iterator = callTimeoutListeners.iterator()
     while (iterator.hasNext) {
       val listener = iterator.next()
@@ -563,10 +566,10 @@ class CircuitBreaker(
 
         f.onComplete {
           case s: Success[_] ⇒
-            notifyCallSuccessListeners(System.nanoTime() - start)
+            notifyCallSuccessListeners(start)
             callSucceeds()
           case Failure(ex) ⇒
-            notifyCallFailureListeners(System.nanoTime() - start)
+            notifyCallFailureListeners(start)
             callFails()
         }
 
@@ -579,7 +582,7 @@ class CircuitBreaker(
 
         p.future.onComplete {
           case s: Success[_] ⇒
-            notifyCallSuccessListeners(System.nanoTime() - start)
+            notifyCallSuccessListeners(start)
             callSucceeds()
           case _ ⇒
             callFails()
@@ -587,7 +590,7 @@ class CircuitBreaker(
 
         val timeout = scheduler.scheduleOnce(callTimeout) {
           if (p tryFailure timeoutEx) {
-            notifyCallTimeoutListeners(System.nanoTime() - start)
+            notifyCallTimeoutListeners(start)
           }
         }
 
@@ -597,7 +600,7 @@ class CircuitBreaker(
             timeout.cancel
           case Failure(ex) ⇒
             if (p.tryFailure(ex)) {
-              notifyCallFailureListeners(System.nanoTime() - start)
+              notifyCallFailureListeners(start)
             }
             timeout.cancel
         }
