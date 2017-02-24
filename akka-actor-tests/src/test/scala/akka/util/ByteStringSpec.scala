@@ -27,14 +27,14 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     n ← Gen.choose(min, max)
     b ← Gen.containerOfN[Array, Byte](n, arbitrary[Byte])
     from ← Gen.choose(0, b.length)
-    until ← Gen.choose(from, b.length)
+    until ← Gen.choose(from, from max b.length)
   } yield ByteString(b).slice(from, until)
 
   implicit val arbitraryByteString: Arbitrary[ByteString] = Arbitrary {
     Gen.sized { s ⇒
       for {
         chunks ← Gen.choose(0, s)
-        bytes ← Gen.listOfN(chunks, genSimpleByteString(1, s / (chunks max 1)))
+        bytes ← Gen.listOfN(chunks, genSimpleByteString(1, 1 max (s / (chunks max 1))))
       } yield (ByteString.empty /: bytes)(_ ++ _)
     }
   }
@@ -44,8 +44,11 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
   implicit val arbitraryByteStringSlice: Arbitrary[ByteStringSlice] = Arbitrary {
     for {
       xs ← arbitraryByteString.arbitrary
-      from ← Gen.choose(0, xs.length - 1)
-      until ← Gen.choose(from, xs.length)
+      from ← Gen.choose(0, 0 max (xs.length - 1))
+      until ← {
+        require(from <= xs.length)
+        Gen.choose(from, xs.length)
+      }
     } yield (xs, from, until)
   }
 
