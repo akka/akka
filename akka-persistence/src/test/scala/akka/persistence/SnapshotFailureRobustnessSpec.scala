@@ -75,7 +75,7 @@ object SnapshotFailureRobustnessSpec {
   class FailingLocalSnapshotStore(config: Config) extends LocalSnapshotStore(config) {
     override def save(metadata: SnapshotMetadata, snapshot: Any): Unit = {
       if (metadata.sequenceNr == 2 || snapshot == "boom") {
-        val bytes = "b0rk".getBytes("UTF-8")
+        val bytes = "b0rkb0rk".getBytes("UTF-8") // length >= 8 to prevent EOF exception
         val tmpFile = withOutputStream(metadata)(_.write(bytes))
         tmpFile.renameTo(snapshotFileForWrite(metadata))
       } else super.save(metadata, snapshot)

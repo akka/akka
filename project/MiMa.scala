@@ -400,6 +400,11 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#DataDeleted.this"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#Delete.copy"),
 
+      // #16197 Remove backwards compatible workaround in SnapshotSerializer
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.serialization.SnapshotSerializer$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.serialization.SnapshotHeader"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.serialization.SnapshotHeader$"),
+
       // #21618 distributed data
       ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.ddata.Replicator$ReadMajority$"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator#ReadMajority.copy"),
