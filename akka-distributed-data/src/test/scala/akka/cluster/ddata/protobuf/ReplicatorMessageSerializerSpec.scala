@@ -25,6 +25,7 @@ import akka.remote.RARP
 import com.typesafe.config.ConfigFactory
 import akka.cluster.ddata.DurableStore.DurableDataEnvelope
 import akka.cluster.ddata.GCounter
+import akka.cluster.ddata.VersionVector
 
 class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
   "ReplicatorMessageSerializerSpec",
@@ -48,10 +49,11 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
     shutdown()
   }
 
-  def checkSerialization(obj: AnyRef): Unit = {
+  def checkSerialization[T <: AnyRef](obj: T): T = {
     val blob = serializer.toBinary(obj)
-    val ref = serializer.fromBinary(blob, serializer.manifest(obj))
-    ref should be(obj)
+    val deserialized = serializer.fromBinary(blob, serializer.manifest(obj))
+    deserialized should be(obj)
+    deserialized.asInstanceOf[T]
   }
 
   "ReplicatorMessageSerializer" must {
@@ -90,10 +92,22 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(DeltaPropagation(address1, Map(
         "A" → Delta(DataEnvelope(delta1), 1L, 1L),
         "B" → Delta(DataEnvelope(delta2), 3L, 5L))))
+
       checkSerialization(new DurableDataEnvelope(data1))
-      checkSerialization(new DurableDataEnvelope(DataEnvelope(data1, pruning = Map(
+      val pruning = Map(
         address1 → PruningPerformed(System.currentTimeMillis()),
-        address3 → PruningInitialized(address2, Set(address1.address))))))
+        address3 → PruningInitialized(address2, Set(address1.address)))
+      val deserializedDurableDataEnvelope =
+        checkSerialization(new DurableDataEnvelope(DataEnvelope(data1, pruning,
+          deltaVersions = VersionVector(address1, 13L))))
+      // equals of DurableDataEnvelope is only checking the data, PruningPerformed
+      // should be serialized
+      val expectedPruning = pruning.filter {
+        case (_, _: PruningPerformed) ⇒ true
+        case _                        ⇒ false
+      }
+      deserializedDurableDataEnvelope.dataEnvelope.pruning should ===(expectedPruning)
+      deserializedDurableDataEnvelope.dataEnvelope.deltaVersions.size should ===(0)
     }
 
   }
