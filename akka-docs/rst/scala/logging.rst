@@ -40,7 +40,7 @@ The source object is translated to a String according to the following rules:
 The log message may contain argument placeholders ``{}``, which will be
 substituted if the log level is enabled. Giving more arguments as there are
 placeholders results in a warning being appended to the log statement (i.e. on
-the same line with the same severity). You may pass a Java array as the only
+the same line with the same severity). You may pass an array as the only
 substitution argument to have its elements be treated individually:
 
 .. includecode:: code/docs/event/LoggingDocSpec.scala#array
