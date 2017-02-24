@@ -41,14 +41,31 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
 
       def deployProto(d: Deploy): DeployData = {
         val builder = DeployData.newBuilder.setPath(d.path)
-        if (d.config != ConfigFactory.empty)
-          builder.setConfig(oldSerialize(d.config))
-        if (d.routerConfig != NoRouter)
-          builder.setRouterConfig(oldSerialize(d.routerConfig))
-        if (d.scope != NoScopeGiven)
-          builder.setScope(oldSerialize(d.scope))
-        if (d.dispatcher != NoDispatcherGiven)
+
+        {
+          val (serId, _, manifest, bytes) = serialize(d.config)
+          builder.setConfigSerializerId(serId)
+          builder.setConfigManifest(manifest)
+          builder.setConfig(ByteString.copyFrom(bytes))
+        }
+
+        if (d.routerConfig != NoRouter) {
+          val (serId, _, manifest, bytes) = serialize(d.routerConfig)
+          builder.setRouterConfigSerializerId(serId)
+          builder.setRouterConfigManifest(manifest)
+          builder.setRouterConfig(ByteString.copyFrom(bytes))
+        }
+
+        if (d.scope != NoScopeGiven) {
+          val (serId, _, manifest, bytes) = serialize(d.scope)
+          builder.setScopeSerializerId(serId)
+          builder.setScopeManifest(manifest)
+          builder.setScope(ByteString.copyFrom(bytes))
+        }
+
+        if (d.dispatcher != NoDispatcherGiven) {
           builder.setDispatcher(d.dispatcher)
+        }
         builder.build
       }
 
@@ -82,15 +99,45 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
     val proto = DaemonMsgCreateData.parseFrom(bytes)
 
     def deploy(protoDeploy: DeployData): Deploy = {
+
       val config =
-        if (protoDeploy.hasConfig) oldDeserialize(protoDeploy.getConfig, classOf[Config])
-        else ConfigFactory.empty
+        if (protoDeploy.hasConfig) {
+          if (protoDeploy.hasConfigSerializerId) {
+            serialization.deserialize(
+              protoDeploy.getConfig.toByteArray,
+              protoDeploy.getConfigSerializerId,
+              protoDeploy.getConfigManifest).get.asInstanceOf[Config]
+          } else {
+            // old wire format
+            oldDeserialize(protoDeploy.getConfig, classOf[Config])
+          }
+        } else ConfigFactory.empty
+
       val routerConfig =
-        if (protoDeploy.hasRouterConfig) oldDeserialize(protoDeploy.getRouterConfig, classOf[RouterConfig])
-        else NoRouter
+        if (protoDeploy.hasRouterConfig) {
+          if (protoDeploy.hasRouterConfigSerializerId) {
+            serialization.deserialize(
+              protoDeploy.getRouterConfig.toByteArray,
+              protoDeploy.getRouterConfigSerializerId,
+              protoDeploy.getRouterConfigManifest).get.asInstanceOf[RouterConfig]
+          } else {
+            // old wire format
+            oldDeserialize(protoDeploy.getRouterConfig, classOf[RouterConfig])
+          }
+        } else NoRouter
+
       val scope =
-        if (protoDeploy.hasScope) oldDeserialize(protoDeploy.getScope, classOf[Scope])
-        else NoScopeGiven
+        if (protoDeploy.hasScope) {
+          if (protoDeploy.hasScopeSerializerId) {
+            serialization.deserialize(
+              protoDeploy.getScope.toByteArray,
+              protoDeploy.getScopeSerializerId,
+              protoDeploy.getScopeManifest).get.asInstanceOf[Scope]
+          } else {
+            // old wire format
+            oldDeserialize(protoDeploy.getScope, classOf[Scope])
+          }
+        } else NoScopeGiven
       val dispatcher =
         if (protoDeploy.hasDispatcher) protoDeploy.getDispatcher
         else NoDispatcherGiven

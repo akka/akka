@@ -5,6 +5,8 @@
 option java_package = "akka.remote";
 option optimize_for = SPEED;
 
+import "ContainerFormats.proto";
+
 /******************************************
  * Remoting message formats
  ******************************************/
@@ -84,6 +86,14 @@ message DeployData {
   optional bytes routerConfig = 3;
   optional bytes scope = 4;
   optional string dispatcher = 5;
+  // older wire protocol: hardcoded class used to look up serializer
+  // newer wire protocol: serializer id and manifest available for each
+  optional int32 scopeSerializerId = 6;
+  optional string scopeManifest = 7;
+  optional int32 configSerializerId = 8;
+  optional string configManifest = 9;
+  optional int32 routerConfigSerializerId = 10;
+  optional string routerConfigManifest = 11;
 }
 
 
@@ -134,4 +144,82 @@ message AddressData {
   required string hostname = 2;
   required uint32 port = 3;
   optional string protocol = 4;
+}
+
+/**
+ * java.util.concurrent.TimeUnit enum
+ */
+enum TimeUnit {
+  NANOSECONDS = 1;
+  MICROSECONDS = 2;
+  MILLISECONDS = 3;
+  SECONDS = 4;
+  MINUTES = 5;
+  HOURS = 6;
+  DAYS = 7;
+}
+
+message FiniteDuration {
+  required int64 value = 1;
+  required TimeUnit unit = 2;
+}
+
+message RemoteScope {
+  required AddressData node = 1;
+}
+
+// router configs
+
+message DefaultResizer {
+  required uint32 lowerBound = 1;
+  required uint32 upperBound = 2;
+  required uint32 pressureThreshold = 3;
+  required double rampupRate = 4;
+  required double backoffThreshold = 5;
+  required double backoffRate = 6;
+  required uint32 messagesPerResize = 7;
+}
+
+message FromConfig {
+  optional Payload resizer = 1;
+  optional string routerDispatcher = 2;
+}
+
+message GenericRoutingGroup {
+  repeated string paths = 1;
+  optional string routerDispatcher = 2;
+}
+
+message GenericRoutingPool {
+  required uint32 nrOfInstances = 1;
+  optional string routerDispatcher = 2;
+  required bool usePoolDispatcher = 3;
+  optional Payload resizer = 4;
+}
+
+message ScatterGatherGroup {
+  required GenericRoutingGroup generic = 1;
+  required FiniteDuration within = 2;
+}
+
+message ScatterGatherPool {
+  required GenericRoutingPool generic = 1;
+  required FiniteDuration within = 2;
+}
+
+message TailChoppingGroup {
+  required GenericRoutingGroup generic = 1;
+  required FiniteDuration within = 2;
+  required FiniteDuration interval = 3;
+}
+
+message TailChoppingPool {
+  required GenericRoutingPool generic = 1;
+  required FiniteDuration within = 2;
+  required FiniteDuration interval = 3;
+}
+
+message RemoteRouterConfig {
+  required Payload local = 1;
+  repeated AddressData nodes = 2;
 }
