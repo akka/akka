@@ -4,6 +4,7 @@
 
 package akka.persistence.serialization
 
+import java.io.NotSerializableException
 import java.util.UUID
 import akka.actor._
 import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot, UnconfirmedDelivery }
@@ -12,8 +13,7 @@ import akka.serialization._
 import akka.testkit._
 import akka.util.ByteString.UTF_8
 import com.typesafe.config._
-import org.apache.commons.codec.binary.Hex.decodeHex
-
+import org.apache.commons.codec.binary.Hex.{ encodeHex, decodeHex }
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -90,7 +90,7 @@ class SnapshotSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       deserialized should ===(Snapshot(MySnapshot2(".a.")))
     }
 
-    "be able to read snapshot created with akka 2.3.6 and Scala 2.10" in {
+    "throw error when reads snapshot created with akka 2.3.6 and Scala 2.10" in {
       val dataStr = "abc"
       val snapshot = Snapshot(dataStr.getBytes(UTF_8))
       val serializer = serialization.findSerializerFor(snapshot)
@@ -108,13 +108,13 @@ class SnapshotSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
           "6024a8328a45e90200007870616263"
 
       val bytes = decodeHex(oldSnapshot.toCharArray)
-      val deserialized = serializer.fromBinary(bytes, None).asInstanceOf[Snapshot]
-
-      val deserializedDataStr = new String(deserialized.data.asInstanceOf[Array[Byte]], UTF_8)
-      dataStr should ===(deserializedDataStr)
+      val cause = intercept[NotSerializableException] {
+        serializer.fromBinary(bytes, None).asInstanceOf[Snapshot]
+      }
+      cause.getMessage should startWith("Replaying snapshot from akka 2.3.x")
     }
 
-    "be able to read snapshot created with akka 2.3.6 and Scala 2.11" in {
+    "throw error when reads snapshot created with akka 2.3.6 and Scala 2.11" in {
       val dataStr = "abc"
       val snapshot = Snapshot(dataStr.getBytes(UTF_8))
       val serializer = serialization.findSerializerFor(snapshot)
@@ -132,9 +132,29 @@ class SnapshotSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
           "6937fddb0e66740200007870616263"
 
       val bytes = decodeHex(oldSnapshot.toCharArray)
-      val deserialized = serializer.fromBinary(bytes, None).asInstanceOf[Snapshot]
+      val cause = intercept[NotSerializableException] {
+        serializer.fromBinary(bytes, None).asInstanceOf[Snapshot]
+      }
+      cause.getMessage should startWith("Replaying snapshot from akka 2.3.x")
+    }
 
+    "be able to write and read snapshot created with akka 2.4.17 and Scala 2.11" in {
+      val dataStr = "abc"
+      val snapshot = Snapshot(dataStr.getBytes(UTF_8))
+      val serializer = serialization.findSerializerFor(snapshot)
+
+      // the oldSnapshot was created with Akka 2.4.17
+      // It was created with:
+      // import org.apache.commons.codec.binary.Hex.encodeHex
+      // println(s"encoded snapshot: " + String.valueOf(encodeHex(serializer.toBinary(snapshot))))
+      val oldSnapshot = "0400000004000000616263"
+
+      oldSnapshot should ===(String.valueOf(encodeHex(serializer.toBinary(snapshot))))
+
+      val bytes = decodeHex(oldSnapshot.toCharArray)
+      val deserialized = serializer.fromBinary(bytes, None).asInstanceOf[Snapshot]
       val deserializedDataStr = new String(deserialized.data.asInstanceOf[Array[Byte]], UTF_8)
+
       dataStr should ===(deserializedDataStr)
     }
   }
