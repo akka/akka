@@ -15,7 +15,7 @@ import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorSelection;
 import akka.actor.Address;
 import akka.actor.Cancellable;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
 import akka.cluster.Cluster;
 import akka.cluster.ClusterEvent.UnreachableMember;
 import akka.cluster.ClusterEvent.ReachableMember;
@@ -26,7 +26,7 @@ import akka.cluster.ClusterEvent.ReachabilityEvent;
 import akka.cluster.Member;
 import akka.cluster.MemberStatus;
 
-public class StatsSampleClient extends UntypedActor {
+public class StatsSampleClient extends AbstractActor {
 
   final String servicePath;
   final Cancellable tickTask;
@@ -40,7 +40,7 @@ public class StatsSampleClient extends UntypedActor {
     tickTask = getContext()
         .system()
         .scheduler()
-        .schedule(interval, interval, getSelf(), "tick",
+        .schedule(interval, interval, self(), "tick",
             getContext().dispatcher(), null);
   }
 
@@ -53,59 +53,48 @@ public class StatsSampleClient extends UntypedActor {
   //re-subscribe when restart
   @Override
   public void postStop() {
-    cluster.unsubscribe(getSelf());
+    cluster.unsubscribe(self());
     tickTask.cancel();
   }
 
   @Override
-  public void onReceive(Object message) {
-    if (message.equals("tick") && !nodes.isEmpty()) {
-      // just pick any one
-      List<Address> nodesList = new ArrayList<Address>(nodes);
-      Address address = nodesList.get(ThreadLocalRandom.current().nextInt(
+  public Receive createReceive() {
+    return receiveBuilder()
+      .matchEquals("tick", x -> !nodes.isEmpty(), x -> {
+        // just pick any one
+        List<Address> nodesList = new ArrayList<Address>(nodes);
+        Address address = nodesList.get(ThreadLocalRandom.current().nextInt(
           nodesList.size()));
-      ActorSelection service = getContext().actorSelection(address + servicePath);
-      service.tell(new StatsJob("this is the text that will be analyzed"),
-          getSelf());
-
-    } else if (message instanceof StatsResult) {
-      StatsResult result = (StatsResult) message;
-      System.out.println(result);
-
-    } else if (message instanceof JobFailed) {
-      JobFailed failed = (JobFailed) message;
-      System.out.println(failed);
-
-    } else if (message instanceof CurrentClusterState) {
-      CurrentClusterState state = (CurrentClusterState) message;
-      nodes.clear();
-      for (Member member : state.getMembers()) {
-        if (member.hasRole("compute") && member.status().equals(MemberStatus.up())) {
-          nodes.add(member.address());
+        ActorSelection service = getContext().actorSelection(address + servicePath);
+        service.tell(new StatsJob("this is the text that will be analyzed"),
+          self());
+      })
+      .match(StatsResult.class, System.out::println)
+      .match(JobFailed.class, System.out::println)
+      .match(CurrentClusterState.class, state -> {
+        nodes.clear();
+        for (Member member : state.getMembers()) {
+          if (member.hasRole("compute") && member.status().equals(MemberStatus.up())) {
+            nodes.add(member.address());
+          }
         }
-      }
+      })
+      .match(MemberUp.class, mUp -> {
+        if (mUp.member().hasRole("compute"))
+          nodes.add(mUp.member().address());
+      })
+      .match(MemberEvent.class, event -> {
+        nodes.remove(event.member().address());
+      })
+      .match(UnreachableMember.class, unreachable -> {
+        nodes.remove(unreachable.member().address());
+      })
+      .match(ReachableMember.class, reachable -> {
+        if (reachable.member().hasRole("compute"))
+          nodes.add(reachable.member().address());
 
-    } else if (message instanceof MemberUp) {
-      MemberUp mUp = (MemberUp) message;
-      if (mUp.member().hasRole("compute"))
-        nodes.add(mUp.member().address());
-
-    } else if (message instanceof MemberEvent) {
-      MemberEvent other = (MemberEvent) message;
-      nodes.remove(other.member().address());
-
-    } else if (message instanceof UnreachableMember) {
-      UnreachableMember unreachable = (UnreachableMember) message;
-      nodes.remove(unreachable.member().address());
-
-    } else if (message instanceof ReachableMember) {
-      ReachableMember reachable = (ReachableMember) message;
-      if (reachable.member().hasRole("compute"))
-        nodes.add(reachable.member().address());
-
-    } else {
-      unhandled(message);
-    }
+      })
+      .build();
   }
 
 }

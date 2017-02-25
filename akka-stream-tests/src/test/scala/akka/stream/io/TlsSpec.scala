@@ -484,10 +484,10 @@ class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=o
         Source.single(SendBytes(ByteString.empty)).via(flow).runWith(Sink.ignore)
       }
       Await.result(run("akka-remote"), 3.seconds) // CN=akka-remote
-      val cause = intercept[SSLHandshakeException] {
-        Await.result(run("akka-stream"), 3.seconds)
+      val cause = intercept[Exception] {
+        Await.result(run("unknown.example.org"), 3.seconds)
       }
-      cause.getCause.getCause.getMessage should startWith("No name matching akka-stream found")
+      cause.getMessage should ===("Hostname verification failed! Expected session to be for unknown.example.org")
     }
 
   }

@@ -4,6 +4,7 @@
 package akka.cluster.ddata
 
 import akka.cluster.{ UniqueAddress, Cluster }
+import akka.annotation.InternalApi
 
 object ORMultiMap {
 
@@ -113,7 +114,7 @@ final class ORMultiMap[A, B] private[akka] (private[akka] val underlying: ORMap[
   /**
    * INTERNAL API
    */
-  private[akka] def put(node: UniqueAddress, key: A, value: Set[B]): ORMultiMap[A, B] = {
+  @InternalApi private[akka] def put(node: UniqueAddress, key: A, value: Set[B]): ORMultiMap[A, B] = {
     val newUnderlying = underlying.updated(node, key, ORSet.empty[B]) { existing ⇒
       value.foldLeft(existing.clear(node)) { (s, element) ⇒ s.add(node, element) }
     }
@@ -136,7 +137,7 @@ final class ORMultiMap[A, B] private[akka] (private[akka] val underlying: ORMap[
   /**
    * INTERNAL API
    */
-  private[akka] def remove(node: UniqueAddress, key: A): ORMultiMap[A, B] =
+  @InternalApi private[akka] def remove(node: UniqueAddress, key: A): ORMultiMap[A, B] =
     new ORMultiMap(underlying.remove(node, key))
 
   /**
@@ -154,7 +155,7 @@ final class ORMultiMap[A, B] private[akka] (private[akka] val underlying: ORMap[
   /**
    * INTERNAL API
    */
-  private[akka] def addBinding(node: UniqueAddress, key: A, element: B): ORMultiMap[A, B] = {
+  @InternalApi private[akka] def addBinding(node: UniqueAddress, key: A, element: B): ORMultiMap[A, B] = {
     val newUnderlying = underlying.updated(node, key, ORSet.empty[B])(_.add(node, element))
     new ORMultiMap(newUnderlying)
   }
@@ -176,7 +177,7 @@ final class ORMultiMap[A, B] private[akka] (private[akka] val underlying: ORMap[
   /**
    * INTERNAL API
    */
-  private[akka] def removeBinding(node: UniqueAddress, key: A, element: B): ORMultiMap[A, B] = {
+  @InternalApi private[akka] def removeBinding(node: UniqueAddress, key: A, element: B): ORMultiMap[A, B] = {
     val newUnderlying = {
       val u = underlying.updated(node, key, ORSet.empty[B])(_.remove(node, element))
       u.get(key) match {
@@ -198,7 +199,7 @@ final class ORMultiMap[A, B] private[akka] (private[akka] val underlying: ORMap[
   /**
    * INTERNAL API
    */
-  private[akka] def replaceBinding(node: UniqueAddress, key: A, oldElement: B, newElement: B): ORMultiMap[A, B] =
+  @InternalApi private[akka] def replaceBinding(node: UniqueAddress, key: A, oldElement: B, newElement: B): ORMultiMap[A, B] =
     if (newElement != oldElement)
       addBinding(node, key, newElement).removeBinding(node, key, oldElement)
     else

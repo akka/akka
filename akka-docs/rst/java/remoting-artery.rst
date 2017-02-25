@@ -6,8 +6,8 @@ Remoting (codename Artery)
 
 .. note::
 
-  This page describes the experimental remoting subsystem, codenamed *Artery* that will eventually replace the
-  old remoting implementation. For the current stable remoting system please refer to :ref:`remoting-java`.
+  This page describes the :ref:`may change <may-change>` remoting subsystem, codenamed *Artery* that will eventually
+  replace the old remoting implementation. For the current stable remoting system please refer to :ref:`remoting-java`.
 
 Remoting enables Actor systems on different hosts or JVMs to communicate with each other. By enabling remoting
 the system will start listening on a provided network address and also gains the ability to connect to other
@@ -263,6 +263,8 @@ An ``ActorSystem`` should not be exposed via Akka Remote (Artery) over plain Aer
 It should be protected by network security, such as a firewall. There is currently no support for encryption with Artery
 so if network security is not considered as enough protection the classic remoting with
 :ref:`TLS and mutual authentication <remote-tls-java>`  should be used.
+
+Best practice is that Akka remoting nodes should only be accessible from the adjacent network.
 
 It is also security best-practice to :ref:`disable the Java serializer <disable-java-serializer-java-artery>` because of 
 its multiple `known attack surfaces <https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_.

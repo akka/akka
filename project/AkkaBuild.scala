@@ -96,7 +96,7 @@ object AkkaBuild extends Build {
   )
 
   lazy val typed = Project(
-    id = "akka-typed-experimental",
+    id = "akka-typed",
     base = file("akka-typed"),
     dependencies = Seq(testkit % "compile;test->test")
   )
@@ -200,8 +200,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(
       stream,
       persistence % "compile;provided->provided;test->test",
-      testkit % "compile;test->test",
-      streamTestkit % "compile;test->test")
+      streamTestkit % "test")
   )
 
   lazy val persistenceTck = Project(
@@ -294,16 +293,16 @@ object AkkaBuild extends Build {
     publishArtifact := false
   ) ++ dontPublishSettings
 
-  lazy val experimentalSettings = Seq(
+  lazy val mayChangeSettings = Seq(
     description := """|This module of Akka is marked as
-                      |experimental, which means that it is in early
+                      |'may change', which means that it is in early
                       |access mode, which also means that it is not covered
-                      |by commercial support. An experimental module doesn't
+                      |by commercial support. An module marked 'may change' doesn't
                       |have to obey the rule of staying binary compatible
                       |between minor releases. Breaking API changes may be
                       |introduced in minor releases without notice as we
-                      |refine and simplify based on your feedback. An
-                      |experimental module may be dropped in major releases
+                      |refine and simplify based on your feedback. Additionally
+                      |such a module may be dropped in major releases
                       |without prior deprecation.
                       |""".stripMargin
   )

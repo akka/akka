@@ -424,6 +424,10 @@ An ``ActorSystem`` should not be exposed via Akka Remote over plain TCP to an un
 It should be protected by network security, such as a firewall. If that is not considered as enough protection
 :ref:`TLS with mutual authentication <remote-tls-java>`  should be enabled.
 
+Best practice is that Akka remoting nodes should only be accessible from the adjacent network. Note that if TLS is 
+enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by
+compromising any node with certificates issued by the same internal PKI tree.
+
 It is also security best-practice to :ref:`disable the Java serializer <disable-java-serializer-java>` because of 
 its multiple `known attack surfaces <https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_.
 
@@ -487,6 +491,9 @@ Mutual authentication means that the the passive side (the TLS server side) of a
 a certificate from the connecting peer. Without this mode only the client side is requesting and verifying certificates.
 While Akka is a peer-to-peer technology, each connection between nodes starts out from one side (the "client") towards 
 the other (the "server").
+
+Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate 
+by compromising any node with certificates issued by the same internal PKI tree.
 
 See also a description of the settings in the :ref:`remote-configuration-scala` section.
 

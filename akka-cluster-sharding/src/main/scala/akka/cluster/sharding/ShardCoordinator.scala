@@ -803,11 +803,37 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
   }: Receive).orElse[Any, Unit](receiveTerminated).orElse[Any, Unit](receiveSnapshotResult)
 
   def receiveSnapshotResult: Receive = {
-    case SaveSnapshotSuccess(_) ⇒
+    case SaveSnapshotSuccess(m) ⇒
       log.debug("Persistent snapshot saved successfully")
+      /*
+       * delete old events but keep the latest around because
+       *
+       * it's not safe to delete all events immediate because snapshots are typically stored with a weaker consistency
+       * level which means that a replay might "see" the deleted events before it sees the stored snapshot,
+       * i.e. it will use an older snapshot and then not replay the full sequence of events
+       *
+       * for debugging if something goes wrong in production it's very useful to be able to inspect the events
+       */
+      val deleteToSequenceNr = m.sequenceNr - keepNrOfBatches * snapshotAfter
+      if (deleteToSequenceNr > 0) {
+        deleteMessages(deleteToSequenceNr)
+      }
 
     case SaveSnapshotFailure(_, reason) ⇒
       log.warning("Persistent snapshot failure: {}", reason.getMessage)
+
+    case DeleteMessagesSuccess(toSequenceNr) ⇒
+      log.debug("Persistent messages to {} deleted successfully", toSequenceNr)
+      deleteSnapshots(SnapshotSelectionCriteria(maxSequenceNr = toSequenceNr - 1))
+
+    case DeleteMessagesFailure(reason, toSequenceNr) ⇒
+      log.warning("Persistent messages to {} deletion failure: {}", toSequenceNr, reason.getMessage)
+
+    case DeleteSnapshotSuccess(m) ⇒
+      log.debug("Persistent snapshots matching {} deleted successfully", m)
+
+    case DeleteSnapshotFailure(m, reason) ⇒
+      log.warning("Persistent snapshots matching {} deletion falure: {}", m, reason.getMessage)
   }
 
   def update[E <: DomainEvent](evt: E)(f: E ⇒ Unit): Unit = {

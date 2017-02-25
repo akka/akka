@@ -22,6 +22,7 @@ object ReplicatorSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.log-dead-letters-during-shutdown = off
+    #akka.cluster.distributed-data.delta-crdt.enabled = off
     """))
 
   testTransport(on = true)
