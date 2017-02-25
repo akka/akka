@@ -8,14 +8,12 @@ import akka.actor._
 import akka.dispatch.sysmsg._
 import akka.event.{ Logging, LoggingAdapter, EventStream }
 import akka.event.Logging.Error
-import akka.serialization.{ JavaSerializer, Serialization, SerializationExtension }
+import akka.serialization.{ Serialization, SerializationExtension }
 import akka.pattern.pipe
 import scala.util.control.NonFatal
 import akka.actor.SystemGuardian.{ TerminationHookDone, TerminationHook, RegisterTerminationHook }
 import scala.util.control.Exception.Catcher
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.concurrent.forkjoin.ThreadLocalRandom
-import com.typesafe.config.Config
+import scala.concurrent.Future
 import akka.ConfigurationException
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 
@@ -150,7 +148,7 @@ private[akka] class RemoteActorRefProvider(
   // This actor ensures the ordering of shutdown between remoteDaemon and the transport
   @volatile private var remotingTerminator: ActorRef = _
 
-  @volatile private var remoteWatcher: ActorRef = _
+  @volatile private[akka] var remoteWatcher: ActorRef = _
   @volatile private var remoteDeploymentWatcher: ActorRef = _
 
   def init(system: ActorSystemImpl): Unit = {
@@ -422,20 +420,6 @@ private[akka] class RemoteActorRefProvider(
    */
   def quarantine(address: Address, uid: Option[Int]): Unit = transport.quarantine(address, uid)
 
-  /**
-   * INTERNAL API
-   */
-  private[akka] def afterSendSystemMessage(message: SystemMessage): Unit =
-    message match {
-      // Sending to local remoteWatcher relies strong delivery guarantees of local send, i.e.
-      // default dispatcher must not be changed to an implementation that defeats that
-      case rew: RemoteWatcher.Rewatch ⇒
-        remoteWatcher ! RemoteWatcher.RewatchRemote(rew.watchee, rew.watcher)
-      case Watch(watchee, watcher)   ⇒ remoteWatcher ! RemoteWatcher.WatchRemote(watchee, watcher)
-      case Unwatch(watchee, watcher) ⇒ remoteWatcher ! RemoteWatcher.UnwatchRemote(watchee, watcher)
-      case _                         ⇒
-    }
-
 }
 
 private[akka] trait RemoteRef extends ActorRefScope {
@@ -477,8 +461,13 @@ private[akka] class RemoteActorRef private[akka] (
 
   def sendSystemMessage(message: SystemMessage): Unit =
     try {
-      remote.send(message, None, this)
-      provider.afterSendSystemMessage(message)
+      message match {
+        case Watch(watchee, watcher) if watcher != provider.remoteWatcher ⇒
+          provider.remoteWatcher ! RemoteWatcher.WatchRemote(watchee, watcher)
+        case Unwatch(watchee, watcher) if watcher != provider.remoteWatcher ⇒
+          provider.remoteWatcher ! RemoteWatcher.UnwatchRemote(watchee, watcher)
+        case _ ⇒ remote.send(message, None, this)
+      }
     } catch handleException
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {

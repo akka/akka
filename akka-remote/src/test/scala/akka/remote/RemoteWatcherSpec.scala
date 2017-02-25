@@ -14,7 +14,6 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.RootActorPath
 import akka.actor.Identify
 import akka.actor.ActorIdentity
-import akka.actor.PoisonPill
 import akka.actor.Address
 
 object RemoteWatcherSpec {
@@ -124,9 +123,8 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! WatchRemote(b2, a1)
       monitorA ! WatchRemote(b2, a2)
       monitorA ! Stats
-      // for each watchee the RemoteWatcher also adds its own watch: 5 = 3 + 2
       // (a1->b1), (a1->b2), (a2->b2)
-      expectMsg(Stats.counts(watching = 5, watchingNodes = 1))
+      expectMsg(Stats.counts(watching = 3, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
       expectMsg(Heartbeat)
@@ -142,7 +140,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! UnwatchRemote(b1, a1)
       // still (a1->b2) and (a2->b2) left
       monitorA ! Stats
-      expectMsg(Stats.counts(watching = 3, watchingNodes = 1))
+      expectMsg(Stats.counts(watching = 2, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
       expectMsg(Heartbeat)
@@ -151,7 +149,7 @@ class RemoteWatcherSpec extends AkkaSpec(
       monitorA ! UnwatchRemote(b2, a2)
       // still (a1->b2) left
       monitorA ! Stats
-      expectMsg(Stats.counts(watching = 2, watchingNodes = 1))
+      expectMsg(Stats.counts(watching = 1, watchingNodes = 1))
       expectNoMsg(100 millis)
       monitorA ! HeartbeatTick
       expectMsg(Heartbeat)
