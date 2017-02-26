@@ -5,7 +5,7 @@ package akka.typed.patterns
 
 import Receptionist._
 import akka.typed.ScalaDSL._
-import akka.typed.AskPattern._
+import akka.typed.scaladsl.AskPattern._
 import scala.concurrent.duration._
 import akka.typed._
 
