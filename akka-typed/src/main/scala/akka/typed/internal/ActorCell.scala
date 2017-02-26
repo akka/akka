@@ -120,7 +120,7 @@ private[typed] class ActorCell[T](
     spawn(behavior, name, deployment)
   }
 
-  override def stop(child: ActorRef[Nothing]): Boolean = {
+  override def stop(child: ActorRef[_]): Boolean = {
     val name = child.path.name
     childrenMap.get(name) match {
       case None                      ⇒ false

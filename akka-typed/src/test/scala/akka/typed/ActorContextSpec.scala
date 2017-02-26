@@ -4,8 +4,8 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 import com.typesafe.config.ConfigFactory
 import akka.actor.DeadLetterSuppression
-import akka.typed.ScalaDSL._
-import akka.typed.patterns._
+import akka.typed.scaladsl.Actor
+import akka.typed.scaladsl.Actor.SignalOrMessage
 
 object ActorContextSpec {
 
@@ -74,6 +74,91 @@ object ActorContextSpec {
   final case class Adapter(a: ActorRef[Command]) extends Event
 
   def subject(monitor: ActorRef[Monitor]): Behavior[Command] =
+    Actor.SignalOrMessage(
+      (ctx, signal) ⇒ { monitor ! GotSignal(signal); Actor.Same },
+      (ctx, message) ⇒ message match {
+        case ReceiveTimeout ⇒
+          monitor ! GotReceiveTimeout
+          Actor.Same
+        case Ping(replyTo) ⇒
+          replyTo ! Pong1
+          Actor.Same
+        case Miss(replyTo) ⇒
+          replyTo ! Missed
+          Actor.Unhandled
+        case Renew(replyTo) ⇒
+          replyTo ! Renewed
+          subject(monitor)
+        case Throw(ex) ⇒
+          throw ex
+        case MkChild(name, mon, replyTo) ⇒
+          val child = name match {
+            case None    ⇒ ctx.spawnAnonymous(Actor.Restarter[Throwable]().wrap(subject(mon)))
+            case Some(n) ⇒ ctx.spawn(Actor.Restarter[Throwable]().wrap(subject(mon)), n)
+          }
+          replyTo ! Created(child)
+          Actor.Same
+        case SetTimeout(d, replyTo) ⇒
+          d match {
+            case f: FiniteDuration ⇒ ctx.setReceiveTimeout(f, ReceiveTimeout)
+            case _                 ⇒ ctx.cancelReceiveTimeout()
+          }
+          replyTo ! TimeoutSet
+          Actor.Same
+        case Schedule(delay, target, msg, replyTo) ⇒
+          replyTo ! Scheduled
+          ctx.schedule(delay, target, msg)
+          Actor.Same
+        case Stop ⇒ Actor.Stopped
+        case Kill(ref, replyTo) ⇒
+          if (ctx.stop(ref)) replyTo ! Killed
+          else replyTo ! NotKilled
+          Actor.Same
+        case Watch(ref, replyTo) ⇒
+          ctx.watch[Nothing](ref)
+          replyTo ! Watched
+          Actor.Same
+        case Unwatch(ref, replyTo) ⇒
+          ctx.unwatch[Nothing](ref)
+          replyTo ! Unwatched
+          Actor.Same
+        case GetInfo(replyTo) ⇒
+          replyTo ! Info(ctx.self, ctx.system)
+          Actor.Same
+        case GetChild(name, replyTo) ⇒
+          replyTo ! Child(ctx.child(name))
+          Actor.Same
+        case GetChildren(replyTo) ⇒
+          replyTo ! Children(ctx.children.toSet)
+          Actor.Same
+        case BecomeInert(replyTo) ⇒
+          replyTo ! BecameInert
+          Actor.Stateless {
+            case (_, Ping(replyTo)) ⇒
+              replyTo ! Pong2
+            case (_, Throw(ex)) ⇒
+              throw ex
+            case _ ⇒ ()
+          }
+        case BecomeCareless(replyTo) ⇒
+          replyTo ! BecameCareless
+          Actor.SignalOrMessage(
+            (ctx, signal) ⇒ signal match {
+              case Terminated(_) ⇒ Actor.Unhandled
+              case sig ⇒
+                monitor ! GotSignal(sig)
+                Actor.Same
+            },
+            (ctx, message) ⇒ Actor.Unhandled
+          )
+        case GetAdapter(replyTo, name) ⇒
+          replyTo ! Adapter(ctx.spawnAdapter(identity, name))
+          Actor.Same
+      }
+    )
+
+  def oldSubject(monitor: ActorRef[Monitor]): Behavior[Command] = {
+    import ScalaDSL._
     FullTotal {
       case Sig(ctx, signal) ⇒
         monitor ! GotSignal(signal)
@@ -95,8 +180,8 @@ object ActorContextSpec {
           throw ex
         case MkChild(name, mon, replyTo) ⇒
           val child = name match {
-            case None    ⇒ ctx.spawnAnonymous(Restarter[Throwable]().wrap(subject(mon)))
-            case Some(n) ⇒ ctx.spawn(Restarter[Throwable]().wrap(subject(mon)), n)
+            case None    ⇒ ctx.spawnAnonymous(patterns.Restarter[Command, Throwable](subject(mon), false)())
+            case Some(n) ⇒ ctx.spawn(patterns.Restarter[Command, Throwable](subject(mon), false)(), n)
           }
           replyTo ! Created(child)
           Same
@@ -156,6 +241,8 @@ object ActorContextSpec {
           Same
       }
     }
+  }
+
 }
 
 class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
@@ -179,7 +266,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     /**
      * The behavior against which to run all the tests.
      */
-    def behavior(ctx: ActorContext[Event]): Behavior[Command]
+    def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command]
 
     implicit def system: ActorSystem[TypedSpec.Command]
 
@@ -187,8 +274,8 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       if (system eq nativeSystem) suite + "Native"
       else suite + "Adapted"
 
-    def setup(name: String, wrapper: Option[Restarter.Apply[_]] = None)(
-      proc: (ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
+    def setup(name: String, wrapper: Option[Actor.Restarter.Apply[_]] = None)(
+      proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
       runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
         val props = wrapper.map(_.wrap(behavior(ctx))).getOrElse(behavior(ctx))
         val steps =
@@ -260,7 +347,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       }
     })
 
-    def `01 must correctly wire the lifecycle hooks`(): Unit = sync(setup("ctx01", Some(Restarter[Throwable]())) { (ctx, startWith) ⇒
+    def `01 must correctly wire the lifecycle hooks`(): Unit = sync(setup("ctx01", Some(Actor.Restarter[Throwable]())) { (ctx, startWith) ⇒
       val self = ctx.self
       val ex = new Exception("KABOOM1")
       startWith { subj ⇒
@@ -335,7 +422,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       }
     })
 
-    def `05 must reset behavior upon Restart`(): Unit = sync(setup("ctx05", Some(Restarter[Exception]())) { (ctx, startWith) ⇒
+    def `05 must reset behavior upon Restart`(): Unit = sync(setup("ctx05", Some(Actor.Restarter[Exception]())) { (ctx, startWith) ⇒
       val self = ctx.self
       val ex = new Exception("KABOOM05")
       startWith
@@ -353,7 +440,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         .stimulate(_ ! Ping(self), _ ⇒ Pong1)
     })
 
-    def `06 must not reset behavior upon Resume`(): Unit = sync(setup("ctx06", Some(Restarter[Exception](resume = true))) { (ctx, startWith) ⇒
+    def `06 must not reset behavior upon Resume`(): Unit = sync(setup("ctx06", Some(Actor.Restarter[Exception](resume = true))) { (ctx, startWith) ⇒
       val self = ctx.self
       val ex = new Exception("KABOOM06")
       startWith
@@ -534,80 +621,115 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   }
 
   trait Normal extends Tests {
-    override def suite = "basic"
-    override def behavior(ctx: ActorContext[Event]): Behavior[Command] = subject(ctx.self)
+    override def suite = "normal"
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      subject(ctx.self)
   }
   object `An ActorContext (native)` extends Normal with NativeSystem
   object `An ActorContext (adapted)` extends Normal with AdaptedSystem
 
   trait Widened extends Tests {
+    import Actor._
     override def suite = "widened"
-    override def behavior(ctx: ActorContext[Event]): Behavior[Command] = subject(ctx.self).widen { case x ⇒ x }
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      subject(ctx.self).widen { case x ⇒ x }
   }
   object `An ActorContext with widened Behavior (native)` extends Widened with NativeSystem
   object `An ActorContext with widened Behavior (adapted)` extends Widened with AdaptedSystem
 
-  trait SynchronousSelf extends Tests {
+  trait Deferred extends Tests {
+    override def suite = "deferred"
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      Actor.Deferred(_ ⇒ subject(ctx.self))
+  }
+  object `An ActorContext with deferred Behavior (native)` extends Deferred with NativeSystem
+  object `An ActorContext with deferred Behavior (adapted)` extends Deferred with AdaptedSystem
+
+  trait Tap extends Tests {
+    override def suite = "tap"
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      Actor.Tap((_, _) ⇒ (), (_, _) ⇒ (), subject(ctx.self))
+  }
+  object `An ActorContext with Tap (old-native)` extends Tap with NativeSystem
+  object `An ActorContext with Tap (old-adapted)` extends Tap with AdaptedSystem
+
+  trait NormalOld extends Tests {
+    override def suite = "basic"
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      oldSubject(ctx.self)
+  }
+  object `An ActorContext (old-native)` extends NormalOld with NativeSystem
+  object `An ActorContext (old-adapted)` extends NormalOld with AdaptedSystem
+
+  trait WidenedOld extends Tests {
+    import ScalaDSL._
+    override def suite = "widened"
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      oldSubject(ctx.self).widen { case x ⇒ x }
+  }
+  object `An ActorContext with widened Behavior (old-native)` extends WidenedOld with NativeSystem
+  object `An ActorContext with widened Behavior (old-adapted)` extends WidenedOld with AdaptedSystem
+
+  trait SynchronousSelfOld extends Tests {
     override def suite = "synchronous"
-    override def behavior(ctx: ActorContext[Event]): Behavior[Command] = SynchronousSelf(self ⇒ subject(ctx.self))
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] = ScalaDSL.SynchronousSelf(self ⇒ oldSubject(ctx.self))
   }
-  object `An ActorContext with SynchronousSelf (native)` extends SynchronousSelf with NativeSystem
-  object `An ActorContext with SynchronousSelf (adapted)` extends SynchronousSelf with AdaptedSystem
+  object `An ActorContext with SynchronousSelf (old-native)` extends SynchronousSelfOld with NativeSystem
+  object `An ActorContext with SynchronousSelf (old-adapted)` extends SynchronousSelfOld with AdaptedSystem
 
-  trait NonMatchingTap extends Tests {
+  trait NonMatchingTapOld extends Tests {
     override def suite = "TapNonMatch"
-    override def behavior(ctx: ActorContext[Event]): Behavior[Command] = Tap({ case null ⇒ }, subject(ctx.self))
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] = ScalaDSL.Tap({ case null ⇒ }, oldSubject(ctx.self))
   }
-  object `An ActorContext with non-matching Tap (native)` extends NonMatchingTap with NativeSystem
-  object `An ActorContext with non-matching Tap (adapted)` extends NonMatchingTap with AdaptedSystem
+  object `An ActorContext with non-matching Tap (old-native)` extends NonMatchingTapOld with NativeSystem
+  object `An ActorContext with non-matching Tap (old-adapted)` extends NonMatchingTapOld with AdaptedSystem
 
-  trait MatchingTap extends Tests {
+  trait MatchingTapOld extends Tests {
     override def suite = "TapMatch"
-    override def behavior(ctx: ActorContext[Event]): Behavior[Command] = Tap({ case _ ⇒ }, subject(ctx.self))
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] = ScalaDSL.Tap({ case _ ⇒ }, oldSubject(ctx.self))
   }
-  object `An ActorContext with matching Tap (native)` extends MatchingTap with NativeSystem
-  object `An ActorContext with matching Tap (adapted)` extends MatchingTap with AdaptedSystem
+  object `An ActorContext with matching Tap (old-native)` extends MatchingTapOld with NativeSystem
+  object `An ActorContext with matching Tap (old-adapted)` extends MatchingTapOld with AdaptedSystem
 
-  private val stoppingBehavior = Full[Command] { case Msg(_, Stop) ⇒ Stopped }
+  private val stoppingBehavior = ScalaDSL.Full[Command] { case ScalaDSL.Msg(_, Stop) ⇒ ScalaDSL.Stopped }
 
-  trait AndLeft extends Tests {
-    override def suite = "and"
-    override def behavior(ctx: ActorContext[Event]): Behavior[Command] =
-      And(subject(ctx.self), stoppingBehavior)
+  trait AndLeftOld extends Tests {
+    override def suite = "andLeft"
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      ScalaDSL.And(oldSubject(ctx.self), stoppingBehavior)
   }
-  object `An ActorContext with And (left, native)` extends AndLeft with NativeSystem
-  object `An ActorContext with And (left, adapted)` extends AndLeft with AdaptedSystem
+  object `An ActorContext with And (left, native)` extends AndLeftOld with NativeSystem
+  object `An ActorContext with And (left, adapted)` extends AndLeftOld with AdaptedSystem
 
-  trait AndRight extends Tests {
-    override def suite = "and"
-    override def behavior(ctx: ActorContext[Event]): Behavior[Command] =
-      And(stoppingBehavior, subject(ctx.self))
+  trait AndRightOld extends Tests {
+    override def suite = "andRight"
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      ScalaDSL.And(stoppingBehavior, oldSubject(ctx.self))
   }
-  object `An ActorContext with And (right, native)` extends AndRight with NativeSystem
-  object `An ActorContext with And (right, adapted)` extends AndRight with AdaptedSystem
+  object `An ActorContext with And (right, native)` extends AndRightOld with NativeSystem
+  object `An ActorContext with And (right, adapted)` extends AndRightOld with AdaptedSystem
 
-  trait OrLeft extends Tests {
-    override def suite = "basic"
-    override def behavior(ctx: ActorContext[Event]): Behavior[Command] =
-      Or(subject(ctx.self), stoppingBehavior)
+  trait OrLeftOld extends Tests {
+    override def suite = "orLeft"
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      ScalaDSL.Or(oldSubject(ctx.self), stoppingBehavior)
     override def stop(ref: ActorRef[Command]) = {
       ref ! Stop
       ref ! Stop
     }
   }
-  object `An ActorContext with Or (left, native)` extends OrLeft with NativeSystem
-  object `An ActorContext with Or (left, adapted)` extends OrLeft with AdaptedSystem
+  object `An ActorContext with Or (left, native)` extends OrLeftOld with NativeSystem
+  object `An ActorContext with Or (left, adapted)` extends OrLeftOld with AdaptedSystem
 
-  trait OrRight extends Tests {
-    override def suite = "basic"
-    override def behavior(ctx: ActorContext[Event]): Behavior[Command] =
-      Or(stoppingBehavior, subject(ctx.self))
+  trait OrRightOld extends Tests {
+    override def suite = "orRight"
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      ScalaDSL.Or(stoppingBehavior, oldSubject(ctx.self))
     override def stop(ref: ActorRef[Command]) = {
       ref ! Stop
       ref ! Stop
     }
   }
-  object `An ActorContext with Or (right, native)` extends OrRight with NativeSystem
-  object `An ActorContext with Or (right, adapted)` extends OrRight with AdaptedSystem
-
+  object `An ActorContext with Or (right, native)` extends OrRightOld with NativeSystem
+  object `An ActorContext with Or (right, adapted)` extends OrRightOld with AdaptedSystem
 }

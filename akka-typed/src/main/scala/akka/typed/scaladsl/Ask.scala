@@ -1,19 +1,19 @@
 /**
  * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed
+package akka.typed.scaladsl
 
 import scala.concurrent.{ Future, Promise }
 import akka.util.Timeout
 import akka.actor.InternalActorRef
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
-import java.lang.IllegalArgumentException
 import akka.actor.Scheduler
 import akka.typed.internal.FunctionRef
 import akka.actor.RootActorPath
 import akka.actor.Address
-import akka.util.LineNumbers
+import akka.typed.ActorRef
+import akka.typed.adapter
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -82,7 +82,7 @@ object AskPattern {
       AskPath,
       (msg, self) ⇒ {
         p.trySuccess(msg)
-        self.sendSystem(internal.Terminate())
+        self.sendSystem(akka.typed.internal.Terminate())
       },
       (self) ⇒ if (!p.isCompleted) p.tryFailure(new NoSuchElementException("ask pattern terminated before value was received")))
     actorRef ! f(ref)

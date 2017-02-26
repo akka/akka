@@ -12,6 +12,7 @@ import akka.util.{ ReentrantGuard, Subclassification, SubclassifiedIndex }
 import scala.collection.immutable
 import java.util.concurrent.TimeoutException
 import akka.util.Timeout
+import akka.typed.scaladsl.AskPattern
 
 /**
  * INTERNAL API

@@ -12,6 +12,12 @@ import scala.annotation.tailrec
 import akka.actor.ActorRefProvider
 import java.util.concurrent.ThreadLocalRandom
 
+/**
+ * Utility for receiving messages outside of an actor. No methods are provided
+ * for synchronously awaiting a message, this is primarily useful for synchronous
+ * tests of behaviors that send messages to other actors, where an Inbox’s ActorRef
+ * can conveniently be used as a stub.
+ */
 class Inbox[T](name: String) {
 
   private val q = new ConcurrentLinkedQueue[T]

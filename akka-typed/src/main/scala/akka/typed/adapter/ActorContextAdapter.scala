@@ -22,7 +22,7 @@ private[typed] class ActorContextAdapter[T](ctx: a.ActorContext) extends ActorCo
     ctx.spawnAnonymous(behavior, deployment)
   override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig) =
     ctx.spawn(behavior, name, deployment)
-  override def stop(child: ActorRef[Nothing]) =
+  override def stop(child: ActorRef[_]) =
     toUntyped(child) match {
       case f: akka.actor.FunctionRef ⇒
         val cell = ctx.asInstanceOf[akka.actor.ActorCell]
