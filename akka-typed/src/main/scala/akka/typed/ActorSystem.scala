@@ -13,14 +13,18 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.typed.adapter.{ ActorSystemAdapter, PropsAdapter }
 import akka.util.Timeout
+import akka.annotation.DoNotInherit
+import akka.annotation.ApiMayChange
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
- * [[ActorSystem$]] `apply` from a [[Props]] object that describes the root
+ * [[ActorSystem#apply]] from a [[Behavior]] object that describes the root
  * Actor of this hierarchy and which will create all other Actors beneath it.
  * A system also implements the [[ActorRef]] type, and sending a message to
  * the system directs that message to the root Actor.
  */
+@DoNotInherit
+@ApiMayChange
 trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
 
   /**
@@ -131,11 +135,11 @@ trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
    * Ask the system guardian of this system to create an actor from the given
    * behavior and deployment and with the given name. The name does not need to
    * be unique since the guardian will prefix it with a running number when
-   * creating the child actor. The timeout sets the timeout used for the [[AskPattern$]]
+   * creating the child actor. The timeout sets the timeout used for the [[akka.typed.scaladsl.AskPattern$]]
    * invocation when asking the guardian.
    *
    * The returned Future of [[ActorRef]] may be converted into an [[ActorRef]]
-   * to which messages can immediately be sent by using the [[ActorRef$apply]]
+   * to which messages can immediately be sent by using the [[ActorRef$.apply[T](s*]]
    * method.
    */
   def systemActorOf[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig)(implicit timeout: Timeout): Future[ActorRef[U]]

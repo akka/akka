@@ -13,6 +13,10 @@ package akka.typed
  * Behaviors can be formulated in a number of different ways, either by
  * creating a derived class or by employing factory methods like the ones
  * in the [[ScalaDSL$]] object.
+ *
+ * Closing over ActorContext makes a Behavior immobile: it cannot be moved to
+ * another context and executed there, and therefore it cannot be replicated or
+ * forked either.
  */
 abstract class Behavior[T] {
   /**
@@ -30,6 +34,7 @@ abstract class Behavior[T] {
    * Code calling this method should use [[Behavior$]] `canonicalize` to replace
    * the special objects with real Behaviors.
    */
+  @throws(classOf[Exception])
   def management(ctx: ActorContext[T], msg: Signal): Behavior[T]
 
   /**
@@ -45,6 +50,7 @@ abstract class Behavior[T] {
    * Code calling this method should use [[Behavior$]] `canonicalize` to replace
    * the special objects with real Behaviors.
    */
+  @throws(classOf[Exception])
   def message(ctx: ActorContext[T], msg: T): Behavior[T]
 
   /**
@@ -54,14 +60,6 @@ abstract class Behavior[T] {
    */
   def narrow[U <: T]: Behavior[U] = this.asInstanceOf[Behavior[U]]
 }
-
-/*
- * FIXME
- *
- * Closing over ActorContext makes a Behavior immobile: it cannot be moved to
- * another context and executed there, and therefore it cannot be replicated or
- * forked either.
- */
 
 object Behavior {
 
@@ -123,8 +121,8 @@ object Behavior {
   /**
    * Given a possibly special behavior (same or unhandled) and a
    * “current” behavior (which defines the meaning of encountering a `Same`
-   * behavior) this method unwraps the behavior such that the innermost behavior
-   * is returned, i.e. it removes the decorations.
+   * behavior) this method computes the next behavior, suitable for passing a
+   * message or signal.
    */
   def canonicalize[T](behavior: Behavior[T], current: Behavior[T]): Behavior[T] =
     behavior match {
@@ -133,6 +131,11 @@ object Behavior {
       case other               ⇒ other
     }
 
+  /**
+   * Validate the given behavior as a suitable initial actor behavior; most
+   * notably the behavior can neither be `Same` nor `Unhandled`. Starting
+   * out with a `Stopped` behavior is allowed, though.
+   */
   def validateAsInitial[T](behavior: Behavior[T]): Behavior[T] =
     behavior match {
       case `sameBehavior` | `unhandledBehavior` ⇒
@@ -140,12 +143,22 @@ object Behavior {
       case x ⇒ x
     }
 
+  /**
+   * Validate the given behavior as initial, pass it a [[PreStart]] message
+   * and canonicalize the result.
+   */
   def preStart[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
     val b = validateAsInitial(behavior)
     if (isAlive(b)) canonicalize(b.management(ctx, PreStart), b) else b
   }
 
+  /**
+   * Returns true if the given behavior is not stopped.
+   */
   def isAlive[T](behavior: Behavior[T]): Boolean = behavior ne stoppedBehavior
 
+  /**
+   * Returns true if the given behavior is the special `Unhandled` marker.
+   */
   def isUnhandled[T](behavior: Behavior[T]): Boolean = behavior eq unhandledBehavior
 }

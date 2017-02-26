@@ -21,6 +21,7 @@ import scala.util.Success
 import akka.util.Timeout
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicInteger
+import akka.typed.scaladsl.AskPattern
 
 object ActorSystemImpl {
   import ScalaDSL._

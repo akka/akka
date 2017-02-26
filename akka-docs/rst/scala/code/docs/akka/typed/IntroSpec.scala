@@ -6,7 +6,7 @@ package docs.akka.typed
 //#imports
 import akka.typed._
 import akka.typed.ScalaDSL._
-import akka.typed.AskPattern._
+import akka.typed.scaladsl.AskPattern._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.Await
