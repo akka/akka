@@ -303,7 +303,15 @@ object GraphStages {
           def onPull(): Unit = {}
 
           override def onDownstreamFinish(): Unit = {
-            materialized.tryFailure(new RuntimeException("Downstream cancelled before future source completed"))
+            if (!materialized.isCompleted) {
+              // make sure we always yield the matval if possible, even if downstream cancelled
+              // before the source was materialized
+              val matValFuture = future.map { gr ⇒
+                val runnable = Source.fromGraph(gr).to(Sink.ignore)
+                interpreter.subFusingMaterializer.materialize(runnable, initialAttributes = attr)
+              }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+              materialized.completeWith(matValFuture)
+            }
             super.onDownstreamFinish()
           }
         })
@@ -320,8 +328,6 @@ object GraphStages {
           completeStage()
 
         override def postStop(): Unit = {
-          // I don't think this can happen, but just to be sure we don't leave the matval promise unfulfilled
-          materialized.tryFailure(new RuntimeException("FutureFlattenSource stage stopped without materialization of inner source completing"))
           if (!sinkIn.isClosed) sinkIn.cancel()
         }
 
