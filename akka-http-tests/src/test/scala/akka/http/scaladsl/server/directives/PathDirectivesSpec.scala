@@ -423,7 +423,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       Get("/foo/bar") ~> route ~> checkRedirectTo("/foo/bar/")
     }
 
-    "preserves the query and the frag when redirect" in {
+    "preserve the query and the frag when redirect" in {
       Get("/foo/bar?query#frag") ~> route ~> checkRedirectTo("/foo/bar/?query#frag")
     }
 
@@ -441,6 +441,10 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
   "the `redirectToNoTrailingSlashIfPresent` directive" should {
     val route = redirectToNoTrailingSlashIfPresent(Found) { completeOk }
 
+    "pass if the path is a single slash" in {
+      Get("/") ~> route ~> check { response shouldEqual Ok }
+    }
+
     "pass if the request path already doesn't have a trailing slash" in {
       Get("/foo/bar") ~> route ~> check { response shouldEqual Ok }
     }
@@ -449,7 +453,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       Get("/foo/bar/") ~> route ~> checkRedirectTo("/foo/bar")
     }
 
-    "preserves the query and the frag when redirect" in {
+    "preserve the query and the frag when redirect" in {
       Get("/foo/bar/?query#frag") ~> route ~> checkRedirectTo("/foo/bar?query#frag")
     }
 
