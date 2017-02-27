@@ -443,6 +443,7 @@ private[akka] class ShardRegion(
     case query: ShardRegionQuery                 ⇒ receiveQuery(query)
     case msg: RestartShard                       ⇒ deliverMessage(msg, sender())
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
+    case unknownMsg                              ⇒ log.warning(s"Message does not have an extractor defined so it was ignored: $unknownMsg")
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {
