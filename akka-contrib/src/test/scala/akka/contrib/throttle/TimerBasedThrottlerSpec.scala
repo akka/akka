@@ -74,35 +74,35 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
 
     "send messages after a `SetTarget(None)` pause" in {
       val echo = system.actorOf(TestActors.echoActorProps)
-      val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer (1.second.dilated)))
+      val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer (10.second.dilated)))
       throttler ! SetTarget(Some(echo))
       1 to 3 foreach { throttler ! _ }
       throttler ! SetTarget(None)
-      within(0.34 second) {
+      within(3.4 second) {
         expectMsg(1)
         expectNoMsg()
       }
       expectNoMsg(1 second)
       throttler ! SetTarget(Some(echo))
       4 to 7 foreach { throttler ! _ }
-      within(2.1 seconds) {
+      within(21 seconds) {
         2 to 7 foreach { expectMsg(_) }
       }
     }
 
     "keep messages when the target is set to None" in {
       val echo = system.actorOf(TestActors.echoActorProps)
-      val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer (1.second.dilated)))
+      val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer (10.second.dilated)))
       throttler ! SetTarget(Some(echo))
       1 to 7 foreach { throttler ! _ }
       throttler ! SetTarget(None)
-      within(0.34 second) {
+      within(3.4 second) {
         expectMsg(1)
         expectNoMsg()
       }
       expectNoMsg(1 second)
       throttler ! SetTarget(Some(echo))
-      within(2.1 seconds) {
+      within(21 seconds) {
         2 to 7 foreach { expectMsg(_) }
       }
     }
