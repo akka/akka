@@ -315,5 +315,5 @@ In addition to PR Validation the cluster is also used for nightly and performanc
 ## Related links
 
 * [Akka Contributor License Agreement](http://www.lightbend.com/contribute/cla)
-* [Akka Issue Tracker](http://doc.akka.io/docs/akka/current/project/issue-tracking.html)
+* [Akka HTTP Issue Tracker](https://github.com/akka/akka-http/issues)
 * [Scalariform](https://github.com/daniel-trinh/scalariform)
