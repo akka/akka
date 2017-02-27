@@ -113,29 +113,29 @@ class FutureDirectivesSpec extends RoutingSpec with Inside {
         responseAs[String] shouldEqual "yes"
       }
     }
-    "propagate the exception in the failure case" in EventFilter.error(
+    "propagate the exception in the failure case" in EventFilter[TestException.type](
       occurrences = 1,
-      message = "Error during processing of request: 'XXX'. Completing with 500 Internal Server Error response."
+      message = BasicRouteSpecs.defaultExnHandler500Error("XXX")
     ).intercept {
-      Get() ~> onSuccess(Future.failed(TestException)) { echoComplete } ~> check {
-        status shouldEqual StatusCodes.InternalServerError
+        Get() ~> onSuccess(Future.failed(TestException)) { echoComplete } ~> check {
+          status shouldEqual StatusCodes.InternalServerError
+        }
       }
-    }
     "catch an exception in the success case" in {
       Get() ~> onSuccess(Future.successful("ok")) { throwTestException("EX when ") } ~> check {
         status shouldEqual StatusCodes.InternalServerError
         responseAs[String] shouldEqual s"Oops. akka.http.scaladsl.server.directives.FutureDirectivesSpec$$TestException: EX when ok"
       }
     }
-    "catch an exception in the failure case" in EventFilter.error(
+    "catch an exception in the failure case" in EventFilter[TestException.type](
       occurrences = 1,
-      message = "Error during processing of request: 'XXX'. Completing with 500 Internal Server Error response."
+      message = BasicRouteSpecs.defaultExnHandler500Error("XXX")
     ).intercept {
-      Get() ~> onSuccess(Future.failed(TestException)) { throwTestException("EX when ") } ~> check {
-        status shouldEqual StatusCodes.InternalServerError
-        responseAs[String] shouldEqual "There was an internal server error."
+        Get() ~> onSuccess(Future.failed(TestException)) { throwTestException("EX when ") } ~> check {
+          status shouldEqual StatusCodes.InternalServerError
+          responseAs[String] shouldEqual "There was an internal server error."
+        }
       }
-    }
   }
 
   "The `completeOrRecoverWith` directive" should {

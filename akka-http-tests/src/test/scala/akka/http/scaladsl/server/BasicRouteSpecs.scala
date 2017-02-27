@@ -9,6 +9,14 @@ import model.HttpMethods._
 import model.StatusCodes
 import akka.testkit.EventFilter
 
+object BasicRouteSpecs {
+  private[http] def defaultExnHandler500Error(message: String) = {
+    ExceptionHandler.ErrorMessageTemplate
+      .replaceFirst("""\{\}""", message)
+      .replaceFirst("""\{\}""", StatusCodes.InternalServerError.toString)
+  }
+}
+
 class BasicRouteSpecs extends RoutingSpec {
 
   "routes created by the concatenation operator '~'" should {
@@ -182,33 +190,33 @@ class BasicRouteSpecs extends RoutingSpec {
 
   case object MyException extends RuntimeException("Boom")
   "Route sealing" should {
-    "catch route execution exceptions" in EventFilter.error(
+    "catch route execution exceptions" in EventFilter[MyException.type](
       occurrences = 1,
-      message = "Error during processing of request: 'Boom'. Completing with 500 Internal Server Error response."
+      message = BasicRouteSpecs.defaultExnHandler500Error("Boom")
     ).intercept {
-      Get("/abc") ~> Route.seal {
-        get { ctx ⇒
-          throw MyException
+        Get("/abc") ~> Route.seal {
+          get { ctx ⇒
+            throw MyException
+          }
+        } ~> check {
+          status shouldEqual StatusCodes.InternalServerError
         }
-      } ~> check {
-        status shouldEqual StatusCodes.InternalServerError
       }
-    }
-    "catch route building exceptions" in EventFilter.error(
+    "catch route building exceptions" in EventFilter[MyException.type](
       occurrences = 1,
-      message = "Error during processing of request: 'Boom'. Completing with 500 Internal Server Error response."
+      message = BasicRouteSpecs.defaultExnHandler500Error("Boom")
     ).intercept {
-      Get("/abc") ~> Route.seal {
-        get {
-          throw MyException
+        Get("/abc") ~> Route.seal {
+          get {
+            throw MyException
+          }
+        } ~> check {
+          status shouldEqual StatusCodes.InternalServerError
         }
-      } ~> check {
-        status shouldEqual StatusCodes.InternalServerError
       }
-    }
-    "convert all rejections to responses" in EventFilter.error(
+    "convert all rejections to responses" in EventFilter[RuntimeException](
       occurrences = 1,
-      start = "Error during processing of request"
+      start = "Error during processing of request: 'Unhandled rejection:"
     ).intercept {
       object MyRejection extends Rejection
       Get("/abc") ~> Route.seal {

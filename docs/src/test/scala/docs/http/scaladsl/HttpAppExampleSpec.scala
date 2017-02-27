@@ -14,7 +14,7 @@ class HttpAppExampleSpec extends WordSpec with Matchers
     import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
-    
+
     // Server definition
     object WebServer extends HttpApp {
       def route: Route =

@@ -42,17 +42,17 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       "for successful futures and marshalling" in {
         Get() ~> complete(Promise.successful("yes").future) ~> check { responseAs[String] shouldEqual "yes" }
       }
-      "for failed futures and marshalling" in EventFilter.error(
+      object TestException extends RuntimeException("Boom")
+      "for failed futures and marshalling" in EventFilter[TestException.type](
         occurrences = 1,
-        message = "Error during processing of request: 'Boom'. Completing with 500 Internal Server Error response."
+        message = BasicRouteSpecs.defaultExnHandler500Error("Boom")
       ).intercept {
-        object TestException extends RuntimeException("Boom")
-        Get() ~> complete(Promise.failed[String](TestException).future) ~>
-          check {
-            status shouldEqual StatusCodes.InternalServerError
-            responseAs[String] shouldEqual "There was an internal server error."
-          }
-      }
+          Get() ~> complete(Promise.failed[String](TestException).future) ~>
+            check {
+              status shouldEqual StatusCodes.InternalServerError
+              responseAs[String] shouldEqual "There was an internal server error."
+            }
+        }
       "for futures failed with a RejectionError" in {
         Get() ~> complete(Promise.failed[String](RejectionError(AuthorizationFailedRejection)).future) ~>
           check {

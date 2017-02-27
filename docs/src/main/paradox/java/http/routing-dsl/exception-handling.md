@@ -37,3 +37,34 @@ The second case allows you to restrict the applicability of your handler to cert
 Here is an example for wiring up a custom handler via @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions-java):
 
 @@snip [ExceptionHandlerExamplesTest.java](../../../../../test/java/docs/http/javadsl/ExceptionHandlerExample.java) { #explicit-handler-example }
+
+## Default Exception Handler
+
+A default `ExceptionHandler` is used if no custom instance is provided.
+
+It will handle every `NonFatal` throwable, write its stack trace and complete the request
+with `InternalServerError` `(500)` status code.
+
+The message body will contain a string obtained via `Throwable#getMessage` call on the exception caught.
+
+In case `getMessage` returns `null` (which is true for e.g. `NullPointerException` instances),
+the class name and a remark about the message being null are included in the response body.
+
+Note that `IllegalRequestException`s' stack traces are not logged, since instances of this class
+normally contain enough information to provide a useful error message.
+
+@@@ note
+Users are strongly encouraged not to rely on the `ExceptionHandler` as a means
+of handling 'normally exceptional' situations.
+
+Exceptions are known to have a negative performance impact for cases
+when the depth of the call stack is significant (stack trace construction cost)
+and when the handler is located far from the place of the throwable instantiation (stack unwinding costs).
+
+In a typical Akka application both these conditions are frequently true,
+so as a rule of thumb, you should try to minimize the number of `Throwable` instances
+reaching the exception handler.
+
+To understand the performance implications of (mis-)using exceptions,
+have a read at this excellent post by A. Shipilёv: [The Exceptional Performance of Lil' Exception](https://shipilev.net/blog/2014/exceptional-performance).
+@@@

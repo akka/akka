@@ -23,6 +23,10 @@ trait ExceptionHandler extends ExceptionHandler.PF {
 
 object ExceptionHandler {
   type PF = PartialFunction[Throwable, Route]
+  private[http] val ErrorMessageTemplate: String = {
+    "Error during processing of request: '{}'. Completing with {} response. " +
+      "To change default exception handling behavior, provide a custom ExceptionHandler."
+  }
 
   implicit def apply(pf: PF): ExceptionHandler = apply(knownToBeSealed = false)(pf)
 
@@ -43,7 +47,8 @@ object ExceptionHandler {
         ctx.complete((status, info.format(settings.verboseErrorMessages)))
       }
       case NonFatal(e) ⇒ ctx ⇒ {
-        ctx.log.error("Error during processing of request: '{}'. Completing with {} response.", e.getMessage, InternalServerError)
+        val message = Option(e.getMessage).getOrElse(s"${e.getClass.getName} (No error message supplied)")
+        ctx.log.error(e, ErrorMessageTemplate, message, InternalServerError)
         ctx.complete(InternalServerError)
       }
     }
