@@ -68,6 +68,7 @@ lazy val parsing = project("akka-parsing")
   .settings(
     scalacOptions := scalacOptions.value.filterNot(_ == "-Xfatal-warnings")
   )
+  .addAkkaModuleDependency("akka-actor")
 
 lazy val httpCore = project("akka-http-core")
   .settings(Dependencies.httpCore)
