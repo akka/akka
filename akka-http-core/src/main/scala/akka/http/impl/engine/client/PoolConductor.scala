@@ -12,6 +12,7 @@ import akka.stream.scaladsl._
 import akka.stream._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model.HttpMethod
+import akka.macros.LogHelper
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
@@ -114,8 +115,8 @@ private object PoolConductor {
   private case class Busy(openRequests: Int) extends SlotState { require(openRequests > 0) }
   private object Busy extends Busy(1)
 
-  private class SlotSelector(slotSettings: PoolSlotsSetting, pipeliningLimit: Int, log: LoggingAdapter)
-    extends GraphStage[FanInShape2[RequestContext, SlotEvent, SwitchSlotCommand]] {
+  private class SlotSelector(slotSettings: PoolSlotsSetting, pipeliningLimit: Int, val log: LoggingAdapter)
+    extends GraphStage[FanInShape2[RequestContext, SlotEvent, SwitchSlotCommand]] with LogHelper {
 
     private val requestContextIn = Inlet[RequestContext]("SlotSelector.requestContextIn")
     private val slotEventIn = Inlet[SlotEvent]("SlotSelector.slotEventIn")
@@ -129,11 +130,20 @@ private object PoolConductor {
       val slotStates = Array.fill[SlotState](slotSettings.maxSlots)(Unconnected)
       var nextSlot = 0
 
+      def updateSlotState(idx: Int, f: SlotState ⇒ SlotState): Unit = {
+        val oldState = slotStates(idx)
+        val newState = f(oldState)
+
+        debug(s"[$idx] $oldState -> $newState")
+
+        slotStates(idx) = newState
+      }
+
       setHandler(requestContextIn, new InHandler {
         override def onPush(): Unit = {
           val ctx = grab(requestContextIn)
           val slot = nextSlot
-          slotStates(slot) = slotStateAfterDispatch(slotStates(slot), ctx.request.method)
+          updateSlotState(slot, slotStateAfterDispatch(_, ctx.request.method))
           nextSlot = bestSlot()
           emit(slotCommandOut, SwitchSlotCommand(DispatchCommand(ctx), slot), tryPullCtx)
         }
@@ -143,9 +153,9 @@ private object PoolConductor {
         override def onPush(): Unit = {
           grab(slotEventIn) match {
             case SlotEvent.RequestCompleted(slotIx) ⇒
-              slotStates(slotIx) = slotStateAfterRequestCompleted(slotStates(slotIx))
+              updateSlotState(slotIx, slotStateAfterRequestCompleted)
             case SlotEvent.Disconnected(slotIx, failed) ⇒
-              slotStates(slotIx) = slotStateAfterDisconnect(slotStates(slotIx), failed)
+              updateSlotState(slotIx, slotStateAfterDisconnect(_, failed))
               reconnectIfNeeded()
             case SlotEvent.ConnectedEagerly(slotIx) ⇒
             // do nothing ...
@@ -172,7 +182,7 @@ private object PoolConductor {
 
       def connect(slotIx: Int): Unit = {
         emit(slotCommandOut, SwitchSlotCommand(ConnectEagerlyCommand, slotIx))
-        slotStates(slotIx) = Idle
+        updateSlotState(slotIx, _ ⇒ Idle)
       }
 
       private def reconnectIfNeeded(): Unit =

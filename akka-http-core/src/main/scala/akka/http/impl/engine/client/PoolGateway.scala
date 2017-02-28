@@ -84,9 +84,15 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
 
 private[http] object PoolGateway {
 
-  sealed trait GatewayIdentifier
-  case object SharedGateway extends GatewayIdentifier
-  final case class UniqueGateway(id: Long) extends GatewayIdentifier
+  sealed trait GatewayIdentifier {
+    def name: String
+  }
+  case object SharedGateway extends GatewayIdentifier {
+    def name: String = "shared"
+  }
+  final case class UniqueGateway(id: Long) extends GatewayIdentifier {
+    def name: String = s"#$id"
+  }
 
   private[this] val uniqueGatewayId = new AtomicLong(0)
   def newUniqueGatewayIdentifier = UniqueGateway(uniqueGatewayId.incrementAndGet())

@@ -5,13 +5,15 @@
 package akka.http.impl
 
 import akka.NotUsed
-import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
 import language.implicitConversions
 import java.nio.charset.Charset
+
 import com.typesafe.config.Config
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.stream.stage._
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
 import scala.reflect.ClassTag
@@ -19,6 +21,7 @@ import scala.util.{ Failure, Success }
 import scala.util.matching.Regex
 import akka.util.ByteString
 import akka.actor._
+import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
@@ -72,6 +75,21 @@ package object util {
       val pre = if (si) "kMGTPE".charAt(exp - 1).toString else "KMGTPE".charAt(exp - 1).toString + 'i'
       "%.1f %sB" format (bytes / math.pow(unit, exp), pre)
     } else bytes.toString + "  B"
+  }
+
+  private[http] implicit class RichHttpRequest(val request: HttpRequest) extends AnyVal {
+    def debugString: String = s"${request.method.value} ${request.uri.path} ${entityDebugInfo(request.entity)}"
+  }
+  private[http] implicit class RichHttpResponse(val response: HttpResponse) extends AnyVal {
+    def debugString: String = s"${response.status.value} ${entityDebugInfo(response.entity)}"
+  }
+  private def entityDebugInfo(e: HttpEntity): String = e match {
+    case HttpEntity.Empty                 ⇒ "Empty"
+    case HttpEntity.Strict(_, data)       ⇒ s"Strict(${data.size} bytes)"
+    case HttpEntity.Default(_, length, _) ⇒ s"Default($length bytes)"
+    case _: HttpEntity.CloseDelimited     ⇒ "CloseDelimited"
+    case _: HttpEntity.IndefiniteLength   ⇒ "IndefiniteLength"
+    case _: HttpEntity.Chunked            ⇒ "Chunked"
   }
 }
 

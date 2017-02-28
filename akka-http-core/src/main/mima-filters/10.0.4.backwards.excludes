@@ -1,0 +1,6 @@
+# Internal classes, #912
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.client.PoolSlot#SlotProcessor.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.client.PoolInterfaceActor")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.client.PoolSlot.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.client.PoolFlow.apply")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.client.PoolGateway#GatewayIdentifier.name")
