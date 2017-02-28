@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.model
 
+import akka.stream.scaladsl.Flow
+import akka.stream.{ FlowShape, Graph }
 import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
@@ -270,6 +272,8 @@ final class HttpRequest(
   override def withUri(path: String): HttpRequest = withUri(Uri(path))
   def withUri(uri: Uri): HttpRequest = copy(uri = uri)
 
+  def transformEntityDataBytes[T](transformer: Graph[FlowShape[ByteString, ByteString], T]): HttpRequest = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
+
   import JavaMapping.Implicits._
   /** Java API */
   override def getUri: jm.Uri = uri.asJava
@@ -369,7 +373,7 @@ object HttpRequest {
       }
     }
 
-  /* Manual Case Class things, to easen bin-compat */
+  /* Manual Case Class things, to ease bin-compat */
 
   def apply(
     method:   HttpMethod                = HttpMethods.GET,
@@ -417,7 +421,9 @@ final class HttpResponse(
 
   def mapEntity(f: ResponseEntity ⇒ ResponseEntity): HttpResponse = withEntity(f(entity))
 
-  /* Manual Case Class things, to easen bin-compat */
+  def transformEntityDataBytes[T](transformer: Graph[FlowShape[ByteString, ByteString], T]): HttpResponse = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
+
+  /* Manual Case Class things, to ease bin-compat */
 
   def copy(
     status:   StatusCode                = status,

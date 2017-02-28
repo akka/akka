@@ -13,3 +13,7 @@ ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$Abs
 ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.model.UriJavaAccessor$")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.model.UriJavaAccessor")
 ProblemFilters.exclude[FinalClassProblem]("akka.http.impl.model.JavaQuery")
+
+
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.transformEntityDataBytes")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpResponse.encoding")

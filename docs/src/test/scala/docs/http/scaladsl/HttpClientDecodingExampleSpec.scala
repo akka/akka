@@ -47,6 +47,8 @@ class HttpClientDecodingExampleSpec extends WordSpec with Matchers with CompileO
 
     val futureResponses: Future[Seq[HttpResponse]] =
       Future.traverse(requests)(http.singleRequest(_).map(decodeResponse))
+
+    system.terminate()
     //#single-request-decoding-example
   }
 }

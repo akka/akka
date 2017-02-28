@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class HttpClientDecodingExample {
+public class HttpClientDecodingExampleTest {
 
   public static void main(String[] args) throws Exception {
 
@@ -38,7 +38,7 @@ public class HttpClientDecodingExample {
 
     final Http http = Http.get(system);
 
-    final Function<HttpResponse, CompletionStage<HttpResponse>> decodeResponse = response -> {
+    final Function<HttpResponse, HttpResponse> decodeResponse = response -> {
       // Pick the right coder
       final Coder coder;
       if (HttpEncodings.gzip().equals(response.encoding())) {
@@ -50,24 +50,21 @@ public class HttpClientDecodingExample {
       }
 
       // Decode the entity
-      return response.entity()
-        .toStrict(FiniteDuration.create(3, TimeUnit.SECONDS).toMillis(), materializer)
-        .thenCompose(strict ->
-          coder.decode(strict.getData(), materializer))
-        .thenApply(bs ->
-          response.withEntity(response.entity().getContentType(), bs)
-        );
+      return coder.decodeMessage(response);
     };
 
-    final List<CompletableFuture<HttpResponse>> futureResponses = httpRequests.stream()
+    List<CompletableFuture<HttpResponse>> futureResponses = httpRequests.stream()
       .map(req -> http.singleRequest(req, materializer)
-        .thenCompose(decodeResponse))
+        .thenApply(decodeResponse))
       .map(CompletionStage::toCompletableFuture)
       .collect(Collectors.toList());
 
     for (CompletableFuture<HttpResponse> futureResponse : futureResponses) {
       final HttpResponse httpResponse = futureResponse.get();
-      System.out.println("response is: " + httpResponse);
+      system.log().info("response is: " + httpResponse.entity()
+                        .toStrict(1000, materializer)
+                        .toCompletableFuture()
+                        .get());
     }
 
     system.terminate();

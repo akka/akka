@@ -5,17 +5,23 @@
 package akka.http.scaladsl.coding
 
 import akka.NotUsed
+import akka.http.javadsl.model.HttpMessage.MessageTransformations
 import akka.http.scaladsl.model._
 import akka.stream.{ FlowShape, Materializer }
 import akka.stream.stage.GraphStage
 import akka.util.ByteString
 import headers.HttpEncoding
-import akka.stream.scaladsl.{ Sink, Source, Flow }
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 
 import scala.concurrent.Future
 
 trait Decoder {
   def encoding: HttpEncoding
+
+  def decodeMessage[T <: HttpMessage with MessageTransformations[T]](message: T): T#Self =
+    if (message.headers exists Encoder.isContentEncodingHeader)
+      message.transformEntityDataBytes(decoderFlow).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
+    else message.self
 
   def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self =
     if (message.headers exists Encoder.isContentEncodingHeader)
