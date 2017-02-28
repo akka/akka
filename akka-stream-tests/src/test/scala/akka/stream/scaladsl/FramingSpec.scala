@@ -265,7 +265,7 @@ class FramingSpec extends StreamSpec {
         .futureValue should ===(testMessages)
     }
 
-    "not go into an infinite loop for 0 or less length field values (#22367)" in {
+    "fail the stage on negative length field values (#22367)" in {
       implicit val bo = java.nio.ByteOrder.LITTLE_ENDIAN
 
       // A 4-byte message containing only an Int specifying the length of the payload
@@ -281,8 +281,25 @@ class FramingSpec extends StreamSpec {
 
       val ex = res.failed.futureValue
       ex shouldBe a[FramingException]
+      ex.getMessage should ===("Decoded frame header reported negative size -4")
     }
 
+    "let zero length field values pass through (#22367)" in {
+      implicit val bo = java.nio.ByteOrder.LITTLE_ENDIAN
+
+      // Interleave empty frames with a frame with data
+      val encodedPayload = encode(ByteString(42), 0, 4, bo)
+      val emptyFrame = encode(ByteString(), 0, 4, bo)
+      val bs = Vector(emptyFrame, encodedPayload, emptyFrame)
+
+      val res =
+        Source(bs)
+          .via(Flow[ByteString].via(Framing.lengthField(4, 0, 1000)))
+          .runWith(Sink.seq)
+
+      res.futureValue should equal(Seq(emptyFrame, encodedPayload, emptyFrame))
+
+    }
   }
 
 }
