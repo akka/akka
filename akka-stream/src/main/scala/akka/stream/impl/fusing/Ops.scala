@@ -1553,8 +1553,14 @@ final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy)
       completeIfReady()
 
     def onPull(): Unit = {
-      if (!isTimerActive(timerName) && !buffer.isEmpty && nextElementWaitTime() < 0)
-        push(out, buffer.dequeue()._2)
+      if (!isTimerActive(timerName) && !buffer.isEmpty) {
+        val waitTime = nextElementWaitTime()
+        if (waitTime < 0) {
+          push(out, buffer.dequeue()._2)
+        } else {
+          scheduleOnce(timerName, Math.max(10, waitTime).millis)
+        }
+      }
 
       if (!isClosed(in) && !hasBeenPulled(in) && pullCondition)
         pull(in)
