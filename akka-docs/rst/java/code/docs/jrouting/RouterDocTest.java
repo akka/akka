@@ -147,7 +147,7 @@ public class RouterDocTest extends AbstractJavaTest {
           //#reply-with-self
 
           //#reply-with-parent
-          sender().tell("reply", getContext().parent());
+          sender().tell("reply", getContext().getParent());
           //#reply-with-parent
         })
         .build();

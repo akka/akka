@@ -7,19 +7,22 @@ package akka.actor
 import akka.actor.dungeon.ChildrenContainer
 import akka.dispatch.Envelope
 import akka.dispatch.sysmsg._
-import akka.event.Logging.{ LogEvent, Debug, Error }
+import akka.event.Logging.{ Debug, Error, LogEvent }
 import akka.japi.Procedure
-import java.io.{ ObjectOutputStream, NotSerializableException }
+import java.io.{ NotSerializableException, ObjectOutputStream }
+
 import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.util.control.NonFatal
 import akka.dispatch.MessageDispatcher
 import akka.util.Reflect
 import akka.japi.pf.ReceiveBuilder
 import akka.actor.AbstractActor.Receive
+import akka.annotation.InternalApi
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -205,6 +208,7 @@ trait UntypedActorContext extends ActorContext {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] trait Cell {
   /**
    * The “self” reference which this Cell is attached to.
@@ -384,6 +388,9 @@ private[akka] class ActorCell(
   var currentMessage: Envelope = _
   private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
   private[this] var sysmsgStash: LatestFirstSystemMessageList = SystemMessageList.LNil
+
+  // Java API
+  final def getParent() = parent
 
   protected def stash(msg: SystemMessage): Unit = {
     assert(msg.unlinked)

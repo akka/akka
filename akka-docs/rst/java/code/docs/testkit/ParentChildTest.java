@@ -46,7 +46,7 @@ public class ParentChildTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .matchEquals("ping", message -> {
-          getContext().parent().tell("pong", self());
+          getContext().getParent().tell("pong", self());
         })
         .build();
     }
