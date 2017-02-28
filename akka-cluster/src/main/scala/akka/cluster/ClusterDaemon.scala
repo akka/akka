@@ -1408,7 +1408,7 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq
     case ReceiveTimeout ⇒
       if (attempt >= 2)
         log.warning(
-          "Couldn't join seed nodes after [{}] attmpts, will try again. seed-nodes=[{}]",
+          "Couldn't join seed nodes after [{}] attempts, will try again. seed-nodes=[{}]",
           attempt, seedNodes.filterNot(_ == selfAddress).mkString(", "))
       // no InitJoinAck received, try again
       self ! JoinSeedNode
