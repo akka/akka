@@ -440,6 +440,21 @@ trait TestKitBase {
   }
 
   /**
+   * Same as `fishForMessage`, but gets a different partial function and returns properly typed message.
+   */
+  def fishForSpecificMessage[T](max: Duration = Duration.Undefined, hint: String = "")(f: PartialFunction[Any, T]): T = {
+    val _max = remainingOrDilated(max)
+    val end = now + _max
+    @tailrec
+    def recv: T = {
+      val o = receiveOne(end - now)
+      assert(o ne null, s"timeout (${_max}) during fishForSpecificMessage, hint: $hint")
+      if (f.isDefinedAt(o)) f(o) else recv
+    }
+    recv
+  }
+
+  /**
    * Same as `expectMsgType[T](remainingOrDefault)`, but correctly treating the timeFactor.
    */
   def expectMsgType[T](implicit t: ClassTag[T]): T = expectMsgClass_internal(remainingOrDefault, t.runtimeClass.asInstanceOf[Class[T]])
