@@ -20,7 +20,7 @@ private[metrics] class CircuitBreakerEventsStage(breaker: CircuitBreaker, maxBuf
 
       breaker.onOpen(callback.invoke(Event.BreakerOpened(now)))
       breaker.onHalfOpen(callback.invoke(Event.BreakerHalfOpened(now)))
-      breaker.onClose(callback.invoke(Event.BreakerOpened(now)))
+      breaker.onClose(callback.invoke(Event.BreakerClosed(now)))
 
       breaker.onCallSuccess(e ⇒ callback.invoke(Event.CallSuccess(now, e)))
       breaker.onCallFailure(e ⇒ callback.invoke(Event.CallFailure(now, e)))
@@ -59,9 +59,7 @@ private[metrics] class CircuitBreakerEventsStage(breaker: CircuitBreaker, maxBuf
       } else if (isAvailable(out)) {
         push(out, event)
       }
-
     }
-
 
     override def onPull(): Unit =
       if (maxBuffer != 0 && buffer.nonEmpty) {
