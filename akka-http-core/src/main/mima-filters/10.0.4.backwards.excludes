@@ -4,3 +4,10 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.client.PoolIn
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.client.PoolSlot.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.client.PoolFlow.apply")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.client.PoolGateway#GatewayIdentifier.name")
+
+# Added new member to ConnectionPoolSettings which shouldn't be implemented by user classes, #916
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.transport")
+
+# changes to internal classes, #916
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy")

@@ -9,7 +9,7 @@ import akka.event.Logging
 import akka.http.impl.engine.client.PoolFlow._
 import akka.http.impl.util.RichHttpRequest
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.{ Http, HttpsConnectionContext }
+import akka.http.scaladsl.Http
 import akka.macros.LogHelper
 import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
@@ -75,13 +75,10 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
     import hcps._
     import setup.{ connectionContext, settings }
 
-    val connectionFlow = connectionContext match {
-      case httpsContext: HttpsConnectionContext ⇒ Http().outgoingConnectionHttps(host, port, httpsContext, None, settings.connectionSettings, setup.log)
-      case _                                    ⇒ Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
-    }
+    val connectionFlow =
+      Http().outgoingConnectionUsingTransport(host, port, settings.transport, connectionContext, settings.connectionSettings, setup.log)
 
     val poolFlow = PoolFlow(connectionFlow, settings, log).named("PoolFlow")
-
     Source.fromPublisher(ActorPublisher(self)).via(poolFlow).runWith(Sink.fromSubscriber(ActorSubscriber[ResponseContext](self)))
   }
 
