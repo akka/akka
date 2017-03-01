@@ -540,7 +540,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's
    * effective URI to produce a response future.
    *
-   * The given [[HttpsConnectionContext]] will be used for encruption if the request is sent to an https endpoint.
+   * The given [[HttpsConnectionContext]] will be used for encryption if the request is sent to an https endpoint.
    *
    * Note that the request must have either an absolute URI or a valid `Host` header, otherwise
    * the future will be completed with an error.

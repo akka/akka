@@ -340,7 +340,7 @@ usually need the same settings, however the `server` most likely has a very diff
 <a id="registeringcustommediatypes"></a>
 ## Registering Custom Media Types
 
-Akka HTTP [predefines](https://github.com/akka/akka-http/blob/master/akka-http-core/src/main/scala/akka/http/scaladsl/model/MediaType.scala#L297) most commonly encountered media types and emits them in their well-typed form while parsing http messages.
+Akka HTTP @github[predefines](/akka-http-core/src/main/scala/akka/http/scaladsl/model/MediaType.scala#L297) most commonly encountered media types and emits them in their well-typed form while parsing http messages.
 Sometimes you may want to define a custom media type and inform the parser infrastructure about how to handle these custom
 media types, e.g. that `application/custom` is to be treated as `NonBinary` with `WithFixedCharset`. To achieve this you
 need to register the custom media type in the server's settings by configuring `ParserSettings` like this:
@@ -353,11 +353,11 @@ in the right style / place.
 <a id="registeringcustomstatuscodes"></a>
 ## Registering Custom Status Codes
 
-Similarily to media types, Akka HTTP @scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)
+Similarly to media types, Akka HTTP @scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)
 well-known status codes, however sometimes you may need to use a custom one (or are forced to use an API which returns custom status codes).
 Similarily to the media types registration, you can register custom status codes by configuring `ParserSettings` like this:
 
-@@snip [CustomMediaTypesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
+@@snip [CustomStatusCodesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
 
 ## The URI model
 
