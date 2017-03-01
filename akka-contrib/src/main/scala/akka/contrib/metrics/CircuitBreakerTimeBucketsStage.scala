@@ -1,15 +1,14 @@
 package akka.contrib.metrics
 
 import akka.Done
-import akka.contrib.metrics.Event.{BreakerClosed, BreakerHalfOpened, BreakerOpened}
+import akka.contrib.metrics.Event.{ BreakerClosed, BreakerHalfOpened, BreakerOpened }
 import akka.pattern.CircuitBreaker
 import akka.stream._
 import akka.stream.impl.Buffer
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogic}
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogic }
 
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
-
 
 private[metrics] class CircuitBreakerTimeBucketsStage(breaker: CircuitBreaker, interval: FiniteDuration, maxBuffer: Int) extends GraphStage[SourceShape[TimeBucketResult]] {
   private val out = Outlet[TimeBucketResult]("CircuitBreakerTimeBucketsStage.out")
@@ -39,19 +38,18 @@ private[metrics] class CircuitBreakerTimeBucketsStage(breaker: CircuitBreaker, i
     private def now = System.currentTimeMillis()
 
     private val callback = getAsyncCallback[Event] {
-      case e: Event.BreakerOpened => state.opens += e
-      case e: Event.BreakerHalfOpened => state.halfOpens += e
-      case e: Event.BreakerClosed => state.closes += e
+      case e: Event.BreakerOpened     ⇒ state.opens += e
+      case e: Event.BreakerHalfOpened ⇒ state.halfOpens += e
+      case e: Event.BreakerClosed     ⇒ state.closes += e
 
-      case e: Event.CallSuccess => state.callSuccesses.append(e.elapsed)
-      case e: Event.CallFailure => state.callFailures.append(e.elapsed)
-      case e: Event.CallTimeout => state.callTimeouts.append(e.elapsed)
-      case _: Event.CallBreakerOpen => state.callBreakerOpens += 1
+      case e: Event.CallSuccess       ⇒ state.callSuccesses.append(e.elapsed)
+      case e: Event.CallFailure       ⇒ state.callFailures.append(e.elapsed)
+      case e: Event.CallTimeout       ⇒ state.callTimeouts.append(e.elapsed)
+      case _: Event.CallBreakerOpen   ⇒ state.callBreakerOpens += 1
     }
 
     override def onPull(): Unit =
       if (buffer.nonEmpty) push(out, buffer.dequeue())
-
 
     override protected def onTimer(timerKey: Any): Unit = {
       if (buffer.isFull) buffer.dropHead()
@@ -69,7 +67,6 @@ private[metrics] class CircuitBreakerTimeBucketsStage(breaker: CircuitBreaker, i
 
     setHandler(out, this)
   }
-
 
   class TimeBucketResultHelper(var start: Long) {
     val opens: mutable.ListBuffer[BreakerOpened] = mutable.ListBuffer.empty
@@ -110,6 +107,5 @@ private[metrics] class CircuitBreakerTimeBucketsStage(breaker: CircuitBreaker, i
 
     def toReal = TimeBucket(elapsedTotal, count)
   }
-
 
 }

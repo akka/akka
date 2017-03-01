@@ -4,8 +4,7 @@ import akka.pattern.CircuitBreaker
 import akka.stream.OverflowStrategies._
 import akka.stream._
 import akka.stream.impl.Buffer
-import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
-
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 
 private[metrics] class CircuitBreakerEventsStage(breaker: CircuitBreaker, maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStage[SourceShape[Event]] {
   private val out = Outlet[Event]("CircuitBreakerEventsStage.out")
