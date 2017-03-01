@@ -29,14 +29,15 @@ class ExamplePersistentActor extends PersistentActor {
     case SnapshotOffer(_, snapshot: ExampleState) => state = snapshot
   }
 
+  val snapShotInterval = 1000
   val receiveCommand: Receive = {
     case Cmd(data) =>
-      persist(Evt(s"${data}-${numEvents}"))(updateState)
-      persist(Evt(s"${data}-${numEvents + 1}")) { event =>
+      persist(Evt(s"${data}-${numEvents}")) { event =>
         updateState(event)
         context.system.eventStream.publish(event)
+        if (lastSequenceNr % snapShotInterval == 0 && lastSequenceNr != 0)
+          saveSnapshot(state)
       }
-    case "snap"  => saveSnapshot(state)
     case "print" => println(state)
   }
 
@@ -51,7 +52,6 @@ object PersistentActorExample extends App {
   persistentActor ! Cmd("foo")
   persistentActor ! Cmd("baz")
   persistentActor ! Cmd("bar")
-  persistentActor ! "snap"
   persistentActor ! Cmd("buzz")
   persistentActor ! "print"
 
