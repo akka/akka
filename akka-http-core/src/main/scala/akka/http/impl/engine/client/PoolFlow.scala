@@ -8,11 +8,10 @@ import akka.NotUsed
 import akka.http.impl.engine.client.PoolConductor.PoolSlotsSetting
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
-import scala.concurrent.{ Promise, Future }
+import scala.concurrent.{ Future, Promise }
 import scala.util.Try
 import akka.event.LoggingAdapter
-import akka.actor._
-import akka.stream.{ FlowShape, Materializer }
+import akka.stream.FlowShape
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
@@ -70,9 +69,7 @@ private object PoolFlow {
   */
   def apply(
     connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
-    settings:       ConnectionPoolSettings, log: LoggingAdapter)(
-    implicit
-    system: ActorSystem, fm: Materializer): Flow[RequestContext, ResponseContext, NotUsed] =
+    settings:       ConnectionPoolSettings, log: LoggingAdapter): Flow[RequestContext, ResponseContext, NotUsed] =
     Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
       import GraphDSL.Implicits._
@@ -82,7 +79,7 @@ private object PoolFlow {
       )
 
       val slots = Vector
-        .tabulate(maxConnections)(PoolSlot(_, connectionFlow))
+        .tabulate(maxConnections)(PoolSlot(_, connectionFlow, log))
         .map(b.add)
 
       val responseMerge = b.add(Merge[ResponseContext](maxConnections))

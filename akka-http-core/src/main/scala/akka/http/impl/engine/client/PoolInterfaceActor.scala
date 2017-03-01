@@ -5,14 +5,17 @@
 package akka.http.impl.engine.client
 
 import akka.actor._
+import akka.event.Logging
 import akka.http.impl.engine.client.PoolFlow._
+import akka.http.impl.util.RichHttpRequest
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.{ Http, HttpsConnectionContext }
+import akka.macros.LogHelper
 import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
 import akka.stream.actor.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
 import akka.stream.impl.{ Buffer, SeqActorName }
-import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.{ BufferOverflowException, Materializer }
 
 import scala.annotation.tailrec
@@ -44,7 +47,12 @@ private object PoolInterfaceActor {
  *   (ActorPublisher) and response sink (ActorSubscriber).
  */
 private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer)
-  extends ActorSubscriber with ActorPublisher[RequestContext] with ActorLogging {
+  extends ActorSubscriber with ActorPublisher[RequestContext] with LogHelper {
+  override val log = {
+    val scheme = if (gateway.hcps.setup.connectionContext.isSecure) "https" else "http"
+    Logging.getLogger(context.system, s"${context.system.name}/Pool(${gateway.gatewayId.name}->$scheme://${gateway.hcps.host}:${gateway.hcps.port})")
+  }
+
   import PoolInterfaceActor._
 
   private[this] val hcps = gateway.hcps
@@ -65,16 +73,14 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
   private def initConnectionFlow() = {
     import context.system
     import hcps._
-    import setup._
+    import setup.{ connectionContext, settings }
 
     val connectionFlow = connectionContext match {
       case httpsContext: HttpsConnectionContext ⇒ Http().outgoingConnectionHttps(host, port, httpsContext, None, settings.connectionSettings, setup.log)
       case _                                    ⇒ Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
     }
 
-    val poolFlow =
-      PoolFlow(Flow[HttpRequest].viaMat(connectionFlow)(Keep.right), settings, setup.log)
-        .named("PoolFlow")
+    val poolFlow = PoolFlow(connectionFlow, settings, log).named("PoolFlow")
 
     Source.fromPublisher(ActorPublisher(self)).via(poolFlow).runWith(Sink.fromSubscriber(ActorSubscriber[ResponseContext](self)))
   }
@@ -100,11 +106,11 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
       activateIdleTimeoutIfNecessary()
 
     case OnComplete ⇒ // the pool shut down
-      log.debug("Host connection pool to {}:{} has completed orderly shutdown", hcps.host, hcps.port)
+      debug("Host connection pool has completed orderly shutdown")
       self ! PoisonPill // give potentially queued requests another chance to be forwarded back to the gateway
 
     case OnError(e) ⇒ // the pool shut down
-      log.debug("Host connection pool to {}:{} has shut down with error {}", hcps.host, hcps.port, e)
+      debug(s"Host connection pool has shut down with error ${e.getMessage}")
       self ! PoisonPill // give potentially queued requests another chance to be forwarded back to the gateway
 
     /////////////// FROM CLIENT //////////////
@@ -116,8 +122,13 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
       }
       if (totalDemand == 0) {
         // if we can't dispatch right now we buffer and dispatch when demand from the pool arrives
-        if (inputBuffer.isFull) x.responsePromise.failure(PoolOverflowException)
-        else inputBuffer.enqueue(x)
+        if (inputBuffer.isFull) {
+          debug(s"InputBuffer (max-open-requests = ${hcps.setup.settings.maxOpenRequests}) exhausted when trying to enqueue ${x.request.debugString}")
+          x.responsePromise.failure(PoolOverflowException)
+        } else {
+          inputBuffer.enqueue(x)
+          debug(s"InputBuffer (max-open-requests = ${hcps.setup.settings.maxOpenRequests}) now filled with ${inputBuffer.used} request after enqueuing ${x.request.debugString}")
+        }
       } else dispatchRequest(x) // if we can dispatch right now, do it
       request(1) // for every incoming request we demand one response from the pool
 
@@ -127,7 +138,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
       responsePromise.completeWith(gateway(request))
 
     case Shutdown ⇒ // signal coming in from gateway
-      log.debug("Shutting down host connection pool to {}:{}", hcps.host, hcps.port)
+      debug("Shutting down host connection pool")
       onCompleteThenStop()
       while (!inputBuffer.isEmpty) {
         val PoolRequest(request, responsePromise) = inputBuffer.dequeue()
