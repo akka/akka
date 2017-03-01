@@ -17,7 +17,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.io.StdIn
 import scala.util.{ Failure, Success, Try }
 
@@ -132,10 +132,15 @@ abstract class HttpApp extends Directives {
    * Hook that lets the user specify the future that will signal the shutdown of the server whenever completed.
    */
   protected def waitForShutdownSignal(system: ActorSystem)(implicit ec: ExecutionContext): Future[Done] = {
-    Future {
-      StdIn.readLine("Press RETURN to stop...\n")
-      Done
+    val promise = Promise[Done]()
+    sys.addShutdownHook {
+      promise.success(Done)
     }
+    Future {
+      if (StdIn.readLine("Press RETURN to stop...\n") != null)
+        promise.success(Done)
+    }
+    promise.future
   }
 
   /**
