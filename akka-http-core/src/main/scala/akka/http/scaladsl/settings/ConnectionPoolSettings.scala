@@ -27,16 +27,6 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
   def transport: ClientTransport
 
-  /* JAVA APIs */
-
-  final override def getConnectionSettings: js.ClientConnectionSettings = connectionSettings
-  final override def getPipeliningLimit: Int = pipeliningLimit
-  final override def getIdleTimeout: Duration = idleTimeout
-  final override def getMaxConnections: Int = maxConnections
-  final override def getMinConnections: Int = minConnections
-  final override def getMaxOpenRequests: Int = maxOpenRequests
-  final override def getMaxRetries: Int = maxRetries
-
   // ---
 
   // overrides for more precise return type

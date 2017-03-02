@@ -6,22 +6,23 @@ package akka.http.impl.util
 
 import java.net.InetAddress
 import java.util.Optional
+import java.util.concurrent.CompletionStage
 import java.{ lang ⇒ jl, util ⇒ ju }
 
 import akka.japi.Pair
 import akka.stream.{ FlowShape, Graph, javadsl, scaladsl }
 
 import scala.collection.immutable
-import scala.compat.java8.OptionConverters
+import scala.compat.java8.{ FutureConverters, OptionConverters }
 import scala.reflect.ClassTag
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.impl.model.{ JavaQuery, JavaUri }
-import akka.http.javadsl.{ ConnectionContext, HttpConnectionContext, HttpsConnectionContext, model ⇒ jm }
+import akka.http.javadsl.{ ConnectionContext, HttpConnectionContext, HttpsConnectionContext, model ⇒ jm, settings ⇒ js }
+import akka.http.{ javadsl ⇒ jdsl, scaladsl ⇒ sdsl }
 import akka.http.scaladsl.{ model ⇒ sm }
-import akka.http.javadsl.{ settings ⇒ js }
-import akka.http.impl.util.JavaMapping.Implicits._
 
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
 /** INTERNAL API */
@@ -118,13 +119,15 @@ private[http] object JavaMapping {
       def toJava(scalaObject: Option[_S]): Optional[_J] = OptionConverters.toJava(scalaObject.map(mapping.toJava))
     }
 
-  implicit def flowMapping[JIn, SIn, JOut, SOut, M](implicit inMapping: JavaMapping[JIn, SIn], outMapping: JavaMapping[JOut, SOut]): JavaMapping[javadsl.Flow[JIn, JOut, M], scaladsl.Flow[SIn, SOut, M]] =
-    new JavaMapping[javadsl.Flow[JIn, JOut, M], scaladsl.Flow[SIn, SOut, M]] {
-      def toScala(javaObject: javadsl.Flow[JIn, JOut, M]): S =
+  implicit def flowMapping[JIn, SIn, JOut, SOut, JM, SM](implicit inMapping: JavaMapping[JIn, SIn], outMapping: JavaMapping[JOut, SOut], matValueMapping: JavaMapping[JM, SM]): JavaMapping[javadsl.Flow[JIn, JOut, JM], scaladsl.Flow[SIn, SOut, SM]] =
+    new JavaMapping[javadsl.Flow[JIn, JOut, JM], scaladsl.Flow[SIn, SOut, SM]] {
+      def toScala(javaObject: javadsl.Flow[JIn, JOut, JM]): S =
         scaladsl.Flow[SIn].map(inMapping.toJava).viaMat(javaObject)(scaladsl.Keep.right).map(outMapping.toScala)
-      def toJava(scalaObject: scaladsl.Flow[SIn, SOut, M]): J =
+          .mapMaterializedValue(matValueMapping.toScala)
+      def toJava(scalaObject: scaladsl.Flow[SIn, SOut, SM]): J =
         javadsl.Flow.fromGraph {
           scaladsl.Flow[JIn].map(inMapping.toScala).viaMat(scalaObject)(scaladsl.Keep.right).map(outMapping.toJava)
+            .mapMaterializedValue(matValueMapping.toJava)
         }
     }
 
@@ -156,6 +159,12 @@ private[http] object JavaMapping {
       def toJava(scalaObject: Try[_S]): J = scalaObject.map(mapping.toJava)
     }
 
+  implicit def futureMapping[_J, _S](implicit mapping: JavaMapping[_J, _S], ec: ExecutionContext): JavaMapping[CompletionStage[_J], Future[_S]] =
+    new JavaMapping[CompletionStage[_J], Future[_S]] {
+      def toJava(scalaObject: Future[_S]): CompletionStage[_J] = FutureConverters.toJava(scalaObject.map(mapping.toJava))
+      def toScala(javaObject: CompletionStage[_J]): Future[_S] = FutureConverters.toScala(javaObject).map(mapping.toScala)
+    }
+
   implicit object StringIdentity extends Identity[String]
 
   implicit object LongMapping extends JavaMapping[jl.Long, Long] {
@@ -185,7 +194,19 @@ private[http] object JavaMapping {
   implicit object ServerSettings extends Inherited[js.ServerSettings, akka.http.scaladsl.settings.ServerSettings]
   implicit object ServerSettingsT extends Inherited[js.ServerSettings.Timeouts, akka.http.scaladsl.settings.ServerSettings.Timeouts]
 
+  implicit object OutgoingConnection extends JavaMapping[jdsl.OutgoingConnection, sdsl.Http.OutgoingConnection] {
+    def toScala(javaObject: jdsl.OutgoingConnection): sdsl.Http.OutgoingConnection = javaObject.delegate
+    def toJava(scalaObject: sdsl.Http.OutgoingConnection): jdsl.OutgoingConnection = new jdsl.OutgoingConnection(scalaObject)
+  }
+  implicit object ClientTransport extends JavaMapping[jdsl.ClientTransport, sdsl.ClientTransport] {
+    def toScala(javaObject: jdsl.ClientTransport): sdsl.ClientTransport = jdsl.ClientTransport.toScala(javaObject)
+    def toJava(scalaObject: sdsl.ClientTransport): jdsl.ClientTransport = jdsl.ClientTransport.fromScala(scalaObject)
+  }
+
   implicit object DateTime extends Inherited[jm.DateTime, akka.http.scaladsl.model.DateTime]
+
+  implicit object InetSocketAddress extends Identity[java.net.InetSocketAddress]
+  implicit object ByteString extends Identity[akka.util.ByteString]
 
   implicit object ContentType extends Inherited[jm.ContentType, sm.ContentType]
   implicit object ContentTypeBinary extends Inherited[jm.ContentType.Binary, sm.ContentType.Binary]

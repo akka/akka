@@ -4,23 +4,30 @@
 package akka.http.javadsl.settings
 
 import akka.actor.ActorSystem
+import akka.annotation.DoNotInherit
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
+import akka.http.impl.util.JavaMapping
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
 import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.javadsl.ClientTransport
 
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSettingsImpl ⇒
-  def getMaxConnections: Int
-  def getMinConnections: Int
-  def getMaxRetries: Int
-  def getMaxOpenRequests: Int
-  def getPipeliningLimit: Int
-  def getIdleTimeout: Duration
-  def getConnectionSettings: ClientConnectionSettings
+  def getMaxConnections: Int = maxConnections
+  def getMinConnections: Int = minConnections
+  def getMaxRetries: Int = maxRetries
+  def getMaxOpenRequests: Int = maxOpenRequests
+  def getPipeliningLimit: Int = pipeliningLimit
+  def getIdleTimeout: Duration = idleTimeout
+  def getConnectionSettings: ClientConnectionSettings = connectionSettings
+
+  /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
+  def getTransport: ClientTransport = transport.asJava
 
   // ---
 
@@ -30,6 +37,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
+  def withTransport(newValue: ClientTransport): ConnectionPoolSettings = self.copy(transport = newValue.asScala)
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {

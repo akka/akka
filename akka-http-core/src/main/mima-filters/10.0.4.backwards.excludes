@@ -11,3 +11,4 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.setting
 # changes to internal classes, #916
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.JavaMapping.flowMapping")

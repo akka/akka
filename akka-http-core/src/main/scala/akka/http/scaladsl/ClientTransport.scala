@@ -19,7 +19,7 @@ import scala.concurrent.Future
  * Abstraction to allow the creation of alternative transports to run HTTP on.
  */
 @ApiMayChange
-trait ClientTransport {
+trait ClientTransport { outer ⇒
   def connectTo(host: String, port: Int)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]]
 }
 
