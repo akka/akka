@@ -14,7 +14,7 @@ import akka.stream.impl.fusing.ActorGraphInterpreter.{ ActorOutputBoundary, Batc
 import akka.stream.impl.fusing.GraphInterpreter.Connection
 import akka.stream.impl.fusing._
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
-import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.collection.immutable.Map
 import scala.concurrent.duration.FiniteDuration
@@ -38,6 +38,10 @@ object PhasedFusingActorMaterializer {
     SourceModuleIslandTag → new Phase[Any] {
       override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer): PhaseIsland[Any] =
         new SourceModulePhase(materializer).asInstanceOf[PhaseIsland[Any]]
+    },
+    ProcessorModuleIslandTag → new Phase[Any] {
+      override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer): PhaseIsland[Any] =
+        new ProcessorModulePhase(materializer).asInstanceOf[PhaseIsland[Any]]
     },
     GraphStageTag → DefaultPhase
   )
@@ -696,6 +700,27 @@ final class SinkModulePhase(materializer: PhasedFusingActorMaterializer) extends
       case s: Subscriber[Any]       ⇒ publisher.subscribe(s)
     }
   }
+
+  override def onIslandReady(): Unit = ()
+}
+
+object ProcessorModuleIslandTag extends IslandTag
+
+final class ProcessorModulePhase(materializer: PhasedFusingActorMaterializer) extends PhaseIsland[Processor[Any, Any]] {
+  override def name: String = "ProcessorModulePhase"
+  private[this] var processor: Processor[Any, Any] = _
+
+  override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (Processor[Any, Any], Any) = {
+    val procAndMat = mod.asInstanceOf[ProcessorModule[Any, Any, Any]].createProcessor()
+    processor = procAndMat._1
+    procAndMat
+  }
+
+  override def assignPort(in: InPort, slot: Int, logic: Processor[Any, Any]): Unit = ()
+  override def assignPort(out: OutPort, slot: Int, logic: Processor[Any, Any]): Unit = ()
+
+  override def createPublisher(out: OutPort, logic: Processor[Any, Any]): Publisher[Any] = logic
+  override def takePublisher(slot: Int, publisher: Publisher[Any]): Unit = publisher.subscribe(processor)
 
   override def onIslandReady(): Unit = ()
 }
