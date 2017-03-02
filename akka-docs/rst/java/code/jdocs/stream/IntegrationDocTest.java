@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -455,8 +456,8 @@ public class IntegrationDocTest extends AbstractJavaTest {
         sendTextMessages.run(mat);
         //#blocking-mapAsync
 
-        final Object[] got = receiveN(7);
-        final Set<Object> set = new HashSet<>(Arrays.asList(got));
+        final List<Object> got = receiveN(7);
+        final Set<Object> set = new HashSet<>(got);
 
         assertTrue(set.contains(String.valueOf("rolandkuhn".hashCode())));
         assertTrue(set.contains(String.valueOf("patriknw".hashCode())));
@@ -617,8 +618,8 @@ public class IntegrationDocTest extends AbstractJavaTest {
           .runForeach(elem -> System.out.println("after: " + elem), mat);
         //#sometimes-slow-mapAsyncUnordered
 
-        final Object[] got = receiveN(10);
-        final Set<Object> set = new HashSet<>(Arrays.asList(got));
+        final List<Object> got = receiveN(10);
+        final Set<Object> set = new HashSet<>(got);
 
         assertTrue(set.contains("after: A"));
         assertTrue(set.contains("after: B"));

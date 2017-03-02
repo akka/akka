@@ -35,6 +35,7 @@ import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
+import java.util.List;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -135,7 +136,7 @@ public class TestKitDocTest extends AbstractJavaTest {
       getRef().tell(43, ActorRef.noSender());
       getRef().tell("hello", ActorRef.noSender());
 
-      final String[] out = (String[]) receiveWhile(duration("1 second"), in -> {
+      final List<String> out = receiveWhile(duration("1 second"), in -> {
         if (in instanceof Integer) {
           return in.toString();
         } else {
@@ -143,7 +144,7 @@ public class TestKitDocTest extends AbstractJavaTest {
         }
       });
 
-      assertArrayEquals(new String[] {"42", "43"}, out);
+      assertArrayEquals(new String[] {"42", "43"}, out.toArray());
       expectMsgEquals("hello");
     }};
     //#test-receivewhile
@@ -193,22 +194,22 @@ public class TestKitDocTest extends AbstractJavaTest {
       getRef().tell(42, ActorRef.noSender());
       //#test-expect
       final String hello = expectMsgEquals("hello");
-      final Object   any = expectMsgAnyOf(Arrays.asList("hello", "world"));
-      final Object[] all = (Object[]) expectMsgAllOf(Arrays.asList("hello", "world"));
+      final String   any = expectMsgAnyOf("hello", "world");
+      final List<String> all = expectMsgAllOf("hello", "world");
       final int i        = expectMsgClass(Integer.class);
-      final Number j     = expectMsgAnyClassOf(Arrays.asList(Integer.class, Long.class));
+      final Number j     = expectMsgAnyClassOf(Integer.class, Long.class);
       expectNoMsg();
       //#test-expect
       getRef().tell("receveN-1", ActorRef.noSender());
       getRef().tell("receveN-2", ActorRef.noSender());
       //#test-expect
-      final Object[] two = receiveN(2);
+      final List<Object> two = receiveN(2);
       //#test-expect
       assertEquals("hello", hello);
       assertEquals("hello", any);
       assertEquals(42, i);
       assertEquals(42, j);
-      assertArrayEquals(new String[] {"hello", "world"}, all);
+      assertArrayEquals(new String[] {"hello", "world"}, all.toArray());
     }};
   }
 

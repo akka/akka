@@ -400,7 +400,7 @@ public class RouterDocTest extends AbstractJavaTest {
       //#broadcastDavyJonesWarning
       router.tell(new Broadcast("Watch out for Davy Jones' locker"), getTestActor());
       //#broadcastDavyJonesWarning
-      assertEquals(5, receiveN(5).length);
+      assertEquals(5, receiveN(5).size());
     }};
   }
   

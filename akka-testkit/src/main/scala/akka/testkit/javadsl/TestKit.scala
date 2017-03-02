@@ -3,17 +3,16 @@
  */
 package akka.testkit.javadsl
 
+import java.util.function.{ Function ⇒ JFunction, Supplier }
+import java.util.{ List ⇒ JList }
+
 import akka.actor._
 import akka.japi.JavaPartialFunction
-import akka.japi.Util
-import akka.testkit.{ TestActor, TestProbe }
-import akka.testkit._
+import akka.testkit.{ TestActor, TestProbe, _ }
 
-import java.lang.{ Iterable ⇒ JIterable }
-import java.util.function.{ Function ⇒ JFunction, Supplier }
-
+import scala.annotation.varargs
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
-import scala.reflect._
 
 /**
  * Java API: Test kit for testing actors. Inheriting from this class enables
@@ -205,6 +204,15 @@ class TestKit(system: ActorSystem) {
   def expectMsgEquals[T](obj: T): T = tp.expectMsg(obj)
 
   /**
+   * Receive one message from the test actor and assert that it equals the given
+   * object. Wait time is bounded by the given duration, with an
+   * AssertionFailure being thrown in case of timeout.
+   *
+   * @return the received object
+   */
+  def expectMsgEquals[T](max: FiniteDuration, obj: T): T = tp.expectMsg(max, obj)
+
+  /**
    * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
    */
   def expectMsg[T](obj: T): T = tp.expectMsg(obj)
@@ -268,19 +276,22 @@ class TestKit(system: ActorSystem) {
   /**
    * Same as `expectMsgAnyOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAnyOf[T](objs: JIterable[T]): T = tp.expectMsgAnyOf(Util.immutableSeq(objs): _*)
+  @varargs
+  def expectMsgAnyOf[T](objs: T*): T = tp.expectMsgAnyOf(objs: _*)
 
   /**
    * Receive one message from the test actor and assert that it equals one of
    * the given objects. Wait time is bounded by the given duration, with an
    * AssertionFailure being thrown in case of timeout.
    */
-  def expectMsgAnyOf[T](max: FiniteDuration, objs: JIterable[T]): T = tp.expectMsgAnyOf(max, Util.immutableSeq(objs): _*)
+  @varargs
+  def expectMsgAnyOf[T](max: FiniteDuration, objs: T*): T = tp.expectMsgAnyOf(max, objs: _*)
 
   /**
    * Same as `expectMsgAllOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllOf[T](objs: JIterable[T]): Array[T] = tp.expectMsgAllOf(Util.immutableSeq(objs): _*).toArray(classTag[Any]).asInstanceOf[Array[T]]
+  @varargs
+  def expectMsgAllOf[T](objs: T*): JList[T] = tp.expectMsgAllOf(objs: _*).asJava
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -289,19 +300,23 @@ class TestKit(system: ActorSystem) {
    * which the objects are received is not fixed. Wait time is bounded by the
    * given duration, with an AssertionFailure being thrown in case of timeout.
    */
-  def expectMsgAllOf[T](max: FiniteDuration, objs: JIterable[T]): Array[T] = tp.expectMsgAllOf(max, Util.immutableSeq(objs): _*).toArray(classTag[Any]).asInstanceOf[Array[T]]
+  @varargs
+  def expectMsgAllOf[T](max: FiniteDuration, objs: T*): JList[T] = tp.expectMsgAllOf(max, objs: _*).asJava
 
   /**
    * Same as `expectMsgAnyClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAnyClassOf[T](objs: JIterable[Class[_]]): T = tp.expectMsgAnyClassOf(Util.immutableSeq(objs): _*).asInstanceOf[T]
+
+  @varargs
+  def expectMsgAnyClassOf[T](objs: Class[_]*): T = tp.expectMsgAnyClassOf(objs: _*).asInstanceOf[T]
 
   /**
    * Receive one message from the test actor and assert that it conforms to
    * one of the given classes. Wait time is bounded by the given duration,
    * with an AssertionFailure being thrown in case of timeout.
    */
-  def expectMsgAnyClassOf[T](max: FiniteDuration, objs: JIterable[Class[_]]): T = tp.expectMsgAnyClassOf(max, Util.immutableSeq(objs): _*).asInstanceOf[T]
+  @varargs
+  def expectMsgAnyClassOf[T](max: FiniteDuration, objs: Class[_]*): T = tp.expectMsgAnyClassOf(max, objs: _*).asInstanceOf[T]
 
   /**
    * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
@@ -326,17 +341,42 @@ class TestKit(system: ActorSystem) {
   def expectTerminated(target: ActorRef): Terminated = tp.expectTerminated(target)
 
   /**
+   * Hybrid of expectMsgPF and receiveWhile: receive messages while the
+   * partial function matches and returns false. Use it to ignore certain
+   * messages while waiting for a specific message.
+   *
+   * @return the last received message, i.e. the first one for which the
+   *         partial function returned true
+   */
+  def fishForMessage(max: Duration, hint: String, f: JFunction[Any, Boolean]): Any = {
+    tp.fishForMessage(max, hint)(new JavaPartialFunction[Any, Boolean] {
+      @throws(classOf[Exception])
+      override def apply(x: Any, isCheck: Boolean): Boolean = f.apply(x)
+    })
+  }
+
+  /**
+   * Same as `fishForMessage`, but gets a different partial function and returns properly typed message.
+   */
+  def fishForSpecificMessage[T](max: Duration, hint: String, f: JFunction[Any, T]): T = {
+    tp.fishForSpecificMessage(max, hint)(new JavaPartialFunction[Any, T] {
+      @throws(classOf[Exception])
+      override def apply(x: Any, isCheck: Boolean): T = f.apply(x)
+    })
+  }
+
+  /**
    * Same as `receiveN(n, remaining)` but correctly taking into account
    * Duration.timeFactor.
    */
-  def receiveN(n: Int): Array[AnyRef] =
-    tp.receiveN(n).toArray(classTag[AnyRef])
+  def receiveN(n: Int): JList[AnyRef] =
+    tp.receiveN(n).asJava
 
   /**
    * Receive N messages in a row before the given deadline.
    */
-  def receiveN(n: Int, max: FiniteDuration): Array[AnyRef] =
-    tp.receiveN(n, max).toArray(classTag[AnyRef])
+  def receiveN(n: Int, max: FiniteDuration): JList[AnyRef] =
+    tp.receiveN(n, max).asJava
 
   /**
    * Receive one message from the internal queue of the TestActor. If the given
@@ -358,18 +398,18 @@ class TestKit(system: ActorSystem) {
    * certain characteristics are generated at a certain rate:
    *
    */
-  def receiveWhile[T](max: Duration, idle: Duration, messages: Int, f: JFunction[AnyRef, T]): Array[T] = {
+  def receiveWhile[T](max: Duration, idle: Duration, messages: Int, f: JFunction[AnyRef, T]): JList[T] = {
     tp.receiveWhile(max, idle, messages)(new JavaPartialFunction[AnyRef, T] {
       @throws(classOf[Exception])
       override def apply(x: AnyRef, isCheck: Boolean): T = f.apply(x)
-    }).asInstanceOf[AnyRef].asInstanceOf[Array[T]]
+    }).asJava
   }
 
-  def receiveWhile[T](max: Duration, f: JFunction[AnyRef, T]): Array[T] = {
+  def receiveWhile[T](max: Duration, f: JFunction[AnyRef, T]): JList[T] = {
     tp.receiveWhile(max = max)(new JavaPartialFunction[AnyRef, T] {
       @throws(classOf[Exception])
       override def apply(x: AnyRef, isCheck: Boolean): T = f.apply(x)
-    }).toArray(classTag[Any]).asInstanceOf[Array[T]]
+    }).asJava
   }
 
   /**

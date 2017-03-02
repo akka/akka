@@ -228,7 +228,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
 
         watch(worker);
 
-        List<Object> got = Arrays.asList(receiveN(N));
+        List<Object> got = new ArrayList<>(receiveN(N));
         Collections.sort(got, new Comparator<Object>() {
           @Override
           public int compare(Object o1, Object o2) {

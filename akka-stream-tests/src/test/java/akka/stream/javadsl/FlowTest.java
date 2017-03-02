@@ -407,7 +407,7 @@ public class FlowTest extends StreamTest {
       }
     })).run(materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(3));
+    List<Object> output = probe.receiveN(3);
     List<Pair<String, Integer>> expected = Arrays.asList(new Pair<String, Integer>("A", 1), new Pair<String, Integer>(
         "B", 2), new Pair<String, Integer>("C", 3));
     assertEquals(expected, output);
@@ -428,7 +428,7 @@ public class FlowTest extends StreamTest {
       }
     }, materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(6));
+    List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
   }
 
@@ -447,7 +447,7 @@ public class FlowTest extends StreamTest {
       }
     }, materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(6));
+    List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
   }
 
@@ -721,7 +721,7 @@ public class FlowTest extends StreamTest {
       }
     }), materializer);
 
-    probe.expectMsgAllOf(Arrays.asList("A","B","C"));
+    probe.expectMsgAllOf("A","B","C");
   }
 
   @Test
@@ -737,7 +737,7 @@ public class FlowTest extends StreamTest {
     })));
 
     Source.from(input).to(sink).run(materializer);
-    probe.expectMsgAllOf(Arrays.asList("A","B","C"));
+    probe.expectMsgAllOf("A","B","C");
   }
 
   @Test
@@ -815,7 +815,7 @@ public class FlowTest extends StreamTest {
               }
             }, materializer);
 
-    probe.expectMsgAllOf(Arrays.asList("A", "B", "C", "D", "E", "F"));
+    probe.expectMsgAllOf("A", "B", "C", "D", "E", "F");
   }
 
   @Test

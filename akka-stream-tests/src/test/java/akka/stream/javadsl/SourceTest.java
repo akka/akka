@@ -166,7 +166,7 @@ public class SourceTest extends StreamTest {
       }
     }, materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(6));
+    List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
   }
 
@@ -185,7 +185,7 @@ public class SourceTest extends StreamTest {
       }
     }, materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(6));
+    List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
   }
 
@@ -205,7 +205,7 @@ public class SourceTest extends StreamTest {
       }
     }, materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(5));
+    List<Object> output = probe.receiveN(5);
     assertEquals(Arrays.asList(4, 3, 2, 1, 0), output);
     probe.expectNoMsg(FiniteDuration.create(500, TimeUnit.MILLISECONDS));
   }
@@ -593,7 +593,7 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<Done> future = source.runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
 
-    probe.expectMsgAllOf(Arrays.asList(0, 1, 2, 3));
+    probe.expectMsgAllOf(0, 1, 2, 3);
 
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
@@ -610,7 +610,7 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<Done> future = source.runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
 
-    probe.expectMsgAllOf(Arrays.asList(Arrays.asList(0, 2), Arrays.asList(1, 3)));
+    probe.expectMsgAllOf(Arrays.asList(0, 2), Arrays.asList(1, 3));
 
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
@@ -627,7 +627,7 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<Done> future = source.runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
 
-    probe.expectMsgAllOf(Arrays.asList(Boolean.TRUE, Boolean.FALSE));
+    probe.expectMsgAllOf(Boolean.TRUE, Boolean.FALSE);
 
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
@@ -644,7 +644,7 @@ public class SourceTest extends StreamTest {
       }
     }, materializer);
 
-    probe.expectMsgAllOf(Arrays.asList("A", "B", "C", "D", "E", "F"));
+    probe.expectMsgAllOf("A", "B", "C", "D", "E", "F");
   }
 
   @Test
@@ -697,7 +697,7 @@ public class SourceTest extends StreamTest {
               }
             }, materializer);
 
-    probe.expectMsgAllOf(Arrays.asList("A", "B", "C", "D", "E", "F"));
+    probe.expectMsgAllOf("A", "B", "C", "D", "E", "F");
   }
 
 
