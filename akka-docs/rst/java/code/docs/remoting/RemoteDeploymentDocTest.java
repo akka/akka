@@ -4,6 +4,7 @@
 package docs.remoting;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
+import docs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -21,7 +22,7 @@ import akka.remote.RemoteScope;
 
 import akka.actor.AbstractActor;
 
-public class RemoteDeploymentDocTest {
+public class RemoteDeploymentDocTest extends AbstractJavaTest {
 
   public static class SampleActor extends AbstractActor {
     @Override

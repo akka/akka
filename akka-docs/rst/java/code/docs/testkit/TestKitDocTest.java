@@ -6,6 +6,8 @@ package docs.testkit;
 import static org.junit.Assert.*;
 
 import akka.testkit.*;
+import docs.AbstractJavaTest;
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -24,7 +26,7 @@ import scala.concurrent.Future;
 import akka.testkit.TestActor.AutoPilot;
 import scala.concurrent.duration.Duration;
 
-public class TestKitDocTest {
+public class TestKitDocTest extends AbstractJavaTest {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
@@ -76,7 +78,7 @@ public class TestKitDocTest {
     final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "myActor");
     try {
       ref.receive(new Exception("expected"));
-      fail("expected an exception to be thrown");
+      Assert.fail("expected an exception to be thrown");
     } catch (Exception e) {
       assertEquals("expected", e.getMessage());
     }
