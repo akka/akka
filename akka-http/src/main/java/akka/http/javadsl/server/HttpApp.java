@@ -145,15 +145,18 @@ public abstract class HttpApp extends AllDirectives {
    * Hook that lets the user specify the future that will signal the shutdown of the server whenever completed.
    */
   protected CompletionStage<Done> waitForShutdownSignal (ActorSystem system) {
-    return CompletableFuture.supplyAsync( () -> {
+    final CompletableFuture<Done> promise = new CompletableFuture<>();
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> promise.complete(Done.getInstance())));
+    CompletableFuture.runAsync(() -> {
       System.out.println("Press RETURN to stop...");
       try {
-        System.in.read();
+        if (System.in.read() >= 0)
+          promise.complete(Done.getInstance());
       } catch (IOException e) {
         systemReference.get().log().error(e, "Problem occurred! " + e.getMessage());
       }
-      return Done.getInstance();
     });
+    return promise;
   }
 
   /**
