@@ -684,8 +684,11 @@ final case class LinearTraversalBuilder(
    */
   def append[A, B, C](toAppend: LinearTraversalBuilder, matCompose: (A, B) ⇒ C): LinearTraversalBuilder = {
 
-    if (toAppend.isEmpty) this
-    else if (this.isEmpty) {
+    if (toAppend.isEmpty) {
+      copy(
+        traversalSoFar = PushNotUsed.concat(LinearTraversalBuilder.addMatCompose(traversalSoFar, matCompose))
+      )
+    } else if (this.isEmpty) {
       toAppend.copy(
         traversalSoFar = toAppend.traversalSoFar.concat(LinearTraversalBuilder.addMatCompose(traversal, matCompose))
       )
