@@ -612,7 +612,7 @@ final class GraphInterpreterShell(
 /**
  * INTERNAL API
  */
-class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
+final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
   import ActorGraphInterpreter._
 
   var activeInterpreters = Set.empty[GraphInterpreterShell]

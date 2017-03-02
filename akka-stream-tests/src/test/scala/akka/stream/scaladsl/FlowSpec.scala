@@ -40,48 +40,6 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
   val identity: Flow[Any, Any, NotUsed] ⇒ Flow[Any, Any, NotUsed] = in ⇒ in.map(e ⇒ e)
   val identity2: Flow[Any, Any, NotUsed] ⇒ Flow[Any, Any, NotUsed] = in ⇒ identity(in)
 
-  // TODO: Reenable these tests
-  //  class BrokenActorInterpreter(_shell: GraphInterpreterShell, brokenMessage: Any)
-  //    extends ActorGraphInterpreter(_shell) {
-  //
-  //    override protected[akka] def aroundReceive(receive: Receive, msg: Any) = {
-  //      msg match {
-  //        case ActorGraphInterpreter.OnNext(_, 0, m) if m == brokenMessage ⇒
-  //          throw new NullPointerException(s"I'm so broken [$m]")
-  //        case _ ⇒ super.aroundReceive(receive, msg)
-  //      }
-  //    }
-  //  }
-
-  //  val faultyFlow: Flow[Any, Any, NotUsed] ⇒ Flow[Any, Any, NotUsed] = in ⇒ in.via({
-  //    val stage = fusing.Map({ x: Any ⇒ x })
-  //
-  //    val assembly = new GraphAssembly(
-  //      Array(stage),
-  //      Array(Attributes.none),
-  //      Array(stage.shape.in, null),
-  //      Array(0, -1),
-  //      Array(null, stage.shape.out),
-  //      Array(-1, 0))
-  //
-  //    val (connections, logics) =
-  //      assembly.materialize(Attributes.none, assembly.stages.map(_.module), new java.util.HashMap, _ ⇒ ())
-  //
-  //    val shell = new GraphInterpreterShell(assembly, connections, logics, stage.shape, settings,
-  //      materializer.asInstanceOf[ActorMaterializerImpl])
-  //
-  //    val props = Props(new BrokenActorInterpreter(shell, "a3"))
-  //      .withDispatcher("akka.test.stream-dispatcher").withDeploy(Deploy.local)
-  //    val impl = system.actorOf(props, "borken-stage-actor")
-  //
-  //    val subscriber = new ActorGraphInterpreter.BoundarySubscriber(impl, shell, 0)
-  //    val publisher = new ActorPublisher[Any](impl) { override val wakeUpMsg = ActorGraphInterpreter.SubscribePending(shell, 0) }
-  //
-  //    impl ! ActorGraphInterpreter.ExposedPublisher(shell, 0, publisher)
-  //
-  //    Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
-  //  })
-
   val toPublisher: (Source[Any, _], ActorMaterializer) ⇒ Publisher[Any] =
     (f, m) ⇒ f.runWith(Sink.asPublisher(false))(m)
 
@@ -535,67 +493,6 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
       Source(0 to 9).via(Flow.fromFunction(_ + 1)).runWith(Sink.seq).futureValue should ===(1 to 10)
     }
   }
-  //
-  //  "A broken Flow" must {
-  //    "cancel upstream and call onError on current and future downstream subscribers if an internal error occurs" in {
-  //      new ChainSetup(faultyFlow, settings.withInputBuffer(initialSize = 1, maxSize = 1), toFanoutPublisher(16)) {
-  //
-  //        def checkError(sprobe: TestSubscriber.ManualProbe[Any]): Unit = {
-  //          val error = sprobe.expectError()
-  //          error.isInstanceOf[AbruptTerminationException] should be(true)
-  //          error.getMessage should startWith("Processor actor")
-  //        }
-  //
-  //        val downstream2 = TestSubscriber.manualProbe[Any]()
-  //        publisher.subscribe(downstream2)
-  //        val downstream2Subscription = downstream2.expectSubscription()
-  //
-  //        downstreamSubscription.request(5)
-  //        downstream2Subscription.request(5)
-  //        upstream.expectRequest(upstreamSubscription, 1)
-  //        upstreamSubscription.sendNext("a1")
-  //        downstream.expectNext("a1")
-  //        downstream2.expectNext("a1")
-  //
-  //        upstream.expectRequest(upstreamSubscription, 1)
-  //        upstreamSubscription.sendNext("a2")
-  //        downstream.expectNext("a2")
-  //        downstream2.expectNext("a2")
-  //
-  //        val filters = immutable.Seq(
-  //          EventFilter[NullPointerException](),
-  //          EventFilter[IllegalStateException](),
-  //          EventFilter[PostRestartException]()) // This is thrown because we attach the dummy failing actor to toplevel
-  //        try {
-  //          system.eventStream.publish(Mute(filters))
-  //
-  //          upstream.expectRequest(upstreamSubscription, 1)
-  //          upstreamSubscription.sendNext("a3")
-  //          upstreamSubscription.expectCancellation()
-  //
-  //          // IllegalStateException terminated abruptly
-  //          checkError(downstream)
-  //          checkError(downstream2)
-  //
-  //          val downstream3 = TestSubscriber.manualProbe[Any]()
-  //          publisher.subscribe(downstream3)
-  //          downstream3.expectSubscription()
-  //          // IllegalStateException terminated abruptly
-  //          checkError(downstream3)
-  //        } finally {
-  //          system.eventStream.publish(UnMute(filters))
-  //        }
-  //      }
-  //    }
-  //
-  //    "suitably override attribute handling methods" in {
-  //      import Attributes._
-  //      val f: Flow[Int, Int, NotUsed] = Flow[Int].map(_ + 1).async.addAttributes(none).named("name")
-  //
-  //      f.module.attributes.getFirst[Name] shouldEqual Some(Name("name"))
-  //      f.module.attributes.getFirst[Attributes.AsyncBoundary.type] shouldEqual Some(AsyncBoundary)
-  //    }
-  //  }
 
   object TestException extends RuntimeException with NoStackTrace
 
