@@ -219,6 +219,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * INTERNAL API
    */
+  private[stream] var attributes: Attributes = Attributes.none
+
+  /**
+   * INTERNAL API
+   */
   // Using common array to reduce overhead for small port counts
   private[stream] val handlers = Array.ofDim[Any](inCount + outCount)
 
