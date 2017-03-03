@@ -7,7 +7,6 @@ package akka.stream.impl
 import akka.stream.stage.GraphStageLogic.{ EagerTerminateOutput, EagerTerminateInput }
 import akka.stream.testkit.StreamSpec
 import akka.stream._
-import akka.stream.Fusing.aggressive
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit.Utils.assertAllStagesStopped
@@ -55,28 +54,35 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
   object passThrough extends GraphStage[FlowShape[Int, Int]] {
     val in = Inlet[Int]("in")
     val out = Outlet[Int]("out")
+    in.id = 0
+    out.id = 1
     override val shape = FlowShape(in, out)
     override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
       setHandler(in, new InHandler {
         override def onPush(): Unit = push(out, grab(in))
         override def onUpstreamFinish(): Unit = complete(out)
+        override def toString = "InHandler"
       })
       setHandler(out, new OutHandler {
         override def onPull(): Unit = pull(in)
+        override def toString = "OutHandler"
       })
+      override def toString = "GraphStageLogicSpec.passthroughLogic"
     }
+    override def toString = "GraphStageLogicSpec.passthrough"
   }
 
   object emitEmptyIterable extends GraphStage[SourceShape[Int]] {
     val out = Outlet[Int]("out")
+    out.id = 0
     override val shape = SourceShape(out)
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = emitMultiple(out, Iterator.empty, () ⇒ emit(out, 42, () ⇒ completeStage()))
       })
-
     }
+    override def toString = "GraphStageLogicSpec.emitEmptyIterable"
   }
 
   final case class ReadNEmitN(n: Int) extends GraphStage[FlowShape[Int, Int]] {
@@ -140,24 +146,6 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
         .expectNext(1, 2, 3, 4)
         .expectComplete()
 
-    }
-
-    "emit all things before completing with two fused stages" in assertAllStagesStopped {
-      val g = aggressive(Flow[Int].via(emit1234).via(emit5678))
-
-      Source.empty.via(g).runWith(TestSink.probe)
-        .request(9)
-        .expectNextN(1 to 8)
-        .expectComplete()
-    }
-
-    "emit all things before completing with three fused stages" in assertAllStagesStopped {
-      val g = aggressive(Flow[Int].via(emit1234).via(passThrough).via(emit5678))
-
-      Source.empty.via(g).runWith(TestSink.probe)
-        .request(9)
-        .expectNextN(1 to 8)
-        .expectComplete()
     }
 
     "emit properly after empty iterable" in assertAllStagesStopped {
