@@ -280,6 +280,28 @@ object PersistenceDocSpec {
     //#defer-caller
   }
 
+  object DeferWithPersist {
+    //#defer-with-persist
+    class MyPersistentActor extends PersistentActor {
+
+      override def persistenceId = "my-stable-persistence-id"
+
+      override def receiveRecover: Receive = {
+        case _ => // handle recovery here
+      }
+
+      override def receiveCommand: Receive = {
+        case c: String => {
+          sender() ! c
+          persist(s"evt-$c-1") { e => sender() ! e }
+          persist(s"evt-$c-2") { e => sender() ! e }
+          deferAsync(s"evt-$c-3") { e => sender() ! e }
+        }
+      }
+    }
+    //#defer-with-persist
+  }
+
   object NestedPersists {
 
     class MyPersistentActor extends PersistentActor {
