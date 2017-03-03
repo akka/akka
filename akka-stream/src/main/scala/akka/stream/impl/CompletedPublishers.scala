@@ -3,12 +3,15 @@
  */
 package akka.stream.impl
 
-import org.reactivestreams.{ Subscriber, Publisher, Subscription }
+import akka.annotation.InternalApi
+import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+
 import scala.concurrent.{ ExecutionContext, Promise }
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] case object EmptyPublisher extends Publisher[Nothing] {
   import ReactiveStreamsCompliance._
   override def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit =

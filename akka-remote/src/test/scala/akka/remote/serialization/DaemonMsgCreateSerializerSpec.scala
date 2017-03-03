@@ -4,14 +4,18 @@
 
 package akka.remote.serialization
 
-import language.postfixOps
+import akka.actor.{Actor, ActorRef, ActorSystem, Address, Deploy, ExtendedActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
+import akka.remote.{DaemonMsgCreate, RemoteScope}
+import akka.routing.{FromConfig, RoundRobinPool}
 import akka.serialization.SerializationExtension
+import akka.testkit.{AkkaSpec, TestKit}
 import com.typesafe.config.ConfigFactory
 import akka.testkit.AkkaSpec
 import akka.actor.{ Actor, Address, Props, Deploy, OneForOneStrategy, SupervisorStrategy }
 import akka.remote.{ DaemonMsgCreate, RemoteScope }
 import akka.routing.{ RoundRobinPool, FromConfig }
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object DaemonMsgCreateSerializerSpec {
   class MyActor extends Actor {
