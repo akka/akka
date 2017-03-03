@@ -16,6 +16,8 @@ import scala.concurrent.{ Future, Promise }
 import akka.Done
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.InternalApi
+
 import scala.compat.java8.FutureConverters._
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -394,5 +396,24 @@ final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphSt
   }
 
   override def toString = "LazySource"
+}
+
+/** INTERNAL API */
+@InternalApi
+final object EmptySource extends GraphStage[SourceShape[Nothing]] {
+  val out = Outlet[Nothing]("EmptySource.out")
+  override val shape = SourceShape(out)
+
+  override protected def initialAttributes = DefaultAttributes.lazySource
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with OutHandler {
+      override def preStart(): Unit = completeStage()
+      override def onPull(): Unit = completeStage()
+
+      setHandler(out, this)
+    }
+
+  override def toString = "EmptySource"
 }
 
