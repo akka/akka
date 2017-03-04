@@ -47,7 +47,8 @@ object Scaladoc extends AutoPlugin {
       "-groups",
       "-doc-source-url", urlString,
       "-sourcepath", base.getAbsolutePath,
-      "-skip-packages", "akka.pattern"
+      // Workaround https://issues.scala-lang.org/browse/SI-10028
+      "-skip-packages", "akka.pattern:org.specs2"
     )
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
