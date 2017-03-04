@@ -145,7 +145,7 @@ public interface HttpMessage {
         /**
          * Returns a copy of Self message with a new entity.
          *
-         * @deprecated Will be removed in Akka 3.x, use {@link #withEntity(ContentType, Path)} instead.
+         * @deprecated Will be removed in Akka HTTP 11.x, use {@link #withEntity(ContentType, Path)} instead.
          */
         @Deprecated
         Self withEntity(ContentType type, File file);

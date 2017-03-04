@@ -167,5 +167,3 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
       }
   }
 }
-
-//FIXME: trait Specs2RouteTest extends RouteTest with Specs2Interface

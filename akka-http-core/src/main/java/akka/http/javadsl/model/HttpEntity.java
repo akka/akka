@@ -50,10 +50,9 @@ public interface HttpEntity {
     /**
      * The empty entity.
      *
-     * @deprecated Will be removed in Akka 3.x, use {@link HttpEntities#EMPTY} instead.
+     * @deprecated Will be removed in Akka HTTP 11.x, use {@link HttpEntities#EMPTY} instead.
      */
     @Deprecated
-    // FIXME: Remove in Akka 10.0
     HttpEntity.Strict EMPTY = HttpEntities.EMPTY;
 
     /**

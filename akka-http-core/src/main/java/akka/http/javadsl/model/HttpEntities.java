@@ -43,7 +43,7 @@ public final class HttpEntities {
     }
 
     /**
-     * @deprecated Will be removed in Akka 3.x, use {@link #create(ContentType, Path)} instead.
+     * @deprecated Will be removed in Akka HTTP 11.x, use {@link #create(ContentType, Path)} instead.
      */
     @Deprecated
     public static UniversalEntity create(ContentType contentType, File file) {
@@ -55,7 +55,7 @@ public final class HttpEntities {
     }
 
     /**
-     * @deprecated Will be removed in Akka 3.x, use {@link #create(ContentType, Path, int)} instead.
+     * @deprecated Will be removed in Akka HTTP 11.x, use {@link #create(ContentType, Path, int)} instead.
      */
     @Deprecated
     public static UniversalEntity create(ContentType contentType, File file, int chunkSize) {

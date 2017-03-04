@@ -42,7 +42,7 @@ private[http] object RoutingJavaMapping {
   implicit object Rejection extends Inherited[javadsl.server.Rejection, scaladsl.server.Rejection]
 
   implicit object RequestContext extends JavaMapping[javadsl.server.RequestContext, scaladsl.server.RequestContext] {
-    // TODO make it inhierit
+    // TODO make it inherit
     //    extends Inherited[javadsl.server.RequestContext, scaladsl.server.RequestContext]
     override def toScala(javaObject: javadsl.server.RequestContext): scaladsl.server.RequestContext = javaObject.delegate
     override def toJava(scalaObject: scaladsl.server.RequestContext): javadsl.server.RequestContext = javadsl.server.RequestContext.wrap(scalaObject)

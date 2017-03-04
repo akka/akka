@@ -9,7 +9,7 @@ import akka.util.Unsafe
 /**
  * Provides workarounds around JavaDSL initialisation edge cases.
  *
- * FIXME: Exists only to fix JavaDSL init problem: #19162. Remove in Akka 3.x when "ALL" static fields moved
+ * FIXME: Exists only to fix JavaDSL init problem: #19162. Remove in Akka HTTP 11.x when "ALL" static fields moved
  */
 private[akka] object JavaInitialization {
 
