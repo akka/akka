@@ -19,7 +19,6 @@ addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "1.0.0")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.16")
 addSbtPlugin("pl.project13.sbt" % "sbt-jol" % "0.1.1")
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.0") // for advanced PR validation features
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0-8-g6d0c3f8")
