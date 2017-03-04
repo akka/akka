@@ -2,6 +2,7 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import akka._
 import AkkaDependency._
 import akka.ValidatePullRequest._
+import sbtunidoc.BaseUnidocPlugin.autoImport.unidoc
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -49,7 +50,7 @@ lazy val root = Project(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing),
     deployRsyncArtifact :=
-      (sbtunidoc.Plugin.UnidocKeys.unidoc in Compile).value zip Seq(s"www/api/akka-http/${version.value}", s"www/japi/akka-http/${version.value}")
+      (unidoc in Compile).value zip Seq(s"www/api/akka-http/${version.value}", s"www/japi/akka-http/${version.value}")
   )
   .aggregate(
     parsing,
@@ -71,6 +72,7 @@ lazy val parsing = project("akka-parsing")
   .addAkkaModuleDependency("akka-actor")
 
 lazy val httpCore = project("akka-http-core")
+  .enablePlugins(Unidoc)
   .settings(Dependencies.httpCore)
   .settings(Version.versionSettings)
   .dependsOn(parsing)
@@ -78,16 +80,18 @@ lazy val httpCore = project("akka-http-core")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
 
 lazy val http = project("akka-http")
+  .enablePlugins(Unidoc)
   .dependsOn(httpCore)
 
 lazy val http2Support = project("akka-http2-support")
-  .enablePlugins(JavaAgent)
+  .enablePlugins(JavaAgent, Unidoc)
   .disablePlugins(MimaPlugin) // experimental module still
   .settings(javaAgents += Dependencies.Compile.Test.alpnAgent)
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
 
 lazy val httpTestkit = project("akka-http-testkit")
+  .enablePlugins(Unidoc)
   .settings(Dependencies.httpTestkit)
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream-testkit")
@@ -131,6 +135,7 @@ def httpMarshallersScalaSubproject(name: String) =
     base = file(s"akka-http-marshallers-scala/akka-http-$name"),
     dependencies = Seq(http)
   )
+  .enablePlugins(Unidoc)
 
 def httpMarshallersJavaSubproject(name: String) =
   Project(
@@ -138,6 +143,7 @@ def httpMarshallersJavaSubproject(name: String) =
     base = file(s"akka-http-marshallers-java/akka-http-$name"),
     dependencies = Seq(http)
   )
+  .enablePlugins(Unidoc)
 
 lazy val docs = project("docs")
   .enablePlugins(ParadoxPlugin, NoPublish, DeployRsync)
