@@ -2,3 +2,10 @@
 target
 
 *.orig
+
+*#
+*~
+.#*
+.*.swp
+*.vim
+.ensime*
