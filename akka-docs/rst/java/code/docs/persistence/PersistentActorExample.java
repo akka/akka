@@ -103,7 +103,8 @@ class ExamplePersistentActor extends AbstractPersistentActor {
                   state.update(e);
                   getContext().system().eventStream().publish(e);
                   if (lastSequenceNr() % snapShotInterval == 0 && lastSequenceNr() != 0)
-                      saveSnapshot(state);
+                      // IMPORTANT: create a copy of snapshot because ExampleState is mutable
+                      saveSnapshot(state.copy());
               });
             })
             .matchEquals("print", s -> System.out.println(state))
