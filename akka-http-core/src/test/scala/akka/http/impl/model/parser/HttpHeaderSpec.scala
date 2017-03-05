@@ -696,8 +696,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       try parsedHeader should equal(header)
       catch {
         case e: TestFailedException if parsedHeader.toString == header.toString ⇒
-          throw new AssertionError(s"Test equals failed with equal toString. parsedHeader class was ${parsedHeader.getClass}," +
-            s"header class was ${header.getClass}", e)
+          def className[T](t: T): String = scala.reflect.NameTransformer.decode(t.getClass.getName)
+          throw new AssertionError(s"Test equals failed with equal toString. parsedHeader class was ${className(parsedHeader)}, " +
+            s"header class was ${className(header)}", e)
       }
     }
     def rendering(line: String): String = line
