@@ -289,7 +289,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                          localAddress: Option[InetSocketAddress] = None,
                          settings:     ClientConnectionSettings  = ClientConnectionSettings(system),
                          log:          LoggingAdapter            = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, localAddress, settings, ConnectionContext.noEncryption(), log)
+    _outgoingConnection(host, port, settings, ConnectionContext.noEncryption(), ClientTransport.TCP(localAddress, settings), log)
 
   /**
    * Same as [[#outgoingConnection]] but for encrypted (HTTPS) connections.
@@ -305,35 +305,45 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                               localAddress:      Option[InetSocketAddress] = None,
                               settings:          ClientConnectionSettings  = ClientConnectionSettings(system),
                               log:               LoggingAdapter            = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, localAddress, settings, connectionContext, log)
+    _outgoingConnection(host, port, settings, connectionContext, ClientTransport.TCP(localAddress, settings), log)
+
+  /**
+   * Similar to `outgoingConnection` but allows to specify a user-defined transport layer to run the connection on.
+   *
+   * Depending on the kind of `ConnectionContext` the implementation will add TLS between the given transport and the HTTP
+   * implementation
+   *
+   * To configure additional settings for requests made using this method,
+   * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
+   */
+  def outgoingConnectionUsingTransport(
+    host:              String,
+    port:              Int,
+    transport:         ClientTransport,
+    connectionContext: ConnectionContext,
+    settings:          ClientConnectionSettings = ClientConnectionSettings(system),
+    log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
+    _outgoingConnection(host, port, settings, connectionContext, transport, log)
 
   private def _outgoingConnection(
     host:              String,
     port:              Int,
-    localAddress:      Option[InetSocketAddress],
     settings:          ClientConnectionSettings,
     connectionContext: ConnectionContext,
+    transport:         ClientTransport,
     log:               LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
     val layer = clientLayer(hostHeader, settings, log)
-    layer.joinMat(_outgoingTlsConnectionLayer(host, port, localAddress, settings, connectionContext, log))(Keep.right)
+    layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, transport, log))(Keep.right)
   }
 
-  private def _outgoingTlsConnectionLayer(host: String, port: Int, localAddress: Option[InetSocketAddress],
+  private def _outgoingTlsConnectionLayer(host: String, port: Int,
                                           settings: ClientConnectionSettings, connectionContext: ConnectionContext,
-                                          log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
+                                          transport: ClientTransport,
+                                          log:       LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
     val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
-    // The InetSocketAddress representing the remote address must be created unresolved because akka.io.TcpOutgoingConnection will
-    // not attempt DNS resolution if the InetSocketAddress is already resolved. That behavior is problematic when it comes to
-    // connection pools since it means that new connections opened by the pool in the future can end up using a stale IP address.
-    // By passing an unresolved InetSocketAddress instead, we ensure that DNS resolution is performed for every new connection.
-    val transportFlow = Tcp().outgoingConnection(InetSocketAddress.createUnresolved(host, port), localAddress,
-      settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
 
-    tlsStage.joinMat(transportFlow) { (_, tcpConnFuture) ⇒
-      import system.dispatcher
-      tcpConnFuture map { tcpConn ⇒ OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress) }
-    }
+    tlsStage.joinMat(transport.connectTo(host, port))(Keep.right)
   }
 
   type ClientLayer = Http.ClientLayer
@@ -572,7 +582,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     val port = uri.effectivePort
 
     webSocketClientLayer(request, settings, log)
-      .joinMat(_outgoingTlsConnectionLayer(host, port, localAddress, settings, ctx, log))(Keep.left)
+      .joinMat(_outgoingTlsConnectionLayer(host, port, settings, ctx, ClientTransport.TCP(localAddress, settings), log))(Keep.left)
   }
 
   /**
