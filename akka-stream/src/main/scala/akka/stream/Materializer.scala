@@ -101,4 +101,4 @@ private[akka] object NoMaterializer extends Materializer {
 case class MaterializationContext(
   materializer:        Materializer,
   effectiveAttributes: Attributes,
-  stageName:           String)
+  islandName:          String)
