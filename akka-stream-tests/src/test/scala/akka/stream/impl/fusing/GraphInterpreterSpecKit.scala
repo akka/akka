@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+/* FIXME enable again
 package akka.stream.impl.fusing
 
 import akka.event.Logging
@@ -453,3 +454,4 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
   abstract class OneBoundedSetup[T](_ops: GraphStageWithMaterializedValue[Shape, Any]*) extends OneBoundedSetupWithDecider[T](Supervision.stoppingDecider, _ops: _*)
 }
+*/
