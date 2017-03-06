@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-/* FIXME enable again
+
 package akka.stream.impl.fusing
 
 import akka.stream.impl.ConstantFun
@@ -128,4 +128,4 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
   }
 
 }
-*/
+

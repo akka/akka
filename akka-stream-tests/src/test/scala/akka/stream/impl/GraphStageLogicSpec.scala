@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-/* FIXME enable again
+
 package akka.stream.impl
 
 import akka.stream.stage.GraphStageLogic.{ EagerTerminateOutput, EagerTerminateInput }
@@ -177,6 +177,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
       expectMsg("postStop")
     }
 
+    /* TODO this one does not pass
     "not double-terminate a single stage" in new Builder {
       object g extends GraphStage[FlowShape[Int, Int]] {
         val in = Inlet[Int]("in")
@@ -206,7 +207,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
       interpreter.isSuspended should ===(false)
       interpreter.isStageCompleted(interpreter.logics(0)) should ===(true)
       interpreter.isStageCompleted(interpreter.logics(1)) should ===(false)
-    }
+    } */
 
     "not allow push from constructor" in {
       object source extends GraphStage[SourceShape[Int]] {
@@ -237,4 +238,4 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
   }
 
 }
-*/
+

@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-/* FIXME enable again
+
 package akka.stream.impl.fusing
 
 import java.util.concurrent.CountDownLatch
@@ -364,6 +364,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       ise.getCause.getCause should (have message ("violating your spec"))
     }
 
+    /* TODO this one does not work
     "be able to handle Subscriber spec violations without leaking" in assertAllStagesStopped {
       val filthySubscriber = new Subscriber[Int] {
         override def onSubscribe(s: Subscription): Unit = s.request(1)
@@ -390,7 +391,8 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
       upstream.expectCancellation()
     }
+    */
 
   }
 }
-*/
+

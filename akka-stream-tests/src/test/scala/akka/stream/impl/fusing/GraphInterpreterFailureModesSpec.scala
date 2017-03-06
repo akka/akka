@@ -1,4 +1,4 @@
-/* FIXME enable again
+
 package akka.stream.impl.fusing
 
 import akka.stream.testkit.StreamSpec
@@ -110,4 +110,4 @@ class GraphInterpreterFailureModesSpec extends StreamSpec with GraphInterpreterS
   }
 
 }
-*/
+
