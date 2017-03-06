@@ -120,7 +120,7 @@ object UnidocRoot extends AutoPlugin {
 
   override lazy val projectSettings =
     CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++
-    settings(Seq(), Seq(AkkaBuild.remoteTests, AkkaBuild.benchJmh, AkkaBuild.protobuf, AkkaBuild.akkaScalaNightly))
+    settings(Seq(), Seq(AkkaBuild.remoteTests, AkkaBuild.benchJmh, AkkaBuild.protobuf, AkkaBuild.akkaScalaNightly, AkkaBuild.docs))
 }
 
 /**

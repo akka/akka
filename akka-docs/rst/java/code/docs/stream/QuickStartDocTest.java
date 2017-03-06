@@ -20,6 +20,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import docs.AbstractJavaTest;
 import scala.concurrent.duration.Duration;
 //#other-imports
 
@@ -29,7 +30,7 @@ import org.junit.*;
  * This class is not meant to be run as a test in the test suite, but it
  * is set up such that it can be run interactively from within an IDE.
  */
-public class QuickStartDocTest {
+public class QuickStartDocTest extends AbstractJavaTest {
   
   static
   //#create-materializer

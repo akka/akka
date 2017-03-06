@@ -234,7 +234,7 @@ consequences:
   * starting up a stream may take longer than before due to executing the fusion algorithm
   * passing elements from one processing stage to the next is a lot faster between fused
     stages due to avoiding the asynchronous messaging overhead
-  * fused stream processing stages do no longer run in parallel to each other, meaning that
+  * fused stream processing stages no longer run in parallel to each other, meaning that
     only up to one CPU core is used for each fused part
 
 The first point can be countered by pre-fusing and then reusing a stream blueprint as sketched below:
