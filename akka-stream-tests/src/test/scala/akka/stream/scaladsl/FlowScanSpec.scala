@@ -71,10 +71,14 @@ class FlowScanSpec extends StreamSpec {
         .expectNext(0)
         .expectComplete()
     }
+
     "fail when upstream failed" in {
-      Source.failed[Int](TE("")).scan(0) { case (a, b) ⇒ a + b }.runWith(TestSink.probe[Int])
+      val ex = TE("")
+      Source.failed[Int](ex)
+        .scan(0) { case (a, b) ⇒ a + b }
+        .runWith(TestSink.probe[Int])
         .request(2)
-        .expectError(TE(""))
+        .expectNextOrError(0, ex)
     }
   }
 }
