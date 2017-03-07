@@ -161,7 +161,7 @@ class ReverseArrowSpec extends StreamSpec {
         val src = b.add(source)
         src ~> f
         sink2 <~ f
-        (the[IllegalArgumentException] thrownBy (s <~ f <~ src)).getMessage should include("already connected")
+        (the[UnsupportedOperationException] thrownBy (s <~ f <~ src)).getMessage should include("Cannot wire ports in a completed builder")
         ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }
