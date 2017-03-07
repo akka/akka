@@ -19,11 +19,13 @@ private[akka] object ConstantFun {
 
   def javaIdentityFunction[T]: JFun[T, T] = JavaIdentityFunction.asInstanceOf[JFun[T, T]]
 
-  def scalaIdentityFunction[T]: T ⇒ T = conforms
+  def scalaIdentityFunction[T]: T ⇒ T = conforms.asInstanceOf[Function[T, T]]
 
   def scalaAnyToNone[A, B]: A ⇒ Option[B] = none
   def scalaAnyTwoToNone[A, B, C]: (A, B) ⇒ Option[C] = two2none
   def javaAnyToNone[A, B]: A ⇒ Option[B] = none
+
+  val conforms = (a: Any) ⇒ a
 
   val zeroLong = (_: Any) ⇒ 0L
 
