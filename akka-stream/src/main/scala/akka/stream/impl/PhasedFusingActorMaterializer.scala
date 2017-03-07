@@ -24,7 +24,7 @@ import scala.concurrent.ExecutionContextExecutor
 
 object PhasedFusingActorMaterializer {
 
-  val Debug = false
+  val Debug = true
 
   val DefaultPhase: Phase[Any] = new Phase[Any] {
     override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer,
@@ -410,7 +410,7 @@ case class PhasedFusingActorMaterializer(
     var current: Traversal = graph.traversalBuilder.traversal
 
     val attributesStack = new java.util.ArrayDeque[Attributes](8)
-    attributesStack.addLast(initialAttributes)
+    attributesStack.addLast(initialAttributes and graph.traversalBuilder.attributes)
 
     // TODO: No longer need for a stack
     val traversalStack = new java.util.ArrayDeque[Traversal](16)

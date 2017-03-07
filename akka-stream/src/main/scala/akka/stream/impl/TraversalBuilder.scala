@@ -461,7 +461,7 @@ object LinearTraversalBuilder {
 
   def empty(attributes: Attributes = Attributes.none): LinearTraversalBuilder =
     if (attributes eq Attributes.none) cachedEmptyLinear
-    else LinearTraversalBuilder(None, None, 0, 0, PushNotUsed, None, attributes)
+    else LinearTraversalBuilder(None, None, 0, 0, PushNotUsed, None, attributes, EmptyTraversal)
 
   /**
    * Create a traversal builder specialized for linear graphs. This is designed to be much faster and lightweight
@@ -559,7 +559,8 @@ final case class LinearTraversalBuilder(
   traversalSoFar:       Traversal,
   pendingBuilder:       Option[TraversalBuilder],
   attributes:           Attributes,
-  beforeBuilder:        Traversal                = EmptyTraversal) extends TraversalBuilder {
+  beforeBuilder:        Traversal                = EmptyTraversal,
+  islandTag:            Option[IslandTag]        = None) extends TraversalBuilder {
 
   protected def isEmpty: Boolean = inSlots == 0 && outPort.isEmpty
 
@@ -571,13 +572,16 @@ final case class LinearTraversalBuilder(
   /**
    * This builder can always return a traversal.
    */
-  override def traversal: Traversal = applyAttributes(traversalSoFar)
+  override def traversal: Traversal = applyIslandAndAttributes(traversalSoFar)
 
   override def setAttributes(attributes: Attributes): LinearTraversalBuilder =
     copy(attributes = attributes)
 
-  private def applyAttributes(t: Traversal): Traversal = {
-    val withBuilder = beforeBuilder.concat(t)
+  private def applyIslandAndAttributes(t: Traversal): Traversal = {
+    val withBuilder = islandTag match {
+      case None      ⇒ beforeBuilder.concat(t)
+      case Some(tag) ⇒ EnterIsland(tag, beforeBuilder.concat(t))
+    }
 
     if (attributes eq Attributes.none) withBuilder
     else PushAttributes(attributes).concat(withBuilder).concat(PopAttributes)
@@ -685,7 +689,7 @@ final case class LinearTraversalBuilder(
         val traversalWithWiringCorrected = pendingBuilder match {
           case Some(composite) ⇒
             val out = outPort.get
-            applyAttributes(
+            applyIslandAndAttributes(
               composite
                 .assign(out, -composite.offsetOfModule(out) - toAppend.inSlots + toAppend.inOffset)
                 .traversal
@@ -695,7 +699,7 @@ final case class LinearTraversalBuilder(
             if (toAppend.inOffset == (toAppend.inSlots - 1))
               traversal
             else
-              applyAttributes(rewireLastOutTo(traversalSoFar, toAppend.inOffset - toAppend.inSlots))
+              applyIslandAndAttributes(rewireLastOutTo(traversalSoFar, toAppend.inOffset - toAppend.inSlots))
         }
 
         val newTraversal =
@@ -734,7 +738,10 @@ final case class LinearTraversalBuilder(
    * between islands.
    */
   override def makeIsland(islandTag: IslandTag): LinearTraversalBuilder =
-    copy(traversalSoFar = EnterIsland(islandTag, traversalSoFar))
+    this.islandTag match {
+      case Some(tag) ⇒ this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
+      case None      ⇒ copy(islandTag = Some(islandTag))
+    }
 }
 
 sealed trait TraversalBuildStep
@@ -961,5 +968,10 @@ final case class CompositeTraversalBuilder(
     copy(finalSteps = finalSteps.concat(Transform(f.asInstanceOf[Any ⇒ Any])))
   }
 
-  override def makeIsland(islandTag: IslandTag): TraversalBuilder = copy(islandTag = islandTag)
+  override def makeIsland(islandTag: IslandTag): TraversalBuilder = {
+    if (this.islandTag eq null)
+      copy(islandTag = islandTag)
+    else
+      this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
+  }
 }

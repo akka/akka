@@ -806,6 +806,100 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       mat.inlets(0) should ===(sink.in)
     }
 
+    "properly nest islands and attributes" in {
+      val builder =
+        source.traversalBuilder
+          .setAttributes(Attributes.name("island1"))
+          .makeIsland(TestIsland1)
+          .append(flow1.traversalBuilder, Keep.left)
+          .makeIsland(TestIsland2)
+          .setAttributes(Attributes.name("island2"))
+          .append(flow2.traversalBuilder, Keep.left)
+          .append(sink.traversalBuilder, Keep.left)
+
+      val mat = testMaterialize(builder)
+
+      mat.islandAssignments should ===(List(
+        (sink, Attributes.none, TestDefaultIsland),
+        (flow2, Attributes.none, TestDefaultIsland),
+        (flow1, Attributes.name("island2"), TestIsland2),
+        (source, Attributes.name("island2") and Attributes.name("island1"), TestIsland1)
+      ))
+    }
+
+    "properly nest flow with islands" in {
+      val nestedFlow =
+        flow1.traversalBuilder
+          .append(flow2.traversalBuilder, Keep.left)
+          .setAttributes(Attributes.name("nestedFlow"))
+          .makeIsland(TestIsland1)
+
+      val builder =
+        source.traversalBuilder
+          .setAttributes(Attributes.name("source"))
+          .append(nestedFlow, Keep.left)
+          .append(sink.traversalBuilder, Keep.left)
+          .setAttributes(Attributes.name("wholeThing")) // This will not be applied to the enclosing default island
+
+      val mat = testMaterialize(builder)
+
+      mat.islandAssignments should ===(List(
+        (sink, Attributes.none, TestDefaultIsland),
+        (flow2, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
+        (flow1, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
+        (source, Attributes.none, TestDefaultIsland)
+      ))
+    }
+
+    "properly nest flow with island inside another island" in {
+      val nestedFlow =
+        flow1.traversalBuilder
+          .append(flow2.traversalBuilder, Keep.left)
+          .setAttributes(Attributes.name("nestedFlow"))
+          .makeIsland(TestIsland1)
+
+      val builder =
+        source.traversalBuilder
+          .setAttributes(Attributes.name("source"))
+          .append(nestedFlow, Keep.left)
+          .makeIsland(TestIsland2)
+          .append(sink.traversalBuilder, Keep.left)
+          .setAttributes(Attributes.name("wholeThing")) // This will not be applied to the enclosing default island
+
+      val mat = testMaterialize(builder)
+
+      mat.islandAssignments should ===(List(
+        (sink, Attributes.none, TestDefaultIsland),
+        (flow2, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
+        (flow1, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
+        (source, Attributes.name("wholeThing"), TestIsland2)
+      ))
+    }
+
+    "properly nest flow with islands starting from linear enclosing a composite" in {
+      val nestedFlow =
+        flow2.traversalBuilder
+          .setAttributes(Attributes.name("nestedFlow"))
+          .makeIsland(TestIsland1)
+
+      val builder =
+        source.traversalBuilder
+          .append(compositeFlow1.traversalBuilder, compositeFlow1.shape, Keep.left)
+          .makeIsland(TestIsland2)
+          .append(nestedFlow, Keep.left)
+          .append(sink.traversalBuilder, Keep.left)
+          .setAttributes(Attributes.name("wholeThing")) // This will not be applied to the enclosing default island
+
+      val mat = testMaterialize(builder)
+
+      mat.islandAssignments should ===(List(
+        (sink, Attributes.none, TestDefaultIsland),
+        (flow2, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
+        (compositeFlow1, Attributes.name("wholeThing"), TestIsland2),
+        (source, Attributes.name("wholeThing"), TestIsland2)
+      ))
+    }
+
   }
 
 }
