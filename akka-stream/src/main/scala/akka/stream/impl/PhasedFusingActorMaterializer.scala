@@ -121,10 +121,10 @@ class IslandTracking(
 
   import PhasedFusingActorMaterializer.Debug
 
-  private var stageCounter = 0
-  private def nextStageName(): String = {
-    val s = islandNamePrefix + stageCounter
-    stageCounter += 1
+  private var islandNameCounter = 0
+  private def nextIslandName(): String = {
+    val s = islandNamePrefix + islandNameCounter
+    islandNameCounter += 1
     s
   }
 
@@ -139,7 +139,7 @@ class IslandTracking(
   private var activePhases: java.util.ArrayList[PhaseIsland[Any]] = null
   private var forwardWires: java.util.ArrayList[ForwardWire] = null
 
-  private var currentPhase: PhaseIsland[Any] = defaultPhase.apply(settings, materializer, nextStageName())
+  private var currentPhase: PhaseIsland[Any] = defaultPhase.apply(settings, materializer, nextIslandName())
 
   def getCurrentPhase: PhaseIsland[Any] = currentPhase
   def getCurrentOffset: Int = currentGlobalOffset
@@ -176,7 +176,7 @@ class IslandTracking(
     val previousIslandOffset = currentIslandGlobalOffset
 
     val effectiveSettings = materializer.effectiveSettings(attributes)
-    currentPhase = phases(tag)(effectiveSettings, materializer, nextStageName())
+    currentPhase = phases(tag)(effectiveSettings, materializer, nextIslandName())
     activePhases.add(currentPhase)
     if (Debug) println(s"Entering island starting at offset = $currentIslandGlobalOffset phase = $currentPhase")
 
