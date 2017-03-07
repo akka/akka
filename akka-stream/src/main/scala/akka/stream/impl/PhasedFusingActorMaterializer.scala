@@ -14,13 +14,13 @@ import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.fusing.ActorGraphInterpreter.{ ActorOutputBoundary, BatchingActorInputBoundary }
 import akka.stream.impl.fusing.GraphInterpreter.Connection
 import akka.stream.impl.fusing._
+import akka.stream.impl.io.{ TLSActor, TlsModule }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.collection.immutable.Map
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ ExecutionContextExecutor, Future }
-import scala.util.Random
+import scala.concurrent.ExecutionContextExecutor
 
 object PhasedFusingActorMaterializer {
 
@@ -47,6 +47,10 @@ object PhasedFusingActorMaterializer {
       override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer,
                          islandName: String): PhaseIsland[Any] =
         new ProcessorModulePhase(materializer, islandName).asInstanceOf[PhaseIsland[Any]]
+    },
+    TlsModuleIslandTag → new Phase[Any] {
+      def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] =
+        new TlsModulePhase(settings, materializer, islandName).asInstanceOf[PhaseIsland[Any]]
     },
     GraphStageTag → DefaultPhase)
 
@@ -739,4 +743,37 @@ final class ProcessorModulePhase(materializer: PhasedFusingActorMaterializer, is
   override def takePublisher(slot: Int, publisher: Publisher[Any]): Unit = publisher.subscribe(processor)
 
   override def onIslandReady(): Unit = ()
+}
+
+object TlsModuleIslandTag extends IslandTag
+
+final class TlsModulePhase(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String) extends PhaseIsland[NotUsed] {
+  def name: String = "TlsModulePhase"
+
+  var tlsActor: ActorRef = _
+  var publishers: Vector[ActorPublisher[Any]] = _
+
+  def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (NotUsed, Any) = {
+    println(mod)
+    val tls = mod.asInstanceOf[TlsModule]
+
+    val props = TLSActor.props(settings, tls.createSSLEngine, tls.verifySession, tls.closing)
+    tlsActor = materializer.actorOf(props, islandName)
+    def factory(id: Int) = new ActorPublisher[Any](tlsActor) {
+      override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
+    }
+    publishers = Vector.tabulate(2)(factory)
+    tlsActor ! FanOut.ExposedPublishers(publishers)
+    (NotUsed, NotUsed)
+  }
+  def assignPort(in: InPort, slot: Int, logic: NotUsed): Unit = ()
+  def assignPort(out: OutPort, slot: Int, logic: NotUsed): Unit = ()
+
+  def createPublisher(out: OutPort, logic: NotUsed): Publisher[Any] =
+    publishers(out.id)
+
+  def takePublisher(slot: Int, publisher: Publisher[Any]): Unit =
+    publisher.subscribe(FanIn.SubInput[Any](tlsActor, slot))
+
+  def onIslandReady(): Unit = ()
 }
