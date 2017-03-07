@@ -22,9 +22,9 @@ private[akka] trait LogHelper {
   /** Override to prefix every log message with a user-defined context string */
   protected def prefixString: String = ""
 
-  def debug(msg: String) = macro LogHelper.debugMacro
-  def info(msg: String) = macro LogHelper.infoMacro
-  def warning(msg: String) = macro LogHelper.warningMacro
+  def debug(msg: String): Unit = macro LogHelper.debugMacro
+  def info(msg: String): Unit = macro LogHelper.infoMacro
+  def warning(msg: String): Unit = macro LogHelper.warningMacro
 }
 
 /** INTERNAL API */

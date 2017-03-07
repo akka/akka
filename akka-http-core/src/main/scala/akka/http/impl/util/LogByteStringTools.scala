@@ -47,7 +47,7 @@ private[akka] object LogByteStringTools {
 
   def logTlsInbound(name: String, maxBytes: Int = MaxBytesPrinted): Flow[SslTlsInbound, SslTlsInbound, NotUsed] =
     Flow[SslTlsInbound].log(name, {
-      case s @ SessionTruncated         ⇒ s
+      case s: SessionTruncated          ⇒ s
       case SessionBytes(session, bytes) ⇒ "SessionBytes " + printByteString(bytes, maxBytes)
     })
 
