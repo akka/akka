@@ -43,23 +43,22 @@ abstract class ExtendedActorMaterializer extends ActorMaterializer {
     val dispatcher =
       if (props.deploy.dispatcher == Deploy.NoDispatcherGiven) effectiveSettings(context.effectiveAttributes).dispatcher
       else props.dispatcher
-    actorOf(props, context.stageName, dispatcher)
+    actorOf(props.withDispatcher(dispatcher), context.islandName)
   }
 
   /**
    * INTERNAL API
    */
-  // TODO: hide it again
-  def actorOf(props: Props, name: String, dispatcher: String): ActorRef = {
+  def actorOf(props: Props, name: String): ActorRef = {
     supervisor match {
       case ref: LocalActorRef ⇒
-        ref.underlying.attachChild(props.withDispatcher(dispatcher), name, systemService = false)
+        ref.underlying.attachChild(props, name, systemService = false)
       case ref: RepointableActorRef ⇒
         if (ref.isStarted)
-          ref.underlying.asInstanceOf[ActorCell].attachChild(props.withDispatcher(dispatcher), name, systemService = false)
+          ref.underlying.asInstanceOf[ActorCell].attachChild(props, name, systemService = false)
         else {
           implicit val timeout = ref.system.settings.CreationTimeout
-          val f = (supervisor ? StreamSupervisor.Materialize(props.withDispatcher(dispatcher), name)).mapTo[ActorRef]
+          val f = (supervisor ? StreamSupervisor.Materialize(props, name)).mapTo[ActorRef]
           Await.result(f, timeout.duration)
         }
       case unknown ⇒

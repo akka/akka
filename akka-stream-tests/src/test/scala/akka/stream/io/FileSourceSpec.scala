@@ -187,7 +187,6 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       pending
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
-      implicit val timeout = Timeout(500.millis)
 
       try {
         val p = FileIO.fromPath(manyLines)
@@ -195,7 +194,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           .runWith(TestSink.probe)(materializer)
 
         materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
-        val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
+        val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSource").get
         try assertDispatcher(ref, "akka.actor.default-dispatcher") finally p.cancel()
       } finally shutdown(sys)
     }
