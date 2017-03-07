@@ -73,13 +73,19 @@ object TraversalTestUtils {
     val inlets:                Array[InPort],
     val outlets:               Array[OutPort],
     val matValue:              Any,
-    val attributesAssignments: List[(AtomicModule[Shape, Any], Attributes)]
+    val attributesAssignments: List[(AtomicModule[Shape, Any], Attributes)],
+    val islandAssignments:     List[(AtomicModule[Shape, Any], Attributes, IslandTag)]
   ) {
 
     override def toString = {
       outlets.iterator.zip(inlets.iterator).mkString("connections: ", ", ", "")
     }
   }
+
+  case object TestDefaultIsland extends IslandTag
+  case object TestIsland1 extends IslandTag
+  case object TestIsland2 extends IslandTag
+  case object TestIsland3 extends IslandTag
 
   /**
    * This test method emulates a materialization run. It simply puts input and output ports into slots of an Array.
@@ -90,6 +96,8 @@ object TraversalTestUtils {
     require(b.isTraversalComplete, "Traversal builder must be complete")
 
     var attributesResult: List[(AtomicModule[Shape, Any], Attributes)] = Nil
+    var islandsResult: List[(AtomicModule[Shape, Any], Attributes, IslandTag)] = Nil
+    var islandStack: List[(IslandTag, Attributes)] = (TestDefaultIsland, Attributes.none) :: Nil
 
     val connections = b.inSlots
     val inlets = Array.ofDim[InPort](connections)
@@ -131,6 +139,7 @@ object TraversalTestUtils {
 
             // Recording attributes assignment results for testing purposes
             attributesResult = (mod → attributesStack.getLast) :: attributesResult
+            islandsResult = (mod, islandStack.head._2, islandStack.head._1) :: islandsResult
 
             // Dummy materialized value is simply the name of the module
             matValueStack.addLast(mod.toString)
@@ -155,6 +164,10 @@ object TraversalTestUtils {
           case Concat(first, next) ⇒
             if (next ne EmptyTraversal) traversalStack.add(next)
             nextStep = first
+          case EnterIsland(tag) ⇒
+            islandStack = (tag, attributesStack.getLast) :: islandStack
+          case ExitIsland ⇒
+            islandStack = islandStack.tail
           case _ ⇒
         }
 
@@ -162,7 +175,7 @@ object TraversalTestUtils {
       }
     }
 
-    new MaterializationResult(connections, inlets, outlets, matValueStack.peekLast(), attributesResult.reverse)
+    new MaterializationResult(connections, inlets, outlets, matValueStack.peekLast(), attributesResult.reverse, islandsResult.reverse)
   }
 
 }

@@ -52,8 +52,10 @@ abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends AtomicModu
    */
   def create(context: MaterializationContext): (AnyRef, Mat)
 
+  def attributes: Attributes
+
   override def traversalBuilder: TraversalBuilder =
-    LinearTraversalBuilder.fromModule(this).makeIsland(SinkModuleIslandTag)
+    LinearTraversalBuilder.fromModule(this, attributes).makeIsland(SinkModuleIslandTag)
 
   // This is okay since we the only caller of this method is right below.
   // TODO: Remove this, no longer needed

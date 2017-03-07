@@ -3,7 +3,7 @@
  */
 package akka.stream
 
-import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.{ GraphStageTag, IslandTag, TraversalBuilder }
 
 import scala.annotation.unchecked.uncheckedVariance
 
