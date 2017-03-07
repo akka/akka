@@ -12,7 +12,6 @@ import akka.testkit.JavaTestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Future;
 
 import java.util.ArrayList;
 import java.util.List;

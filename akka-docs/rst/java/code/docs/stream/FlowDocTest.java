@@ -18,12 +18,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.Promise;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-import scala.Option;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.dispatch.Futures;

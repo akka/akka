@@ -19,7 +19,6 @@ import docs.stream.SilenceSystemOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Future;
 
 import akka.stream.*;
 import akka.testkit.JavaTestKit;

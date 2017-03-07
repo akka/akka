@@ -1,11 +1,10 @@
 package docs.cluster;
 
 import java.math.BigInteger;
-import scala.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
+
 import akka.actor.AbstractActor;
-import akka.dispatch.Mapper;
-import static akka.dispatch.Futures.future;
-import static akka.pattern.Patterns.pipe;
+import static akka.pattern.PatternsCS.pipe;
 
 //#backend
 public class FactorialBackend extends AbstractActor {
@@ -14,15 +13,10 @@ public class FactorialBackend extends AbstractActor {
   public Receive createReceive() {
     return receiveBuilder()
       .match(Integer.class, n -> {
-        Future<BigInteger> f = future(() -> factorial(n),
-          getContext().dispatcher());
 
-        Future<FactorialResult> result = f.map(
-          new Mapper<BigInteger, FactorialResult>() {
-            public FactorialResult apply(BigInteger factorial) {
-              return new FactorialResult(n, factorial);
-            }
-          }, getContext().dispatcher());
+        CompletableFuture<FactorialResult> result =
+          CompletableFuture.supplyAsync(() -> factorial(n))
+            .thenApply((factorial) -> new FactorialResult(n, factorial));
 
         pipe(result, getContext().dispatcher()).to(sender());
 

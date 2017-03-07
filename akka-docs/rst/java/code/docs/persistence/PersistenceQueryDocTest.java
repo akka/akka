@@ -14,7 +14,6 @@ import akka.persistence.query.Offset;
 import com.typesafe.config.Config;
 
 import akka.actor.*;
-import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.query.*;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
@@ -23,7 +22,6 @@ import akka.util.Timeout;
 
 import docs.persistence.query.MyEventsByTagPublisher;
 import org.reactivestreams.Subscriber;
-import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.ArrayList;
@@ -272,11 +270,11 @@ public class PersistenceQueryDocTest {
       readJournal.eventsByTag("blue", new Sequence(0L));
 
     // find top 10 blue things:
-    final Future<List<Object>> top10BlueThings =
-      (Future<List<Object>>) blueThings
-        .map(t -> t.event())
+    final CompletionStage<List<Object>> top10BlueThings =
+       blueThings
+        .map(EventEnvelope::event)
         .take(10) // cancels the query stream after pulling 10 elements
-        .<List<Object>>runFold(new ArrayList<>(10), (acc, e) -> {
+        .runFold(new ArrayList<>(10), (acc, e) -> {
           acc.add(e);
           return acc;
         }, mat);
