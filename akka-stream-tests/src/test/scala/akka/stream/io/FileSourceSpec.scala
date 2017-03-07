@@ -182,15 +182,13 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       } finally shutdown(sys)
     }
 
-    //FIXME: overriding dispatcher should be made available with dispatcher alias support in materializer (#17929)
     "allow overriding the dispatcher using Attributes" in {
-      pending
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
 
       try {
         val p = FileIO.fromPath(manyLines)
-          .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
+          .addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
           .runWith(TestSink.probe)(materializer)
 
         materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
