@@ -117,17 +117,13 @@ class FlowRecoverWithSpec extends StreamSpec {
       Source(1 to 3).map { a ⇒ if (a == 3) throw new IndexOutOfBoundsException() else a }
         .recoverWithRetries(3, {
           case t: Throwable ⇒
-            Source(List(11, 22)).concat(Source.failed(ex))
+            Source(List(11, 22, 33)).map(m ⇒ if (m == 33) throw ex else m)
         }).runWith(TestSink.probe[Int])
-        .request(2)
+        .request(100)
         .expectNextN(List(1, 2))
-        .request(2)
         .expectNextN(List(11, 22))
-        .request(2)
         .expectNextN(List(11, 22))
-        .request(2)
         .expectNextN(List(11, 22))
-        .request(1)
         .expectError(ex)
     }
 
