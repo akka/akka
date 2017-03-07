@@ -63,12 +63,10 @@ object GraphInterpreter {
    * Contains all the necessary information for the GraphInterpreter to be able to implement a connection
    * between an output and input ports.
    *
-   * @param id Identifier of the connection. Corresponds to the array slot in the [[GraphAssembly]]
-   * @param inOwnerId Identifier of the owner of the input side of the connection. Corresponds to the array slot in
-   *                  the [[GraphAssembly]]
+   * @param id Identifier of the connection.
+   * @param inOwnerId Identifier of the owner of the input side of the connection.
    * @param inOwner The stage logic that corresponds to the input side of the connection.
-   * @param outOwnerId Identifier of the owner of the output side of the connection. Corresponds to the array slot
-   *                   in the [[GraphAssembly]]
+   * @param outOwnerId Identifier of the owner of the output side of the connection.
    * @param outOwner The stage logic that corresponds to the output side of the connection.
    * @param inHandler The handler that contains the callback for input events.
    * @param outHandler The handler that contains the callback for output events.
@@ -85,7 +83,9 @@ object GraphInterpreter {
     var portState: Int = InReady
     var slot: Any = Empty
 
-    override def toString = s"Connection($id, $portState, $slot, $inHandler, $outHandler)"
+    override def toString =
+      if (GraphInterpreter.Debug) s"Connection($id, $inOwnerId, $inOwner, $outOwnerId, $outOwner, $inHandler, $outHandler, $portState, $slot)"
+      else s"Connection($id, $portState, $slot, $inHandler, $outHandler)"
   }
 
   /**

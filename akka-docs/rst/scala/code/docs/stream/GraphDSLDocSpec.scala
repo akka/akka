@@ -115,15 +115,6 @@ class GraphDSLDocSpec extends AkkaSpec {
         priorityJobsIn.carbonCopy(),
         resultsOut.carbonCopy())
 
-      // A Shape must also be able to create itself from existing ports
-      override def copyFromPorts(
-        inlets:  immutable.Seq[Inlet[_]],
-        outlets: immutable.Seq[Outlet[_]]) = {
-        assert(inlets.size == this.inlets.size)
-        assert(outlets.size == this.outlets.size)
-        // This is why order matters when overriding inlets and outlets.
-        PriorityWorkerPoolShape[In, Out](inlets(0).as[In], inlets(1).as[In], outlets(0).as[Out])
-      }
     }
     //#graph-dsl-components-shape
 
