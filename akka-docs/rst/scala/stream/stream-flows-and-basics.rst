@@ -229,24 +229,17 @@ which will be running on the thread pools they have been configured to run on - 
 Operator Fusion
 ---------------
 
-Akka Streams 2.0 contains an initial version of stream operator fusion support. This means that
-the processing steps of a flow or stream graph can be executed within the same Actor and has three
-consequences:
+By default Akka Streams will fuse the stream operators. This means that the processing steps of a flow or
+stream graph can be executed within the same Actor and has two consequences:
 
-  * starting up a stream may take longer than before due to executing the fusion algorithm
   * passing elements from one processing stage to the next is a lot faster between fused
     stages due to avoiding the asynchronous messaging overhead
-  * fused stream processing stages no longer run in parallel to each other, meaning that
+  * fused stream processing stages does not run in parallel to each other, meaning that
     only up to one CPU core is used for each fused part
 
-The first point can be countered by pre-fusing and then reusing a stream blueprint as sketched below:
-
-.. includecode:: ../code/docs/stream/FlowDocSpec.scala#explicit-fusing
-
-In order to balance the effects of the second and third bullet points you will have to insert asynchronous
-boundaries manually into your flows and graphs by way of adding ``Attributes.asyncBoundary`` using the method
-``async`` on ``Source``, ``Sink`` and ``Flow`` to pieces that shall communicate with the rest of the graph in an
-asynchronous fashion.
+To allow for parallel processing you will have to insert asynchronous boundaries manually into your flows and
+graphs by way of adding ``Attributes.asyncBoundary`` using the method ``async`` on ``Source``, ``Sink`` and ``Flow``
+to pieces that shall communicate with the rest of the graph in an asynchronous fashion.
 
 .. includecode:: ../code/docs/stream/FlowDocSpec.scala#flow-async
 

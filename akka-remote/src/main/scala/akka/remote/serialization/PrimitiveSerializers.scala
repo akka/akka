@@ -84,7 +84,10 @@ class StringSerializer(val system: ExtendedActorSystem) extends BaseSerializer w
     new String(bytes, "UTF-8")
   }
 
-  override def toBinary(o: AnyRef): Array[Byte] = o.asInstanceOf[String].getBytes("UTF-8")
+  override def toBinary(o: AnyRef): Array[Byte] = {
+    println("stringserializer")
+    o.asInstanceOf[String].getBytes("UTF-8")
+  }
 
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = new String(bytes, "UTF-8")
 

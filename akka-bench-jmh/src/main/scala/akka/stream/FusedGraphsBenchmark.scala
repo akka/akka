@@ -122,7 +122,7 @@ class FusedGraphsBenchmark {
     val testSink = Sink.fromGraph(new JitSafeCompletionLatch)
 
     def fuse(r: RunnableGraph[CountDownLatch]): RunnableGraph[CountDownLatch] = {
-      RunnableGraph.fromGraph(Fusing.aggressive(r))
+      RunnableGraph.fromGraph(r)
     }
 
     val identityStage = new IdentityStage

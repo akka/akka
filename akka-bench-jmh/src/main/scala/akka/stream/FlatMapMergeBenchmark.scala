@@ -27,7 +27,7 @@ class FlatMapMergeBenchmark {
 
   var graph: RunnableGraph[Future[Done]] = _
 
-  def createSource(count: Int): Graph[SourceShape[Int], NotUsed] = akka.stream.Fusing.aggressive(Source.repeat(1).take(count))
+  def createSource(count: Int): Graph[SourceShape[Int], NotUsed] = Source.repeat(1).take(count)
 
   @Setup
   def setup(): Unit = {
