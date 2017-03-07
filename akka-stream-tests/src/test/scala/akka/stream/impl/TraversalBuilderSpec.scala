@@ -416,6 +416,51 @@ class TraversalBuilderSpec extends AkkaSpec {
       ))
     }
 
+    "properly track embedded island and its attributes" in {
+      val flowBuilder =
+        flow1.traversalBuilder
+          .makeIsland(TestIsland1)
+          .setAttributes(Attributes.name("flow"))
+
+      val builder = source.traversalBuilder
+        .add(flowBuilder, flow1.shape, Keep.left)
+        .add(sink.traversalBuilder, sink.shape, Keep.left)
+        .wire(source.out, flow1.in)
+        .wire(flow1.out, sink.in)
+        .setAttributes(Attributes.name("test"))
+
+      val mat = testMaterialize(builder)
+
+      mat.islandAssignments should ===(List(
+        (source, Attributes.none, TestDefaultIsland),
+        (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
+        (sink, Attributes.none, TestDefaultIsland)
+      ))
+    }
+
+    "properly ignore redundant island assignment" in {
+      val flowBuilder =
+        flow1.traversalBuilder
+          .makeIsland(TestIsland1)
+          .makeIsland(TestIsland2)
+          .setAttributes(Attributes.name("flow"))
+
+      val builder = source.traversalBuilder
+        .add(flowBuilder, flow1.shape, Keep.left)
+        .add(sink.traversalBuilder, sink.shape, Keep.left)
+        .wire(source.out, flow1.in)
+        .wire(flow1.out, sink.in)
+        .setAttributes(Attributes.name("test"))
+
+      val mat = testMaterialize(builder)
+
+      mat.islandAssignments should ===(List(
+        (source, Attributes.none, TestDefaultIsland),
+        (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
+        (sink, Attributes.none, TestDefaultIsland)
+      ))
+    }
+
     //TODO: Dummy test cases just for smoke-testing. Should be removed.
 
     "foo" in {
@@ -509,9 +554,6 @@ class TraversalBuilderSpec extends AkkaSpec {
 
       Source.single(1).via(flow).runWith(Sink.ignore)
     }
-
-    // Keep.none
-    // Test self-closed atomic module
 
   }
 
