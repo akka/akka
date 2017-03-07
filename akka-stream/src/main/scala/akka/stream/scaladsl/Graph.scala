@@ -17,6 +17,37 @@ import scala.collection.immutable
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
 
+/**
+ * INTERNAL API
+ *
+ * The implementation of a graph with an arbitrary shape.
+ */
+private[stream] final class GenericGraph[S <: Shape, Mat](override val shape: S, override val traversalBuilder: TraversalBuilder)
+  extends Graph[S, Mat] { outer ⇒
+
+  override def toString: String = s"GenericGraph($shape)"
+
+  override def withAttributes(attr: Attributes): Graph[S, Mat] =
+    new GenericGraphWithChangedAttributes(shape, traversalBuilder, attr)
+}
+
+/**
+ * INTERNAL API
+ *
+ * The implementation of a graph with an arbitrary shape with changed attributes. Changing attributes again
+ * prevents building up a chain of changes.
+ */
+private[stream] final class GenericGraphWithChangedAttributes[S <: Shape, Mat](override val shape: S, originalTraversalBuilder: TraversalBuilder, newAttributes: Attributes)
+  extends Graph[S, Mat] { outer ⇒
+
+  private[stream] def traversalBuilder: TraversalBuilder = originalTraversalBuilder.setAttributes(newAttributes)
+
+  override def toString: String = s"GenericGraphWithChangedAttributes($shape)"
+
+  override def withAttributes(attr: Attributes): Graph[S, Mat] =
+    new GenericGraphWithChangedAttributes(shape, originalTraversalBuilder, attr)
+}
+
 object Merge {
   /**
    * Create a new `Merge` with the specified number of input ports.

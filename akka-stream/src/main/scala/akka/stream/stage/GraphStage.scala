@@ -20,6 +20,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.scaladsl.{ GenericGraph, GenericGraphWithChangedAttributes }
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
@@ -33,12 +34,8 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
     TraversalBuilder.atomic(GraphStageModule(shape, attr, this), attr)
   }
 
-  final override def withAttributes(attr: Attributes): Graph[S, M] = new Graph[S, M] {
-    override def shape = GraphStageWithMaterializedValue.this.shape
-    override def traversalBuilder = GraphStageWithMaterializedValue.this.traversalBuilder.setAttributes(attr)
-
-    override def withAttributes(attr: Attributes) = GraphStageWithMaterializedValue.this.withAttributes(attr)
-  }
+  final override def withAttributes(attr: Attributes): Graph[S, M] =
+    new GenericGraphWithChangedAttributes(shape, GraphStageWithMaterializedValue.this.traversalBuilder, attr)
 }
 
 /**
