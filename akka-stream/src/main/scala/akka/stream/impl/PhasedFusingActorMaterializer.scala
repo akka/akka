@@ -112,7 +112,7 @@ private final case class ForwardWire(
   override def toString: String = s"ForwardWire(islandId = $islandGlobalOffset, from = $from, toGlobal = $toGlobalOffset, phase = $phase)"
 }
 
-private final case class SavedIslandData(islandGlobalOffset: Int, skippedSlots: Int, phase: PhaseIsland[Any])
+private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOffset: Int, skippedSlots: Int, phase: PhaseIsland[Any])
 
 class IslandTracking(
   val phases:       Map[IslandTag, Phase[Any]],
@@ -147,7 +147,7 @@ class IslandTracking(
   def getCurrentPhase: PhaseIsland[Any] = currentPhase
   def getCurrentOffset: Int = currentGlobalOffset
 
-  private def completeSegment(): Int = {
+  private def completeSegment(): Unit = {
     val length = currentGlobalOffset - currentSegmentGlobalOffset
 
     if (activePhases eq null) {
@@ -172,15 +172,13 @@ class IslandTracking(
     } else {
       if (Debug) println(s"Skipped zero length segment")
     }
-
-    length
   }
 
   def enterIsland(tag: IslandTag, attributes: Attributes): Unit = {
     completeSegment()
     val previousPhase = currentPhase
     val previousIslandOffset = currentIslandGlobalOffset
-    islandStateStack.add(SavedIslandData(previousIslandOffset, currentIslandSkippetSlots, previousPhase))
+    islandStateStack.add(SavedIslandData(previousIslandOffset, currentGlobalOffset, currentIslandSkippetSlots, previousPhase))
 
     val effectiveSettings = materializer.effectiveSettings(attributes)
     currentPhase = phases(tag)(effectiveSettings, materializer, nextIslandName())
@@ -205,7 +203,7 @@ class IslandTracking(
     // We restore data for the island
     currentIslandGlobalOffset = parentIsland.islandGlobalOffset
     currentPhase = parentIsland.phase
-    currentIslandSkippetSlots = parentIsland.skippedSlots + previousSegmentLength
+    currentIslandSkippetSlots = parentIsland.skippedSlots + (currentGlobalOffset - parentIsland.lastVisitedOffset)
 
     if (Debug) println(s"Exited to island starting at offset = $currentIslandGlobalOffset phase = $currentPhase")
   }

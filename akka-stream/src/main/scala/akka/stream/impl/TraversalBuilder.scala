@@ -635,7 +635,7 @@ final case class LinearTraversalBuilder(
                 .assign(out, inOffset - composite.offsetOfModule(out))
                 .traversal
                 .concat(traversalSoFar),
-            pendingBuilder = None)
+            pendingBuilder = None, beforeBuilder = EmptyTraversal)
         case None ⇒
           copy(inPort = None, outPort = None, traversalSoFar = rewireLastOutTo(traversalSoFar, inOffset))
       }
@@ -673,7 +673,9 @@ final case class LinearTraversalBuilder(
                 .assign(out, relativeSlot)
                 .traversal
                 .concat(traversalSoFar),
-            pendingBuilder = None)
+            pendingBuilder = None,
+            beforeBuilder = EmptyTraversal
+          )
         case None ⇒
           copy(outPort = None, traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
       }
@@ -728,10 +730,10 @@ final case class LinearTraversalBuilder(
               .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
           else {
             val withAttributes =
-              if (toAppend.attributes ne Attributes.none)
+              if (toAppend.attributes ne Attributes.none) {
                 PopAttributes
                   .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
-              else
+              } else
                 LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose)
 
             if (toAppend.islandTag.isEmpty) {
@@ -768,8 +770,8 @@ final case class LinearTraversalBuilder(
           traversalSoFar = newTraversal,
           pendingBuilder = toAppend.pendingBuilder,
           attributes = Attributes.none,
-          beforeBuilder = newBeforeBuilder,
-          islandTag = toAppend.islandTag
+          beforeBuilder = newBeforeBuilder.concat(toAppend.beforeBuilder),
+          islandTag = None
         )
       } else throw new Exception("should this happen?")
 
