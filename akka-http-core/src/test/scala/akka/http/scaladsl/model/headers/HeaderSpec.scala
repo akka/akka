@@ -97,6 +97,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         `Content-Length`(2000),
         `Content-Disposition`(ContentDispositionTypes.inline),
         `Content-Encoding`(HttpEncodings.gzip),
+        `Content-Range`(ContentRange.Default(1, 20, None)),
         `Content-Type`(ContentTypes.`text/xml(UTF-8)`),
         Cookie("cookie", "with-chocolate"),
         Date(DateTime(2016, 2, 4, 9, 9, 0)),
