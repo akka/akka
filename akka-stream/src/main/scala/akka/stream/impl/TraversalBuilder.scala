@@ -264,8 +264,11 @@ sealed trait TraversalBuilder {
   protected def internalSetAttributes(attributes: Attributes): TraversalBuilder
 
   def setAttributes(attributes: Attributes): TraversalBuilder = {
-    if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
-    else internalSetAttributes(attributes)
+    if (attributes ne Attributes.none) {
+      if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
+      else internalSetAttributes(attributes)
+    } else
+      this
   }
 
   def attributes: Attributes
@@ -544,7 +547,8 @@ object LinearTraversalBuilder {
           addMatCompose(PushNotUsed, combine),
           pendingBuilder = Some(composite),
           Attributes.none,
-          beforeBuilder = if (inOpt.isDefined) PushAttributes(composite.attributes) else EmptyTraversal)
+          beforeBuilder =
+            if (inOpt.isDefined && (composite.attributes ne Attributes.none)) PushAttributes(composite.attributes) else EmptyTraversal)
 
     }
   }
@@ -585,8 +589,11 @@ final case class LinearTraversalBuilder(
     copy(attributes = attributes)
 
   override def setAttributes(attributes: Attributes): LinearTraversalBuilder = {
-    if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
-    else internalSetAttributes(attributes)
+    if (attributes ne Attributes.none) {
+      if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
+      else internalSetAttributes(attributes)
+    } else
+      this
   }
 
   private def applyIslandAndAttributes(t: Traversal): Traversal = {
@@ -720,15 +727,21 @@ final case class LinearTraversalBuilder(
             toAppend.traversal
               .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
           else {
+            val withAttributes =
+              if (toAppend.attributes ne Attributes.none)
+                PopAttributes
+                  .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
+              else
+                LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose)
+
             if (toAppend.islandTag.isEmpty) {
               toAppend.traversalSoFar
-                .concat(PopAttributes)
-                .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
+                .concat(withAttributes)
+
             } else {
               toAppend.traversalSoFar
                 .concat(ExitIsland)
-                .concat(PopAttributes)
-                .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
+                .concat(withAttributes)
             }
           }
 
@@ -736,10 +749,12 @@ final case class LinearTraversalBuilder(
           if (toAppend.pendingBuilder.isEmpty) {
             EmptyTraversal
           } else {
-            toAppend.islandTag match {
-              case None      ⇒ PushAttributes(toAppend.attributes)
-              case Some(tag) ⇒ PushAttributes(toAppend.attributes).concat(EnterIsland(tag))
-            }
+            if (toAppend.attributes ne Attributes.none) {
+              toAppend.islandTag match {
+                case None      ⇒ PushAttributes(toAppend.attributes)
+                case Some(tag) ⇒ PushAttributes(toAppend.attributes).concat(EnterIsland(tag))
+              }
+            } else EmptyTraversal
 
           }
 
@@ -753,7 +768,8 @@ final case class LinearTraversalBuilder(
           traversalSoFar = newTraversal,
           pendingBuilder = toAppend.pendingBuilder,
           attributes = Attributes.none,
-          beforeBuilder = newBeforeBuilder
+          beforeBuilder = newBeforeBuilder,
+          islandTag = toAppend.islandTag
         )
       } else throw new Exception("should this happen?")
 

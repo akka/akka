@@ -779,7 +779,7 @@ final class TlsModulePhase(settings: ActorMaterializerSettings, materializer: Ph
     publishers(out.id)
 
   def takePublisher(slot: Int, publisher: Publisher[Any]): Unit =
-    publisher.subscribe(FanIn.SubInput[Any](tlsActor, 1-slot))
+    publisher.subscribe(FanIn.SubInput[Any](tlsActor, 1 - slot))
 
   def onIslandReady(): Unit = ()
 }
