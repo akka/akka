@@ -357,5 +357,5 @@ final case class ProcessorModule[In, Out, Mat](
   override def toString: String = f"ProcessorModule [${System.identityHashCode(this)}%08x]"
 
   override private[stream] def traversalBuilder =
-    LinearTraversalBuilder.fromModule(this).makeIsland(ProcessorModuleIslandTag)
+    LinearTraversalBuilder.fromModule(this, attributes).makeIsland(ProcessorModuleIslandTag)
 }

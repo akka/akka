@@ -24,6 +24,9 @@ import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import scala.collection.immutable.Map
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContextExecutor
+import scala.annotation.tailrec
+import akka.stream.impl.fusing.GraphInterpreter.DownstreamBoundaryStageLogic
+import akka.stream.impl.fusing.GraphInterpreter.UpstreamBoundaryStageLogic
 
 object PhasedFusingActorMaterializer {
 
@@ -656,9 +659,21 @@ final class GraphStageIsland(
       case _ ⇒
         val props = ActorGraphInterpreter.props(shell)
           .withDispatcher(effectiveSettings.dispatcher)
-
-        materializer.actorOf(props, islandName)
+        materializer.actorOf(props, fullIslandName)
     }
+  }
+
+  private def fullIslandName: String = {
+    @tailrec def findUsefulName(i: Int): String = {
+      if (i == logics.size) islandName
+      else logics.get(i) match {
+        case _: DownstreamBoundaryStageLogic[_] | _: UpstreamBoundaryStageLogic[_] ⇒
+          findUsefulName(i + 1)
+        case _ ⇒
+          islandName + "-" + logics.get(i).attributes.nameOrDefault()
+      }
+    }
+    findUsefulName(0)
   }
 
   override def toString: String = "GraphStagePhase"
@@ -714,8 +729,8 @@ final class SinkModulePhase(materializer: PhasedFusingActorMaterializer, islandN
 
   override def takePublisher(slot: Int, publisher: Publisher[Any]): Unit = {
     subscriberOrVirtualPublisher match {
-      case v: VirtualPublisher[Any] ⇒ v.registerPublisher(publisher)
-      case s: Subscriber[Any]       ⇒ publisher.subscribe(s)
+      case v: VirtualPublisher[_]        ⇒ v.registerPublisher(publisher)
+      case s: Subscriber[Any] @unchecked ⇒ publisher.subscribe(s)
     }
   }
 
