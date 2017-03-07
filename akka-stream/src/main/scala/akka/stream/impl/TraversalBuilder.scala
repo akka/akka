@@ -120,13 +120,8 @@ final case class Compose(composer: (Any, Any) ⇒ Any) extends MaterializedValue
 final case class PushAttributes(attributes: Attributes) extends Traversal
 final case object PopAttributes extends Traversal
 
-final case class EnterIsland(islandTag: IslandTag, island: Traversal) extends Traversal {
-  override def rewireFirstTo(relativeOffset: Int): Traversal =
-    copy(island = island.rewireFirstTo(relativeOffset))
-}
-
-// Never embedded into actual traversal, used as a marker in AbsoluteTraversal
-final case class ExitIsland(islandGlobalOffset: Int, skippedSlots: Int, phase: PhaseIsland[Any]) extends Traversal
+final case class EnterIsland(islandTag: IslandTag) extends Traversal
+final case object ExitIsland extends Traversal
 
 object TraversalBuilder {
 
@@ -190,15 +185,13 @@ object TraversalBuilder {
       var nextStep: Traversal = EmptyTraversal
 
       current match {
-        case PushNotUsed          ⇒ prindent("push NotUsed")
-        case Pop                  ⇒ prindent("pop mat")
-        case _: Transform         ⇒ prindent("transform mat")
-        case _: Compose           ⇒ prindent("compose mat")
-        case PushAttributes(attr) ⇒ prindent("push attr " + attr)
-        case PopAttributes        ⇒ prindent("pop attr")
-        case EnterIsland(tag, island) ⇒
-          prindent("enter island " + tag)
-          printTraversal(island, indent + 1)
+        case PushNotUsed                        ⇒ prindent("push NotUsed")
+        case Pop                                ⇒ prindent("pop mat")
+        case _: Transform                       ⇒ prindent("transform mat")
+        case _: Compose                         ⇒ prindent("compose mat")
+        case PushAttributes(attr)               ⇒ prindent("push attr " + attr)
+        case PopAttributes                      ⇒ prindent("pop attr")
+        case EnterIsland(tag)                   ⇒ prindent("enter island " + tag)
         case MaterializeAtomic(mod, outToSlots) ⇒ prindent("materialize " + mod + " " + outToSlots.mkString("[", ", ", "]"))
         case Concat(first, next) ⇒
           printTraversal(first, indent + 1)
@@ -231,8 +224,6 @@ object TraversalBuilder {
         case Concat(first, next) ⇒
           slot = printWiring(first, slot)
           nextStep = next
-        case EnterIsland(_, traversal) ⇒
-          nextStep = traversal
         case _ ⇒
       }
 
@@ -269,7 +260,12 @@ sealed trait TraversalBuilder {
    */
   def transformMat[A, B](f: A ⇒ B): TraversalBuilder
 
-  def setAttributes(attributes: Attributes): TraversalBuilder
+  protected def internalSetAttributes(attributes: Attributes): TraversalBuilder
+
+  def setAttributes(attributes: Attributes): TraversalBuilder = {
+    if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
+    else internalSetAttributes(attributes)
+  }
 
   def attributes: Attributes
 
@@ -350,7 +346,8 @@ final case class CompletedTraversalBuilder(
   traversalSoFar: Traversal,
   inSlots:        Int,
   inToOffset:     Map[InPort, Int],
-  attributes:     Attributes) extends TraversalBuilder {
+  attributes:     Attributes,
+  islandTag:      Option[IslandTag] = None) extends TraversalBuilder
 
   override def add[A, B, C](submodule: TraversalBuilder, shape: Shape, combineMat: (A, B) ⇒ C): TraversalBuilder = {
     val key = new BuilderKey
@@ -362,9 +359,15 @@ final case class CompletedTraversalBuilder(
       attributes = attributes).add(submodule, shape, combineMat)
   }
 
-  override def traversal: Traversal =
-    if (attributes eq Attributes.none) traversalSoFar
-    else PushAttributes(attributes).concat(traversalSoFar).concat(PopAttributes)
+  override def traversal: Traversal = {
+    val withIsland = islandTag match {
+      case Some(tag) ⇒ EnterIsland(tag).concat(traversalSoFar).concat(ExitIsland)
+      case None      ⇒ traversalSoFar
+    }
+
+    if (attributes eq Attributes.none) withIsland
+    else PushAttributes(attributes).concat(withIsland).concat(PopAttributes)
+  }
 
   override def transformMat[A, B](f: (A) ⇒ B): TraversalBuilder =
     copy(traversalSoFar = traversalSoFar.concat(Transform(f.asInstanceOf[Any ⇒ Any])))
@@ -376,13 +379,16 @@ final case class CompletedTraversalBuilder(
   override def wire(out: OutPort, in: InPort): TraversalBuilder =
     throw new UnsupportedOperationException(s"Cannot wire ports in a completed builder. ${out.mappedTo} ~> ${in.mappedTo}")
 
-  override def setAttributes(attributes: Attributes): TraversalBuilder =
+  override def internalSetAttributes(attributes: Attributes): TraversalBuilder =
     copy(attributes = attributes)
 
   override def unwiredOuts: Int = 0
 
   override def makeIsland(islandTag: IslandTag): TraversalBuilder =
-    copy(traversalSoFar = EnterIsland(islandTag, traversalSoFar))
+    this.islandTag match {
+      case None    ⇒ copy(islandTag = Some(islandTag))
+      case Some(_) ⇒ this
+    }
 
   override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder =
     throw new UnsupportedOperationException("Cannot assign ports to slots in a completed builder.")
@@ -444,7 +450,7 @@ final case class AtomicTraversalBuilder(
     } else copy(outToSlot = newOutToSlot, unwiredOuts = newUnwiredOuts)
   }
 
-  override def setAttributes(attributes: Attributes): TraversalBuilder =
+  override def internalSetAttributes(attributes: Attributes): TraversalBuilder =
     copy(attributes = attributes)
 
   override def makeIsland(islandTag: IslandTag): TraversalBuilder =
@@ -574,17 +580,23 @@ final case class LinearTraversalBuilder(
    */
   override def traversal: Traversal = applyIslandAndAttributes(traversalSoFar)
 
-  override def setAttributes(attributes: Attributes): LinearTraversalBuilder =
+  override def internalSetAttributes(attributes: Attributes): LinearTraversalBuilder =
     copy(attributes = attributes)
 
+  override def setAttributes(attributes: Attributes): LinearTraversalBuilder = {
+    if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
+    else internalSetAttributes(attributes)
+  }
+
   private def applyIslandAndAttributes(t: Traversal): Traversal = {
-    val withBuilder = islandTag match {
-      case None      ⇒ beforeBuilder.concat(t)
-      case Some(tag) ⇒ EnterIsland(tag, beforeBuilder.concat(t))
+    val withBuilder = beforeBuilder.concat(t)
+    val withIslandTag = islandTag match {
+      case None      ⇒ withBuilder
+      case Some(tag) ⇒ EnterIsland(tag).concat(withBuilder).concat(ExitIsland)
     }
 
-    if (attributes eq Attributes.none) withBuilder
-    else PushAttributes(attributes).concat(withBuilder).concat(PopAttributes)
+    if (attributes eq Attributes.none) withIslandTag
+    else PushAttributes(attributes).concat(withIslandTag).concat(PopAttributes)
   }
 
   /**
@@ -707,9 +719,27 @@ final case class LinearTraversalBuilder(
             toAppend.traversal
               .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
           else {
-            toAppend.traversalSoFar
-              .concat(PopAttributes)
-              .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
+            if (toAppend.islandTag.isEmpty) {
+              toAppend.traversalSoFar
+                .concat(PopAttributes)
+                .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
+            } else {
+              toAppend.traversalSoFar
+                .concat(ExitIsland)
+                .concat(PopAttributes)
+                .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
+            }
+          }
+
+        val newBeforeBuilder =
+          if (toAppend.pendingBuilder.isEmpty) {
+            EmptyTraversal
+          } else {
+            toAppend.islandTag match {
+              case None      ⇒ PushAttributes(toAppend.attributes)
+              case Some(tag) ⇒ PushAttributes(toAppend.attributes).concat(EnterIsland(tag))
+            }
+
           }
 
         // Simply just take the new unwired ports, increase the number of inSlots and concatenate the traversals
@@ -722,7 +752,8 @@ final case class LinearTraversalBuilder(
           traversalSoFar = newTraversal,
           pendingBuilder = toAppend.pendingBuilder,
           attributes = Attributes.none,
-          beforeBuilder = if (toAppend.pendingBuilder.isEmpty) EmptyTraversal else PushAttributes(toAppend.attributes))
+          beforeBuilder = newBeforeBuilder
+        )
       } else throw new Exception("should this happen?")
 
     }
@@ -809,7 +840,7 @@ final case class CompositeTraversalBuilder(
   override def offsetOf(in: InPort): Int = inOffsets(in)
   override def isTraversalComplete = false
 
-  override def setAttributes(attributes: Attributes): TraversalBuilder =
+  override def internalSetAttributes(attributes: Attributes): TraversalBuilder =
     copy(attributes = attributes)
 
   /**
@@ -830,7 +861,7 @@ final case class CompositeTraversalBuilder(
         remaining = remaining.tail
       }
 
-      val finalTraversal = if (islandTag == null) traversal else EnterIsland(islandTag, traversal)
+      val finalTraversal = if (islandTag == null) traversal else EnterIsland(islandTag).concat(traversal).concat(ExitIsland)
 
       // The CompleteTraversalBuilder only keeps the minimum amount of necessary information that is needed for it
       // to be embedded in a larger graph, making partial graph reuse much more efficient.

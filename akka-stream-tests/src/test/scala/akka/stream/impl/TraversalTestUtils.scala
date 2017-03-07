@@ -164,11 +164,9 @@ object TraversalTestUtils {
           case Concat(first, next) ⇒
             if (next ne EmptyTraversal) traversalStack.add(next)
             nextStep = first
-          case EnterIsland(tag, next) ⇒
+          case EnterIsland(tag) ⇒
             islandStack = (tag, attributesStack.getLast) :: islandStack
-            traversalStack.add(ExitIsland(0, 0, null))
-            nextStep = next
-          case ExitIsland(_, _, _) ⇒
+          case ExitIsland ⇒
             islandStack = islandStack.tail
           case _ ⇒
         }

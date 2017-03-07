@@ -900,6 +900,29 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       ))
     }
 
+    "properly nest flow containing composite with islands" in {
+      val nestedFlow =
+        flow1.traversalBuilder
+          .append(compositeFlow2.traversalBuilder, compositeFlow1.shape, Keep.left)
+          .setAttributes(Attributes.name("nestedFlow"))
+          .makeIsland(TestIsland1)
+
+      val builder =
+        source.traversalBuilder
+          .append(nestedFlow, Keep.left)
+          .append(sink.traversalBuilder, Keep.left)
+          .setAttributes(Attributes.name("wholeThing")) // This will not be applied to the enclosing default island
+
+      val mat = testMaterialize(builder)
+
+      mat.islandAssignments should ===(List(
+        (sink, Attributes.none, TestDefaultIsland),
+        (compositeFlow2, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
+        (flow1, Attributes.name("wholeThing") and Attributes.name("nestedFlow"), TestIsland1),
+        (source, Attributes.none, TestDefaultIsland)
+      ))
+    }
+
   }
 
 }
