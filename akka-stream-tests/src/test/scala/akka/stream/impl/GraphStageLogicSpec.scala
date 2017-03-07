@@ -177,7 +177,6 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
       expectMsg("postStop")
     }
 
-    /* TODO this one does not pass
     "not double-terminate a single stage" in new Builder {
       object g extends GraphStage[FlowShape[Int, Int]] {
         val in = Inlet[Int]("in")
@@ -196,6 +195,8 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
         .connect(passThrough.out, Downstream)
         .init()
 
+      // note: a bit dangerous assumptions about connection and logic positions here
+      // if anything around creating the logics and connections in the builder changes this may fail
       interpreter.complete(interpreter.connections(0))
       interpreter.cancel(interpreter.connections(1))
       interpreter.execute(2)
@@ -205,9 +206,9 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       interpreter.isCompleted should ===(false)
       interpreter.isSuspended should ===(false)
-      interpreter.isStageCompleted(interpreter.logics(0)) should ===(true)
-      interpreter.isStageCompleted(interpreter.logics(1)) should ===(false)
-    } */
+      interpreter.isStageCompleted(interpreter.logics(1)) should ===(true)
+      interpreter.isStageCompleted(interpreter.logics(2)) should ===(false)
+    }
 
     "not allow push from constructor" in {
       object source extends GraphStage[SourceShape[Int]] {
