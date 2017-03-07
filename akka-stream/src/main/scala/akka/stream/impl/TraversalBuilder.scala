@@ -192,6 +192,7 @@ object TraversalBuilder {
         case PushAttributes(attr)               ⇒ prindent("push attr " + attr)
         case PopAttributes                      ⇒ prindent("pop attr")
         case EnterIsland(tag)                   ⇒ prindent("enter island " + tag)
+        case ExitIsland                         ⇒ prindent("exit island")
         case MaterializeAtomic(mod, outToSlots) ⇒ prindent("materialize " + mod + " " + outToSlots.mkString("[", ", ", "]"))
         case Concat(first, next) ⇒
           printTraversal(first, indent + 1)
@@ -347,7 +348,7 @@ final case class CompletedTraversalBuilder(
   inSlots:        Int,
   inToOffset:     Map[InPort, Int],
   attributes:     Attributes,
-  islandTag:      Option[IslandTag] = None) extends TraversalBuilder
+  islandTag:      Option[IslandTag] = None) extends TraversalBuilder {
 
   override def add[A, B, C](submodule: TraversalBuilder, shape: Shape, combineMat: (A, B) ⇒ C): TraversalBuilder = {
     val key = new BuilderKey
