@@ -54,8 +54,6 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
   object passThrough extends GraphStage[FlowShape[Int, Int]] {
     val in = Inlet[Int]("in")
     val out = Outlet[Int]("out")
-    in.id = 0
-    out.id = 1
     override val shape = FlowShape(in, out)
     override def createLogic(attr: Attributes) = new GraphStageLogic(shape) {
       setHandler(in, new InHandler {
@@ -74,7 +72,6 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   object emitEmptyIterable extends GraphStage[SourceShape[Int]] {
     val out = Outlet[Int]("out")
-    out.id = 0
     override val shape = SourceShape(out)
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
