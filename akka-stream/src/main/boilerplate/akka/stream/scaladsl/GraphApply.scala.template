@@ -15,7 +15,7 @@ trait GraphApply {
     val builder = new GraphDSL.Builder
     val s = buildBlock(builder)
 
-    new GraphApply.GraphImpl(s, builder.traversalBuilder)
+    createGraph(s, builder)
   }
 
   /**
@@ -27,7 +27,7 @@ trait GraphApply {
     val s1 = builder.add(g1, Keep.right)
     val s = buildBlock(builder)(s1)
 
-    new GraphApply.GraphImpl(s, builder.traversalBuilder)
+    createGraph(s, builder)
   }
 
 
@@ -45,25 +45,11 @@ trait GraphApply {
     ]
     val s = buildBlock(builder)([#s1#])
 
-    new GraphApply.GraphImpl(s, builder.traversalBuilder)
+    createGraph(s, builder)
   }#
 
   ]
+
+  private def createGraph[S <: Shape, Mat](shape: S, graphBuilder: GraphDSL.Builder[Mat]): Graph[S, Mat] =
+    new GenericGraph(shape, graphBuilder.traversalBuilder)
 }
-
-/**
- * INTERNAL API
- */
-object GraphApply {
-  final class GraphImpl[S <: Shape, Mat](override val shape: S, override val traversalBuilder: TraversalBuilder)
-    extends Graph[S, Mat] {
-    
-    override def toString: String = s"Graph($shape)"
-
-    override def withAttributes(attr: Attributes): Graph[S, Mat] =
-      new GraphImpl(shape, traversalBuilder.setAttributes(attr))
-
-    override def named(name: String): Graph[S, Mat] = addAttributes(Attributes.name(name))
-  }
-}
-
