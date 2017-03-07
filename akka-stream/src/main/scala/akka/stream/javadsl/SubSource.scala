@@ -1163,7 +1163,7 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    *
    * '''Cancels when''' downstream cancels
    */
-  def zip[T](source: Graph[SourceShape[T], _]): SubSource[Out @uncheckedVariance Pair T, Mat] =
+  def zip[T](source: Graph[SourceShape[T], _]): SubSource[Out @uncheckedVariance Tuple2 T, Mat] =
     new SubSource(delegate.zip(source))
 
   /**

@@ -694,7 +694,7 @@ object Zip {
  *
  * '''Cancels when''' downstream cancels
  */
-final class Zip[A, B] extends ZipWith2[A, B, (A, B)](Pair.apply) {
+final class Zip[A, B] extends ZipWith2[A, B, (A, B)](Tuple2.apply) {
   override def toString = "Zip"
 }
 
