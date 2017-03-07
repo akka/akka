@@ -276,17 +276,6 @@ public class FlowDocTest extends AbstractJavaTest {
   }
 
   public void fusingAndAsync() {
-    //#explicit-fusing
-    Flow<Integer, Integer, NotUsed> flow =
-        Flow.of(Integer.class).map(x -> x * 2).filter(x -> x > 500);
-    Graph<FlowShape<Integer, Integer>, NotUsed> fused =
-        akka.stream.Fusing.aggressive(flow);
-    
-    Source.fromIterator(() -> Stream.iterate(0, x -> x + 1).iterator())
-        .via(fused)
-        .take(1000);
-    //#explicit-fusing
-    
     //#flow-async
     Source.range(1, 3)
         .map(x -> x + 1).async()

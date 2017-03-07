@@ -66,6 +66,7 @@ object GraphStageLogic {
    */
   object EagerTerminateInput extends InHandler {
     override def onPush(): Unit = ()
+    override def toString = "EagerTerminateInput"
   }
 
   /**
@@ -75,6 +76,7 @@ object GraphStageLogic {
   object IgnoreTerminateInput extends InHandler {
     override def onPush(): Unit = ()
     override def onUpstreamFinish(): Unit = ()
+    override def toString = "IgnoreTerminateInput"
   }
 
   /**
@@ -102,6 +104,7 @@ object GraphStageLogic {
    */
   object EagerTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
+    override def toString = "EagerTerminateOutput"
   }
 
   /**
@@ -110,6 +113,7 @@ object GraphStageLogic {
   object IgnoreTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
     override def onDownstreamFinish(): Unit = ()
+    override def toString = "IgnoreTerminateOutput"
   }
 
   /**
@@ -218,6 +222,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * INTERNAL API
+   *
+   * Input handlers followed by output handlers, use `inHandler(id)` and `outHandler(id)` to access the respective
+   * handlers.
    */
   private[stream] var attributes: Attributes = Attributes.none
 
@@ -226,6 +233,21 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   // Using common array to reduce overhead for small port counts
   private[stream] val handlers = Array.ofDim[Any](inCount + outCount)
+
+  /**
+   * INTERNAL API
+   */
+  private[stream] def inHandler(id: Int): InHandler = {
+    if (id > inCount) throw new IllegalArgumentException(s"$id not in inHandler range $inCount in $this")
+    if (inCount < 1) throw new IllegalArgumentException(s"Tried to access inHandler $id but there are no in ports in $this")
+    handlers(id).asInstanceOf[InHandler]
+  }
+
+  private[stream] def outHandler(id: Int): OutHandler = {
+    if (id > outCount) throw new IllegalArgumentException(s"$id not in outHandler range $outCount in $this")
+    if (outCount < 1) throw new IllegalArgumentException(s"Tried to access outHandler $id but there are no out ports $this")
+    handlers(inCount + id).asInstanceOf[OutHandler]
+  }
 
   /**
    * INTERNAL API

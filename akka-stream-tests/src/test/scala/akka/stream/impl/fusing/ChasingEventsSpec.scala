@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-/* FIXME enable again
+
 package akka.stream.impl.fusing
 
 import akka.stream.scaladsl.{ Sink, Source }
@@ -114,4 +114,3 @@ class ChasingEventsSpec extends AkkaSpec {
   }
 
 }
-*/
