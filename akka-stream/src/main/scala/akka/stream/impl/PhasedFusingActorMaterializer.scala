@@ -180,18 +180,19 @@ class IslandTracking(
     completeSegment()
     val previousPhase = currentPhase
     val previousIslandOffset = currentIslandGlobalOffset
+    islandStateStack.add(SavedIslandData(previousIslandOffset, currentIslandSkippetSlots, previousPhase))
 
     val effectiveSettings = materializer.effectiveSettings(attributes)
     currentPhase = phases(tag)(effectiveSettings, materializer, nextIslandName())
     activePhases.add(currentPhase)
-    if (Debug) println(s"Entering island starting at offset = $currentIslandGlobalOffset phase = $currentPhase")
 
     // Resolve the phase to be used to materialize this island
     currentIslandGlobalOffset = currentGlobalOffset
 
     // The base offset of this segment is the current global offset
     currentSegmentGlobalOffset = currentGlobalOffset
-    islandStateStack.add(SavedIslandData(previousIslandOffset, currentIslandSkippetSlots, previousPhase))
+    currentIslandSkippetSlots = 0
+    if (Debug) println(s"Entering island starting at offset = $currentIslandGlobalOffset phase = $currentPhase")
   }
 
   def exitIsland(): Unit = {
@@ -253,7 +254,6 @@ class IslandTracking(
   }
 
   def wireOut(out: OutPort, absoluteOffset: Int, logic: Any): Unit = {
-    // TODO: forward wires
     if (Debug) println(s"  wiring $out to absolute = $absoluteOffset")
 
     // First check if we are wiring backwards. This is important since we can only do resolution for backward wires.
@@ -760,10 +760,10 @@ final class TlsModulePhase(settings: ActorMaterializerSettings, materializer: Ph
   var publishers: Vector[ActorPublisher[Any]] = _
 
   def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (NotUsed, Any) = {
-    println(mod)
     val tls = mod.asInstanceOf[TlsModule]
 
-    val props = TLSActor.props(settings, tls.createSSLEngine, tls.verifySession, tls.closing)
+    val props =
+      TLSActor.props(settings, tls.createSSLEngine, tls.verifySession, tls.closing).withDispatcher(settings.dispatcher)
     tlsActor = materializer.actorOf(props, islandName)
     def factory(id: Int) = new ActorPublisher[Any](tlsActor) {
       override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
@@ -779,7 +779,7 @@ final class TlsModulePhase(settings: ActorMaterializerSettings, materializer: Ph
     publishers(out.id)
 
   def takePublisher(slot: Int, publisher: Publisher[Any]): Unit =
-    publisher.subscribe(FanIn.SubInput[Any](tlsActor, slot))
+    publisher.subscribe(FanIn.SubInput[Any](tlsActor, 1-slot))
 
   def onIslandReady(): Unit = ()
 }
