@@ -91,9 +91,6 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
         DaemonMsgCreate(Props(classOf[MyActorWithParam], "a string"), Deploy.local, "/user/test", system.actorFor("/user")))
       println(String.valueOf(encodeHex(bytes)))
       */
-      import org.apache.commons.codec.binary.Hex.encodeHex
-
-      println(String.valueOf(encodeHex(SerializationExtension(system).serialize("a string").get)))
 
       val oldBytesHex =
         "0a6a12020a001a48616b6b612e72656d6f74652e73657269616c697a6174696f" +
