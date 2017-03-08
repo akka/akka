@@ -28,7 +28,10 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
 
   protected def initialAttributes: Attributes = Attributes.none
 
-  final override lazy val traversalBuilder: TraversalBuilder = TraversalBuilder.atomic(GraphStageModule(shape, initialAttributes, this))
+  final override lazy val traversalBuilder: TraversalBuilder = {
+    val attr = initialAttributes
+    TraversalBuilder.atomic(GraphStageModule(shape, attr, this), attr)
+  }
 
   final override def withAttributes(attr: Attributes): Graph[S, M] = new Graph[S, M] {
     override def shape = GraphStageWithMaterializedValue.this.shape

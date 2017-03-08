@@ -30,8 +30,7 @@ import scala.compat.java8.FutureConverters._
  */
 final class Source[+Out, +Mat](
   override val traversalBuilder: LinearTraversalBuilder,
-  override val shape:            SourceShape[Out]
-)
+  override val shape:            SourceShape[Out])
   extends FlowOpsMat[Out, Mat] with Graph[SourceShape[Out], Mat] {
 
   override type Repr[+O] = Source[O, Mat @uncheckedVariance]
@@ -53,8 +52,7 @@ final class Source[+Out, +Mat](
 
     new Source[T, Mat3](
       traversalBuilder.append(toAppend, flow.shape, combine),
-      SourceShape(flow.shape.out)
-    )
+      SourceShape(flow.shape.out))
   }
 
   /**
@@ -157,8 +155,7 @@ final class Source[+Out, +Mat](
    */
   override def async: Repr[Out] = new Source(
     traversalBuilder.makeIsland(GraphStageTag),
-    shape
-  )
+    shape)
 
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.

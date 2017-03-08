@@ -13,7 +13,7 @@ import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreterShell
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Await, ExecutionContextExecutor}
+import scala.concurrent.{ Await, ExecutionContextExecutor }
 
 /**
  * ExtendedActorMaterializer used by subtypes which materializer using GraphInterpreterShell

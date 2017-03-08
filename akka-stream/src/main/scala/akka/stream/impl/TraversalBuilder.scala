@@ -156,23 +156,26 @@ object TraversalBuilder {
   /**
    * Create a generic traversal builder starting from an atomic module.
    */
-  def atomic(module: AtomicModule[Shape, Any], attributes: Attributes = Attributes.none): TraversalBuilder = {
+  def atomic(module: AtomicModule[Shape, Any], attributes: Attributes): TraversalBuilder = {
     initShape(module.shape)
 
-    if (module.shape.outlets.isEmpty) {
-      val b = CompletedTraversalBuilder(
-        traversalSoFar = MaterializeAtomic(module, Array.ofDim[Int](module.shape.outlets.size)),
-        inSlots = module.shape.inlets.size,
-        inToOffset = module.shape.inlets.map(in ⇒ in → in.id).toMap,
-        attributes)
-      b
-    } else {
-      AtomicTraversalBuilder(
-        module,
-        Array.ofDim[Int](module.shape.outlets.size),
-        module.shape.outlets.size,
-        attributes)
-    }
+    val builder =
+      if (module.shape.outlets.isEmpty) {
+        val b = CompletedTraversalBuilder(
+          traversalSoFar = MaterializeAtomic(module, Array.ofDim[Int](module.shape.outlets.size)),
+          inSlots = module.shape.inlets.size,
+          inToOffset = module.shape.inlets.map(in ⇒ in → in.id).toMap,
+          Attributes.none)
+        b
+      } else {
+        AtomicTraversalBuilder(
+          module,
+          Array.ofDim[Int](module.shape.outlets.size),
+          module.shape.outlets.size,
+          Attributes.none)
+      }
+    // important to use setAttributes because it will create island for async (dispatcher attribute)
+    builder.setAttributes(attributes)
   }
 
   def printTraversal(t: Traversal, indent: Int = 0): Unit = {
@@ -477,7 +480,7 @@ object LinearTraversalBuilder {
    * Create a traversal builder specialized for linear graphs. This is designed to be much faster and lightweight
    * than its generic counterpart. It can be freely mixed with the generic builder in both ways.
    */
-  def fromModule(module: AtomicModule[Shape, Any], attributes: Attributes = Attributes.none): LinearTraversalBuilder = {
+  def fromModule(module: AtomicModule[Shape, Any], attributes: Attributes): LinearTraversalBuilder = {
     require(module.shape.inlets.size <= 1, "Modules with more than one input port cannot be linear.")
     require(module.shape.outlets.size <= 1, "Modules with more than one input port cannot be linear.")
     TraversalBuilder.initShape(module.shape)

@@ -28,7 +28,7 @@ private[stream] final case class TlsModule(plainIn: Inlet[SslTlsOutbound], plain
 
   override def toString: String = f"TlsModule($closing) [${System.identityHashCode(this)}%08x]"
 
-  override private[stream] def traversalBuilder = TraversalBuilder.atomic(this).makeIsland(TlsModuleIslandTag)
+  override private[stream] def traversalBuilder = TraversalBuilder.atomic(this, attributes).makeIsland(TlsModuleIslandTag)
 }
 
 /**
