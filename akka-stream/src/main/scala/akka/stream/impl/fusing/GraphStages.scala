@@ -36,7 +36,7 @@ final case class GraphStageModule[+S <: Shape @uncheckedVariance, +M](
     if (attributes ne this.attributes) new GraphStageModule(shape, attributes, stage)
     else this
 
-  override private[stream] def traversalBuilder = LinearTraversalBuilder.fromModule(this)
+  override private[stream] def traversalBuilder = LinearTraversalBuilder.fromModule(this, attributes)
 
   override def toString: String = f"GraphStage($stage) [${System.identityHashCode(this)}%08x]"
 }
