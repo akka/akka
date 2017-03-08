@@ -265,7 +265,7 @@ object ActorAttributes {
   val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
 
   /**
-   * Specifies the name of the dispatcher.
+   * Specifies the name of the dispatcher. This also adds an async boundary.
    */
   def dispatcher(dispatcher: String): Attributes = Attributes(Dispatcher(dispatcher))
 
