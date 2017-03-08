@@ -6,13 +6,14 @@ package akka.stream.impl
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreterShell
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Await, ExecutionContextExecutor }
+import scala.concurrent.{Await, ExecutionContextExecutor}
 
 /**
  * ExtendedActorMaterializer used by subtypes which materializer using GraphInterpreterShell
@@ -21,20 +22,20 @@ abstract class ExtendedActorMaterializer extends ActorMaterializer {
 
   override def withNamePrefix(name: String): ExtendedActorMaterializer
 
-  /**
-   * INTERNAL API
-   */
-  def materialize[Mat](
-    _runnableGraph: Graph[ClosedShape, Mat],
-    subflowFuser:   GraphInterpreterShell ⇒ ActorRef): Mat
+  /** INTERNAL API */
+  @InternalApi def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat
 
-  /**
-   * INTERNAL API
-   */
-  def materialize[Mat](
+  /** INTERNAL API */
+  @InternalApi def materialize[Mat](
     _runnableGraph:    Graph[ClosedShape, Mat],
-    subflowFuser:      GraphInterpreterShell ⇒ ActorRef,
     initialAttributes: Attributes): Mat
+
+  /** INTERNAL API */
+  @InternalApi private[akka] def materialize[Mat](
+    graph:             Graph[ClosedShape, Mat],
+    initialAttributes: Attributes,
+    defaultPhase:      Phase[Any],
+    phases:            Map[IslandTag, Phase[Any]]): Mat
 
   /**
    * INTERNAL API
@@ -78,13 +79,32 @@ abstract class ExtendedActorMaterializer extends ActorMaterializer {
 
 }
 
+/**
+ * This materializer replaces the default phase with one that will fuse stages into an existing interpreter (via `registerShell`),
+ * rather than start a new actor for each of them.
+ *
+ * The default phases are left in-tact since we still respect `.async` and other tags that were marked within a sub-fused graph.
+ */
 private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMaterializer, registerShell: GraphInterpreterShell ⇒ ActorRef) extends Materializer {
+  require(registerShell ne null, "When using SubFusing the subflowFuser MUST NOT be null.") // FIXME remove check?
+
+  val subFusingPhase = new Phase[Any] {
+    override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] = {
+      new GraphStageIsland(settings, materializer, islandName, Some(registerShell)).asInstanceOf[PhaseIsland[Any]]
+    }
+  }
+
   override def executionContext: ExecutionContextExecutor = delegate.executionContext
 
-  override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat = delegate.materialize(runnable, registerShell)
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
+    delegate.materialize(runnable)
 
-  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat =
-    delegate.materialize(runnable, registerShell, initialAttributes)
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat = {
+    if (PhasedFusingActorMaterializer.Debug) println(s"Using [${getClass.getSimpleName}] to materialize [${runnable}]")
+    val phases = PhasedFusingActorMaterializer.DefaultPhases
+
+    delegate.materialize(runnable, initialAttributes, subFusingPhase, phases)
+  }
 
   override def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable = delegate.scheduleOnce(delay, task)
 

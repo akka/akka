@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.impl
 
 import java.util
@@ -27,16 +30,15 @@ object PhasedFusingActorMaterializer {
   val Debug = false
 
   val DefaultPhase: Phase[Any] = new Phase[Any] {
-    override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer,
-                       islandName: String): PhaseIsland[Any] =
-      new GraphStageIsland(settings, materializer, islandName).asInstanceOf[PhaseIsland[Any]]
+    override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] =
+      new GraphStageIsland(settings, materializer, islandName, subflowFuser = None).asInstanceOf[PhaseIsland[Any]]
   }
 
   val DefaultPhases: Map[IslandTag, Phase[Any]] = Map[IslandTag, Phase[Any]](
     SinkModuleIslandTag → new Phase[Any] {
       override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer,
                          islandName: String): PhaseIsland[Any] =
-        (new SinkModulePhase(materializer, islandName)).asInstanceOf[PhaseIsland[Any]]
+        new SinkModulePhase(materializer, islandName).asInstanceOf[PhaseIsland[Any]]
     },
     SourceModuleIslandTag → new Phase[Any] {
       override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer,
@@ -369,6 +371,11 @@ case class PhasedFusingActorMaterializer(
     }
   }
 
+  override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher match {
+    case Deploy.NoDispatcherGiven ⇒ Dispatchers.DefaultDispatcherId
+    case other                    ⇒ other
+  })
+
   override def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
     system.scheduler.schedule(initialDelay, interval, task)(executionContext)
 
@@ -376,37 +383,19 @@ case class PhasedFusingActorMaterializer(
     system.scheduler.scheduleOnce(delay, task)(executionContext)
 
   override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat]): Mat =
-    materialize(_runnableGraph, null, defaultInitialAttributes)
-
-  override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat =
-    materialize(_runnableGraph, null, initialAttributes)
-
-  override def materialize[Mat](_runnableGraph: Graph[ClosedShape, Mat], subflowFuser: (GraphInterpreterShell) ⇒ ActorRef): Mat =
-    materialize(_runnableGraph, subflowFuser, defaultInitialAttributes)
-
-  override def makeLogger(logSource: Class[_]): LoggingAdapter =
-    Logging(system, logSource)
-
-  override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher match {
-    case Deploy.NoDispatcherGiven ⇒ Dispatchers.DefaultDispatcherId
-    case other                    ⇒ other
-  })
+    materialize(_runnableGraph, defaultInitialAttributes)
 
   override def materialize[Mat](
     _runnableGraph:    Graph[ClosedShape, Mat],
-    subflowFuser:      (GraphInterpreterShell) ⇒ ActorRef,
-    initialAttributes: Attributes): Mat = {
+    initialAttributes: Attributes): Mat =
     materialize(
       _runnableGraph,
-      subflowFuser,
       initialAttributes,
       PhasedFusingActorMaterializer.DefaultPhase,
       PhasedFusingActorMaterializer.DefaultPhases)
-  }
 
-  def materialize[Mat](
+  override def materialize[Mat](
     graph:             Graph[ClosedShape, Mat],
-    subflowFuser:      GraphInterpreterShell ⇒ ActorRef,
     initialAttributes: Attributes,
     defaultPhase:      Phase[Any],
     phases:            Map[IslandTag, Phase[Any]]): Mat = {
@@ -505,6 +494,9 @@ case class PhasedFusingActorMaterializer(
     matValueStack.peekLast().asInstanceOf[Mat]
   }
 
+  override def makeLogger(logSource: Class[_]): LoggingAdapter =
+    Logging(system, logSource)
+
 }
 
 trait IslandTag
@@ -539,7 +531,8 @@ object GraphStageTag extends IslandTag
 final class GraphStageIsland(
   effectiveSettings: ActorMaterializerSettings,
   materializer:      PhasedFusingActorMaterializer,
-  islandName:        String) extends PhaseIsland[GraphStageLogic] {
+  islandName:        String,
+  subflowFuser:      Option[GraphInterpreterShell ⇒ ActorRef]) extends PhaseIsland[GraphStageLogic] {
   // TODO: remove these
   private val logicArrayType = Array.empty[GraphStageLogic]
   private[this] val logics = new ArrayList[GraphStageLogic](64)
@@ -655,15 +648,17 @@ final class GraphStageIsland(
     shell.connections = finalConnections
     shell.logics = logics.toArray(logicArrayType)
 
-    // TODO: Subfusing
-    //    if (subflowFuser != null) {
-    //      subflowFuser(shell)
-    //    } else {
-    val props = ActorGraphInterpreter.props(shell)
-      .withDispatcher(effectiveSettings.dispatcher)
-    materializer.actorOf(props, islandName)
-    //    }
+    // TODO make OptionVal
+    subflowFuser match {
+      case Some(fuseIntoExistingInterperter) ⇒
+        fuseIntoExistingInterperter(shell)
 
+      case _ ⇒
+        val props = ActorGraphInterpreter.props(shell)
+          .withDispatcher(effectiveSettings.dispatcher)
+
+        materializer.actorOf(props, islandName)
+    }
   }
 
   override def toString: String = "GraphStagePhase"
