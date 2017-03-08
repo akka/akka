@@ -267,11 +267,8 @@ sealed trait TraversalBuilder {
   protected def internalSetAttributes(attributes: Attributes): TraversalBuilder
 
   def setAttributes(attributes: Attributes): TraversalBuilder = {
-    if (attributes ne Attributes.none) {
-      if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
-      else internalSetAttributes(attributes)
-    } else
-      this
+    if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
+    else internalSetAttributes(attributes)
   }
 
   def attributes: Attributes
@@ -595,11 +592,8 @@ final case class LinearTraversalBuilder(
     copy(attributes = attributes)
 
   override def setAttributes(attributes: Attributes): LinearTraversalBuilder = {
-    if (attributes ne Attributes.none) {
-      if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
-      else internalSetAttributes(attributes)
-    } else
-      this
+    if (attributes.isAsync) this.makeIsland(GraphStageTag).internalSetAttributes(attributes)
+    else internalSetAttributes(attributes)
   }
 
   private def applyIslandAndAttributes(t: Traversal): Traversal = {
@@ -640,10 +634,7 @@ final case class LinearTraversalBuilder(
                 beforeBuilder.concat(
                   composite
                   .assign(out, inOffset - composite.offsetOfModule(out))
-                  .traversal
-
-                ).concat(traversalSoFar)
-              ),
+                  .traversal).concat(traversalSoFar)),
             pendingBuilder = None, beforeBuilder = EmptyTraversal)
         case None ⇒
           copy(inPort = None, outPort = None, traversalSoFar = rewireLastOutTo(traversalSoFar, inOffset))
@@ -683,12 +674,9 @@ final case class LinearTraversalBuilder(
                   composite
                     .assign(out, relativeSlot)
                     .traversal
-                    .concat(traversalSoFar)
-                )
-              ),
+                    .concat(traversalSoFar))),
             pendingBuilder = None,
-            beforeBuilder = EmptyTraversal
-          )
+            beforeBuilder = EmptyTraversal)
         case None ⇒
           copy(outPort = None, traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
       }
