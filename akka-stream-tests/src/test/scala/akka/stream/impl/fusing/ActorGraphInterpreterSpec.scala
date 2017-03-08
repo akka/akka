@@ -391,6 +391,10 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       upstream.expectCancellation()
     }
 
+    "print graph" in assertAllStagesStopped {
+      Source.maybe.runWith(Sink.foreach[Any](_ ⇒ ()))
+    }
+
   }
 }
 
