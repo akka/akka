@@ -256,8 +256,7 @@ Upon a submission of a Pull Request the GitHub pull request builder plugin will 
 
     Can one of the repo owners verify this patch?
 
-This requires a member from a core team to start Pull Request validation process by posting comment consisting only of `OK TO TEST`.
-From now on, whenever new commits are pushed to the Pull Request, a validation job will be automatically started and the results of the validation posted to the Pull Request.
+This requires a member from a core team to start Pull Request validation process by posting comment consisting only of `OK TO TEST`. From now on, whenever new commits are pushed to the Pull Request, a validation job will be automatically started and the results of the validation posted to the Pull Request.
 
 A Pull Request validation job can be started manually by posting `PLS BUILD` comment on the Pull Request.
 
@@ -270,6 +269,9 @@ Also, tests tagged as `PerformanceTest` and the likes of it are excluded from PR
 In order to force the `validatePullRequest` task to build the entire project, regardless of dependency analysis of a PRs
 changes one can use the special `PLS BUILD ALL` command (typed in a comment on GitHub, on the Pull Request), which will cause
 the validator to test all projects.
+
+Note, that `OK TO TEST` will only be picked up when the user asking for it is considered an admin. Public (!) members of the [akka organization](https://github.com/orgs/akka/people) are automatically considered admins and users manually declared admin in the Jenkins job (currently no one is explicitly listed). `PLS BUILD` and `PLS BUILD ALL` can be issued by everyone that is an admin or everyone who was whitelisted in the Jenkins Job (whitelisting != declaring someone an admin).
+
 
 ## Source style
 
