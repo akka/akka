@@ -538,7 +538,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
             case x ⇒ c.abort(argTree.pos, "Unexpected `run` argument: " + show(argTree))
           }
 
-        actionBody(c.resetLocalAttrs(argTree))
+        actionBody(c.untypecheck(argTree))
       }
 
       rrTree match {
@@ -564,8 +564,8 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
     def render(wrapped: Boolean): Tree =
       block(hlTree match {
         case q"support.this.HListable.fromUnit"       ⇒ argTree
-        case q"support.this.HListable.fromHList[$t]"  ⇒ q"valueStack.pushAll(${c.resetLocalAttrs(argTree)})"
-        case q"support.this.HListable.fromAnyRef[$t]" ⇒ q"valueStack.push(${c.resetLocalAttrs(argTree)})"
+        case q"support.this.HListable.fromHList[$t]"  ⇒ q"valueStack.pushAll(${c.untypecheck(argTree)})"
+        case q"support.this.HListable.fromAnyRef[$t]" ⇒ q"valueStack.push(${c.untypecheck(argTree)})"
         case x                                        ⇒ c.abort(hlTree.pos, "Unexpected HListable: " + show(x))
       }, q"true")
   }
@@ -638,7 +638,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
           case Block(statements, res) ⇒ block(statements, actionBody(res))
 
           case x @ (Ident(_) | Select(_, _)) ⇒
-            val valNames: List[TermName] = argTypes.indices.map { i ⇒ newTermName("value" + i) }(collection.breakOut)
+            val valNames: List[TermName] = argTypes.indices.map { i ⇒ TermName("value" + i) }(collection.breakOut)
             val args = valNames map Ident.apply
             block(popToVals(valNames), q"__push($x(..$args))")
 
@@ -652,7 +652,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
             block(popToVals(args.map(_.name)), rewrite(body))
         }
 
-      actionBody(c.resetLocalAttrs(actionTree))
+      actionBody(c.untypecheck(actionTree))
     }
   }
 
@@ -672,7 +672,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
           case x ⇒ c.abort(x.pos, "Illegal runSubParser expr: " + show(x))
         }
 
-      val q"($arg ⇒ $body)" = c.resetLocalAttrs(fTree)
+      val q"($arg ⇒ $body)" = c.untypecheck(fTree)
       rewrite(arg.name, body)
     }
   }

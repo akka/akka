@@ -17,7 +17,7 @@
 package akka.parboiled2
 
 import scala.collection.immutable
-import scala.reflect.macros.Context
+import scala.reflect.macros.whitebox
 import akka.shapeless.HList
 
 /**
@@ -52,7 +52,7 @@ object DynamicRuleDispatch {
 
   ///////////////////// INTERNAL ////////////////////////
 
-  def __create[P <: Parser, L <: HList](c: Context)(ruleNames: c.Expr[String]*)(implicit P: c.WeakTypeTag[P], L: c.WeakTypeTag[L]): c.Expr[(DynamicRuleDispatch[P, L], immutable.Seq[String])] = {
+  def __create[P <: Parser, L <: HList](c: whitebox.Context)(ruleNames: c.Expr[String]*)(implicit P: c.WeakTypeTag[P], L: c.WeakTypeTag[L]): c.Expr[(DynamicRuleDispatch[P, L], immutable.Seq[String])] = {
     import c.universe._
     val names: Array[String] = ruleNames.map {
       _.tree match {
@@ -71,7 +71,7 @@ object DynamicRuleDispatch {
             else if (c > 0) ${rec(start, mid - 1)}
             else {
               val p = handler.parser
-              p.__run[$L](p.${newTermName(name).encodedName.toTermName})(handler)
+              p.__run[$L](p.${TermName(name).encodedName.toTermName})(handler)
             }"""
       } else q"handler.ruleNotFound(ruleName)"
 

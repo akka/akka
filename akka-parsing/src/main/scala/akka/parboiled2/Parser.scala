@@ -19,7 +19,7 @@ package akka.parboiled2
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
 import scala.util.{ Failure, Success, Try }
-import scala.util.control.{ NonFatal, NoStackTrace }
+import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.shapeless._
 import akka.parboiled2.support._
 
@@ -626,12 +626,12 @@ object Parser {
 }
 
 object ParserMacros {
-  import scala.reflect.macros.Context
+  import scala.reflect.macros.whitebox
 
   /**
    * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
    */
-  type RunnableRuleContext[L <: HList] = Context { type PrefixType = Rule.Runnable[L] }
+  type RunnableRuleContext[L <: HList] = whitebox.Context { type PrefixType = Rule.Runnable[L] }
 
   def runImpl[L <: HList: c.WeakTypeTag](c: RunnableRuleContext[L])()(scheme: c.Expr[Parser.DeliveryScheme[L]]): c.Expr[scheme.value.Result] = {
     import c.universe._
@@ -651,15 +651,16 @@ object ParserMacros {
   /**
    * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
    */
-  type ParserContext = Context { type PrefixType = Parser }
+  type ParserContext = whitebox.Context { type PrefixType = Parser }
 
   def ruleImpl[I <: HList: ctx.WeakTypeTag, O <: HList: ctx.WeakTypeTag](ctx: ParserContext)(r: ctx.Expr[Rule[I, O]]): ctx.Expr[Rule[I, O]] = {
     import ctx.universe._
     val ruleName =
-      ctx.enclosingMethod match {
-        case DefDef(_, name, _, _, _, _) ⇒ name.decoded
-        case _                           ⇒ ctx.abort(r.tree.pos, "`rule` can only be used from within a method")
-      }
+      if (ctx.internal.enclosingOwner.isMethod)
+        ctx.internal.enclosingOwner.name.decodedName.toString
+      else
+        ctx.abort(r.tree.pos, "`rule` can only be used from within a method")
+
     namedRuleImpl(ctx)(ctx.Expr[String](Literal(Constant(ruleName))))(r)
   }
 
