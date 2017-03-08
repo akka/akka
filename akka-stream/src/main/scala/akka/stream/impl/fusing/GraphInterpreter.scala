@@ -9,8 +9,6 @@ import akka.stream.stage._
 import akka.stream._
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.util.OptionVal
-
 import scala.util.control.NonFatal
 
 /**
