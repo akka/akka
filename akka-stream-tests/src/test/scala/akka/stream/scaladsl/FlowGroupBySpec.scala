@@ -25,7 +25,6 @@ import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
-
 import java.util.concurrent.ThreadLocalRandom
 
 object FlowGroupBySpec {

@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
  */
 object ActorGraphInterpreter {
 
-  object ResumeActor extends DeadLetterSuppression with NoSerializationVerificationNeeded
+  object Resume extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
   trait BoundaryEvent extends DeadLetterSuppression with NoSerializationVerificationNeeded {
     def shell: GraphInterpreterShell
@@ -443,12 +443,11 @@ final class GraphInterpreterShell(
   }
 
   final case class ResumeShell(shell: GraphInterpreterShell) extends BoundaryEvent {
-    override def execute(eventLimit: Int): Int = {
+    override def execute(eventLimit: Int): Int =
       if (!waitingForShutdown) {
         if (GraphInterpreter.Debug) println(s"${interpreter.Name}  resume")
         if (interpreter.isSuspended) runBatch(eventLimit) else eventLimit
       } else eventLimit
-    }
   }
 
   final case class Abort(shell: GraphInterpreterShell) extends BoundaryEvent {
@@ -541,7 +540,7 @@ final class GraphInterpreterShell(
 
   private var waitingForShutdown: Boolean = false
 
-  private val resume = ResumeShell(this)
+  val resume = ResumeShell(this)
 
   def sendResume(sendResume: Boolean): Unit = {
     resumeScheduled = true
@@ -606,7 +605,7 @@ final class GraphInterpreterShell(
   }
 
   // TODO: Fix debug string
-  override def toString: String = s"GraphInterpreterShell\n" //  ${assembly.toString.replace("\n", "\n  ")}"
+  override def toString: String = s"GraphInterpreterShell" //  \n${assembly.toString.replace("\n", "\n  ")}"
 }
 
 /**
@@ -621,7 +620,7 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
 
   def tryInit(shell: GraphInterpreterShell): Boolean =
     try {
-      currentLimit = shell.init(self, subFusingMaterializerImpl, enqueueToShortCircuit(_), currentLimit)
+      currentLimit = shell.init(self, subFusingMaterializerImpl, enqueueToShortCircuit, currentLimit)
       if (GraphInterpreter.Debug) println(s"registering new shell in ${_initial}\n  ${shell.toString.replace("\n", "\n  ")}")
       if (shell.isTerminated) false
       else {
@@ -641,13 +640,13 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
   private var shortCircuitBuffer: util.ArrayDeque[Any] = null
 
   def enqueueToShortCircuit(input: Any): Unit = {
-    if (shortCircuitBuffer == null) shortCircuitBuffer = new util.ArrayDeque[Any]()
+    if (shortCircuitBuffer eq null) shortCircuitBuffer = new util.ArrayDeque[Any]()
     shortCircuitBuffer.addLast(input)
   }
 
   def registerShell(shell: GraphInterpreterShell): ActorRef = {
     newShells ::= shell
-    enqueueToShortCircuit(shell.ResumeShell(shell))
+    enqueueToShortCircuit(Resume)
     self
   }
 
@@ -678,13 +677,14 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
     while (!shortCircuitBuffer.isEmpty && currentLimit > 0 && activeInterpreters.nonEmpty)
       shortCircuitBuffer.poll() match {
         case b: BoundaryEvent ⇒ processEvent(b)
-        case ResumeActor      ⇒ finishShellRegistration()
+        case Resume           ⇒ finishShellRegistration()
       }
-    if (!shortCircuitBuffer.isEmpty && currentLimit == 0) self ! ResumeActor
+    if (!shortCircuitBuffer.isEmpty && currentLimit == 0) self ! Resume
   }
 
   private def processEvent(b: BoundaryEvent): Unit = {
     val shell = b.shell
+
     if (!shell.isTerminated && (shell.isInitialized || tryInit(shell))) {
       try currentLimit = shell.processEvent(b, currentLimit)
       catch {
@@ -704,7 +704,7 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
       processEvent(b)
       if (shortCircuitBuffer != null) shortCircuitBatch()
 
-    case ResumeActor ⇒
+    case Resume ⇒
       currentLimit = eventLimit
       if (shortCircuitBuffer != null) shortCircuitBatch()
 
