@@ -13,7 +13,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import scala.collection.immutable
+import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
 
@@ -1021,6 +1021,9 @@ private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]
 object GraphDSL extends GraphApply {
 
   class Builder[+M] private[stream] () {
+    private val unwiredIns = new mutable.HashSet[Inlet[_]]()
+    private val unwiredOuts = new mutable.HashSet[Outlet[_]]()
+
     private var traversalBuilderInProgress: TraversalBuilder = TraversalBuilder.empty()
 
     /**
@@ -1029,6 +1032,8 @@ object GraphDSL extends GraphApply {
     private[GraphDSL] def addEdge[T, U >: T](from: Outlet[T], to: Inlet[U]): Unit =
       try {
         traversalBuilderInProgress = traversalBuilderInProgress.wire(from, to)
+        unwiredIns -= to
+        unwiredOuts -= from
       } catch {
         case NonFatal(ex) ⇒
           if (!traversalBuilderInProgress.isUnwired(from))
@@ -1046,6 +1051,10 @@ object GraphDSL extends GraphApply {
     def add[S <: Shape](graph: Graph[S, _]): S = {
       val newShape = graph.shape.deepCopy()
       traversalBuilderInProgress = traversalBuilderInProgress.add(graph.traversalBuilder, newShape, Keep.left)
+
+      unwiredIns ++= newShape.inlets
+      unwiredOuts ++= newShape.outlets
+
       newShape.asInstanceOf[S]
     }
 
@@ -1062,6 +1071,10 @@ object GraphDSL extends GraphApply {
         newShape,
         Keep.right
       )
+
+      unwiredIns ++= newShape.inlets
+      unwiredOuts ++= newShape.outlets
+
       newShape.asInstanceOf[S]
     }
 
@@ -1074,6 +1087,10 @@ object GraphDSL extends GraphApply {
     private[stream] def add[S <: Shape, A, B](graph: Graph[S, _], combine: (A, B) ⇒ Any): S = {
       val newShape = graph.shape.deepCopy()
       traversalBuilderInProgress = traversalBuilderInProgress.add(graph.traversalBuilder, newShape, combine)
+
+      unwiredIns ++= newShape.inlets
+      unwiredOuts ++= newShape.outlets
+
       newShape.asInstanceOf[S]
     }
 
@@ -1101,10 +1118,39 @@ object GraphDSL extends GraphApply {
           mat
         }
         .add(source.traversalBuilder, source.shape, Keep.left)
+
+      unwiredOuts += source.shape.out
+
       source.shape.out
     }
 
-    private[stream] def traversalBuilder: TraversalBuilder = traversalBuilderInProgress
+    private[GraphDSL] def traversalBuilder: TraversalBuilder = traversalBuilderInProgress
+
+    private[stream] def result(resultShape: Shape): TraversalBuilder = {
+      def errorString[T](expectedSet: Set[T], actualSet: Set[T], tag: String)(format: T ⇒ String): String =
+        if (expectedSet != actualSet) {
+          val diff1 = expectedSet.diff(actualSet)
+          val diff2 = actualSet.diff(expectedSet)
+
+          val forwardMessage =
+            if (diff1.isEmpty) ""
+            else s" $tag [${diff1.map(format).mkString(", ")}] were returned in the resulting shape but were already connected."
+
+          val backwardMessage =
+            if (diff2.isEmpty) ""
+            else s" $tag [${diff2.map(format).mkString(", ")}] were not returned in the resulting shape and not connected."
+
+          forwardMessage + backwardMessage
+        } else ""
+
+      if (resultShape.inlets.toSet != unwiredIns || resultShape.outlets.toSet != unwiredOuts) {
+        val inletError = errorString(resultShape.inlets.toSet, unwiredIns.toSet, "Inlets")(_.s)
+        val outletError = errorString(resultShape.outlets.toSet, unwiredOuts.toSet, "Outlets")(_.s)
+        throw new IllegalStateException(s"Illegal GraphDSL usage.$inletError$outletError")
+      }
+
+      traversalBuilderInProgress
+    }
 
     /** Converts this Scala DSL element to it's Java DSL counterpart. */
     def asJava: javadsl.GraphDSL.Builder[M] = new javadsl.GraphDSL.Builder()(this)

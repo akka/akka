@@ -51,5 +51,5 @@ trait GraphApply {
   ]
 
   private def createGraph[S <: Shape, Mat](shape: S, graphBuilder: GraphDSL.Builder[Mat]): Graph[S, Mat] =
-    new GenericGraph(shape, graphBuilder.traversalBuilder)
+    new GenericGraph(shape, graphBuilder.result(shape))
 }
