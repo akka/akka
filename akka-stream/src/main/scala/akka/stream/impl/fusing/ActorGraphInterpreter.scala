@@ -594,7 +594,6 @@ final class GraphInterpreterShell(
    *  - a new error is encountered
    */
   def tryAbort(ex: Throwable): Unit = {
-    ex.printStackTrace()
     val reason = ex match {
       case s: SpecViolation ⇒
         new IllegalStateException("Shutting down because of violation of the Reactive Streams specification.", s)
