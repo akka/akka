@@ -15,7 +15,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Promise
-import scala.util.control.NoStackTrace
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 object Merge {
   /**
@@ -996,7 +996,16 @@ object GraphDSL extends GraphApply {
      * INTERNAL API
      */
     private[GraphDSL] def addEdge[T, U >: T](from: Outlet[T], to: Inlet[U]): Unit =
-      traversalBuilderInProgress = traversalBuilderInProgress.wire(from, to)
+      try {
+        traversalBuilderInProgress = traversalBuilderInProgress.wire(from, to)
+      } catch {
+        case NonFatal(ex) ⇒
+          if (!traversalBuilderInProgress.isUnwired(from))
+            throw new IllegalArgumentException(s"[${from.s}] is already connected")
+          else if (!traversalBuilderInProgress.isUnwired(to))
+            throw new IllegalArgumentException(s"[${to.s}] is already connected")
+          else throw ex
+      }
 
     /**
      * Import a graph into this module, performing a deep copy, discarding its
