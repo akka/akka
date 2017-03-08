@@ -97,6 +97,50 @@ object MiMa extends AutoPlugin {
     import com.typesafe.tools.mima.core._
 
     val bcIssuesBetween24and25 = Seq(
+
+      // #22387 new materializer
+      FilterAnyProblemStartingWith("akka.stream.impl"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.BidiShape.copyFromPorts"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.BidiShape.reversed"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.MaterializationContext.stageName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.SinkShape.copyFromPorts"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.Shape.copyFromPorts"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ClosedShape.copyFromPorts"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$FusedGraph$"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.Attributes.extractName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.AmorphousShape.copyFromPorts"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.SourceShape.copyFromPorts"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing$FusedGraph"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.Fusing"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.FlowShape.copyFromPorts"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.Graph.module"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Graph.traversalBuilder"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.module"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.RunnableGraph#RunnableGraphAdapter.module"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.BidiFlow.module"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Sink.module"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Flow.module"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Sink.module"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Sink.this"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.scaladsl.RunnableGraph.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphApply#GraphImpl.module"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.scaladsl.GraphApply#GraphImpl.this"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.ModuleExtractor"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RunnableGraph.module"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.scaladsl.RunnableGraph.copy"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.scaladsl.RunnableGraph.copy$default$1"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.scaladsl.RunnableGraph.this"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.ModuleExtractor$"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.BidiFlow.module"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.BidiFlow.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Builder.module"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.module"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.module"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageWithMaterializedValue.module"),
+
       // ##22269 GSet as delta-CRDT
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GSet.this"), // constructor supplied by companion object
 
