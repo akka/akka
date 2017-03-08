@@ -120,7 +120,6 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
         val materializer = ActorMaterializer()(sys)
-        implicit val timeout = Timeout(3.seconds)
 
         try {
           Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head))
