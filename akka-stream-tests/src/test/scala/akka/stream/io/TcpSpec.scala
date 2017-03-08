@@ -21,7 +21,7 @@ import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import java.net._
 
-import akka.testkit.{ EventFilter, TestKit, TestLatch }
+import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -407,7 +407,16 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       val serverAddress = temporaryServerAddress()
       val binding = Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostName, serverAddress.getPort)(mat2)
 
-      val result = Source.maybe[ByteString].via(Tcp(system2).outgoingConnection(serverAddress)).runFold(0)(_ + _.size)(mat2)
+      val probe = TestProbe()
+      val testMsg = ByteString(0)
+      val result =
+        Source.single(testMsg)
+          .concat(Source.maybe[ByteString])
+          .via(Tcp(system2).outgoingConnection(serverAddress))
+          .runForeach { msg ⇒ probe.ref ! msg }(mat2)
+
+      // Ensure first that the actor is there
+      probe.expectMsg(testMsg)
 
       // Getting rid of existing connection actors by using a blunt instrument
       system2.actorSelection(akka.io.Tcp(system2).getManager.path / "selectors" / s"$$a" / "*") ! Kill
