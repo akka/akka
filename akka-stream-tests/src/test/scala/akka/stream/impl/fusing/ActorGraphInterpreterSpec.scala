@@ -364,7 +364,6 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       ise.getCause.getCause should (have message ("violating your spec"))
     }
 
-    /* TODO this one does not work
     "be able to handle Subscriber spec violations without leaking" in assertAllStagesStopped {
       val filthySubscriber = new Subscriber[Int] {
         override def onSubscribe(s: Subscription): Unit = s.request(1)
@@ -391,7 +390,6 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
       upstream.expectCancellation()
     }
-    */
 
   }
 }
