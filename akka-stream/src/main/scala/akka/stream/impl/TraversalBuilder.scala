@@ -547,8 +547,7 @@ object LinearTraversalBuilder {
           addMatCompose(PushNotUsed, combine),
           pendingBuilder = Some(composite),
           Attributes.none,
-          beforeBuilder =
-            if (inOpt.isDefined && (composite.attributes ne Attributes.none)) PushAttributes(composite.attributes) else EmptyTraversal)
+          beforeBuilder = EmptyTraversal)
 
     }
   }
@@ -583,7 +582,11 @@ final case class LinearTraversalBuilder(
   /**
    * This builder can always return a traversal.
    */
-  override def traversal: Traversal = applyIslandAndAttributes(traversalSoFar)
+  override def traversal: Traversal = {
+    if (outPort.nonEmpty)
+      throw new IllegalStateException("Traversal cannot be acquired until all output ports have been wired")
+    applyIslandAndAttributes(traversalSoFar)
+  }
 
   override def internalSetAttributes(attributes: Attributes): LinearTraversalBuilder =
     copy(attributes = attributes)
@@ -597,10 +600,9 @@ final case class LinearTraversalBuilder(
   }
 
   private def applyIslandAndAttributes(t: Traversal): Traversal = {
-    val withBuilder = beforeBuilder.concat(t)
     val withIslandTag = islandTag match {
-      case None      ⇒ withBuilder
-      case Some(tag) ⇒ EnterIsland(tag).concat(withBuilder).concat(ExitIsland)
+      case None      ⇒ t
+      case Some(tag) ⇒ EnterIsland(tag).concat(t).concat(ExitIsland)
     }
 
     if (attributes eq Attributes.none) withIslandTag
@@ -631,10 +633,14 @@ final case class LinearTraversalBuilder(
             inPort = None,
             outPort = None,
             traversalSoFar =
-              composite
-                .assign(out, inOffset - composite.offsetOfModule(out))
-                .traversal
-                .concat(traversalSoFar),
+              applyIslandAndAttributes(
+                beforeBuilder.concat(
+                  composite
+                  .assign(out, inOffset - composite.offsetOfModule(out))
+                  .traversal
+
+                ).concat(traversalSoFar)
+              ),
             pendingBuilder = None, beforeBuilder = EmptyTraversal)
         case None ⇒
           copy(inPort = None, outPort = None, traversalSoFar = rewireLastOutTo(traversalSoFar, inOffset))
@@ -669,10 +675,14 @@ final case class LinearTraversalBuilder(
           copy(
             outPort = None,
             traversalSoFar =
-              composite
-                .assign(out, relativeSlot)
-                .traversal
-                .concat(traversalSoFar),
+              applyIslandAndAttributes(
+                beforeBuilder.concat(
+                  composite
+                    .assign(out, relativeSlot)
+                    .traversal
+                    .concat(traversalSoFar)
+                )
+              ),
             pendingBuilder = None,
             beforeBuilder = EmptyTraversal
           )
@@ -708,71 +718,208 @@ final case class LinearTraversalBuilder(
         require(toAppend.inPort.isDefined, "Appended linear module must have an unwired input port " +
           "because there is a dangling output.")
 
-        val traversalWithWiringCorrected = pendingBuilder match {
-          case Some(composite) ⇒
-            val out = outPort.get
-            applyIslandAndAttributes(
-              composite
-                .assign(out, -composite.offsetOfModule(out) - toAppend.inSlots + toAppend.inOffset)
-                .traversal
-                .concat(traversalSoFar))
+        /*
+         * To understand how append work, first the general structure of the LinearTraversalBuilder must be
+         * understood. The most general structure of LinearTraversalBuilder looks like this (in Flow DSL order):
+         *
+         *   traversalSoFar ~ pendingBuilder ~ beforeBuilder
+         *
+         * The reason for this is that composite builders cannot provide a Traversal until all of their output
+         * ports have been wired, so we cannot just concat their traversal to traversalSoFar until a new
+         * LinearTraversalBuilder is appended (which will wire the output port and hence finish the traversal).
+         * The reason for beforeBuilder (which is a Traversal) is to collect PushAttribute and EnterIsland steps
+         * which need to be applied before visiting the Traversal that will be returned by pendingBuilder.
+         *
+         * Remember also, that the Traversal is built in _reverse_ order, hence, if you look at the ordering from
+         * the Traversal perspective it will look like this:
+         *
+         *   beforeBuilder ~ pendingBuilder ~ traversalSoFar
+         *
+         * If the LinearTraversalBuilder had a "pure" LinearTraversalBuilder appended last, then the structure is
+         * simply:
+         *
+         *   traversalSoFar
+         *
+         * This is because pure LinearTraversalBuilders can always provide the full Traversal. This is achieved by
+         * the last output port assigned to the -1 relative offset, optimistically. Remember that Traversal is
+         * built in the _reverse_ order, hence downstreams are visited before upstreams, and hence output ports
+         * are wired _back_. The assignment to -1 is sometimes incorrect though, because an appended Traversal, even
+         * if it is a pure linear at that point might had a composite included at some point (which is now completed).
+         * If the input port of that composite is exposed, it is not guaranteed that it is the last input port that
+         * is visited in the (reverse) Traversal order. In this case this optimistic assignment to -1 needs to be
+         * corrected, which is what rewireLastOutTo is used for.
+         *
+         * Please refer to the comments detailing these steps below.
+         */
+
+        /*
+         * As a first step, we construct the full traversal for the LinearTraversalBuilder that is appended to.
+         * Depending whether we have a composite builder as our last step or not, composition will be somewhat
+         * different.
+         */
+        val assembledTraversalForThis = this.pendingBuilder match {
           case None ⇒
-            // No need to rewire if input port is at the expected position
-            if (toAppend.inOffset == (toAppend.inSlots - 1))
-              traversal
-            else
-              applyIslandAndAttributes(rewireLastOutTo(traversalSoFar, toAppend.inOffset - toAppend.inSlots))
+            /*
+             * This is the case where we are a pure linear builder (all composites have been already completed),
+             * which means that traversalSoFar contains everything already, except the final attributes and islands
+             * applied.
+             *
+             * Since the exposed output port has been wired optimistically to -1, we need to check if this is correct,
+             * and correct if necessary. This is the step below:
+             */
+            if (toAppend.inOffset == (toAppend.inSlots - 1)) {
+              /*
+               * if the builder we want to append (remember that is _prepend_ from the Traversal's perspective)
+               * has its exposed input port at the last location (which is toAppend.inSlots - 1 because input
+               * port offsets start with 0), then -1 is the correct wiring. I.e.
+               *
+               * 1. Visit the appended module first in the traversal, its input port is the last
+               * 2. Visit this module second in the traversal, wire the output port back to the previous input port (-1)
+               */
+              traversalSoFar
+            } else {
+              /*
+               * The optimistic mapping to -1 is not correct, we need to unfold the Traversal to find our last module
+               * (which is the _first_ module in the Traversal) and rewire the output assignment to the correct offset.
+               *
+               * Since we will be visited second (and the appended toAppend first), we need to
+               *
+               * 1. go backward toAppend.inSlots slots to reach the beginning offset of toAppend
+               * 2. now go forward toAppend.inOffset to reach the correct location
+               *
+               * <-------------- (-toAppend.inSlots)
+               * ------->        (+toAppend.inOffset)
+               *
+               * --------in----|[out module]----------
+               *    toAppend           this
+               *
+               */
+              rewireLastOutTo(traversalSoFar, toAppend.inOffset - toAppend.inSlots)
+            }
+
+          case Some(composite) ⇒
+            /*
+             * This is the case where our last module is a composite, and since it does not have its output port
+             * wired yet, the traversal is split into the parts, traversalSoFar, pendingBuilder and beforeBuilder.
+             *
+             * Since will wire now the output port, we can assemble everything together:
+             */
+            val out = outPort.get
+            /*
+             * Since we will be visited second (and the appended toAppend first), we need to
+             *
+             * 1. go back to the start of the composite module, i.e. composite.offsetOfModule(out) steps. This
+             *    is necessary because the composite might not have the internal module as the first visited
+             *    module in the Traversal and hence not have a base offset of 0 in the composite
+             * 2. go backward toAppend.inSlots slots to reach the beginning offset of toAppend
+             * 3. now go forward toAppend.inOffset to reach the correct location
+             *
+             *                <------- (-composite.offsetOfModule(out))
+             * <--------------         (-toAppend.inSlots)
+             * ------->                (+toAppend.inOffset)
+             *
+             * --------in----|-------[out module]----------
+             *    toAppend                this
+             *
+             */
+            val compositeTraversal = composite
+              .assign(out, -composite.offsetOfModule(out) - toAppend.inSlots + toAppend.inOffset)
+              .traversal // All output ports are finished, so we can finally call this now
+
+            /*
+             * Now we can assemble the pieces for the final Traversal of _this_ builder.
+             *
+             * beforeBuilder ~ compositeTraversal ~ traversalSoFar
+             *
+             * (remember that this is the _reverse_ of the Flow DSL order)
+             */
+            beforeBuilder
+              .concat(compositeTraversal)
+              .concat(traversalSoFar)
         }
 
-        val newTraversal =
-          if (toAppend.pendingBuilder.isEmpty)
-            toAppend.traversal
-              .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
-          else {
-            val withAttributes =
-              if (toAppend.attributes ne Attributes.none) {
-                PopAttributes
-                  .concat(LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose))
-              } else
-                LinearTraversalBuilder.addMatCompose(traversalWithWiringCorrected, matCompose)
+        /*
+         * We have almost finished the traversal for _this_ builder, we only need to apply attributes and islands.
+         */
+        val finalTraversalForThis = {
+          // Now add the island tags, attributes, and the opcodes that will compose the materialized values with toAppend
+          LinearTraversalBuilder.addMatCompose(applyIslandAndAttributes(assembledTraversalForThis), matCompose)
+        }
 
-            if (toAppend.islandTag.isEmpty) {
-              toAppend.traversalSoFar
-                .concat(withAttributes)
+        /*
+         * We have finished "this" builder, now we need to construct the new builder as the result of appending.
+         * There are two variants, depending whether toAppend is purely linear or if it has a composite at the end.
+         */
+        toAppend.pendingBuilder match {
+          case None ⇒
+            /*
+             * This is the simple case, when the other is purely linear. We just concatenate the traversals
+             * and do some bookkeeping.
+             */
+            LinearTraversalBuilder(
+              inPort = inPort,
+              outPort = toAppend.outPort,
+              inSlots = inSlots + toAppend.inSlots, // we have now more input ports than before
+              // the inOffset of _this_ gets shifted by toAppend.inSlots, because the traversal of toAppend is _prepended_
+              inOffset = inOffset + toAppend.inSlots,
+              // Build in reverse so it yields a more efficient layout for left-to-right building
+              traversalSoFar = toAppend.applyIslandAndAttributes(toAppend.traversalSoFar).concat(finalTraversalForThis),
+              pendingBuilder = None,
+              attributes = Attributes.none, // attributes are none for the new enclosing builder
+              beforeBuilder = EmptyTraversal, // no need for beforeBuilder as there are no composites
+              islandTag = None // islandTag is reset for the new enclosing builder
+            )
 
-            } else {
-              toAppend.traversalSoFar
-                .concat(ExitIsland)
-                .concat(withAttributes)
+          case Some(composite) ⇒
+            /*
+             * In this case we need to assemble as much as we can, and create a new "sandwich" of
+             *   beforeBuilder ~ pendingBuilder ~ traversalSoFar
+             *
+             * We need to apply the attributes and islandTags of the appended builder, but we cannot do it in one
+             * step, instead we need to append half of the steps to traversalSoFar, and the other half to
+             * beforeBuilder.
+             */
+            var newTraversalSoFar = finalTraversalForThis
+            var newBeforeTraversal = toAppend.beforeBuilder
+
+            // First prepare island enter and exit if tags are present
+            toAppend.islandTag match {
+              case None ⇒
+              // Nothing changes
+              case Some(tag) ⇒
+                // Enter the island just before the appended builder (keeping the toAppend.beforeBuilder steps)
+                newBeforeTraversal = EnterIsland(tag).concat(newBeforeTraversal)
+                // Exit the island just after the appended builder (they should not applied to _this_ builder)
+                newTraversalSoFar = ExitIsland.concat(newTraversalSoFar)
             }
-          }
 
-        val newBeforeBuilder =
-          if (toAppend.pendingBuilder.isEmpty) {
-            EmptyTraversal
-          } else {
+            // Secondly, prepare attribute push and pop if Attributes are present
             if (toAppend.attributes ne Attributes.none) {
-              toAppend.islandTag match {
-                case None      ⇒ PushAttributes(toAppend.attributes)
-                case Some(tag) ⇒ PushAttributes(toAppend.attributes).concat(EnterIsland(tag))
-              }
-            } else EmptyTraversal
+              // Push the attributes just before the appended builder.
+              newBeforeTraversal = PushAttributes(toAppend.attributes).concat(newBeforeTraversal)
+              // Pop the attributes immediately after the appended builder (they should not applied to _this_ builder)
+              newTraversalSoFar = PopAttributes.concat(newTraversalSoFar)
+            }
 
-          }
+            // Finally add the already completed part of toAppend to newTraversalSoFar
+            newTraversalSoFar = toAppend.traversalSoFar.concat(newTraversalSoFar)
 
-        // Simply just take the new unwired ports, increase the number of inSlots and concatenate the traversals
-        LinearTraversalBuilder(
-          inPort = inPort,
-          outPort = toAppend.outPort,
-          inSlots = inSlots + toAppend.inSlots,
-          inOffset = inOffset + toAppend.inSlots,
-          // Build in reverse so it yields a more efficient layout for left-to-right building
-          traversalSoFar = newTraversal,
-          pendingBuilder = toAppend.pendingBuilder,
-          attributes = Attributes.none,
-          beforeBuilder = newBeforeBuilder.concat(toAppend.beforeBuilder),
-          islandTag = None
-        )
+            LinearTraversalBuilder(
+              inPort = inPort,
+              outPort = toAppend.outPort,
+              inSlots = inSlots + toAppend.inSlots, // we have now more input ports than before
+              // the inOffset of _this_ gets shifted by toAppend.inSlots, because the traversal of toAppend is _prepended_
+              inOffset = inOffset + toAppend.inSlots,
+              // Build in reverse so it yields a more efficient layout for left-to-right building. We cannot
+              // apply the full traversal, only the completed part of it
+              traversalSoFar = newTraversalSoFar,
+              // Last composite of toAppend is still pending
+              pendingBuilder = toAppend.pendingBuilder,
+              attributes = Attributes.none, // attributes are none for the new enclosing builder
+              beforeBuilder = newBeforeTraversal, // no need for beforeBuilder as there are no composites
+              islandTag = None // islandTag is reset for the new enclosing builder
+            )
+        }
       } else throw new Exception("should this happen?")
 
     }
