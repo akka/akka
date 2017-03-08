@@ -52,7 +52,7 @@ object ActorGraphInterpreter {
     size:             Int,
     shell:            GraphInterpreterShell,
     publisher:        Publisher[Any],
-    internalPortName: String) extends UpstreamBoundaryStageLogic[Any] {
+    internalPortName: String) extends UpstreamBoundaryStageLogic[Any] with OutHandler {
 
     final case class OnError(shell: GraphInterpreterShell, cause: Throwable) extends SimpleBoundaryEvent {
       override def execute(): Unit = {
@@ -208,8 +208,10 @@ object ActorGraphInterpreter {
       }
     }
 
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = {
+    setHandler(out, this)
+
+    override def onPull(): Unit = {
+      try {
         if (inputBufferElements > 1) push(out, dequeue())
         else if (inputBufferElements == 1) {
           if (upstreamCompleted) {
@@ -219,12 +221,16 @@ object ActorGraphInterpreter {
         } else if (upstreamCompleted) {
           complete(out)
         }
+      } catch {
+        case s: SpecViolation ⇒ shell.tryAbort(s)
       }
+    }
 
-      override def onDownstreamFinish(): Unit = cancel()
-
-      override def toString: String = BatchingActorInputBoundary.this.toString
-    })
+    override def onDownstreamFinish(): Unit =
+      try cancel()
+      catch {
+        case s: SpecViolation ⇒ shell.tryAbort(s)
+      }
 
     override def toString: String = s"BatchingActorInputBoundary(forPort=$internalPortName, fill=$inputBufferElements/$size, completed=$upstreamCompleted, canceled=$downstreamCanceled)"
   }
@@ -317,7 +323,7 @@ object ActorGraphInterpreter {
   }
 
   private[stream] class ActorOutputBoundary(val shell: GraphInterpreterShell, val internalPortName: String)
-    extends DownstreamBoundaryStageLogic[Any] {
+    extends DownstreamBoundaryStageLogic[Any] with InHandler {
 
     val in: Inlet[Any] = Inlet[Any]("UpstreamBoundary:" + internalPortName)
     in.id = 0
@@ -361,19 +367,29 @@ object ActorGraphInterpreter {
       }
     }
 
-    setHandler(in, new InHandler {
-      override def onPush(): Unit = {
+    setHandler(in, this)
+
+    override def onPush(): Unit = {
+      try {
         onNext(grab(in))
         if (downstreamCompleted) cancel(in)
         else if (downstreamDemand > 0) pull(in)
+      } catch {
+        case s: SpecViolation ⇒ shell.tryAbort(s)
+      }
+    }
+
+    override def onUpstreamFinish(): Unit =
+      try complete()
+      catch {
+        case s: SpecViolation ⇒ shell.tryAbort(s)
       }
 
-      override def onUpstreamFinish(): Unit = complete()
-
-      override def onUpstreamFailure(cause: Throwable): Unit = fail(cause)
-
-      override def toString: String = ActorOutputBoundary.this.toString
-    })
+    override def onUpstreamFailure(cause: Throwable): Unit =
+      try fail(cause)
+      catch {
+        case s: SpecViolation ⇒ shell.tryAbort(s)
+      }
 
     def subscribePending(): Unit =
       publisher.takePendingSubscribers() foreach { sub ⇒
