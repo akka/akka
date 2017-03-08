@@ -4,11 +4,13 @@
 package akka
 
 import sbt._
-import sbtunidoc.Plugin.UnidocKeys._
-import sbtunidoc.Plugin.{ ScalaUnidoc, JavaUnidoc, Genjavadoc, scalaJavaUnidocSettings, genjavadocExtraSettings, scalaUnidocSettings }
 import sbt.Keys._
-import sbt.File
 import scala.annotation.tailrec
+import sbtunidoc.{ GenJavadocPlugin, JavaUnidocPlugin, ScalaUnidocPlugin }
+import sbtunidoc.BaseUnidocPlugin.autoImport.{ unidoc, unidocProjectFilter }
+import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
+import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
+import sbtunidoc.GenJavadocPlugin.autoImport.{ Genjavadoc, unidocGenjavadocVersion }
 
 object Doc {
   val BinVer = """(\d+\.\d+)\.\d+""".r
@@ -47,7 +49,8 @@ object Scaladoc extends AutoPlugin {
       "-groups",
       "-doc-source-url", urlString,
       "-sourcepath", base.getAbsolutePath,
-      "-skip-packages", "akka.pattern"
+      // Workaround https://issues.scala-lang.org/browse/SI-10028
+      "-skip-packages", "akka.pattern:org.specs2"
     )
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
@@ -113,6 +116,7 @@ object UnidocRoot extends AutoPlugin {
   }
 
   override def trigger = noTrigger
+  override def requires = ScalaUnidocPlugin && CliOptions.genjavadocEnabled.ifTrue(JavaUnidocPlugin).getOrElse(plugins.JvmPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
     javacOptions in (JavaUnidoc, unidoc) ++= Seq("-Xdoclint:none"),
@@ -128,7 +132,6 @@ object UnidocRoot extends AutoPlugin {
   ))
 
   override lazy val projectSettings =
-    CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++
     settings ++
     akkaSettings
 }
@@ -139,17 +142,15 @@ object UnidocRoot extends AutoPlugin {
 object Unidoc extends AutoPlugin {
 
   override def trigger = allRequirements
-  override def requires = plugins.JvmPlugin
+  override def requires = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(GenJavadocPlugin).getOrElse(plugins.JvmPlugin)
 
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
-    genjavadocExtraSettings ++ Seq(
+    Seq(
       javacOptions in compile += "-Xdoclint:none",
       javacOptions in test += "-Xdoclint:none",
       javacOptions in doc += "-Xdoclint:none",
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
-      unidocGenjavadocVersion in Global := "0.10",
-      // FIXME: see https://github.com/akka/akka-http/issues/230
-      sources in(Genjavadoc, doc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
+      unidocGenjavadocVersion in Global := "0.10"
     )
   ).getOrElse(Seq.empty)
 }

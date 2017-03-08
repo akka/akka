@@ -8,7 +8,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
 import net.virtualvoid.sbt.graph.ModuleGraph
 import org.kohsuke.github.{GHIssueComment, GitHubBuilder}
-import sbtunidoc.Plugin.UnidocKeys.unidoc
+import sbtunidoc.BaseUnidocPlugin.autoImport.unidoc
 import sbt.Keys._
 import sbt._
 
@@ -158,7 +158,7 @@ object ValidatePullRequest extends AutoPlugin {
           .filter(l =>
             l.startsWith("akka-") ||
               l.startsWith("docs") ||
-              (l.startsWith("project") && l != "project/MiMa.scala") || 
+              (l.startsWith("project") && l != "project/MiMa.scala") ||
               (l == "build.sbt")
           )
           .map(l ⇒ l.takeWhile(_ != '/'))
