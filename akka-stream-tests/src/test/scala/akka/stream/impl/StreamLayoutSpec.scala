@@ -3,13 +3,17 @@
  */
 package akka.stream.impl
 
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration._
+
+import java.util.concurrent.CompletionStage
+import scala.compat.java8.FutureConverters._
+
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.testkit.StreamSpec
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-
-import scala.concurrent.duration._
 
 class StreamLayoutSpec extends StreamSpec {
   import StreamLayout._
@@ -29,6 +33,8 @@ class StreamLayoutSpec extends StreamSpec {
   def testSink(): Module = testAtomic(1, 0)
 
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withAutoFusing(false))
+
+  implicit def ec: ExecutionContext = materializer.executionContext
 
   "StreamLayout" must {
 

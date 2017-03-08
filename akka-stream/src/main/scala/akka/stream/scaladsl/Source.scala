@@ -217,9 +217,9 @@ object Source {
     })
 
   /**
-   * Create [[Source]] that will continually produce given elements in specified order.
+   * Creates [[Source]] that will continually produce given elements in specified order.
    *
-   * Start a new 'cycled' `Source` from the given elements. The producer stream of elements
+   * Starts a new 'cycled' `Source` from the given elements. The producer stream of elements
    * will continue infinitely by repeating the sequence of elements provided by function parameter.
    */
   def cycle[T](f: () ⇒ Iterator[T]): Source[T, NotUsed] = {
@@ -250,7 +250,7 @@ object Source {
     single(iterable).mapConcat(ConstantFun.scalaIdentityFunction).withAttributes(DefaultAttributes.iterableSource)
 
   /**
-   * Start a new `Source` from the given `Future`. The stream will consist of
+   * Starts a new `Source` from the given `Future`. The stream will consist of
    * one element when the `Future` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
@@ -259,13 +259,25 @@ object Source {
     fromGraph(new FutureSource(future))
 
   /**
-   * Start a new `Source` from the given `Future`. The stream will consist of
+   * Starts a new `Source` from the given `Future`. The stream will consist of
    * one element when the `Future` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
   def fromCompletionStage[T](future: CompletionStage[T]): Source[T, NotUsed] =
     fromGraph(new FutureSource(future.toScala))
+
+  /**
+   * Streams the elements of the given future source once it successfully completes.
+   * If the future fails the stream is failed.
+   */
+  def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): Source[T, Future[M]] = fromGraph(new FutureFlattenSource(future))
+
+  /**
+   * Streams the elements of an asynchronous source once its given `completion` stage completes.
+   * If the `completion` fails the stream is failed with that exception.
+   */
+  def fromSourceCompletionStage[T, M](completion: CompletionStage[Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
 
   /**
    * Elements are emitted periodically with the specified interval.
