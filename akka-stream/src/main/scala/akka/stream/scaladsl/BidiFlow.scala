@@ -56,13 +56,21 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
    * flow into the materialized value of the resulting BidiFlow.
    */
   def atopMat[OO1, II2, Mat2, M](bidi: Graph[BidiShape[O1, OO1, II2, I2], Mat2])(combine: (Mat, Mat2) ⇒ M): BidiFlow[I1, OO1, II2, O2, M] = {
-    val newBidiShape = bidi.shape.deepCopy()
+    val newBidi1Shape = shape.deepCopy()
+    val newBidi2Shape = bidi.shape.deepCopy()
+
+    // We MUST add the current module as an explicit submodule. The composite builder otherwise *grows* the
+    // existing module, which is not good if there are islands present (the new module will "join" the island).
+    val newTraversalBuilder =
+      TraversalBuilder.empty()
+        .add(traversalBuilder, newBidi1Shape, Keep.right)
+        .add(bidi.traversalBuilder, newBidi2Shape, combine)
+        .wire(newBidi1Shape.out1, newBidi2Shape.in1)
+        .wire(newBidi2Shape.out2, newBidi1Shape.in2)
 
     new BidiFlow(
-      traversalBuilder.add(bidi.traversalBuilder, newBidiShape, combine)
-        .wire(shape.out1, newBidiShape.in1)
-        .wire(newBidiShape.out2, shape.in2),
-      BidiShape(shape.in1, newBidiShape.out1, newBidiShape.in2, shape.out2)
+      newTraversalBuilder,
+      BidiShape(newBidi1Shape.in1, newBidi2Shape.out1, newBidi2Shape.in2, newBidi1Shape.out2)
     )
   }
 
@@ -106,14 +114,18 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
    * flow into the materialized value of the resulting [[Flow]].
    */
   def joinMat[Mat2, M](flow: Graph[FlowShape[O1, I2], Mat2])(combine: (Mat, Mat2) ⇒ M): Flow[I1, O2, M] = {
+    val newBidiShape = shape.deepCopy()
     val newFlowShape = flow.shape.deepCopy()
 
-    val resultBuilder = traversalBuilder
+    // We MUST add the current module as an explicit submodule. The composite builder otherwise *grows* the
+    // existing module, which is not good if there are islands present (the new module will "join" the island).
+    val resultBuilder = TraversalBuilder.empty()
+      .add(traversalBuilder, newBidiShape, Keep.right)
       .add(flow.traversalBuilder, newFlowShape, combine)
-      .wire(shape.out1, newFlowShape.in)
-      .wire(newFlowShape.out, shape.in2)
+      .wire(newBidiShape.out1, newFlowShape.in)
+      .wire(newFlowShape.out, newBidiShape.in2)
 
-    val newShape = FlowShape(shape.in1, shape.out2)
+    val newShape = FlowShape(newBidiShape.in1, newBidiShape.out2)
 
     new Flow(
       LinearTraversalBuilder.fromBuilder(resultBuilder, newShape, Keep.right),
