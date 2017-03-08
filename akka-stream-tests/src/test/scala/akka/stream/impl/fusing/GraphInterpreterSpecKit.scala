@@ -194,6 +194,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
     object Upstream extends UpstreamBoundaryStageLogic[Int] {
       override val out = Outlet[Int]("up")
+      out.id = 0
       override def toString = "Upstream"
 
       setHandler(out, new OutHandler {
@@ -207,6 +208,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
     object Downstream extends DownstreamBoundaryStageLogic[Int] {
       override val in = Inlet[Int]("down")
+      in.id = 0
       setHandler(in, new InHandler {
         override def onPush() = {
           // TODO handler needed but should it do anything?
