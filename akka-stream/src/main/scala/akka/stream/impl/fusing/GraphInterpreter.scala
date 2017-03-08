@@ -299,8 +299,7 @@ final class GraphInterpreter(
         logic.preStart()
       } catch {
         case NonFatal(e) ⇒
-          e.printStackTrace()
-          //          log.error(e, "Error during preStart in [{}]", assembly.stages(logic.stageId))
+          log.error(e, "Error during preStart in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)
           logic.failStage(e)
       }
       afterStageHasRun(logic)
@@ -354,7 +353,7 @@ final class GraphInterpreter(
         def reportStageError(e: Throwable): Unit = {
           if (activeStage == null) throw e
           else {
-            log.error(e, "Error in stage [{}]: {}", activeStage, e.getMessage)
+            log.error(e, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), e.getMessage)
             activeStage.failStage(e)
 
             // Abort chasing
@@ -562,7 +561,7 @@ final class GraphInterpreter(
       logic.afterPostStop()
     } catch {
       case NonFatal(e) ⇒
-      //log.error(e, s"Error during postStop in [{}]: {}", assembly.stages(logic.stageId), e.getMessage)
+        log.error(e, s"Error during postStop in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)
     }
   }
 
