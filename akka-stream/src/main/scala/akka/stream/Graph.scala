@@ -30,7 +30,6 @@ trait Graph[+S <: Shape, +M] {
   /**
    * Put an asynchronous boundary around this `Graph`
    */
-  // TODO: no longer encoded as attributes!!!!
   def async: Graph[S, M] = addAttributes(Attributes.asyncBoundary)
 
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
