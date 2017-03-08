@@ -153,9 +153,7 @@ final class Source[+Out, +Mat](
   /**
    * Put an asynchronous boundary around this `Source`
    */
-  override def async: Repr[Out] = new Source(
-    traversalBuilder.makeIsland(GraphStageTag),
-    shape)
+  override def async: Repr[Out] = addAttributes(Attributes.asyncBoundary)
 
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
@@ -233,8 +231,7 @@ object Source {
     case s: javadsl.Source[T, M] ⇒ s.asScala
     case other ⇒ new Source(
       LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
-      other.shape
-    )
+      other.shape)
   }
 
   /**

@@ -25,8 +25,7 @@ import akka.annotation.DoNotInherit
  */
 final class Flow[-In, +Out, +Mat](
   override val traversalBuilder: LinearTraversalBuilder,
-  override val shape:            FlowShape[In, Out]
-)
+  override val shape:            FlowShape[In, Out])
   extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
   // TODO: debug string
@@ -46,13 +45,11 @@ final class Flow[-In, +Out, +Mat](
     if (this.isIdentity) {
       new Flow(
         LinearTraversalBuilder.fromBuilder(flow.traversalBuilder, flow.shape, combine),
-        flow.shape
-      ).asInstanceOf[Flow[In, T, Mat3]]
+        flow.shape).asInstanceOf[Flow[In, T, Mat3]]
     } else {
       new Flow(
         traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
-        FlowShape[In, T](shape.in, flow.shape.out)
-      )
+        FlowShape[In, T](shape.in, flow.shape.out))
     }
   }
 
@@ -98,13 +95,11 @@ final class Flow[-In, +Out, +Mat](
     if (isIdentity) {
       new Sink(
         LinearTraversalBuilder.fromBuilder(sink.traversalBuilder, sink.shape, combine),
-        SinkShape(sink.shape.in)
-      ).asInstanceOf[Sink[In, Mat3]]
+        SinkShape(sink.shape.in)).asInstanceOf[Sink[In, Mat3]]
     } else {
       new Sink(
         traversalBuilder.append(sink.traversalBuilder, sink.shape, combine),
-        SinkShape(shape.in)
-      )
+        SinkShape(shape.in))
     }
   }
 
@@ -114,8 +109,7 @@ final class Flow[-In, +Out, +Mat](
   override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
     new Flow(
       traversalBuilder.transformMat(f),
-      shape
-    )
+      shape)
 
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]].
@@ -208,8 +202,7 @@ final class Flow[-In, +Out, +Mat](
 
     new Flow(
       LinearTraversalBuilder.fromBuilder(resultBuilder, newShape, Keep.right),
-      newShape
-    )
+      newShape)
   }
 
   /**
@@ -222,8 +215,7 @@ final class Flow[-In, +Out, +Mat](
   override def withAttributes(attr: Attributes): Repr[Out] =
     new Flow(
       traversalBuilder.setAttributes(attr),
-      shape
-    )
+      shape)
 
   /**
    * Add the given attributes to this Flow. Further calls to `withAttributes`
@@ -241,12 +233,7 @@ final class Flow[-In, +Out, +Mat](
   /**
    * Put an asynchronous boundary around this `Flow`
    */
-  override def async: Repr[Out] = {
-    new Flow(
-      traversalBuilder.makeIsland(GraphStageTag),
-      shape
-    )
-  }
+  override def async: Repr[Out] = addAttributes(Attributes.asyncBoundary)
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
@@ -285,8 +272,7 @@ object Flow {
 
   private[this] val identity: Flow[Any, Any, NotUsed] = new Flow[Any, Any, NotUsed](
     identityTraversalBuilder,
-    GraphStages.Identity.shape
-  )
+    GraphStages.Identity.shape)
 
   /**
    * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]
@@ -322,8 +308,7 @@ object Flow {
       case f: javadsl.Flow[I, O, M] ⇒ f.asScala
       case other ⇒ new Flow(
         LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right),
-        g.shape
-      )
+        g.shape)
     }
 
   /**
@@ -381,8 +366,7 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
   override def named(name: String): RunnableGraph[Mat] =
     addAttributes(Attributes.name(name))
 
-  override def async: RunnableGraph[Mat] =
-    new RunnableGraph(traversalBuilder.makeIsland(GraphStageTag))
+  override def async: RunnableGraph[Mat] = addAttributes(Attributes.asyncBoundary)
 }
 
 /**

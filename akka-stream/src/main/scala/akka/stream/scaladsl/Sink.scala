@@ -25,8 +25,7 @@ import scala.util.{ Failure, Success, Try }
  */
 final class Sink[-In, +Mat](
   override val traversalBuilder: LinearTraversalBuilder,
-  override val shape:            SinkShape[In]
-)
+  override val shape:            SinkShape[In])
   extends Graph[SinkShape[In], Mat] {
 
   // TODO: Debug string
@@ -55,8 +54,7 @@ final class Sink[-In, +Mat](
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =
     new Sink(
       traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]),
-      shape
-    )
+      shape)
 
   /**
    * Change the attributes of this [[Sink]] to the given ones and seal the list
@@ -68,8 +66,7 @@ final class Sink[-In, +Mat](
   override def withAttributes(attr: Attributes): Sink[In, Mat] =
     new Sink(
       traversalBuilder.setAttributes(attr),
-      shape
-    )
+      shape)
 
   /**
    * Add the given attributes to this Sink. Further calls to `withAttributes`
@@ -88,11 +85,7 @@ final class Sink[-In, +Mat](
   /**
    * Put an asynchronous boundary around this `Sink`
    */
-  override def async: Sink[In, Mat] =
-    new Sink(
-      traversalBuilder.makeIsland(GraphStageTag),
-      shape
-    )
+  override def async: Sink[In, Mat] = addAttributes(Attributes.asyncBoundary)
 
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
@@ -115,8 +108,7 @@ object Sink {
       case s: javadsl.Sink[T, M] ⇒ s.asScala
       case other ⇒ new Sink(
         LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
-        other.shape
-      )
+        other.shape)
     }
 
   /**

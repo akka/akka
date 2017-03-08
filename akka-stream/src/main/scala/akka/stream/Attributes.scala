@@ -31,7 +31,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * INTERNAL API
    */
   private[stream] def isAsync: Boolean = {
-    attributeList.exists {
+    attributeList.nonEmpty && attributeList.exists {
       case AsyncBoundary                 ⇒ true
       case ActorAttributes.Dispatcher(_) ⇒ true
       case _                             ⇒ false
