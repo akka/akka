@@ -7,12 +7,13 @@ package akka.http.impl.util
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 
 import akka.NotUsed
+import akka.actor.Cancellable
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -249,12 +250,16 @@ private[http] object StreamUtils {
       def onPush(): Unit = push(out, grab(in)) // using `passAlong` was considered but it seems to need some boilerplate to make it work
       def onPull(): Unit = pull(in)
 
+      var timeout: OptionVal[Cancellable] = OptionVal.None
+
       override def onDownstreamFinish(): Unit = {
         cancelAfter match {
           case finite: FiniteDuration ⇒
-            scheduleOnce(finite) {
-              log.debug(s"Stage was canceled after delay of $cancelAfter")
-              completeStage()
+            timeout = OptionVal.Some {
+              scheduleOnce(finite) {
+                log.debug(s"Stage was canceled after delay of $cancelAfter")
+                completeStage()
+              }
             }
           case _ ⇒ // do nothing
         }
@@ -272,6 +277,11 @@ private[http] object StreamUtils {
           }
         )
       }
+
+      override def postStop(): Unit = timeout match {
+        case OptionVal.Some(x) ⇒ x.cancel()
+        case OptionVal.None    ⇒ // do nothing
+      }
     }
   }
 
@@ -288,7 +298,7 @@ private[http] object StreamUtils {
     /**
      * Schedule a block to be run once after the given duration in the context of this graph stage.
      */
-    def scheduleOnce(delay: FiniteDuration)(block: ⇒ Unit): Unit =
+    def scheduleOnce(delay: FiniteDuration)(block: ⇒ Unit): Cancellable =
       materializer.scheduleOnce(delay, new Runnable { def run() = runInContext(block) })
 
     def runInContext(block: ⇒ Unit): Unit = getAsyncCallback[AnyRef](_ ⇒ block).invoke(null)

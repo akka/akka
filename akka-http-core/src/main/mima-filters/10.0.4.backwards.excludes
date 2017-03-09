@@ -12,3 +12,7 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.setting
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.JavaMapping.flowMapping")
+
+# changes to internal classes, #945
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils#ScheduleSupport.scheduleOnce")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.util.StreamUtils#ScheduleSupport.scheduleOnce")
