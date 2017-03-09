@@ -8,7 +8,7 @@ import java.util.ArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
-import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, Deploy, ExtendedActorSystem, PoisonPill, Props }
+import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, Deploy, ExtendedActorSystem, PoisonPill }
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
 import akka.stream.Attributes.InputBuffer
@@ -35,7 +35,7 @@ object PhasedFusingActorMaterializer {
 
   val DefaultPhase: Phase[Any] = new Phase[Any] {
     override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] =
-      new GraphStageIsland(settings, materializer, islandName, subflowFuser = None).asInstanceOf[PhaseIsland[Any]]
+      new GraphStageIsland(settings, materializer, islandName, subflowFuser = OptionVal.None).asInstanceOf[PhaseIsland[Any]]
   }
 
   val DefaultPhases: Map[IslandTag, Phase[Any]] = Map[IslandTag, Phase[Any]](
@@ -536,7 +536,7 @@ final class GraphStageIsland(
   effectiveSettings: ActorMaterializerSettings,
   materializer:      PhasedFusingActorMaterializer,
   islandName:        String,
-  subflowFuser:      Option[GraphInterpreterShell ⇒ ActorRef]) extends PhaseIsland[GraphStageLogic] {
+  subflowFuser:      OptionVal[GraphInterpreterShell ⇒ ActorRef]) extends PhaseIsland[GraphStageLogic] {
   // TODO: remove these
   private val logicArrayType = Array.empty[GraphStageLogic]
   private[this] val logics = new ArrayList[GraphStageLogic](64)
@@ -654,9 +654,8 @@ final class GraphStageIsland(
     shell.connections = finalConnections
     shell.logics = logics.toArray(logicArrayType)
 
-    // TODO make OptionVal
     subflowFuser match {
-      case Some(fuseIntoExistingInterperter) ⇒
+      case OptionVal.Some(fuseIntoExistingInterperter) ⇒
         fuseIntoExistingInterperter(shell)
 
       case _ ⇒

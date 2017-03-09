@@ -11,6 +11,7 @@ import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreterShell
+import akka.util.OptionVal
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, ExecutionContextExecutor }
@@ -90,7 +91,7 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
 
   val subFusingPhase = new Phase[Any] {
     override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] = {
-      new GraphStageIsland(settings, materializer, islandName, Some(registerShell)).asInstanceOf[PhaseIsland[Any]]
+      new GraphStageIsland(settings, materializer, islandName, OptionVal(registerShell)).asInstanceOf[PhaseIsland[Any]]
     }
   }
 

@@ -298,22 +298,22 @@ object ActorGraphInterpreter {
     }
 
     def shutdown(reason: Option[Throwable]): Unit = {
-      shutdownReason = reason
+      shutdownReason = OptionVal(reason.orNull)
       pendingSubscribers.getAndSet(null) match {
         case null    ⇒ // already called earlier
         case pending ⇒ pending foreach reportSubscribeFailure
       }
     }
 
-    @volatile private var shutdownReason: Option[Throwable] = None
+    @volatile private var shutdownReason: OptionVal[Throwable] = OptionVal.None
 
     private def reportSubscribeFailure(subscriber: Subscriber[Any]): Unit =
       try shutdownReason match {
-        case Some(e: SpecViolation) ⇒ // ok, not allowed to call onError
-        case Some(e) ⇒
+        case OptionVal.Some(e: SpecViolation) ⇒ // ok, not allowed to call onError
+        case OptionVal.Some(e) ⇒
           tryOnSubscribe(subscriber, CancelledSubscription)
           tryOnError(subscriber, e)
-        case None ⇒
+        case OptionVal.None ⇒
           tryOnSubscribe(subscriber, CancelledSubscription)
           tryOnComplete(subscriber)
       } catch {
@@ -341,7 +341,7 @@ object ActorGraphInterpreter {
     // interpreter (i.e. inside this op this flag has no effects since if it is completed the op will not be invoked)
     private var downstreamCompleted = false
     // when upstream failed before we got the exposed publisher
-    private var upstreamFailed: Option[Throwable] = None
+    private var upstreamFailed: OptionVal[Throwable] = OptionVal.None
     private var upstreamCompleted: Boolean = false
 
     private def onNext(elem: Any): Unit = {
@@ -362,7 +362,7 @@ object ActorGraphInterpreter {
       // No need to fail if had already been cancelled, or we closed earlier
       if (!(downstreamCompleted || upstreamCompleted)) {
         upstreamCompleted = true
-        upstreamFailed = Some(e)
+        upstreamFailed = OptionVal.Some(e)
         publisher.shutdown(Some(e))
         if ((subscriber ne null) && !e.isInstanceOf[SpecViolation]) tryOnError(subscriber, e)
       }

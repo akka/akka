@@ -7,6 +7,8 @@ package akka.stream.impl
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.scaladsl.Keep
+import akka.util.OptionVal
+import scala.language.existentials
 
 /**
  * Graphs to be materialized are defined by their traversal. There is no explicit graph information tracked, instead
@@ -464,14 +466,14 @@ final case class AtomicTraversalBuilder(
 object LinearTraversalBuilder {
 
   // TODO: Remove
-  private val cachedEmptyLinear = LinearTraversalBuilder(None, None, 0, 0, PushNotUsed, None, Attributes.none)
+  private val cachedEmptyLinear = LinearTraversalBuilder(OptionVal.None, OptionVal.None, 0, 0, PushNotUsed, OptionVal.None, Attributes.none)
 
   private[this] final val wireBackward: Array[Int] = Array(-1)
   private[this] final val noWire: Array[Int] = Array()
 
   def empty(attributes: Attributes = Attributes.none): LinearTraversalBuilder =
     if (attributes eq Attributes.none) cachedEmptyLinear
-    else LinearTraversalBuilder(None, None, 0, 0, PushNotUsed, None, attributes, EmptyTraversal)
+    else LinearTraversalBuilder(OptionVal.None, OptionVal.None, 0, 0, PushNotUsed, OptionVal.None, attributes, EmptyTraversal)
 
   /**
    * Create a traversal builder specialized for linear graphs. This is designed to be much faster and lightweight
@@ -482,8 +484,8 @@ object LinearTraversalBuilder {
     require(module.shape.outlets.size <= 1, "Modules with more than one input port cannot be linear.")
     TraversalBuilder.initShape(module.shape)
 
-    val inPortOpt = module.shape.inlets.headOption
-    val outPortOpt = module.shape.outlets.headOption
+    val inPortOpt = OptionVal(module.shape.inlets.headOption.orNull)
+    val outPortOpt = OptionVal(module.shape.outlets.headOption.orNull)
 
     val wiring = if (outPortOpt.isDefined) wireBackward else noWire
 
@@ -493,7 +495,7 @@ object LinearTraversalBuilder {
       inOffset = 0,
       if (inPortOpt.isDefined) 1 else 0,
       traversalSoFar = MaterializeAtomic(module, wiring),
-      pendingBuilder = None,
+      pendingBuilder = OptionVal.None,
       attributes)
   }
 
@@ -523,12 +525,12 @@ object LinearTraversalBuilder {
         }
 
         LinearTraversalBuilder(
-          inPort = inOpt,
-          outPort = None,
+          inPort = OptionVal(inOpt.orNull),
+          outPort = OptionVal.None,
           inOffset = inOffs,
           inSlots = completed.inSlots,
           completed.traversal.concat(addMatCompose(PushNotUsed, combine)),
-          pendingBuilder = None,
+          pendingBuilder = OptionVal.None,
           Attributes.none)
 
       case composite ⇒
@@ -540,12 +542,12 @@ object LinearTraversalBuilder {
         }
 
         LinearTraversalBuilder(
-          inPort = inOpt,
-          outPort = Some(out),
+          inPort = OptionVal(inOpt.orNull),
+          outPort = OptionVal.Some(out),
           inOffset = inOffs,
           inSlots = composite.inSlots,
           addMatCompose(PushNotUsed, combine),
-          pendingBuilder = Some(composite),
+          pendingBuilder = OptionVal.Some(composite),
           Attributes.none,
           beforeBuilder = EmptyTraversal)
 
@@ -562,15 +564,15 @@ object LinearTraversalBuilder {
  * -1 relative offset to something else (see rewireLastOutTo).
  */
 final case class LinearTraversalBuilder(
-  inPort:               Option[InPort],
-  outPort:              Option[OutPort],
+  inPort:               OptionVal[InPort],
+  outPort:              OptionVal[OutPort],
   inOffset:             Int,
   override val inSlots: Int,
   traversalSoFar:       Traversal,
-  pendingBuilder:       Option[TraversalBuilder],
+  pendingBuilder:       OptionVal[TraversalBuilder],
   attributes:           Attributes,
-  beforeBuilder:        Traversal                = EmptyTraversal,
-  islandTag:            Option[IslandTag]        = None) extends TraversalBuilder {
+  beforeBuilder:        Traversal                   = EmptyTraversal,
+  islandTag:            OptionVal[IslandTag]        = OptionVal.None) extends TraversalBuilder {
 
   protected def isEmpty: Boolean = inSlots == 0 && outPort.isEmpty
 
@@ -583,7 +585,7 @@ final case class LinearTraversalBuilder(
    * This builder can always return a traversal.
    */
   override def traversal: Traversal = {
-    if (outPort.nonEmpty)
+    if (outPort.isDefined)
       throw new IllegalStateException("Traversal cannot be acquired until all output ports have been wired")
     applyIslandAndAttributes(traversalSoFar)
   }
@@ -598,8 +600,8 @@ final case class LinearTraversalBuilder(
 
   private def applyIslandAndAttributes(t: Traversal): Traversal = {
     val withIslandTag = islandTag match {
-      case None      ⇒ t
-      case Some(tag) ⇒ EnterIsland(tag).concat(t).concat(ExitIsland)
+      case OptionVal.None      ⇒ t
+      case OptionVal.Some(tag) ⇒ EnterIsland(tag).concat(t).concat(ExitIsland)
     }
 
     if (attributes eq Attributes.none) withIslandTag
@@ -625,19 +627,19 @@ final case class LinearTraversalBuilder(
   override def wire(out: OutPort, in: InPort): TraversalBuilder = {
     if (outPort.contains(out) && inPort.contains(in)) {
       pendingBuilder match {
-        case Some(composite) ⇒
+        case OptionVal.Some(composite) ⇒
           copy(
-            inPort = None,
-            outPort = None,
+            inPort = OptionVal.None,
+            outPort = OptionVal.None,
             traversalSoFar =
               applyIslandAndAttributes(
                 beforeBuilder.concat(
                   composite
                   .assign(out, inOffset - composite.offsetOfModule(out))
                   .traversal).concat(traversalSoFar)),
-            pendingBuilder = None, beforeBuilder = EmptyTraversal)
-        case None ⇒
-          copy(inPort = None, outPort = None, traversalSoFar = rewireLastOutTo(traversalSoFar, inOffset))
+            pendingBuilder = OptionVal.None, beforeBuilder = EmptyTraversal)
+        case OptionVal.None ⇒
+          copy(inPort = OptionVal.None, outPort = OptionVal.None, traversalSoFar = rewireLastOutTo(traversalSoFar, inOffset))
       }
     } else
       throw new IllegalArgumentException(s"The ports $in and $out cannot be accessed in this builder.")
@@ -646,8 +648,8 @@ final case class LinearTraversalBuilder(
   override def offsetOfModule(out: OutPort): Int = {
     if (outPort.contains(out)) {
       pendingBuilder match {
-        case Some(composite) ⇒ composite.offsetOfModule(out)
-        case None            ⇒ 0 // Output belongs to the last module, which will be materialized *first*
+        case OptionVal.Some(composite) ⇒ composite.offsetOfModule(out)
+        case OptionVal.None            ⇒ 0 // Output belongs to the last module, which will be materialized *first*
       }
     } else
       throw new IllegalArgumentException(s"Port $out cannot be accessed in this builder")
@@ -665,9 +667,9 @@ final case class LinearTraversalBuilder(
   override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder = {
     if (outPort.contains(out)) {
       pendingBuilder match {
-        case Some(composite) ⇒
+        case OptionVal.Some(composite) ⇒
           copy(
-            outPort = None,
+            outPort = OptionVal.None,
             traversalSoFar =
               applyIslandAndAttributes(
                 beforeBuilder.concat(
@@ -675,10 +677,10 @@ final case class LinearTraversalBuilder(
                     .assign(out, relativeSlot)
                     .traversal
                     .concat(traversalSoFar))),
-            pendingBuilder = None,
+            pendingBuilder = OptionVal.None,
             beforeBuilder = EmptyTraversal)
-        case None ⇒
-          copy(outPort = None, traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
+        case OptionVal.None ⇒
+          copy(outPort = OptionVal.None, traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
       }
     } else
       throw new IllegalArgumentException(s"Port $out cannot be assigned in this builder")
@@ -705,7 +707,7 @@ final case class LinearTraversalBuilder(
       toAppend.copy(
         traversalSoFar = toAppend.traversalSoFar.concat(LinearTraversalBuilder.addMatCompose(traversal, matCompose)))
     } else {
-      if (outPort.nonEmpty) {
+      if (outPort.isDefined) {
         require(toAppend.inPort.isDefined, "Appended linear module must have an unwired input port " +
           "because there is a dangling output.")
 
@@ -749,7 +751,7 @@ final case class LinearTraversalBuilder(
          * different.
          */
         val assembledTraversalForThis = this.pendingBuilder match {
-          case None ⇒
+          case OptionVal.None ⇒
             /*
              * This is the case where we are a pure linear builder (all composites have been already completed),
              * which means that traversalSoFar contains everything already, except the final attributes and islands
@@ -788,7 +790,7 @@ final case class LinearTraversalBuilder(
               rewireLastOutTo(traversalSoFar, toAppend.inOffset - toAppend.inSlots)
             }
 
-          case Some(composite) ⇒
+          case OptionVal.Some(composite) ⇒
             /*
              * This is the case where our last module is a composite, and since it does not have its output port
              * wired yet, the traversal is split into the parts, traversalSoFar, pendingBuilder and beforeBuilder.
@@ -842,7 +844,7 @@ final case class LinearTraversalBuilder(
          * There are two variants, depending whether toAppend is purely linear or if it has a composite at the end.
          */
         toAppend.pendingBuilder match {
-          case None ⇒
+          case OptionVal.None ⇒
             /*
              * This is the simple case, when the other is purely linear. We just concatenate the traversals
              * and do some bookkeeping.
@@ -855,13 +857,13 @@ final case class LinearTraversalBuilder(
               inOffset = inOffset + toAppend.inSlots,
               // Build in reverse so it yields a more efficient layout for left-to-right building
               traversalSoFar = toAppend.applyIslandAndAttributes(toAppend.traversalSoFar).concat(finalTraversalForThis),
-              pendingBuilder = None,
+              pendingBuilder = OptionVal.None,
               attributes = Attributes.none, // attributes are none for the new enclosing builder
               beforeBuilder = EmptyTraversal, // no need for beforeBuilder as there are no composites
-              islandTag = None // islandTag is reset for the new enclosing builder
+              islandTag = OptionVal.None // islandTag is reset for the new enclosing builder
             )
 
-          case Some(composite) ⇒
+          case OptionVal.Some(composite) ⇒
             /*
              * In this case we need to assemble as much as we can, and create a new "sandwich" of
              *   beforeBuilder ~ pendingBuilder ~ traversalSoFar
@@ -875,9 +877,9 @@ final case class LinearTraversalBuilder(
 
             // First prepare island enter and exit if tags are present
             toAppend.islandTag match {
-              case None ⇒
+              case OptionVal.None ⇒
               // Nothing changes
-              case Some(tag) ⇒
+              case OptionVal.Some(tag) ⇒
                 // Enter the island just before the appended builder (keeping the toAppend.beforeBuilder steps)
                 newBeforeTraversal = EnterIsland(tag).concat(newBeforeTraversal)
                 // Exit the island just after the appended builder (they should not applied to _this_ builder)
@@ -908,7 +910,7 @@ final case class LinearTraversalBuilder(
               pendingBuilder = toAppend.pendingBuilder,
               attributes = Attributes.none, // attributes are none for the new enclosing builder
               beforeBuilder = newBeforeTraversal, // no need for beforeBuilder as there are no composites
-              islandTag = None // islandTag is reset for the new enclosing builder
+              islandTag = OptionVal.None // islandTag is reset for the new enclosing builder
             )
         }
       } else throw new Exception("should this happen?")
@@ -927,8 +929,8 @@ final case class LinearTraversalBuilder(
    */
   override def makeIsland(islandTag: IslandTag): LinearTraversalBuilder =
     this.islandTag match {
-      case Some(tag) ⇒ this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
-      case None      ⇒ copy(islandTag = Some(islandTag))
+      case OptionVal.Some(tag) ⇒ this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
+      case OptionVal.None      ⇒ copy(islandTag = OptionVal.Some(islandTag))
     }
 }
 
