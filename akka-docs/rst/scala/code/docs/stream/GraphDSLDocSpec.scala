@@ -44,7 +44,7 @@ class GraphDSLDocSpec extends AkkaSpec {
   }
 
   "flow connection errors" in {
-    intercept[IllegalArgumentException] {
+    intercept[IllegalStateException] {
       //#simple-graph
       RunnableGraph.fromGraph(GraphDSL.create() { implicit builder =>
         import GraphDSL.Implicits._
