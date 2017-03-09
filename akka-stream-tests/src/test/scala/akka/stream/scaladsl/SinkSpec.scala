@@ -128,7 +128,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
 
-      s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("headSink"), Name("name"))
+      s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("name"), Name("headSink"))
       s.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
     }
 
@@ -136,7 +136,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
 
-      s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("headSink"), Name("name"))
+      s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("name"), Name("headSink"))
     }
 
     "given one attribute of a class should correctly get it as last attribute with default value" in {
