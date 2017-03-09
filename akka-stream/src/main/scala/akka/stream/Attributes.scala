@@ -171,7 +171,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * Extracts Name attributes and concatenates them.
    */
   def nameLifted: Option[String] = {
-    @tailrec def concatNames(i: Iterator[Attribute], first: String, buf: StringBuilder): String =
+    @tailrec def concatNames(i: Iterator[Attribute], first: String, buf: java.lang.StringBuilder): String =
       if (i.hasNext)
         i.next() match {
           case Name(n) ⇒
@@ -179,7 +179,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
             val nn = URLEncoder.encode(n, "UTF-8")
             if (buf ne null) concatNames(i, null, buf.append('-').append(nn))
             else if (first ne null) {
-              val b = new StringBuilder((first.length() + nn.length()) * 2)
+              val b = new java.lang.StringBuilder((first.length() + nn.length()) * 2)
               concatNames(i, null, b.append(first).append('-').append(nn))
             } else concatNames(i, nn, null)
           case _ ⇒ concatNames(i, first, buf)

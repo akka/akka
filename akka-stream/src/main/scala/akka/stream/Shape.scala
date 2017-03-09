@@ -7,6 +7,7 @@ import akka.util.Collections.EmptyImmutableSeq
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
+import akka.annotation.InternalApi
 
 /**
  * An input port of a StreamLayout.Module. This type logically belongs
@@ -136,6 +137,22 @@ final class Outlet[T] private (val s: String) extends OutPort {
   override def toString: String = s + "(" + this.hashCode + s")" +
     (if (mappedTo eq this) ""
     else s" mapped to $mappedTo")
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object Shape {
+  /**
+   * `inlets` and `outlets` can be `Vector` or `List` so this method
+   * checks the size of 1 in an optimized way.
+   */
+  def hasOnePort(ports: immutable.Seq[_]): Boolean = {
+    ports.nonEmpty && (ports match {
+      case l: List[_] ⇒ l.tail.isEmpty // assuming List is most common
+      case _          ⇒ ports.size == 1 // e.g. Vector
+    })
+  }
 }
 
 /**
