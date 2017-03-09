@@ -22,6 +22,7 @@ An unmarshaller will return a `Left(exception)` in the case of an error.  This i
 are mapped to rejections:
 
 |Left(exception)          | Rejection                                                                |
+|-------------------------|--------------------------------------------------------------------------|
 |`ContentExpected`        | `RequestEntityExpectedRejection`                                         |
 |`UnsupportedContentType` | `UnsupportedRequestContentTypeRejection`, which lists the supported types|
 |`MaformedContent`        | `MalformedRequestContentRejection`, with an error message and cause      |
