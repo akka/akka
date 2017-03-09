@@ -554,7 +554,7 @@ final class GraphStageIsland(
   private val logicArrayType = Array.empty[GraphStageLogic]
   private[this] val logics = new ArrayList[GraphStageLogic](64)
   // TODO: Resize
-  private val connections = Array.ofDim[Connection](64)
+  private val connections = new Array[Connection](64)
   private var maxConnections = 0
   private var outConnections: List[Connection] = Nil
   private var fullIslandName: OptionVal[String] = OptionVal.None

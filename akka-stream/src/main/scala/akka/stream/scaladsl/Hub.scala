@@ -377,7 +377,7 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
      * Elements are published by simply putting them into the array and bumping the tail. If necessary, certain
      * consumers are sent a wakeup message through an AsyncCallback.
      */
-    private[this] val queue = Array.ofDim[AnyRef](bufferSize)
+    private[this] val queue = new Array[AnyRef](bufferSize)
     /* This is basically a classic Bucket Queue: https://en.wikipedia.org/wiki/Bucket_queue
      * (in fact, this is the variant described in the Optimizations section, where the given set
      * of priorities always fall to a range

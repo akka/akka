@@ -164,7 +164,7 @@ object TraversalBuilder {
     val builder =
       if (module.shape.outlets.isEmpty) {
         val b = CompletedTraversalBuilder(
-          traversalSoFar = MaterializeAtomic(module, Array.ofDim[Int](module.shape.outlets.size)),
+          traversalSoFar = MaterializeAtomic(module, new Array[Int](module.shape.outlets.size)),
           inSlots = module.shape.inlets.size,
           inToOffset = module.shape.inlets.map(in ⇒ in → in.id).toMap,
           Attributes.none)
@@ -172,7 +172,7 @@ object TraversalBuilder {
       } else {
         AtomicTraversalBuilder(
           module,
-          Array.ofDim[Int](module.shape.outlets.size),
+          new Array[Int](module.shape.outlets.size),
           module.shape.outlets.size,
           Attributes.none)
       }
