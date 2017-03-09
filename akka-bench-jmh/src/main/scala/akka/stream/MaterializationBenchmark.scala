@@ -101,14 +101,14 @@ class MaterializationBenchmark {
   }
 
   @Benchmark
-  def flow_with_map(): Unit = flowWithMap.run()
+  def flow_with_map(): NotUsed = flowWithMap.run()
 
   @Benchmark
-  def graph_with_junctions(): Unit = graphWithJunctions.run()
+  def graph_with_junctions(): NotUsed = graphWithJunctions.run()
 
   @Benchmark
-  def graph_with_nested_imports(): Unit = graphWithNestedImports.run()
+  def graph_with_nested_imports(): NotUsed = graphWithNestedImports.run()
 
   @Benchmark
-  def graph_with_imported_flow(): Unit = graphWithImportedFlow.run()
+  def graph_with_imported_flow(): NotUsed = graphWithImportedFlow.run()
 }
