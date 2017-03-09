@@ -428,7 +428,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     "keep mapped materialized value of empty builder" in {
       val builder =
         LinearTraversalBuilder.empty()
-          .transformMat[NotUsed, String](_ ⇒ "NOTUSED")
+          .transformMat((_: Any) ⇒ "NOTUSED")
           .append(source.traversalBuilder, source.shape, Keep.left)
           .append(sink.traversalBuilder, sink.shape, Keep.left)
 
@@ -556,7 +556,7 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
       val builder = source.traversalBuilder
         .append(flow1.traversalBuilder, flow1.shape, Keep.right)
         .append(sink.traversalBuilder, sink.shape, Keep.left)
-        .transformMat[String, String]("MAPPED: " + _)
+        .transformMat("MAPPED: " + (_: String))
 
       val mat = testMaterialize(builder)
 
@@ -566,12 +566,12 @@ class LinearTraversalBuilderSpec extends AkkaSpec {
     "properly map materialized value (nested)" in {
       val flowBuilder =
         flow1.traversalBuilder
-          .transformMat[String, String]("M1: " + _)
+          .transformMat("M1: " + (_: String))
 
       val builder = source.traversalBuilder
         .append(flowBuilder, flow1.shape, Keep.right)
         .append(sink.traversalBuilder, sink.shape, Keep.left)
-        .transformMat[String, String]("M2: " + _)
+        .transformMat("M2: " + (_: String))
 
       val mat = testMaterialize(builder)
 
