@@ -21,6 +21,7 @@ import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.actor.ActorSubscriberMessage
 import akka.stream.scaladsl.{ GenericGraph, GenericGraphWithChangedAttributes }
+import akka.util.OptionVal
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
@@ -227,6 +228,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * handlers.
    */
   private[stream] var attributes: Attributes = Attributes.none
+
+  /**
+   * INTERNAL API
+   *
+   * If possible a link back to the stage that the logic was created with, used for debugging.
+   */
+  private[stream] var originalStage: OptionVal[GraphStageWithMaterializedValue[_ <: Shape, _]] = OptionVal.None
 
   /**
    * INTERNAL API

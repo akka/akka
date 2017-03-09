@@ -8,6 +8,7 @@ import akka.event.LoggingAdapter
 import akka.stream.stage._
 import akka.stream._
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.util.control.NonFatal
 
 /**
@@ -296,8 +297,7 @@ final class GraphInterpreter(
         logic.preStart()
       } catch {
         case NonFatal(e) ⇒
-          e.printStackTrace()
-          //          log.error(e, "Error during preStart in [{}]", assembly.stages(logic.stageId))
+          log.error(e, "Error during preStart in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)
           logic.failStage(e)
       }
       afterStageHasRun(logic)
@@ -351,10 +351,7 @@ final class GraphInterpreter(
         def reportStageError(e: Throwable): Unit = {
           if (activeStage == null) throw e
           else {
-            // TODO: Get error reporting back
-            //val stage = stages(activeStage.stageId)
-
-            log.error(e, "Error in stage [{}]: {}", activeStage, e.getMessage)
+            log.error(e, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), e.getMessage)
             activeStage.failStage(e)
 
             // Abort chasing
@@ -562,7 +559,7 @@ final class GraphInterpreter(
       logic.afterPostStop()
     } catch {
       case NonFatal(e) ⇒
-      //log.error(e, s"Error during postStop in [{}]: {}", assembly.stages(logic.stageId), e.getMessage)
+        log.error(e, s"Error during postStop in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)
     }
   }
 
@@ -631,45 +628,48 @@ final class GraphInterpreter(
 
   /**
    * Debug utility to dump the "waits-on" relationships in DOT format to the console for analysis of deadlocks.
+   * Use dot/graphviz to render graph.
    *
    * Only invoke this after the interpreter completely settled, otherwise the results might be off. This is a very
    * simplistic tool, make sure you are understanding what you are doing and then it will serve you well.
    */
   def dumpWaits(): Unit = println(toString)
 
-  //  override def toString: String = {
-  //    val builder = new StringBuilder("digraph waits {\n")
-  //
-  //    for (i ← assembly.stages.indices)
-  //      builder.append(s"""N$i [label="${assembly.stages(i)}"]""" + "\n")
-  //
-  //    def nameIn(port: Int): String = {
-  //      val owner = assembly.inOwners(port)
-  //      if (owner == Boundary) "Out" + port
-  //      else "N" + owner
-  //    }
-  //
-  //    def nameOut(port: Int): String = {
-  //      val owner = assembly.outOwners(port)
-  //      if (owner == Boundary) "In" + port
-  //      else "N" + owner
-  //    }
-  //
-  //    for (i ← connections.indices) {
-  //      connections(i).portState match {
-  //        case InReady ⇒
-  //          builder.append(s"""  ${nameIn(i)} -> ${nameOut(i)} [label=shouldPull; color=blue]""")
-  //        case OutReady ⇒
-  //          builder.append(s"""  ${nameOut(i)} -> ${nameIn(i)} [label=shouldPush; color=red];""")
-  //        case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) ⇒
-  //          builder.append(s"""  ${nameIn(i)} -> ${nameOut(i)} [style=dotted; label=closed dir=both];""")
-  //        case _ ⇒
-  //      }
-  //      builder.append("\n")
-  //    }
-  //
-  //    builder.append("}\n")
-  //    builder.append(s"// $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
-  //    builder.toString()
-  //  }
+  override def toString: String = {
+    try {
+      val builder = new StringBuilder("\ndot format graph for deadlock analysis:\n")
+      builder.append("================================================================\n")
+      builder.append("digraph waits {\n")
+
+      for (i ← logics.indices) {
+        val logic = logics(i)
+        val label = logic.originalStage.getOrElse(logic).toString
+        builder.append(s"""  N$i [label="$label"];""").append('\n')
+      }
+
+      val logicIndexes = logics.zipWithIndex.map { case (stage, idx) ⇒ stage → idx }.toMap
+      for (connection ← connections) {
+        val inName = "N" + logicIndexes(connection.inOwner)
+        val outName = "N" + logicIndexes(connection.outOwner)
+
+        builder.append(s"  $inName -> $outName ")
+        connection.portState match {
+          case InReady ⇒
+            builder.append("[label=shouldPull; color=blue];")
+          case OutReady ⇒
+            builder.append(s"[label=shouldPush; color=red];")
+          case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) ⇒
+            builder.append("[style=dotted; label=closed dir=both];")
+          case _ ⇒
+        }
+        builder.append("\n")
+      }
+
+      builder.append("}\n================================================================\n")
+      builder.append(s"// $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
+      builder.toString()
+    } catch {
+      case _: NoSuchElementException ⇒ "Not all logics has a stage listed, cannot create graph"
+    }
+  }
 }
