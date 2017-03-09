@@ -19,6 +19,7 @@ import akka.stream.impl.fusing.GraphInterpreter.Connection
 import akka.stream.impl.fusing._
 import akka.stream.impl.io.{ TLSActor, TlsModule }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
+import akka.util.OptionVal
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.collection.immutable.Map
@@ -555,8 +556,10 @@ final class GraphStageIsland(
   override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (GraphStageLogic, Any) = {
     // TODO: bail on unknown types
     val stageModule = mod.asInstanceOf[GraphStageModule[Shape, Any]]
-    val matAndLogic = stageModule.stage.createLogicAndMaterializedValue(attributes)
+    val stage = stageModule.stage
+    val matAndLogic = stage.createLogicAndMaterializedValue(attributes)
     val logic = matAndLogic._1
+    logic.originalStage = OptionVal.Some(stage)
     logic.attributes = attributes
     logics.add(logic)
     logic.stageId = logics.size() - 1

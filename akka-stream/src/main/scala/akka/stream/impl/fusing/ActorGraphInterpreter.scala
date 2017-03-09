@@ -14,6 +14,7 @@ import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.impl.fusing.GraphInterpreter.{ Connection, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
 import akka.stream.impl.{ SubFusingActorMaterializerImpl, _ }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
+import akka.util.OptionVal
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.annotation.tailrec
@@ -594,7 +595,6 @@ final class GraphInterpreterShell(
    *  - a new error is encountered
    */
   def tryAbort(ex: Throwable): Unit = {
-    ex.printStackTrace()
     val reason = ex match {
       case s: SpecViolation ⇒
         new IllegalStateException("Shutting down because of violation of the Reactive Streams specification.", s)
@@ -620,8 +620,28 @@ final class GraphInterpreterShell(
     }
   }
 
-  // TODO: Fix debug string
-  override def toString: String = s"GraphInterpreterShell" //  \n${assembly.toString.replace("\n", "\n  ")}"
+  override def toString: String = {
+    val builder = StringBuilder.newBuilder
+    builder.append("GraphInterpreterShell(\n  logics: [\n")
+    interpreter.logics.foreach { logic ⇒
+      builder.append("    ")
+        .append(logic.originalStage.getOrElse(logic).toString)
+        .append(" attrs: [")
+        .append(logic.attributes.attributeList.mkString(", "))
+        .append("],\n")
+    }
+    builder.setLength(builder.length - 2)
+    builder.append("\n  ],\n  connections: [\n")
+    interpreter.connections.foreach { connection ⇒
+      builder
+        .append("    ")
+        .append(connection.toString)
+        .append(",\n")
+    }
+    builder.setLength(builder.length - 2)
+    builder.append("\n  ]\n)")
+    builder.toString()
+  }
 }
 
 /**
