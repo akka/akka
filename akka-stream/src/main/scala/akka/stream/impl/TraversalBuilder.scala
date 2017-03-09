@@ -519,6 +519,8 @@ object LinearTraversalBuilder {
       Pop.concat(t)
     else if (matCompose eq Keep.right)
       t.concat(Pop)
+    else if (matCompose eq Keep.none)
+      t.concat(Pop).concat(Pop).concat(PushNotUsed)
     else
       t.concat(ComposeReversed(matCompose))
   }
