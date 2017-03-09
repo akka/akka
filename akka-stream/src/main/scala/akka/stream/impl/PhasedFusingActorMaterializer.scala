@@ -28,6 +28,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.annotation.tailrec
 import akka.stream.impl.fusing.GraphInterpreter.DownstreamBoundaryStageLogic
 import akka.stream.impl.fusing.GraphInterpreter.UpstreamBoundaryStageLogic
+import akka.util.OptionVal
 
 object PhasedFusingActorMaterializer {
 
@@ -556,6 +557,7 @@ final class GraphStageIsland(
   private val connections = Array.ofDim[Connection](64)
   private var maxConnections = 0
   private var outConnections: List[Connection] = Nil
+  private var fullIslandName: OptionVal[String] = OptionVal.None
 
   val shell = new GraphInterpreterShell(
     connections = null,
@@ -575,6 +577,10 @@ final class GraphStageIsland(
     logic.attributes = attributes
     logics.add(logic)
     logic.stageId = logics.size() - 1
+    fullIslandName match {
+      case OptionVal.Some(_) ⇒ // already set
+      case OptionVal.None    ⇒ fullIslandName = OptionVal.Some(islandName + "-" + logic.attributes.nameOrDefault())
+    }
     matAndLogic
   }
 
@@ -673,21 +679,12 @@ final class GraphStageIsland(
       case _ ⇒
         val props = ActorGraphInterpreter.props(shell)
           .withDispatcher(effectiveSettings.dispatcher)
-        materializer.actorOf(props, fullIslandName)
+        val actorName = fullIslandName match {
+          case OptionVal.Some(n) ⇒ n
+          case OptionVal.None    ⇒ islandName
+        }
+        materializer.actorOf(props, actorName)
     }
-  }
-
-  private def fullIslandName: String = {
-    @tailrec def findUsefulName(i: Int): String = {
-      if (i == logics.size) islandName
-      else logics.get(i) match {
-        case _: DownstreamBoundaryStageLogic[_] | _: UpstreamBoundaryStageLogic[_] ⇒
-          findUsefulName(i + 1)
-        case _ ⇒
-          islandName + "-" + logics.get(i).attributes.nameOrDefault()
-      }
-    }
-    findUsefulName(0)
   }
 
   override def toString: String = "GraphStagePhase"

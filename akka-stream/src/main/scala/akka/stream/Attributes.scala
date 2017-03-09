@@ -170,12 +170,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * Extracts Name attributes and concatenates them.
    */
-  def nameLifted: Option[String] = Option(nameOrDefault(null))
-
-  /**
-   * INTERNAL API
-   */
-  def nameOrDefault(default: String = "unknown-operation"): String = {
+  def nameLifted: Option[String] = {
     @tailrec def concatNames(i: Iterator[Attribute], first: String, buf: StringBuilder): String =
       if (i.hasNext)
         i.next() match {
@@ -192,10 +187,19 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
       else if (buf eq null) first
       else buf.toString
 
-    concatNames(attributeList.reverseIterator, null, null) match {
-      case null ⇒ default
-      case some ⇒ some
+    Option(concatNames(attributeList.reverseIterator, null, null))
+  }
+
+  /**
+   * INTERNAL API
+   */
+  def nameOrDefault(default: String = "unnamed"): String = {
+    @tailrec def find(attrs: List[Attribute]): String = attrs match {
+      case Attributes.Name(name) :: _ ⇒ name
+      case _ :: tail                  ⇒ find(tail)
+      case Nil                        ⇒ default
     }
+    find(attributeList)
   }
 
 }
