@@ -88,7 +88,13 @@ final class Merge[T](val inputPorts: Int, val eagerComplete: Boolean) extends Gr
     private var runningUpstreams = inputPorts
     private def upstreamsClosed = runningUpstreams == 0
 
-    override def preStart(): Unit = in.foreach(tryPull)
+    override def preStart(): Unit = {
+      var ix = 0
+      while (ix < in.size) {
+        tryPull(in(ix))
+        ix += 1
+      }
+    }
 
     @tailrec
     private def dequeueAndDispatch(): Unit = {
@@ -107,7 +113,11 @@ final class Merge[T](val inputPorts: Int, val eagerComplete: Boolean) extends Gr
       }
     }
 
-    in.foreach { i ⇒
+    var ix = 0
+    while (ix < in.size) {
+      val i = in(ix)
+      ix += 1
+
       setHandler(i, new InHandler {
         override def onPush(): Unit = {
           if (isAvailable(out)) {
@@ -120,7 +130,11 @@ final class Merge[T](val inputPorts: Int, val eagerComplete: Boolean) extends Gr
 
         override def onUpstreamFinish() =
           if (eagerComplete) {
-            in.foreach(cancel)
+            var ix2 = 0
+            while (ix2 < in.size) {
+              cancel(in(ix2))
+              ix2 += 1
+            }
             runningUpstreams = 0
             if (!pending) completeStage()
           } else {
@@ -1069,8 +1083,7 @@ object GraphDSL extends GraphApply {
       traversalBuilderInProgress = traversalBuilderInProgress.add(
         graph.traversalBuilder.transformMat(transform),
         newShape,
-        Keep.right
-      )
+        Keep.right)
 
       unwiredIns ++= newShape.inlets
       unwiredOuts ++= newShape.outlets

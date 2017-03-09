@@ -450,21 +450,10 @@ case class PhasedFusingActorMaterializer(
             if (Debug) println(s"  materialized value is $matValue")
             matValueStack.addLast(matValue)
 
-            val ins = mod.shape.inlets.iterator
             val stageGlobalOffset = islandTracking.getCurrentOffset
 
-            while (ins.hasNext) {
-              val in = ins.next()
-              islandTracking.wireIn(in, logic)
-            }
-
-            val outs = mod.shape.outlets.iterator
-            while (outs.hasNext) {
-              val out = outs.next()
-              val absoluteTargetSlot = stageGlobalOffset + outToSlot(out.id)
-              if (Debug) println(s"  wiring offset: ${outToSlot.mkString("[", ",", "]")}")
-              islandTracking.wireOut(out, absoluteTargetSlot, logic)
-            }
+            wireInlets(islandTracking, mod, logic)
+            wireOutlets(islandTracking, mod, logic, stageGlobalOffset, outToSlot)
 
             if (Debug) println(s"PUSH: $matValue => $matValueStack")
 
@@ -509,6 +498,44 @@ case class PhasedFusingActorMaterializer(
 
     if (Debug) println("--- Finished materialization")
     matValueStack.peekLast().asInstanceOf[Mat]
+  }
+
+  private def wireInlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any): Unit = {
+    val inlets = mod.shape.inlets
+    if (inlets.nonEmpty) {
+      if (Shape.hasOnePort(inlets)) {
+        // optimization, duplication to avoid iterator allocation
+        islandTracking.wireIn(inlets.head, logic)
+      } else {
+        val ins = inlets.iterator
+        while (ins.hasNext) {
+          val in = ins.next()
+          islandTracking.wireIn(in, logic)
+        }
+      }
+    }
+  }
+
+  private def wireOutlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any,
+                          stageGlobalOffset: Int, outToSlot: Array[Int]): Unit = {
+    val outlets = mod.shape.outlets
+    if (outlets.nonEmpty) {
+      if (Shape.hasOnePort(outlets)) {
+        // optimization, duplication to avoid iterator allocation
+        val out = outlets.head
+        val absoluteTargetSlot = stageGlobalOffset + outToSlot(out.id)
+        if (Debug) println(s"  wiring offset: ${outToSlot.mkString("[", ",", "]")}")
+        islandTracking.wireOut(out, absoluteTargetSlot, logic)
+      } else {
+        val outs = outlets.iterator
+        while (outs.hasNext) {
+          val out = outs.next()
+          val absoluteTargetSlot = stageGlobalOffset + outToSlot(out.id)
+          if (Debug) println(s"  wiring offset: ${outToSlot.mkString("[", ",", "]")}")
+          islandTracking.wireOut(out, absoluteTargetSlot, logic)
+        }
+      }
+    }
   }
 
   override def makeLogger(logSource: Class[_]): LoggingAdapter =
