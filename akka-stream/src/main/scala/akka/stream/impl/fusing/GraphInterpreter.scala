@@ -79,8 +79,7 @@ object GraphInterpreter {
     var outOwnerId: Int,
     var outOwner:   GraphStageLogic,
     var inHandler:  InHandler,
-    var outHandler: OutHandler
-  ) {
+    var outHandler: OutHandler) {
     var portState: Int = InReady
     var slot: Any = Empty
 
@@ -225,7 +224,7 @@ final class GraphInterpreter(
 
   // An event queue implemented as a circular buffer
   // FIXME: This calculates the maximum size ever needed, but most assemblies can run on a smaller queue
-  private[this] val eventQueue = Array.ofDim[Connection](1 << (32 - Integer.numberOfLeadingZeros(connections.length - 1)))
+  private[this] val eventQueue = new Array[Connection](1 << (32 - Integer.numberOfLeadingZeros(connections.length - 1)))
   private[this] val mask = eventQueue.length - 1
   private[this] var queueHead: Int = 0
   private[this] var queueTail: Int = 0

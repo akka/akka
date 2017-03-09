@@ -94,7 +94,7 @@ object ActorGraphInterpreter {
 
     private var actor: ActorRef = ActorRef.noSender
     private var upstream: Subscription = _
-    private val inputBuffer = Array.ofDim[AnyRef](size)
+    private val inputBuffer = new Array[AnyRef](size)
     private var inputBufferElements = 0
     private var nextInputElementCursor = 0
     private var upstreamCompleted = false
@@ -130,8 +130,7 @@ object ActorGraphInterpreter {
             ReactiveStreamsCompliance.requireNonNullElement(t)
             actor ! OnNext(shell, t)
           }
-        }
-      )
+        })
     }
 
     private def dequeue(): Any = {
