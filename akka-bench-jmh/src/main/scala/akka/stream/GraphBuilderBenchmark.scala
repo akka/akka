@@ -6,6 +6,7 @@ package akka.stream
 
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
+import org.openjdk.jmh.infra.Blackhole
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -16,22 +17,22 @@ class GraphBuilderBenchmark {
   var complexity = 0
 
   @Benchmark
-  def flow_with_map(): Unit = {
-    MaterializationBenchmark.flowWithMapBuilder(complexity)
+  def flow_with_map(blackhole: Blackhole): Unit = {
+    blackhole.consume(MaterializationBenchmark.flowWithMapBuilder(complexity))
   }
 
   @Benchmark
-  def graph_with_junctions(): Unit = {
-    MaterializationBenchmark.graphWithJunctionsBuilder(complexity)
+  def graph_with_junctions(blackhole: Blackhole): Unit = {
+    blackhole.consume(MaterializationBenchmark.graphWithJunctionsBuilder(complexity))
   }
 
   @Benchmark
-  def graph_with_nested_imports(): Unit = {
-    MaterializationBenchmark.graphWithNestedImportsBuilder(complexity)
+  def graph_with_nested_imports(blackhole: Blackhole): Unit = {
+    blackhole.consume(MaterializationBenchmark.graphWithNestedImportsBuilder(complexity))
   }
 
   @Benchmark
-  def graph_with_imported_flow(): Unit = {
-    MaterializationBenchmark.graphWithImportedFlowBuilder(complexity)
+  def graph_with_imported_flow(blackhole: Blackhole): Unit = {
+    blackhole.consume(MaterializationBenchmark.graphWithImportedFlowBuilder(complexity))
   }
 }
