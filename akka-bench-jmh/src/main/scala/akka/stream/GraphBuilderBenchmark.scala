@@ -19,7 +19,7 @@ class GraphBuilderBenchmark {
   var complexity = 0
 
   @Benchmark
-  def flow_with_map(): RunnableGraph[NotUsed] = 
+  def flow_with_map(): RunnableGraph[NotUsed] =
     MaterializationBenchmark.flowWithMapBuilder(complexity)
 
   @Benchmark
@@ -27,7 +27,7 @@ class GraphBuilderBenchmark {
     MaterializationBenchmark.graphWithJunctionsBuilder(complexity)
 
   @Benchmark
-  def graph_with_nested_imports(): RunnableGraph[NotUsed] = 
+  def graph_with_nested_imports(): RunnableGraph[NotUsed] =
     MaterializationBenchmark.graphWithNestedImportsBuilder(complexity)
 
   @Benchmark
