@@ -356,23 +356,35 @@ case class PhasedFusingActorMaterializer(
 
   private[this] def createFlowName(): String = flowNames.next()
 
-  private val defaultInitialAttributes = Attributes(
-    Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
-      ActorAttributes.Dispatcher(settings.dispatcher) ::
-      ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
-      Nil)
+  private val defaultInitialAttributes = {
+    val a = Attributes(
+      Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
+        ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
+        Nil)
+    if (settings.dispatcher == Deploy.NoDispatcherGiven) a
+    else a and ActorAttributes.dispatcher(settings.dispatcher)
+  }
 
   override def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings = {
     import ActorAttributes._
     import Attributes._
-    opAttr.attributeList.foldLeft(settings) { (s, attr) ⇒
-      attr match {
-        case InputBuffer(initial, max)    ⇒ s.withInputBuffer(initial, max)
-        case Dispatcher(dispatcher)       ⇒ s.withDispatcher(dispatcher)
-        case SupervisionStrategy(decider) ⇒ s.withSupervisionStrategy(decider)
-        case _                            ⇒ s
+    @tailrec def applyAttributes(attrs: List[Attribute], s: ActorMaterializerSettings,
+                                 inputBufferDone: Boolean, dispatcherDone: Boolean, supervisorDone: Boolean): ActorMaterializerSettings = {
+      attrs match {
+        case InputBuffer(initial, max) :: tail if !inputBufferDone ⇒
+          applyAttributes(tail, s.withInputBuffer(initial, max), inputBufferDone = true, dispatcherDone, supervisorDone)
+        case Dispatcher(dispatcher) :: tail if !dispatcherDone ⇒
+          applyAttributes(tail, s.withDispatcher(dispatcher), inputBufferDone, dispatcherDone = true, supervisorDone)
+        case SupervisionStrategy(decider) :: tail if !supervisorDone ⇒
+          applyAttributes(tail, s.withSupervisionStrategy(decider), inputBufferDone, dispatcherDone, supervisorDone = true)
+        case _ if inputBufferDone || dispatcherDone || supervisorDone ⇒ s
+        case _ :: tail ⇒
+          applyAttributes(tail, s, inputBufferDone, dispatcherDone, supervisorDone)
+        case Nil ⇒
+          s
       }
     }
+    applyAttributes(opAttr.attributeList, settings, false, false, false)
   }
 
   override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher match {

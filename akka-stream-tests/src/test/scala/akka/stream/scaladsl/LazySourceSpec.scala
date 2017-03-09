@@ -102,8 +102,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
           }
           setHandler(out, this)
         }
-      }
-    )
+      })
 
     "propagate attributes to inner streams" in assertAllStagesStopped {
       val f = Source.single(attributesSource.addAttributes(Attributes.name("inner")))
@@ -114,7 +113,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val attributes = f.futureValue.attributeList
       attributes should contain(Attributes.Name("inner"))
       attributes should contain(Attributes.Name("outer"))
-      attributes.indexOf(Attributes.Name("outer")) < attributes.indexOf(Attributes.Name("inner")) should be(true)
+      attributes.indexOf(Attributes.Name("inner")) < attributes.indexOf(Attributes.Name("outer")) should be(true)
     }
   }
 
