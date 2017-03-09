@@ -252,7 +252,7 @@ case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Se
  */
 final case class SourceShape[+T](out: Outlet[T @uncheckedVariance]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = EmptyImmutableSeq
-  override val outlets: immutable.Seq[Outlet[_]] = List(out)
+  override val outlets: immutable.Seq[Outlet[_]] = out :: Nil
 
   override def deepCopy(): SourceShape[T] = SourceShape(out.carbonCopy())
 }
@@ -268,8 +268,8 @@ object SourceShape {
  * course).
  */
 final case class FlowShape[-I, +O](in: Inlet[I @uncheckedVariance], out: Outlet[O @uncheckedVariance]) extends Shape {
-  override val inlets: immutable.Seq[Inlet[_]] = List(in)
-  override val outlets: immutable.Seq[Outlet[_]] = List(out)
+  override val inlets: immutable.Seq[Inlet[_]] = in :: Nil
+  override val outlets: immutable.Seq[Outlet[_]] = out :: Nil
 
   override def deepCopy(): FlowShape[I, O] = FlowShape(in.carbonCopy(), out.carbonCopy())
 }
@@ -283,7 +283,7 @@ object FlowShape {
  * A Sink [[Shape]] has exactly one input and no outputs, it models a data sink.
  */
 final case class SinkShape[-T](in: Inlet[T @uncheckedVariance]) extends Shape {
-  override val inlets: immutable.Seq[Inlet[_]] = List(in)
+  override val inlets: immutable.Seq[Inlet[_]] = in :: Nil
   override val outlets: immutable.Seq[Outlet[_]] = EmptyImmutableSeq
 
   override def deepCopy(): SinkShape[T] = SinkShape(in.carbonCopy())
@@ -313,8 +313,8 @@ final case class BidiShape[-In1, +Out1, -In2, +Out2](
   in2:  Inlet[In2 @uncheckedVariance],
   out2: Outlet[Out2 @uncheckedVariance]) extends Shape {
   //#implementation-details-elided
-  override val inlets: immutable.Seq[Inlet[_]] = List(in1, in2)
-  override val outlets: immutable.Seq[Outlet[_]] = List(out1, out2)
+  override val inlets: immutable.Seq[Inlet[_]] = in1 :: in2 :: Nil
+  override val outlets: immutable.Seq[Outlet[_]] = out1 :: out2 :: Nil
 
   /**
    * Java API for creating from a pair of unidirectional flows.
