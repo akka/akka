@@ -328,10 +328,8 @@ object Source {
    */
   def empty[T]: Source[T, NotUsed] = _empty
   private[this] val _empty: Source[Nothing, NotUsed] =
-    fromGraph(new PublisherSource[Nothing](
-      EmptyPublisher,
-      DefaultAttributes.emptySource,
-      shape("EmptySource")))
+    Source.fromGraph(EmptySource)
+
   /**
    * Create a `Source` which materializes a [[scala.concurrent.Promise]] which controls what element
    * will be emitted by the Source.

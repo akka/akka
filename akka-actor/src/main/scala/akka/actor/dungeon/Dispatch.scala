@@ -5,13 +5,14 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import akka.dispatch.{ Mailbox, Envelope }
+import akka.dispatch.{ Envelope, Mailbox }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
 import akka.actor._
 import akka.serialization.SerializationExtension
-import scala.util.control.NonFatal
+
+import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.control.Exception.Catcher
 import akka.dispatch.MailboxType
 import akka.dispatch.ProducesMessageQueue
@@ -106,7 +107,11 @@ private[akka] trait Dispatch { this: ActorCell ⇒
       system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "interrupted during message send"))
       Thread.currentThread.interrupt()
     case NonFatal(e) ⇒
-      system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+      val message = e match {
+        case n: NoStackTrace ⇒ "swallowing exception during message send: " + n.getMessage
+        case _               ⇒ "swallowing exception during message send" // stack trace includes message
+      }
+      system.eventStream.publish(Error(e, self.path.toString, clazz(actor), message))
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅

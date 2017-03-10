@@ -45,7 +45,9 @@ object AskPattern {
   }
 
   private class PromiseRef[U](target: ActorRef[_], untyped: InternalActorRef, timeout: Timeout) {
-    val (ref: ActorRef[U], future: Future[U], promiseRef: PromiseActorRef) =
+
+    // Note: _promiseRef mustn't have a type pattern, since it can be null
+    private[this] val (_ref: ActorRef[U], _future: Future[U], _promiseRef) =
       if (untyped.isTerminated)
         (
           adapter.ActorRefAdapter[U](untyped.provider.deadLetters),
@@ -59,6 +61,10 @@ object AskPattern {
         val b = adapter.ActorRefAdapter[U](a)
         (b, a.result.future.asInstanceOf[Future[U]], a)
       }
+
+    val ref: ActorRef[U] = _ref
+    val future: Future[U] = _future
+    val promiseRef: PromiseActorRef = _promiseRef
   }
 
   private def askUntyped[T, U](target: ActorRef[T], untyped: InternalActorRef, timeout: Timeout, f: ActorRef[U] ⇒ T): Future[U] = {
