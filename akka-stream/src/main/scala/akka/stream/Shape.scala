@@ -138,6 +138,8 @@ final class Outlet[T] private (val s: String) extends OutPort {
     else s" mapped to $mappedTo")
 }
 
+abstract class LinearShape extends Shape
+
 /**
  * A Shape describes the inlets and outlets of a [[Graph]]. In keeping with the
  * philosophy that a Graph is a freely reusable blueprint, everything that
@@ -250,7 +252,7 @@ case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Se
  * A Source [[Shape]] has exactly one output and no inputs, it models a source
  * of data.
  */
-final case class SourceShape[+T](out: Outlet[T @uncheckedVariance]) extends Shape {
+final case class SourceShape[+T](out: Outlet[T @uncheckedVariance]) extends LinearShape {
   override val inlets: immutable.Seq[Inlet[_]] = EmptyImmutableSeq
   override val outlets: immutable.Seq[Outlet[_]] = List(out)
 
@@ -267,7 +269,7 @@ object SourceShape {
  * outside like a pipe (but it can be a complex topology of streams within of
  * course).
  */
-final case class FlowShape[-I, +O](in: Inlet[I @uncheckedVariance], out: Outlet[O @uncheckedVariance]) extends Shape {
+final case class FlowShape[-I, +O](in: Inlet[I @uncheckedVariance], out: Outlet[O @uncheckedVariance]) extends LinearShape {
   override val inlets: immutable.Seq[Inlet[_]] = List(in)
   override val outlets: immutable.Seq[Outlet[_]] = List(out)
 
@@ -282,7 +284,7 @@ object FlowShape {
 /**
  * A Sink [[Shape]] has exactly one input and no outputs, it models a data sink.
  */
-final case class SinkShape[-T](in: Inlet[T @uncheckedVariance]) extends Shape {
+final case class SinkShape[-T](in: Inlet[T @uncheckedVariance]) extends LinearShape {
   override val inlets: immutable.Seq[Inlet[_]] = List(in)
   override val outlets: immutable.Seq[Outlet[_]] = EmptyImmutableSeq
 

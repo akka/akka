@@ -6,6 +6,7 @@ package akka.stream.impl
 
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
+import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.scaladsl.Keep
 import akka.util.OptionVal
 import scala.language.existentials
@@ -494,6 +495,25 @@ object LinearTraversalBuilder {
       outPortOpt,
       inOffset = 0,
       if (inPortOpt.isDefined) 1 else 0,
+      traversalSoFar = MaterializeAtomic(module, wiring),
+      pendingBuilder = None,
+      attributes)
+  }
+
+  /**
+   * Create a traversal builder specialized for linear graphs. This is designed to be much faster and lightweight
+   * than its generic counterpart. It can be freely mixed with the generic builder in both ways.
+   */
+  def fromKnownLinearModule(module: GraphStageModule[LinearShape, Any], in: Option[Inlet[_]], out: Option[Outlet[_]], attributes: Attributes): LinearTraversalBuilder = {
+    TraversalBuilder.initShape(module.shape)
+
+    val wiring = if (out.isDefined) wireBackward else noWire
+
+    LinearTraversalBuilder(
+      in,
+      out,
+      inOffset = 0,
+      if (in.isDefined) 1 else 0,
       traversalSoFar = MaterializeAtomic(module, wiring),
       pendingBuilder = OptionVal.None,
       attributes)
