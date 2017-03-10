@@ -52,8 +52,7 @@ public class ConsistentHashingRouterDocTest extends AbstractJavaTest {
         })
         .match(Get.class, get -> {
           Object value = cache.get(get.key);
-          getSender().tell(value == null ? NOT_FOUND : value,
-            getContext().getSelf());
+          getSender().tell(value == null ? NOT_FOUND : value, getSelf());
         })
         .match(Evict.class, evict -> {
           cache.remove(evict.key);
