@@ -273,6 +273,69 @@ object Sink {
     new Sink(scaladsl.Sink.lazyInit[T, M](
       t ⇒ sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
       () ⇒ fallback.create()).mapMaterializedValue(_.toJava))
+
+  /**
+   * Start a new `Sink` from some resource which can be opened, written and closed.
+   * Interaction with resource happens in a blocking way.
+   *
+   * Example:
+   * {{{
+   * Sink.foldResource(
+   *   () -> new BufferedWriter(new FileWriter("...")),
+   *   (writer, elem) -> writer.write(elem),
+   *   writer -> writer.close())
+   * }}}
+   *
+   * You can use the supervision strategy to handle exceptions for `write` function. All exceptions thrown by `create`
+   * or `close` will fail the stream.
+   *
+   * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
+   * that stream will be terminated on error in `write` function by default.
+   *
+   * You can configure the default dispatcher for this Sink by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Sink by using [[ActorAttributes]].
+   *
+   * @param open - function that is called on stream start and creates/opens resource.
+   * @param write - function that writes data to opened resource. It is called each time
+   *             an element is pulled. Stream calls close and completes when upstream is completed.
+   * @param close - function that closes resource
+   */
+  def foldResource[T, S](
+    open:  function.Creator[S],
+    write: function.Procedure2[S, T],
+    close: function.Procedure[S]): javadsl.Sink[T, CompletionStage[Done]] =
+    new Sink(scaladsl.Sink.foldResource[T, S](open.create, (s: S, t: T) ⇒ write.apply(s, t), close.apply)
+      .mapMaterializedValue(_.toJava))
+
+  /**
+   * Start a new `Sink` from some resource which can be opened, written and closed.
+   * It's similar to `foldResource` but takes functions that return `CompletionStage` instead of plain values.
+   *
+   * You can use the supervision strategy to handle exceptions for `write` function or failures of produced `Futures`.
+   * All exceptions thrown by `create` or `close` as well as fails of returned futures will fail the stream.
+   *
+   * `Restart` supervision strategy will close and create resource. Default strategy is `Stop` which means
+   * that stream will be terminated on error in `write` function (or future) by default.
+   *
+   * You can configure the default dispatcher for this Sink by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Sink by using [[ActorAttributes]].
+   *
+   * @param open - function that is called on stream start and creates/opens resource.
+   * @param write - function that reads data from opened resource. It is called each time
+   *             an element is pulled. Stream calls close and completes when upstream is completed.
+   * @param close - function that closes resource
+   */
+  def foldResourceAsync[T, S](
+    open:  function.Creator[CompletionStage[S]],
+    write: function.Function2[S, T, CompletionStage[Void]],
+    close: function.Function[S, CompletionStage[Void]]): javadsl.Sink[T, CompletionStage[Done]] =
+    new Sink(
+      scaladsl.Sink.foldResourceAsync[T, S](
+        () ⇒ open.create().toScala,
+        (s: S, t: T) ⇒ write.apply(s, t).toScala.map(_ ⇒ ())(akka.dispatch.ExecutionContexts.sameThreadExecutionContext),
+        (s: S) ⇒ close.apply(s).toScala.map(_ ⇒ ())(akka.dispatch.ExecutionContexts.sameThreadExecutionContext))
+        .mapMaterializedValue(_.toJava)
+    )
 }
 
 /**

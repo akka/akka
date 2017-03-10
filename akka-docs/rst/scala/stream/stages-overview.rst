@@ -413,7 +413,22 @@ fromSubscriber
 ^^^^^^^^^^^^^^
 Integration with Reactive Streams, wraps a ``org.reactivestreams.Subscriber`` as a sink
 
+foldResource
+^^^^^^^^^^^^
+Wrap any resource that can be opened, written for next element (in a blocking way) and closed using three distinct functions into a sink.
 
+**backpressures** when the previous write operation has not yet completed
+
+**completes** when upstream completes
+
+foldResourceAsync
+^^^^^^^^^^^^^^^^^
+Wrap any resource that can be opened, written for next element (in a blocking way) and closed using three distinct functions into a source.
+Functions return ``Future`` to achieve asynchronous processing
+
+**backpressures** when the previous write operation has not yet completed
+
+**completes** when upstream completes
 
 
 Additional Sink and Source converters

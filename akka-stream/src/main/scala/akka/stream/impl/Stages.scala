@@ -106,6 +106,8 @@ object Stages {
     val fileSource = name("fileSource") and IODispatcher
     val unfoldResourceSource = name("unfoldResourceSource") and IODispatcher
     val unfoldResourceSourceAsync = name("unfoldResourceSourceAsync") and IODispatcher
+    val foldResourceSink = name("foldResourceSink") and IODispatcher
+    val foldResourceSinkAsync = name("foldResourceSinkAsync") and IODispatcher
     val asJavaStream = name("asJavaStream") and IODispatcher
     val javaCollectorParallelUnordered = name("javaCollectorParallelUnordered")
     val javaCollector = name("javaCollector")
