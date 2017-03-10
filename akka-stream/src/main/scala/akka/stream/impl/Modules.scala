@@ -12,6 +12,7 @@ import org.reactivestreams._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Promise
 import akka.event.Logging
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
