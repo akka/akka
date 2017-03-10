@@ -84,7 +84,7 @@ class MaterializationBenchmark {
   var graphWithNestedImports: RunnableGraph[NotUsed] = _
   var graphWithImportedFlow: RunnableGraph[NotUsed] = _
 
-  @Param(Array("1", "10"))
+  @Param(Array("1", "10", "100", "1000"))
   var complexity = 0
 
   @Setup

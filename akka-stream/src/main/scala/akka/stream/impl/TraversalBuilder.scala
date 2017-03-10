@@ -480,8 +480,8 @@ object LinearTraversalBuilder {
    * than its generic counterpart. It can be freely mixed with the generic builder in both ways.
    */
   def fromModule(module: AtomicModule[Shape, Any], attributes: Attributes): LinearTraversalBuilder = {
-    require(module.shape.inlets.size <= 1, "Modules with more than one input port cannot be linear.")
-    require(module.shape.outlets.size <= 1, "Modules with more than one input port cannot be linear.")
+    if (module.shape.inlets.size > 1) throw new IllegalStateException("Modules with more than one input port cannot be linear.")
+    if (module.shape.outlets.size > 1) throw new IllegalStateException("Modules with more than one input port cannot be linear.")
     TraversalBuilder.initShape(module.shape)
 
     val inPortOpt = OptionVal(module.shape.inlets.headOption.orNull)
@@ -708,8 +708,8 @@ final case class LinearTraversalBuilder(
         traversalSoFar = toAppend.traversalSoFar.concat(LinearTraversalBuilder.addMatCompose(traversal, matCompose)))
     } else {
       if (outPort.isDefined) {
-        require(toAppend.inPort.isDefined, "Appended linear module must have an unwired input port " +
-          "because there is a dangling output.")
+        if (toAppend.inPort.isEmpty)
+          throw new IllegalArgumentException("Appended linear module must have an unwired input port because there is a dangling output.")
 
         /*
          * To understand how append work, first the general structure of the LinearTraversalBuilder must be

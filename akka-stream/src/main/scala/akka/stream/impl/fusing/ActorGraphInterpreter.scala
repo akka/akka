@@ -89,8 +89,8 @@ object ActorGraphInterpreter {
       override def logic: GraphStageLogic = BatchingActorInputBoundary.this
     }
 
-    require(size > 0, "buffer size cannot be zero")
-    require((size & (size - 1)) == 0, "buffer size must be a power of two")
+    if (size <= 0) throw new IllegalArgumentException("buffer size cannot be zero")
+    if ((size & (size - 1)) != 0) throw new IllegalArgumentException("buffer size must be a power of two")
 
     private var actor: ActorRef = ActorRef.noSender
     private var upstream: Subscription = _
@@ -136,7 +136,7 @@ object ActorGraphInterpreter {
 
     private def dequeue(): Any = {
       val elem = inputBuffer(nextInputElementCursor)
-      require(elem ne null, "Internal queue must never contain a null")
+      if (elem eq null) throw new IllegalArgumentException("Internal queue must never contain a null")
       inputBuffer(nextInputElementCursor) = null
 
       batchRemaining -= 1
@@ -196,7 +196,7 @@ object ActorGraphInterpreter {
       }
 
     def onSubscribe(subscription: Subscription): Unit = {
-      require(subscription != null, "Subscription cannot be null")
+      ReactiveStreamsCompliance.requireNonNullSubscription(subscription)
       if (upstreamCompleted) {
         tryCancel(subscription)
       } else if (downstreamCanceled) {
