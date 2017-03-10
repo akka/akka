@@ -119,7 +119,7 @@ seed nodes in the existing cluster.
 
 If you don't configure seed nodes you need to join the cluster programmatically or manually.
 
-Manual joining can be performed by using ref:`cluster_jmx_scala` or :ref:`cluster_http_scala`.
+Manual joining can be performed by using :ref:`cluster_jmx_scala` or :ref:`cluster_http_scala`.
 Joining programmatically can be performed with ``Cluster(system).join``. Unsuccessful join attempts are
 automatically retried after the time period defined in configuration property ``retry-unsuccessful-join-after``.
 Retries can be disabled by setting the property to ``off``.
