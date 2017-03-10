@@ -9,7 +9,9 @@ import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.actor.UntypedActor;
+import akka.actor.AbstractActor;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
@@ -20,11 +22,13 @@ import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
+import akka.japi.pf.ReceiveBuilder;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.util.Timeout;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -83,11 +87,11 @@ public class HttpServerActorInteractionExample extends AllDirectives {
 
   static class Bid {
     final String userId;
-    final int bid;
+    final int offer;
 
-    Bid(String userId, int bid) {
+    Bid(String userId, int offer) {
       this.userId = userId;
-      this.bid = bid;
+      this.offer = offer;
     }
   }
 
@@ -96,24 +100,36 @@ public class HttpServerActorInteractionExample extends AllDirectives {
   }
 
   static class Bids {
-    final List<Bid> bids;
+    public final List<Bid> bids;
 
     Bids(List<Bid> bids) {
       this.bids = bids;
     }
   }
 
-  //#actor-interaction
-  static class Auction extends UntypedActor {
+  static class Auction extends AbstractActor {
+
+    private final LoggingAdapter log = Logging.getLogger(context().system(), this);
+
+    List<HttpServerActorInteractionExample.Bid> bids = new ArrayList<>();
+
     static Props props() {
       return Props.create(Auction.class);
     }
 
-    @Override
-    public void onReceive(Object message) throws Throwable {
-
+    public Auction() {
+      receive(ReceiveBuilder.
+        match(HttpServerActorInteractionExample.Bid.class, bid -> {
+          bids.add(bid);
+          log.info("Bid complete: {}, {}", bid.userId, bid.offer);
+        }).
+        match(HttpServerActorInteractionExample.GetBids.class, m -> {
+          sender().tell(new HttpServerActorInteractionExample.Bids(bids), self());
+        }).
+        matchAny(o -> log.info("Invalid message")).
+        build()
+      );
     }
   }
-  //#actor-interaction
 }
 //#actor-interaction

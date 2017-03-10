@@ -6,7 +6,6 @@ package docs.http.scaladsl
 
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.StatusCodes
-import akka.stream.scaladsl.Sink
 import akka.testkit.TestActors
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
@@ -511,7 +510,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
   "interact with an actor" in compileOnlySpec {
     //#actor-interaction
-    import akka.actor.{Actor, ActorSystem, Props}
+    import akka.actor.{Actor, ActorSystem, Props, ActorLogging}
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.StatusCodes
     import akka.http.scaladsl.server.Directives._
@@ -525,14 +524,18 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
     object WebServer {
 
-      case class Bid(userId: String, bid: Int)
+      case class Bid(userId: String, offer: Int)
       case object GetBids
       case class Bids(bids: List[Bid])
 
-      class Auction extends Actor {
+      class Auction extends Actor with ActorLogging {
+        var bids = List.empty[Bid]
         def receive = {
-          case Bid(userId, bid) => println(s"Bid complete: $userId, $bid")
-          case _ => println("Invalid message")
+          case bid @ Bid(userId, offer) =>
+            bids = bids :+ bid
+            log.info(s"Bid complete: $userId, $offer")
+          case GetBids => sender() ! Bids(bids)
+          case _ => log.info("Invalid message")
         }
       }
 
