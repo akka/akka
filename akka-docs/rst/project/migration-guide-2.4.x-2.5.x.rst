@@ -298,6 +298,14 @@ directly or via ``filtered`` or ``getAttributeList`` you need to take the new or
 
 .. _Mastering GraphStages, part I: http://blog.akka.io/streams/2016/07/30/mastering-graph-stage-part-1
 
+Dispatcher attribute
+--------------------
+
+The ``ActorAttributes.dispatcher`` attribute is adding an async boundary in 2.5, since that is the typical desired behavior.
+In 2.4 an explicit `async` marker (``AsyncBoundary`` attribute) had to be added. For example, this means that ``Source`` that
+defined ``blocking-io-dispatcher`` as default followed by a ``map`` will now be separated by an async boundary, which was not
+the case in 2.4.
+
 Remote
 ======
 
