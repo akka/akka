@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
 import java.util.concurrent.CountDownLatch
@@ -392,3 +393,4 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
   }
 }
+

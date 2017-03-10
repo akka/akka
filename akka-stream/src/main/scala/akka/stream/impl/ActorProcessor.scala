@@ -47,11 +47,12 @@ private[akka] class ActorProcessor[I, O](impl: ActorRef) extends ActorPublisher[
  * INTERNAL API
  */
 private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) extends DefaultInputTransferStates {
-  require(size > 0, "buffer size cannot be zero")
-  require((size & (size - 1)) == 0, "buffer size must be a power of two")
+  if (size < 1) throw new IllegalArgumentException(s"buffer size must be positive (was: $size)")
+  if ((size & (size - 1)) != 0) throw new IllegalArgumentException(s"buffer size must be a power of two (was: $size)")
+
   // TODO: buffer and batch sizing heuristics
   private var upstream: Subscription = _
-  private val inputBuffer = Array.ofDim[AnyRef](size)
+  private val inputBuffer = new Array[AnyRef](size)
   private var inputBufferElements = 0
   private var nextInputElementCursor = 0
   private var upstreamCompleted = false
@@ -114,7 +115,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
   }
 
   protected def onSubscribe(subscription: Subscription): Unit = {
-    require(subscription != null)
+    ReactiveStreamsCompliance.requireNonNullSubscription(subscription)
     if (upstreamCompleted) subscription.cancel()
     else {
       upstream = subscription

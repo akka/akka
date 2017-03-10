@@ -3,7 +3,8 @@
  */
 package akka.stream
 
-import akka.stream.impl.StreamLayout
+import akka.stream.impl.{ GraphStageTag, IslandTag, TraversalBuilder }
+
 import scala.annotation.unchecked.uncheckedVariance
 
 trait Graph[+S <: Shape, +M] {
@@ -20,7 +21,7 @@ trait Graph[+S <: Shape, +M] {
    *
    * Every materializable element must be backed by a stream layout module
    */
-  private[stream] def module: StreamLayout.Module
+  private[stream] def traversalBuilder: TraversalBuilder
 
   def withAttributes(attr: Attributes): Graph[S, M]
 
@@ -31,5 +32,5 @@ trait Graph[+S <: Shape, +M] {
    */
   def async: Graph[S, M] = addAttributes(Attributes.asyncBoundary)
 
-  def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(module.attributes and attr)
+  def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
 }

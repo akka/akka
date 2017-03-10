@@ -1,10 +1,10 @@
 package akka.stream
 
 import akka.actor.{ ActorSystem, Props }
-import akka.stream.impl.{ StreamSupervisor, ActorMaterializerImpl }
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.StreamSpec
-import akka.testkit.{ TestActor, ImplicitSender }
+import akka.testkit.{ ImplicitSender, TestActor }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -39,7 +39,7 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
     }
 
     "shut down the supervisor actor it encapsulates" in {
-      val m = ActorMaterializer.create(system).asInstanceOf[ActorMaterializerImpl]
+      val m = ActorMaterializer.create(system).asInstanceOf[PhasedFusingActorMaterializer]
 
       Source.maybe[Any].to(Sink.ignore).run()(m)
       m.supervisor ! StreamSupervisor.GetChildren

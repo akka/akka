@@ -643,29 +643,6 @@ final class SubSink[T](name: String, externalCallback: ActorSubscriberMessage �
   override def toString: String = name
 }
 
-object SubSource {
-  /**
-   * INTERNAL API
-   *
-   * HERE ACTUALLY ARE DRAGONS, YOU HAVE BEEN WARNED!
-   *
-   * FIXME #19240
-   */
-  private[akka] def kill[T, M](s: Source[T, M]): Unit = {
-    s.module match {
-      case GraphStageModule(_, _, stage: SubSource[_]) ⇒
-        stage.externalCallback.invoke(SubSink.Cancel)
-      case pub: PublisherSource[_] ⇒
-        pub.create(null)._1.subscribe(new CancellingSubscriber)
-      case m ⇒
-        GraphInterpreter.currentInterpreterOrNull match {
-          case null ⇒ throw new UnsupportedOperationException(s"cannot drop Source of type ${m.getClass.getName}")
-          case intp ⇒ s.runWith(Sink.ignore)(intp.subFusingMaterializer)
-        }
-    }
-  }
-}
-
 /**
  * INTERNAL API
  */

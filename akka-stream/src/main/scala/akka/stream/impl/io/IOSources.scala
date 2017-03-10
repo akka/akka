@@ -9,7 +9,6 @@ import java.nio.file.Path
 import akka.stream._
 import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.IOResult
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.impl.{ ErrorPublisher, SourceModule }
 import akka.util.ByteString
@@ -40,7 +39,7 @@ private[akka] final class FileSource(f: Path, chunkSize: Int, val attributes: At
   override protected def newInstance(shape: SourceShape[ByteString]): SourceModule[ByteString, Future[IOResult]] =
     new FileSource(f, chunkSize, attributes, shape)
 
-  override def withAttributes(attr: Attributes): Module =
+  override def withAttributes(attr: Attributes): SourceModule[ByteString, Future[IOResult]] =
     new FileSource(f, chunkSize, attr, amendShape(attr))
 
   override protected def label: String = s"FileSource($f, $chunkSize)"
@@ -75,6 +74,6 @@ private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStrea
   override protected def newInstance(shape: SourceShape[ByteString]): SourceModule[ByteString, Future[IOResult]] =
     new InputStreamSource(createInputStream, chunkSize, attributes, shape)
 
-  override def withAttributes(attr: Attributes): Module =
+  override def withAttributes(attr: Attributes): SourceModule[ByteString, Future[IOResult]] =
     new InputStreamSource(createInputStream, chunkSize, attr, amendShape(attr))
 }

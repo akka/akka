@@ -35,14 +35,14 @@ object FanOut {
 
     private val outputs = Array.tabulate(outputCount)(new FanoutOutputs(_, impl, pump))
 
-    private val marked = Array.ofDim[Boolean](outputCount)
+    private val marked = new Array[Boolean](outputCount)
     private var markedCount = 0
-    private val pending = Array.ofDim[Boolean](outputCount)
+    private val pending = new Array[Boolean](outputCount)
     private var markedPending = 0
-    private val cancelled = Array.ofDim[Boolean](outputCount)
+    private val cancelled = new Array[Boolean](outputCount)
     private var markedCancelled = 0
-    private val completed = Array.ofDim[Boolean](outputCount)
-    private val errored = Array.ofDim[Boolean](outputCount)
+    private val completed = new Array[Boolean](outputCount)
+    private val errored = new Array[Boolean](outputCount)
 
     override def toString: String =
       s"""|OutputBunch
