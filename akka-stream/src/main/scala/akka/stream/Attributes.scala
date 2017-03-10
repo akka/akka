@@ -16,6 +16,7 @@ import java.net.URLEncoder
 import akka.stream.impl.TraversalBuilder
 
 import scala.compat.java8.OptionConverters._
+import akka.util.ByteString
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -175,13 +176,11 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
       if (i.hasNext)
         i.next() match {
           case Name(n) ⇒
-            // FIXME this URLEncode is a bug IMO, if that format is important then that is how it should be store in Name
-            val nn = URLEncoder.encode(n, "UTF-8")
-            if (buf ne null) concatNames(i, null, buf.append('-').append(nn))
+            if (buf ne null) concatNames(i, null, buf.append('-').append(n))
             else if (first ne null) {
-              val b = new java.lang.StringBuilder((first.length() + nn.length()) * 2)
-              concatNames(i, null, b.append(first).append('-').append(nn))
-            } else concatNames(i, nn, null)
+              val b = new java.lang.StringBuilder((first.length + n.length) * 2)
+              concatNames(i, null, b.append(first).append('-').append(n))
+            } else concatNames(i, n, null)
           case _ ⇒ concatNames(i, first, buf)
         }
       else if (buf eq null) first
@@ -233,10 +232,14 @@ object Attributes {
   /**
    * Specifies the name of the operation.
    * If the name is null or empty the name is ignored, i.e. [[#none]] is returned.
+   *
+   * When using this method the name is encoded with URLEncoder with UTF-8 because
+   * the name is sometimes used as part of actor name. If that is not desired
+   * the name can be added in it's raw format using `.addAttributes(Attributes(Name(name)))`.
    */
   def name(name: String): Attributes =
     if (name == null || name.isEmpty) none
-    else Attributes(Name(name))
+    else Attributes(Name(URLEncoder.encode(name, ByteString.UTF_8)))
 
   /**
    * Specifies the initial and maximum size of the input buffer.
