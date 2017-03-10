@@ -273,7 +273,7 @@ object GraphStages {
         setHandler(out, this)
       }
 
-    override def toString: String = s"SingleSource($elem)"
+    override def toString: String = "SingleSource"
   }
 
   final class FutureSource[T](val future: Future[T]) extends GraphStage[SourceShape[T]] {

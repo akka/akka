@@ -35,7 +35,7 @@ private[akka] class InputStreamPublisher(is: InputStream, completionPromise: Pro
 
   import InputStreamPublisher._
 
-  val arr = Array.ofDim[Byte](chunkSize)
+  val arr = new Array[Byte](chunkSize)
   var readBytesTotal = 0L
 
   def receive = {

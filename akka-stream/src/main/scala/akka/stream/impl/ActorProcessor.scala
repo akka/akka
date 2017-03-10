@@ -52,7 +52,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
 
   // TODO: buffer and batch sizing heuristics
   private var upstream: Subscription = _
-  private val inputBuffer = Array.ofDim[AnyRef](size)
+  private val inputBuffer = new Array[AnyRef](size)
   private var inputBufferElements = 0
   private var nextInputElementCursor = 0
   private var upstreamCompleted = false

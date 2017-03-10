@@ -285,6 +285,17 @@ stages and adds additional protocol and type-safety. You can learn all about it 
 You should also read the blog post series on the official team blog, starting with `Mastering GraphStages, part I`_,
 which explains using and implementing GraphStages in more practical terms than the reference documentation.
 
+Order of Attributes List
+------------------------
+
+Imporant performance improvement could be achieved by reverting the order of the ``attributesList`` in ``Attributes``.
+
+The ``attributeList`` is ordered with the most specific attribute first, least specific last.
+Note that the order was the opposite in Akka 2.4.x (but it was not really documented).
+
+The semantics of the convenience methods, such as ``get`` and ``getFirst`` are the same, but if you use the ``attributesList``
+directly or via ``filtered`` or ``getAttributeList`` you need to take the new order into consideration.
+
 .. _Mastering GraphStages, part I: http://blog.akka.io/streams/2016/07/30/mastering-graph-stage-part-1
 
 Remote

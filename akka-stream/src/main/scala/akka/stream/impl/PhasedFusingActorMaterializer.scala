@@ -28,6 +28,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.annotation.tailrec
 import akka.stream.impl.fusing.GraphInterpreter.DownstreamBoundaryStageLogic
 import akka.stream.impl.fusing.GraphInterpreter.UpstreamBoundaryStageLogic
+import akka.util.OptionVal
 
 object PhasedFusingActorMaterializer {
 
@@ -356,23 +357,35 @@ case class PhasedFusingActorMaterializer(
 
   private[this] def createFlowName(): String = flowNames.next()
 
-  private val defaultInitialAttributes = Attributes(
-    Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
-      ActorAttributes.Dispatcher(settings.dispatcher) ::
-      ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
-      Nil)
+  private val defaultInitialAttributes = {
+    val a = Attributes(
+      Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
+        ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
+        Nil)
+    if (settings.dispatcher == Deploy.NoDispatcherGiven) a
+    else a and ActorAttributes.dispatcher(settings.dispatcher)
+  }
 
   override def effectiveSettings(opAttr: Attributes): ActorMaterializerSettings = {
     import ActorAttributes._
     import Attributes._
-    opAttr.attributeList.foldLeft(settings) { (s, attr) ⇒
-      attr match {
-        case InputBuffer(initial, max)    ⇒ s.withInputBuffer(initial, max)
-        case Dispatcher(dispatcher)       ⇒ s.withDispatcher(dispatcher)
-        case SupervisionStrategy(decider) ⇒ s.withSupervisionStrategy(decider)
-        case _                            ⇒ s
+    @tailrec def applyAttributes(attrs: List[Attribute], s: ActorMaterializerSettings,
+                                 inputBufferDone: Boolean, dispatcherDone: Boolean, supervisorDone: Boolean): ActorMaterializerSettings = {
+      attrs match {
+        case InputBuffer(initial, max) :: tail if !inputBufferDone ⇒
+          applyAttributes(tail, s.withInputBuffer(initial, max), inputBufferDone = true, dispatcherDone, supervisorDone)
+        case Dispatcher(dispatcher) :: tail if !dispatcherDone ⇒
+          applyAttributes(tail, s.withDispatcher(dispatcher), inputBufferDone, dispatcherDone = true, supervisorDone)
+        case SupervisionStrategy(decider) :: tail if !supervisorDone ⇒
+          applyAttributes(tail, s.withSupervisionStrategy(decider), inputBufferDone, dispatcherDone, supervisorDone = true)
+        case _ if inputBufferDone || dispatcherDone || supervisorDone ⇒ s
+        case _ :: tail ⇒
+          applyAttributes(tail, s, inputBufferDone, dispatcherDone, supervisorDone)
+        case Nil ⇒
+          s
       }
     }
+    applyAttributes(opAttr.attributeList, settings, false, false, false)
   }
 
   override lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher match {
@@ -437,21 +450,10 @@ case class PhasedFusingActorMaterializer(
             if (Debug) println(s"  materialized value is $matValue")
             matValueStack.addLast(matValue)
 
-            val ins = mod.shape.inlets.iterator
             val stageGlobalOffset = islandTracking.getCurrentOffset
 
-            while (ins.hasNext) {
-              val in = ins.next()
-              islandTracking.wireIn(in, logic)
-            }
-
-            val outs = mod.shape.outlets.iterator
-            while (outs.hasNext) {
-              val out = outs.next()
-              val absoluteTargetSlot = stageGlobalOffset + outToSlot(out.id)
-              if (Debug) println(s"  wiring offset: ${outToSlot.mkString("[", ",", "]")}")
-              islandTracking.wireOut(out, absoluteTargetSlot, logic)
-            }
+            wireInlets(islandTracking, mod, logic)
+            wireOutlets(islandTracking, mod, logic, stageGlobalOffset, outToSlot)
 
             if (Debug) println(s"PUSH: $matValue => $matValueStack")
 
@@ -498,6 +500,44 @@ case class PhasedFusingActorMaterializer(
     matValueStack.peekLast().asInstanceOf[Mat]
   }
 
+  private def wireInlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any): Unit = {
+    val inlets = mod.shape.inlets
+    if (inlets.nonEmpty) {
+      if (Shape.hasOnePort(inlets)) {
+        // optimization, duplication to avoid iterator allocation
+        islandTracking.wireIn(inlets.head, logic)
+      } else {
+        val ins = inlets.iterator
+        while (ins.hasNext) {
+          val in = ins.next()
+          islandTracking.wireIn(in, logic)
+        }
+      }
+    }
+  }
+
+  private def wireOutlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any,
+                          stageGlobalOffset: Int, outToSlot: Array[Int]): Unit = {
+    val outlets = mod.shape.outlets
+    if (outlets.nonEmpty) {
+      if (Shape.hasOnePort(outlets)) {
+        // optimization, duplication to avoid iterator allocation
+        val out = outlets.head
+        val absoluteTargetSlot = stageGlobalOffset + outToSlot(out.id)
+        if (Debug) println(s"  wiring offset: ${outToSlot.mkString("[", ",", "]")}")
+        islandTracking.wireOut(out, absoluteTargetSlot, logic)
+      } else {
+        val outs = outlets.iterator
+        while (outs.hasNext) {
+          val out = outs.next()
+          val absoluteTargetSlot = stageGlobalOffset + outToSlot(out.id)
+          if (Debug) println(s"  wiring offset: ${outToSlot.mkString("[", ",", "]")}")
+          islandTracking.wireOut(out, absoluteTargetSlot, logic)
+        }
+      }
+    }
+  }
+
   override def makeLogger(logSource: Class[_]): LoggingAdapter =
     Logging(system, logSource)
 
@@ -541,9 +581,10 @@ final class GraphStageIsland(
   private val logicArrayType = Array.empty[GraphStageLogic]
   private[this] val logics = new ArrayList[GraphStageLogic](64)
   // TODO: Resize
-  private val connections = Array.ofDim[Connection](64)
+  private val connections = new Array[Connection](64)
   private var maxConnections = 0
   private var outConnections: List[Connection] = Nil
+  private var fullIslandName: OptionVal[String] = OptionVal.None
 
   val shell = new GraphInterpreterShell(
     connections = null,
@@ -563,6 +604,10 @@ final class GraphStageIsland(
     logic.attributes = attributes
     logics.add(logic)
     logic.stageId = logics.size() - 1
+    fullIslandName match {
+      case OptionVal.Some(_) ⇒ // already set
+      case OptionVal.None    ⇒ fullIslandName = OptionVal.Some(islandName + "-" + logic.attributes.nameOrDefault())
+    }
     matAndLogic
   }
 
@@ -661,21 +706,12 @@ final class GraphStageIsland(
       case _ ⇒
         val props = ActorGraphInterpreter.props(shell)
           .withDispatcher(effectiveSettings.dispatcher)
-        materializer.actorOf(props, fullIslandName)
+        val actorName = fullIslandName match {
+          case OptionVal.Some(n) ⇒ n
+          case OptionVal.None    ⇒ islandName
+        }
+        materializer.actorOf(props, actorName)
     }
-  }
-
-  private def fullIslandName: String = {
-    @tailrec def findUsefulName(i: Int): String = {
-      if (i == logics.size) islandName
-      else logics.get(i) match {
-        case _: DownstreamBoundaryStageLogic[_] | _: UpstreamBoundaryStageLogic[_] ⇒
-          findUsefulName(i + 1)
-        case _ ⇒
-          islandName + "-" + logics.get(i).attributes.nameOrDefault()
-      }
-    }
-    findUsefulName(0)
   }
 
   override def toString: String = "GraphStagePhase"

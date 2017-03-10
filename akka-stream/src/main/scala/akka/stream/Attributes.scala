@@ -16,12 +16,16 @@ import java.net.URLEncoder
 import akka.stream.impl.TraversalBuilder
 
 import scala.compat.java8.OptionConverters._
+import akka.util.ByteString
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
  * or [[akka.stream.scaladsl.GraphDSL]] / [[akka.stream.javadsl.GraphDSL]] materialization.
  *
  * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
+ *
+ * The ``attributeList`` is ordered with the most specific attribute first, least specific last.
+ * Note that the order was the opposite in Akka 2.4.x.
  */
 final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
@@ -40,6 +44,9 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
   /**
    * Java API
+   *
+   * The list is ordered with the most specific attribute first, least specific last.
+   * Note that the order was the opposite in Akka 2.4.x.
    */
   def getAttributeList(): java.util.List[Attribute] = {
     import scala.collection.JavaConverters._
@@ -49,6 +56,9 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * Java API: Get all attributes of a given `Class` or
    * subclass thereof.
+   *
+   * The list is ordered with the most specific attribute first, least specific last.
+   * Note that the order was the opposite in Akka 2.4.x.
    */
   def getAttributeList[T <: Attribute](c: Class[T]): java.util.List[T] =
     if (attributeList.isEmpty) java.util.Collections.emptyList()
@@ -62,71 +72,77 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
     }
 
   /**
-   * Java API: Get the last (most specific) attribute of a given `Class` or subclass thereof.
+   * Java API: Get the most specific attribute (added last) of a given `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
   def getAttribute[T <: Attribute](c: Class[T], default: T): T =
     getAttribute(c).orElse(default)
 
   /**
-   * Java API: Get the first (least specific) attribute of a given `Class` or subclass thereof.
+   * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
   def getFirstAttribute[T <: Attribute](c: Class[T], default: T): T =
     getFirstAttribute(c).orElse(default)
 
   /**
-   * Java API: Get the last (most specific) attribute of a given `Class` or subclass thereof.
+   * Java API: Get the most specific attribute (added last) of a given `Class` or subclass thereof.
    */
   def getAttribute[T <: Attribute](c: Class[T]): Optional[T] =
-    Optional.ofNullable(attributeList.foldLeft(
-      null.asInstanceOf[T])(
-      (acc, attr) ⇒ if (c.isInstance(attr)) c.cast(attr) else acc))
+    (attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }).asJava
 
   /**
-   * Java API: Get the first (least specific) attribute of a given `Class` or subclass thereof.
+   * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
    */
   def getFirstAttribute[T <: Attribute](c: Class[T]): Optional[T] =
-    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c cast attr }.asJava
+    attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c cast attr }.asJava
 
   /**
    * Scala API: get all attributes of a given type (or subtypes thereof).
+   *
+   * The list is ordered with the most specific attribute first, least specific last.
+   * Note that the order was the opposite in Akka 2.4.x.
    */
   def filtered[T <: Attribute: ClassTag]: List[T] = {
     val c = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.collect {
-      case attr if c.isAssignableFrom(attr.getClass) ⇒ c.cast(attr)
+    attributeList.collect { case attr if c.isAssignableFrom(attr.getClass) ⇒ c.cast(attr) }
+  }
+
+  /**
+   * Scala API: Get the most specific attribute (added last) of a given type parameter T `Class` or subclass thereof.
+   * If no such attribute exists the `default` value is returned.
+   */
+  def get[T <: Attribute: ClassTag](default: T): T =
+    get[T] match {
+      case Some(a) ⇒ a
+      case None    ⇒ default
+    }
+
+  /**
+   * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
+   * If no such attribute exists the `default` value is returned.
+   */
+  def getFirst[T <: Attribute: ClassTag](default: T): T = {
+    getFirst[T] match {
+      case Some(a) ⇒ a
+      case None    ⇒ default
     }
   }
 
   /**
-   * Scala API: Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
-   * If no such attribute exists the `default` value is returned.
-   */
-  def get[T <: Attribute: ClassTag](default: T): T =
-    getAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]], default)
-
-  /**
-   * Scala API: Get the first (least specific) attribute of a given type parameter T `Class` or subclass thereof.
-   * If no such attribute exists the `default` value is returned.
-   */
-  def getFirst[T <: Attribute: ClassTag](default: T): T =
-    getFirstAttribute(classTag[T].runtimeClass.asInstanceOf[Class[T]], default)
-
-  /**
-   * Scala API: Get the last (most specific) attribute of a given type parameter T `Class` or subclass thereof.
+   * Scala API: Get the most specific attribute (added last) of a given type parameter T `Class` or subclass thereof.
    */
   def get[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.reverseIterator.collectFirst[T] { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
+    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
   }
 
   /**
-   * Scala API: Get the first (least specific) attribute of a given type parameter T `Class` or subclass thereof.
+   * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
    */
   def getFirst[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
+    attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }
   }
 
   /**
@@ -135,48 +151,54 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   def contains(attr: Attribute): Boolean = attributeList.contains(attr)
 
   /**
-   * Adds given attributes to the end of these attributes.
+   * Adds given attributes. Added attributes are considered more specific than
+   * already existing attributes of the same type.
    */
-  def and(other: Attributes): Attributes =
+  def and(other: Attributes): Attributes = {
     if (attributeList.isEmpty) other
     else if (other.attributeList.isEmpty) this
-    else Attributes(attributeList ::: other.attributeList)
+    else if (other.attributeList.tail.isEmpty) Attributes(other.attributeList.head :: attributeList)
+    else Attributes(other.attributeList ::: attributeList)
+  }
 
   /**
-   * Adds given attribute to the end of these attributes.
+   * Adds given attribute. Added attribute is considered more specific than
+   * already existing attributes of the same type.
    */
   def and(other: Attribute): Attributes =
-    Attributes(attributeList :+ other)
+    Attributes(other :: attributeList)
 
   /**
    * Extracts Name attributes and concatenates them.
    */
-  def nameLifted: Option[String] = Option(nameOrDefault(null))
-
-  /**
-   * INTERNAL API
-   */
-  def nameOrDefault(default: String = "unknown-operation"): String = {
-    @tailrec def concatNames(i: Iterator[Attribute], first: String, buf: StringBuilder): String =
+  def nameLifted: Option[String] = {
+    @tailrec def concatNames(i: Iterator[Attribute], first: String, buf: java.lang.StringBuilder): String =
       if (i.hasNext)
         i.next() match {
           case Name(n) ⇒
-            // FIXME this URLEncode is a bug IMO, if that format is important then that is how it should be store in Name
-            val nn = URLEncoder.encode(n, "UTF-8")
-            if (buf ne null) concatNames(i, null, buf.append('-').append(nn))
+            if (buf ne null) concatNames(i, null, buf.append('-').append(n))
             else if (first ne null) {
-              val b = new StringBuilder((first.length() + nn.length()) * 2)
-              concatNames(i, null, b.append(first).append('-').append(nn))
-            } else concatNames(i, nn, null)
+              val b = new java.lang.StringBuilder((first.length + n.length) * 2)
+              concatNames(i, null, b.append(first).append('-').append(n))
+            } else concatNames(i, n, null)
           case _ ⇒ concatNames(i, first, buf)
         }
       else if (buf eq null) first
       else buf.toString
 
-    concatNames(attributeList.iterator, null, null) match {
-      case null ⇒ default
-      case some ⇒ some
+    Option(concatNames(attributeList.reverseIterator, null, null))
+  }
+
+  /**
+   * INTERNAL API
+   */
+  def nameOrDefault(default: String = "unnamed"): String = {
+    @tailrec def find(attrs: List[Attribute]): String = attrs match {
+      case Attributes.Name(name) :: _ ⇒ name
+      case _ :: tail                  ⇒ find(tail)
+      case Nil                        ⇒ default
     }
+    find(attributeList)
   }
 
 }
@@ -201,7 +223,7 @@ object Attributes {
    * INTERNAL API
    */
   def apply(attribute: Attribute): Attributes =
-    apply(List(attribute))
+    apply(attribute :: Nil)
 
   val none: Attributes = Attributes()
 
@@ -210,10 +232,14 @@ object Attributes {
   /**
    * Specifies the name of the operation.
    * If the name is null or empty the name is ignored, i.e. [[#none]] is returned.
+   *
+   * When using this method the name is encoded with URLEncoder with UTF-8 because
+   * the name is sometimes used as part of actor name. If that is not desired
+   * the name can be added in it's raw format using `.addAttributes(Attributes(Name(name)))`.
    */
   def name(name: String): Attributes =
     if (name == null || name.isEmpty) none
-    else Attributes(Name(name))
+    else Attributes(Name(URLEncoder.encode(name, ByteString.UTF_8)))
 
   /**
    * Specifies the initial and maximum size of the input buffer.

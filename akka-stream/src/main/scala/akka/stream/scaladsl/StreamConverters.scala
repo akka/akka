@@ -162,7 +162,8 @@ object StreamConverters {
    * configured through the ``akka.stream.blocking-io-dispatcher``.
    */
   def asJavaStream[T](): Sink[T, java.util.stream.Stream[T]] = {
-    Sink.fromGraph(new QueueSink[T]())
+    // TODO removing the QueueSink name, see issue #22523
+    Sink.fromGraph(new QueueSink[T]().withAttributes(Attributes.none))
       .mapMaterializedValue(queue ⇒ StreamSupport.stream(
         Spliterators.spliteratorUnknownSize(new java.util.Iterator[T] {
           var nextElementFuture: Future[Option[T]] = queue.pull()

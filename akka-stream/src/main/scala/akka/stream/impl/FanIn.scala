@@ -50,7 +50,7 @@ object FanIn {
       }
     }
 
-    private[this] final val states = Array.ofDim[State](inputCount)
+    private[this] final val states = new Array[State](inputCount)
     private var markCount = 0
     private var markedPending = 0
     private var markedDepleted = 0
