@@ -14,10 +14,11 @@ import akka.testkit.TestProbe;
 
 import com.typesafe.config.ConfigFactory;
 
+import docs.AbstractJavaTest;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class ParentChildTest {
+public class ParentChildTest extends AbstractJavaTest {
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
     new AkkaJUnitActorSystemResource("TestKitDocTest",

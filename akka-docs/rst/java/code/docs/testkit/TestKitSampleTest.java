@@ -4,6 +4,7 @@
 package docs.testkit;
 
 //#fullsample
+import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -16,7 +17,7 @@ import akka.actor.AbstractActor;
 import akka.testkit.JavaTestKit;
 import scala.concurrent.duration.Duration;
 
-public class TestKitSampleTest {
+public class TestKitSampleTest extends AbstractJavaTest {
   
   public static class SomeActor extends AbstractActor {
     ActorRef target = null;
