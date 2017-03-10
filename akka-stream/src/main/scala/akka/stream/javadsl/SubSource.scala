@@ -1154,8 +1154,8 @@ class SubSource[+Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source
    *
    * '''Cancels when''' downstream cancels
    */
-  def zip[T](source: Graph[SourceShape[T], _]): SubSource[Out @uncheckedVariance Pair T, Mat] =
-    new SubSource(delegate.zip(source))
+  def zip[T](source: Graph[SourceShape[T], _]): SubSource[akka.japi.Pair[Out @uncheckedVariance, T], Mat] =
+    new SubSource(delegate.zip(source).map { case (o, t) ⇒ akka.japi.Pair.create(o, t) })
 
   /**
    * Put together the elements of current [[Flow]] and the given [[Source]]

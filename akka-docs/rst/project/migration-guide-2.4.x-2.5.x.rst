@@ -270,6 +270,16 @@ would now be::
 
 as the ``GraphStage`` itself is a factory of logic instances.
 
+SubFlow.zip and SubSource.zip now emit akka.japi.Pair instead of Scala's Pair
+-----------------------------------------------------------------------------
+
+The the Java API's ``zip`` operator on ``SubFlow`` and ``SubSource`` has been emiting
+Scala's ``Pair`` (``Tuple2``) instead of ``akka.japi.Pair``. This is fixed in Akka 2.5 where it emits the proper
+Java DSl type.
+
+Please note that the ``zip`` operator on ``Source`` and ``Flow`` has had the correct type, 
+this change only affects the ``Sub...`` versions of those classes.
+
 Deprecation of ActorSubscriber and ActorPublisher
 -------------------------------------------------
 
