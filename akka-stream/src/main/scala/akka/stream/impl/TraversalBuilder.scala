@@ -4,10 +4,13 @@
 
 package akka.stream.impl
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
+import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.scaladsl.Keep
 import akka.util.OptionVal
+
 import scala.language.existentials
 
 /**
@@ -494,6 +497,31 @@ object LinearTraversalBuilder {
       outPortOpt,
       inOffset = 0,
       if (inPortOpt.isDefined) 1 else 0,
+      traversalSoFar = MaterializeAtomic(module, wiring),
+      pendingBuilder = OptionVal.None,
+      attributes)
+  }
+
+  /**
+   * INTERNAL API: Fast-path version of `fromModule` when we alread know ports and shape precisely.
+   */
+  @InternalApi def fromKnownLinearModule(module: GraphStageModule[LinearShape, Any], in: OptionVal[Inlet[_]], out: OptionVal[Outlet[_]], attributes: Attributes): LinearTraversalBuilder = {
+    // fast-path version of initShape (avoids Iterator allocations)
+    val inSlots = if (in.isDefined) {
+      in.get.id = 0
+      1
+    } else 0
+
+    val wiring = if (out.isDefined) {
+      out.get.id = 0
+      wireBackward
+    } else noWire
+
+    LinearTraversalBuilder(
+      in,
+      out,
+      inOffset = 0,
+      inSlots,
       traversalSoFar = MaterializeAtomic(module, wiring),
       pendingBuilder = OptionVal.None,
       attributes)
