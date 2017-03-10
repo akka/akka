@@ -540,7 +540,11 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageWithMaterializedValue.module"),
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.ModuleExtractor"),
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.ModuleExtractor$"),
-      ProblemFilters.excludePackage("akka.stream.impl")
+      ProblemFilters.excludePackage("akka.stream.impl"),
+      
+      // small changes in attributes 
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSource.withAttributes"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSink.withAttributes")
 
       // NOTE: filters that will be backported to 2.4 should go to the latest 2.4 version below
     )
