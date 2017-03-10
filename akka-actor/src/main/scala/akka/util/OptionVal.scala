@@ -50,6 +50,9 @@ private[akka] final class OptionVal[+A >: Null](val x: A) extends AnyVal {
   def getOrElse[B >: A](default: B): B =
     if (x == null) default else x
 
+  def contains[B >: A](it: B): Boolean =
+    x != null && x == it
+
   /**
    *  Returns the option's value if it is nonempty, or `null` if it is empty.
    */

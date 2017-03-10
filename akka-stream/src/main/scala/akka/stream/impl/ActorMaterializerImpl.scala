@@ -11,6 +11,7 @@ import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreterShell
+import akka.util.OptionVal
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, ExecutionContextExecutor }
@@ -86,11 +87,9 @@ abstract class ExtendedActorMaterializer extends ActorMaterializer {
  * The default phases are left in-tact since we still respect `.async` and other tags that were marked within a sub-fused graph.
  */
 private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMaterializer, registerShell: GraphInterpreterShell ⇒ ActorRef) extends Materializer {
-  require(registerShell ne null, "When using SubFusing the subflowFuser MUST NOT be null.") // FIXME remove check?
-
   val subFusingPhase = new Phase[Any] {
     override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] = {
-      new GraphStageIsland(settings, materializer, islandName, Some(registerShell)).asInstanceOf[PhaseIsland[Any]]
+      new GraphStageIsland(settings, materializer, islandName, OptionVal(registerShell)).asInstanceOf[PhaseIsland[Any]]
     }
   }
 

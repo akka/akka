@@ -14,7 +14,7 @@ import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
-import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
+import akka.stream.impl.{ EmptyTraversal, LinearTraversalBuilder, ReactiveStreamsCompliance, TraversalBuilder }
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }

@@ -8,7 +8,7 @@ import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.TLSProtocol._
 import akka.stream.impl.{ TlsModuleIslandTag, TraversalBuilder }
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 
 import scala.util.Try
 
