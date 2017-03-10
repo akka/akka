@@ -37,6 +37,7 @@ import scala.compat.java8.OptionConverters._
 import java.util.Optional
 
 import akka.event.Logging
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
