@@ -85,7 +85,7 @@ public class ActorDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchAny(x -> sender().tell(x, self()))
+        .matchAny(x -> getSender().tell(x, self()))
         .build();
     }
     //#plus-some-behavior
@@ -206,7 +206,7 @@ public class ActorDocTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .match(Integer.class, i -> {
-          sender().tell(i + magicNumber, self());
+          getSender().tell(i + magicNumber, self());
         })
         .build();
     }
@@ -353,9 +353,9 @@ public class ActorDocTest extends AbstractJavaTest {
           //#reply-exception
           try {
             String result = operation();
-            sender().tell(result, self());
+            getSender().tell(result, self());
           } catch (Exception e) {
-            sender().tell(new akka.actor.Status.Failure(e), self());
+            getSender().tell(new akka.actor.Status.Failure(e), self());
             throw e;
           }
           //#reply-exception
@@ -394,8 +394,8 @@ public class ActorDocTest extends AbstractJavaTest {
 
     private AbstractActor.Receive shuttingDown() {
       return receiveBuilder()
-        .matchEquals("job", s -> 
-          sender().tell("service unavailable, shutting down", self())
+        .matchEquals("job", s ->
+            getSender().tell("service unavailable, shutting down", self())
         )
         .match(Terminated.class, t -> t.actor().equals(worker), t -> 
           getContext().stop(self())
@@ -544,7 +544,7 @@ public class ActorDocTest extends AbstractJavaTest {
           // To set in a response to a message
           getContext().setReceiveTimeout(Duration.create(1, TimeUnit.SECONDS));
           //#receive-timeout
-          target = sender();
+          target = getSender();
           target.tell("Hello world", self());
           //#receive-timeout
         })
@@ -582,7 +582,7 @@ public class ActorDocTest extends AbstractJavaTest {
       angry =
         receiveBuilder()
           .matchEquals("foo", s -> {
-            sender().tell("I am already angry?", self());
+            getSender().tell("I am already angry?", self());
           })
           .matchEquals("bar", s -> {
             getContext().become(happy);
@@ -591,7 +591,7 @@ public class ActorDocTest extends AbstractJavaTest {
 
       happy = receiveBuilder()
         .matchEquals("bar", s -> {
-          sender().tell("I am already happy :-)", self());
+          getSender().tell("I am already happy :-)", self());
         })
         .matchEquals("foo", s -> {
           getContext().become(angry);
@@ -675,7 +675,7 @@ public class ActorDocTest extends AbstractJavaTest {
       return receiveBuilder()
         .matchEquals("kill", s -> {
           getContext().stop(child);
-          lastSender = sender();
+          lastSender = getSender();
         })
         .match(Terminated.class, t -> t.actor().equals(child), t -> {
           lastSender.tell("finished", self());

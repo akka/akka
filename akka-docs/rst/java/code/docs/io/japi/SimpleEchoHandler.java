@@ -23,7 +23,7 @@ import akka.util.ByteString;
 public class SimpleEchoHandler extends AbstractActor {
   
   final LoggingAdapter log = Logging
-      .getLogger(getContext().system(), self());
+      .getLogger(getContext().system(), getSelf());
 
   final ActorRef connection;
   final InetSocketAddress remote;
@@ -46,7 +46,7 @@ public class SimpleEchoHandler extends AbstractActor {
       .match(Received.class, msg -> {
         final ByteString data = msg.data();
         buffer(data);
-        connection.tell(TcpMessage.write(data, ACK), self());
+        connection.tell(TcpMessage.write(data, ACK), getSelf());
         // now switch behavior to “waiting for acknowledgement”
         getContext().become(buffering(), false);
   
@@ -103,7 +103,7 @@ public class SimpleEchoHandler extends AbstractActor {
 
     } else if (stored > highWatermark) {
       log.debug("suspending reading");
-      connection.tell(TcpMessage.suspendReading(), self());
+      connection.tell(TcpMessage.suspendReading(), getSelf());
       suspended = true;
     }
   }

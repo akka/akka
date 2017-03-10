@@ -65,7 +65,9 @@ object AbstractActor {
     def findChild(name: String): Optional[ActorRef]
 
     /**
-     * Returns the supervisor of this actor
+     * Returns the supervisor of this actor.
+     *
+     * Same as `parent()`.
      */
     def getParent(): ActorRef
 

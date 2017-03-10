@@ -99,7 +99,7 @@ public class CustomRouterDocTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .matchAny(message -> {
-          sender().tell(message, self());
+          getSender().tell(message, getSelf());
         })
         .build();
     }

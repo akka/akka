@@ -26,12 +26,12 @@ public class TestKitSampleTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .matchEquals("hello", message -> {
-          sender().tell("world", self());
+          sender().tell("world", getSelf());
           if (target != null) target.forward(message, getContext());
         })
         .match(ActorRef.class, actorRef -> {
           target = actorRef;
-          sender().tell("done", self());
+          sender().tell("done", getSelf());
         })
         .build();
     }

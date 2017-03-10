@@ -20,7 +20,7 @@ public class MyStoppingActor extends AbstractActor {
         getContext().stop(child)
       )
       .matchEquals("done", m ->
-        getContext().stop(self())
+        getContext().stop(getSelf())
       )
       .build();
   }

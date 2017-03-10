@@ -28,7 +28,7 @@ public class RemoteDeploymentDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchAny(message -> sender().tell(self(), self()))
+        .matchAny(message -> getSender().tell(getSelf(), getSelf()))
         .build();
     }
   }

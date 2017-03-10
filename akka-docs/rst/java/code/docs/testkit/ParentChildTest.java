@@ -35,7 +35,7 @@ public class ParentChildTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("pingit", message -> child.tell("ping", self()))
+        .matchEquals("pingit", message -> child.tell("ping", getSelf()))
         .matchEquals("pong", message -> ponged = true)
         .build();
     }
@@ -46,7 +46,7 @@ public class ParentChildTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .matchEquals("ping", message -> {
-          getContext().getParent().tell("pong", self());
+          getContext().getParent().tell("pong", getSelf());
         })
         .build();
     }
@@ -65,7 +65,7 @@ public class ParentChildTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("ping", message -> parent.tell("pong", self()))
+        .matchEquals("ping", message -> parent.tell("pong", getSelf()))
         .build();
     }
   }
@@ -84,7 +84,7 @@ public class ParentChildTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("pingit", message -> child.tell("ping", self()))
+        .matchEquals("pingit", message -> child.tell("ping", getSelf()))
         .matchEquals("pong", message -> ponged = true)
         .build();
     }
@@ -105,7 +105,7 @@ public class ParentChildTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchEquals("pingit", message -> child.tell("ping", self()))
+        .matchEquals("pingit", message -> child.tell("ping", getSelf()))
         .matchEquals("pong", message -> ponged = true)
         .build();
     }

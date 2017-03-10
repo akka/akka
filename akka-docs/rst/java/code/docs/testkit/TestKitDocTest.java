@@ -42,7 +42,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .matchEquals("say42", message -> {
-          sender().tell(42, self());
+          getSender().tell(42, getSelf());
         })
         .match(Exception.class, (Exception ex) -> {
           throw ex;

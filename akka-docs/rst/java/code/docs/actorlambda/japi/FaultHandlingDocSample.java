@@ -138,16 +138,16 @@ public class FaultHandlingDocSample {
     public Receive createReceive() {
       return LoggingReceive.create(receiveBuilder().
         matchEquals(Start, x -> progressListener == null, x -> {
-          progressListener = sender();
+          progressListener = getSender();
           getContext().system().scheduler().schedule(
-            Duration.Zero(), Duration.create(1, "second"), self(), Do,
+            Duration.Zero(), Duration.create(1, "second"), getSelf(), Do,
             getContext().dispatcher(), null
           );
         }).
         matchEquals(Do, x -> {
-          counterService.tell(new Increment(1), self());
-          counterService.tell(new Increment(1), self());
-          counterService.tell(new Increment(1), self());
+          counterService.tell(new Increment(1), getSelf());
+          counterService.tell(new Increment(1), getSelf());
+          counterService.tell(new Increment(1), getSelf());
           // Send current progress to the initial sender
           pipe(ask(counterService, GetCurrentCount, askTimeout)
             .mapTo(classTag(CurrentCount.class))
@@ -223,7 +223,7 @@ public class FaultHandlingDocSample {
       }
     }
 
-    final String key = self().path().name();
+    final String key = getSelf().path().name();
     ActorRef storage;
     ActorRef counter;
     final List<SenderMsgPair> backlog = new ArrayList<>();
@@ -258,9 +258,9 @@ public class FaultHandlingDocSample {
         Props.create(Storage.class), "storage"));
       // Tell the counter, if any, to use the new storage
       if (counter != null)
-        counter.tell(new UseStorage(storage), self());
+        counter.tell(new UseStorage(storage), getSelf());
       // We need the initial value to be able to operate
-      storage.tell(new Get(key), self());
+      storage.tell(new Get(key), getSelf());
     }
 
     @Override
@@ -271,7 +271,7 @@ public class FaultHandlingDocSample {
           final long value = entry.value;
           counter = getContext().actorOf(Props.create(Counter.class, key, value));
           // Tell the counter to use current storage
-          counter.tell(new UseStorage(storage), self());
+          counter.tell(new UseStorage(storage), getSelf());
           // and send the buffered backlog to the counter
           for (SenderMsgPair each : backlog) {
             counter.tell(each.msg, each.sender);
@@ -289,10 +289,10 @@ public class FaultHandlingDocSample {
           // We receive Terminated because we watch the child, see initStorage.
           storage = null;
           // Tell the counter that there is no storage for the moment
-          counter.tell(new UseStorage(null), self());
+          counter.tell(new UseStorage(null), getSelf());
           // Try to re-establish storage after while
           getContext().system().scheduler().scheduleOnce(
-            Duration.create(10, "seconds"), self(), Reconnect,
+            Duration.create(10, "seconds"), getSelf(), Reconnect,
             getContext().dispatcher(), null);
         }).
         matchEquals(Reconnect, o -> {
@@ -309,7 +309,7 @@ public class FaultHandlingDocSample {
         if (backlog.size() >= MAX_BACKLOG)
           throw new ServiceUnavailable("CounterService not available," +
             " lack of initial value");
-        backlog.add(new SenderMsgPair(sender(), msg));
+        backlog.add(new SenderMsgPair(getSender(), msg));
       } else {
         counter.forward(msg, getContext());
       }
@@ -359,7 +359,7 @@ public class FaultHandlingDocSample {
           storeCount();
         }).
         matchEquals(GetCurrentCount, gcc -> {
-          sender().tell(new CurrentCount(key, count), self());
+          getSender().tell(new CurrentCount(key, count), getSelf());
         }).build(), getContext());
     }
 
@@ -367,7 +367,7 @@ public class FaultHandlingDocSample {
       // Delegate dangerous work, to protect our valuable state.
       // We can continue without storage.
       if (storage != null) {
-        storage.tell(new Store(new Entry(key, count)), self());
+        storage.tell(new Store(new Entry(key, count)), getSelf());
       }
     }
   }
@@ -440,8 +440,8 @@ public class FaultHandlingDocSample {
         }).
         match(Get.class, get -> {
           Long value = db.load(get.key);
-          sender().tell(new Entry(get.key, value == null ?
-            Long.valueOf(0L) : value), self());
+          getSender().tell(new Entry(get.key, value == null ?
+            Long.valueOf(0L) : value), getSelf());
         }).build(), getContext());
     }
   }

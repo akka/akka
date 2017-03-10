@@ -22,7 +22,7 @@ public class MyActor extends AbstractActor {
         log.info("Received String message: {}", s);
         //#my-actor
         //#reply
-        sender().tell(s, self());
+        sender().tell(s, getSelf());
         //#reply
         //#my-actor
       })

@@ -222,7 +222,7 @@ public class LambdaPersistenceDocTest {
           return receiveBuilder()
             .match(Msg.class, msg -> {
               // ...
-              sender().tell(new Confirm(msg.deliveryId), self());
+              getSender().tell(new Confirm(msg.deliveryId), getSelf());
             })
             .build();
         }
@@ -331,13 +331,13 @@ public class LambdaPersistenceDocTest {
       }
 
       private void handleCommand(String c) {
-        sender().tell(c, self());
+        getSender().tell(c, getSelf());
 
         persistAsync(String.format("evt-%s-1", c), e -> {
-          sender().tell(e, self());
+          getSender().tell(e, getSelf());
         });
         persistAsync(String.format("evt-%s-2", c), e -> {
-          sender().tell(e, self());
+          getSender().tell(e, getSelf());
         });
       }
 
@@ -382,14 +382,14 @@ public class LambdaPersistenceDocTest {
 
       private void handleCommand(String c) {
         persistAsync(String.format("evt-%s-1", c), e -> {
-          sender().tell(e, self());
+          getSender().tell(e, getSelf());
         });
         persistAsync(String.format("evt-%s-2", c), e -> {
-          sender().tell(e, self());
+          getSender().tell(e, getSelf());
         });
 
         deferAsync(String.format("evt-%s-3", c), e -> {
-          sender().tell(e, self());
+          getSender().tell(e, getSelf());
         });
       }
 
@@ -440,17 +440,17 @@ public class LambdaPersistenceDocTest {
 
       //#nested-persist-persist
       @Override public Receive createReceiveRecover() {
-        final Procedure<String> replyToSender = event -> sender().tell(event, self());
+        final Procedure<String> replyToSender = event -> getSender().tell(event, getSelf());
 
         return receiveBuilder()
           .match(String.class, msg -> {
             persist(String.format("%s-outer-1", msg), event -> {
-              sender().tell(event, self());
+              getSender().tell(event, getSelf());
               persist(String.format("%s-inner-1", event), replyToSender);
             });
 
             persist(String.format("%s-outer-2", msg), event -> {
-              sender().tell(event, self());
+              getSender().tell(event, getSelf());
               persist(String.format("%s-inner-2", event), replyToSender);
             });
           })
@@ -495,17 +495,17 @@ public class LambdaPersistenceDocTest {
       //#nested-persistAsync-persistAsync
       @Override 
       public Receive createReceive() {
-          final Procedure<String> replyToSender = event -> sender().tell(event, self());
+          final Procedure<String> replyToSender = event -> getSender().tell(event, getSelf());
 
         return receiveBuilder()
           .match(String.class, msg -> {
             persistAsync(String.format("%s-outer-1", msg ), event -> {
-              sender().tell(event, self());
+              getSender().tell(event, getSelf());
               persistAsync(String.format("%s-inner-1", event), replyToSender);
             });
 
             persistAsync(String.format("%s-outer-2", msg ), event -> {
-              sender().tell(event, self());
+              getSender().tell(event, getSelf());
               persistAsync(String.format("%s-inner-1", event), replyToSender);
             });
           })
@@ -515,8 +515,8 @@ public class LambdaPersistenceDocTest {
 
       void usage(ActorRef persistentActor) {
         //#nested-persistAsync-persistAsync-caller
-        persistentActor.tell("a", self());
-        persistentActor.tell("b", self());
+        persistentActor.tell("a", getSelf());
+        persistentActor.tell("b", getSelf());
 
         // order of received messages:
         // a
@@ -554,7 +554,7 @@ public class LambdaPersistenceDocTest {
       public Receive createReceive() {
         return receiveBuilder()
           .match(Shutdown.class, shutdown -> {
-            getContext().stop(self());
+            getContext().stop(getSelf());
           })
           .match(String.class, msg -> {
             System.out.println(msg);

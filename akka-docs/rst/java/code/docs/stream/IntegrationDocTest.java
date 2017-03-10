@@ -264,7 +264,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
       return receiveBuilder()
         .match(Save.class, s -> {
           probe.tell(s.tweet.author.handle, ActorRef.noSender());
-          sender().tell(SaveDone.INSTANCE, self());
+          getSender().tell(SaveDone.INSTANCE, self());
         })
         .build();
     }
@@ -303,7 +303,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
           // ... process message
           String reply = word.toUpperCase();
           // reply to the ask
-          sender().tell(reply, self());
+          getSender().tell(reply, self());
         })
         .build();
     }

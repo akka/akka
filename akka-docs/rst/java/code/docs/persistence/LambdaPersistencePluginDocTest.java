@@ -44,7 +44,7 @@ public class LambdaPersistencePluginDocTest {
       public void preStart() throws Exception {
         String path = "akka.tcp://example@127.0.0.1:2552/user/store";
         ActorSelection selection = getContext().actorSelection(path);
-        selection.tell(new Identify(1), self());
+        selection.tell(new Identify(1), getSelf());
       }
 
       @Override

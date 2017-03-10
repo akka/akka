@@ -73,7 +73,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .match(Props.class, props -> {
-          sender().tell(getContext().actorOf(props), self());
+          getSender().tell(getContext().actorOf(props), getSelf());
         })
         .build();
     }
@@ -104,7 +104,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .match(Props.class, props -> {
-          sender().tell(getContext().actorOf(props), self());
+          getSender().tell(getContext().actorOf(props), getSelf());
         })
         .build();
     }
@@ -127,7 +127,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
       return receiveBuilder()
         .match(Exception.class, exception -> { throw exception; })
         .match(Integer.class, i -> state = i)
-        .matchEquals("get", s -> sender().tell(state, self()))
+        .matchEquals("get", s -> getSender().tell(state, getSelf()))
         .build();
     }
   }

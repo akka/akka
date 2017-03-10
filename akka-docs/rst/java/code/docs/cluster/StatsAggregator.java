@@ -39,14 +39,14 @@ public class StatsAggregator extends AbstractActor {
             sum += c;
           }
           double meanWordLength = ((double) sum) / results.size();
-          replyTo.tell(new StatsResult(meanWordLength), self());
-          getContext().stop(self());
+          replyTo.tell(new StatsResult(meanWordLength), getSelf());
+          getContext().stop(getSelf());
         }
       })
       .match(ReceiveTimeout.class, x -> {
         replyTo.tell(new JobFailed("Service unavailable, try again later"),
-          self());
-        getContext().stop(self());
+          getSelf());
+        getContext().stop(getSelf());
       })
       .build();
   }

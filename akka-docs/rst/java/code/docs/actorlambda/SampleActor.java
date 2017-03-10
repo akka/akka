@@ -12,7 +12,7 @@ public class SampleActor extends AbstractActor {
 
   private Receive guarded = receiveBuilder()
     .match(String.class, s -> s.contains("guard"), s -> {
-      sender().tell("contains(guard): " + s, self());
+      sender().tell("contains(guard): " + s, getSelf());
       getContext().unbecome();
     })
     .build();
@@ -21,13 +21,13 @@ public class SampleActor extends AbstractActor {
   public Receive createReceive() {
     return receiveBuilder()
       .match(Double.class, d -> {
-        sender().tell(d.isNaN() ? 0 : d, self());
+        sender().tell(d.isNaN() ? 0 : d, getSelf());
       })
       .match(Integer.class, i -> {
-        sender().tell(i * 10, self());
+        sender().tell(i * 10, getSelf());
       })
       .match(String.class, s -> s.startsWith("guard"), s -> {
-        sender().tell("startsWith(guard): " + s.toUpperCase(), self());
+        sender().tell("startsWith(guard): " + s.toUpperCase(), getSelf());
         getContext().become(guarded, false);
       })
       .build();

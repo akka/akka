@@ -25,7 +25,7 @@ public class GraduallyBuiltActor extends AbstractActor {
       log.info("Received String message: {}", s);
       //#actor
       //#reply
-      sender().tell(s, self());
+      getSender().tell(s, getSelf());
       //#reply
       //#actor
     });

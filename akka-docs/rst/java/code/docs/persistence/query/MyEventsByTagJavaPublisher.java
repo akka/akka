@@ -56,8 +56,8 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
 
     final Scheduler scheduler = getContext().system().scheduler();
     this.continueTask = scheduler
-      .schedule(refreshInterval, refreshInterval, self(), CONTINUE,
-                getContext().dispatcher(), self());
+      .schedule(refreshInterval, refreshInterval, getSelf(), CONTINUE,
+                getContext().dispatcher(), getSelf());
   }
   
   @Override
@@ -68,7 +68,7 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
         deliverBuf();
       })
       .match(Cancel.class, (in) -> {
-        getContext().stop(self());
+        getContext().stop(getSelf());
       })
       .build();
   }

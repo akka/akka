@@ -75,7 +75,7 @@ public class InitializationDocTest extends AbstractJavaTest {
           initializeMe = "Up and running";
           getContext().become(receiveBuilder()
             .matchEquals("U OK?", m2 -> {
-              sender().tell(initializeMe, self());
+              sender().tell(initializeMe, getSelf());
             })
             .build());
         })
@@ -98,7 +98,7 @@ public class InitializationDocTest extends AbstractJavaTest {
       return receiveBuilder()
         .matchUnchecked(GenericMessage.class, (GenericMessage<String> msg) -> {
           GenericMessage<String> message = msg;
-          sender().tell(message.value.toUpperCase(), self());
+          sender().tell(message.value.toUpperCase(), getSelf());
         })
         .build();
     }
@@ -111,7 +111,7 @@ public class InitializationDocTest extends AbstractJavaTest {
 
       return receiveBuilder()
         .matchUnchecked(GenericMessage.class, typedPredicate, (GenericMessage<String> msg) -> {
-          sender().tell(msg.value.toUpperCase(), self());
+          sender().tell(msg.value.toUpperCase(), getSelf());
         })
         .build();
     }

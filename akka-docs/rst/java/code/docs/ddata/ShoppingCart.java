@@ -159,9 +159,9 @@ public class ShoppingCart extends AbstractActor {
   }
 
   private void receiveGetCart() {
-    Optional<Object> ctx = Optional.of(sender());
+    Optional<Object> ctx = Optional.of(getSender());
     replicator.tell(new Replicator.Get<LWWMap<String, LineItem>>(dataKey, readMajority, ctx),
-        self());
+        getSelf());
   }
 
   private boolean isResponseToGetCart(GetResponse<?> response) {
@@ -172,19 +172,19 @@ public class ShoppingCart extends AbstractActor {
   private void receiveGetSuccess(GetSuccess<LWWMap<String, LineItem>> g) {
     Set<LineItem> items = new HashSet<>(g.dataValue().getEntries().values());
     ActorRef replyTo = (ActorRef) g.getRequest().get();
-    replyTo.tell(new Cart(items), self());
+    replyTo.tell(new Cart(items), getSelf());
   }
 
   private void receiveNotFound(NotFound<LWWMap<String, LineItem>> n) {
     ActorRef replyTo = (ActorRef) n.getRequest().get();
-    replyTo.tell(new Cart(new HashSet<>()), self());
+    replyTo.tell(new Cart(new HashSet<>()), getSelf());
   }
 
   private void receiveGetFailure(GetFailure<LWWMap<String, LineItem>> f) {
     // ReadMajority failure, try again with local read
-    Optional<Object> ctx = Optional.of(sender());
+    Optional<Object> ctx = Optional.of(getSender());
     replicator.tell(new Replicator.Get<LWWMap<String, LineItem>>(dataKey, Replicator.readLocal(), 
-        ctx), self());
+        ctx), getSelf());
   }
   //#get-cart
 
@@ -198,7 +198,7 @@ public class ShoppingCart extends AbstractActor {
   private void receiveAddItem(AddItem add) {
     Update<LWWMap<String, LineItem>> update = new Update<>(dataKey, LWWMap.create(), writeMajority,
         cart -> updateCart(cart, add.item));
-    replicator.tell(update, self());
+    replicator.tell(update, getSelf());
   }
 
   //#add-item
@@ -230,8 +230,8 @@ public class ShoppingCart extends AbstractActor {
     // Try to fetch latest from a majority of nodes first, since ORMap
     // remove must have seen the item to be able to remove it.
     Optional<Object> ctx = Optional.of(rm);
-    replicator.tell(new Replicator.Get<LWWMap<String, LineItem>>(dataKey, readMajority, ctx), 
-        self());
+    replicator.tell(new Replicator.Get<LWWMap<String, LineItem>>(dataKey, readMajority, ctx),
+        getSelf());
   }
 
   private void receiveRemoveItemGetSuccess(GetSuccess<LWWMap<String, LineItem>> g) {
@@ -249,7 +249,7 @@ public class ShoppingCart extends AbstractActor {
   private void removeItem(String productId) {
     Update<LWWMap<String, LineItem>> update = new Update<>(dataKey, LWWMap.create(), writeMajority,
         cart -> cart.remove(node, productId));
-    replicator.tell(update, self());
+    replicator.tell(update, getSelf());
   }
 
   private boolean isResponseToRemoveItem(GetResponse<?> response) {

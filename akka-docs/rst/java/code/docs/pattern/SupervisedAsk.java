@@ -59,7 +59,7 @@ public class SupervisedAsk {
     @Override
     public SupervisorStrategy supervisorStrategy() {
       return new OneForOneStrategy(0, Duration.Zero(), cause -> {
-          caller.tell(new Status.Failure(cause), self());
+          caller.tell(new Status.Failure(cause), getSelf());
           return SupervisorStrategy.stop();
         });
     }
@@ -69,25 +69,25 @@ public class SupervisedAsk {
       return receiveBuilder()
         .match(AskParam.class, message -> {
           askParam = message;
-          caller = sender();
+          caller = getSender();
           targetActor = getContext().actorOf(askParam.props);
           getContext().watch(targetActor);
           targetActor.forward(askParam.message, getContext());
           Scheduler scheduler = getContext().system().scheduler();
           timeoutMessage = scheduler.scheduleOnce(askParam.timeout.duration(),
-            self(), new AskTimeout(), getContext().dispatcher(), null);
+              getSelf(), new AskTimeout(), getContext().dispatcher(), null);
         })
         .match(Terminated.class, message -> {
           Throwable ex = new ActorKilledException("Target actor terminated.");
-          caller.tell(new Status.Failure(ex), self());
+          caller.tell(new Status.Failure(ex), getSelf());
           timeoutMessage.cancel();
-          getContext().stop(self());
+          getContext().stop(getSelf());
         })
         .match(AskTimeout.class, message -> {
           Throwable ex = new TimeoutException("Target actor timed out after "
             + askParam.timeout.toString());
-          caller.tell(new Status.Failure(ex), self());
-          getContext().stop(self());
+          caller.tell(new Status.Failure(ex), getSelf());
+          getContext().stop(getSelf());
         })
         .build();
     }
