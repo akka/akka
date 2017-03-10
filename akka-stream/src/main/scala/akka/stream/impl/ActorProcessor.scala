@@ -47,8 +47,8 @@ private[akka] class ActorProcessor[I, O](impl: ActorRef) extends ActorPublisher[
  * INTERNAL API
  */
 private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) extends DefaultInputTransferStates {
-  if (size < 1) throw new IllegalArgumentException(s"buffer size MSUT be positive (was: $size")
-  if ((size & (size - 1)) != 0) throw new IllegalArgumentException("buffer size must be a power of two")
+  if (size < 1) throw new IllegalArgumentException(s"buffer size must be positive (was: $size)")
+  if ((size & (size - 1)) != 0) throw new IllegalArgumentException(s"buffer size must be a power of two (was: $size)")
 
   // TODO: buffer and batch sizing heuristics
   private var upstream: Subscription = _
