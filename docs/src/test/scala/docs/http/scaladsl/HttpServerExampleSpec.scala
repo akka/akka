@@ -556,7 +556,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
                 auction ! Bid(user, bid)
                 complete((StatusCodes.Accepted, "bid placed"))
               }
-            }
+            } ~
             get {
               implicit val timeout: Timeout = 5.seconds
 
