@@ -168,9 +168,9 @@ can be performed automatically or manually. By default it must be done manually,
 It can also be performed programmatically with ``Cluster(system).down(address)``.
 
 A pre-packaged solution for the downing problem is provided by
-`Split Brain Resolver <http://doc.akka.io/docs/akka/akka-commercial-addons-1.0/scala/split-brain-resolver.html>`_,
+`Split Brain Resolver <http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html>`_,
 which is part of the `Lightbend Reactive Platform <http://www.lightbend.com/platform>`_. 
-If you don’t use RP, you should anyway carefully read the `documentation <http://doc.akka.io/docs/akka/akka-commercial-addons-1.0/scala/split-brain-resolver.html>`_
+If you don’t use RP, you should anyway carefully read the `documentation <http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html>`_
 of the Split Brain Resolver and make sure that the solution you are using handles the concerns
 described there.
 
