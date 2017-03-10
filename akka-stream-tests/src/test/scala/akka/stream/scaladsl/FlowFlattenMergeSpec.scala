@@ -178,8 +178,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
           }
           setHandler(out, this)
         }
-      }
-    )
+      })
 
     "propagate attributes to inner streams" in assertAllStagesStopped {
       val f = Source.single(attributesSource.addAttributes(Attributes.name("inner")))
@@ -190,7 +189,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       val attributes = Await.result(f, 3.seconds).attributeList
       attributes should contain(Attributes.Name("inner"))
       attributes should contain(Attributes.Name("outer"))
-      attributes.indexOf(Attributes.Name("outer")) < attributes.indexOf(Attributes.Name("inner")) should be(true)
+      attributes.indexOf(Attributes.Name("inner")) < attributes.indexOf(Attributes.Name("outer")) should be(true)
     }
 
   }

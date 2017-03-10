@@ -35,7 +35,7 @@ public class AttributesTest extends StreamTest {
   @Test
   public void mustGetAttributesByClass() {
     assertEquals(
-      Arrays.asList(new Attributes.Name("a"), new Attributes.Name("b")),
+      Arrays.asList(new Attributes.Name("b"), new Attributes.Name("a")),
       attributes.getAttributeList(Attributes.Name.class));
     assertEquals(
         Collections.singletonList(new Attributes.InputBuffer(1, 2)),

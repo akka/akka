@@ -9,6 +9,7 @@ import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.scaladsl.Keep
 import akka.util.OptionVal
 import scala.language.existentials
+import scala.collection.immutable.Map.Map1
 
 /**
  * Graphs to be materialized are defined by their traversal. There is no explicit graph information tracked, instead
@@ -135,18 +136,32 @@ object TraversalBuilder {
    */
   private[impl] def initShape(shape: Shape): Unit = {
     // Initialize port IDs
-    val inIter = shape.inlets.iterator
-    var i = 0
-    while (inIter.hasNext) {
-      inIter.next.id = i
-      i += 1
+    val inlets = shape.inlets
+    if (inlets.nonEmpty) {
+      if (Shape.hasOnePort(inlets))
+        inlets.head.id = 0
+      else {
+        val inIter = inlets.iterator
+        var i = 0
+        while (inIter.hasNext) {
+          inIter.next().id = i
+          i += 1
+        }
+      }
     }
 
-    val outIter = shape.outlets.iterator
-    i = 0
-    while (outIter.hasNext) {
-      outIter.next.id = i
-      i += 1
+    val outlets = shape.outlets
+    if (outlets.nonEmpty) {
+      if (Shape.hasOnePort(outlets))
+        outlets.head.id = 0
+      else {
+        val outIter = shape.outlets.iterator
+        var i = 0
+        while (outIter.hasNext) {
+          outIter.next().id = i
+          i += 1
+        }
+      }
     }
   }
 
@@ -164,7 +179,7 @@ object TraversalBuilder {
     val builder =
       if (module.shape.outlets.isEmpty) {
         val b = CompletedTraversalBuilder(
-          traversalSoFar = MaterializeAtomic(module, Array.ofDim[Int](module.shape.outlets.size)),
+          traversalSoFar = MaterializeAtomic(module, new Array[Int](module.shape.outlets.size)),
           inSlots = module.shape.inlets.size,
           inToOffset = module.shape.inlets.map(in ⇒ in → in.id).toMap,
           Attributes.none)
@@ -172,7 +187,7 @@ object TraversalBuilder {
       } else {
         AtomicTraversalBuilder(
           module,
-          Array.ofDim[Int](module.shape.outlets.size),
+          new Array[Int](module.shape.outlets.size),
           module.shape.outlets.size,
           Attributes.none)
       }
@@ -447,12 +462,17 @@ final case class AtomicTraversalBuilder(
     // Check if every output port has been assigned, if yes, we have a Traversal for this module.
     val newUnwiredOuts = unwiredOuts - 1
     if (newUnwiredOuts == 0) {
+      val inToOffset: Map[InPort, Int] = {
+        val inlets = module.shape.inlets
+        if (inlets.isEmpty) Map.empty
+        else if (Shape.hasOnePort(inlets)) new Map1(inlets.head, inlets.head.id)
+        else inlets.map(in ⇒ in.asInstanceOf[InPort] → in.id)(collection.breakOut)
+      }
       CompletedTraversalBuilder(
         traversalSoFar = MaterializeAtomic(module, newOutToSlot),
-        inSlots = inSlots,
-        // TODO Optimize Map creation
-        inToOffset = module.shape.inlets.iterator.map(in ⇒ in → in.id).toMap,
-        attributes = attributes)
+        inSlots,
+        inToOffset,
+        attributes)
     } else copy(outToSlot = newOutToSlot, unwiredOuts = newUnwiredOuts)
   }
 
@@ -638,8 +658,6 @@ final case class LinearTraversalBuilder(
                   .assign(out, inOffset - composite.offsetOfModule(out))
                   .traversal).concat(traversalSoFar)),
             pendingBuilder = OptionVal.None, beforeBuilder = EmptyTraversal)
-        case OptionVal.None ⇒
-          copy(inPort = OptionVal.None, outPort = OptionVal.None, traversalSoFar = rewireLastOutTo(traversalSoFar, inOffset))
         case OptionVal.None ⇒
           copy(
             inPort = OptionVal.None,
