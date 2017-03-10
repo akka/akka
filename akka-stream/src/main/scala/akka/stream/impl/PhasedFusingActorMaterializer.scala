@@ -616,14 +616,14 @@ final class GraphStageIsland(
     val c = connections(slot)
     if (c ne null) c
     else {
-      val c2 = new Connection(0, 0, null, 0, null, null, null)
+      val c2 = new Connection(0, null, null, null, null)
       connections(slot) = c2
       c2
     }
   }
 
   def outConn(): Connection = {
-    val connection = new Connection(0, 0, null, 0, null, null, null)
+    val connection = new Connection(0, null, null, null, null)
     outConnections ::= connection
     connection
   }
@@ -632,7 +632,6 @@ final class GraphStageIsland(
     val connection = conn(slot)
     connection.inOwner = logic
     connection.id = slot
-    connection.inOwnerId = logic.stageId
     connection.inHandler = logic.handlers(in.id).asInstanceOf[InHandler]
     logic.portToConn(in.id) = connection
   }
@@ -641,7 +640,6 @@ final class GraphStageIsland(
     val connection = conn(slot)
     connection.outOwner = logic
     connection.id = slot
-    connection.outOwnerId = logic.stageId
     connection.outHandler = logic.handlers(logic.inCount + out.id).asInstanceOf[OutHandler]
     logic.portToConn(logic.inCount + out.id) = connection
   }
@@ -655,11 +653,9 @@ final class GraphStageIsland(
     boundary.portToConn(boundary.in.id) = connection
     connection.inHandler = boundary.handlers(0).asInstanceOf[InHandler]
     connection.inOwner = boundary
-    connection.inOwnerId = boundary.stageId
 
     connection.outOwner = logic
     connection.id = -1 // Will be filled later
-    connection.outOwnerId = logic.stageId
     connection.outHandler = logic.handlers(logic.inCount + out.id).asInstanceOf[OutHandler]
     logic.portToConn(logic.inCount + out.id) = connection
 
@@ -678,7 +674,6 @@ final class GraphStageIsland(
     boundary.portToConn(boundary.out.id + boundary.inCount) = connection
     connection.outHandler = boundary.handlers(0).asInstanceOf[OutHandler]
     connection.outOwner = boundary
-    connection.outOwnerId = boundary.stageId
   }
 
   override def onIslandReady(): Unit = {

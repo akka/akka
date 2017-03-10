@@ -110,11 +110,9 @@ object GraphInterpreterSpecKit {
 
         val connection = new Connection(
           id = idx,
-          outOwnerId = outOwner.stageId,
           outOwner = outOwner,
           outHandler = outOwner.outHandler(0),
           inOwner = inOwner,
-          inOwnerId = inOwner.stageId,
           inHandler = inOwner.inHandler(0)
         )
 
@@ -143,10 +141,8 @@ object GraphInterpreterSpecKit {
 
         val connection = new Connection(
           id = idx,
-          outOwnerId = outOwner.stageId,
           outOwner = outOwner,
           outHandler = outOwner.outHandler(outlet.id),
-          inOwnerId = inOwner.stageId,
           inOwner = inOwner,
           inHandler = inOwner.inHandler(inlet.id)
         )
