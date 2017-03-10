@@ -283,7 +283,7 @@ the :class:`CompletionStage<Sink>` part, and wraps the other two values in a cus
 
 .. note::
   The nested structure in the above example is not necessary for combining the materialized values, it just
-  demonstrates how the two features work together. See :ref:`flow-combine-mat-java` for further examples
+  demonstrates how the two features work together. See :ref:`operator-fusion-java` for further examples
   of combining materialized values without nesting and hierarchy involved.
 
 Attributes
