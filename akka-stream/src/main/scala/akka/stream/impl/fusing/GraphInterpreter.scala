@@ -65,18 +65,14 @@ object GraphInterpreter {
    * between an output and input ports.
    *
    * @param id Identifier of the connection.
-   * @param inOwnerId Identifier of the owner of the input side of the connection.
    * @param inOwner The stage logic that corresponds to the input side of the connection.
-   * @param outOwnerId Identifier of the owner of the output side of the connection.
    * @param outOwner The stage logic that corresponds to the output side of the connection.
    * @param inHandler The handler that contains the callback for input events.
    * @param outHandler The handler that contains the callback for output events.
    */
   final class Connection(
     var id:         Int,
-    var inOwnerId:  Int,
     var inOwner:    GraphStageLogic,
-    var outOwnerId: Int,
     var outOwner:   GraphStageLogic,
     var inHandler:  InHandler,
     var outHandler: OutHandler) {
@@ -84,7 +80,7 @@ object GraphInterpreter {
     var slot: Any = Empty
 
     override def toString =
-      if (GraphInterpreter.Debug) s"Connection($id, $inOwnerId, $inOwner, $outOwnerId, $outOwner, $inHandler, $outHandler, $portState, $slot)"
+      if (GraphInterpreter.Debug) s"Connection($id, $inOwner, $outOwner, $inHandler, $outHandler, $portState, $slot)"
       else s"Connection($id, $portState, $slot, $inHandler, $outHandler)"
   }
 
@@ -121,7 +117,6 @@ object GraphInterpreter {
  * From an external viewpoint, the GraphInterpreter takes an assembly of graph processing stages encoded as a
  * [[GraphInterpreter#GraphAssembly]] object and provides facilities to execute and interact with this assembly.
  * The lifecycle of the Interpreter is roughly the following:
- *  - Boundary logics are attached via [[attachDownstreamBoundary()]] and [[attachUpstreamBoundary()]]
  *  - [[init()]] is called
  *  - [[execute()]] is called whenever there is need for execution, providing an upper limit on the processed events
  *  - [[finish()]] is called before the interpreter is disposed, preferably after [[isCompleted]] returned true, although
@@ -323,10 +318,10 @@ final class GraphInterpreter(
   private def outOwnerName(connection: Connection): String = connection.outOwner.toString
 
   // Debug name for a connections input part
-  private def inLogicName(connection: Connection): String = logics(connection.inOwnerId).toString
+  private def inLogicName(connection: Connection): String = logics(connection.inOwner.stageId).toString
 
   // Debug name for a connections output part
-  private def outLogicName(connection: Connection): String = logics(connection.outOwnerId).toString
+  private def outLogicName(connection: Connection): String = logics(connection.outOwner.stageId).toString
 
   private def shutdownCounters: String =
     shutdownCounter.map(x ⇒ if (x >= KeepGoingFlag) s"${x & KeepGoingMask}(KeepGoing)" else x.toString).mkString(",")
@@ -476,7 +471,7 @@ final class GraphInterpreter(
       activeStage = connection.outOwner
       if (Debug) println(s"$Name CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
       connection.portState |= OutClosed
-      completeConnection(connection.outOwnerId)
+      completeConnection(connection.outOwner.stageId)
       connection.outHandler.onDownstreamFinish()
     } else if ((code & (OutClosed | InClosed)) == OutClosed) {
       // COMPLETIONS
@@ -486,7 +481,7 @@ final class GraphInterpreter(
         if (Debug) println(s"$Name COMPLETE ${outOwnerName(connection)} -> ${inOwnerName(connection)} (${connection.inHandler}) [${inLogicName(connection)}]")
         connection.portState |= InClosed
         activeStage = connection.inOwner
-        completeConnection(connection.inOwnerId)
+        completeConnection(connection.inOwner.stageId)
         if ((connection.portState & InFailed) == 0) connection.inHandler.onUpstreamFinish()
         else connection.inHandler.onUpstreamFailure(connection.slot.asInstanceOf[Failed].ex)
       } else {
@@ -587,7 +582,7 @@ final class GraphInterpreter(
       enqueue(connection)
     } else if ((currentState & (InClosed | Pushing | Pulling | OutClosed)) == 0) enqueue(connection)
 
-    if ((currentState & OutClosed) == 0) completeConnection(connection.outOwnerId)
+    if ((currentState & OutClosed) == 0) completeConnection(connection.outOwner.stageId)
   }
 
   private[stream] def fail(connection: Connection, ex: Throwable): Unit = {
@@ -605,7 +600,7 @@ final class GraphInterpreter(
         enqueue(connection)
       }
     }
-    if ((currentState & OutClosed) == 0) completeConnection(connection.outOwnerId)
+    if ((currentState & OutClosed) == 0) completeConnection(connection.outOwner.stageId)
   }
 
   private[stream] def cancel(connection: Connection): Unit = {
@@ -622,7 +617,7 @@ final class GraphInterpreter(
         enqueue(connection)
       }
     }
-    if ((currentState & InClosed) == 0) completeConnection(connection.inOwnerId)
+    if ((currentState & InClosed) == 0) completeConnection(connection.inOwner.stageId)
   }
 
   /**
