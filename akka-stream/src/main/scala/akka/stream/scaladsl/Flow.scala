@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 import akka.event.LoggingAdapter
 import akka.stream._
 import akka.Done
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage._
@@ -24,12 +23,13 @@ import akka.annotation.DoNotInherit
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
-final class Flow[-In, +Out, +Mat](override val module: Module)
+final class Flow[-In, +Out, +Mat](
+  override val traversalBuilder: LinearTraversalBuilder,
+  override val shape:            FlowShape[In, Out])
   extends FlowOpsMat[Out, Mat] with Graph[FlowShape[In, Out], Mat] {
 
-  override val shape: FlowShape[In, Out] = module.shape.asInstanceOf[FlowShape[In, Out]]
-
-  override def toString: String = s"Flow($shape, $module)"
+  // TODO: debug string
+  override def toString: String = s"Flow($shape)"
 
   override type Repr[+O] = Flow[In @uncheckedVariance, O, Mat @uncheckedVariance]
   override type ReprMat[+O, +M] = Flow[In @uncheckedVariance, O, M]
@@ -37,27 +37,21 @@ final class Flow[-In, +Out, +Mat](override val module: Module)
   override type Closed = Sink[In @uncheckedVariance, Mat @uncheckedVariance]
   override type ClosedMat[+M] = Sink[In @uncheckedVariance, M]
 
-  private[stream] def isIdentity: Boolean = this.module eq GraphStages.Identity.module
+  private[stream] def isIdentity: Boolean = this.traversalBuilder eq Flow.identityTraversalBuilder
 
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
-  override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] =
+  override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
     if (this.isIdentity) {
-      import Predef.Map.empty
-      import StreamLayout.{ CompositeModule, Ignore, IgnorableMatValComp, Transform, Atomic, Combine }
-      val m = flow.module
-      val mat =
-        if (combine == Keep.left) {
-          if (IgnorableMatValComp(m)) Ignore else Transform(_ ⇒ NotUsed, Atomic(m))
-        } else Combine(combine.asInstanceOf[(Any, Any) ⇒ Any], Ignore, Atomic(m))
-      new Flow(CompositeModule(Set(m), m.shape, empty, empty, mat, Attributes.none))
-    } else {
-      val flowCopy = flow.module.carbonCopy
       new Flow(
-        module
-          .fuse(flowCopy, shape.out, flowCopy.shape.inlets.head, combine)
-          .replaceShape(FlowShape(shape.in, flowCopy.shape.outlets.head)))
+        LinearTraversalBuilder.fromBuilder(flow.traversalBuilder, flow.shape, combine),
+        flow.shape).asInstanceOf[Flow[In, T, Mat3]]
+    } else {
+      new Flow(
+        traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
+        FlowShape[In, T](shape.in, flow.shape.out))
     }
+  }
 
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
@@ -98,15 +92,14 @@ final class Flow[-In, +Out, +Mat](override val module: Module)
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Sink[In, Mat3] = {
-    if (isIdentity)
-      Sink.fromGraph(sink.asInstanceOf[Graph[SinkShape[In], Mat2]])
-        .mapMaterializedValue(combine(NotUsed.asInstanceOf[Mat], _))
-    else {
-      val sinkCopy = sink.module.carbonCopy
+    if (isIdentity) {
       new Sink(
-        module
-          .fuse(sinkCopy, shape.out, sinkCopy.shape.inlets.head, combine)
-          .replaceShape(SinkShape(shape.in)))
+        LinearTraversalBuilder.fromBuilder(sink.traversalBuilder, sink.shape, combine),
+        SinkShape(sink.shape.in)).asInstanceOf[Sink[In, Mat3]]
+    } else {
+      new Sink(
+        traversalBuilder.append(sink.traversalBuilder, sink.shape, combine),
+        SinkShape(shape.in))
     }
   }
 
@@ -114,7 +107,9 @@ final class Flow[-In, +Out, +Mat](override val module: Module)
    * Transform the materialized value of this Flow, leaving all other properties as they were.
    */
   override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
-    new Flow(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
+    new Flow(
+      traversalBuilder.transformMat(f),
+      shape)
 
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableGraph]].
@@ -147,12 +142,11 @@ final class Flow[-In, +Out, +Mat](override val module: Module)
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def joinMat[Mat2, Mat3](flow: Graph[FlowShape[Out, In], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableGraph[Mat3] = {
-    val flowCopy = flow.module.carbonCopy
-    RunnableGraph(
-      module
-        .compose(flowCopy, combine)
-        .wire(shape.out, flowCopy.shape.inlets.head)
-        .wire(flowCopy.shape.outlets.head, shape.in))
+    val resultBuilder = traversalBuilder
+      .append(flow.traversalBuilder, flow.shape, combine)
+      .wire(flow.shape.out, shape.in)
+
+    RunnableGraph(resultBuilder)
   }
 
   /**
@@ -194,14 +188,21 @@ final class Flow[-In, +Out, +Mat](override val module: Module)
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def joinMat[I2, O2, Mat2, M](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2])(combine: (Mat, Mat2) ⇒ M): Flow[I2, O2, M] = {
-    val copy = bidi.module.carbonCopy
-    val ins = copy.shape.inlets
-    val outs = copy.shape.outlets
-    new Flow(module
-      .compose(copy, combine)
-      .wire(shape.out, ins.head)
-      .wire(outs(1), shape.in)
-      .replaceShape(FlowShape(ins(1), outs.head)))
+    val newBidiShape = bidi.shape.deepCopy()
+    val newFlowShape = shape.deepCopy()
+
+    val resultBuilder =
+      TraversalBuilder.empty()
+        .add(traversalBuilder, newFlowShape, Keep.right)
+        .add(bidi.traversalBuilder, newBidiShape, combine)
+        .wire(newFlowShape.out, newBidiShape.in1)
+        .wire(newBidiShape.out2, newFlowShape.in)
+
+    val newShape = FlowShape(newBidiShape.in2, newBidiShape.out1)
+
+    new Flow(
+      LinearTraversalBuilder.fromBuilder(resultBuilder, newShape, Keep.right),
+      newShape)
   }
 
   /**
@@ -212,8 +213,9 @@ final class Flow[-In, +Out, +Mat](override val module: Module)
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
-    if (isIdentity) this
-    else new Flow(module.withAttributes(attr))
+    new Flow(
+      traversalBuilder.setAttributes(attr),
+      shape)
 
   /**
    * Add the given attributes to this Flow. Further calls to `withAttributes`
@@ -221,7 +223,7 @@ final class Flow[-In, +Out, +Mat](override val module: Module)
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
-  override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(module.attributes and attr)
+  override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(traversalBuilder.attributes and attr)
 
   /**
    * Add a ``name`` attribute to this Flow.
@@ -265,7 +267,12 @@ final class Flow[-In, +Out, +Mat](override val module: Module)
 }
 
 object Flow {
-  private[this] val identity: Flow[Any, Any, NotUsed] = new Flow[Any, Any, NotUsed](GraphStages.Identity.module)
+  private[stream] val identityTraversalBuilder =
+    LinearTraversalBuilder.fromBuilder(GraphStages.Identity.traversalBuilder, GraphStages.Identity.shape, Keep.right)
+
+  private[this] val identity: Flow[Any, Any, NotUsed] = new Flow[Any, Any, NotUsed](
+    identityTraversalBuilder,
+    GraphStages.Identity.shape)
 
   /**
    * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]
@@ -278,7 +285,7 @@ object Flow {
    * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]] and returns a materialized value.
    */
   def fromProcessorMat[I, O, M](processorFactory: () ⇒ (Processor[I, O], M)): Flow[I, O, M] =
-    new Flow(ProcessorModule(processorFactory))
+    fromGraph(ProcessorModule(processorFactory))
 
   /**
    * Returns a `Flow` which outputs all its inputs.
@@ -299,7 +306,9 @@ object Flow {
     g match {
       case f: Flow[I, O, M]         ⇒ f
       case f: javadsl.Flow[I, O, M] ⇒ f.asScala
-      case other                    ⇒ new Flow(other.module)
+      case other ⇒ new Flow(
+        LinearTraversalBuilder.fromBuilder(g.traversalBuilder, g.shape, Keep.right),
+        g.shape)
     }
 
   /**
@@ -328,21 +337,20 @@ object RunnableGraph {
   def fromGraph[Mat](g: Graph[ClosedShape, Mat]): RunnableGraph[Mat] =
     g match {
       case r: RunnableGraph[Mat] ⇒ r
-      case other                 ⇒ RunnableGraph(other.module)
+      case other                 ⇒ RunnableGraph(other.traversalBuilder)
     }
 }
 /**
  * Flow with attached input and output, can be executed.
  */
-final case class RunnableGraph[+Mat](val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
-  require(module.isRunnable)
+final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBuilder) extends Graph[ClosedShape, Mat] {
   override def shape = ClosedShape
 
   /**
    * Transform only the materialized value of this RunnableGraph, leaving all other properties as they were.
    */
   def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): RunnableGraph[Mat2] =
-    copy(module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
+    copy(traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]))
 
   /**
    * Run this flow and return the materialized instance from the flow.
@@ -350,16 +358,15 @@ final case class RunnableGraph[+Mat](val module: StreamLayout.Module) extends Gr
   def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 
   override def addAttributes(attr: Attributes): RunnableGraph[Mat] =
-    withAttributes(module.attributes and attr)
+    withAttributes(traversalBuilder.attributes and attr)
 
   override def withAttributes(attr: Attributes): RunnableGraph[Mat] =
-    new RunnableGraph(module.withAttributes(attr))
+    new RunnableGraph(traversalBuilder.setAttributes(attr))
 
   override def named(name: String): RunnableGraph[Mat] =
     addAttributes(Attributes.name(name))
 
-  override def async: RunnableGraph[Mat] =
-    addAttributes(Attributes.asyncBoundary)
+  override def async: RunnableGraph[Mat] = addAttributes(Attributes.asyncBoundary)
 }
 
 /**
@@ -993,7 +1000,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * Delay precision is 10ms to avoid unnecessary timer scheduling cycles
    *
-   * Internal buffer has default capacity 16. You can set buffer size by calling `withAttributes(inputBuffer)`
+   * Internal buffer has default capacity 16. You can set buffer size by calling `addAttributes(inputBuffer)`
    *
    * '''Emits when''' there is a pending element in the buffer and configured time for this element elapsed
    *  * EmitEarly - strategy do not wait to emit element if buffer is full

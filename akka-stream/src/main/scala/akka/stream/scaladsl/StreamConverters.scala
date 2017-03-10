@@ -44,7 +44,7 @@ object StreamConverters {
    * @param chunkSize the size of each read operation, defaults to 8192
    */
   def fromInputStream(in: () ⇒ InputStream, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
-    new Source(new InputStreamSource(in, chunkSize, DefaultAttributes.inputStreamSource, sourceShape("InputStreamSource")))
+    Source.fromGraph(new InputStreamSource(in, chunkSize, DefaultAttributes.inputStreamSource, sourceShape("InputStreamSource")))
 
   /**
    * Creates a Source which when materialized will return an [[OutputStream]] which it is possible
@@ -77,7 +77,7 @@ object StreamConverters {
    * will cancel the stream when the [[OutputStream]] is no longer writable.
    */
   def fromOutputStream(out: () ⇒ OutputStream, autoFlush: Boolean = false): Sink[ByteString, Future[IOResult]] =
-    new Sink(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink"), autoFlush))
+    Sink.fromGraph(new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink"), autoFlush))
 
   /**
    * Creates a Sink which when materialized will return an [[InputStream]] which it is possible
@@ -162,7 +162,8 @@ object StreamConverters {
    * configured through the ``akka.stream.blocking-io-dispatcher``.
    */
   def asJavaStream[T](): Sink[T, java.util.stream.Stream[T]] = {
-    Sink.fromGraph(new QueueSink[T]())
+    // TODO removing the QueueSink name, see issue #22523
+    Sink.fromGraph(new QueueSink[T]().withAttributes(Attributes.none))
       .mapMaterializedValue(queue ⇒ StreamSupport.stream(
         Spliterators.spliteratorUnknownSize(new java.util.Iterator[T] {
           var nextElementFuture: Future[Option[T]] = queue.pull()

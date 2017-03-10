@@ -12,14 +12,16 @@ import akka.actor._
 import akka.annotation.ApiMayChange
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
-import akka.stream.impl.StreamLayout.Module
+import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
-import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.impl.{ EmptyTraversal, LinearTraversalBuilder, ReactiveStreamsCompliance, TraversalBuilder }
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.scaladsl.{ GenericGraph, GenericGraphWithChangedAttributes }
+import akka.util.OptionVal
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
@@ -28,14 +30,13 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
 
   protected def initialAttributes: Attributes = Attributes.none
 
-  final override lazy val module: Module = GraphStageModule(shape, initialAttributes, this)
-
-  final override def withAttributes(attr: Attributes): Graph[S, M] = new Graph[S, M] {
-    override def shape = GraphStageWithMaterializedValue.this.shape
-    override def module = GraphStageWithMaterializedValue.this.module.withAttributes(attr)
-
-    override def withAttributes(attr: Attributes) = GraphStageWithMaterializedValue.this.withAttributes(attr)
+  final override lazy val traversalBuilder: TraversalBuilder = {
+    val attr = initialAttributes
+    TraversalBuilder.atomic(GraphStageModule(shape, attr, this), attr)
   }
+
+  final override def withAttributes(attr: Attributes): Graph[S, M] =
+    new GenericGraphWithChangedAttributes(shape, GraphStageWithMaterializedValue.this.traversalBuilder, attr)
 }
 
 /**
@@ -66,6 +67,7 @@ object GraphStageLogic {
    */
   object EagerTerminateInput extends InHandler {
     override def onPush(): Unit = ()
+    override def toString = "EagerTerminateInput"
   }
 
   /**
@@ -75,6 +77,7 @@ object GraphStageLogic {
   object IgnoreTerminateInput extends InHandler {
     override def onPush(): Unit = ()
     override def onUpstreamFinish(): Unit = ()
+    override def toString = "IgnoreTerminateInput"
   }
 
   /**
@@ -102,6 +105,7 @@ object GraphStageLogic {
    */
   object EagerTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
+    override def toString = "EagerTerminateOutput"
   }
 
   /**
@@ -110,6 +114,7 @@ object GraphStageLogic {
   object IgnoreTerminateOutput extends OutHandler {
     override def onPull(): Unit = ()
     override def onDownstreamFinish(): Unit = ()
+    override def toString = "IgnoreTerminateOutput"
   }
 
   /**
@@ -218,15 +223,45 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * INTERNAL API
+   *
+   * Input handlers followed by output handlers, use `inHandler(id)` and `outHandler(id)` to access the respective
+   * handlers.
    */
-  // Using common array to reduce overhead for small port counts
-  private[stream] val handlers = Array.ofDim[Any](inCount + outCount)
+  private[stream] var attributes: Attributes = Attributes.none
+
+  /**
+   * INTERNAL API
+   *
+   * If possible a link back to the stage that the logic was created with, used for debugging.
+   */
+  private[stream] var originalStage: OptionVal[GraphStageWithMaterializedValue[_ <: Shape, _]] = OptionVal.None
 
   /**
    * INTERNAL API
    */
   // Using common array to reduce overhead for small port counts
-  private[stream] val portToConn = Array.ofDim[Connection](handlers.length)
+  private[stream] val handlers = new Array[Any](inCount + outCount)
+
+  /**
+   * INTERNAL API
+   */
+  private[stream] def inHandler(id: Int): InHandler = {
+    if (id > inCount) throw new IllegalArgumentException(s"$id not in inHandler range $inCount in $this")
+    if (inCount < 1) throw new IllegalArgumentException(s"Tried to access inHandler $id but there are no in ports in $this")
+    handlers(id).asInstanceOf[InHandler]
+  }
+
+  private[stream] def outHandler(id: Int): OutHandler = {
+    if (id > outCount) throw new IllegalArgumentException(s"$id not in outHandler range $outCount in $this")
+    if (outCount < 1) throw new IllegalArgumentException(s"Tried to access outHandler $id but there are no out ports $this")
+    handlers(inCount + id).asInstanceOf[OutHandler]
+  }
+
+  /**
+   * INTERNAL API
+   */
+  // Using common array to reduce overhead for small port counts
+  private[stream] val portToConn = new Array[Connection](handlers.length)
 
   /**
    * INTERNAL API

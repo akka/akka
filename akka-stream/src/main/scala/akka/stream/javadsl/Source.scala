@@ -5,13 +5,15 @@ package akka.stream.javadsl
 
 import java.util
 import java.util.Optional
+
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
-import akka.stream.impl.{ ConstantFun, StreamLayout, SourceQueueAdapter }
+import akka.stream.impl.{ ConstantFun, LinearTraversalBuilder, SourceQueueAdapter, StreamLayout }
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -21,6 +23,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
+
 import scala.compat.java8.FutureConverters._
 
 /** Java API */
@@ -423,7 +426,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
 
   override def shape: SourceShape[Out] = delegate.shape
 
-  def module: StreamLayout.Module = delegate.module
+  override def traversalBuilder: LinearTraversalBuilder = delegate.traversalBuilder
 
   override def toString: String = delegate.toString
 

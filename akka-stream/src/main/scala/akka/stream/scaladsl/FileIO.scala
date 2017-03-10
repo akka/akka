@@ -55,7 +55,7 @@ object FileIO {
    * @param chunkSize the size of each read operation, defaults to 8192
    */
   def fromPath(f: Path, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
-    new Source(new FileSource(f, chunkSize, DefaultAttributes.fileSource, sourceShape("FileSource")))
+    Source.fromGraph(new FileSource(f, chunkSize, DefaultAttributes.fileSource, sourceShape("FileSource")))
 
   /**
    * Creates a Sink which writes incoming [[ByteString]] elements to the given file. Overwrites existing files by default.
@@ -86,5 +86,5 @@ object FileIO {
    * @param options File open options, defaults to Set(WRITE, CREATE)
    */
   def toPath(f: Path, options: Set[StandardOpenOption] = Set(WRITE, CREATE)): Sink[ByteString, Future[IOResult]] =
-    new Sink(new FileSink(f, options, DefaultAttributes.fileSink, sinkShape("FileSink")))
+    Sink.fromGraph(new FileSink(f, options, DefaultAttributes.fileSink, sinkShape("FileSink")))
 }

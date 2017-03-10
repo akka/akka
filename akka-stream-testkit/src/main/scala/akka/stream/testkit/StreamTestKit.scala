@@ -5,7 +5,6 @@ package akka.stream.testkit
 
 import akka.actor.{ ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.stream._
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl._
 import akka.testkit.TestProbe
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
@@ -758,7 +757,7 @@ private[testkit] object StreamTestKit {
       (probe, probe)
     }
     override protected def newInstance(shape: SourceShape[T]): SourceModule[T, TestPublisher.Probe[T]] = new ProbeSource[T](attributes, shape)
-    override def withAttributes(attr: Attributes): Module = new ProbeSource[T](attr, amendShape(attr))
+    override def withAttributes(attr: Attributes): SourceModule[T, TestPublisher.Probe[T]] = new ProbeSource[T](attr, amendShape(attr))
   }
 
   final class ProbeSink[T](val attributes: Attributes, shape: SinkShape[T])(implicit system: ActorSystem) extends SinkModule[T, TestSubscriber.Probe[T]](shape) {
@@ -767,7 +766,7 @@ private[testkit] object StreamTestKit {
       (probe, probe)
     }
     override protected def newInstance(shape: SinkShape[T]): SinkModule[T, TestSubscriber.Probe[T]] = new ProbeSink[T](attributes, shape)
-    override def withAttributes(attr: Attributes): Module = new ProbeSink[T](attr, amendShape(attr))
+    override def withAttributes(attr: Attributes): SinkModule[T, TestSubscriber.Probe[T]] = new ProbeSink[T](attr, amendShape(attr))
   }
 
 }

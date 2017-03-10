@@ -7,18 +7,19 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
-import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, _ }
+import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, PublisherSource, _ }
 import akka.stream.{ Outlet, SourceShape, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.CompletionStage
+
 import scala.compat.java8.FutureConverters._
 
 /**
@@ -27,7 +28,9 @@ import scala.compat.java8.FutureConverters._
  * an “atomic” source, e.g. from a collection or a file. Materialization turns a Source into
  * a Reactive Streams `Publisher` (at least conceptually).
  */
-final class Source[+Out, +Mat](override val module: Module)
+final class Source[+Out, +Mat](
+  override val traversalBuilder: LinearTraversalBuilder,
+  override val shape:            SourceShape[Out])
   extends FlowOpsMat[Out, Mat] with Graph[SourceShape[Out], Mat] {
 
   override type Repr[+O] = Source[O, Mat @uncheckedVariance]
@@ -36,27 +39,20 @@ final class Source[+Out, +Mat](override val module: Module)
   override type Closed = RunnableGraph[Mat @uncheckedVariance]
   override type ClosedMat[+M] = RunnableGraph[M]
 
-  override val shape: SourceShape[Out] = module.shape.asInstanceOf[SourceShape[Out]]
-
-  override def toString: String = s"Source($shape, $module)"
+  override def toString: String = s"Source($shape)"
 
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
-    if (flow.module eq GraphStages.Identity.module) {
-      if (combine eq Keep.left)
-        this.asInstanceOf[Source[T, Mat3]]
-      else if (combine eq Keep.right)
-        this.mapMaterializedValue((_) ⇒ NotUsed).asInstanceOf[Source[T, Mat3]]
+    val toAppend =
+      if (flow.traversalBuilder eq Flow.identityTraversalBuilder)
+        LinearTraversalBuilder.empty()
       else
-        this.mapMaterializedValue(combine(_, NotUsed.asInstanceOf[Mat2])).asInstanceOf[Source[T, Mat3]]
-    } else {
-      val flowCopy = flow.module.carbonCopy
-      new Source(
-        module
-          .fuse(flowCopy, shape.out, flowCopy.shape.inlets.head, combine)
-          .replaceShape(SourceShape(flowCopy.shape.outlets.head)))
-    }
+        flow.traversalBuilder
+
+    new Source[T, Mat3](
+      traversalBuilder.append(toAppend, flow.shape, combine),
+      SourceShape(flow.shape.out))
   }
 
   /**
@@ -70,15 +66,14 @@ final class Source[+Out, +Mat](override val module: Module)
    * concatenating the processing steps of both.
    */
   def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): RunnableGraph[Mat3] = {
-    val sinkCopy = sink.module.carbonCopy
-    RunnableGraph(module.fuse(sinkCopy, shape.out, sinkCopy.shape.inlets.head, combine))
+    RunnableGraph(traversalBuilder.append(sink.traversalBuilder, sink.shape, combine))
   }
 
   /**
    * Transform only the materialized value of this Source, leaving all other properties as they were.
    */
   override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
-    new Source[Out, Mat2](module.transformMaterializedValue(f.asInstanceOf[Any ⇒ Any]))
+    new Source[Out, Mat2](traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]), shape)
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
@@ -140,7 +135,7 @@ final class Source[+Out, +Mat](override val module: Module)
    * only to the contained processing stages).
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
-    new Source(module.withAttributes(attr))
+    new Source(traversalBuilder.setAttributes(attr), shape)
 
   /**
    * Add the given attributes to this Source. Further calls to `withAttributes`
@@ -148,7 +143,7 @@ final class Source[+Out, +Mat](override val module: Module)
    * operation has no effect on an empty Flow (because the attributes apply
    * only to the contained processing stages).
    */
-  override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(module.attributes and attr)
+  override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(traversalBuilder.attributes and attr)
 
   /**
    * Add a ``name`` attribute to this Source.
@@ -198,7 +193,7 @@ object Source {
    * back-pressure upstream.
    */
   def fromPublisher[T](publisher: Publisher[T]): Source[T, NotUsed] =
-    new Source(new PublisherSource(publisher, DefaultAttributes.publisherSource, shape("PublisherSource")))
+    fromGraph(new PublisherSource(publisher, DefaultAttributes.publisherSource, shape("PublisherSource")))
 
   /**
    * Helper to create [[Source]] from `Iterator`.
@@ -234,7 +229,9 @@ object Source {
   def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
     case s: Source[T, M]         ⇒ s
     case s: javadsl.Source[T, M] ⇒ s.asScala
-    case other                   ⇒ new Source(other.module)
+    case other ⇒ new Source(
+      LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
+      other.shape)
   }
 
   /**
@@ -345,17 +342,16 @@ object Source {
    * with None.
    */
   def maybe[T]: Source[T, Promise[Option[T]]] =
-    new Source(new MaybeSource[T](DefaultAttributes.maybeSource, shape("MaybeSource")))
+    fromGraph(new MaybeSource[T](DefaultAttributes.maybeSource, shape("MaybeSource")))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
   def failed[T](cause: Throwable): Source[T, NotUsed] =
-    new Source(
-      new PublisherSource(
-        ErrorPublisher(cause, "FailedSource")[T],
-        DefaultAttributes.failedSource,
-        shape("FailedSource")))
+    fromGraph(new PublisherSource(
+      ErrorPublisher(cause, "FailedSource")[T],
+      DefaultAttributes.failedSource,
+      shape("FailedSource")))
 
   /**
    * Creates a `Source` that is not materialized until there is downstream demand, when the source gets materialized
@@ -369,7 +365,7 @@ object Source {
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
   def asSubscriber[T]: Source[T, Subscriber[T]] =
-    new Source(new SubscriberSource[T](DefaultAttributes.subscriberSource, shape("SubscriberSource")))
+    fromGraph(new SubscriberSource[T](DefaultAttributes.subscriberSource, shape("SubscriberSource")))
 
   /**
    * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
@@ -381,7 +377,7 @@ object Source {
   @deprecated("Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
   def actorPublisher[T](props: Props): Source[T, ActorRef] = {
     require(classOf[ActorPublisher[_]].isAssignableFrom(props.actorClass()), "Actor must be ActorPublisher")
-    new Source(new ActorPublisherSource(props, DefaultAttributes.actorPublisherSource, shape("ActorPublisherSource")))
+    fromGraph(new ActorPublisherSource(props, DefaultAttributes.actorPublisherSource, shape("ActorPublisherSource")))
   }
 
   /**
@@ -419,7 +415,7 @@ object Source {
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
     require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
     require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
-    new Source(new ActorRefSource(bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
+    fromGraph(new ActorRefSource(bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
   }
 
   /**

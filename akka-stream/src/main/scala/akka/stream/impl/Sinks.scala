@@ -5,40 +5,44 @@ package akka.stream.impl
 
 import akka.dispatch.ExecutionContexts
 import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.Supervision.{ stoppingDecider, Stop }
+import akka.stream.Supervision.{ Stop, stoppingDecider }
 import akka.stream.impl.QueueSink.{ Output, Pull }
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.{ Done, NotUsed }
-import akka.actor.{ ActorRef, Actor, Props }
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.BiConsumer
+
 import akka.actor.{ ActorRef, Props }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Promise, Future }
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.language.postfixOps
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
-import akka.stream.scaladsl.{ Source, Sink, SinkQueueWithCancel, SinkQueue }
+import akka.stream.scaladsl.{ Sink, SinkQueue, SinkQueueWithCancel, Source }
 import java.util.concurrent.CompletionStage
+
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import java.util.Optional
+
 import akka.event.Logging
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
  */
-abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends AtomicModule {
+abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends AtomicModule[SinkShape[In], Mat] {
 
   /**
    * Create the Subscriber or VirtualPublisher that consumes the incoming
@@ -49,17 +53,17 @@ abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends AtomicModu
    */
   def create(context: MaterializationContext): (AnyRef, Mat)
 
-  override def replaceShape(s: Shape): AtomicModule =
-    if (s != shape) throw new UnsupportedOperationException("cannot replace the shape of a Sink, you need to wrap it in a Graph for that")
-    else this
+  def attributes: Attributes
+
+  override def traversalBuilder: TraversalBuilder =
+    LinearTraversalBuilder.fromModule(this, attributes).makeIsland(SinkModuleIslandTag)
 
   // This is okay since we the only caller of this method is right below.
+  // TODO: Remove this, no longer needed
   protected def newInstance(s: SinkShape[In] @uncheckedVariance): SinkModule[In, Mat]
 
-  override def carbonCopy: AtomicModule = newInstance(SinkShape(shape.in.carbonCopy()))
-
   protected def amendShape(attr: Attributes): SinkShape[In] = {
-    val thisN = attributes.nameOrDefault(null)
+    val thisN = traversalBuilder.attributes.nameOrDefault(null)
     val thatN = attr.nameOrDefault(null)
 
     if ((thatN eq null) || thisN == thatN) shape
@@ -91,7 +95,7 @@ private[akka] class PublisherSink[In](val attributes: Attributes, shape: SinkSha
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] = new PublisherSink[In](attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new PublisherSink[In](attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] = new PublisherSink[In](attr, amendShape(attr))
 }
 
 /**
@@ -106,7 +110,7 @@ private[akka] final class FanoutPublisherSink[In](
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
     val impl = actorMaterializer.actorOf(
       context,
-      FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(attributes)))
+      FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(context.effectiveAttributes)))
     val fanoutProcessor = new ActorProcessor[In, In](impl)
     impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
@@ -116,7 +120,7 @@ private[akka] final class FanoutPublisherSink[In](
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
     new FanoutPublisherSink[In](attributes, shape)
 
-  override def withAttributes(attr: Attributes): AtomicModule =
+  override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] =
     new FanoutPublisherSink[In](attr, amendShape(attr))
 }
 
@@ -129,7 +133,7 @@ final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: Attri
   override def create(context: MaterializationContext) = (subscriber, NotUsed)
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] = new SubscriberSink[In](subscriber, attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new SubscriberSink[In](subscriber, attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] = new SubscriberSink[In](subscriber, attr, amendShape(attr))
 }
 
 /**
@@ -139,7 +143,7 @@ final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: Attri
 final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, NotUsed](shape) {
   override def create(context: MaterializationContext): (Subscriber[Any], NotUsed) = (new CancellingSubscriber[Any], NotUsed)
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] = new CancelSink(attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new CancelSink(attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): SinkModule[Any, NotUsed] = new CancelSink(attr, amendShape(attr))
 }
 
 /**
@@ -155,7 +159,7 @@ final class ActorSubscriberSink[In](props: Props, val attributes: Attributes, sh
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, ActorRef] = new ActorSubscriberSink[In](props, attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule = new ActorSubscriberSink[In](props, attr, amendShape(attr))
+  override def withAttributes(attr: Attributes): SinkModule[In, ActorRef] = new ActorSubscriberSink[In](props, attr, amendShape(attr))
 }
 
 /**
@@ -176,7 +180,7 @@ final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
     new ActorRefSink[In](ref, onCompleteMessage, attributes, shape)
-  override def withAttributes(attr: Attributes): AtomicModule =
+  override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] =
     new ActorRefSink[In](ref, onCompleteMessage, attr, amendShape(attr))
 }
 

@@ -57,7 +57,7 @@ object ActorMaterializer {
     val haveShutDown = new AtomicBoolean(false)
     val system = actorSystemOf(context)
 
-    new ActorMaterializerImpl(
+    new PhasedFusingActorMaterializer(
       system,
       materializerSettings,
       system.dispatchers,
@@ -86,7 +86,7 @@ object ActorMaterializer {
   private[akka] def systemMaterializer(materializerSettings: ActorMaterializerSettings, namePrefix: String,
                                        system: ExtendedActorSystem): ActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
-    new ActorMaterializerImpl(
+    new PhasedFusingActorMaterializer(
       system,
       materializerSettings,
       system.dispatchers,

@@ -30,8 +30,7 @@ class FlowScanAsyncSpec extends StreamSpec {
         .via(sumScanFlow)
         .runWith(TestSink.probe[Int])
         .request(1)
-        .expectNext(0)
-        .expectComplete()
+        .expectNextOrComplete(0)
     }
 
     "work with a single source" in {
@@ -73,7 +72,8 @@ class FlowScanAsyncSpec extends StreamSpec {
       Source.failed[Int](expected)
         .via(sumScanFlow)
         .runWith(TestSink.probe[Int])
-        .expectSubscriptionAndError(expected)
+        .request(2)
+        .expectNextOrError(0, expected)
     }
 
     "with the restarting decider" should {
