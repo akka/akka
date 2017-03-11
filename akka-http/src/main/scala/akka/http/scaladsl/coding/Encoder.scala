@@ -5,7 +5,6 @@
 package akka.http.scaladsl.coding
 
 import akka.NotUsed
-import akka.http.javadsl.model.HttpMessage.MessageTransformations
 import akka.http.scaladsl.model._
 import akka.http.impl.util.StreamUtils
 import akka.stream.FlowShape
@@ -19,15 +18,13 @@ trait Encoder {
 
   def messageFilter: HttpMessage ⇒ Boolean
 
-  def encodeMessage[T <: HttpMessage with MessageTransformations[T]](message: T): T#Self =
+  def encodeMessage(message: HttpMessage): HttpMessage#Self =
     if (messageFilter(message) && !message.headers.exists(Encoder.isContentEncodingHeader))
       message.transformEntityDataBytes(encoderFlow).withHeaders(`Content-Encoding`(encoding) +: message.headers)
     else message.self
 
   def encode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self =
-    if (messageFilter(message) && !message.headers.exists(Encoder.isContentEncodingHeader))
-      encodeData(message).withHeaders(`Content-Encoding`(encoding) +: message.headers)
-    else message.self
+    encodeMessage(message).asInstanceOf[T#Self]
 
   def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T =
     mapper.transformDataBytes(t, Flow[ByteString].via(newEncodeTransformer))

@@ -7,8 +7,6 @@ package docs.http.scaladsl
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
-import scala.concurrent.Future
-
 class HttpClientDecodingExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
   "single-request-decoding-example" in compileOnlySpec {
     //#single-request-decoding-example

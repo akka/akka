@@ -5,7 +5,6 @@
 package akka.http.scaladsl.coding
 
 import akka.NotUsed
-import akka.http.javadsl.model.HttpMessage.MessageTransformations
 import akka.http.scaladsl.model._
 import akka.stream.{ FlowShape, Materializer }
 import akka.stream.stage.GraphStage
@@ -18,15 +17,13 @@ import scala.concurrent.Future
 trait Decoder {
   def encoding: HttpEncoding
 
-  def decodeMessage[T <: HttpMessage with MessageTransformations[T]](message: T): T#Self =
+  def decodeMessage(message: HttpMessage): HttpMessage#Self =
     if (message.headers exists Encoder.isContentEncodingHeader)
       message.transformEntityDataBytes(decoderFlow).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
     else message.self
 
   def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self =
-    if (message.headers exists Encoder.isContentEncodingHeader)
-      decodeData(message).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
-    else message.self
+    decodeMessage(message).asInstanceOf[T#Self]
 
   def decodeData[T](t: T)(implicit mapper: DataMapper[T]): T = mapper.transformDataBytes(t, decoderFlow)
 

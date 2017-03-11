@@ -30,19 +30,11 @@ public enum Coder {
     }
 
     public HttpResponse encodeMessage(HttpResponse message) {
-        boolean shouldApply = (boolean) underlying.messageFilter().apply((HttpMessage) message);
-        if (shouldApply && message.getHeader(ContentEncoding.class).isPresent()) {
-            return message.transformEntityDataBytes(underlying.newEncodeTransformer());
-        }
-        return message;
+        return (HttpResponse) underlying.encodeMessage((akka.http.scaladsl.model.HttpMessage) message);
     }
 
     public HttpRequest encodeMessage(HttpRequest message) {
-        boolean shouldApply = (boolean) underlying.messageFilter().apply((HttpMessage) message);
-        if (shouldApply && message.getHeader(ContentEncoding.class).isPresent()) {
-            return message.transformEntityDataBytes(underlying.newEncodeTransformer());
-        }
-        return message;
+        return (HttpRequest) underlying.encodeMessage((akka.http.scaladsl.model.HttpMessage) message);
     }
 
     public ByteString encode(ByteString input) {
@@ -50,17 +42,11 @@ public enum Coder {
     }
 
     public HttpResponse decodeMessage(HttpResponse message) {
-        if (message.getHeader(ContentEncoding.class).isPresent()) {
-            return message.transformEntityDataBytes(underlying.decoderFlow());
-        }
-        return message;
+        return (HttpResponse) underlying.decodeMessage((akka.http.scaladsl.model.HttpMessage) message);
     }
 
     public HttpRequest decodeMessage(HttpRequest message) {
-        if (message.getHeader(ContentEncoding.class).isPresent()) {
-            return message.transformEntityDataBytes(underlying.decoderFlow());
-        }
-        return message;
+        return (HttpRequest) underlying.decodeMessage((akka.http.scaladsl.model.HttpMessage) message);
     }
 
     public CompletionStage<ByteString> decode(ByteString input, Materializer mat) {
