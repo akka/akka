@@ -274,7 +274,7 @@ object Actor {
    */
   final case class SignalOrMessage[T](
     signal: (ActorContext[T], Signal) ⇒ Behavior[T],
-    mesg:   (ActorContext[T], T) ⇒ Behavior[T]) extends Behavior[T] {
+    mesg:   (ActorContext[T], T) ⇒ Behavior[T]) extends Behavior[T] { // FIXME `message` as parameter name
     override def management(ctx: AC[T], msg: Signal): Behavior[T] = signal(ctx, msg)
     override def message(ctx: AC[T], msg: T): Behavior[T] = mesg(ctx, msg)
     override def toString = s"SignalOrMessage(${LineNumbers(signal)},${LineNumbers(mesg)})"
