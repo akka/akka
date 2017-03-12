@@ -75,7 +75,7 @@ object GraphApply {
  * INTERNAL API
  */
 object ModuleExtractor {
-  def unapply[S <: Shape, Mat](graph: Graph[S, Mat]): Option[Module] = graph match {
+  def unapply[S <: Shape, Mat](graph: Graph[S, Mat]): Option[Module] = graph.module match {
     case module: Module =>
       Some(module)
     case _ =>
