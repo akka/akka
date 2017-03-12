@@ -17,7 +17,7 @@ import akka.stream.stage.OutHandler
  */
 class BenchTestSource(elementCount: Int) extends GraphStage[SourceShape[java.lang.Integer]] {
 
-  private val elements = Array.ofDim[java.lang.Integer](elementCount)
+  private val elements = new Array[java.lang.Integer](elementCount)
   (1 to elementCount).map(n => elements(n - 1) = n)
 
   val out: Outlet[java.lang.Integer] = Outlet("BenchTestSource")

@@ -64,7 +64,7 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
         .runWith(Sink.ignore)
 
       // use large enough messages to fill up buffers
-      val payload = Array.ofDim[Byte](100000)
+      val payload = new Array[Byte](100000)
       val done = Source(1 to 1000).map(_ ⇒ payload)
         .map { n ⇒
           val envelope = pool.acquire()

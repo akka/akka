@@ -198,7 +198,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     def supplier(): Supplier[Array[Int]] = new Supplier[Array[Int]] {
-      override def get(): Array[Int] = Array.ofDim(1)
+      override def get(): Array[Int] = new Array(1)
     }
     def accumulator(): BiConsumer[Array[Int], Int] = new BiConsumer[Array[Int], Int] {
       override def accept(a: Array[Int], b: Int): Unit = a(0) = intIdentity.applyAsInt(b)

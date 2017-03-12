@@ -38,7 +38,7 @@ object GraphInterpreterSpecKit {
     var inOwners = SMap.empty[Inlet[_], GraphStageLogic]
     var outOwners = SMap.empty[Outlet[_], GraphStageLogic]
 
-    val logics = Array.ofDim[GraphStageLogic](upstreams.length + stages.length + downstreams.length)
+    val logics = new Array[GraphStageLogic](upstreams.length + stages.length + downstreams.length)
     var idx = 0
 
     while (idx < upstreams.length) {
@@ -134,7 +134,7 @@ object GraphInterpreterSpecKit {
     inOwners:       SMap[Inlet[_], GraphStageLogic],
     outOwners:      SMap[Outlet[_], GraphStageLogic]): Array[Connection] = {
 
-    val connections = Array.ofDim[Connection](connectedPorts.size)
+    val connections = new Array[Connection](connectedPorts.size)
     connectedPorts.zipWithIndex.foreach {
       case ((outlet, inlet), idx) ⇒
 
