@@ -103,15 +103,13 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
     "not emit empty group when finished while not being pushed" taggedAs TimingTest in {
       val p = TestPublisher.manualProbe[Int]()
       val c = TestSubscriber.manualProbe[immutable.Seq[Int]]()
-      Source.fromPublisher(p).groupedWithin(1000, 500.millis).to(Sink.fromSubscriber(c)).run()
+      Source.fromPublisher(p).groupedWithin(1000, 50.millis).to(Sink.fromSubscriber(c)).run()
       val pSub = p.expectSubscription
       val cSub = c.expectSubscription
       cSub.request(1)
       pSub.expectRequest
-      c.expectNoMsg(600.millis)
       pSub.sendComplete
       c.expectComplete
-      c.expectNoMsg(100.millis)
     }
 
     "reset time window when max elements reached" taggedAs TimingTest in {
