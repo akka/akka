@@ -107,6 +107,10 @@ public class HttpServerActorInteractionExample extends AllDirectives {
     }
   }
 
+  //#actor-interaction
+  /* TODO: replace with code that works for both 2.4 and 2.5, see #821
+  //#actor-interaction
+  // compiles only against Akka 2.4, see migration guide for how to rewrite for Akka 2.5
   static class Auction extends AbstractActor {
 
     private final LoggingAdapter log = Logging.getLogger(context().system(), this);
@@ -131,5 +135,12 @@ public class HttpServerActorInteractionExample extends AllDirectives {
       );
     }
   }
+  //#actor-interaction
+  */
+
+  static class Auction {
+    static Props props() { return null; }
+  }
+  //#actor-interaction
 }
 //#actor-interaction
