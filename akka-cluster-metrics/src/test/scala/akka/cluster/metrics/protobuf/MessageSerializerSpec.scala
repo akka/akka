@@ -4,18 +4,19 @@
 
 package akka.cluster.metrics.protobuf
 
-import akka.actor.{ ExtendedActorSystem, Address }
+import akka.actor.{ Address, ExtendedActorSystem }
 import akka.testkit.AkkaSpec
 import akka.cluster.MemberStatus
-import akka.cluster.metrics.MetricsGossip
-import akka.cluster.metrics.NodeMetrics
-import akka.cluster.metrics.Metric
-import akka.cluster.metrics.EWMA
+import akka.cluster.metrics._
 import akka.cluster.TestMember
-import akka.cluster.metrics.MetricsGossipEnvelope
 
 class MessageSerializerSpec extends AkkaSpec(
-  "akka.actor.provider = cluster") {
+  """
+     akka.actor.provider = cluster
+     akka.actor.serialize-messages = off
+     akka.actor.allow-java-serialization = off
+     akka.actor.enable-additional-serialization-bindings = on
+  """) {
 
   val serializer = new MessageSerializer(system.asInstanceOf[ExtendedActorSystem])
 
@@ -54,6 +55,20 @@ class MessageSerializerSpec extends AkkaSpec(
 
       checkSerialization(MetricsGossipEnvelope(a1.address, metricsGossip, true))
 
+    }
+  }
+
+  "AdaptiveLoadBalancingPool" must {
+    "be serializable" in {
+      val simplePool = AdaptiveLoadBalancingPool()
+      checkSerialization(simplePool)
+
+      val complicatedPool = AdaptiveLoadBalancingPool(
+        metricsSelector = MixMetricsSelector(Vector(CpuMetricsSelector, HeapMetricsSelector, SystemLoadAverageMetricsSelector)),
+        nrOfInstances = 7,
+        routerDispatcher = "my-dispatcher",
+        usePoolDispatcher = true)
+      checkSerialization(complicatedPool)
     }
   }
 }

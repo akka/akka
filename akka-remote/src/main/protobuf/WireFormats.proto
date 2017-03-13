@@ -185,11 +185,6 @@ message FromConfig {
   optional string routerDispatcher = 2;
 }
 
-message GenericRoutingGroup {
-  repeated string paths = 1;
-  optional string routerDispatcher = 2;
-}
-
 message GenericRoutingPool {
   required uint32 nrOfInstances = 1;
   optional string routerDispatcher = 2;
@@ -197,20 +192,9 @@ message GenericRoutingPool {
   optional Payload resizer = 4;
 }
 
-message ScatterGatherGroup {
-  required GenericRoutingGroup generic = 1;
-  required FiniteDuration within = 2;
-}
-
 message ScatterGatherPool {
   required GenericRoutingPool generic = 1;
   required FiniteDuration within = 2;
-}
-
-message TailChoppingGroup {
-  required GenericRoutingGroup generic = 1;
-  required FiniteDuration within = 2;
-  required FiniteDuration interval = 3;
 }
 
 message TailChoppingPool {

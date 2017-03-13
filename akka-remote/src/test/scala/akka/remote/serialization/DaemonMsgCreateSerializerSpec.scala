@@ -6,10 +6,10 @@ package akka.remote.serialization
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import akka.actor.{Actor, ActorRef,  Address, Deploy, ExtendedActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
-import akka.remote.{DaemonMsgCreate, RemoteScope}
-import akka.routing.{FromConfig, RoundRobinPool}
-import akka.serialization.{ Serialization,SerializationExtension}
+import akka.actor.{ Actor, ActorRef, Address, Deploy, ExtendedActorSystem, OneForOneStrategy, Props, SupervisorStrategy }
+import akka.remote.{ DaemonMsgCreate, RemoteScope }
+import akka.routing.{ FromConfig, RoundRobinPool }
+import akka.serialization.{ Serialization, SerializationExtension }
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._

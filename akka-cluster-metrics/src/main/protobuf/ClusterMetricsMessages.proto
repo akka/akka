@@ -71,3 +71,28 @@ message Address {
   required uint32 port = 3;
   optional string protocol = 4;
 }
+
+/****************************************
+ * Router pool (for remote deployment
+ ****************************************/
+
+message AdaptiveLoadBalancingPool {
+  // omitted if default
+  optional MetricsSelector metricsSelector = 1;
+  required uint32 nrOfInstances = 2;
+  // omitted if default
+  optional string routerDispatcher = 3;
+  required bool usePoolDispatcher = 4;
+}
+
+
+// couldn't figure out how to import Payload
+message MetricsSelector {
+  required uint32 serializerId = 1;
+  required string manifest = 2;
+  required bytes data = 3;
+}
+
+message MixMetricsSelector {
+  repeated MetricsSelector selectors = 1;
+}
