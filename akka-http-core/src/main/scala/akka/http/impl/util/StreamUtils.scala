@@ -243,6 +243,33 @@ private[http] object StreamUtils {
         }
       x.runWith(Sink.ignore)(mat)
   }
+
+  private trait Fuser {
+    def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M]
+  }
+  private val fuser: Fuser =
+    try {
+      val cl = Class.forName("akka.stream.Fusing$")
+      val field = cl.getDeclaredField("MODULE$")
+      field.setAccessible(true)
+      type Fusing = { def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] }
+      val instance = field.get(null).asInstanceOf[Fusing]
+
+      new Fuser {
+        def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = instance.aggressive(g)
+      }
+    } catch {
+      case ex: ClassNotFoundException ⇒
+        new Fuser {
+          def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = g // no fusing
+        }
+    }
+
+  /**
+   * Try to fuse flow using Fusing.aggressive reflectively on Akka 2.4 or do nothing on Akka >= 2.5 (where explicit
+   * fusing is neither supported nor necessary).
+   */
+  def fuseAggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = fuser.aggressive(g)
 }
 
 /**
