@@ -112,7 +112,7 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "work with ByteString as well" in assertAllStagesStopped {
       val chunkSize = 50
-      val buffer = Array.ofDim[Char](chunkSize)
+      val buffer = new Array[Char](chunkSize)
       val p = Source.unfoldResource[ByteString, Reader](
         () ⇒ new BufferedReader(new FileReader(manyLinesFile)),
         reader ⇒ {

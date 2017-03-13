@@ -168,7 +168,7 @@ abstract class SerializerWithStringManifest extends Serializer {
  *    try {
  *      toBinary(o, buf)
  *      buf.flip()
- *      val bytes = Array.ofDim[Byte](buf.remaining)
+ *      val bytes = new Array[Byte](buf.remaining)
  *      buf.get(bytes)
  *      bytes
  *    } finally {
@@ -402,7 +402,7 @@ class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerialize
     }
 
   override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = {
-    val bytes = Array.ofDim[Byte](buf.remaining())
+    val bytes = new Array[Byte](buf.remaining())
     buf.get(bytes)
     bytes
   }

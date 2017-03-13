@@ -161,7 +161,7 @@ class FramingSpec extends StreamSpec {
         }
       }
 
-      ByteString(Array.ofDim[Byte](fieldOffset)) ++ header ++ payload
+      ByteString(new Array[Byte](fieldOffset)) ++ header ++ payload
     }
 
     "work with various byte orders, frame lengths and offsets" taggedAs LongRunningTest in {

@@ -151,10 +151,10 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     val elemSize = 2
     val (bytes, from, until) = slice
     val (n, a, b) = (bytes.length / elemSize, from / elemSize, until / elemSize)
-    val reference = Array.ofDim[Short](n)
+    val reference = new Array[Short](n)
     bytes.asByteBuffer.order(byteOrder).asShortBuffer.get(reference, 0, n)
     val input = bytes.iterator
-    val decoded = Array.ofDim[Short](n)
+    val decoded = new Array[Short](n)
     for (i ← 0 until a) decoded(i) = input.getShort(byteOrder)
     input.getShorts(decoded, a, b - a)(byteOrder)
     for (i ← b until n) decoded(i) = input.getShort(byteOrder)
@@ -165,10 +165,10 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     val elemSize = 4
     val (bytes, from, until) = slice
     val (n, a, b) = (bytes.length / elemSize, from / elemSize, until / elemSize)
-    val reference = Array.ofDim[Int](n)
+    val reference = new Array[Int](n)
     bytes.asByteBuffer.order(byteOrder).asIntBuffer.get(reference, 0, n)
     val input = bytes.iterator
-    val decoded = Array.ofDim[Int](n)
+    val decoded = new Array[Int](n)
     for (i ← 0 until a) decoded(i) = input.getInt(byteOrder)
     input.getInts(decoded, a, b - a)(byteOrder)
     for (i ← b until n) decoded(i) = input.getInt(byteOrder)
@@ -179,10 +179,10 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     val elemSize = 8
     val (bytes, from, until) = slice
     val (n, a, b) = (bytes.length / elemSize, from / elemSize, until / elemSize)
-    val reference = Array.ofDim[Long](n)
+    val reference = new Array[Long](n)
     bytes.asByteBuffer.order(byteOrder).asLongBuffer.get(reference, 0, n)
     val input = bytes.iterator
-    val decoded = Array.ofDim[Long](n)
+    val decoded = new Array[Long](n)
     for (i ← 0 until a) decoded(i) = input.getLong(byteOrder)
     input.getLongs(decoded, a, b - a)(byteOrder)
     for (i ← b until n) decoded(i) = input.getLong(byteOrder)
@@ -193,10 +193,10 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     val elemSize = 4
     val (bytes, from, until) = slice
     val (n, a, b) = (bytes.length / elemSize, from / elemSize, until / elemSize)
-    val reference = Array.ofDim[Float](n)
+    val reference = new Array[Float](n)
     bytes.asByteBuffer.order(byteOrder).asFloatBuffer.get(reference, 0, n)
     val input = bytes.iterator
-    val decoded = Array.ofDim[Float](n)
+    val decoded = new Array[Float](n)
     for (i ← 0 until a) decoded(i) = input.getFloat(byteOrder)
     input.getFloats(decoded, a, b - a)(byteOrder)
     for (i ← b until n) decoded(i) = input.getFloat(byteOrder)
@@ -208,10 +208,10 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     val elemSize = 8
     val (bytes, from, until) = slice
     val (n, a, b) = (bytes.length / elemSize, from / elemSize, until / elemSize)
-    val reference = Array.ofDim[Double](n)
+    val reference = new Array[Double](n)
     bytes.asByteBuffer.order(byteOrder).asDoubleBuffer.get(reference, 0, n)
     val input = bytes.iterator
-    val decoded = Array.ofDim[Double](n)
+    val decoded = new Array[Double](n)
     for (i ← 0 until a) decoded(i) = input.getDouble(byteOrder)
     input.getDoubles(decoded, a, b - a)(byteOrder)
     for (i ← b until n) decoded(i) = input.getDouble(byteOrder)
@@ -222,7 +222,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
   def testShortEncoding(slice: ArraySlice[Short], byteOrder: ByteOrder): Boolean = {
     val elemSize = 2
     val (data, from, to) = slice
-    val reference = Array.ofDim[Byte](data.length * elemSize)
+    val reference = new Array[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asShortBuffer.put(data)
     val builder = ByteString.newBuilder
     for (i ← 0 until from) builder.putShort(data(i))(byteOrder)
@@ -234,7 +234,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
   def testIntEncoding(slice: ArraySlice[Int], byteOrder: ByteOrder): Boolean = {
     val elemSize = 4
     val (data, from, to) = slice
-    val reference = Array.ofDim[Byte](data.length * elemSize)
+    val reference = new Array[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asIntBuffer.put(data)
     val builder = ByteString.newBuilder
     for (i ← 0 until from) builder.putInt(data(i))(byteOrder)
@@ -246,7 +246,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
   def testLongEncoding(slice: ArraySlice[Long], byteOrder: ByteOrder): Boolean = {
     val elemSize = 8
     val (data, from, to) = slice
-    val reference = Array.ofDim[Byte](data.length * elemSize)
+    val reference = new Array[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asLongBuffer.put(data)
     val builder = ByteString.newBuilder
     for (i ← 0 until from) builder.putLong(data(i))(byteOrder)
@@ -259,7 +259,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     val elemSize = 8
     val (data, nBytes) = anb
 
-    val reference = Array.ofDim[Byte](data.length * elemSize)
+    val reference = new Array[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asLongBuffer.put(data)
     val builder = ByteString.newBuilder
     for (i ← 0 until data.length) builder.putLongPart(data(i), nBytes)(byteOrder)
@@ -273,7 +273,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
   def testFloatEncoding(slice: ArraySlice[Float], byteOrder: ByteOrder): Boolean = {
     val elemSize = 4
     val (data, from, to) = slice
-    val reference = Array.ofDim[Byte](data.length * elemSize)
+    val reference = new Array[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asFloatBuffer.put(data)
     val builder = ByteString.newBuilder
     for (i ← 0 until from) builder.putFloat(data(i))(byteOrder)
@@ -285,7 +285,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
   def testDoubleEncoding(slice: ArraySlice[Double], byteOrder: ByteOrder): Boolean = {
     val elemSize = 8
     val (data, from, to) = slice
-    val reference = Array.ofDim[Byte](data.length * elemSize)
+    val reference = new Array[Byte](data.length * elemSize)
     ByteBuffer.wrap(reference).order(byteOrder).asDoubleBuffer.put(data)
     val builder = ByteString.newBuilder
     for (i ← 0 until from) builder.putDouble(data(i))(byteOrder)
@@ -734,7 +734,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
         check { slice: ByteStringSlice ⇒
           slice match {
             case (xs, from, until) ⇒ likeVector(xs)({ it ⇒
-              val array = Array.ofDim[Byte](xs.length)
+              val array = new Array[Byte](xs.length)
               it.slice(from, until).copyToArray(array, from, until)
               array.toSeq
             })
@@ -815,7 +815,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
         check { slice: ByteStringSlice ⇒
           slice match {
             case (xs, from, until) ⇒ likeVecIt(xs)({ it ⇒
-              val array = Array.ofDim[Byte](xs.length)
+              val array = new Array[Byte](xs.length)
               it.slice(from, until).copyToArray(array, from, until)
               array.toSeq
             }, strict = false)
@@ -830,7 +830,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
         check { slice: ByteStringSlice ⇒
           val (bytes, from, to) = slice
           val input = bytes.iterator
-          val output = Array.ofDim[Byte](bytes.length)
+          val output = new Array[Byte](bytes.length)
           for (i ← 0 until from) output(i) = input.getByte
           input.getBytes(output, from, to - from)
           for (i ← to until bytes.length) output(i) = input.getByte
@@ -863,7 +863,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           val a = (0 max from) min bytes.length
           val b = (a max to) min bytes.length
           val input = bytes.iterator
-          val output = Array.ofDim[Byte](bytes.length)
+          val output = new Array[Byte](bytes.length)
 
           input.asInputStream.skip(a)
 
@@ -890,7 +890,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           val buffer = ByteBuffer.allocate(bytes.size)
           bytes.copyToBuffer(buffer)
           buffer.flip()
-          val array = Array.ofDim[Byte](bytes.size)
+          val array = new Array[Byte](bytes.size)
           buffer.get(array)
           bytes == array.toSeq
         }

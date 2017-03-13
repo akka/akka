@@ -136,7 +136,7 @@ private[remote] class Association(
   private val queueSize = advancedSettings.OutboundMessageQueueSize
   private val largeQueueSize = advancedSettings.OutboundLargeMessageQueueSize
 
-  private[this] val queues: Array[SendQueue.ProducerApi[OutboundEnvelope]] = Array.ofDim(2 + outboundLanes)
+  private[this] val queues: Array[SendQueue.ProducerApi[OutboundEnvelope]] = new Array(2 + outboundLanes)
   queues(ControlQueueIndex) = QueueWrapperImpl(createQueue(controlQueueSize)) // control stream
   queues(LargeQueueIndex) =
     if (transport.largeMessageChannelEnabled) // large messages stream

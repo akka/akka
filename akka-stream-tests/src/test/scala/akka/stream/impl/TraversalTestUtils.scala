@@ -100,8 +100,8 @@ object TraversalTestUtils {
     var islandStack: List[(IslandTag, Attributes)] = (TestDefaultIsland, Attributes.none) :: Nil
 
     val connections = b.inSlots
-    val inlets = Array.ofDim[InPort](connections)
-    val outlets = Array.ofDim[OutPort](connections)
+    val inlets = new Array[InPort](connections)
+    val outlets = new Array[OutPort](connections)
 
     // Track next assignable number for input ports
     var inOffs = 0

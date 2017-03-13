@@ -47,7 +47,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
     buffer.flip()
 
     // also make sure that the Array and ByteBuffer formats are equal, given LITTLE_ENDIAN
-    val array1 = Array.ofDim[Byte](buffer.remaining())
+    val array1 = new Array[Byte](buffer.remaining())
     buffer.get(array1)
     val array2 = serializer.toBinary(msg)
     ByteString(array1) should ===(ByteString(array2))
