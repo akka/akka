@@ -8,7 +8,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
 import net.virtualvoid.sbt.graph.ModuleGraph
 import org.kohsuke.github.{GHIssueComment, GitHubBuilder}
-import sbtunidoc.BaseUnidocPlugin.autoImport.unidoc
+import sbtunidoc.Plugin.UnidocKeys.unidoc
 import sbt.Keys._
 import sbt._
 
