@@ -579,8 +579,8 @@ final class GraphStageIsland(
   subflowFuser:      OptionVal[GraphInterpreterShell ⇒ ActorRef]) extends PhaseIsland[GraphStageLogic] {
   // TODO: remove these
   private val logicArrayType = Array.empty[GraphStageLogic]
-  private[this] val logics = new ArrayList[GraphStageLogic](64)
-  // TODO: Resize
+  private[this] val logics = new ArrayList[GraphStageLogic](16)
+
   private var connections = new Array[Connection](16)
   private var maxConnections = 0
   private var outConnections: List[Connection] = Nil
@@ -614,7 +614,7 @@ final class GraphStageIsland(
   def conn(slot: Int): Connection = {
     maxConnections = math.max(slot, maxConnections)
     if (maxConnections >= connections.length) {
-      connections = connections.padTo(connections.length * 2, null)
+      connections = java.util.Arrays.copyOf(connections, connections.length * 2)
     }
     val c = connections(slot)
     if (c ne null) c
