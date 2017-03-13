@@ -148,14 +148,14 @@ object TraversalTestUtils {
             matValueStack.removeLast()
           case PushNotUsed ⇒
             matValueStack.addLast(NotUsed)
-          case Transform(f) ⇒
+          case transform: Transform ⇒
             val prev = matValueStack.removeLast()
-            val result = f(prev)
+            val result = transform(prev)
             matValueStack.addLast(result)
-          case Compose(f) ⇒
+          case compose: ComposeOp ⇒
             val second = matValueStack.removeLast()
             val first = matValueStack.removeLast()
-            val result = f(first, second)
+            val result = compose(first, second)
             matValueStack.addLast(result)
           case PushAttributes(attr) ⇒
             attributesStack.addLast(attributesStack.getLast and attr)

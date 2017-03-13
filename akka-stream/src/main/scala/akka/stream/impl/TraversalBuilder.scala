@@ -6,6 +6,7 @@ package akka.stream.impl
 
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
+import akka.stream.impl.TraversalBuilder.{ AnyFunction1, AnyFunction2 }
 import akka.stream.scaladsl.Keep
 import akka.util.OptionVal
 import scala.language.existentials
@@ -117,8 +118,19 @@ sealed trait MaterializedValueOp extends Traversal
 
 case object Pop extends MaterializedValueOp
 case object PushNotUsed extends MaterializedValueOp
-final case class Transform(mapper: Any ⇒ Any) extends MaterializedValueOp
-final case class Compose(composer: (Any, Any) ⇒ Any) extends MaterializedValueOp
+final case class Transform(mapper: AnyFunction1) extends MaterializedValueOp {
+  def apply(arg: Any): Any = mapper.asInstanceOf[Any ⇒ Any](arg)
+}
+trait ComposeOp extends MaterializedValueOp {
+  def apply(arg1: Any, arg2: Any): Any
+}
+final case class Compose(composer: AnyFunction2) extends ComposeOp {
+  def apply(arg1: Any, arg2: Any): Any = composer.asInstanceOf[(Any, Any) ⇒ Any](arg1, arg2)
+}
+/** An optimization which applies the arguments in reverse order */
+final case class ComposeReversed(composer: AnyFunction2) extends ComposeOp {
+  def apply(arg1: Any, arg2: Any): Any = composer.asInstanceOf[(Any, Any) ⇒ Any](arg2, arg1)
+}
 
 final case class PushAttributes(attributes: Attributes) extends Traversal
 final case object PopAttributes extends Traversal
@@ -127,6 +139,10 @@ final case class EnterIsland(islandTag: IslandTag) extends Traversal
 final case object ExitIsland extends Traversal
 
 object TraversalBuilder {
+  // The most generic function1 and function2 (also completely useless, as we have thrown away all types)
+  // needs to be casted once to be useful (pending runtime exception in cases of bugs).
+  type AnyFunction1 = Nothing ⇒ Any
+  type AnyFunction2 = (Nothing, Nothing) ⇒ Any
 
   private val cachedEmptyCompleted = CompletedTraversalBuilder(PushNotUsed, 0, Map.empty, Attributes.none)
 
@@ -209,6 +225,7 @@ object TraversalBuilder {
         case Pop                                ⇒ prindent("pop mat")
         case _: Transform                       ⇒ prindent("transform mat")
         case _: Compose                         ⇒ prindent("compose mat")
+        case _: ComposeReversed                 ⇒ prindent("compose reversed mat")
         case PushAttributes(attr)               ⇒ prindent("push attr " + attr)
         case PopAttributes                      ⇒ prindent("pop attr")
         case EnterIsland(tag)                   ⇒ prindent("enter island " + tag)
@@ -273,13 +290,13 @@ sealed trait TraversalBuilder {
    *
    * See append in the [[LinearTraversalBuilder]] for a more efficient alternative for linear graphs.
    */
-  def add[A, B, C](submodule: TraversalBuilder, shape: Shape, combineMat: (A, B) ⇒ C): TraversalBuilder
+  def add(submodule: TraversalBuilder, shape: Shape, combineMat: AnyFunction2): TraversalBuilder
 
   /**
    * Maps the materialized value produced by the module built-up so far with the provided function, providing a new
    * TraversalBuilder returning the mapped materialized value.
    */
-  def transformMat[A, B](f: A ⇒ B): TraversalBuilder
+  def transformMat(f: AnyFunction1): TraversalBuilder
 
   protected def internalSetAttributes(attributes: Attributes): TraversalBuilder
 
@@ -370,7 +387,7 @@ final case class CompletedTraversalBuilder(
   attributes:     Attributes,
   islandTag:      OptionVal[IslandTag] = OptionVal.None) extends TraversalBuilder {
 
-  override def add[A, B, C](submodule: TraversalBuilder, shape: Shape, combineMat: (A, B) ⇒ C): TraversalBuilder = {
+  override def add(submodule: TraversalBuilder, shape: Shape, combineMat: AnyFunction2): TraversalBuilder = {
     val key = new BuilderKey
     CompositeTraversalBuilder(
       reverseBuildSteps = key :: Nil,
@@ -390,8 +407,8 @@ final case class CompletedTraversalBuilder(
     else PushAttributes(attributes).concat(withIsland).concat(PopAttributes)
   }
 
-  override def transformMat[A, B](f: (A) ⇒ B): TraversalBuilder =
-    copy(traversalSoFar = traversalSoFar.concat(Transform(f.asInstanceOf[Any ⇒ Any])))
+  override def transformMat(f: AnyFunction1): TraversalBuilder =
+    copy(traversalSoFar = traversalSoFar.concat(Transform(f)))
 
   override def offsetOf(in: InPort): Int = inToOffset(in)
 
@@ -431,7 +448,7 @@ final case class AtomicTraversalBuilder(
   unwiredOuts: Int,
   attributes:  Attributes) extends TraversalBuilder {
 
-  override def add[A, B, C](submodule: TraversalBuilder, shape: Shape, combineMat: (A, B) ⇒ C): TraversalBuilder = {
+  override def add(submodule: TraversalBuilder, shape: Shape, combineMat: AnyFunction2): TraversalBuilder = {
     // TODO: Use automatically a linear builder if applicable
     // Create a composite, add ourselves, then the other.
     CompositeTraversalBuilder(attributes = attributes)
@@ -439,7 +456,7 @@ final case class AtomicTraversalBuilder(
       .add(submodule, shape, combineMat)
   }
 
-  override def transformMat[A, B](f: (A) ⇒ B): TraversalBuilder =
+  override def transformMat(f: AnyFunction1): TraversalBuilder =
     TraversalBuilder.empty().add(this, module.shape, Keep.right).transformMat(f)
 
   override val inSlots: Int = module.shape.inlets.size
@@ -519,19 +536,21 @@ object LinearTraversalBuilder {
       attributes)
   }
 
-  def addMatCompose[A, B](t: Traversal, matCompose: (A, B) ⇒ Any): Traversal = {
+  def addMatCompose(t: Traversal, matCompose: AnyFunction2): Traversal = {
     if (matCompose eq Keep.left)
       Pop.concat(t)
     else if (matCompose eq Keep.right)
       t.concat(Pop)
-    else // TODO: Optimize this case so the extra function allocation is not needed. Maybe ReverseCompose?
-      t.concat(Compose((second, first) ⇒ matCompose.asInstanceOf[(Any, Any) ⇒ Any](first, second)))
+    else if (matCompose eq Keep.none)
+      t.concat(Pop).concat(Pop).concat(PushNotUsed)
+    else
+      t.concat(ComposeReversed(matCompose))
   }
 
-  def fromBuilder[A, B](
+  def fromBuilder(
     traversalBuilder: TraversalBuilder,
     shape:            Shape,
-    combine:          (A, B) ⇒ Any     = Keep.right[A, B]): LinearTraversalBuilder = {
+    combine:          AnyFunction2     = Keep.right): LinearTraversalBuilder = {
     traversalBuilder match {
       case linear: LinearTraversalBuilder ⇒
         if (combine eq Keep.right) linear
@@ -596,7 +615,7 @@ final case class LinearTraversalBuilder(
 
   protected def isEmpty: Boolean = inSlots == 0 && outPort.isEmpty
 
-  override def add[A, B, C](submodule: TraversalBuilder, shape: Shape, combineMat: (A, B) ⇒ C): TraversalBuilder = {
+  override def add(submodule: TraversalBuilder, shape: Shape, combineMat: AnyFunction2): TraversalBuilder = {
     throw new UnsupportedOperationException("LinearTraversal does not support free-form addition. Add it into a" +
       "composite builder instead and add the second module to that.")
   }
@@ -716,7 +735,7 @@ final case class LinearTraversalBuilder(
 
   override def unwiredOuts: Int = if (outPort.isDefined) 1 else 0
 
-  def append[A, B, C](toAppend: TraversalBuilder, shape: Shape, matCompose: (A, B) ⇒ C): LinearTraversalBuilder =
+  def append(toAppend: TraversalBuilder, shape: Shape, matCompose: AnyFunction2): LinearTraversalBuilder =
     append(LinearTraversalBuilder.fromBuilder(toAppend, shape, Keep.right), matCompose)
 
   // We don't really need the Shape for the linear append, but it is nicer to keep the API uniform here
@@ -724,7 +743,7 @@ final case class LinearTraversalBuilder(
    * Append any builder that is linear shaped (have at most one input and at most one output port) to the
    * end of this graph, connecting the output of the last module to the input of the appended module.
    */
-  def append[A, B, C](toAppend: LinearTraversalBuilder, matCompose: (A, B) ⇒ C): LinearTraversalBuilder = {
+  def append(toAppend: LinearTraversalBuilder, matCompose: AnyFunction2): LinearTraversalBuilder = {
 
     if (toAppend.isEmpty) {
       copy(
@@ -945,8 +964,8 @@ final case class LinearTraversalBuilder(
 
   }
 
-  override def transformMat[A, B](f: (A) ⇒ B): LinearTraversalBuilder = {
-    copy(traversalSoFar = traversalSoFar.concat(Transform(f.asInstanceOf[Any ⇒ Any])))
+  override def transformMat(f: AnyFunction1): LinearTraversalBuilder = {
+    copy(traversalSoFar = traversalSoFar.concat(Transform(f)))
   }
 
   /**
@@ -1097,7 +1116,7 @@ final case class CompositeTraversalBuilder(
   }
 
   // Requires that a remapped Shape's ports contain the same ID as their target ports!
-  def add[A, B, C](submodule: TraversalBuilder, shape: Shape, combineMat: (A, B) ⇒ C): TraversalBuilder = {
+  def add(submodule: TraversalBuilder, shape: Shape, combineMat: AnyFunction2): TraversalBuilder = {
     val builderKey = new BuilderKey
 
     val newBuildSteps =
@@ -1116,7 +1135,7 @@ final case class CompositeTraversalBuilder(
           builderKey ::
           reverseBuildSteps
       } else {
-        AppendTraversal(Compose(combineMat.asInstanceOf[(Any, Any) ⇒ Any])) ::
+        AppendTraversal(Compose(combineMat)) ::
           builderKey ::
           reverseBuildSteps
       }
@@ -1183,8 +1202,8 @@ final case class CompositeTraversalBuilder(
     copy(inOffsets = inOffsets - in).assign(out, offsetOf(in) - offsetOfModule(out))
   }
 
-  override def transformMat[A, B](f: (A) ⇒ B): TraversalBuilder = {
-    copy(finalSteps = finalSteps.concat(Transform(f.asInstanceOf[Any ⇒ Any])))
+  override def transformMat(f: AnyFunction1): TraversalBuilder = {
+    copy(finalSteps = finalSteps.concat(Transform(f)))
   }
 
   override def makeIsland(islandTag: IslandTag): TraversalBuilder = {
