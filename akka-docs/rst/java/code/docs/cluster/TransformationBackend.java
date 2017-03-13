@@ -13,7 +13,7 @@ import akka.cluster.MemberStatus;
 //#backend
 public class TransformationBackend extends AbstractActor {
 
-  Cluster cluster = Cluster.get(getContext().system());
+  Cluster cluster = Cluster.get(getContext().getSystem());
 
   //subscribe to cluster changes, MemberUp
   @Override
@@ -31,8 +31,8 @@ public class TransformationBackend extends AbstractActor {
   public Receive createReceive() {
     return receiveBuilder()
       .match(TransformationJob.class, job -> {
-        sender().tell(new TransformationResult(job.getText().toUpperCase()),
-          self());
+        getSender().tell(new TransformationResult(job.getText().toUpperCase()),
+         getSelf());
       })
       .match(CurrentClusterState.class, state -> {
         for (Member member : state.getMembers()) {
@@ -50,7 +50,7 @@ public class TransformationBackend extends AbstractActor {
   void register(Member member) {
     if (member.hasRole("frontend"))
       getContext().actorSelection(member.address() + "/user/frontend").tell(
-          BACKEND_REGISTRATION, self());
+          BACKEND_REGISTRATION, getSelf());
   }
 }
 //#backend

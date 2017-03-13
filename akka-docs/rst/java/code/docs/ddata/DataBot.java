@@ -30,15 +30,15 @@ public class DataBot extends AbstractActor {
   
   private static final String TICK = "tick";
   
-  private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   private final ActorRef replicator = 
-      DistributedData.get(getContext().system()).replicator();
-  private final Cluster node = Cluster.get(getContext().system());
+      DistributedData.get(getContext().getSystem()).replicator();
+  private final Cluster node = Cluster.get(getContext().getSystem());
 
-  private final Cancellable tickTask = getContext().system().scheduler().schedule(
-      Duration.create(5, SECONDS), Duration.create(5, SECONDS), self(), TICK,
-      getContext().dispatcher(), self());
+  private final Cancellable tickTask = getContext().getSystem().scheduler().schedule(
+      Duration.create(5, SECONDS), Duration.create(5, SECONDS), getSelf(), TICK,
+      getContext().dispatcher(), getSelf());
 
   private final Key<ORSet<String>> dataKey = ORSetKey.create("key");
   
@@ -63,7 +63,7 @@ public class DataBot extends AbstractActor {
           ORSet.create(), 
           Replicator.writeLocal(), 
           curr ->  curr.add(node, s));
-       replicator.tell(update, self());
+       replicator.tell(update, getSelf());
     } else {
       // remove
       log.info("Removing: {}", s);
@@ -72,7 +72,7 @@ public class DataBot extends AbstractActor {
           ORSet.create(), 
           Replicator.writeLocal(), 
           curr ->  curr.remove(node, s));
-      replicator.tell(update, self());
+      replicator.tell(update, getSelf());
     }
   }
 
@@ -89,7 +89,7 @@ public class DataBot extends AbstractActor {
   
   @Override
   public void preStart() {
-    Subscribe<ORSet<String>> subscribe = new Subscribe<>(dataKey, self());
+    Subscribe<ORSet<String>> subscribe = new Subscribe<>(dataKey, getSelf());
     replicator.tell(subscribe, ActorRef.noSender());
   }
 

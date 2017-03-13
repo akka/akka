@@ -73,7 +73,7 @@ public class SupervisedAsk {
           targetActor = getContext().actorOf(askParam.props);
           getContext().watch(targetActor);
           targetActor.forward(askParam.message, getContext());
-          Scheduler scheduler = getContext().system().scheduler();
+          Scheduler scheduler = getContext().getSystem().scheduler();
           timeoutMessage = scheduler.scheduleOnce(askParam.timeout.duration(),
               getSelf(), new AskTimeout(), getContext().dispatcher(), null);
         })

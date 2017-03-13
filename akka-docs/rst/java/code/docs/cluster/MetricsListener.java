@@ -14,11 +14,11 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 public class MetricsListener extends AbstractActor {
-  LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
-  Cluster cluster = Cluster.get(getContext().system());
+  Cluster cluster = Cluster.get(getContext().getSystem());
   
-  ClusterMetricsExtension extension = ClusterMetricsExtension.get(getContext().system());
+  ClusterMetricsExtension extension = ClusterMetricsExtension.get(getContext().getSystem());
 
   
   // Subscribe unto ClusterMetricsEvent events.

@@ -19,7 +19,7 @@ public class StatsWorker extends AbstractActor {
           length = word.length();
           cache.put(word, length);
         }
-        sender().tell(length, self());
+        getSender().tell(length, getSelf());
       })
       .build();
   }

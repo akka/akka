@@ -37,7 +37,7 @@ public class TestKitDocTest extends AbstractJavaTest {
   private final ActorSystem system = actorSystemResource.getSystem();
 
   //#test-actor-ref
-  static class MyActor extends AbstractActor {
+  static class MyJavaActor extends AbstractActor {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -54,9 +54,9 @@ public class TestKitDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateTestActorRef() {
-    final Props props = Props.create(MyActor.class);
-    final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "testA");
-    final MyActor actor = ref.underlyingActor();
+    final Props props = Props.create(MyJavaActor.class);
+    final TestActorRef<MyJavaActor> ref = TestActorRef.create(system, props, "testA");
+    final MyJavaActor actor = ref.underlyingActor();
     assertTrue(actor.testMe());
   }
   //#test-actor-ref
@@ -64,8 +64,8 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateAsk() throws Exception {
     //#test-behavior
-    final Props props = Props.create(MyActor.class);
-    final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "testB");
+    final Props props = Props.create(MyJavaActor.class);
+    final TestActorRef<MyJavaActor> ref = TestActorRef.create(system, props, "testB");
     final CompletableFuture<Object> future = PatternsCS.ask(ref, "say42", 3000).toCompletableFuture();
     assertTrue(future.isDone());
     assertEquals(42, future.get());
@@ -75,8 +75,8 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateExceptions() {
     //#test-expecting-exceptions
-    final Props props = Props.create(MyActor.class);
-    final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "myActor");
+    final Props props = Props.create(MyJavaActor.class);
+    final TestActorRef<MyJavaActor> ref = TestActorRef.create(system, props, "myActor");
     try {
       ref.receive(new Exception("expected"));
       Assert.fail("expected an exception to be thrown");
@@ -330,7 +330,7 @@ public class TestKitDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateWatch() {
-    final ActorRef target = system.actorOf(Props.create(MyActor.class));
+    final ActorRef target = system.actorOf(Props.create(MyJavaActor.class));
     //#test-probe-watch
     new JavaTestKit(system) {{
       final JavaTestKit probe = new JavaTestKit(system);
@@ -414,7 +414,7 @@ public class TestKitDocTest extends AbstractJavaTest {
   public void demonstrateCTD() {
     //#calling-thread-dispatcher
     system.actorOf(
-      Props.create(MyActor.class)
+      Props.create(MyJavaActor.class)
         .withDispatcher(CallingThreadDispatcher.Id()));
     //#calling-thread-dispatcher
   }

@@ -7,7 +7,7 @@ import org.apache.camel.ProducerTemplate;
 
 public class MyActor extends UntypedAbstractActor {
   public void onReceive(Object message) {
-    Camel camel = CamelExtension.get(getContext().system());
+    Camel camel = CamelExtension.get(getContext().getSystem());
     ProducerTemplate template = camel.template();
     template.sendBody("direct:news", message);
   }

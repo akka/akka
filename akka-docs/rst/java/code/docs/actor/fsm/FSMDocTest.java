@@ -2,12 +2,11 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.actorlambda.fsm;
+package docs.actor.fsm;
 
 import akka.actor.*;
 import akka.testkit.JavaTestKit;
 import docs.AbstractJavaTest;
-import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -15,8 +14,8 @@ import scala.concurrent.duration.Duration;
 
 import static org.junit.Assert.*;
 
-import static docs.actorlambda.fsm.FSMDocTest.StateType.*;
-import static docs.actorlambda.fsm.FSMDocTest.Messages.*;
+import static docs.actor.fsm.FSMDocTest.StateType.*;
+import static docs.actor.fsm.FSMDocTest.Messages.*;
 import static java.util.concurrent.TimeUnit.*;
 
 public class FSMDocTest extends AbstractJavaTest {

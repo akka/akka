@@ -107,7 +107,7 @@ public class RouterDocTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .match(Work.class, message -> {
-          router.route(message, sender());
+          router.route(message, getSender());
         })
         .match(Terminated.class, message -> {
           router = router.removeRoutee(message.actor());
@@ -132,7 +132,7 @@ public class RouterDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchAny(message -> sender().tell(message, getSelf()))
+        .matchAny(message -> getSender().tell(message, getSelf()))
         .build();
     }
   }
@@ -143,11 +143,11 @@ public class RouterDocTest extends AbstractJavaTest {
       return receiveBuilder()
         .matchAny(message -> {
           //#reply-with-self
-          sender().tell("reply", getSelf());
+          getSender().tell("reply", getSelf());
           //#reply-with-self
 
           //#reply-with-parent
-          sender().tell("reply", getContext().getParent());
+          getSender().tell("reply", getContext().getParent());
           //#reply-with-parent
         })
         .build();

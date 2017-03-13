@@ -26,7 +26,7 @@ public class FactorialFrontend extends AbstractActor {
   final int upToN;
   final boolean repeat;
 
-  LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   ActorRef backend = getContext().actorOf(FromConfig.getInstance().props(),
       "factorialBackendRouter");
@@ -64,7 +64,7 @@ public class FactorialFrontend extends AbstractActor {
   void sendJobs() {
     log.info("Starting batch of factorials up to [{}]", upToN);
     for (int n = 1; n <= upToN; n++) {
-      backend.tell(n, self());
+      backend.tell(n, getSelf());
     }
   }
 

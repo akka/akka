@@ -54,7 +54,7 @@ public class LambdaPersistencePluginDocTest {
             if (ai.correlationId().equals(1)) {
               Optional<ActorRef> store = ai.getActorRef();
               if (store.isPresent()) {
-                SharedLeveldbJournal.setStore(store.get(), getContext().system());
+                SharedLeveldbJournal.setStore(store.get(), getContext().getSystem());
               } else {
                 throw new RuntimeException("Couldn't identify store");
               }

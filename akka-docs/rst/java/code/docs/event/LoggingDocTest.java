@@ -41,7 +41,7 @@ public class LoggingDocTest extends AbstractJavaTest {
   @Test
   public void useLoggingActor() {
     ActorSystem system = ActorSystem.create("MySystem");
-    ActorRef myActor = system.actorOf(Props.create(MyActor.class, this));
+    ActorRef myActor = system.actorOf(Props.create(MyJavaActor.class, this));
     myActor.tell("test", ActorRef.noSender());
     JavaTestKit.shutdownActorSystem(system);
   }
@@ -85,10 +85,10 @@ public class LoggingDocTest extends AbstractJavaTest {
       public Receive createReceive() {
         return receiveBuilder()
           .match(Jazz.class, msg -> 
-            System.out.printf("%s is listening to: %s%n", self().path().name(), msg)
+            System.out.printf("%s is listening to: %s%n", getSelf().path().name(), msg)
           )
           .match(Electronic.class, msg -> 
-            System.out.printf("%s is listening to: %s%n", self().path().name(), msg)
+            System.out.printf("%s is listening to: %s%n", getSelf().path().name(), msg)
           )
           .build();
       }
@@ -151,8 +151,8 @@ public class LoggingDocTest extends AbstractJavaTest {
   }
 
   //#my-actor
-  class MyActor extends AbstractActor {
-    LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+  class MyJavaActor extends AbstractActor {
+    LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
     @Override
     public void preStart() {
@@ -211,7 +211,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .match(InitializeLogger.class, msg -> {
-          sender().tell(Logging.loggerInitialized(), self());
+          getSender().tell(Logging.loggerInitialized(), getSelf());
         })
         .match(Error.class, msg -> {
           // ...

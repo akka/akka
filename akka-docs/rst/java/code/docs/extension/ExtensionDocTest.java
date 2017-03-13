@@ -57,14 +57,14 @@ public class ExtensionDocTest extends AbstractJavaTest {
 
   static
   //#extension-usage-actor
-  public class MyActor extends AbstractActor {
+  public class MyJavaActor extends AbstractActor {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
         .matchAny(msg -> {
           // typically you would use static import of the
           // CountExtension.CountExtensionProvider field
-          CountExtension.CountExtensionProvider.get(getContext().system()).increment();
+          CountExtension.CountExtensionProvider.get(getContext().getSystem()).increment();
         })
         .build();
     }

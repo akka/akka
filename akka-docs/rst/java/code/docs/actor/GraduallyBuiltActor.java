@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.actorlambda;
+package docs.actor;
 
 //#imports
 import akka.actor.AbstractActor;
@@ -15,7 +15,7 @@ import akka.japi.pf.UnitPFBuilder;
 
 //#actor
 public class GraduallyBuiltActor extends AbstractActor {
-  private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   @Override
   public Receive createReceive() {

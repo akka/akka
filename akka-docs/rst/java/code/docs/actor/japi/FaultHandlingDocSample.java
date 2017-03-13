@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package docs.actorlambda.japi;
+package docs.actor.japi;
 
 //#all
 //#imports
@@ -14,7 +14,6 @@ import akka.actor.*;
 import akka.dispatch.Mapper;
 import akka.event.LoggingReceive;
 import akka.japi.pf.DeciderBuilder;
-import akka.japi.pf.ReceiveBuilder;
 import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -28,10 +27,10 @@ import static akka.actor.SupervisorStrategy.escalate;
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
 
-import static docs.actorlambda.japi.FaultHandlingDocSample.WorkerApi.*;
-import static docs.actorlambda.japi.FaultHandlingDocSample.CounterServiceApi.*;
-import static docs.actorlambda.japi.FaultHandlingDocSample.CounterApi.*;
-import static docs.actorlambda.japi.FaultHandlingDocSample.StorageApi.*;
+import static docs.actor.japi.FaultHandlingDocSample.WorkerApi.*;
+import static docs.actor.japi.FaultHandlingDocSample.CounterServiceApi.*;
+import static docs.actor.japi.FaultHandlingDocSample.CounterApi.*;
+import static docs.actor.japi.FaultHandlingDocSample.StorageApi.*;
 
 //#imports
 
@@ -77,13 +76,13 @@ public class FaultHandlingDocSample {
           log().info("Current progress: {} %", progress.percent);
           if (progress.percent >= 100.0) {
             log().info("That's all, shutting down");
-            getContext().system().terminate();
+            getContext().getSystem().terminate();
           }
         }).
         matchEquals(ReceiveTimeout.getInstance(), x -> {
           // No progress within 15 seconds, ServiceUnavailable
           log().error("Shutting down due to unavailable service");
-          getContext().system().terminate();
+          getContext().getSystem().terminate();
         }).build(), getContext());
     }
   }
@@ -139,7 +138,7 @@ public class FaultHandlingDocSample {
       return LoggingReceive.create(receiveBuilder().
         matchEquals(Start, x -> progressListener == null, x -> {
           progressListener = getSender();
-          getContext().system().scheduler().schedule(
+          getContext().getSystem().scheduler().schedule(
             Duration.Zero(), Duration.create(1, "second"), getSelf(), Do,
             getContext().dispatcher(), null
           );
@@ -291,7 +290,7 @@ public class FaultHandlingDocSample {
           // Tell the counter that there is no storage for the moment
           counter.tell(new UseStorage(null), getSelf());
           // Try to re-establish storage after while
-          getContext().system().scheduler().scheduleOnce(
+          getContext().getSystem().scheduler().scheduleOnce(
             Duration.create(10, "seconds"), getSelf(), Reconnect,
             getContext().dispatcher(), null);
         }).

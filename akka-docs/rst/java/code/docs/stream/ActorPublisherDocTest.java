@@ -79,10 +79,10 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .match(JobManagerProtocol.Job.class, job -> buf.size() == MAX_BUFFER_SIZE, job -> {
-          sender().tell(JobManagerProtocol.JobDenied, self());
+          getSender().tell(JobManagerProtocol.JobDenied, getSelf());
         })
         .match(JobManagerProtocol.Job.class, job -> {
-          sender().tell(JobManagerProtocol.JobAccepted, self());
+          getSender().tell(JobManagerProtocol.JobAccepted, getSelf());
 
           if (buf.isEmpty() && totalDemand() > 0)
             onNext(job);

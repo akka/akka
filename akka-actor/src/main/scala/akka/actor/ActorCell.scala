@@ -391,6 +391,8 @@ private[akka] class ActorCell(
 
   // Java API
   final def getParent() = parent
+  // Java API
+  final def getSystem() = system
 
   protected def stash(msg: SystemMessage): Unit = {
     assert(msg.unlinked)

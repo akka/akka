@@ -153,7 +153,7 @@ New messages sent to a persistent actor during recovery do not interfere with re
 only be received by a persistent actor after recovery completes.
 
 .. note::
-  Accessing the ``sender()`` for replayed messages will always result in a ``deadLetters`` reference,
+  Accessing the ``getSender()`` for replayed messages will always result in a ``deadLetters`` reference,
   as the original sender is presumed to be long gone. If you indeed have to notify an actor during
   recovery in the future, store its ``ActorPath`` explicitly in your persisted events.
 
@@ -235,7 +235,7 @@ The ``DiscardToDeadLetterStrategy`` strategy also has a pre-packaged companion c
 
 You can also query the default strategy via the Akka persistence extension singleton::
 
-    Persistence.get(getContext().system()).defaultInternalStashOverflowStrategy();
+    Persistence.get(getContext().getSystem()).defaultInternalStashOverflowStrategy();
 
 .. note::
   The bounded mailbox should be avoided in the persistent actor, by which the messages come from storage backends may 
@@ -283,7 +283,7 @@ It will be kept in memory and used when invoking the handler.
 
 .. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#defer
 
-Notice that the ``sender()`` is **safe** to access in the handler callback, and will be pointing to the original sender
+Notice that the ``getSender()`` method is **safe** to call in the handler callback, and will be pointing to the original sender
 of the command for which this ``deferAsync`` handler was called.
 
 .. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#defer-caller
@@ -297,7 +297,7 @@ of the command for which this ``deferAsync`` handler was called.
 Nested persist calls
 --------------------
 It is possible to call ``persist`` and ``persistAsync`` inside their respective callback blocks and they will properly
-retain both the thread safety (including the right value of ``sender()``) as well as stashing guarantees.
+retain both the thread safety (including the right return value of ``getSender()``) as well as stashing guarantees.
 
 In general it is encouraged to create command handlers which do not need to resort to nested event persisting,
 however there are situations where it may be useful. It is important to understand the ordering of callback execution in

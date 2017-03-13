@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package docs.actorlambda;
+package docs.actor;
 
 import docs.AbstractJavaTest;
 import org.junit.AfterClass;
@@ -35,7 +35,7 @@ public class DependencyInjectionDocTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .match(String.class, msg -> {
-          sender().tell(s, getSelf());
+          getSender().tell(s, getSelf());
         })
         .build();
     }

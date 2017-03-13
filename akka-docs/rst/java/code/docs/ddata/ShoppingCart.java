@@ -125,8 +125,8 @@ public class ShoppingCart extends AbstractActor {
     return Props.create(ShoppingCart.class, userId);
   }
 
-  private final ActorRef replicator = DistributedData.get(context().system()).replicator();
-  private final Cluster node = Cluster.get(context().system());
+  private final ActorRef replicator = DistributedData.get(getContext().getSystem()).replicator();
+  private final Cluster node = Cluster.get(getContext().getSystem());
 
   @SuppressWarnings("unused")
   private final String userId;

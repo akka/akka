@@ -21,9 +21,9 @@ public class TransformationFrontend extends AbstractActor {
   public Receive createReceive() {
     return receiveBuilder()
       .match(TransformationJob.class, job -> backends.isEmpty(), job -> {
-        sender().tell(
+        getSender().tell(
           new JobFailed("Service unavailable, try again later", job),
-          sender());
+            getSender());
       })
       .match(TransformationJob.class, job -> {
         jobCounter++;

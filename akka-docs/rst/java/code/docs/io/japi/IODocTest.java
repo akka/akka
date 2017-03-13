@@ -48,16 +48,16 @@ public class IODocTest extends AbstractJavaTest {
 
     @Override
     public void preStart() throws Exception {
-      final ActorRef tcp = Tcp.get(getContext().system()).manager();
+      final ActorRef tcp = Tcp.get(getContext().getSystem()).manager();
       tcp.tell(TcpMessage.bind(self(),
-          new InetSocketAddress("localhost", 0), 100), self());
+          new InetSocketAddress("localhost", 0), 100), getSelf());
     }
 
     @Override
     public Receive createReceive() {
       return receiveBuilder()
         .match(Bound.class, msg -> {
-          manager.tell(msg, self());
+          manager.tell(msg, getSelf());
   
         })
         .match(CommandFailed.class, msg -> {
@@ -65,10 +65,10 @@ public class IODocTest extends AbstractJavaTest {
         
         })
         .match(Connected.class, conn -> {
-          manager.tell(conn, self());
+          manager.tell(conn, getSelf());
           final ActorRef handler = getContext().actorOf(
               Props.create(SimplisticHandler.class));
-          sender().tell(TcpMessage.register(handler), self());
+          getSender().tell(TcpMessage.register(handler), getSelf());
         })
         .build();
     }
@@ -85,7 +85,7 @@ public class IODocTest extends AbstractJavaTest {
         .match(Received.class, msg -> {
           final ByteString data = msg.data();
           System.out.println(data);
-          sender().tell(TcpMessage.write(data), self());
+          getSender().tell(TcpMessage.write(data), getSelf());
         })
         .match(ConnectionClosed.class, msg -> {
           getContext().stop(self());
@@ -110,21 +110,21 @@ public class IODocTest extends AbstractJavaTest {
       this.remote = remote;
       this.listener = listener;
       
-      final ActorRef tcp = Tcp.get(getContext().system()).manager();
-      tcp.tell(TcpMessage.connect(remote), self());
+      final ActorRef tcp = Tcp.get(getContext().getSystem()).manager();
+      tcp.tell(TcpMessage.connect(remote), getSelf());
     }
 
     @Override
     public Receive createReceive() {
       return receiveBuilder()
         .match(CommandFailed.class, msg -> {
-          listener.tell("failed", self());
+          listener.tell("failed", getSelf());
           getContext().stop(self());
           
         })
         .match(Connected.class, msg -> {
-          listener.tell(msg, self());
-          sender().tell(TcpMessage.register(self()), self());
+          listener.tell(msg, getSelf());
+          getSender().tell(TcpMessage.register(self()), getSelf());
           getContext().become(connected(sender()));
         })
         .build();
@@ -133,16 +133,16 @@ public class IODocTest extends AbstractJavaTest {
     private Receive connected(final ActorRef connection) {
       return receiveBuilder()
         .match(ByteString.class, msg -> {
-            connection.tell(TcpMessage.write((ByteString) msg), self());
+            connection.tell(TcpMessage.write((ByteString) msg), getSelf());
         })
         .match(CommandFailed.class, msg -> {
           // OS kernel socket buffer was full
         })
         .match(Received.class, msg -> {
-          listener.tell(msg.data(), self());
+          listener.tell(msg.data(), getSelf());
         })
         .matchEquals("close", msg -> {
-          connection.tell(TcpMessage.close(), self());
+          connection.tell(TcpMessage.close(), getSelf());
         })
         .match(ConnectionClosed.class, msg -> {
           getContext().stop(self());

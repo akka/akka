@@ -72,6 +72,13 @@ object AbstractActor {
     def getParent(): ActorRef
 
     /**
+     * Returns the system this actor is running in.
+     *
+     * Same as `system()`
+     */
+    def getSystem(): ActorSystem
+
+    /**
      * Changes the Actor's behavior to become the new 'Receive' handler.
      * Replaces the current behavior on the top of the behavior stack.
      */

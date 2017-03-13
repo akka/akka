@@ -26,7 +26,7 @@ public class IODocTest {
 
   static public class Demo extends AbstractActor {
     ActorRef connectionActor = null;
-    ActorRef listener = self();
+    ActorRef listener =getSelf();
 
     @Override
     public Receive createReceive() {
@@ -38,20 +38,20 @@ public class IODocTest {
           //#connect
           final InetSocketAddress remoteAddr = new InetSocketAddress("127.0.0.1",
               12345);
-          tcp.tell(TcpMessage.connect(remoteAddr), self());
+          tcp.tell(TcpMessage.connect(remoteAddr), getSelf());
           //#connect
           //#connect-with-options
           final InetSocketAddress localAddr = new InetSocketAddress("127.0.0.1",
               1234);
           final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
           options.add(TcpSO.keepAlive(true));
-          tcp.tell(TcpMessage.connect(remoteAddr, localAddr, options, null, false), self());
+          tcp.tell(TcpMessage.connect(remoteAddr, localAddr, options, null, false), getSelf());
           //#connect-with-options
         })
         //#connected
         .match(Tcp.Connected.class, conn -> {
-          connectionActor = sender();
-          connectionActor.tell(TcpMessage.register(listener), self());
+          connectionActor = getSender();
+          connectionActor.tell(TcpMessage.register(listener), getSelf());
         })
         //#connected
         //#received
@@ -70,14 +70,14 @@ public class IODocTest {
         })
         //#received
         .matchEquals("bind", msg -> {
-          final ActorRef handler = self();
+          final ActorRef handler =getSelf();
           //#bind
           final ActorRef tcp = Tcp.get(system).manager();
           final InetSocketAddress localAddr = new InetSocketAddress("127.0.0.1",
               1234);
           final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
           options.add(TcpSO.reuseAddress(true));
-          tcp.tell(TcpMessage.bind(handler, localAddr, 10, options, false), self());
+          tcp.tell(TcpMessage.bind(handler, localAddr, 10, options, false), getSelf());
           //#bind
         })
         .build();

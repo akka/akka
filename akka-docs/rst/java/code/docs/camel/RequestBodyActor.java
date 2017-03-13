@@ -10,9 +10,9 @@ public class RequestBodyActor extends AbstractActor {
   public Receive createReceive() {
     return receiveBuilder()
       .matchAny(message -> {
-        Camel camel = CamelExtension.get(getContext().system());
+        Camel camel = CamelExtension.get(getContext().getSystem());
         ProducerTemplate template = camel.template();
-        sender().tell(template.requestBody("direct:news", message), self());
+        getSender().tell(template.requestBody("direct:news", message), getSelf());
       })
       .build();
   }

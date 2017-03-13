@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.actorlambda.fsm;
+package docs.actor.fsm;
 
 //#simple-imports
 import akka.actor.AbstractFSM;
@@ -14,11 +14,11 @@ import java.util.List;
 import scala.concurrent.duration.Duration;
 //#simple-imports
 
-import static docs.actorlambda.fsm.Buncher.Data;
-import static docs.actorlambda.fsm.Buncher.State.*;
-import static docs.actorlambda.fsm.Buncher.State;
-import static docs.actorlambda.fsm.Buncher.Uninitialized.*;
-import static docs.actorlambda.fsm.Events.*;
+import static docs.actor.fsm.Buncher.Data;
+import static docs.actor.fsm.Buncher.State.*;
+import static docs.actor.fsm.Buncher.State;
+import static docs.actor.fsm.Buncher.Uninitialized.*;
+import static docs.actor.fsm.Events.*;
 
 //#simple-fsm
 public class Buncher extends AbstractFSM<State, Data> {

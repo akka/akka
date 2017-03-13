@@ -83,10 +83,10 @@ public class RecipeGlobalRateLimit extends RecipeTest {
       this.replenishTimer = system.scheduler().schedule(
         this.tokenRefreshPeriod,
         this.tokenRefreshPeriod,
-        self(),
+       getSelf(),
         REPLENISH_TOKENS,
-        getContext().system().dispatcher(),
-        self());
+        getContext().getSystem().dispatcher(),
+       getSelf());
     }
     
     @Override
@@ -101,7 +101,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
         })
         .match(WantToPass.class, wtp -> {
           permitTokens -= 1;
-          sender().tell(MAY_PASS, self());
+          getSender().tell(MAY_PASS, getSelf());
           if (permitTokens == 0) {
             getContext().become(closed());
           }
@@ -129,7 +129,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
           permitTokens --;
       }
 
-      toBeReleased.stream().forEach(ref -> ref.tell(MAY_PASS, self()));
+      toBeReleased.stream().forEach(ref -> ref.tell(MAY_PASS, getSelf()));
       if (permitTokens > 0) {
         getContext().become(open());
       }
@@ -139,7 +139,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
     public void postStop() {
       replenishTimer.cancel();
       waitQueue.stream().forEach(ref -> {
-        ref.tell(new Status.Failure(new IllegalStateException("limiter stopped")), self());
+        ref.tell(new Status.Failure(new IllegalStateException("limiter stopped")), getSelf());
       });
     }
   }

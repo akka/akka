@@ -2,14 +2,15 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.actorlambda;
+package docs.actor;
 
 import akka.actor.*;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import docs.AbstractJavaTest;
-import static docs.actorlambda.Messages.Swap.Swap;
-import static docs.actorlambda.Messages.*;
+import static docs.actor.Messages.Swap.Swap;
+import static docs.actor.Messages.*;
+import static akka.japi.Util.immutableSeq;
 import akka.actor.CoordinatedShutdown;
 
 import akka.util.Timeout;
@@ -79,13 +80,13 @@ public class ActorDocTest extends AbstractJavaTest {
   static
   //#context-actorOf
   public class FirstActor extends AbstractActor {
-    final ActorRef child = getContext().actorOf(Props.create(MyActor.class), "myChild");
+    final ActorRef child = getContext().actorOf(Props.create(MyJavaActor.class), "myChild");
     
     //#plus-some-behavior
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .matchAny(x -> getSender().tell(x, self()))
+        .matchAny(x -> getSender().tell(x, getSelf()))
         .build();
     }
     //#plus-some-behavior
@@ -206,7 +207,7 @@ public class ActorDocTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .match(Integer.class, i -> {
-          getSender().tell(i + magicNumber, self());
+          getSender().tell(i + magicNumber, getSelf());
         })
         .build();
     }
@@ -301,7 +302,7 @@ public class ActorDocTest extends AbstractJavaTest {
     //#preStart
     @Override
     public void preStart() {
-      target = getContext().actorOf(Props.create(MyActor.class, "target"));
+      target = getContext().actorOf(Props.create(MyJavaActor.class, "target"));
     }
     //#preStart
     //#postStop
@@ -311,7 +312,7 @@ public class ActorDocTest extends AbstractJavaTest {
       final String message = "stopped";
       //#tell
       // don’t forget to think about who is the sender (2nd argument)
-      target.tell(message, self());
+      target.tell(message, getSelf());
       //#tell
       final Object result = "";
       //#forward
@@ -353,9 +354,9 @@ public class ActorDocTest extends AbstractJavaTest {
           //#reply-exception
           try {
             String result = operation();
-            getSender().tell(result, self());
+            getSender().tell(result, getSelf());
           } catch (Exception e) {
-            getSender().tell(new akka.actor.Status.Failure(e), self());
+            getSender().tell(new akka.actor.Status.Failure(e), getSelf());
             throw e;
           }
           //#reply-exception
@@ -383,10 +384,10 @@ public class ActorDocTest extends AbstractJavaTest {
     public Receive createReceive() {
       return receiveBuilder()
         .matchEquals("job", s -> {
-          worker.tell("crunch", self());
+          worker.tell("crunch", getSelf());
         })
         .matchEquals(SHUTDOWN, x -> {
-          worker.tell(PoisonPill.getInstance(), self());
+          worker.tell(PoisonPill.getInstance(), getSelf());
           getContext().become(shuttingDown());
         })
         .build();
@@ -395,7 +396,7 @@ public class ActorDocTest extends AbstractJavaTest {
     private AbstractActor.Receive shuttingDown() {
       return receiveBuilder()
         .matchEquals("job", s ->
-            getSender().tell("service unavailable, shutting down", self())
+            getSender().tell("service unavailable, shutting down", getSelf())
         )
         .match(Terminated.class, t -> t.actor().equals(worker), t -> 
           getContext().stop(self())
@@ -469,12 +470,12 @@ public class ActorDocTest extends AbstractJavaTest {
     //#system-actorOf
     // ActorSystem is a heavy object: create only one per application
     final ActorSystem system = ActorSystem.create("MySystem", config);
-    final ActorRef myActor = system.actorOf(Props.create(MyActor.class), "myactor");
+    final ActorRef MyJavaActor = system.actorOf(Props.create(MyJavaActor.class), "myactor");
     //#system-actorOf
     try {
       new JavaTestKit(system) {
         {
-          myActor.tell("hello", getRef());
+          MyJavaActor.tell("hello", getRef());
           expectMsgEquals("hello");
         }
       };
@@ -502,7 +503,7 @@ public class ActorDocTest extends AbstractJavaTest {
   @Test
   public void creatingPropsConfig() {
     //#creating-props
-    Props props1 = Props.create(MyActor.class);
+    Props props1 = Props.create(MyJavaActor.class);
     Props props2 = Props.create(ActorWithArgs.class,
       () -> new ActorWithArgs("arg")); // careful, see below
     Props props3 = Props.create(ActorWithArgs.class, "arg");
@@ -530,7 +531,7 @@ public class ActorDocTest extends AbstractJavaTest {
   //#receive-timeout
   public class ReceiveTimeoutActor extends AbstractActor {
     //#receive-timeout
-    ActorRef target = getContext().system().deadLetters();
+    ActorRef target = getContext().getSystem().deadLetters();
     //#receive-timeout
     public ReceiveTimeoutActor() {
       // To set an initial delay
@@ -545,14 +546,14 @@ public class ActorDocTest extends AbstractJavaTest {
           getContext().setReceiveTimeout(Duration.create(1, TimeUnit.SECONDS));
           //#receive-timeout
           target = getSender();
-          target.tell("Hello world", self());
+          target.tell("Hello world", getSelf());
           //#receive-timeout
         })
         .match(ReceiveTimeout.class, r -> {
           // To turn it off
           getContext().setReceiveTimeout(Duration.Undefined());
           //#receive-timeout
-          target.tell("timeout", self());
+          target.tell("timeout", getSelf());
           //#receive-timeout
         })
         .build();
@@ -582,7 +583,7 @@ public class ActorDocTest extends AbstractJavaTest {
       angry =
         receiveBuilder()
           .matchEquals("foo", s -> {
-            getSender().tell("I am already angry?", self());
+            getSender().tell("I am already angry?", getSelf());
           })
           .matchEquals("bar", s -> {
             getContext().become(happy);
@@ -591,7 +592,7 @@ public class ActorDocTest extends AbstractJavaTest {
 
       happy = receiveBuilder()
         .matchEquals("bar", s -> {
-          getSender().tell("I am already happy :-)", self());
+          getSender().tell("I am already happy :-)", getSelf());
         })
         .matchEquals("foo", s -> {
           getContext().become(angry);
@@ -678,7 +679,7 @@ public class ActorDocTest extends AbstractJavaTest {
           lastSender = getSender();
         })
         .match(Terminated.class, t -> t.actor().equals(child), t -> {
-          lastSender.tell("finished", self());
+          lastSender.tell("finished", getSelf());
         })
         .build();
     }
@@ -704,7 +705,7 @@ public class ActorDocTest extends AbstractJavaTest {
 
     public Follower(){
       ActorSelection selection = getContext().actorSelection("/user/another");
-      selection.tell(new Identify(identifyId), self());
+      selection.tell(new Identify(identifyId), getSelf());
     }
     
     @Override

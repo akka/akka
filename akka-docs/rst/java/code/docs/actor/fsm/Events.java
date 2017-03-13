@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.actorlambda.fsm;
+package docs.actor.fsm;
 
 import akka.actor.ActorRef;
 import java.util.List;

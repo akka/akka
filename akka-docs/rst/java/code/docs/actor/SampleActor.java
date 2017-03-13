@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.actorlambda;
+package docs.actor;
 
 //#sample-actor
 import akka.actor.AbstractActor;
@@ -12,7 +12,7 @@ public class SampleActor extends AbstractActor {
 
   private Receive guarded = receiveBuilder()
     .match(String.class, s -> s.contains("guard"), s -> {
-      sender().tell("contains(guard): " + s, getSelf());
+      getSender().tell("contains(guard): " + s, getSelf());
       getContext().unbecome();
     })
     .build();
@@ -21,13 +21,13 @@ public class SampleActor extends AbstractActor {
   public Receive createReceive() {
     return receiveBuilder()
       .match(Double.class, d -> {
-        sender().tell(d.isNaN() ? 0 : d, getSelf());
+        getSender().tell(d.isNaN() ? 0 : d, getSelf());
       })
       .match(Integer.class, i -> {
-        sender().tell(i * 10, getSelf());
+        getSender().tell(i * 10, getSelf());
       })
       .match(String.class, s -> s.startsWith("guard"), s -> {
-        sender().tell("startsWith(guard): " + s.toUpperCase(), getSelf());
+        getSender().tell("startsWith(guard): " + s.toUpperCase(), getSelf());
         getContext().become(guarded, false);
       })
       .build();

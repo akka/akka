@@ -27,7 +27,7 @@ public class SchedulerPatternTest extends AbstractJavaTest {
   //#schedule-constructor
   public class ScheduleInConstructor extends AbstractActor {
 
-    private final Cancellable tick = getContext().system().scheduler().schedule(
+    private final Cancellable tick = getContext().getSystem().scheduler().schedule(
       Duration.create(500, TimeUnit.MILLISECONDS),
       Duration.create(1, TimeUnit.SECONDS),
         getSelf(), "tick", getContext().dispatcher(), null);
@@ -74,7 +74,7 @@ public class SchedulerPatternTest extends AbstractJavaTest {
 
     @Override
     public void preStart() {
-      getContext().system().scheduler().scheduleOnce(
+      getContext().getSystem().scheduler().scheduleOnce(
         Duration.create(500, TimeUnit.MILLISECONDS),
           getSelf(), "tick", getContext().dispatcher(), null);
     }
@@ -89,7 +89,7 @@ public class SchedulerPatternTest extends AbstractJavaTest {
       return receiveBuilder()
         .matchEquals("tick", message -> {
           // send another periodic tick after the specified delay
-          getContext().system().scheduler().scheduleOnce(
+          getContext().getSystem().scheduler().scheduleOnce(
             Duration.create(1, TimeUnit.SECONDS),
               getSelf(), "tick", getContext().dispatcher(), null);
           // do something useful here

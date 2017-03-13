@@ -22,7 +22,7 @@ import akka.io.TcpMessage;
 public class EchoManager extends AbstractActor {
 
   final LoggingAdapter log = Logging
-      .getLogger(getContext().system(), self());
+      .getLogger(getContext().getSystem(), getSelf());
 
   final Class<?> handlerClass;
 
@@ -38,11 +38,11 @@ public class EchoManager extends AbstractActor {
   @Override
   public void preStart() throws Exception {
     //#manager
-    final ActorRef tcpManager = Tcp.get(getContext().system()).manager();
+    final ActorRef tcpManager = Tcp.get(getContext().getSystem()).manager();
     //#manager
     tcpManager.tell(
         TcpMessage.bind(self(), new InetSocketAddress("localhost", 0), 100),
-        self());
+       getSelf());
   }
 
   @Override
@@ -67,13 +67,13 @@ public class EchoManager extends AbstractActor {
       })
       .match(Connected.class, conn -> {
         log.info("received connection from [{}]", conn.remoteAddress());
-        final ActorRef connection = sender();
+        final ActorRef connection = getSender();
         final ActorRef handler = getContext().actorOf(
             Props.create(handlerClass, connection, conn.remoteAddress()));
         //#echo-manager
         connection.tell(TcpMessage.register(handler,
             true, // <-- keepOpenOnPeerClosed flag
-            true), self());
+            true), getSelf());
         //#echo-manager
       })
       .build();

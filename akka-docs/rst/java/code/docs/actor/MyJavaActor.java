@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.actorlambda;
+package docs.actor;
 
 //#imports
 import akka.actor.AbstractActor;
@@ -12,8 +12,8 @@ import akka.event.LoggingAdapter;
 //#imports
 
 //#my-actor
-public class MyActor extends AbstractActor {
-  private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+public class MyJavaActor extends AbstractActor {
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   @Override
   public Receive createReceive() {
@@ -22,7 +22,7 @@ public class MyActor extends AbstractActor {
         log.info("Received String message: {}", s);
         //#my-actor
         //#reply
-        sender().tell(s, getSelf());
+        getSender().tell(s, getSelf());
         //#reply
         //#my-actor
       })

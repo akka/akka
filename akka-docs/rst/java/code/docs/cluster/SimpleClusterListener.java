@@ -11,8 +11,8 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 public class SimpleClusterListener extends AbstractActor {
-  LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-  Cluster cluster = Cluster.get(getContext().system());
+  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+  Cluster cluster = Cluster.get(getContext().getSystem());
 
   //subscribe to cluster changes
   @Override

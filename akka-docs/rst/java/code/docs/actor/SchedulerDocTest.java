@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import akka.actor.Cancellable;
 //#imports2
 
-import docs.actorlambda.MyActor;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -29,7 +28,7 @@ public class SchedulerDocTest extends AbstractJavaTest {
       AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
-  private ActorRef testActor = system.actorOf(Props.create(MyActor.class));
+  private ActorRef testActor = system.actorOf(Props.create(MyJavaActor.class));
 
   @Test
   public void scheduleOneOffTask() {

@@ -17,7 +17,7 @@ It is possible to require a certain type of message queue for a certain type of 
 by having that actor implement the parameterized interface :class:`RequiresMessageQueue`. Here is
 an example:
 
-.. includecode:: code/docs/actorlambda/MyBoundedActor.java#my-bounded-untyped-actor
+.. includecode:: code/docs/actor/MyBoundedActor.java#my-bounded-untyped-actor
 
 The type parameter to the :class:`RequiresMessageQueue` interface needs to be mapped to a mailbox in
 configuration like this:

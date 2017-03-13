@@ -25,7 +25,7 @@ import akka.util.ByteString;
 public class EchoHandler extends AbstractActor {
 
   final LoggingAdapter log = Logging
-      .getLogger(getContext().system(), self());
+      .getLogger(getContext().getSystem(), getSelf());
 
   final ActorRef connection;
   final InetSocketAddress remote;
@@ -72,7 +72,7 @@ public class EchoHandler extends AbstractActor {
     return receiveBuilder()
       .match(Received.class, msg -> {
         final ByteString data = msg.data();
-        connection.tell(TcpMessage.write(data, new Ack(currentOffset())), self());
+        connection.tell(TcpMessage.write(data, new Ack(currentOffset())), getSelf());
         buffer(data);
 
       })
@@ -81,7 +81,7 @@ public class EchoHandler extends AbstractActor {
       })
       .match(CommandFailed.class, msg -> {
         final Write w = (Write) msg.cmd();
-        connection.tell(TcpMessage.resumeWriting(), self());
+        connection.tell(TcpMessage.resumeWriting(), getSelf());
         getContext().become(buffering((Ack) w.ack()));
       })
       .match(ConnectionClosed.class, msg -> {
@@ -159,7 +159,7 @@ public class EchoHandler extends AbstractActor {
     return receiveBuilder()
       .match(CommandFailed.class, msg -> {
         // the command can only have been a Write
-        connection.tell(TcpMessage.resumeWriting(), self());
+        connection.tell(TcpMessage.resumeWriting(), getSelf());
         getContext().become(closeResend(), false);
       })
       .match(Integer.class, msg -> {  
@@ -201,7 +201,7 @@ public class EchoHandler extends AbstractActor {
 
     } else if (stored > HIGH_WATERMARK) {
       log.debug("suspending reading at {}", currentOffset());
-      connection.tell(TcpMessage.suspendReading(), self());
+      connection.tell(TcpMessage.suspendReading(), getSelf());
       suspended = true;
     }
   }
@@ -217,7 +217,7 @@ public class EchoHandler extends AbstractActor {
 
     if (suspended && stored < LOW_WATERMARK) {
       log.debug("resuming reading");
-      connection.tell(TcpMessage.resumeReading(), self());
+      connection.tell(TcpMessage.resumeReading(), getSelf());
       suspended = false;
     }
   }
@@ -230,12 +230,12 @@ public class EchoHandler extends AbstractActor {
   protected void writeAll() {
     int i = 0;
     for (ByteString data : storage) {
-      connection.tell(TcpMessage.write(data, new Ack(storageOffset + i++)), self());
+      connection.tell(TcpMessage.write(data, new Ack(storageOffset + i++)), getSelf());
     }
   }
 
   protected void writeFirst() {
-    connection.tell(TcpMessage.write(storage.peek(), new Ack(storageOffset)), self());
+    connection.tell(TcpMessage.write(storage.peek(), new Ack(storageOffset)), getSelf());
   }
 
   //#storage-omitted

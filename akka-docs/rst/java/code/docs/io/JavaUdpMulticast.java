@@ -58,7 +58,7 @@ public class JavaUdpMulticast {
     //#multicast-group
 
     public static class Listener extends AbstractActor {
-        LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+        LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
         ActorRef sink;
 
@@ -70,10 +70,10 @@ public class JavaUdpMulticast {
             options.add(new Inet6ProtocolFamily());
             options.add(new MulticastGroup(group, iface));
 
-            final ActorRef mgr = Udp.get(getContext().system()).getManager();
+            final ActorRef mgr = Udp.get(getContext().getSystem()).getManager();
             // listen for datagrams on this address
             InetSocketAddress endpoint = new InetSocketAddress(port);
-            mgr.tell(UdpMessage.bind(self(), endpoint, options), self());
+            mgr.tell(UdpMessage.bind(self(), endpoint, options), getSelf());
             //#bind
         }
 
@@ -82,19 +82,19 @@ public class JavaUdpMulticast {
             return receiveBuilder()
                 .match(Udp.Bound.class, bound -> {
                   log.info("Bound to {}", bound.localAddress());
-                  sink.tell(bound, self());
+                  sink.tell(bound, getSelf());
                 })
                 .match(Udp.Received.class, received -> {
                   final String txt = received.data().decodeString("utf-8");
                   log.info("Received '{}' from {}", txt, received.sender());
-                  sink.tell(txt, self());
+                  sink.tell(txt, getSelf());
                 })
                 .build();
         }
     }
 
     public static class Sender extends AbstractActor {
-        LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+        LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
         String iface;
         String group;
@@ -110,8 +110,8 @@ public class JavaUdpMulticast {
             List<Inet.SocketOption> options = new ArrayList<>();
             options.add(new Inet6ProtocolFamily());
 
-            final ActorRef mgr = Udp.get(getContext().system()).getManager();
-            mgr.tell(UdpMessage.simpleSender(options), self());
+            final ActorRef mgr = Udp.get(getContext().getSystem()).getManager();
+            mgr.tell(UdpMessage.simpleSender(options), getSelf());
         }
 
         @Override
@@ -120,7 +120,7 @@ public class JavaUdpMulticast {
                 .match(Udp.SimpleSenderReady.class, x -> {
                     InetSocketAddress remote = new InetSocketAddress(group + "%" + iface, port);
                     log.info("Sending message to " + remote);
-                    sender().tell(UdpMessage.send(ByteString.fromString(message), remote), self());
+                    getSender().tell(UdpMessage.send(ByteString.fromString(message), remote), getSelf());
                 })
                 .build();
         }

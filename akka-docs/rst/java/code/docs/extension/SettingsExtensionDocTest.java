@@ -60,10 +60,10 @@ public class SettingsExtensionDocTest extends AbstractJavaTest {
 
   static
   //#extension-usage-actor
-  public class MyActor extends AbstractActor {
+  public class MyJavaActor extends AbstractActor {
     // typically you would use static import of the Settings.SettingsProvider field
     final SettingsImpl settings =
-      Settings.SettingsProvider.get(getContext().system());
+      Settings.SettingsProvider.get(getContext().getSystem());
     Connection connection =
       connect(settings.DB_URI, settings.CIRCUIT_BREAKER_TIMEOUT);
 

@@ -176,7 +176,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
               if (queue.size() > MAX_QUEUE_SIZE)
                 throw new RuntimeException("queued too many: " + queue.size());
   
-              router.route(WorkerPoolProtocol.work(msg.id), self());
+              router.route(WorkerPoolProtocol.work(msg.id), getSelf());
           })
           .match(ActorSubscriberMessage.onCompleteInstance().getClass(), complete -> {
             if (queue.isEmpty()) {
@@ -185,7 +185,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
           })
           .match(WorkerPoolProtocol.Reply.class, reply -> {
             int id = reply.id;
-            queue.get(id).tell(WorkerPoolProtocol.done(id), self());
+            queue.get(id).tell(WorkerPoolProtocol.done(id), getSelf());
             queue.remove(id);
             if (canceled() && queue.isEmpty()) {
               getContext().stop(self());
@@ -201,7 +201,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
         return receiveBuilder()
           .match(WorkerPoolProtocol.Work.class, work -> {
             // ...
-            sender().tell(WorkerPoolProtocol.reply(work.id), self());
+            getSender().tell(WorkerPoolProtocol.reply(work.id), getSelf());
           })
           .build();
       }

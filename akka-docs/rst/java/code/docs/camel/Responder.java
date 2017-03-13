@@ -10,7 +10,7 @@ public class Responder extends UntypedAbstractActor{
   public void onReceive(Object message) {
     if (message instanceof CamelMessage) {
       CamelMessage camelMessage = (CamelMessage) message;
-      sender().tell(createResponse(camelMessage), self());
+      getSender().tell(createResponse(camelMessage), getSelf());
     } else
       unhandled(message);
   }

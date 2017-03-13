@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package docs.actorlambda;
+package docs.actor;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -75,7 +75,7 @@ public class InitializationDocTest extends AbstractJavaTest {
           initializeMe = "Up and running";
           getContext().become(receiveBuilder()
             .matchEquals("U OK?", m2 -> {
-              sender().tell(initializeMe, getSelf());
+              getSender().tell(initializeMe, getSelf());
             })
             .build());
         })
@@ -98,7 +98,7 @@ public class InitializationDocTest extends AbstractJavaTest {
       return receiveBuilder()
         .matchUnchecked(GenericMessage.class, (GenericMessage<String> msg) -> {
           GenericMessage<String> message = msg;
-          sender().tell(message.value.toUpperCase(), getSelf());
+          getSender().tell(message.value.toUpperCase(), getSelf());
         })
         .build();
     }
@@ -111,7 +111,7 @@ public class InitializationDocTest extends AbstractJavaTest {
 
       return receiveBuilder()
         .matchUnchecked(GenericMessage.class, typedPredicate, (GenericMessage<String> msg) -> {
-          sender().tell(msg.value.toUpperCase(), getSelf());
+          getSender().tell(msg.value.toUpperCase(), getSelf());
         })
         .build();
     }

@@ -63,7 +63,7 @@ will then be replicated according to the given consistency level.
 
 The ``modify`` function is called by the ``Replicator`` actor and must therefore be a pure
 function that only uses the data parameter and stable fields from enclosing scope. It must
-for example not access ``sender()`` reference of an enclosing actor.
+for example not access the ``sender`` reference of an enclosing actor.
 
 ``Update`` is intended to only be sent from an actor running in same local ``ActorSystem`` as
  the ``Replicator``, because the ``modify`` function is typically not serializable.

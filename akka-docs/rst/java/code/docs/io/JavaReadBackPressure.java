@@ -26,15 +26,15 @@ public class JavaReadBackPressure {
         public Receive createReceive() {
             return receiveBuilder()
                 .match(Tcp.Bound.class, x -> {
-                  listener = sender();
+                  listener = getSender();
                   // Accept connections one by one
-                  listener.tell(TcpMessage.resumeAccepting(1), self());
+                  listener.tell(TcpMessage.resumeAccepting(1), getSelf());
                 })
                 .match(Tcp.Connected.class, x -> {
-                  ActorRef handler = getContext().actorOf(Props.create(PullEcho.class, sender()));
-                  sender().tell(TcpMessage.register(handler), self());
+                  ActorRef handler = getContext().actorOf(Props.create(PullEcho.class, getSender()));
+                    getSender().tell(TcpMessage.register(handler), getSelf());
                   // Resume accepting connections
-                  listener.tell(TcpMessage.resumeAccepting(1), self());
+                  listener.tell(TcpMessage.resumeAccepting(1), getSelf());
                 })
                 .build();
         }
@@ -43,11 +43,11 @@ public class JavaReadBackPressure {
         @Override
         public void preStart() throws Exception {
             //#pull-mode-bind
-            tcp = Tcp.get(getContext().system()).manager();
+            tcp = Tcp.get(getContext().getSystem()).manager();
             final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
             tcp.tell(
                TcpMessage.bind(self(), new InetSocketAddress("localhost", 0), 100, options, true),
-               self()
+              getSelf()
             );
             //#pull-mode-bind
         }
@@ -57,7 +57,7 @@ public class JavaReadBackPressure {
             final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
             tcp.tell(
                TcpMessage.connect(new InetSocketAddress("localhost", 3000), null, options, null, true),
-               self()
+              getSelf()
             );
             //#pull-mode-connect
         }
@@ -76,7 +76,7 @@ public class JavaReadBackPressure {
         //#pull-reading-echo
         @Override
         public void preStart() throws Exception {
-            connection.tell(TcpMessage.resumeReading(), self());
+            connection.tell(TcpMessage.resumeReading(), getSelf());
         }
 
         @Override
@@ -84,10 +84,10 @@ public class JavaReadBackPressure {
             return receiveBuilder()
                 .match(Tcp.Received.class, message -> {
                     ByteString data = message.data();
-                    connection.tell(TcpMessage.write(data, new Ack()), self());
+                    connection.tell(TcpMessage.write(data, new Ack()), getSelf());
                 })
                 .match(Ack.class, message -> {
-                    connection.tell(TcpMessage.resumeReading(), self());
+                    connection.tell(TcpMessage.resumeReading(), getSelf());
                 })
                 .build();
         }

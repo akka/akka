@@ -113,7 +113,7 @@ public class FutureDocTest extends AbstractJavaTest {
 
   @Test
   public void useBlockingFromActor() throws Exception {
-    ActorRef actor = system.actorOf(Props.create(MyActor.class));
+    ActorRef actor = system.actorOf(Props.create(MyJavaActor.class));
     String msg = "hello";
     //#ask-blocking
     Timeout timeout = new Timeout(Duration.create(5, "seconds"));
@@ -656,18 +656,18 @@ public class FutureDocTest extends AbstractJavaTest {
 
 
 
-  public static class MyActor extends AbstractActor {
+  public static class MyJavaActor extends AbstractActor {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
         .match(String.class, msg -> {
-          sender().tell(msg.toUpperCase(), self());
+          getSender().tell(msg.toUpperCase(), getSelf());
         })
         .match(Integer.class, i -> {
           if (i < 0) {
-            sender().tell(new Failure(new ArithmeticException("Negative values not supported")), self());
+            getSender().tell(new Failure(new ArithmeticException("Negative values not supported")), getSelf());
           } else {
-            sender().tell(i, self());
+            getSender().tell(i, getSelf());
           }
         })
         .build();

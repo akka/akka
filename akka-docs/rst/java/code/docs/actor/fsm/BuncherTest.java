@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.actorlambda.fsm;
+package docs.actor.fsm;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -14,11 +14,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import java.util.LinkedList;
 
-import docs.actorlambda.fsm.*;
-import static docs.actorlambda.fsm.Events.Batch;
-import static docs.actorlambda.fsm.Events.Queue;
-import static docs.actorlambda.fsm.Events.SetTarget;
-import static docs.actorlambda.fsm.Events.Flush.Flush;
+import static docs.actor.fsm.Events.Batch;
+import static docs.actor.fsm.Events.Queue;
+import static docs.actor.fsm.Events.SetTarget;
+import static docs.actor.fsm.Events.Flush.Flush;
 
 //#test-code
 public class BuncherTest extends AbstractJavaTest {

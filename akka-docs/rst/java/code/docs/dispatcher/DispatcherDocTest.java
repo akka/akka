@@ -8,8 +8,8 @@ import akka.dispatch.RequiresMessageQueue;
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;
 import docs.AbstractJavaTest;
-import docs.actorlambda.MyBoundedActor;
-import docs.actorlambda.MyActor;
+import docs.actor.MyBoundedActor;
+import docs.actor.MyJavaActor;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.ExecutionContext;
@@ -17,7 +17,6 @@ import scala.concurrent.ExecutionContext;
 //#imports
 import akka.actor.*;
 //#imports
-import akka.actor.AbstractActor.Receive;
 //#imports-prio
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -52,7 +51,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   public void defineDispatcherInConfig() {
     //#defining-dispatcher-in-config
     ActorRef myActor =
-      system.actorOf(Props.create(MyActor.class),
+      system.actorOf(Props.create(MyJavaActor.class),
         "myactor");
     //#defining-dispatcher-in-config
   }
@@ -62,7 +61,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   public void defineDispatcherInCode() {
     //#defining-dispatcher-in-code
     ActorRef myActor =
-      system.actorOf(Props.create(MyActor.class).withDispatcher("my-dispatcher"),
+      system.actorOf(Props.create(MyJavaActor.class).withDispatcher("my-dispatcher"),
         "myactor3");
     //#defining-dispatcher-in-code
   }
@@ -71,7 +70,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   @Test
   public void defineFixedPoolSizeDispatcher() {
     //#defining-fixed-pool-size-dispatcher
-    ActorRef myActor = system.actorOf(Props.create(MyActor.class)
+    ActorRef myActor = system.actorOf(Props.create(MyJavaActor.class)
         .withDispatcher("blocking-io-dispatcher"));
     //#defining-fixed-pool-size-dispatcher
   }
@@ -80,7 +79,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   @Test
   public void definePinnedDispatcher() {
     //#defining-pinned-dispatcher
-    ActorRef myActor = system.actorOf(Props.create(MyActor.class)
+    ActorRef myActor = system.actorOf(Props.create(MyJavaActor.class)
         .withDispatcher("my-pinned-dispatcher"));
     //#defining-pinned-dispatcher
   }
@@ -99,7 +98,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   public void defineMailboxInConfig() {
     //#defining-mailbox-in-config
     ActorRef myActor =
-      system.actorOf(Props.create(MyActor.class),
+      system.actorOf(Props.create(MyJavaActor.class),
         "priomailboxactor");
     //#defining-mailbox-in-config
   }
@@ -109,7 +108,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
   public void defineMailboxInCode() {
     //#defining-mailbox-in-code
     ActorRef myActor =
-      system.actorOf(Props.create(MyActor.class)
+      system.actorOf(Props.create(MyJavaActor.class)
         .withMailbox("prio-mailbox"));
     //#defining-mailbox-in-code
   }
@@ -127,12 +126,12 @@ public class DispatcherDocTest extends AbstractJavaTest {
     //#prio-dispatcher
 
     class Demo extends AbstractActor {
-      LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+      LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
       {
         for (Object msg : new Object[] { "lowpriority", "lowpriority",
             "highpriority", "pigdog", "pigdog2", "pigdog3", "highpriority",
             PoisonPill.getInstance() }) {
-          self().tell(msg, self());
+         getSelf().tell(msg, getSelf());
         }
       }
 
@@ -170,11 +169,11 @@ public class DispatcherDocTest extends AbstractJavaTest {
     //#control-aware-dispatcher
 
     class Demo extends AbstractActor {
-      LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+      LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
       {
         for (Object msg : new Object[] { "foo", "bar", new MyControlMessage(),
                 PoisonPill.getInstance() }) {
-          self().tell(msg, self());
+         getSelf().tell(msg, getSelf());
         }
       }
 
@@ -232,7 +231,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
 
   @Test
   public void requiredMailboxDispatcher() throws Exception {
-    ActorRef myActor = system.actorOf(Props.create(MyActor.class)
+    ActorRef myActor = system.actorOf(Props.create(MyJavaActor.class)
       .withDispatcher("custom-dispatcher"));
   }
 

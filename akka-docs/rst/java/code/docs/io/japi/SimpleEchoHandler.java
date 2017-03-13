@@ -23,7 +23,7 @@ import akka.util.ByteString;
 public class SimpleEchoHandler extends AbstractActor {
   
   final LoggingAdapter log = Logging
-      .getLogger(getContext().system(), getSelf());
+      .getLogger(getContext().getSystem(), getSelf());
 
   final ActorRef connection;
   final InetSocketAddress remote;
@@ -115,7 +115,7 @@ public class SimpleEchoHandler extends AbstractActor {
 
     if (suspended && stored < lowWatermark) {
       log.debug("resuming reading");
-      connection.tell(TcpMessage.resumeReading(), self());
+      connection.tell(TcpMessage.resumeReading(), getSelf());
       suspended = false;
     }
     
@@ -126,7 +126,7 @@ public class SimpleEchoHandler extends AbstractActor {
         getContext().unbecome();
       }
     } else {
-      connection.tell(TcpMessage.write(storage.peek(), ACK), self());
+      connection.tell(TcpMessage.write(storage.peek(), ACK), getSelf());
     }
   }
   //#simple-helpers

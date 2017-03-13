@@ -32,15 +32,15 @@ public class StatsSampleClient extends AbstractActor {
   final Cancellable tickTask;
   final Set<Address> nodes = new HashSet<Address>();
 
-  Cluster cluster = Cluster.get(getContext().system());
+  Cluster cluster = Cluster.get(getContext().getSystem());
 
   public StatsSampleClient(String servicePath) {
     this.servicePath = servicePath;
     FiniteDuration interval = Duration.create(2, TimeUnit.SECONDS);
     tickTask = getContext()
-        .system()
+        .getSystem()
         .scheduler()
-        .schedule(interval, interval, self(), "tick",
+        .schedule(interval, interval, getSelf(), "tick",
             getContext().dispatcher(), null);
   }
 
@@ -67,7 +67,7 @@ public class StatsSampleClient extends AbstractActor {
           nodesList.size()));
         ActorSelection service = getContext().actorSelection(address + servicePath);
         service.tell(new StatsJob("this is the text that will be analyzed"),
-          self());
+         getSelf());
       })
       .match(StatsResult.class, System.out::println)
       .match(JobFailed.class, System.out::println)

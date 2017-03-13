@@ -56,9 +56,9 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   static
   //#update
   class DemonstrateUpdate extends AbstractActor {
-    final Cluster node = Cluster.get(getContext().system());
+    final Cluster node = Cluster.get(getContext().getSystem());
     final ActorRef replicator = 
-      DistributedData.get(getContext().system()).replicator();
+      DistributedData.get(getContext().getSystem()).replicator();
 
     final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
     final Key<GSet<String>> set1Key = GSetKey.create("set1");
@@ -71,20 +71,20 @@ public class DistributedDataDocTest extends AbstractJavaTest {
       
       b.matchEquals("demonstrate update", msg -> {
         replicator.tell(new Replicator.Update<PNCounter>(counter1Key, PNCounter.create(),
-            Replicator.writeLocal(), curr -> curr.increment(node, 1)), self());
+            Replicator.writeLocal(), curr -> curr.increment(node, 1)), getSelf());
 
         final WriteConsistency writeTo3 = new WriteTo(3, Duration.create(1, SECONDS));
         replicator.tell(new Replicator.Update<GSet<String>>(set1Key, GSet.create(),
-            writeTo3, curr -> curr.add("hello")), self());
+            writeTo3, curr -> curr.add("hello")), getSelf());
 
         final WriteConsistency writeMajority =
             new WriteMajority(Duration.create(5, SECONDS));
         replicator.tell(new Replicator.Update<ORSet<String>>(set2Key, ORSet.create(),
-            writeMajority, curr -> curr.add(node, "hello")), self());
+            writeMajority, curr -> curr.add(node, "hello")), getSelf());
 
         final WriteConsistency writeAll = new WriteAll(Duration.create(5, SECONDS));
         replicator.tell(new Replicator.Update<Flag>(activeFlagKey, Flag.create(),
-            writeAll, curr -> curr.switchOn()), self());
+            writeAll, curr -> curr.switchOn()), getSelf());
       });
       //#update
   
@@ -112,9 +112,9 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   static
   //#update-request-context
   class DemonstrateUpdateWithRequestContext extends AbstractActor {
-    final Cluster node = Cluster.get(getContext().system());
+    final Cluster node = Cluster.get(getContext().getSystem());
     final ActorRef replicator = 
-      DistributedData.get(getContext().system()).replicator();
+      DistributedData.get(getContext().getSystem()).replicator();
 
     final WriteConsistency writeTwo = new WriteTo(2, Duration.create(3, SECONDS));
     final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
@@ -127,17 +127,17 @@ public class DistributedDataDocTest extends AbstractJavaTest {
           Optional<Object> reqContext = Optional.of(sender());
           Replicator.Update<PNCounter> upd = new Replicator.Update<PNCounter>(counter1Key,
               PNCounter.create(), writeTwo, reqContext, curr -> curr.increment(node, 1));
-          replicator.tell(upd, self());
+          replicator.tell(upd, getSelf());
         })
 
         .match(UpdateSuccess.class, a -> a.key().equals(counter1Key), a -> {
           ActorRef replyTo = (ActorRef) a.getRequest().get();
-          replyTo.tell("ack", self());
+          replyTo.tell("ack", getSelf());
         })
 
         .match(UpdateTimeout.class, a -> a.key().equals(counter1Key), a -> {
           ActorRef replyTo = (ActorRef) a.getRequest().get();
-          replyTo.tell("nack", self());
+          replyTo.tell("nack", getSelf());
         })
         
         .build();
@@ -149,7 +149,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   //#get
   class DemonstrateGet extends AbstractActor {
     final ActorRef replicator = 
-      DistributedData.get(getContext().system()).replicator();
+      DistributedData.get(getContext().getSystem()).replicator();
     
       final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
       final Key<GSet<String>> set1Key = GSetKey.create("set1");
@@ -163,19 +163,19 @@ public class DistributedDataDocTest extends AbstractJavaTest {
         b.matchEquals("demonstrate get", msg -> {
 
           replicator.tell(new Replicator.Get<PNCounter>(counter1Key,
-              Replicator.readLocal()), self());
+              Replicator.readLocal()), getSelf());
   
           final ReadConsistency readFrom3 = new ReadFrom(3, Duration.create(1, SECONDS));
           replicator.tell(new Replicator.Get<GSet<String>>(set1Key,
-              readFrom3), self());
+              readFrom3), getSelf());
   
           final ReadConsistency readMajority = new ReadMajority(Duration.create(5, SECONDS));
           replicator.tell(new Replicator.Get<ORSet<String>>(set2Key,
-              readMajority), self());
+              readMajority), getSelf());
   
           final ReadConsistency readAll = new ReadAll(Duration.create(5, SECONDS));
           replicator.tell(new Replicator.Get<Flag>(activeFlagKey,
-              readAll), self());
+              readAll), getSelf());
           
         });
         //#get
@@ -213,7 +213,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   //#get-request-context
   class DemonstrateGetWithRequestContext extends AbstractActor {
     final ActorRef replicator = 
-      DistributedData.get(getContext().system()).replicator();
+      DistributedData.get(getContext().getSystem()).replicator();
   
       final ReadConsistency readTwo = new ReadFrom(2, Duration.create(3, SECONDS));
       final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
@@ -225,24 +225,24 @@ public class DistributedDataDocTest extends AbstractJavaTest {
             // incoming request to retrieve current value of the counter
             Optional<Object> reqContext = Optional.of(sender());
             replicator.tell(new Replicator.Get<PNCounter>(counter1Key,
-                readTwo), self());
+                readTwo), getSelf());
           })
 
           .match(GetSuccess.class, a -> a.key().equals(counter1Key), a -> {
             ActorRef replyTo = (ActorRef) a.getRequest().get();
             GetSuccess<PNCounter> g = a;
             long value = g.dataValue().getValue().longValue();
-            replyTo.tell(value, self());
+            replyTo.tell(value, getSelf());
           })
 
           .match(GetFailure.class, a -> a.key().equals(counter1Key), a -> {
             ActorRef replyTo = (ActorRef) a.getRequest().get();
-            replyTo.tell(-1L, self());
+            replyTo.tell(-1L, getSelf());
           })
 
           .match(NotFound.class, a -> a.key().equals(counter1Key), a -> {
             ActorRef replyTo = (ActorRef) a.getRequest().get();
-            replyTo.tell(0L, self());
+            replyTo.tell(0L, getSelf());
           })
           
           .build();
@@ -254,7 +254,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
 //#subscribe
   class DemonstrateSubscribe extends AbstractActor {
     final ActorRef replicator = 
-      DistributedData.get(getContext().system()).replicator();
+      DistributedData.get(getContext().getSystem()).replicator();
     final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
     
     BigInteger currentValue = BigInteger.valueOf(0);
@@ -268,7 +268,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
         })
         .match(String.class, a -> a.equals("get-count"), a -> {
           // incoming request to retrieve current value of the counter
-          sender().tell(currentValue, sender());
+          getSender().tell(currentValue, getSender());
         })
         .build();
     }
@@ -276,7 +276,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
     @Override
     public void preStart() {
       // subscribe to changes of the Counter1Key value
-      replicator.tell(new Subscribe<PNCounter>(counter1Key, self()), ActorRef.noSender());
+      replicator.tell(new Subscribe<PNCounter>(counter1Key, getSelf()), ActorRef.noSender());
     }
 
   }
@@ -286,7 +286,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   //#delete
   class DemonstrateDelete extends AbstractActor {
     final ActorRef replicator = 
-      DistributedData.get(getContext().system()).replicator();
+      DistributedData.get(getContext().getSystem()).replicator();
     
     final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
     final Key<ORSet<String>> set2Key = ORSetKey.create("set2");
@@ -297,12 +297,12 @@ public class DistributedDataDocTest extends AbstractJavaTest {
         .matchEquals("demonstrate delete", msg -> {
 
           replicator.tell(new Delete<PNCounter>(counter1Key,
-              Replicator.writeLocal()), self());
+              Replicator.writeLocal()), getSelf());
     
           final WriteConsistency writeMajority =
               new WriteMajority(Duration.create(5, SECONDS));
           replicator.tell(new Delete<PNCounter>(counter1Key,
-              writeMajority), self());
+              writeMajority), getSelf());
         })
         .build();
     }

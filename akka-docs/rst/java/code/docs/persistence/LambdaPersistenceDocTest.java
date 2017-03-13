@@ -117,7 +117,7 @@ public class LambdaPersistenceDocTest {
       //#recovery-no-snap
     }
 
-    abstract class MyActor extends AbstractPersistentActor {
+    abstract class MyJavaActor extends AbstractPersistentActor {
       //#backoff
       @Override
       public void preStart() throws Exception {
@@ -309,7 +309,7 @@ public class LambdaPersistenceDocTest {
     }
 
 
-    class MyActor extends AbstractActor {
+    class MyJavaActor extends AbstractActor {
       private final ActorRef persistentActor =
         getContext().actorOf(Props.create(MyPersistentActor.class));
 
