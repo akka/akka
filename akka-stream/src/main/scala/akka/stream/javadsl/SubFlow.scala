@@ -18,8 +18,6 @@ import java.util.Comparator
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
-import akka.stream.impl.fusing.MapError
-
 /**
  * A “stream of streams” sub-flow of data elements, e.g. produced by `groupBy`.
  * SubFlows cannot contribute to the super-flow’s materialized value since they
@@ -1161,8 +1159,8 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    */
-  def zip[T](source: Graph[SourceShape[T], _]): SubFlow[In, Out @uncheckedVariance Pair T, Mat] =
-    new SubFlow(delegate.zip(source))
+  def zip[T](source: Graph[SourceShape[T], _]): SubFlow[In, akka.japi.Pair[Out @uncheckedVariance, T], Mat] =
+    new SubFlow(delegate.zip(source).map { case (o, t) ⇒ akka.japi.Pair.create(o, t) })
 
   /**
    * Put together the elements of current [[Flow]] and the given [[Source]]
