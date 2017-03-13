@@ -106,7 +106,7 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
       val remoteProbe = TestProbe()(systemA)
 
       val largeBytes = 2000000
-      largeRemote.tell(Ping(ByteString.fromArray(Array.ofDim[Byte](largeBytes))), remoteProbe.ref)
+      largeRemote.tell(Ping(ByteString.fromArray(new Array[Byte](largeBytes))), remoteProbe.ref)
       regularRemote.tell(Ping(), remoteProbe.ref)
 
       // should be no problems sending regular small messages while large messages are being sent

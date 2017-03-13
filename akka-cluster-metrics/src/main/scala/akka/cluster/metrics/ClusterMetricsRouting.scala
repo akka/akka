@@ -468,7 +468,7 @@ private[metrics] class WeightedRoutees(routees: immutable.IndexedSeq[Routee], se
         case a                         ⇒ a
       }
     }
-    val buckets = Array.ofDim[Int](routees.size)
+    val buckets = new Array[Int](routees.size)
     val meanWeight = if (weights.isEmpty) 1 else weights.values.sum / weights.size
     val w = weights.withDefaultValue(meanWeight) // we don’t necessarily have metrics for all addresses
     var i = 0

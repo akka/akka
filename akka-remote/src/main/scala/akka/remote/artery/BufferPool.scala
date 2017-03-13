@@ -365,8 +365,8 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
   import EnvelopeBuffer._
   val aeronBuffer = new UnsafeBuffer(byteBuffer)
 
-  private var literalChars = Array.ofDim[Char](64)
-  private var literalBytes = Array.ofDim[Byte](64)
+  private var literalChars = new Array[Char](64)
+  private var literalBytes = new Array[Byte](64)
 
   def writeHeader(h: HeaderBuilder): Unit = writeHeader(h, null)
 
@@ -514,8 +514,8 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
 
   private def ensureLiteralCharsLength(length: Int): Unit = {
     if (length > literalChars.length) {
-      literalChars = Array.ofDim[Char](length)
-      literalBytes = Array.ofDim[Byte](length)
+      literalChars = new Array[Char](length)
+      literalBytes = new Array[Byte](length)
     }
   }
 

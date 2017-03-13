@@ -19,7 +19,7 @@ class LongSerializer(val system: ExtendedActorSystem) extends BaseSerializer wit
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = {
-    val result = Array.ofDim[Byte](8)
+    val result = new Array[Byte](8)
     var long = Long.unbox(o)
     var i = 0
     while (long != 0) {
@@ -50,7 +50,7 @@ class IntSerializer(val system: ExtendedActorSystem) extends BaseSerializer with
   override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = Int.box(buf.getInt)
 
   override def toBinary(o: AnyRef): Array[Byte] = {
-    val result = Array.ofDim[Byte](4)
+    val result = new Array[Byte](4)
     var int = Int.unbox(o)
     var i = 0
     while (int != 0) {
@@ -79,7 +79,7 @@ class StringSerializer(val system: ExtendedActorSystem) extends BaseSerializer w
   override def toBinary(o: AnyRef, buf: ByteBuffer): Unit = buf.put(toBinary(o))
 
   override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = {
-    val bytes = Array.ofDim[Byte](buf.remaining())
+    val bytes = new Array[Byte](buf.remaining())
     buf.get(bytes)
     new String(bytes, "UTF-8")
   }
@@ -106,7 +106,7 @@ class ByteStringSerializer(val system: ExtendedActorSystem) extends BaseSerializ
 
   override def toBinary(o: AnyRef): Array[Byte] = {
     val bs = o.asInstanceOf[ByteString]
-    val result = Array.ofDim[Byte](bs.length)
+    val result = new Array[Byte](bs.length)
     bs.copyToArray(result, 0, bs.length)
     result
   }

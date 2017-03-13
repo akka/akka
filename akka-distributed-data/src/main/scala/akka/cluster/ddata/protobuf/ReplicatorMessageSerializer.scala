@@ -52,7 +52,7 @@ import akka.cluster.ddata.PruningState.PruningPerformed
 
     private val n = new AtomicInteger(0)
     private val mask = size - 1
-    private val elements = Array.ofDim[(A, B)](size)
+    private val elements = new Array[(A, B)](size)
     private val ttlNanos = timeToLive.toNanos
 
     // in theory this should be volatile, but since the cache has low
