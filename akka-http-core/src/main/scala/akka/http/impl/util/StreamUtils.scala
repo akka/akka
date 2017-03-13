@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.stream._
+import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
 import akka.stream.scaladsl._
@@ -302,6 +303,25 @@ private[http] object StreamUtils {
       materializer.scheduleOnce(delay, new Runnable { def run() = runInContext(block) })
 
     def runInContext(block: ⇒ Unit): Unit = getAsyncCallback[AnyRef](_ ⇒ block).invoke(null)
+  }
+
+  private val EmptySource = Source.empty
+
+  /** Dummy name to signify that the caller asserts that cancelSource is only run from within a GraphInterpreter context */
+  val OnlyRunInGraphInterpreterContext: Materializer = null
+  /**
+   * Tries to guess whether a source needs to cancelled and how. In the best case no materialization should be needed.
+   */
+  def cancelSource(source: Source[_, _])(implicit materializer: Materializer): Unit = source match {
+    case EmptySource ⇒ // nothing to do with empty source
+    case x ⇒
+      val mat =
+        GraphInterpreter.currentInterpreterOrNull match {
+          case null if materializer ne null ⇒ materializer
+          case null                         ⇒ throw new IllegalStateException("Need to pass materializer to cancelSource if not run from GraphInterpreter context.")
+          case x                            ⇒ x.subFusingMaterializer // try to use fuse if already running in interpreter context
+        }
+      x.runWith(Sink.ignore)(mat)
   }
 }
 
