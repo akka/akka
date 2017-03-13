@@ -466,15 +466,15 @@ case class PhasedFusingActorMaterializer(
           case PushNotUsed ⇒
             matValueStack.addLast(NotUsed)
             if (Debug) println(s"PUSH: NotUsed => $matValueStack")
-          case Transform(f) ⇒
+          case transform: Transform ⇒
             val prev = matValueStack.removeLast()
-            val result = f(prev)
+            val result = transform(prev)
             matValueStack.addLast(result)
             if (Debug) println(s"TRFM: $matValueStack")
-          case Compose(f) ⇒
+          case compose: ComposeOp ⇒
             val second = matValueStack.removeLast()
             val first = matValueStack.removeLast()
-            val result = f(first, second)
+            val result = compose(first, second)
             matValueStack.addLast(result)
             if (Debug) println(s"COMP: $matValueStack")
           case PushAttributes(attr) ⇒
