@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.stream.impl
 
 import java.util.ArrayList
@@ -18,7 +21,7 @@ import org.reactivestreams.Publisher
 
 import scala.collection.immutable.Map
 
-private[akka] final case class SpecialOnlyMatMaterializer(
+private[akka] final case class SpecialEmptyMaterializer(
   override val system:       ActorSystem,
   override val settings:     ActorMaterializerSettings,
   override val dispatchers:  Dispatchers,
@@ -29,7 +32,7 @@ private[akka] final case class SpecialOnlyMatMaterializer(
 
   val Debug = false
 
-  val DefaultPhase: Phase[Any] = new Phase[Any] {
+  val InPlacePhase: Phase[Any] = new Phase[Any] {
     override def apply(settings: ActorMaterializerSettings, materializer: PhasedFusingActorMaterializer, islandName: String): PhaseIsland[Any] =
       new SpecialGraphStageIsland(settings, materializer, islandName, subflowFuser = OptionVal.None).asInstanceOf[PhaseIsland[Any]]
   }
@@ -41,14 +44,13 @@ private[akka] final case class SpecialOnlyMatMaterializer(
     phases:            Map[IslandTag, Phase[Any]]
   ): Mat = {
 
-    val islandTracking = new IslandTracking(phases, settings, DefaultPhase, this, islandNamePrefix = flowNames.next() + "-")
+    val islandTracking = new IslandTracking(phases, settings, InPlacePhase, this, islandNamePrefix = flowNames.next() + "-")
 
     var current: Traversal = graph.traversalBuilder.traversal
 
     val attributesStack = new java.util.ArrayDeque[Attributes](4)
     attributesStack.addLast(initialAttributes and graph.traversalBuilder.attributes)
 
-    // TODO: No longer need for a stack
     val traversalStack = new java.util.ArrayDeque[Traversal](4)
     traversalStack.addLast(current)
 

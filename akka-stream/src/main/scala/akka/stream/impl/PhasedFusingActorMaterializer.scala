@@ -20,15 +20,12 @@ import akka.stream.impl.fusing._
 import akka.stream.impl.io.{ TLSActor, TlsModule }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+import org.reactivestreams.{ Processor, Publisher, Subscriber }
 
-import scala.collection.immutable.Map
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContextExecutor
 import scala.annotation.tailrec
-import akka.stream.impl.fusing.GraphInterpreter.DownstreamBoundaryStageLogic
-import akka.stream.impl.fusing.GraphInterpreter.UpstreamBoundaryStageLogic
-import akka.util.OptionVal
+import scala.collection.immutable.Map
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration.FiniteDuration
 
 object PhasedFusingActorMaterializer {
 

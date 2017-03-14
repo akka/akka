@@ -17,10 +17,10 @@ import akka.testkit.{ AkkaSpec, ImplicitSender }
 
 import scala.concurrent.Await
 
-class SpecialOnlyMatMaterializerSpec extends AkkaSpec with ImplicitSender {
+class SpecialEmptyMatMaterializerSpec extends AkkaSpec with ImplicitSender {
 
   val materializer = ActorMaterializer()
-  val fastSpecialMat = SpecialOnlyMatMaterializer(system, materializer.settings, system.dispatchers, system.deadLetters, new AtomicBoolean(false), SeqActorName("FAST"))
+  val fastSpecialMat = SpecialEmptyMaterializer(system, materializer.settings, system.dispatchers, system.deadLetters, new AtomicBoolean(false), SeqActorName("FAST"))
 
   val playEmptyGraph =
     Source.empty[Unit]
@@ -32,7 +32,7 @@ class SpecialOnlyMatMaterializerSpec extends AkkaSpec with ImplicitSender {
 
         override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) =
           new GraphStageLogic(shape) with InHandler with OutHandler {
-            override def onPush(): Unit = push(out, grab(in))
+            override def onPush(): Unit = ???
 
             override def onPull(): Unit = pull(in)
 
