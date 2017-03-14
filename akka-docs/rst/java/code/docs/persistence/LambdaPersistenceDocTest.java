@@ -234,13 +234,14 @@ public class LambdaPersistenceDocTest {
   static Object o4 = new Object() {
     class MyPersistentActor extends AbstractPersistentActor {
 
+      private void updateState(String evt){}
+
       //#save-snapshot
       private Object state;
+      private int snapShotInterval = 1000;
 
       @Override public Receive createReceive() {
         return receiveBuilder().
-          match(String.class, s -> s.equals("snap"),
-            s -> saveSnapshot(state)).
           match(SaveSnapshotSuccess.class, ss -> {
             SnapshotMetadata metadata = ss.metadata();
             // ...
@@ -248,6 +249,13 @@ public class LambdaPersistenceDocTest {
           match(SaveSnapshotFailure.class, sf -> {
             SnapshotMetadata metadata = sf.metadata();
             // ...
+          }).
+          match(String.class, cmd -> {
+            persist( "evt-" + cmd, e -> {
+              updateState(e);
+              if (lastSequenceNr() % snapShotInterval == 0 && lastSequenceNr() != 0)
+                saveSnapshot(state);
+            });
           }).build();
       }
       //#save-snapshot
