@@ -5,6 +5,7 @@ package docs.testkit;
 
 import static org.junit.Assert.*;
 
+import akka.pattern.PatternsCS;
 import akka.testkit.*;
 import docs.AbstractJavaTest;
 import org.junit.Assert;
@@ -21,10 +22,10 @@ import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.AbstractActor;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
 import akka.testkit.TestActor.AutoPilot;
 import scala.concurrent.duration.Duration;
+
+import java.util.concurrent.CompletableFuture;
 
 public class TestKitDocTest extends AbstractJavaTest {
 
@@ -65,9 +66,9 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-behavior
     final Props props = Props.create(MyActor.class);
     final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "testB");
-    final Future<Object> future = akka.pattern.Patterns.ask(ref, "say42", 3000);
-    assertTrue(future.isCompleted());
-    assertEquals(42, Await.result(future, Duration.Zero()));
+    final CompletableFuture<Object> future = PatternsCS.ask(ref, "say42", 3000).toCompletableFuture();
+    assertTrue(future.isDone());
+    assertEquals(42, future.get());
     //#test-behavior
   }
 

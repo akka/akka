@@ -15,9 +15,6 @@ import docs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;

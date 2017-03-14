@@ -5,30 +5,20 @@
 package docs.actorlambda;
 
 import akka.actor.*;
-import akka.japi.pf.ReceiveBuilder;
-import akka.testkit.ErrorFilter;
-import akka.testkit.EventFilter;
-import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import docs.AbstractJavaTest;
 import static docs.actorlambda.Messages.Swap.Swap;
 import static docs.actorlambda.Messages.*;
-import static akka.japi.Util.immutableSeq;
 import akka.actor.CoordinatedShutdown;
 
 import akka.util.Timeout;
 import akka.Done;
-import java.util.concurrent.CompletionStage;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import akka.testkit.TestActors;
-import akka.dispatch.Mapper;
-import akka.dispatch.Futures;
-import akka.util.Timeout;
+import scala.concurrent.Await;
 
 import akka.testkit.JavaTestKit;
 import org.junit.AfterClass;
@@ -49,20 +39,16 @@ import akka.actor.ActorSelection;
 import akka.actor.Identify;
 //#import-identify
 //#import-ask
-import static akka.pattern.Patterns.ask;
-import static akka.pattern.Patterns.pipe;
-import akka.dispatch.Futures;
-import akka.dispatch.Mapper;
+import static akka.pattern.PatternsCS.ask;
+import static akka.pattern.PatternsCS.pipe;
 import akka.util.Timeout;
+import java.util.concurrent.CompletableFuture;
 //#import-ask
 //#import-gracefulStop
+import static akka.pattern.PatternsCS.gracefulStop;
 import akka.pattern.AskTimeoutException;
-import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
-//#import-ask
-import scala.concurrent.Future;
-import static akka.pattern.Patterns.gracefulStop;
-//#import-ask
+import java.util.concurrent.CompletionStage;
 //#import-gracefulStop
 //#import-terminated
 import akka.actor.Terminated;
@@ -160,7 +146,7 @@ public class ActorDocTest extends AbstractJavaTest {
     public void onReceive(Object msg) throws Exception {
       if (msg instanceof Msg1)
         receiveMsg1((Msg1) msg);
-      else if (msg instanceof Msg1)
+      else if (msg instanceof Msg2)
         receiveMsg2((Msg2) msg);
       else if (msg instanceof Msg3)
         receiveMsg3((Msg3) msg);
@@ -424,9 +410,9 @@ public class ActorDocTest extends AbstractJavaTest {
     ActorRef actorRef = system.actorOf(Props.create(Manager.class));
     //#gracefulStop
     try {
-      Future<Boolean> stopped =
+      CompletionStage<Boolean> stopped =
         gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), Manager.SHUTDOWN);
-      Await.result(stopped, Duration.create(6, TimeUnit.SECONDS));
+      stopped.toCompletableFuture().get(6, TimeUnit.SECONDS);
       // the actor has been stopped
     } catch (AskTimeoutException e) {
       // the actor wasn't stopped within 5 seconds
@@ -768,25 +754,23 @@ public class ActorDocTest extends AbstractJavaTest {
         ActorRef actorC = getRef();
 
         //#ask-pipe
-        final Timeout t = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+        Timeout t = new Timeout(Duration.create(5, TimeUnit.SECONDS));
 
-        final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
-        futures.add(ask(actorA, "request", 1000)); // using 1000ms timeout
-        futures.add(ask(actorB, "another request", t)); // using timeout from
-                                                        // above
+        // using 1000ms timeout
+        CompletableFuture<Object> future1 =
+          ask(actorA, "request", 1000).toCompletableFuture();
 
-        final Future<Iterable<Object>> aggregate = Futures.sequence(futures,
-            system.dispatcher());
+        // using timeout from above
+        CompletableFuture<Object> future2 =
+          ask(actorB, "another request", t).toCompletableFuture();
 
-        final Future<Result> transformed = aggregate.map(
-            new Mapper<Iterable<Object>, Result>() {
-              public Result apply(Iterable<Object> coll) {
-                final Iterator<Object> it = coll.iterator();
-                final String x = (String) it.next();
-                final String s = (String) it.next();
-                return new Result(x, s);
-              }
-            }, system.dispatcher());
+        CompletableFuture<Result> transformed =
+          CompletableFuture.allOf(future1, future2)
+          .thenApply(v -> {
+            String x = (String) future1.join();
+            String s = (String) future2.join();
+            return new Result(x, s);
+          });
 
         pipe(transformed, system.dispatcher()).to(actorC);
         //#ask-pipe

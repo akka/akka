@@ -31,9 +31,7 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestLatch;
-import scala.collection.Iterator;
 import scala.concurrent.Await;
-import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.util.Random;
 
