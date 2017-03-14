@@ -348,7 +348,7 @@ case class PhasedFusingActorMaterializer(
       "set akka.stream.materializer.debug.fuzzing-mode to off.")
   }
   if (!settings.autoFusing) {
-    _logger.info("Deprecated setting auto-fusing set to false. Since Akka 2.5.0 it does not have any effect " +
+    _logger.warn("Deprecated setting auto-fusing set to false. Since Akka 2.5.0 it does not have any effect " +
       "and streams are always fused.")
   }
 

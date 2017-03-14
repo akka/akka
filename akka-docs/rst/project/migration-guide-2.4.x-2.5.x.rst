@@ -311,9 +311,9 @@ Removal of the auto-fuse setting
 
 In 2.4 fusing stages together into the same actor could be completely disabled with the setting
 ``akka.stream.materializer.auto-fusing``. The new materializer introduced in Akka 2.5 does not support disabling fusing,
-so this setting does not have any effect any more and has been deprecated. Running each stage in a stream can be done
-by adding explicit async boundaries around every stage. How to add asynchronous boundaries can be seen in
-:ref:`operator-fusion-java` (Java) and :ref:`operator-fusion-scala` (Scala).
+so this setting does not have any effect any more and has been deprecated. Running each stage in a stream on a separate
+actor can be done by adding explicit async boundaries around every stage. How to add asynchronous boundaries can be seen
+in :ref:`operator-fusion-java` (Java) and :ref:`operator-fusion-scala` (Scala).
 
 Remote
 ======
