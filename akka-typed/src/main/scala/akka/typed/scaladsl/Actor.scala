@@ -45,7 +45,7 @@ trait ActorContext[T] { this: akka.typed.javadsl.ActorContext[T] ⇒
   /**
    * Return the mailbox capacity that was configured by the parent for this actor.
    */
-  def mailboxCapacity: Int
+  def mailboxCapacity: Int // TODO should this be public api? what is the use case?
 
   /**
    * The [[ActorSystem]] to which this Actor belongs.
@@ -100,7 +100,7 @@ trait ActorContext[T] { this: akka.typed.javadsl.ActorContext[T] ⇒
   /**
    * Schedule the sending of a notification in case no other
    * message is received during the given period of time. The timeout starts anew
-   * with each received message. Provide `Duration.Undefined` to switch off this
+   * with each received message. Use [[#cancelReceiveTimeout]] to switch off this
    * mechanism.
    */
   def setReceiveTimeout(d: FiniteDuration, msg: T): Unit
@@ -273,6 +273,10 @@ object Actor {
    * change is desired, use `Actor.same()`.
    */
   final case class SignalOrMessage[T](
+    // TODO was the `Or` combinator problematic?
+    //      I'm thinking if it would be more composable to have a `SignalBehavor` dedicated for the management signals
+    //      and combine it with ordinary Behavior when both signals and messages are of interest.
+    //      E.g. how to use signals together with Deferred+Stateful
     signal: (ActorContext[T], Signal) ⇒ Behavior[T],
     mesg:   (ActorContext[T], T) ⇒ Behavior[T]) extends Behavior[T] { // FIXME `message` as parameter name
     override def management(ctx: AC[T], msg: Signal): Behavior[T] = signal(ctx, msg)
@@ -311,7 +315,7 @@ object Actor {
     override def management(ctx: AC[T], msg: Signal): Behavior[T] = Unhandled
     override def message(ctx: AC[T], msg: T): Behavior[T] = {
       behavior(ctx, msg)
-      this
+      this // TODO Unhandled should be propagated?
     }
     override def toString = s"Static(${LineNumbers(behavior)})"
   }

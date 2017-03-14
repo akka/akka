@@ -73,6 +73,6 @@ final case object PostStop extends PostStop {
  */
 final case class Terminated(ref: ActorRef[Nothing])(failed: Throwable) extends Signal {
   def wasFailed: Boolean = failed ne null
-  def failure: Throwable = failed
+  def failure: Throwable = failed // TODO is this needed? only return Option
   def failureOption: Option[Throwable] = Option(failed)
 }

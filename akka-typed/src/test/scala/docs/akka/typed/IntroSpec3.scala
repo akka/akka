@@ -14,7 +14,7 @@ import scala.concurrent.Await
 import akka.testkit.AkkaSpec
 import akka.typed.TypedSpec
 
-object IntroSpec2 {
+object IntroSpec3 {
 
   //#hello-world-actor
   object HelloWorld {
@@ -50,7 +50,9 @@ object IntroSpec2 {
     //#chatroom-protocol
     //#chatroom-behavior
 
-    def chatRoom(sessions: List[ActorRef[SessionEvent]] = List.empty): Behavior[Command] =
+    val chatRoom: Behavior[Command] = Deferred { _ ⇒
+      var sessions: List[ActorRef[SessionEvent]] = List.empty
+
       Stateful[Command] { (ctx, msg) ⇒
         msg match {
           case GetSession(screenName, client) ⇒
@@ -58,21 +60,23 @@ object IntroSpec2 {
               p: PostMessage ⇒ PostSessionMessage(screenName, p.message)
             }
             client ! SessionGranted(wrapper)
-            chatRoom(client :: sessions)
+            sessions = client :: sessions
+            Same
           case PostSessionMessage(screenName, message) ⇒
             val mp = MessagePosted(screenName, message)
             sessions foreach (_ ! mp)
             Same
         }
       }
+    }
     //#chatroom-behavior
   }
   //#chatroom-actor
 
 }
 
-class IntroSpec2 extends TypedSpec {
-  import IntroSpec2._
+class IntroSpec3 extends TypedSpec {
+  import IntroSpec3._
 
   def `must say hello`(): Unit = {
     //#hello-world
@@ -118,7 +122,7 @@ class IntroSpec2 extends TypedSpec {
         signal = { (ctx, sig) ⇒
         sig match {
           case PreStart ⇒
-            val chatRoom = ctx.spawn(ChatRoom.chatRoom(), "chatroom")
+            val chatRoom = ctx.spawn(ChatRoom.chatRoom, "chatroom")
             val gabblerRef = ctx.spawn(gabbler, "gabbler")
             ctx.watch(gabblerRef)
             chatRoom ! GetSession("ol’ Gabbler", gabblerRef)

@@ -89,10 +89,22 @@ object ActorContextSpec {
     case _ ⇒ ()
   }
 
-  val foo3: Behavior[Ping] = Actor.Stateless {
-    case (_, Ping(replyTo)) ⇒
-      replyTo ! Pong2
+  val foo5 = Actor.Stateful[Command] { (ctx, msg) ⇒
+    msg match {
+      case Ping(replyTo) ⇒
+        replyTo ! Pong2
+        Actor.Same
+      case _ ⇒ Actor.Unhandled
+    }
   }
+
+  //  val foo6 = Actor.Stateless[Command] { (ctx, msg) =>
+  //    msg match {
+  //      case Ping(replyTo) ⇒
+  //        replyTo ! Pong2
+  //      case _ => Actor.Unhandled
+  //    }
+  //  }
 
   // TODO missing parameter type for expanded function The argument types of an anonymous function must be fully known.
   //      (SLS 8.5) Expected type was: Function2[akka.typed.scaladsl.ActorContext[akka.typed.ActorContextSpec.Ping], akka.typed.ActorContextSpec.Ping, ?]
