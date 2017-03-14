@@ -1,12 +1,13 @@
 package docs.pattern;
 
-import scala.concurrent.Await;
-import scala.concurrent.Future;
 import akka.actor.ActorRef;
 import akka.actor.ActorRefFactory;
 import akka.actor.Props;
 import akka.actor.AbstractActor;
 import akka.util.Timeout;
+import scala.concurrent.duration.FiniteDuration;
+
+import java.util.concurrent.CompletionStage;
 
 public class SupervisedAskSpec {
 
@@ -17,9 +18,10 @@ public class SupervisedAskSpec {
     try {
       ActorRef supervisorCreator = SupervisedAsk
           .createSupervisorCreator(actorSystem);
-      Future<Object> finished = SupervisedAsk.askOf(supervisorCreator,
+      CompletionStage<Object> finished = SupervisedAsk.askOf(supervisorCreator,
           Props.create(someActor), message, timeout);
-      return Await.result(finished, timeout.duration());
+      FiniteDuration d = timeout.duration();
+      return finished.toCompletableFuture().get(d.length(), d.unit());
     } catch (Exception e) {
       // exception propagated by supervision
       throw e;

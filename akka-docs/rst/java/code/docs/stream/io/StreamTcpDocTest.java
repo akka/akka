@@ -15,13 +15,11 @@ import java.net.InetSocketAddress;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Future;
 
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.javadsl.Tcp.*;
-import akka.stream.stage.*;
 import akka.testkit.JavaTestKit;
 import akka.testkit.SocketUtil;
 import akka.testkit.TestProbe;

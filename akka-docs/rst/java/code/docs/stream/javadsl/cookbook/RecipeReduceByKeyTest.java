@@ -18,8 +18,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
 
 import java.util.Arrays;
 import java.util.HashSet;

@@ -25,10 +25,6 @@ import akka.testkit.JavaTestKit;
 import akka.util.ByteIterator;
 import akka.util.ByteString;
 import akka.util.ByteStringBuilder;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 import static org.junit.Assert.assertArrayEquals;
 
 public class BidiFlowDocTest extends AbstractJavaTest {

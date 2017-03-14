@@ -1,11 +1,10 @@
 package docs.pattern;
 
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeoutException;
 
-import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
-import akka.actor.Actor;
 import akka.actor.ActorKilledException;
 import akka.actor.ActorRef;
 import akka.actor.ActorRefFactory;
@@ -15,11 +14,9 @@ import akka.actor.Props;
 import akka.actor.Scheduler;
 import akka.actor.Status;
 import akka.actor.SupervisorStrategy;
-import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.Terminated;
 import akka.actor.AbstractActor;
-import akka.japi.Function;
-import akka.pattern.Patterns;
+import akka.pattern.PatternsCS;
 import akka.util.Timeout;
 
 public class SupervisedAsk {
@@ -61,13 +58,10 @@ public class SupervisedAsk {
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
-      return new OneForOneStrategy(0, Duration.Zero(),
-          new Function<Throwable, Directive>() {
-            public Directive apply(Throwable cause) {
-              caller.tell(new Status.Failure(cause), self());
-              return SupervisorStrategy.stop();
-            }
-          });
+      return new OneForOneStrategy(0, Duration.Zero(), cause -> {
+          caller.tell(new Status.Failure(cause), self());
+          return SupervisorStrategy.stop();
+        });
     }
 
     @Override
@@ -99,10 +93,10 @@ public class SupervisedAsk {
     }
   }
 
-  public static Future<Object> askOf(ActorRef supervisorCreator, Props props,
-      Object message, Timeout timeout) {
+  public static CompletionStage<Object> askOf(ActorRef supervisorCreator, Props props,
+                                              Object message, Timeout timeout) {
     AskParam param = new AskParam(props, message, timeout);
-    return Patterns.ask(supervisorCreator, param, timeout);
+    return PatternsCS.ask(supervisorCreator, param, timeout);
   }
 
   synchronized public static ActorRef createSupervisorCreator(

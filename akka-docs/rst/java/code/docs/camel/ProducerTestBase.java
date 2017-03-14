@@ -2,14 +2,14 @@ package docs.camel;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import akka.testkit.JavaTestKit;
-import scala.concurrent.Future;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.camel.CamelMessage;
-import akka.pattern.Patterns;
+import akka.pattern.PatternsCS;
 
 public class ProducerTestBase {
   public void tellJmsProducer() {
@@ -29,7 +29,7 @@ public class ProducerTestBase {
     ActorSystem system = ActorSystem.create("some-system");
     Props props = Props.create(FirstProducer.class);
     ActorRef producer = system.actorOf(props,"myproducer");
-    Future<Object> future = Patterns.ask(producer, "some request", 1000);
+    CompletionStage<Object> future = PatternsCS.ask(producer, "some request", 1000);
     //#AskProducer
     system.stop(producer);
     JavaTestKit.shutdownActorSystem(system);
