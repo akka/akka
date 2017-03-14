@@ -25,7 +25,7 @@ public class UdpConnectedDocTest {
 
   static public class Demo extends AbstractActor {
     ActorRef connectionActor = null;
-    ActorRef handler =getSelf();
+    ActorRef handler = getSelf();
     ActorSystem system = getContext().getSystem();
 
     @Override

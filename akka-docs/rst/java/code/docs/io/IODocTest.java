@@ -26,7 +26,7 @@ public class IODocTest {
 
   static public class Demo extends AbstractActor {
     ActorRef connectionActor = null;
-    ActorRef listener =getSelf();
+    ActorRef listener = getSelf();
 
     @Override
     public Receive createReceive() {
@@ -70,7 +70,7 @@ public class IODocTest {
         })
         //#received
         .matchEquals("bind", msg -> {
-          final ActorRef handler =getSelf();
+          final ActorRef handler = getSelf();
           //#bind
           final ActorRef tcp = Tcp.get(system).manager();
           final InetSocketAddress localAddr = new InetSocketAddress("127.0.0.1",

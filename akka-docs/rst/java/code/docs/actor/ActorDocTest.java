@@ -470,12 +470,12 @@ public class ActorDocTest extends AbstractJavaTest {
     //#system-actorOf
     // ActorSystem is a heavy object: create only one per application
     final ActorSystem system = ActorSystem.create("MySystem", config);
-    final ActorRef MyJavaActor = system.actorOf(Props.create(MyJavaActor.class), "myactor");
+    final ActorRef myActor = system.actorOf(Props.create(MyJavaActor.class), "myactor");
     //#system-actorOf
     try {
       new JavaTestKit(system) {
         {
-          MyJavaActor.tell("hello", getRef());
+          myActor.tell("hello", getRef());
           expectMsgEquals("hello");
         }
       };

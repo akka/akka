@@ -153,7 +153,7 @@ New messages sent to a persistent actor during recovery do not interfere with re
 only be received by a persistent actor after recovery completes.
 
 .. note::
-  Accessing the ``getSender()`` for replayed messages will always result in a ``deadLetters`` reference,
+  Accessing the sender with ``getSender()`` for replayed messages will always result in a ``deadLetters`` reference,
   as the original sender is presumed to be long gone. If you indeed have to notify an actor during
   recovery in the future, store its ``ActorPath`` explicitly in your persisted events.
 

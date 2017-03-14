@@ -284,7 +284,7 @@ ProducerTemplate
 The `UntypedProducerActor`_ class is a very convenient way for actors to produce messages to Camel endpoints.
 Actors may also use a Camel `ProducerTemplate`_ for producing messages to endpoints.
 
-.. includecode:: code/docs/camel/MyJavaActor.java#ProducerTemplate
+.. includecode:: code/docs/camel/MyActor.java#ProducerTemplate
 
 For initiating a two-way message exchange, one of the
 ``ProducerTemplate.request*`` methods must be used.
