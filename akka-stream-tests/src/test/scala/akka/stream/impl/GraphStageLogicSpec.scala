@@ -233,6 +233,27 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
       ex.getMessage should startWith("not yet initialized: only setHandler is allowed in GraphStageLogic constructor")
     }
 
+    "give a good error message if not all handlers set" in {
+      val ex = intercept[IllegalStateException] {
+        Source.maybe[String]
+          .via(new GraphStage[FlowShape[String, String]] {
+            val in = Inlet[String]("in")
+            val out = Outlet[String]("out")
+            override val shape: FlowShape[String, String] = FlowShape(in, out)
+
+            override def createLogic(inheritedAttributes: Attributes) =
+              new GraphStageLogic(shape) with InHandler with OutHandler {
+                override def onPush(): Unit = push(out, grab(in))
+
+                override def onPull(): Unit = pull(in)
+              }
+
+            override def toString = "stage-name"
+          }).runWith(Sink.ignore)
+      }
+      ex.getMessage should startWith("No handler defined in stage [stage-name] for port [in")
+    }
+
   }
 
 }

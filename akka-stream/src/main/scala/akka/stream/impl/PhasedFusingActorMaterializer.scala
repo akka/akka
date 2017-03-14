@@ -600,6 +600,17 @@ final class GraphStageIsland(
     val stage = stageModule.stage
     val matAndLogic = stage.createLogicAndMaterializedValue(attributes)
     val logic = matAndLogic._1
+    var idx = 0
+    while (idx < logic.handlers.length) {
+      if (logic.handlers(idx).asInstanceOf[AnyRef] eq null) {
+        val port =
+          if (idx < logic.inCount) stage.shape.inlets(idx)
+          else stage.shape.outlets(idx - logic.inCount)
+        throw new IllegalStateException(s"No handler defined in stage [$stage] for port [$port]." +
+          " All inlets and outlets must be assigned a handler with setHandler in the constructor of your graph stage logic.")
+      }
+      idx += 1
+    }
     logic.originalStage = OptionVal.Some(stage)
     logic.attributes = attributes
     logics.add(logic)
