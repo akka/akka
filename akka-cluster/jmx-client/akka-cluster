@@ -25,21 +25,30 @@ shift 2
 
 JMX_CLIENT="java -jar $JMXSHJAR -h $HOST -p $PORT /dev/fd/0"
 
+
+function mbeanObjectName() {
+  if [[ -z "$CLUSTER_PORT" ]]; then
+    echo "akka:type=Cluster"
+  else
+    echo "akka:type=Cluster,port=$CLUSTER_PORT"
+  fi
+}
+
 function invoke() {
-  echo jmx_invoke -m akka:type=Cluster "$@" | $JMX_CLIENT
+  echo jmx_invoke -m $(mbeanObjectName) "$@" | $JMX_CLIENT
 }
 
 function get() {
-  echo "puts [jmx_get -m akka:type=Cluster \"$1\"]" | $JMX_CLIENT
+  echo "puts [jmx_get -m $(mbeanObjectName) \"$1\"]" | $JMX_CLIENT
 }
 
 function ensureNodeIsRunningAndAvailable {
     REPLY=$(get Available 2>&1) # redirects STDERR to STDOUT before capturing it
     if [[ "$REPLY" != *true ]]; then
         if [[ "$REPLY" == *"Cannot convert result to a string." ]]; then
-          echo "Akka cluster MBean is not available on $HOST:$PORT"
+          echo "Akka cluster MBean is not available on $HOST:$PORT with MBean name '$(mbeanObjectName)'"
         else
-          echo "Akka cluster node is not available on $HOST:$PORT, due to $REPLY"
+          echo "Akka cluster node is not available on $HOST:$PORT with MBean name '$(mbeanObjectName)', due to $REPLY"
         fi
         exit 1
     fi
@@ -48,22 +57,24 @@ function ensureNodeIsRunningAndAvailable {
 echo "This jmx-client/akka-cluster tool is deprecated use curl and https://github.com/akka/akka-cluster-management instead, since 2.5.0." >&2
 
 # switch on command
-case "$1" in
-
+while [ $# -gt 0 ];
+do
+  case "$1" in
     join)
         if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname> <jmx-port> join <node-url-to-join>"
+            echo "Usage: $SELF <node-hostname> <jmx-port> <optional: -p cluster-port> join <node-url-to-join>"
             exit 1
         fi
 
         ACTOR_SYSTEM_URL=$2
         echo "$HOST is JOINING cluster node $ACTOR_SYSTEM_URL"
         invoke join $ACTOR_SYSTEM_URL
+        shift 2
         ;;
 
     leave)
         if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname> <jmx-port> leave <node-url-to-join>"
+            echo "Usage: $SELF <node-hostname> <jmx-port> <optional: -p cluster-port> leave <node-url-to-join>"
             exit 1
         fi
 
@@ -71,11 +82,12 @@ case "$1" in
         ACTOR_SYSTEM_URL=$2
         echo "Scheduling $ACTOR_SYSTEM_URL to LEAVE cluster"
         invoke leave $ACTOR_SYSTEM_URL
+        shift 2
         ;;
 
     down)
         if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname> <jmx-port> down <node-url-to-join>"
+            echo "Usage: $SELF <node-hostname> <jmx-port> <optional: -p cluster-port> down <node-url-to-join>"
             exit 1
         fi
 
@@ -84,11 +96,12 @@ case "$1" in
         ACTOR_SYSTEM_URL=$2
         echo "Marking $ACTOR_SYSTEM_URL as DOWN"
         invoke down $ACTOR_SYSTEM_URL
+        shift 2
         ;;
 
     member-status)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname> <jmx-port> member-status"
+            echo "Usage: $SELF <node-hostname> <jmx-port> <optional: -p cluster-port> member-status"
             exit 1
         fi
 
@@ -96,22 +109,24 @@ case "$1" in
 
         echo "Querying member status for $HOST"
         get MemberStatus
+        shift 1
         ;;
 
     cluster-status)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname> <jmx-port> cluster-status"
+            echo "Usage: $SELF <node-hostname> <jmx-port> <optional: -p cluster-port> cluster-status"
             exit 1
         fi
 
         ensureNodeIsRunningAndAvailable
 
         get ClusterStatus
+        shift 1
         ;;
 
     members)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname> <jmx-port> members"
+            echo "Usage: $SELF <node-hostname> <jmx-port> <optional: -p cluster-port> members"
             exit 1
         fi
 
@@ -119,11 +134,12 @@ case "$1" in
 
         echo "Querying members"
         get Members
+        shift 1
         ;;
 
     unreachable)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname> <jmx-port> unreachable"
+            echo "Usage: $SELF <node-hostname> <jmx-port> <optional: -p cluster-port> unreachable"
             exit 1
         fi
 
@@ -131,11 +147,12 @@ case "$1" in
 
         echo "Querying unreachable members"
         get Unreachable
+        shift 1
         ;;
 
     leader)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname> <jmx-port> leader"
+            echo "Usage: $SELF <node-hostname> <jmx-port> <optional: -p cluster-port> leader"
             exit 1
         fi
 
@@ -143,11 +160,12 @@ case "$1" in
 
         echo "Checking leader status"
         get Leader
+        shift 1
         ;;
 
     is-singleton)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname> <jmx-port> is-singleton"
+            echo "Usage: $SELF <node-hostname> <jmx-port> <optional: -p cluster-port> is-singleton"
             exit 1
         fi
 
@@ -155,11 +173,12 @@ case "$1" in
 
         echo "Checking for singleton cluster"
         get Singleton
+        shift 1
         ;;
 
     is-available)
         if [ $# -ne 1 ]; then
-            echo "Usage: $SELF <node-hostname> <jmx-port> is-available"
+            echo "Usage: $SELF <node-hostname> <jmx-port> <optional: -p cluster-port> is-available"
             exit 1
         fi
 
@@ -167,10 +186,22 @@ case "$1" in
 
         echo "Checking if member node on $HOST is AVAILABLE"
         get Available
+        shift 1
         ;;
 
+    -p)
+        if [[ ! $2 =~ ^[0-9]+$ ]]; then
+            echo "-p option requires a cluster port number in digits"
+            exit 1
+        fi
+
+        CLUSTER_PORT=$2
+        shift 2
+        ;;
     *)
-        printf "Usage: $0 <node-hostname> <jmx-port> <command> ...\n"
+        printf "Usage: $0 <node-hostname> <jmx-port> <optional: -p cluster-port> <command> ...\n"
+        printf "\n"
+        printf "-p parameter needs is needed when cluster is run with akka.cluster.jmx.multi-mbeans-in-same-jvm = on.¥n"
         printf "\n"
         printf "Supported commands are:\n"
         printf "%26s - %s\n" "join <node-url>"   "Sends request a JOIN node with the specified URL"
@@ -188,6 +219,10 @@ case "$1" in
         printf "Examples: $0 localhost 9999 is-available\n"
         printf "          $0 localhost 9999 join akka.tcp://MySystem@darkstar:2552\n"
         printf "          $0 localhost 9999 cluster-status\n"
+        printf "          $0 localhost 9999 -p 2551 is-available\n"
+        printf "          $0 localhost 9999 -p 2551 join akka.tcp://MySystem@darkstar:2552\n"
+        printf "          $0 localhost 9999 -p 2551 cluster-status\n"
         exit 1
         ;;
 esac
+done
