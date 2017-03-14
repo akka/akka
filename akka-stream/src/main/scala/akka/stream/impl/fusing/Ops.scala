@@ -1476,6 +1476,8 @@ final class GroupedWithin[T](val n: Int, val d: FiniteDuration) extends GraphSta
 final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy) extends SimpleLinearGraphStage[T] {
   private[this] def timerName = "DelayedTimer"
 
+  final val DelayPrecisionMS = 10
+
   override def initialAttributes: Attributes = DefaultAttributes.delay
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
@@ -1558,7 +1560,7 @@ final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy)
         if (waitTime < 0) {
           push(out, buffer.dequeue()._2)
         } else {
-          scheduleOnce(timerName, Math.max(10, waitTime).millis)
+          scheduleOnce(timerName, Math.max(DelayPrecisionMS, waitTime).millis)
         }
       }
 
@@ -1583,7 +1585,7 @@ final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy)
 
       if (!buffer.isEmpty) {
         val waitTime = nextElementWaitTime()
-        if (waitTime > 10)
+        if (waitTime > DelayPrecisionMS)
           scheduleOnce(timerName, waitTime.millis)
       }
       completeIfReady()
