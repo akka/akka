@@ -22,6 +22,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.stream.actor.ActorSubscriberMessage
 import akka.stream.scaladsl.{ GenericGraph, GenericGraphWithChangedAttributes }
 import akka.util.OptionVal
+import akka.annotation.InternalApi
 
 abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S, M] {
 
@@ -30,9 +31,18 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
 
   protected def initialAttributes: Attributes = Attributes.none
 
-  final override lazy val traversalBuilder: TraversalBuilder = {
-    val attr = initialAttributes
-    TraversalBuilder.atomic(GraphStageModule(shape, attr, this), attr)
+  private var _traversalBuilder: TraversalBuilder = null
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] final override def traversalBuilder: TraversalBuilder = {
+    // _traversalBuilder instance is cached to avoid allocations, no need for volatile or synchronization
+    if (_traversalBuilder eq null) {
+      val attr = initialAttributes
+      _traversalBuilder = TraversalBuilder.atomic(GraphStageModule(shape, attr, this), attr)
+    }
+    _traversalBuilder
   }
 
   final override def withAttributes(attr: Attributes): Graph[S, M] =
