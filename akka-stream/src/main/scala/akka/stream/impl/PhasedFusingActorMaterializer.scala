@@ -569,7 +569,7 @@ trait PhaseIsland[M] {
 
 object GraphStageTag extends IslandTag
 
-final class GraphStageIsland(
+private[akka] class GraphStageIsland(
   effectiveSettings: ActorMaterializerSettings,
   materializer:      PhasedFusingActorMaterializer,
   islandName:        String,
@@ -694,6 +694,10 @@ final class GraphStageIsland(
     shell.connections = finalConnections
     shell.logics = logics.toArray(logicArrayType)
 
+    onIslandReadyStartInterpreter(shell)
+  }
+
+  protected def onIslandReadyStartInterpreter(shell: GraphInterpreterShell): Unit = {
     subflowFuser match {
       case OptionVal.Some(fuseIntoExistingInterperter) ⇒
         fuseIntoExistingInterperter(shell)

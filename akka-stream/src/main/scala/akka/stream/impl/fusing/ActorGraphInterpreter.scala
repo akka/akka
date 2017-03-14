@@ -681,7 +681,7 @@ trait ActorGraphInterpreterLogic {
     }
 
   //this limits number of messages that can be processed synchronously during one actor receive.
-  private val eventLimit: Int = Int.MaxValue // _initial.mat.settings.syncProcessingLimit
+  protected def eventLimit: Int = _initial.mat.settings.syncProcessingLimit
   private var currentLimit: Int = eventLimit
   //this is a var in order to save the allocation when no short-circuiting actually happens
   private var shortCircuitBuffer: util.ArrayDeque[Any] = null
@@ -703,7 +703,7 @@ trait ActorGraphInterpreterLogic {
    */
   @tailrec private def finishShellRegistration(): Unit =
     newShells match {
-      case Nil ⇒ if (activeInterpreters.isEmpty) () // context.stop(self)
+      case Nil ⇒ if (activeInterpreters.isEmpty && context != null) context.stop(self)
       case shell :: tail ⇒
         newShells = tail
         if (shell.isInitialized) {
@@ -716,7 +716,7 @@ trait ActorGraphInterpreterLogic {
 
   def preStart(): Unit = {
     tryInit(_initial)
-    if (activeInterpreters.isEmpty) () // context.stop(self)
+    if (activeInterpreters.isEmpty && context != null) context.stop(self)
     else if (shortCircuitBuffer != null) shortCircuitBatch()
   }
 

@@ -124,150 +124,24 @@ final class SpecialGraphStageIsland(
   effectiveSettings: ActorMaterializerSettings,
   materializer:      PhasedFusingActorMaterializer,
   islandName:        String,
-  subflowFuser:      OptionVal[GraphInterpreterShell ⇒ ActorRef]) extends PhaseIsland[GraphStageLogic] {
-  // TODO: remove these
-  private val logicArrayType = Array.empty[GraphStageLogic]
-  private[this] val logics = new ArrayList[GraphStageLogic](4)
-  // TODO: Resize
-  private val connections = new Array[Connection](4)
-  private var maxConnections = 0
-  private var outConnections: List[Connection] = Nil
-  private var fullIslandName: OptionVal[String] = OptionVal.None
+  subflowFuser:      OptionVal[GraphInterpreterShell ⇒ ActorRef]
+) extends GraphStageIsland(effectiveSettings, materializer, islandName, OptionVal.None) {
 
-  val shell = new GraphInterpreterShell(
-    connections = null,
-    logics = null,
-    effectiveSettings,
-    materializer)
-
-  override def name: String = "Fusing GraphStages phase"
-
-  override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (GraphStageLogic, Any) = {
-    // TODO: bail on unknown types
-    val stageModule = mod.asInstanceOf[GraphStageModule[Shape, Any]]
-    val stage = stageModule.stage
-    val matAndLogic = stage.createLogicAndMaterializedValue(attributes)
-    val logic = matAndLogic._1
-    logic.originalStage = OptionVal.Some(stage)
-    logic.attributes = attributes
-    logics.add(logic)
-    logic.stageId = logics.size() - 1
-
-    fullIslandName match {
-      case OptionVal.Some(_) ⇒ // already set
-      case OptionVal.None    ⇒ fullIslandName = OptionVal.Some("FAST_NAME")
-    }
-    matAndLogic
-  }
-
-  def conn(slot: Int): Connection = {
-    maxConnections = math.max(slot, maxConnections)
-    val c = connections(slot)
-    if (c ne null) c
-    else {
-      val c2 = new Connection(0, null, null, null, null)
-      connections(slot) = c2
-      c2
-    }
-  }
-
-  def outConn(): Connection = {
-    val connection = new Connection(0, null, null, null, null)
-    outConnections ::= connection
-    connection
-  }
-
-  override def assignPort(in: InPort, slot: Int, logic: GraphStageLogic): Unit = {
-    val connection = conn(slot)
-    connection.inOwner = logic
-    connection.id = slot
-    connection.inHandler = logic.handlers(in.id).asInstanceOf[InHandler]
-    logic.portToConn(in.id) = connection
-  }
-
-  override def assignPort(out: OutPort, slot: Int, logic: GraphStageLogic): Unit = {
-    val connection = conn(slot)
-    connection.outOwner = logic
-    connection.id = slot
-    connection.outHandler = logic.handlers(logic.inCount + out.id).asInstanceOf[OutHandler]
-    logic.portToConn(logic.inCount + out.id) = connection
-  }
-
-  override def createPublisher(out: OutPort, logic: GraphStageLogic): Publisher[Any] = {
-    val boundary = new ActorOutputBoundary(shell, out.toString)
-    logics.add(boundary)
-    boundary.stageId = logics.size() - 1
-
-    val connection = outConn()
-    boundary.portToConn(boundary.in.id) = connection
-    connection.inHandler = boundary.handlers(0).asInstanceOf[InHandler]
-    connection.inOwner = boundary
-
-    connection.outOwner = logic
-    connection.id = -1 // Will be filled later
-    connection.outHandler = logic.handlers(logic.inCount + out.id).asInstanceOf[OutHandler]
-    logic.portToConn(logic.inCount + out.id) = connection
-
-    boundary.publisher
-  }
-
-  override def takePublisher(slot: Int, publisher: Publisher[Any]): Unit = {
-    val connection = conn(slot)
-    // TODO: proper input port debug string (currently prints the stage)
-    val bufferSize = connection.inOwner.attributes.get[InputBuffer].get.max
-    val boundary =
-      new BatchingActorInputBoundary(bufferSize, shell, publisher, connection.inOwner.toString)
-    logics.add(boundary)
-    boundary.stageId = logics.size() - 1
-
-    boundary.portToConn(boundary.out.id + boundary.inCount) = connection
-    connection.outHandler = boundary.handlers(0).asInstanceOf[OutHandler]
-    connection.outOwner = boundary
-  }
-
-  override def onIslandReady(): Unit = {
-
-    val totalConnections = maxConnections + outConnections.size + 1
-    val finalConnections = java.util.Arrays.copyOf(connections, totalConnections)
-
-    var i = maxConnections + 1
-    var outConns = outConnections
-    while (i < totalConnections) {
-      val conn = outConns.head
-      outConns = outConns.tail
-      finalConnections(i) = conn
-      conn.id = i
-      i += 1
-    }
-
-    shell.connections = finalConnections
-    shell.logics = logics.toArray(logicArrayType)
-
+  override protected def onIslandReadyStartInterpreter(shell: GraphInterpreterShell) = {
     val interpreter = new ActorGraphInterpreterLogic {
       override val _initial: GraphInterpreterShell = shell
+      override def eventLimit: Int = Int.MaxValue
       override def log: LoggingAdapter = NoLogging
       override def self: ActorRef = null
-      override def context: ActorContext = ???
+      override def context: ActorContext = null
     }
 
     interpreter.preStart()
     interpreter.processEvent(shell.resume)
-
-    //    subflowFuser match {
-    //      case OptionVal.Some(fuseIntoExistingInterperter) ⇒
-    //        fuseIntoExistingInterperter(shell)
-    //
-    //      case _ ⇒
-    //        ???
-    //              val props = ActorGraphInterpreter.props(shell)
-    //      //          .withDispatcher(effectiveSettings.dispatcher)
-    //      //        val actorName = fullIslandName match {
-    //      //          case OptionVal.Some(n) ⇒ n
-    //      //          case OptionVal.None    ⇒ islandName
-    //      //        }
-    //      //        materializer.actorOf(props, actorName)
-    //    }
+    interpreter.postStop()
   }
+
+  override def onIslandReady(): Unit = super.onIslandReady()
 
   override def toString: String = "GraphStagePhase"
 }
