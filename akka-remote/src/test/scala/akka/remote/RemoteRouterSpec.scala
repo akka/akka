@@ -20,13 +20,9 @@ object RemoteRouterSpec {
   }
 }
 
-class RemoteRouterSpec extends AbstractRemoteRouterSpec(false)
-class RemoteRouterJavaSerializationSpec extends AbstractRemoteRouterSpec(true)
-
-abstract class AbstractRemoteRouterSpec(javaSerialization: Boolean) extends AkkaSpec(s"""
+class RemoteRouterSpec extends AkkaSpec(s"""
     akka.actor.provider = remote
-    akka.actor.allow-java-serialization = ${if (javaSerialization) "on" else "off"}
-    akka.actor.enable-additional-serialization-bindings = ${if (javaSerialization) "off" else "on"}
+    akka.actor.allow-java-serialization = off
     akka.actor.serialize-messages = off
     akka.remote.netty.tcp {
       hostname = localhost
