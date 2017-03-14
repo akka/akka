@@ -127,10 +127,10 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
         val manifest = ser2.manifest(selector)
         builder.setManifest(manifest)
       case _ ⇒
-        if (serializer.includeManifest)
-          builder.setManifest(selector.getClass.getName)
-        else
-          builder.setManifest("")
+        builder.setManifest(
+          if (serializer.includeManifest) selector.getClass.getName
+          else ""
+        )
     }
     builder.build()
   }

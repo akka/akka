@@ -49,6 +49,7 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
+      akka.actor.allow-java-serialization = off
       akka.actor.deployment {
         /router1 {
           router = round-robin-pool
