@@ -168,8 +168,8 @@ package docs.serialization {
       #//#serialization-bindings-config
       """)
       val a = ActorSystem("system", config)
-      SerializationExtension(a).serializerFor(classOf[String]).getClass should be(classOf[JavaSerializer])
-      SerializationExtension(a).serializerFor(classOf[Customer]).getClass should be(classOf[JavaSerializer])
+      SerializationExtension(a).serializerFor(classOf[String]).getClass should be(classOf[TestMessageSerializer])
+      SerializationExtension(a).serializerFor(classOf[Customer]).getClass should be(classOf[TestMessageSerializer])
       SerializationExtension(a).serializerFor(classOf[java.lang.Boolean]).getClass should be(classOf[MyOwnSerializer])
       shutdown(a)
     }
