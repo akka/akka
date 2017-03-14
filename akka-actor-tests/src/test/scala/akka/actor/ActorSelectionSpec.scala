@@ -119,6 +119,11 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
       // not equal because it's terminated
       identify(a1.path) should ===(None)
 
+      // wait till path is freed
+      awaitCond {
+        system.asInstanceOf[ExtendedActorSystem].provider.resolveActorRef(a1.path) != a1
+      }
+
       val a2 = system.actorOf(p, name)
       a2.path should ===(a1.path)
       a2.path.toString should ===(a1.path.toString)
