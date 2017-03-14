@@ -26,7 +26,7 @@ private[akka] object ConstantFun {
   def javaAnyToNone[A, B]: A ⇒ Option[B] = none
 
   val conforms = (a: Any) ⇒ a
-  
+
   val zeroLong = (_: Any) ⇒ 0L
 
   val oneLong = (_: Any) ⇒ 1L

@@ -69,7 +69,7 @@ object PhasedFusingActorMaterializer {
     val streamSupervisor = context.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown)
       .withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName())
 
-    PhasedFusingActorMaterializer(
+    new PhasedFusingActorMaterializer(
       system,
       materializerSettings,
       system.dispatchers,
@@ -331,13 +331,13 @@ class IslandTracking(
 
 }
 
-case class PhasedFusingActorMaterializer(
-  system:                ActorSystem,
+class PhasedFusingActorMaterializer(
+  val system:            ActorSystem,
   override val settings: ActorMaterializerSettings,
-  dispatchers:           Dispatchers,
-  supervisor:            ActorRef,
-  haveShutDown:          AtomicBoolean,
-  flowNames:             SeqActorName) extends ExtendedActorMaterializer {
+  val dispatchers:       Dispatchers,
+  val supervisor:        ActorRef,
+  val haveShutDown:      AtomicBoolean,
+  val flowNames:         SeqActorName) extends ExtendedActorMaterializer {
   import PhasedFusingActorMaterializer._
 
   private val _logger = Logging.getLogger(system, this)
@@ -353,7 +353,7 @@ case class PhasedFusingActorMaterializer(
 
   override def isShutdown: Boolean = haveShutDown.get()
 
-  override def withNamePrefix(name: String): PhasedFusingActorMaterializer = this.copy(flowNames = flowNames.copy(name))
+  override def withNamePrefix(name: String): PhasedFusingActorMaterializer = this // FIXME .copy(flowNames = flowNames.copy(name))
 
   private[this] def createFlowName(): String = flowNames.next()
 
@@ -500,7 +500,7 @@ case class PhasedFusingActorMaterializer(
     matValueStack.peekLast().asInstanceOf[Mat]
   }
 
-  private def wireInlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any): Unit = {
+  protected def wireInlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any): Unit = {
     val inlets = mod.shape.inlets
     if (inlets.nonEmpty) {
       if (Shape.hasOnePort(inlets)) {
@@ -516,8 +516,8 @@ case class PhasedFusingActorMaterializer(
     }
   }
 
-  private def wireOutlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any,
-                          stageGlobalOffset: Int, outToSlot: Array[Int]): Unit = {
+  protected def wireOutlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any,
+                            stageGlobalOffset: Int, outToSlot: Array[Int]): Unit = {
     val outlets = mod.shape.outlets
     if (outlets.nonEmpty) {
       if (Shape.hasOnePort(outlets)) {
@@ -548,7 +548,7 @@ trait IslandTag
 trait Phase[M] {
   def apply(
     effectiveSettings: ActorMaterializerSettings,
-    materializer:      PhasedFusingActorMaterializer,
+    materializer:      PhasedFusingActorMaterializer, // FIXME this should be Materializer?
     islandName:        String): PhaseIsland[M]
 }
 

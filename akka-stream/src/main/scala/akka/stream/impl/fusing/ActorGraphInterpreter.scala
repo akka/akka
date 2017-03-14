@@ -8,7 +8,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
-import akka.event.Logging
+import akka.event.{ Logging, LoggingAdapter, NoLogging }
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.impl.fusing.GraphInterpreter.{ Connection, DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
@@ -444,7 +444,7 @@ final class GraphInterpreterShell(
   import ActorGraphInterpreter._
 
   private var self: ActorRef = _
-  lazy val log = Logging(mat.system.eventStream, self)
+  lazy val log = NoLogging // Logging(mat.system.eventStream, self)
 
   final case class AsyncInput(shell: GraphInterpreterShell, logic: GraphStageLogic, evt: Any, handler: (Any) ⇒ Unit) extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
@@ -646,12 +646,24 @@ final class GraphInterpreterShell(
 /**
  * INTERNAL API
  */
-final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
+final class ActorGraphInterpreter(val _initial: GraphInterpreterShell) extends Actor with ActorLogging with ActorGraphInterpreterLogic {
+  import ActorGraphInterpreter._
+
+  override def preStart(): Unit = super.preStart()
+  override def postStop(): Unit = super.postStop()
+}
+
+trait ActorGraphInterpreterLogic {
+
+  def _initial: GraphInterpreterShell
+  def log: LoggingAdapter
+  def self: ActorRef
+  def context: ActorContext
   import ActorGraphInterpreter._
 
   var activeInterpreters = Set.empty[GraphInterpreterShell]
   var newShells: List[GraphInterpreterShell] = Nil
-  val subFusingMaterializerImpl = new SubFusingActorMaterializerImpl(_initial.mat, registerShell)
+  val subFusingMaterializerImpl: SubFusingActorMaterializerImpl = null // new SubFusingActorMaterializerImpl(_initial.mat, registerShell)
 
   def tryInit(shell: GraphInterpreterShell): Boolean =
     try {
@@ -669,7 +681,7 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
     }
 
   //this limits number of messages that can be processed synchronously during one actor receive.
-  private val eventLimit: Int = _initial.mat.settings.syncProcessingLimit
+  private val eventLimit: Int = Int.MaxValue // _initial.mat.settings.syncProcessingLimit
   private var currentLimit: Int = eventLimit
   //this is a var in order to save the allocation when no short-circuiting actually happens
   private var shortCircuitBuffer: util.ArrayDeque[Any] = null
@@ -691,7 +703,7 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
    */
   @tailrec private def finishShellRegistration(): Unit =
     newShells match {
-      case Nil ⇒ if (activeInterpreters.isEmpty) context.stop(self)
+      case Nil ⇒ if (activeInterpreters.isEmpty) () // context.stop(self)
       case shell :: tail ⇒
         newShells = tail
         if (shell.isInitialized) {
@@ -702,9 +714,9 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
         }
     }
 
-  override def preStart(): Unit = {
+  def preStart(): Unit = {
     tryInit(_initial)
-    if (activeInterpreters.isEmpty) context.stop(self)
+    if (activeInterpreters.isEmpty) () // context.stop(self)
     else if (shortCircuitBuffer != null) shortCircuitBatch()
   }
 
@@ -717,9 +729,8 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
     if (!shortCircuitBuffer.isEmpty && currentLimit == 0) self ! Resume
   }
 
-  private def processEvent(b: BoundaryEvent): Unit = {
+  def processEvent(b: BoundaryEvent): Unit = {
     val shell = b.shell
-
     if (!shell.isTerminated && (shell.isInitialized || tryInit(shell))) {
       try currentLimit = shell.processEvent(b, currentLimit)
       catch {
@@ -733,7 +744,7 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
     }
   }
 
-  override def receive: Receive = {
+  def receive: Actor.Receive = {
     case b: BoundaryEvent ⇒
       currentLimit = eventLimit
       processEvent(b)
@@ -742,22 +753,9 @@ final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor
     case Resume ⇒
       currentLimit = eventLimit
       if (shortCircuitBuffer != null) shortCircuitBatch()
-
-    case StreamSupervisor.PrintDebugDump ⇒
-      val builder = new java.lang.StringBuilder(s"activeShells (actor: $self):\n")
-      activeInterpreters.foreach { shell ⇒
-        builder.append("  " + shell.toString.replace("\n", "\n  "))
-        builder.append(shell.interpreter.toString)
-      }
-      builder.append(s"newShells:")
-      newShells.foreach { shell ⇒
-        builder.append("  " + shell.toString.replace("\n", "\n  "))
-        builder.append(shell.interpreter.toString)
-      }
-      println(builder)
   }
 
-  override def postStop(): Unit = {
+  def postStop(): Unit = {
     val ex = AbruptTerminationException(self)
     activeInterpreters.foreach(_.tryAbort(ex))
     activeInterpreters = Set.empty[GraphInterpreterShell]
