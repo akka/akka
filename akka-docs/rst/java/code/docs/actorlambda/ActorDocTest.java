@@ -5,36 +5,28 @@
 package docs.actorlambda;
 
 import akka.actor.*;
-import akka.japi.pf.ReceiveBuilder;
-import akka.testkit.ErrorFilter;
-import akka.testkit.EventFilter;
-import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import docs.AbstractJavaTest;
 import static docs.actorlambda.Messages.Swap.Swap;
 import static docs.actorlambda.Messages.*;
-import static akka.japi.Util.immutableSeq;
 import akka.actor.CoordinatedShutdown;
 
-import akka.util.Timeout;
 import akka.Done;
-import java.util.concurrent.CompletionStage;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import akka.testkit.TestActors;
-import akka.dispatch.Mapper;
-import akka.dispatch.Futures;
-import akka.util.Timeout;
 
 import akka.testkit.JavaTestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+
+import java.util.Arrays;
 
 //#import-props
 import akka.actor.Props;
@@ -49,10 +41,9 @@ import akka.actor.ActorSelection;
 import akka.actor.Identify;
 //#import-identify
 //#import-ask
-import static akka.pattern.Patterns.ask;
-import static akka.pattern.Patterns.pipe;
-import akka.dispatch.Futures;
-import akka.dispatch.Mapper;
+import static akka.pattern.PatternsCS.ask;
+import static akka.pattern.PatternsCS.pipe;
+import java.util.concurrent.CompletionStage;
 import akka.util.Timeout;
 //#import-ask
 //#import-gracefulStop
@@ -60,8 +51,7 @@ import akka.pattern.AskTimeoutException;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 //#import-ask
-import scala.concurrent.Future;
-import static akka.pattern.Patterns.gracefulStop;
+import static akka.pattern.PatternsCS.gracefulStop;
 //#import-ask
 //#import-gracefulStop
 //#import-terminated
@@ -424,9 +414,13 @@ public class ActorDocTest extends AbstractJavaTest {
     ActorRef actorRef = system.actorOf(Props.create(Manager.class));
     //#gracefulStop
     try {
-      Future<Boolean> stopped =
+      CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+      CompletionStage<Boolean> stopped =
         gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), Manager.SHUTDOWN);
-      Await.result(stopped, Duration.create(6, TimeUnit.SECONDS));
+      stopped.thenAccept(future::complete);
+
+      future.get(6, TimeUnit.SECONDS);
       // the actor has been stopped
     } catch (AskTimeoutException e) {
       // the actor wasn't stopped within 5 seconds
@@ -770,23 +764,24 @@ public class ActorDocTest extends AbstractJavaTest {
         //#ask-pipe
         final Timeout t = new Timeout(Duration.create(5, TimeUnit.SECONDS));
 
-        final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
-        futures.add(ask(actorA, "request", 1000)); // using 1000ms timeout
-        futures.add(ask(actorB, "another request", t)); // using timeout from
-                                                        // above
+        final CompletionStage<Object> future1 = ask(actorA, "request", 1000); // using 1000ms timeout
+        final CompletionStage<Object> future2 = ask(actorB, "another request", t); // using timeout from above
 
-        final Future<Iterable<Object>> aggregate = Futures.sequence(futures,
-            system.dispatcher());
+        final CompletionStage<Iterable<Object>> aggregate = future1.thenCombineAsync(
+                future2,
+                (resp1, resp2) -> Arrays.asList(resp1, resp2),
+                system.dispatcher()
+              );
 
-        final Future<Result> transformed = aggregate.map(
-            new Mapper<Iterable<Object>, Result>() {
-              public Result apply(Iterable<Object> coll) {
-                final Iterator<Object> it = coll.iterator();
-                final String x = (String) it.next();
-                final String s = (String) it.next();
-                return new Result(x, s);
-              }
-            }, system.dispatcher());
+        final CompletionStage<Result> transformed = aggregate.thenApplyAsync(
+                (iter) -> {
+                  final Iterator<Object> it = iter.iterator();
+                  final String x = (String) it.next();
+                  final String s = (String) it.next();
+                  return new Result(x, s);
+                },
+                system.dispatcher()
+        );
 
         pipe(transformed, system.dispatcher()).to(actorC);
         //#ask-pipe

@@ -549,24 +549,23 @@ a use pattern rather than a method on :class:`ActorRef`:
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#import-ask
 .. includecode:: code/docs/actorlambda/ActorDocTest.java#ask-pipe
 
-This example demonstrates ``ask`` together with the ``pipe`` pattern on
-futures, because this is likely to be a common combination. Please note that
-all of the above is completely non-blocking and asynchronous: ``ask`` produces
-a :class:`Future`, two of which are composed into a new future using the
-:meth:`Futures.sequence` and :meth:`map` methods and then ``pipe`` installs
-an ``onComplete``-handler on the future to effect the submission of the
-aggregated :class:`Result` to another actor.
+This example demonstrates ``ask`` together with the ``pipe`` pattern on completion stages,
+because this is likely to be a common combination. Please note that all of the above is
+completely non-blocking and asynchronous: ``ask`` produces a :class:`CompletionStage`,
+two of which are composed into a new stage using the :meth:`thenCombineAsync` and
+:meth:`thenApplyAsync` methods and then ``pipe`` installs an ``onComplete``-handler on the
+stage to effect the submission of the aggregated :class:`Result` to another actor.
 
 Using ``ask`` will send a message to the receiving Actor as with ``tell``, and
 the receiving actor must reply with ``sender().tell(reply, self())`` in order to
-complete the returned :class:`Future` with a value. The ``ask`` operation
+complete the returned :class:`CompletionStage` with a value. The ``ask`` operation
 involves creating an internal actor for handling this reply, which needs to
 have a timeout after which it is destroyed in order not to leak resources; see
 more below.
 
 .. note::
-    A variant of the ``ask`` pattern that returns a ``CompletionStage`` instead of a Scala ``Future``
-    is available in the ``akka.pattern.PatternsCS`` object.
+    A variant of the ``ask`` pattern that returns a Scala ``Future`` instead of a ``CompletionStage``
+    is available in the ``akka.pattern.Patterns`` object.
 
 .. warning::
 
