@@ -42,6 +42,9 @@ object AskPattern {
         case a: adapter.ActorSystemAdapter[_] ⇒ askUntyped(ref, a.untyped.guardian, timeout, f)
         case _                                ⇒ ask(ref, timeout, scheduler, f)
       }
+
+    // TODO def ask also
+    // TODO ask for javadsl
   }
 
   private class PromiseRef[U](target: ActorRef[_], untyped: InternalActorRef, timeout: Timeout) {

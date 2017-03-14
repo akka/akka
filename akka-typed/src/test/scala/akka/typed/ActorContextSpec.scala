@@ -73,6 +73,48 @@ object ActorContextSpec {
   final case class GetAdapter(replyTo: ActorRef[Adapter], name: String = "") extends Command
   final case class Adapter(a: ActorRef[Command]) extends Event
 
+  val foo1: Actor.Stateless[Command] = Actor.Stateless {
+    case (_, Ping(replyTo)) ⇒
+      replyTo ! Pong2
+    case (_, Throw(ex)) ⇒
+      throw ex
+    case _ ⇒ ()
+  }
+
+  val foo2: Behavior[Command] = Actor.Stateless {
+    case (_, Ping(replyTo)) ⇒
+      replyTo ! Pong2
+    case (_, Throw(ex)) ⇒
+      throw ex
+    case _ ⇒ ()
+  }
+
+  val foo5 = Actor.Stateful[Command] { (ctx, msg) ⇒
+    msg match {
+      case Ping(replyTo) ⇒
+        replyTo ! Pong2
+        Actor.Same
+      case _ ⇒ Actor.Unhandled
+    }
+  }
+
+  //  val foo6 = Actor.Stateless[Command] { (ctx, msg) =>
+  //    msg match {
+  //      case Ping(replyTo) ⇒
+  //        replyTo ! Pong2
+  //      case _ => Actor.Unhandled
+  //    }
+  //  }
+
+  // TODO missing parameter type for expanded function The argument types of an anonymous function must be fully known.
+  //      (SLS 8.5) Expected type was: Function2[akka.typed.scaladsl.ActorContext[akka.typed.ActorContextSpec.Ping], akka.typed.ActorContextSpec.Ping, ?]
+  /*
+  val foo4 = Actor.Stateless[Ping] {
+    case (_, Ping(replyTo)) ⇒
+      replyTo ! Pong2
+  }
+  */
+
   def subject(monitor: ActorRef[Monitor]): Behavior[Command] =
     Actor.SignalOrMessage(
       (ctx, signal) ⇒ { monitor ! GotSignal(signal); Actor.Same },
@@ -149,13 +191,11 @@ object ActorContextSpec {
                 monitor ! GotSignal(sig)
                 Actor.Same
             },
-            (ctx, message) ⇒ Actor.Unhandled
-          )
+            (ctx, message) ⇒ Actor.Unhandled)
         case GetAdapter(replyTo, name) ⇒
           replyTo ! Adapter(ctx.spawnAdapter(identity, name))
           Actor.Same
-      }
-    )
+      })
 
   def oldSubject(monitor: ActorRef[Monitor]): Behavior[Command] = {
     import ScalaDSL._

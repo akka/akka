@@ -20,8 +20,9 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
   behavior: Behavior[T] = initialBehavior) extends Behavior[T] {
 
   private def restart(ctx: ActorContext[T]): Behavior[T] = {
-    try behavior.management(ctx, PreRestart) catch { case NonFatal(_) ⇒ }
+    try behavior.management(ctx, PreRestart) catch { case NonFatal(_) ⇒ } // TODO shouldn't it stop?
     Behavior.canonicalize(initialBehavior.management(ctx, PreStart), initialBehavior)
+    // TODO since we don't create a new instance of the Behavior we should perhaps have a MutableBehavior that is like Deferred + Stateful
   }
 
   private def canonical(b: Behavior[T]): Behavior[T] =
@@ -68,6 +69,7 @@ final case class MutableRestarter[T, Thr <: Throwable: ClassTag](initialBehavior
   private def restart(ctx: ActorContext[T]): Behavior[T] = {
     try current.management(ctx, PreRestart) catch { case NonFatal(_) ⇒ }
     current = initialBehavior
+    // TODO not sure I understand this for mutable state in the Behavior, where is new instance created?
     current.management(ctx, PreStart)
   }
 
