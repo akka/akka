@@ -1415,7 +1415,7 @@ final class GroupedWithin[T](val n: Int, val d: FiniteDuration) extends GraphSta
     //       AND
     // - timer fired OR group is full
     private var groupClosed = false
-    private var groupEmitted = false
+    private var groupEmitted = true
     private var finished = false
     private var elements = 0
 
