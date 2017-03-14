@@ -159,13 +159,21 @@ object PersistenceDocSpec {
     class MyPersistentActor extends PersistentActor {
       override def persistenceId = "my-stable-persistence-id"
 
+      def updateState(event: String): Unit = {}
+
       //#save-snapshot
       var state: Any = _
 
+      val snapShotInterval = 1000
       override def receiveCommand: Receive = {
-        case "snap"                                => saveSnapshot(state)
         case SaveSnapshotSuccess(metadata)         => // ...
         case SaveSnapshotFailure(metadata, reason) => // ...
+        case cmd: String =>
+          persist(s"evt-$cmd") { e =>
+            updateState(e)
+            if (lastSequenceNr % snapShotInterval == 0 && lastSequenceNr != 0)
+              saveSnapshot(state)
+          }
       }
       //#save-snapshot
 

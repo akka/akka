@@ -76,6 +76,7 @@ class ExampleState implements Serializable {
 class ExamplePersistentActor extends AbstractPersistentActor {
 
     private ExampleState state = new ExampleState();
+    private int snapShotInterval = 1000;
 
     public int getNumEvents() {
         return state.size();
@@ -97,16 +98,15 @@ class ExamplePersistentActor extends AbstractPersistentActor {
         return receiveBuilder()
             .match(Cmd.class, c -> {
               final String data = c.getData();
-              final Evt evt1 = new Evt(data + "-" + getNumEvents());
-              final Evt evt2 = new Evt(data + "-" + (getNumEvents() + 1));
-              persistAll(asList(evt1, evt2), (Evt evt) -> {
-                state.update(evt);
-                if (evt.equals(evt2)) {
-                  getContext().system().eventStream().publish(evt);
-                }
+              final Evt evt = new Evt(data + "-" + getNumEvents());
+              persist(evt, (Evt e) -> {
+                  state.update(e);
+                  getContext().system().eventStream().publish(e);
+                  if (lastSequenceNr() % snapShotInterval == 0 && lastSequenceNr() != 0)
+                      // IMPORTANT: create a copy of snapshot because ExampleState is mutable
+                      saveSnapshot(state.copy());
               });
             })
-            .matchEquals("snap", s -> saveSnapshot(state.copy()))
             .matchEquals("print", s -> System.out.println(state))
             .build();
     }
@@ -120,7 +120,6 @@ public class PersistentActorExample {
         persistentActor.tell(new Cmd("foo"), null);
         persistentActor.tell(new Cmd("baz"), null);
         persistentActor.tell(new Cmd("bar"), null);
-        persistentActor.tell("snap", null);
         persistentActor.tell(new Cmd("buzz"), null);
         persistentActor.tell("print", null);
 
