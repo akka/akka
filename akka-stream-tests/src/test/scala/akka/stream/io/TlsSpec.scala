@@ -84,7 +84,7 @@ object TlsSpec {
 
 }
 
-class TlsSpec extends StreamSpec("akka.loglevel=INFO\nakka.actor.debug.receive=off") {
+class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=off") {
   import TlsSpec._
 
   import system.dispatcher
