@@ -41,7 +41,7 @@ abstract class ExtendedActorMaterializer extends ActorMaterializer {
   /**
    * INTERNAL API
    */
-  override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
+  @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val dispatcher =
       if (props.deploy.dispatcher == Deploy.NoDispatcherGiven) effectiveSettings(context.effectiveAttributes).dispatcher
       else props.dispatcher
@@ -51,7 +51,7 @@ abstract class ExtendedActorMaterializer extends ActorMaterializer {
   /**
    * INTERNAL API
    */
-  def actorOf(props: Props, name: String): ActorRef = {
+  @InternalApi private[akka] def actorOf(props: Props, name: String): ActorRef = {
     supervisor match {
       case ref: LocalActorRef ⇒
         ref.underlying.attachChild(props, name, systemService = false)
@@ -71,12 +71,12 @@ abstract class ExtendedActorMaterializer extends ActorMaterializer {
   /**
    * INTERNAL API
    */
-  override def logger: LoggingAdapter
+  @InternalApi private[akka] override def logger: LoggingAdapter
 
   /**
    * INTERNAL API
    */
-  override def supervisor: ActorRef
+  @InternalApi private[akka] override def supervisor: ActorRef
 
 }
 
@@ -117,7 +117,7 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
 /**
  * INTERNAL API
  */
-object FlowNames extends ExtensionId[FlowNames] with ExtensionIdProvider {
+@InternalApi private[akka] object FlowNames extends ExtensionId[FlowNames] with ExtensionIdProvider {
   override def get(system: ActorSystem): FlowNames = super.get(system)
   override def lookup() = FlowNames
   override def createExtension(system: ExtendedActorSystem): FlowNames = new FlowNames
@@ -126,14 +126,14 @@ object FlowNames extends ExtensionId[FlowNames] with ExtensionIdProvider {
 /**
  * INTERNAL API
  */
-class FlowNames extends Extension {
+@InternalApi private[akka] class FlowNames extends Extension {
   val name = SeqActorName("Flow")
 }
 
 /**
  * INTERNAL API
  */
-object StreamSupervisor {
+@InternalApi private[akka] object StreamSupervisor {
   def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
     Props(new StreamSupervisor(settings, haveShutDown)).withDeploy(Deploy.local)
   private[stream] val baseName = "StreamSupervisor"

@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-private[stream] object QueueSource {
+@InternalApi private[akka] object QueueSource {
   sealed trait Input[+T]
   final case class Offer[+T](elem: T, promise: Promise[QueueOfferResult]) extends Input[T]
   case object Completion extends Input[Nothing]
@@ -35,7 +35,7 @@ private[stream] object QueueSource {
 /**
  * INTERNAL API
  */
-final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
+@InternalApi private[akka] final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
   import QueueSource._
 
   val out = Outlet[T]("queueSource.out")
@@ -189,7 +189,10 @@ final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy) e
   }
 }
 
-final class SourceQueueAdapter[T](delegate: SourceQueueWithComplete[T]) extends akka.stream.javadsl.SourceQueueWithComplete[T] {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class SourceQueueAdapter[T](delegate: SourceQueueWithComplete[T]) extends akka.stream.javadsl.SourceQueueWithComplete[T] {
   def offer(elem: T): CompletionStage[QueueOfferResult] = delegate.offer(elem).toJava
   def watchCompletion(): CompletionStage[Done] = delegate.watchCompletion().toJava
   def complete(): Unit = delegate.complete()
@@ -199,7 +202,7 @@ final class SourceQueueAdapter[T](delegate: SourceQueueWithComplete[T]) extends 
 /**
  * INTERNAL API
  */
-final class UnfoldResourceSource[T, S](
+@InternalApi private[akka] final class UnfoldResourceSource[T, S](
   create:   () ⇒ S,
   readData: (S) ⇒ Option[T],
   close:    (S) ⇒ Unit) extends GraphStage[SourceShape[T]] {
@@ -256,7 +259,10 @@ final class UnfoldResourceSource[T, S](
   override def toString = "UnfoldResourceSource"
 }
 
-final class UnfoldResourceSourceAsync[T, S](
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class UnfoldResourceSourceAsync[T, S](
   create:   () ⇒ Future[S],
   readData: (S) ⇒ Future[Option[T]],
   close:    (S) ⇒ Future[Done]) extends GraphStage[SourceShape[T]] {
@@ -338,11 +344,17 @@ final class UnfoldResourceSourceAsync[T, S](
 
 }
 
-object LazySource {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object LazySource {
   def apply[T, M](sourceFactory: () ⇒ Source[T, M]) = new LazySource[T, M](sourceFactory)
 }
 
-final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
   val out = Outlet[T]("LazySource.out")
   override val shape = SourceShape(out)
 
@@ -398,9 +410,10 @@ final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphSt
   override def toString = "LazySource"
 }
 
-/** INTERNAL API */
-@InternalApi
-final object EmptySource extends GraphStage[SourceShape[Nothing]] {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final object EmptySource extends GraphStage[SourceShape[Nothing]] {
   val out = Outlet[Nothing]("EmptySource.out")
   override val shape = SourceShape(out)
 
