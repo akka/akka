@@ -255,6 +255,8 @@ object Framing {
           frameSize = parsedLength + minimumChunkSize
           if (frameSize > maximumFrameLength) {
             failStage(new FramingException(s"Maximum allowed frame size is $maximumFrameLength but decoded frame header reported size $frameSize"))
+          } else if (parsedLength < 0) {
+            failStage(new FramingException(s"Decoded frame header reported negative size $parsedLength"))
           } else if (buffSize >= frameSize) {
             pushFrame()
           } else tryPull()
