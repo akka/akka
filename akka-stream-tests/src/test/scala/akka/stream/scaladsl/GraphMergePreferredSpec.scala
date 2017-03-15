@@ -46,7 +46,7 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
       Await.result(result, 3.seconds).filter(_ == 1).size should be(numElements)
     }
 
-    "eventually pass through all elements" in {
+    "eventually pass through all elements without corrupting the ordering" in {
       val result = RunnableGraph.fromGraph(GraphDSL.create(Sink.head[Seq[Int]]) { implicit b ⇒ sink ⇒
         val merge = b.add(MergePreferred[Int](3))
         Source(1 to 100) ~> merge.preferred
@@ -58,7 +58,13 @@ class GraphMergePreferredSpec extends TwoStreamsSetup {
         ClosedShape
       }).run()
 
-      Await.result(result, 3.seconds).toSet should ===((1 to 400).toSet)
+      val resultSeq = Await.result(result, 3.seconds)
+      resultSeq.toSet should ===((1 to 400).toSet)
+      //test ordering of elements coming from each of the flows
+      resultSeq.filter(_ <= 100) should ===(1 to 100)
+      resultSeq.filter(e ⇒ e > 100 && e <= 200) should ===(101 to 200)
+      resultSeq.filter(e ⇒ e > 200 && e <= 300) should ===(201 to 300)
+      resultSeq.filter(e ⇒ e > 300 && e <= 400) should ===(301 to 400)
     }
 
     "disallow multiple preferred inputs" in {
