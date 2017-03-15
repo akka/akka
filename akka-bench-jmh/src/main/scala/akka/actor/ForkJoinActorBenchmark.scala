@@ -19,7 +19,7 @@ import scala.concurrent.Await
 class ForkJoinActorBenchmark {
   import ForkJoinActorBenchmark._
 
-  @Param(Array("1", "5"))
+  @Param(Array("1", "5", "10"))
   var tpt = 0
 
   @Param(Array("1", "4"))
@@ -61,13 +61,88 @@ class ForkJoinActorBenchmark {
     val ping = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
     val pong = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
 
-    ping.tell(message, pong)
+    ping.tell(Message, pong)
 
     val p = TestProbe()
     p.watch(ping)
     p.expectTerminated(ping, timeout)
     p.watch(pong)
     p.expectTerminated(pong, timeout)
+  }
+
+  @Benchmark
+  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
+  @OperationsPerInvocation(totalMessagesLessThanCores)
+  def pingPongLessActorsThanCores(): Unit = {
+    val pingPongs =
+      for {
+        i <- 1 to lessThanCoresActorPairs
+      } yield {
+        val ping = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+        val pong = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+        (ping, pong)
+      }
+
+    pingPongs.foreach { case (ping, pong) => ping.tell(Message, pong) }
+
+    pingPongs.foreach {
+      case (ping, pong) =>
+        val p = TestProbe()
+        p.watch(ping)
+        p.expectTerminated(ping, timeout)
+        p.watch(pong)
+        p.expectTerminated(pong, timeout)
+    }
+  }
+
+  @Benchmark
+  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
+  @OperationsPerInvocation(totalMessagesSameAsCores)
+  def pingPongSameNumberOfActorsAsCores(): Unit = {
+    val pingPongs =
+      for {
+        i <- 1 to (cores / 2)
+      } yield {
+        val ping = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+        val pong = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+        (ping, pong)
+      }
+
+    pingPongs.foreach { case (ping, pong) => ping.tell(Message, pong) }
+
+    pingPongs.foreach {
+      case (ping, pong) =>
+        val p = TestProbe()
+        p.watch(ping)
+        p.expectTerminated(ping, timeout)
+        p.watch(pong)
+        p.expectTerminated(pong, timeout)
+    }
+  }
+
+  @Benchmark
+  @Measurement(timeUnit = TimeUnit.MILLISECONDS)
+  @OperationsPerInvocation(totalMessagesMoreThanCores)
+  def pingPongMoreActorsThanCores(): Unit = {
+    val pingPongs =
+      for {
+        i <- 1 to moreThanCoresActorPairs
+      } yield {
+        val ping = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+        val pong = system.actorOf(Props[ForkJoinActorBenchmark.PingPong])
+        (ping, pong)
+      }
+
+    pingPongs.foreach { case (ping, pong) => ping.tell(Message, pong) }
+
+    pingPongs.foreach {
+      case (ping, pong) =>
+        val p = TestProbe()
+        p.watch(ping)
+        p.expectTerminated(ping, timeout)
+        p.watch(pong)
+        p.expectTerminated(pong, timeout)
+    }
   }
 
   @Benchmark
@@ -85,7 +160,7 @@ class ForkJoinActorBenchmark {
 
     def send(left: Int): Unit =
       if (left > 0) {
-        beginning ! message
+        beginning ! Message
         send(left - 1)
       }
 
@@ -99,12 +174,22 @@ class ForkJoinActorBenchmark {
 
 object ForkJoinActorBenchmark {
   final val stop = "stop"
-  final val message = "message"
+  case object Message
   final val timeout = 15.seconds
   final val messages = 400000
+
+  // update according to cpu
+  final val cores = 8
+  // 2 actors per
+  final val moreThanCoresActorPairs = cores * 2
+  final val lessThanCoresActorPairs = (cores / 2) - 1
+  final val totalMessagesMoreThanCores = moreThanCoresActorPairs * messages
+  final val totalMessagesLessThanCores = lessThanCoresActorPairs * messages
+  final val totalMessagesSameAsCores = cores * messages
+
   class Pipe(next: Option[ActorRef]) extends Actor {
     def receive = {
-      case m @ `message` =>
+      case m @ Message =>
         if (next.isDefined) next.get forward m
       case s @ `stop` =>
         context stop self
@@ -114,12 +199,12 @@ object ForkJoinActorBenchmark {
   class PingPong extends Actor {
     var left = messages / 2
     def receive = {
-      case `message` =>
+      case Message =>
 
         if (left <= 1)
           context stop self
 
-        sender() ! message
+        sender() ! Message
         left -= 1
     }
   }
