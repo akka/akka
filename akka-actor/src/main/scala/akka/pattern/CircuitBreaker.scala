@@ -58,12 +58,12 @@ object CircuitBreaker {
   def create(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration): CircuitBreaker =
     apply(scheduler, maxFailures, callTimeout, resetTimeout)
 
-  val exceptionAsFailure: Try[_] ⇒ Boolean = {
+  private val exceptionAsFailure: Try[_] ⇒ Boolean = {
     case _: Success[_] ⇒ false
     case _             ⇒ true
   }
 
-  def exceptionAsFailureJava[T]: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean] =
+  private def exceptionAsFailureJava[T]: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean] =
     new BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean] {
       override def apply(t: Optional[T], err: Optional[Throwable]) = {
         if (err.isPresent)
