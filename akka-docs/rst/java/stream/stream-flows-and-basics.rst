@@ -222,7 +222,7 @@ which will be running on the thread pools they have been configured to run on - 
    Reusing *instances* of linear computation stages (Source, Sink, Flow) inside composite Graphs is legal,
    yet will materialize that stage multiple times.
 
-.. _flow-combine-mat-java:
+.. _operator-fusion-java:
 
 Operator Fusion
 ---------------

@@ -347,6 +347,10 @@ case class PhasedFusingActorMaterializer(
     _logger.warning("Fuzzing mode is enabled on this system. If you see this warning on your production system then " +
       "set akka.stream.materializer.debug.fuzzing-mode to off.")
   }
+  if (!settings.autoFusing) {
+    _logger.warning("Deprecated setting auto-fusing set to false. Since Akka 2.5.0 it does not have any effect " +
+      "and streams are always fused.")
+  }
 
   override def shutdown(): Unit =
     if (haveShutDown.compareAndSet(false, true)) supervisor ! PoisonPill
