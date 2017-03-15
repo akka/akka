@@ -34,11 +34,11 @@ below for usage examples.
 
 * **Shutdown**
 
-.. includecode:: ../code/docs/stream/KillSwitchDocTest.java#unique-shutdown
+.. includecode:: ../code/jdocs/stream/KillSwitchDocTest.java#unique-shutdown
 
 * **Abort**
 
-.. includecode:: ../code/docs/stream/KillSwitchDocTest.java#unique-abort
+.. includecode:: ../code/jdocs/stream/KillSwitchDocTest.java#unique-abort
 
 .. _shared-kill-switch-java:
 
@@ -51,11 +51,11 @@ Refer to the below for usage examples.
 
 * **Shutdown**
 
-.. includecode:: ../code/docs/stream/KillSwitchDocTest.java#shared-shutdown
+.. includecode:: ../code/jdocs/stream/KillSwitchDocTest.java#shared-shutdown
 
 * **Abort**
 
-.. includecode:: ../code/docs/stream/KillSwitchDocTest.java#shared-abort
+.. includecode:: ../code/jdocs/stream/KillSwitchDocTest.java#shared-abort
 
 .. note::
    A ``UniqueKillSwitch`` is always a result of a materialization, whilst ``SharedKillSwitch`` needs to be constructed
@@ -79,7 +79,7 @@ producers are backpressured. The hub itself comes as a :class:`Source` to which 
 It is not possible to attach any producers until this :class:`Source` has been materialized (started). This is ensured
 by the fact that we only get the corresponding :class:`Sink` as a materialized value. Usage might look like this:
 
-.. includecode:: ../code/docs/stream/HubDocTest.java#merge-hub
+.. includecode:: ../code/jdocs/stream/HubDocTest.java#merge-hub
 
 This sequence, while might look odd at first, ensures proper startup order. Once we get the :class:`Sink`,
 we can use it as many times as wanted. Everything that is fed to it will be delivered to the consumer we attached
@@ -93,7 +93,7 @@ rate of the producer will be automatically adapted to the slowest consumer. In t
 to which the single producer must be attached first. Consumers can only be attached once the :class:`Sink` has
 been materialized (i.e. the producer has been started). One example of using the :class:`BroadcastHub`:
 
-.. includecode:: ../code/docs/stream/HubDocTest.java#broadcast-hub
+.. includecode:: ../code/jdocs/stream/HubDocTest.java#broadcast-hub
 
 The resulting :class:`Source` can be materialized any number of times, each materialization effectively attaching
 a new subscriber. If there are no subscribers attached to this hub then it will not drop any elements but instead
@@ -114,13 +114,13 @@ First, we connect a :class:`MergeHub` and a :class:`BroadcastHub` together to fo
 we materialize this small stream, we get back a pair of :class:`Source` and :class:`Sink` that together define
 the publish and subscribe sides of our channel.
 
-.. includecode:: ../code/docs/stream/HubDocTest.java#pub-sub-1
+.. includecode:: ../code/jdocs/stream/HubDocTest.java#pub-sub-1
 
 We now use a few tricks to add more features. First of all, we attach a ``Sink.ignore``
 at the broadcast side of the channel to keep it drained when there are no subscribers. If this behavior is not the
 desired one this line can be simply dropped.
 
-.. includecode:: ../code/docs/stream/HubDocTest.java#pub-sub-2
+.. includecode:: ../code/jdocs/stream/HubDocTest.java#pub-sub-2
 
 We now wrap the :class:`Sink` and :class:`Source` in a :class:`Flow` using ``Flow.fromSinkAndSource``. This bundles
 up the two sides of the channel into one and forces users of it to always define a publisher and subscriber side
@@ -130,11 +130,11 @@ same time.
 Finally, we add ``backpressureTimeout`` on the consumer side to ensure that subscribers that block the channel for more
 than 3 seconds are forcefully removed (and their stream failed).
 
-.. includecode:: ../code/docs/stream/HubDocTest.java#pub-sub-3
+.. includecode:: ../code/jdocs/stream/HubDocTest.java#pub-sub-3
 
 The resulting Flow now has a type of ``Flow[String, String, UniqueKillSwitch]`` representing a publish-subscribe
 channel which can be used any number of times to attach new producers or consumers. In addition, it materializes
 to a :class:`UniqueKillSwitch` (see :ref:`unique-kill-switch-java`) that can be used to deregister a single user externally:
 
 
-.. includecode:: ../code/docs/stream/HubDocTest.java#pub-sub-4
+.. includecode:: ../code/jdocs/stream/HubDocTest.java#pub-sub-4

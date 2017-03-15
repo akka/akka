@@ -162,11 +162,11 @@ For more in-depth explanations on how serialization picks the serializer to use 
 
 First we start by defining our domain model class, here representing a person:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#simplest-custom-serializer-model
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#simplest-custom-serializer-model
 
 Next we implement a serializer (or extend an existing one to be able to handle the new ``Person`` class):
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#simplest-custom-serializer
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#simplest-custom-serializer
 
 And finally we register the serializer and bind it to handle the ``docs.persistence.Person`` class:
 
@@ -208,7 +208,7 @@ While being able to read messages with missing fields is half of the solution, y
 values somehow. This is usually modeled as some kind of default value, or by representing the field as an ``Optional<T>``
 See below for an example how reading an optional field from a serialized protocol buffers message might look like.
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#protobuf-read-optional-model
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#protobuf-read-optional-model
 
 Next we prepare an protocol definition using the protobuf Interface Description Language, which we'll use to generate
 the serializer code to be used on the Akka Serialization layer (notice that the schema aproach allows us to easily rename
@@ -221,7 +221,7 @@ Optional fields can be handled explicitly or missing values by calling the ``has
 which we do for ``seatType`` in order to use a ``Unknown`` type in case the event was stored before we had introduced
 the field to this event type:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#protobuf-read-optional
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#protobuf-read-optional
 
 .. _rename-field-java:
 
@@ -278,7 +278,7 @@ or using a library like `Stamina`_ which helps to create those ``V1->V2->V3->...
 The following snippet showcases how one could apply renames if working with plain JSON (using a
 ``JsObject`` as an example JSON representation):
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#rename-plain-json
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#rename-plain-json
 
 As you can see, manually handling renames induces some boilerplate onto the EventAdapter, however much of it
 you will find is common infrastructure code that can be either provided by an external library (for promotion management)
@@ -347,12 +347,12 @@ that the type is no longer needed, and skip the deserialization all-together:
 
 The serializer detects that the string manifest points to a removed event type and skips attempting to deserialize it:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#string-serializer-skip-deleved-event-by-manifest
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#string-serializer-skip-deleved-event-by-manifest
 
 The EventAdapter we implemented is aware of ``EventDeserializationSkipped`` events (our "Tombstones"),
 and emits and empty ``EventSeq`` whenever such object is encoutered:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#string-serializer-skip-deleved-event-by-manifest-adapter
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#string-serializer-skip-deleved-event-by-manifest-adapter
 
 .. _detach-domain-from-data-model-java:
 
@@ -384,13 +384,13 @@ these types in a 1:1 style as illustrated below:
 
 We will use the following domain and data models to showcase how the separation can be implemented by the adapter:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#detach-models
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#detach-models
 
 The :class:`EventAdapter` takes care of converting from one model to the other one (in both directions),
 alowing the models to be completely detached from each other, such that they can be optimised independently
 as long as the mapping logic is able to convert between them:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#detach-models-adapter
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#detach-models-adapter
 
 The same technique could also be used directly in the Serializer if the end result of marshalling is bytes.
 Then the serializer can simply convert the bytes do the domain object by using the generated protobuf builders.
@@ -413,7 +413,7 @@ In this aproach, the :class:`EventAdapter` is used as the marshalling layer: it 
 The journal plugin notices that the incoming event type is JSON (for example by performing a ``match`` on the incoming
 event) and stores the incoming object directly.
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#detach-models-adapter-json
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#detach-models-adapter-json
 
 .. note::
   This technique only applies if the Akka Persistence plugin you are using provides this capability.
@@ -467,7 +467,7 @@ During recovery however, we now need to convert the old ``V1`` model into the ``
 Depending if the old event contains a name change, we either emit the ``UserNameChanged`` or we don't,
 and the address change is handled similarily:
 
-.. includecode:: code/docs/persistence/PersistenceSchemaEvolutionDocTest.java#split-events-during-recovery
+.. includecode:: code/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java#split-events-during-recovery
 
 By returning an :class:`EventSeq` from the event adapter, the recovered event can be converted to multiple events before
 being delivered to the persistent actor.

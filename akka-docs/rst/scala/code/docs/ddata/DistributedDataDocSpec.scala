@@ -4,16 +4,14 @@
 package docs.ddata
 
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
 import akka.actor.Actor
-import akka.actor.ActorLogging
 import akka.cluster.Cluster
 import akka.cluster.ddata._
 import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.actor.ActorRef
 import akka.serialization.SerializationExtension
+import jdocs.ddata
 
 object DistributedDataDocSpec {
 
@@ -36,10 +34,10 @@ object DistributedDataDocSpec {
     #//#japi-serializer-config
     akka.actor {
       serializers {
-        twophaseset = "docs.ddata.japi.protobuf.TwoPhaseSetSerializer"
+        twophaseset = "jdocs.ddata.protobuf.TwoPhaseSetSerializer"
       }
       serialization-bindings {
-        "docs.ddata.japi.TwoPhaseSet" = twophaseset
+        "jdocs.ddata.TwoPhaseSet" = twophaseset
       }
     }
     #//#japi-serializer-config
@@ -401,7 +399,7 @@ class DistributedDataDocSpec extends AkkaSpec(DistributedDataDocSpec.config) {
 
   "test japi.TwoPhaseSetSerializer" in {
     import scala.collection.JavaConverters._
-    val s1 = japi.TwoPhaseSet.create().add("a").add("b").add("c").remove("b")
+    val s1 = ddata.TwoPhaseSet.create().add("a").add("b").add("c").remove("b")
     s1.getElements.asScala should be(Set("a", "c"))
     val serializer = SerializationExtension(system).findSerializerFor(s1)
     val blob = serializer.toBinary(s1)

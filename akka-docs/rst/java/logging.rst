@@ -17,10 +17,10 @@ How to Log
 Create a ``LoggingAdapter`` and use the ``error``, ``warning``, ``info``, or ``debug`` methods,
 as illustrated in this example:
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
    :include: imports
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
    :include: my-actor
 
 The first parameter to ``Logging.getLogger`` could also be any
@@ -42,7 +42,7 @@ placeholders results in a warning being appended to the log statement (i.e. on
 the same line with the same severity). You may pass a Java array as the only
 substitution argument to have its elements be treated individually:
 
-.. includecode:: code/docs/event/LoggingDocTest.java#array
+.. includecode:: code/jdocs/event/LoggingDocTest.java#array
 
 The Java :class:`Class` of the log source is also included in the generated
 :class:`LogEvent`. In case of a simple string this is replaced with a “marker”
@@ -255,10 +255,10 @@ logger available in the 'akka-slf4j' module.
 
 Example of creating a listener:
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
    :include: imports,imports-listener
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
    :include: my-event-listener
 
 Logging to stdout during startup and shutdown
@@ -414,10 +414,10 @@ This way, the values will be put in the SLF4J MDC right before appending the log
   otherwise, the next message will log with same MDC values,
   if it is not set to a new map. Use ``log.clearMDC()``.
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
     :include: imports-mdc
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
     :include: mdc-actor
 
 Now, the values will be available in the MDC, so you can use them in the layout pattern::
@@ -456,7 +456,7 @@ A more advanced (including most Akka added information) example pattern would be
 java.util.logging
 =================
 
-Akka includes a logger for `java.util.logging <https://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html#package.description>`_.
+Akka includes a logger for `java.util.logging <https://docs.oracle.com/javase/8/jdocs/api/java/util/logging/package-summary.html#package.description>`_.
 
 You need to enable the ``akka.event.jul.JavaLogger`` in the ``loggers`` element in
 the :ref:`configuration`. Here you can also define the log level of the event bus.

@@ -26,7 +26,7 @@ How to get the ReadJournal
 The ``ReadJournal`` is retrieved via the ``akka.persistence.query.PersistenceQuery``
 extension:
 
-.. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocTest.java#get-read-journal
+.. includecode:: code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java#get-read-journal
 
 Supported Queries
 =================
@@ -37,7 +37,7 @@ EventsByPersistenceIdQuery and CurrentEventsByPersistenceIdQuery
 ``eventsByPersistenceId`` is used for retrieving events for a specific ``PersistentActor`` 
 identified by ``persistenceId``.
 
-.. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocTest.java#EventsByPersistenceId
+.. includecode:: code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java#EventsByPersistenceId
 
 You can retrieve a subset of all events by specifying ``fromSequenceNr`` and ``toSequenceNr``
 or use ``0L`` and ``Long.MAX_VALUE`` respectively to retrieve all events. Note that
@@ -66,7 +66,7 @@ AllPersistenceIdsQuery and CurrentPersistenceIdsQuery
 
 ``allPersistenceIds`` is used for retrieving all ``persistenceIds`` of all persistent actors.
 
-.. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocTest.java#AllPersistenceIds
+.. includecode:: code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java#AllPersistenceIds
 
 The returned event stream is unordered and you can expect different order for multiple
 executions of the query.
@@ -88,12 +88,12 @@ EventsByTag and CurrentEventsByTag
 ``eventsByTag`` is used for retrieving events that were marked with a given tag, e.g. 
 all domain events of an Aggregate Root type.
 
-.. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocTest.java#EventsByTag
+.. includecode:: code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java#EventsByTag
 
 To tag events you create an :ref:`event-adapters-java` that wraps the events in a ``akka.persistence.journal.Tagged``
 with the given ``tags``.
 
-.. includecode:: code/docs/persistence/query/LeveldbPersistenceQueryDocTest.java#tagger
+.. includecode:: code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java#tagger
 
 You can use ``NoOffset`` to retrieve all events with a given tag or retrieve a subset of all
 events by specifying a ``Sequence`` ``offset``. The ``offset`` corresponds to an ordered sequence number for

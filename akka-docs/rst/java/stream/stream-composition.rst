@@ -85,7 +85,7 @@ with the rest of the graph), but this demonstrates the uniform underlying model.
 
 If we try to build a code snippet that corresponds to the above diagram, our first try might look like this:
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#non-nested-flow
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#non-nested-flow
 
 It is clear however that there is no nesting present in our first attempt, since the library cannot figure out
 where we intended to put composite module boundaries, it is our responsibility to do that. If we are using the
@@ -94,7 +94,7 @@ methods ``withAttributes()`` or ``named()`` (where the latter is just a shorthan
 
 The following code demonstrates how to achieve the desired nesting:
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#nested-flow
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#nested-flow
 
 Once we have hidden the internals of our components, they act like any other built-in component of similar shape. If
 we hide some of the internals of our composites, the result looks just like if any other predefine component has been
@@ -110,7 +110,7 @@ used:
 If we look at usage of built-in components, and our custom components, there is no difference in usage as the code
 snippet below demonstrates.
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#reuse
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#reuse
 
 Composing complex systems
 -------------------------
@@ -136,12 +136,12 @@ can be materialized) that encapsulates a non-trivial stream processing network. 
 directed and non-directed cycles. The ``runnable()`` method of the :class:`GraphDSL` factory object allows the creation of a
 general, closed, and runnable graph. For example the network on the diagram can be realized like this:
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#complex-graph
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#complex-graph
 
 In the code above we used the implicit port numbering feature to make the graph more readable and similar to the diagram.
 It is possible to refer to the ports, so another version might look like this:
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#complex-graph-alt
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#complex-graph-alt
 
 |
 
@@ -159,7 +159,7 @@ from the previous example, what remains is a partial graph:
 
 We can recreate a similar graph in code, using the DSL in a similar way than before:
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#partial-graph
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#partial-graph
 
 The only new addition is the return value of the builder block, which is a :class:`Shape`. All graphs (including
 :class:`Source`, :class:`BidiFlow`, etc) have a shape, which encodes the *typed* ports of the module. In our example
@@ -179,7 +179,7 @@ it is a good practice to give names to modules to help debugging.
 
 Since our partial graph has the right shape, it can be already used in the simpler, linear DSL:
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#partial-use
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#partial-use
 
 It is not possible to use it as a :class:`Flow` yet, though (i.e. we cannot call ``.filter()`` on it), but :class:`Flow`
 has a ``fromGraph()`` method that just adds the DSL to a :class:`FlowShape`. There are similar methods on :class:`Source`,
@@ -196,7 +196,7 @@ To demonstrate this, we will create the following graph:
 
 The code version of the above closed graph might look like this:
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#partial-flow-dsl
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#partial-flow-dsl
 
 .. note::
   All graph builder sections check if the resulting graph has all ports connected except the exposed ones and will
@@ -205,7 +205,7 @@ The code version of the above closed graph might look like this:
 We are still in debt of demonstrating that :class:`RunnableGraph` is a component just like any other, which can
 be embedded in graphs. In the following snippet we embed one closed graph in another:
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#embed-closed
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#embed-closed
 
 The type of the imported module indicates that the imported module has a :class:`ClosedShape`, and so we are not
 able to wire it to anything else inside the enclosing closed graph. Nevertheless, this "island" is embedded properly,
@@ -257,29 +257,29 @@ To implement the above, first, we create a composite :class:`Source`, where the 
 materialized type of :class:`CompletableFuture<Optional<Integer>>>`. By using the combiner function ``Keep.left()``, the resulting materialized
 type is of the nested module (indicated by the color *red* on the diagram):
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#mat-combine-1
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#mat-combine-1
 
 Next, we create a composite :class:`Flow` from two smaller components. Here, the second enclosed :class:`Flow` has a
 materialized type of :class:`CompletionStage<OutgoingConnection>`, and we propagate this to the parent by using ``Keep.right()``
 as the combiner function (indicated by the color *yellow* on the diagram):
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#mat-combine-2
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#mat-combine-2
 
 As a third step, we create a composite :class:`Sink`, using our ``nestedFlow`` as a building block. In this snippet, both
 the enclosed :class:`Flow` and the folding :class:`Sink` has a materialized value that is interesting for us, so
 we use ``Keep.both()`` to get a :class:`Pair` of them as the materialized type of ``nestedSink`` (indicated by the color
 *blue* on the diagram)
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#mat-combine-3
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#mat-combine-3
 
 As the last example, we wire together ``nestedSource`` and ``nestedSink`` and we use a custom combiner function to
 create a yet another materialized type of the resulting :class:`RunnableGraph`. This combiner function just ignores
 the :class:`CompletionStage<Sink>` part, and wraps the other two values in a custom case class :class:`MyClass`
 (indicated by color *purple* on the diagram):
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#mat-combine-4a
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#mat-combine-4a
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#mat-combine-4b
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#mat-combine-4b
 
 .. note::
   The nested structure in the above example is not necessary for combining the materialized values, it just
@@ -299,7 +299,7 @@ by nested modules, unless they override them with a custom value.
 The code below, a modification of an earlier example sets the ``inputBuffer`` attribute on certain modules, but not
 on others:
 
-.. includecode:: ../code/docs/stream/CompositionDocTest.java#attributes-inheritance
+.. includecode:: ../code/jdocs/stream/CompositionDocTest.java#attributes-inheritance
 
 The effect is, that each module inherits the ``inputBuffer`` attribute from its enclosing parent, unless it has
 the same attribute explicitly set. ``nestedSource`` gets the default attributes from the materializer itself. ``nestedSink``

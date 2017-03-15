@@ -36,7 +36,7 @@ Creating Agents
 Agents are created by invoking ``new Agent<ValueType>(value, executionContext)`` – passing in the Agent's initial
 value and providing an ``ExecutionContext`` to be used for it:
 
-.. includecode:: code/docs/agent/AgentDocTest.java
+.. includecode:: code/jdocs/agent/AgentDocTest.java
    :include: import-agent,create
    :language: java
 
@@ -46,7 +46,7 @@ Reading an Agent's value
 Agents can be dereferenced (you can get an Agent's value) by invoking the Agent
 with ``get()`` like this:
 
-.. includecode:: code/docs/agent/AgentDocTest.java#read-get
+.. includecode:: code/jdocs/agent/AgentDocTest.java#read-get
    :language: java
 
 Reading an Agent's current value does not involve any message passing and
@@ -56,7 +56,7 @@ state of an Agent is synchronous.
 You can also get a ``Future`` to the Agents value, that will be completed after the
 currently queued updates have completed:
 
-.. includecode:: code/docs/agent/AgentDocTest.java
+.. includecode:: code/jdocs/agent/AgentDocTest.java
    :include: import-future,read-future
    :language: java
 
@@ -73,7 +73,7 @@ the update will be applied but dispatches to an Agent from a single thread will
 occur in order. You apply a value or a function by invoking the ``send``
 function.
 
-.. includecode:: code/docs/agent/AgentDocTest.java
+.. includecode:: code/jdocs/agent/AgentDocTest.java
    :include: import-function,send
    :language: java
 
@@ -83,18 +83,18 @@ long-running or blocking operations. You do this with the ``sendOff``
 method. Dispatches using either ``sendOff`` or ``send`` will still be executed
 in order.
 
-.. includecode:: code/docs/agent/AgentDocTest.java
+.. includecode:: code/jdocs/agent/AgentDocTest.java
    :include: import-function,send-off
    :language: java
 
 All ``send`` methods also have a corresponding ``alter`` method that returns a ``Future``.
 See :ref:`futures-java` for more information on ``Futures``.
 
-.. includecode:: code/docs/agent/AgentDocTest.java
+.. includecode:: code/jdocs/agent/AgentDocTest.java
    :include: import-future,import-function,alter
    :language: java
 
-.. includecode:: code/docs/agent/AgentDocTest.java
+.. includecode:: code/jdocs/agent/AgentDocTest.java
    :include: import-future,import-function,alter-off
    :language: java
 
