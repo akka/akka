@@ -20,8 +20,6 @@ circuit breakers and other time dependent events which happen all-the-time and i
 instances at the same time. The implementation is based on a Hashed Wheel Timer, which is
 a known datastructure and algorithm for handling such use cases, refer to the `Hashed and Hierarchical Timing Wheels`_ 
 whitepaper by Varghese and Lauck if you'd like to understand its inner workings. 
-The implementation in Akka was initially inspired by the one however added a number of optimisations 
-since, some of which were ported back to Netty and other implementations. 
 
 The Akka scheduler is **not** designed for long-term scheduling (see `akka-quartz-scheduler`_ 
 instead for this use case) nor is it to be used for higly precise firing of the events.
