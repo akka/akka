@@ -33,7 +33,7 @@ private final case class SchedulerException(msg: String) extends akka.AkkaExcept
  *  
  * Please note that this scheduler implementation is higly optimised for high-throughput 
  * and high-frequency events. It is not to be confused with long-term schedulers such as 
- * Quartz. The scheduler will throw an exception attempts are made to schedule too far 
+ * Quartz. The scheduler will throw an exception if attempts are made to schedule too far 
  * into the future (which by default is around 8 months (`Int.MaxValue` seconds).
  */
 trait Scheduler {
