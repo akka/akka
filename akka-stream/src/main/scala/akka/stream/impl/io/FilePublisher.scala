@@ -8,7 +8,8 @@ import java.nio.channels.FileChannel
 import java.nio.file.Path
 
 import akka.Done
-import akka.actor.{ Deploy, ActorLogging, DeadLetterSuppression, Props }
+import akka.actor.{ ActorLogging, DeadLetterSuppression, Deploy, Props }
+import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisherMessage
 import akka.stream.IOResult
 import akka.util.ByteString
@@ -19,7 +20,7 @@ import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 
 /** INTERNAL API */
-private[akka] object FilePublisher {
+@InternalApi private[akka] object FilePublisher {
   def props(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
     require(initialBuffer > 0, s"initialBuffer must be > 0 (was $initialBuffer)")
@@ -35,7 +36,7 @@ private[akka] object FilePublisher {
 }
 
 /** INTERNAL API */
-private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
+@InternalApi private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
   extends akka.stream.actor.ActorPublisher[ByteString] with ActorLogging {
   import FilePublisher._
 

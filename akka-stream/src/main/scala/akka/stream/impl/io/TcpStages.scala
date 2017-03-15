@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
 import akka.NotUsed
 import akka.actor.{ ActorRef, Terminated }
+import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
@@ -29,7 +30,7 @@ import scala.util.Try
 /**
  * INTERNAL API
  */
-private[stream] class ConnectionSourceStage(
+@InternalApi private[stream] class ConnectionSourceStage(
   val tcpManager:          ActorRef,
   val endpoint:            InetSocketAddress,
   val backlog:             Int,
@@ -167,7 +168,7 @@ private[stream] object ConnectionSourceStage {
 /**
  * INTERNAL API
  */
-private[stream] object TcpConnectionStage {
+@InternalApi private[stream] object TcpConnectionStage {
   case object WriteAck extends Tcp.Event
 
   trait TcpRole {
@@ -309,7 +310,7 @@ private[stream] object TcpConnectionStage {
 /**
  * INTERNAL API
  */
-class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
+@InternalApi private[akka] class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
   extends GraphStage[FlowShape[ByteString, ByteString]] {
   import TcpConnectionStage._
 
@@ -333,7 +334,7 @@ class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAdd
 /**
  * INTERNAL API
  */
-private[stream] class OutgoingConnectionStage(
+@InternalApi private[stream] class OutgoingConnectionStage(
   manager:        ActorRef,
   remoteAddress:  InetSocketAddress,
   localAddress:   Option[InetSocketAddress]           = None,
@@ -371,7 +372,7 @@ private[stream] class OutgoingConnectionStage(
 }
 
 /** INTERNAL API */
-private[akka] object TcpIdleTimeout {
+@InternalApi private[akka] object TcpIdleTimeout {
   def apply(idleTimeout: FiniteDuration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val connectionToString = remoteAddress match {
       case Some(addr) ⇒ s" on connection to [$addr]"

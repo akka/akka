@@ -6,7 +6,8 @@ package akka.stream.impl.io
 import java.io.InputStream
 
 import akka.Done
-import akka.actor.{ Deploy, ActorLogging, DeadLetterSuppression, Props }
+import akka.actor.{ ActorLogging, DeadLetterSuppression, Deploy, Props }
+import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisherMessage
 import akka.stream.IOResult
 import akka.util.ByteString
@@ -15,7 +16,7 @@ import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
-private[akka] object InputStreamPublisher {
+@InternalApi private[akka] object InputStreamPublisher {
 
   def props(is: InputStream, completionPromise: Promise[IOResult], chunkSize: Int): Props = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
@@ -27,7 +28,7 @@ private[akka] object InputStreamPublisher {
 }
 
 /** INTERNAL API */
-private[akka] class InputStreamPublisher(is: InputStream, completionPromise: Promise[IOResult], chunkSize: Int)
+@InternalApi private[akka] class InputStreamPublisher(is: InputStream, completionPromise: Promise[IOResult], chunkSize: Int)
   extends akka.stream.actor.ActorPublisher[ByteString]
   with ActorLogging {
 
