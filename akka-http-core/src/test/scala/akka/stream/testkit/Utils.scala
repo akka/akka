@@ -24,8 +24,6 @@ object Utils {
 
   def assertAllStagesStopped[T](block: ⇒ T)(implicit materializer: Materializer): T = {
     val impl = materializer.asInstanceOf[ActorMaterializerImpl] // refined type, will never fail
-    val supervisor = impl.supervisor // will fail here instead
-    val system = impl.system
     val probe = TestProbe()(impl.system)
     probe.send(impl.supervisor, StreamSupervisor.StopChildren)
     probe.expectMsg(StreamSupervisor.StoppedChildren)
