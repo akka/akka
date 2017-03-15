@@ -80,6 +80,7 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(Write("A", DataEnvelope(data1)))
       checkSerialization(WriteAck)
       checkSerialization(WriteNack)
+      checkSerialization(DeltaNack)
       checkSerialization(Read("A"))
       checkSerialization(ReadResult(Some(DataEnvelope(data1))))
       checkSerialization(ReadResult(None))
@@ -89,7 +90,7 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(Gossip(Map(
         "A" → DataEnvelope(data1),
         "B" → DataEnvelope(GSet() + "b" + "c")), sendBack = true))
-      checkSerialization(DeltaPropagation(address1, Map(
+      checkSerialization(DeltaPropagation(address1, reply = true, Map(
         "A" → Delta(DataEnvelope(delta1), 1L, 1L),
         "B" → Delta(DataEnvelope(delta2), 3L, 5L))))
 
