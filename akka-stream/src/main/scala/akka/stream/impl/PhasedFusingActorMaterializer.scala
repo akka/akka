@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, Deploy, ExtendedActorSystem, PoisonPill }
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
 import akka.stream.Attributes.InputBuffer
@@ -19,18 +20,15 @@ import akka.stream.impl.fusing.GraphInterpreter.Connection
 import akka.stream.impl.fusing._
 import akka.stream.impl.io.{ TLSActor, TlsModule }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
-import akka.util.OptionVal
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+import org.reactivestreams.{ Processor, Publisher, Subscriber }
 
 import scala.collection.immutable.Map
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContextExecutor
 import scala.annotation.tailrec
-import akka.stream.impl.fusing.GraphInterpreter.DownstreamBoundaryStageLogic
-import akka.stream.impl.fusing.GraphInterpreter.UpstreamBoundaryStageLogic
 import akka.util.OptionVal
 
-object PhasedFusingActorMaterializer {
+@InternalApi private[akka] object PhasedFusingActorMaterializer {
 
   val Debug = false
 
@@ -61,7 +59,7 @@ object PhasedFusingActorMaterializer {
     },
     GraphStageTag → DefaultPhase)
 
-  def apply(settings: ActorMaterializerSettings)(implicit context: ActorRefFactory): ActorMaterializer = {
+  @InternalApi private[akka] def apply(settings: ActorMaterializerSettings)(implicit context: ActorRefFactory): ActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
     val system = actorSystemOf(context)
     val materializerSettings = ActorMaterializerSettings(system)
@@ -121,7 +119,7 @@ private final case class ForwardWire(
 
 private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOffset: Int, skippedSlots: Int, phase: PhaseIsland[Any])
 
-class IslandTracking(
+@InternalApi private[akka] class IslandTracking(
   val phases:       Map[IslandTag, Phase[Any]],
   val settings:     ActorMaterializerSettings,
   defaultPhase:     Phase[Any],
@@ -151,8 +149,8 @@ class IslandTracking(
 
   private var currentPhase: PhaseIsland[Any] = defaultPhase.apply(settings, materializer, nextIslandName())
 
-  def getCurrentPhase: PhaseIsland[Any] = currentPhase
-  def getCurrentOffset: Int = currentGlobalOffset
+  @InternalApi private[akka] def getCurrentPhase: PhaseIsland[Any] = currentPhase
+  @InternalApi private[akka] def getCurrentOffset: Int = currentGlobalOffset
 
   private def completeSegment(): Unit = {
     val length = currentGlobalOffset - currentSegmentGlobalOffset
@@ -181,7 +179,7 @@ class IslandTracking(
     }
   }
 
-  def enterIsland(tag: IslandTag, attributes: Attributes): Unit = {
+  @InternalApi private[akka] def enterIsland(tag: IslandTag, attributes: Attributes): Unit = {
     completeSegment()
     val previousPhase = currentPhase
     val previousIslandOffset = currentIslandGlobalOffset
@@ -200,7 +198,7 @@ class IslandTracking(
     if (Debug) println(s"Entering island starting at offset = $currentIslandGlobalOffset phase = $currentPhase")
   }
 
-  def exitIsland(): Unit = {
+  @InternalApi private[akka] def exitIsland(): Unit = {
     val parentIsland = islandStateStack.remove(islandStateStack.size() - 1)
     val previousSegmentLength = completeSegment()
 
@@ -215,7 +213,7 @@ class IslandTracking(
     if (Debug) println(s"Exited to island starting at offset = $currentIslandGlobalOffset phase = $currentPhase")
   }
 
-  def wireIn(in: InPort, logic: Any): Unit = {
+  @InternalApi private[akka] def wireIn(in: InPort, logic: Any): Unit = {
     // The slot for this InPort always belong to the current segment, so resolving its local
     // offset/slot is simple
     val localInSlot = currentGlobalOffset - currentIslandGlobalOffset - currentIslandSkippetSlots
@@ -258,7 +256,7 @@ class IslandTracking(
     currentGlobalOffset += 1
   }
 
-  def wireOut(out: OutPort, absoluteOffset: Int, logic: Any): Unit = {
+  @InternalApi private[akka] def wireOut(out: OutPort, absoluteOffset: Int, logic: Any): Unit = {
     if (Debug) println(s"  wiring $out to absolute = $absoluteOffset")
 
     // First check if we are wiring backwards. This is important since we can only do resolution for backward wires.
@@ -319,7 +317,7 @@ class IslandTracking(
 
   }
 
-  def allNestedIslandsReady(): Unit = {
+  @InternalApi private[akka] def allNestedIslandsReady(): Unit = {
     if (activePhases ne null) {
       var i = 0
       while (i < activePhases.size()) {
@@ -331,7 +329,7 @@ class IslandTracking(
 
 }
 
-case class PhasedFusingActorMaterializer(
+@InternalApi case class PhasedFusingActorMaterializer(
   system:                ActorSystem,
   override val settings: ActorMaterializerSettings,
   dispatchers:           Dispatchers,
@@ -547,16 +545,16 @@ case class PhasedFusingActorMaterializer(
 
 }
 
-trait IslandTag
+@DoNotInherit trait IslandTag
 
-trait Phase[M] {
+@DoNotInherit trait Phase[M] {
   def apply(
     effectiveSettings: ActorMaterializerSettings,
     materializer:      PhasedFusingActorMaterializer,
     islandName:        String): PhaseIsland[M]
 }
 
-trait PhaseIsland[M] {
+@DoNotInherit trait PhaseIsland[M] {
 
   def name: String
 
