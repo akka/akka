@@ -8,6 +8,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance._
@@ -24,7 +25,7 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-object ActorGraphInterpreter {
+@InternalApi private[akka] object ActorGraphInterpreter {
 
   object Resume extends DeadLetterSuppression with NoSerializationVerificationNeeded
 
@@ -435,7 +436,7 @@ object ActorGraphInterpreter {
 /**
  * INTERNAL API
  */
-final class GraphInterpreterShell(
+@InternalApi private[akka] final class GraphInterpreterShell(
   var connections: Array[Connection],
   var logics:      Array[GraphStageLogic],
   settings:        ActorMaterializerSettings,
@@ -646,7 +647,7 @@ final class GraphInterpreterShell(
 /**
  * INTERNAL API
  */
-final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
+@InternalApi private[akka] final class ActorGraphInterpreter(_initial: GraphInterpreterShell) extends Actor with ActorLogging {
   import ActorGraphInterpreter._
 
   var activeInterpreters = Set.empty[GraphInterpreterShell]

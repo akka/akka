@@ -4,7 +4,9 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.AtomicReference
+
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
@@ -12,19 +14,21 @@ import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.stage._
 import akka.stream.scaladsl._
 import akka.stream.actor.ActorSubscriberMessage
-import scala.collection.{ mutable, immutable }
+
+import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.annotation.tailrec
 import akka.stream.impl.PublisherSource
 import akka.stream.impl.CancellingSubscriber
 import akka.stream.impl.{ Buffer ⇒ BufferImpl }
+
 import scala.collection.JavaConversions._
 
 /**
  * INTERNAL API
  */
-final class FlattenMerge[T, M](val breadth: Int) extends GraphStage[FlowShape[Graph[SourceShape[T], M], T]] {
+@InternalApi private[akka] final class FlattenMerge[T, M](val breadth: Int) extends GraphStage[FlowShape[Graph[SourceShape[T], M], T]] {
   private val in = Inlet[Graph[SourceShape[T], M]]("flatten.in")
   private val out = Outlet[T]("flatten.out")
 
@@ -103,7 +107,7 @@ final class FlattenMerge[T, M](val breadth: Int) extends GraphStage[FlowShape[Gr
 /**
  * INTERNAL API
  */
-final class PrefixAndTail[T](val n: Int) extends GraphStage[FlowShape[T, (immutable.Seq[T], Source[T, NotUsed])]] {
+@InternalApi private[akka] final class PrefixAndTail[T](val n: Int) extends GraphStage[FlowShape[T, (immutable.Seq[T], Source[T, NotUsed])]] {
   val in: Inlet[T] = Inlet("PrefixAndTail.in")
   val out: Outlet[(immutable.Seq[T], Source[T, NotUsed])] = Outlet("PrefixAndTail.out")
   override val shape: FlowShape[T, (immutable.Seq[T], Source[T, NotUsed])] = FlowShape(in, out)
@@ -211,7 +215,7 @@ final class PrefixAndTail[T](val n: Int) extends GraphStage[FlowShape[T, (immuta
 /**
  * INTERNAL API
  */
-final class GroupBy[T, K](val maxSubstreams: Int, val keyFor: T ⇒ K) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
+@InternalApi private[akka] final class GroupBy[T, K](val maxSubstreams: Int, val keyFor: T ⇒ K) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
   val in: Inlet[T] = Inlet("GroupBy.in")
   val out: Outlet[Source[T, NotUsed]] = Outlet("GroupBy.out")
   override val shape: FlowShape[T, Source[T, NotUsed]] = FlowShape(in, out)
@@ -384,7 +388,7 @@ final class GroupBy[T, K](val maxSubstreams: Int, val keyFor: T ⇒ K) extends G
 /**
  * INTERNAL API
  */
-object Split {
+@InternalApi private[akka] object Split {
   sealed abstract class SplitDecision
 
   /** Splits before the current element. The current element will be the first element in the new substream. */
@@ -403,7 +407,7 @@ object Split {
 /**
  * INTERNAL API
  */
-final class Split[T](val decision: Split.SplitDecision, val p: T ⇒ Boolean, val substreamCancelStrategy: SubstreamCancelStrategy) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
+@InternalApi private[akka] final class Split[T](val decision: Split.SplitDecision, val p: T ⇒ Boolean, val substreamCancelStrategy: SubstreamCancelStrategy) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
   val in: Inlet[T] = Inlet("Split.in")
   val out: Outlet[Source[T, NotUsed]] = Outlet("Split.out")
   override val shape: FlowShape[T, Source[T, NotUsed]] = FlowShape(in, out)
@@ -572,7 +576,7 @@ final class Split[T](val decision: Split.SplitDecision, val p: T ⇒ Boolean, va
 /**
  * INTERNAL API
  */
-private[stream] object SubSink {
+@InternalApi private[stream] object SubSink {
   sealed trait State
   /** Not yet materialized and no command has been scheduled */
   case object Uninitialized extends State
@@ -598,7 +602,7 @@ private[stream] object SubSink {
 /**
  * INTERNAL API
  */
-private[stream] final class SubSink[T](name: String, externalCallback: ActorSubscriberMessage ⇒ Unit)
+@InternalApi private[stream] final class SubSink[T](name: String, externalCallback: ActorSubscriberMessage ⇒ Unit)
   extends GraphStage[SinkShape[T]] {
   import SubSink._
 
@@ -668,7 +672,7 @@ private[stream] final class SubSink[T](name: String, externalCallback: ActorSubs
 /**
  * INTERNAL API
  */
-final class SubSource[T](name: String, private[fusing] val externalCallback: AsyncCallback[SubSink.Command])
+@InternalApi private[akka] final class SubSource[T](name: String, private[fusing] val externalCallback: AsyncCallback[SubSink.Command])
   extends GraphStage[SourceShape[T]] {
   import SubSink._
 
