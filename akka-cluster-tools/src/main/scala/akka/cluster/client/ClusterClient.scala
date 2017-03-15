@@ -4,7 +4,6 @@
 package akka.cluster.client
 
 import java.net.URLEncoder
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor.Actor
@@ -37,7 +36,7 @@ import akka.routing.MurmurHash
 import com.typesafe.config.Config
 import akka.remote.DeadlineFailureDetector
 import akka.dispatch.Dispatchers
-
+import akka.util.MessageBuffer
 import scala.collection.immutable.{ HashMap, HashSet }
 
 object ClusterClientSettings {
@@ -349,7 +348,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
   scheduleRefreshContactsTick(establishingGetContactsInterval)
   self ! RefreshContactsTick
 
-  val buffer = new java.util.LinkedList[(Any, ActorRef)]
+  var buffer = MessageBuffer.empty
 
   def scheduleRefreshContactsTick(interval: FiniteDuration): Unit = {
     refreshContactsTask foreach { _.cancel() }
@@ -460,20 +459,19 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
     if (settings.bufferSize == 0)
       log.debug("Receptionist not available and buffering is disabled, dropping message [{}]", msg.getClass.getName)
     else if (buffer.size == settings.bufferSize) {
-      val (m, _) = buffer.removeFirst()
+      val (m, _) = buffer.head()
+      buffer.dropHead()
       log.debug("Receptionist not available, buffer is full, dropping first message [{}]", m.getClass.getName)
-      buffer.addLast((msg, sender()))
+      buffer.append(msg, sender())
     } else {
       log.debug("Receptionist not available, buffering message type [{}]", msg.getClass.getName)
-      buffer.addLast((msg, sender()))
+      buffer.append(msg, sender())
     }
 
   def sendBuffered(receptionist: ActorRef): Unit = {
     log.debug("Sending buffered messages to receptionist")
-    while (!buffer.isEmpty) {
-      val (msg, snd) = buffer.removeFirst()
-      receptionist.tell(msg, snd)
-    }
+    buffer.foreach((msg, snd) ⇒ receptionist.tell(msg, snd))
+    buffer = MessageBuffer.empty
   }
 
   def publishContactPoints(): Unit = {
