@@ -5,7 +5,7 @@
 package akka.cluster.singleton
 
 import akka.actor._
-import akka.cluster.{ MemberStatus, Cluster, Member }
+import akka.cluster.{ Cluster, Member, MemberStatus }
 import scala.collection.immutable
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterEvent.MemberRemoved
@@ -18,6 +18,7 @@ import scala.language.postfixOps
 import com.typesafe.config.Config
 import akka.actor.NoSerializationVerificationNeeded
 import akka.event.Logging
+import akka.util.MessageBuffer
 
 object ClusterSingletonProxySettings {
 
@@ -143,7 +144,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
   val ageOrdering = Member.ageOrdering
   var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
 
-  var buffer = new java.util.LinkedList[(Any, ActorRef)]
+  var buffer: MessageBuffer = MessageBuffer.empty
 
   // subscribe to MemberEvent, re-subscribe when restart
   override def preStart(): Unit = {
@@ -266,20 +267,19 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     if (settings.bufferSize == 0)
       log.debug("Singleton not available and buffering is disabled, dropping message [{}]", msg.getClass.getName)
     else if (buffer.size == settings.bufferSize) {
-      val (m, _) = buffer.removeFirst()
+      val (m, _) = buffer.head()
+      buffer.dropHead()
       log.debug("Singleton not available, buffer is full, dropping first message [{}]", m.getClass.getName)
-      buffer.addLast((msg, sender()))
+      buffer.append(msg, sender())
     } else {
       log.debug("Singleton not available, buffering message type [{}]", msg.getClass.getName)
-      buffer.addLast((msg, sender()))
+      buffer.append(msg, sender())
     }
 
   def sendBuffered(): Unit = {
     log.debug("Sending buffered messages to current singleton instance")
     val target = singleton.get
-    while (!buffer.isEmpty) {
-      val (msg, snd) = buffer.removeFirst()
-      target.tell(msg, snd)
-    }
+    buffer.foreach((msg, snd) ⇒ target.tell(msg, snd))
+    buffer = MessageBuffer.empty
   }
 }
