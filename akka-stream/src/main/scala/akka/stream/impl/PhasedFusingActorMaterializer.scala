@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, Deploy, ExtendedActorSystem, PoisonPill }
+import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
 import akka.stream.Attributes.InputBuffer
@@ -405,8 +406,16 @@ class PhasedFusingActorMaterializer(
     materialize(
       _runnableGraph,
       initialAttributes,
-      PhasedFusingActorMaterializer.DefaultPhase,
-      PhasedFusingActorMaterializer.DefaultPhases)
+      defaultPhase,
+      defaultPhases)
+
+  /** INTERNAL API: Meant for very small modifications to materialization. Replace the default phase. */
+  @InternalApi protected def defaultPhases[Mat] =
+    PhasedFusingActorMaterializer.DefaultPhases
+
+  /** INTERNAL API: Meant for very small modifications to materialization. Replace the phases map. */
+  @InternalApi protected def defaultPhase[Mat] =
+    PhasedFusingActorMaterializer.DefaultPhase
 
   override def materialize[Mat](
     graph:             Graph[ClosedShape, Mat],

@@ -46,10 +46,41 @@ class SpecialEmptyMatMaterializerSpec extends AkkaSpec with ImplicitSender {
       })(Keep.right)
       .to(Sink.head)
 
+  val play2EmptyGraph =
+    Source.empty[Unit]
+      .fold("") { case _ ⇒ "" + "" }
+      .viaMat(new GraphStageWithMaterializedValue[FlowShape[String, String], String] {
+        val in = Inlet[String]("in")
+        val out = Outlet[String]("out")
+        override val shape: FlowShape[String, String] = FlowShape(in, out)
+
+        override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) =
+          new GraphStageLogic(shape) with InHandler with OutHandler {
+            override def onPush(): Unit = ???
+
+            override def onPull(): Unit = pull(in)
+
+            override def preStart(): Unit =
+              testActor ! "preStart"
+
+            override def postStop(): Unit =
+              testActor ! "postStop"
+
+          } → "MAT"
+      })(Keep.right)
+      .to(Sink.fold("")(_ + _.toString))
+
   "SecialOnlyMatMaterializerBuilder" must {
 
     "work with Play's empty stream case" in {
       val mat = playEmptyGraph.run()(fastSpecialMat)
+      mat should ===("MAT")
+      expectMsg("preStart")
+      expectMsg("postStop")
+    }
+
+    "work with more realistic Play's empty stream case" in {
+      val mat = play2EmptyGraph.run()(fastSpecialMat)
       mat should ===("MAT")
       expectMsg("preStart")
       expectMsg("postStop")
