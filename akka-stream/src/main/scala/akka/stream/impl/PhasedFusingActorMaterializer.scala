@@ -600,17 +600,6 @@ final class GraphStageIsland(
     val stage = stageModule.stage
     val matAndLogic = stage.createLogicAndMaterializedValue(attributes)
     val logic = matAndLogic._1
-    var idx = 0
-    while (idx < logic.handlers.length) {
-      if (logic.handlers(idx).asInstanceOf[AnyRef] eq null) {
-        val port =
-          if (idx < logic.inCount) stage.shape.inlets(idx)
-          else stage.shape.outlets(idx - logic.inCount)
-        throw new IllegalStateException(s"No handler defined in stage [$stage] for port [$port]." +
-          " All inlets and outlets must be assigned a handler with setHandler in the constructor of your graph stage logic.")
-      }
-      idx += 1
-    }
     logic.originalStage = OptionVal.Some(stage)
     logic.attributes = attributes
     logics.add(logic)
@@ -647,6 +636,7 @@ final class GraphStageIsland(
     connection.inOwner = logic
     connection.id = slot
     connection.inHandler = logic.handlers(in.id).asInstanceOf[InHandler]
+    if (connection.inHandler eq null) failOnMissingHandler(logic)
     logic.portToConn(in.id) = connection
   }
 
@@ -655,6 +645,7 @@ final class GraphStageIsland(
     connection.outOwner = logic
     connection.id = slot
     connection.outHandler = logic.handlers(logic.inCount + out.id).asInstanceOf[OutHandler]
+    if (connection.outHandler eq null) failOnMissingHandler(logic)
     logic.portToConn(logic.inCount + out.id) = connection
   }
 
@@ -671,6 +662,7 @@ final class GraphStageIsland(
     connection.outOwner = logic
     connection.id = -1 // Will be filled later
     connection.outHandler = logic.handlers(logic.inCount + out.id).asInstanceOf[OutHandler]
+    if (connection.outHandler eq null) failOnMissingHandler(logic)
     logic.portToConn(logic.inCount + out.id) = connection
 
     boundary.publisher
@@ -700,6 +692,8 @@ final class GraphStageIsland(
     while (i < totalConnections) {
       val conn = outConns.head
       outConns = outConns.tail
+      if (conn.inHandler eq null) failOnMissingHandler(conn.inOwner)
+      else if (conn.outHandler eq null) failOnMissingHandler(conn.outOwner)
       finalConnections(i) = conn
       conn.id = i
       i += 1
@@ -721,6 +715,21 @@ final class GraphStageIsland(
         }
         materializer.actorOf(props, actorName)
     }
+  }
+
+  private def failOnMissingHandler(logic: GraphStageLogic): Unit = {
+    val missingHandlerIdx = logic.handlers.indexWhere(_.asInstanceOf[AnyRef] eq null)
+    val isIn = missingHandlerIdx < logic.inCount
+    val portLabel = logic.originalStage match {
+      case OptionVal.Some(stage) ⇒
+        if (isIn) s"in port [${stage.shape.inlets(missingHandlerIdx)}]"
+        else s"out port [${stage.shape.outlets(missingHandlerIdx - logic.inCount)}"
+      case OptionVal.None ⇒
+        if (isIn) s"in port id [$missingHandlerIdx]"
+        else s"out port id [$missingHandlerIdx]"
+    }
+    throw new IllegalStateException(s"No handler defined in stage [${logic.originalStage.getOrElse(logic).toString}] for $portLabel." +
+      " All inlets and outlets must be assigned a handler with setHandler in the constructor of your graph stage logic.")
   }
 
   override def toString: String = "GraphStagePhase"

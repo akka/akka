@@ -233,7 +233,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
       ex.getMessage should startWith("not yet initialized: only setHandler is allowed in GraphStageLogic constructor")
     }
 
-    "give a good error message if not all handlers set" in {
+    "give a good error message if in handler missing" in {
       val ex = intercept[IllegalStateException] {
         Source.maybe[String]
           .via(new GraphStage[FlowShape[String, String]] {
@@ -242,16 +242,105 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
             override val shape: FlowShape[String, String] = FlowShape(in, out)
 
             override def createLogic(inheritedAttributes: Attributes) =
-              new GraphStageLogic(shape) with InHandler with OutHandler {
-                override def onPush(): Unit = push(out, grab(in))
-
-                override def onPull(): Unit = pull(in)
+              new GraphStageLogic(shape) {
+                // ups, we forgot to actually set the handlers
               }
 
             override def toString = "stage-name"
           }).runWith(Sink.ignore)
       }
-      ex.getMessage should startWith("No handler defined in stage [stage-name] for port [in")
+      ex.getMessage should startWith("No handler defined in stage [stage-name] for in port [in")
+    }
+
+    "give a good error message if out handler missing" in {
+      val ex = intercept[IllegalStateException] {
+        Source.maybe[String]
+          .via(new GraphStage[FlowShape[String, String]] {
+            val in = Inlet[String]("in")
+            val out = Outlet[String]("out")
+            override val shape: FlowShape[String, String] = FlowShape(in, out)
+
+            override def createLogic(inheritedAttributes: Attributes) =
+              new GraphStageLogic(shape) {
+                setHandler(in, new InHandler {
+                  override def onPush() = ???
+                })
+                // ups we forgot the out handler
+              }
+
+            override def toString = "stage-name"
+          })
+          // just to have another graphstage downstream
+          .map(_ ⇒ "whatever")
+          .runWith(Sink.ignore)
+      }
+      ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
+    }
+
+    "give a good error message if out handler missing with downstream boundary" in {
+      val ex = intercept[IllegalStateException] {
+        Source.maybe[String]
+          .via(new GraphStage[FlowShape[String, String]] {
+            val in = Inlet[String]("in")
+            val out = Outlet[String]("out")
+            override val shape: FlowShape[String, String] = FlowShape(in, out)
+
+            override def createLogic(inheritedAttributes: Attributes) =
+              new GraphStageLogic(shape) {
+                setHandler(in, new InHandler {
+                  override def onPush() = ???
+                })
+                // ups we forgot the out handler
+              }
+
+            override def toString = "stage-name"
+          }).runWith(Sink.ignore.async)
+      }
+      ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
+    }
+
+    "give a good error message if handler missing with downstream publisher" in {
+      val ex = intercept[IllegalStateException] {
+        Source.maybe[String].async
+          .via(new GraphStage[FlowShape[String, String]] {
+            val in = Inlet[String]("in")
+            val out = Outlet[String]("out")
+            override val shape: FlowShape[String, String] = FlowShape(in, out)
+
+            override def createLogic(inheritedAttributes: Attributes) =
+              new GraphStageLogic(shape) {
+                setHandler(in, new InHandler {
+                  override def onPush() = ???
+                })
+                // ups we forgot the out handler
+              }
+
+            override def toString = "stage-name"
+          }).runWith(Sink.ignore)
+      }
+      ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
+    }
+
+    "give a good error message if handler missing when stage is an island" in {
+      val ex = intercept[IllegalStateException] {
+        Source.maybe[String]
+          .via(new GraphStage[FlowShape[String, String]] {
+            val in = Inlet[String]("in")
+            val out = Outlet[String]("out")
+            override val shape: FlowShape[String, String] = FlowShape(in, out)
+
+            override def createLogic(inheritedAttributes: Attributes) =
+              new GraphStageLogic(shape) {
+                setHandler(in, new InHandler {
+                  override def onPush() = ???
+                })
+                // ups we forgot the out handler
+              }
+
+            override def toString = "stage-name"
+          }).async.runWith(Sink.ignore)
+      }
+      ex.getMessage should startWith("No handler defined in stage [stage-name] for out port [out")
     }
 
   }
