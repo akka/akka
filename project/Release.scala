@@ -14,7 +14,7 @@ object Release {
   val releaseDirectory = SettingKey[File]("release-directory")
 
   lazy val settings: Seq[Setting[_]] = commandSettings ++ Seq(
-    releaseDirectory <<= crossTarget / "release"
+    releaseDirectory := crossTarget.value / "release"
   )
 
   lazy val commandSettings = Seq(
