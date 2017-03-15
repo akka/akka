@@ -263,15 +263,24 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
-  def onOpen(callback: ⇒ Unit): CircuitBreaker = onOpen(new Runnable { def run = callback })
+  def onOpen(callback: ⇒ Unit): CircuitBreaker = addOnOpenListener(new Runnable { def run = callback })
 
   /**
-   * Java API for onOpen
-   *
-   * @param callback Handler to be invoked on state change
-   * @return CircuitBreaker for fluent usage
-   */
-  def onOpen(callback: Runnable): CircuitBreaker = {
+    * Java API for onOpen
+    *
+    * @param callback Handler to be invoked on state change
+    * @return CircuitBreaker for fluent usage
+    */
+  @deprecated("Use addOnOpenListener instead", "2.5.0")
+  def onOpen(callback: Runnable): CircuitBreaker = addOnOpenListener(callback)
+
+  /**
+    * Java API for onOpen
+    *
+    * @param callback Handler to be invoked on state change
+    * @return CircuitBreaker for fluent usage
+    */
+  def addOnOpenListener(callback: Runnable): CircuitBreaker = {
     Open addListener callback
     this
   }
@@ -283,15 +292,24 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
-  def onHalfOpen(callback: ⇒ Unit): CircuitBreaker = onHalfOpen(new Runnable { def run = callback })
+  def onHalfOpen(callback: ⇒ Unit): CircuitBreaker = addOnHalfOpenListener(new Runnable { def run = callback })
 
   /**
-   * JavaAPI for onHalfOpen
-   *
-   * @param callback Handler to be invoked on state change
-   * @return CircuitBreaker for fluent usage
-   */
-  def onHalfOpen(callback: Runnable): CircuitBreaker = {
+    * JavaAPI for onHalfOpen
+    *
+    * @param callback Handler to be invoked on state change
+    * @return CircuitBreaker for fluent usage
+    */
+  @deprecated("Use addOnHalfOpenListener instead", "2.5.0")
+  def onHalfOpen(callback: Runnable): CircuitBreaker = addOnHalfOpenListener(callback)
+
+  /**
+    * JavaAPI for onHalfOpen
+    *
+    * @param callback Handler to be invoked on state change
+    * @return CircuitBreaker for fluent usage
+    */
+  def addOnHalfOpenListener(callback: Runnable): CircuitBreaker = {
     HalfOpen addListener callback
     this
   }
@@ -304,15 +322,24 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
-  def onClose(callback: ⇒ Unit): CircuitBreaker = onClose(new Runnable { def run = callback })
+  def onClose(callback: ⇒ Unit): CircuitBreaker = addOnCloseListener(new Runnable { def run = callback })
 
   /**
-   * JavaAPI for onClose
-   *
-   * @param callback Handler to be invoked on state change
-   * @return CircuitBreaker for fluent usage
-   */
-  def onClose(callback: Runnable): CircuitBreaker = {
+    * JavaAPI for onClose
+    *
+    * @param callback Handler to be invoked on state change
+    * @return CircuitBreaker for fluent usage
+    */
+  @deprecated("Use addOnCloseListener instead", "2.5.0")
+  def onClose(callback: Runnable): CircuitBreaker = addOnCloseListener(callback)
+
+  /**
+    * JavaAPI for onClose
+    *
+    * @param callback Handler to be invoked on state change
+    * @return CircuitBreaker for fluent usage
+    */
+  def addOnCloseListener(callback: Runnable): CircuitBreaker = {
     Closed addListener callback
     this
   }
@@ -325,7 +352,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on successful call, where passed value is elapsed time in nanoseconds.
    * @return CircuitBreaker for fluent usage
    */
-  def onCallSuccess(callback: Long ⇒ Unit): CircuitBreaker = onCallSuccess(new Consumer[Long] {
+  def onCallSuccess(callback: Long ⇒ Unit): CircuitBreaker = addOnCallSuccessListener(new Consumer[Long] {
     def accept(result: Long): Unit = callback(result)
   })
 
@@ -335,7 +362,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on successful call, where passed value is elapsed time in nanoseconds.
    * @return CircuitBreaker for fluent usage
    */
-  def onCallSuccess(callback: Consumer[Long]): CircuitBreaker = {
+  def addOnCallSuccessListener(callback: Consumer[Long]): CircuitBreaker = {
     successListeners add callback
     this
   }
@@ -348,7 +375,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on failed call, where passed value is elapsed time in nanoseconds.
    * @return CircuitBreaker for fluent usage
    */
-  def onCallFailure(callback: Long ⇒ Unit): CircuitBreaker = onCallFailure(new Consumer[Long] {
+  def onCallFailure(callback: Long ⇒ Unit): CircuitBreaker = addOnCallFailureListener(new Consumer[Long] {
     def accept(result: Long): Unit = callback(result)
   })
 
@@ -358,7 +385,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on failed call, where passed value is elapsed time in nanoseconds.
    * @return CircuitBreaker for fluent usage
    */
-  def onCallFailure(callback: Consumer[Long]): CircuitBreaker = {
+  def addOnCallFailureListener(callback: Consumer[Long]): CircuitBreaker = {
     callFailureListeners add callback
     this
   }
@@ -371,7 +398,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on call finished with timeout, where passed value is elapsed time in nanoseconds.
    * @return CircuitBreaker for fluent usage
    */
-  def onCallTimeout(callback: Long ⇒ Unit): CircuitBreaker = onCallTimeout(new Consumer[Long] {
+  def onCallTimeout(callback: Long ⇒ Unit): CircuitBreaker = addOnCallTimeoutListener(new Consumer[Long] {
     def accept(result: Long): Unit = callback(result)
   })
 
@@ -381,7 +408,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on call finished with timeout, where passed value is elapsed time in nanoseconds.
    * @return CircuitBreaker for fluent usage
    */
-  def onCallTimeout(callback: Consumer[Long]): CircuitBreaker = {
+  def addOnCallTimeoutListener(callback: Consumer[Long]): CircuitBreaker = {
     callTimeoutListeners add callback
     this
   }
@@ -394,7 +421,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on call failed due to open breaker.
    * @return CircuitBreaker for fluent usage
    */
-  def onCallBreakerOpen(callback: ⇒ Unit): CircuitBreaker = onCallBreakerOpen(new Runnable { def run = callback })
+  def onCallBreakerOpen(callback: ⇒ Unit): CircuitBreaker = addOnCallBreakerOpenListener(new Runnable { def run = callback })
 
   /**
    * JavaAPI for onCallBreakerOpen.
@@ -402,7 +429,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on call failed due to open breaker.
    * @return CircuitBreaker for fluent usage
    */
-  def onCallBreakerOpen(callback: Runnable): CircuitBreaker = {
+  def addOnCallBreakerOpenListener(callback: Runnable): CircuitBreaker = {
     callBreakerOpenListeners add callback
     this
   }
