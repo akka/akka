@@ -393,8 +393,12 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
   /**
    * This command needs to be sent to the connection actor after a `SuspendReading`
    * command in order to resume reading from the socket.
+   *
+   * (This message is marked with DeadLetterSuppression as it is prone to end up in
+   *  DeadLetters when the connection is torn down at the same time as the user wants
+   *  to resume reading on that connection.)
    */
-  case object ResumeReading extends Command
+  case object ResumeReading extends Command with DeadLetterSuppression
 
   /**
    * This message enables the accepting of the next connection if read throttling is enabled
