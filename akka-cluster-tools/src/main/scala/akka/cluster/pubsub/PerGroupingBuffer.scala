@@ -5,44 +5,35 @@
 package akka.cluster.pubsub
 
 import akka.actor.ActorRef
+import akka.util.{ MessageBuffer, MessageBufferMap }
 
 private[pubsub] trait PerGroupingBuffer {
-  private type BufferedMessages = Vector[(Any, ActorRef)]
 
-  private var buffers: Map[String, BufferedMessages] = Map.empty
-
-  private var totalBufferSize = 0
+  private val buffers: MessageBufferMap[String] = new MessageBufferMap()
 
   def bufferOr(grouping: String, message: Any, originalSender: ActorRef)(action: ⇒ Unit): Unit = {
-    buffers.get(grouping) match {
-      case None ⇒ action
-      case Some(messages) ⇒
-        buffers = buffers.updated(grouping, messages :+ ((message, originalSender)))
-        totalBufferSize += 1
-    }
+    if (!buffers.contains(grouping)) action
+    else buffers.append(grouping, message, originalSender)
   }
 
   def recreateAndForwardMessagesIfNeeded(grouping: String, recipient: ⇒ ActorRef): Unit = {
-    buffers.get(grouping).filter(_.nonEmpty).foreach { messages ⇒
-      forwardMessages(messages, recipient)
-      totalBufferSize -= messages.length
+    val buffer = buffers.getOrEmpty(grouping)
+    if (buffer.nonEmpty) {
+      forwardMessages(buffer, recipient)
     }
-    buffers -= grouping
+    buffers.remove(grouping)
   }
 
   def forwardMessages(grouping: String, recipient: ActorRef): Unit = {
-    buffers.get(grouping).foreach { messages ⇒
-      forwardMessages(messages, recipient)
-      totalBufferSize -= messages.length
-    }
-    buffers -= grouping
+    forwardMessages(buffers.getOrEmpty(grouping), recipient)
+    buffers.remove(grouping)
   }
 
-  private def forwardMessages(messages: BufferedMessages, recipient: ActorRef): Unit = {
+  private def forwardMessages(messages: MessageBuffer, recipient: ActorRef): Unit = {
     messages.foreach {
       case (message, originalSender) ⇒ recipient.tell(message, originalSender)
     }
   }
 
-  def initializeGrouping(grouping: String): Unit = buffers += grouping → Vector.empty
+  def initializeGrouping(grouping: String): Unit = buffers.add(grouping)
 }

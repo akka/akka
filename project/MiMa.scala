@@ -1095,7 +1095,56 @@ object MiMa extends AutoPlugin {
         // #22374 introduce fishForSpecificMessage in TestKit
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage$default$1"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage$default$2")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage$default$2"),
+
+        // #22224 DaemonMsgCreateSerializer using manifests
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesBytes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesList"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesCount"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClasses"),
+        ProblemFilters.exclude[MissingFieldProblem]("akka.remote.WireFormats#PropsData.CLASSES_FIELD_NUMBER"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifestCount"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIdsList"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIds"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifestList"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIdsCount"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClassesBytes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClassesList"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClassesCount"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClasses"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifestsBytes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifests"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifestsList"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifestsCount"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClassesBytes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClassesList"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.addClassesBytes"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClassesCount"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.clearClasses"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.addClasses"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClasses"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.addAllClasses"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.setClasses"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.serialize"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.deserialize"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.deserialize"),
+        ProblemFilters.exclude[FinalClassProblem]("akka.remote.serialization.DaemonMsgCreateSerializer"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.serialization"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.this"),
+
+        // Internal MessageBuffer for actors
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.PerGroupingBuffer.akka$cluster$pubsub$PerGroupingBuffer$$buffers"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.PerGroupingBuffer.akka$cluster$pubsub$PerGroupingBuffer$_setter_$akka$cluster$pubsub$PerGroupingBuffer$$buffers_="),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.singleton.ClusterSingletonProxy.buffer"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.singleton.ClusterSingletonProxy.buffer_="),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.buffer"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.totalBufferSize"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.Shard.messageBuffers"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.messageBuffers_="),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.totalBufferSize"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers_=")
       )
       // make sure that
       //  * this list ends with the latest released version number
