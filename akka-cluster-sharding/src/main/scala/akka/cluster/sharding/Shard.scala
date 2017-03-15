@@ -17,6 +17,7 @@ import akka.actor.Actor
 import akka.persistence.RecoveryCompleted
 import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
+import akka.util.MessageBufferMap
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
@@ -135,15 +136,13 @@ private[akka] class Shard(
   var idByRef = Map.empty[ActorRef, EntityId]
   var refById = Map.empty[EntityId, ActorRef]
   var passivating = Set.empty[ActorRef]
-  var messageBuffers = Map.empty[EntityId, Vector[(Msg, ActorRef)]]
+  val messageBuffers = new MessageBufferMap[EntityId]
 
   var handOffStopper: Option[ActorRef] = None
 
   initialized()
 
   def initialized(): Unit = context.parent ! ShardInitialized(shardId)
-
-  def totalBufferSize = messageBuffers.foldLeft(0) { (sum, entity) ⇒ sum + entity._2.size }
 
   def processChange[A](event: A)(handler: A ⇒ Unit): Unit =
     handler(event)
@@ -208,7 +207,7 @@ private[akka] class Shard(
 
   def entityTerminated(ref: ActorRef): Unit = {
     val id = idByRef(ref)
-    if (messageBuffers.getOrElse(id, Vector.empty).nonEmpty) {
+    if (messageBuffers.getOrEmpty(id).nonEmpty) {
       log.debug("Starting entity [{}] again, there are buffered messages for it", id)
       sendMsgBuffer(EntityStarted(id))
     } else {
@@ -224,7 +223,7 @@ private[akka] class Shard(
         log.debug("Passivating started on entity {}", id)
 
         passivating = passivating + entity
-        messageBuffers = messageBuffers.updated(id, Vector.empty)
+        messageBuffers.add(id)
         entity ! stopMessage
 
       case _ ⇒ //ignored
@@ -240,14 +239,14 @@ private[akka] class Shard(
     refById -= event.entityId
 
     state = state.copy(state.entities - event.entityId)
-    messageBuffers = messageBuffers - event.entityId
+    messageBuffers.remove(event.entityId)
   }
 
   // EntityStarted handler
   def sendMsgBuffer(event: EntityStarted): Unit = {
     //Get the buffered messages and remove the buffer
-    val messages = messageBuffers.getOrElse(event.entityId, Vector.empty)
-    messageBuffers = messageBuffers - event.entityId
+    val messages = messageBuffers.getOrEmpty(event.entityId)
+    messageBuffers.remove(event.entityId)
 
     if (messages.nonEmpty) {
       log.debug("Sending message buffer for entity [{}] ([{}] messages)", event.entityId, messages.size)
@@ -255,7 +254,7 @@ private[akka] class Shard(
 
       //Now there is no deliveryBuffer we can try to redeliver
       // and as the child exists, the message will be directly forwarded
-      messages foreach {
+      messages.foreach {
         case (msg, snd) ⇒ deliverMessage(msg, snd)
       }
     }
@@ -267,16 +266,16 @@ private[akka] class Shard(
       log.warning("Id must not be empty, dropping message [{}]", msg.getClass.getName)
       context.system.deadLetters ! msg
     } else {
-      messageBuffers.get(id) match {
-        case None ⇒ deliverTo(id, msg, payload, snd)
+      messageBuffers.contains(id) match {
+        case false ⇒ deliverTo(id, msg, payload, snd)
 
-        case Some(buf) if totalBufferSize >= bufferSize ⇒
+        case true if messageBuffers.totalSize >= bufferSize ⇒
           log.debug("Buffer is full, dropping message for entity [{}]", id)
           context.system.deadLetters ! msg
 
-        case Some(buf) ⇒
+        case true ⇒
           log.debug("Message for entity [{}] buffered", id)
-          messageBuffers = messageBuffers.updated(id, buf :+ ((msg, snd)))
+          messageBuffers.append(id, msg, snd)
       }
     }
   }
@@ -379,7 +378,7 @@ private[akka] class PersistentShard(
 
   override def entityTerminated(ref: ActorRef): Unit = {
     val id = idByRef(ref)
-    if (messageBuffers.getOrElse(id, Vector.empty).nonEmpty) {
+    if (messageBuffers.getOrEmpty(id).nonEmpty) {
       //Note; because we're not persisting the EntityStopped, we don't need
       // to persist the EntityStarted either.
       log.debug("Starting entity [{}] again, there are buffered messages for it", id)
@@ -403,7 +402,7 @@ private[akka] class PersistentShard(
 
       case None ⇒
         //Note; we only do this if remembering, otherwise the buffer is an overhead
-        messageBuffers = messageBuffers.updated(id, Vector((msg, snd)))
+        messageBuffers.append(id, msg, snd)
         saveSnapshotWhenNeeded()
         persist(EntityStarted(id))(sendMsgBuffer)
     }

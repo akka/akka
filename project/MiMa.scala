@@ -1205,8 +1205,20 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.deserialize"),
         ProblemFilters.exclude[FinalClassProblem]("akka.remote.serialization.DaemonMsgCreateSerializer"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.serialization"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.this")
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.this"),
 
+        // Internal MessageBuffer for actors
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.PerGroupingBuffer.akka$cluster$pubsub$PerGroupingBuffer$$buffers"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.PerGroupingBuffer.akka$cluster$pubsub$PerGroupingBuffer$_setter_$akka$cluster$pubsub$PerGroupingBuffer$$buffers_="),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.singleton.ClusterSingletonProxy.buffer"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.singleton.ClusterSingletonProxy.buffer_="),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.client.ClusterClient.buffer"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.totalBufferSize"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.Shard.messageBuffers"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.messageBuffers_="),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.totalBufferSize"),
+        ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers"),
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers_=")
       )
       // make sure that
       //  * this list ends with the latest released version number
