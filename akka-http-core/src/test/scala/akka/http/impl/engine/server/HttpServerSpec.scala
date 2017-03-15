@@ -18,7 +18,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.stream.testkit._
-import akka.stream.{ ActorMaterializer, Fusing }
+import akka.stream.ActorMaterializer
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest.Inside
@@ -892,7 +892,7 @@ class HttpServerSpec extends AkkaSpec(
       // this is the normal behavior for bindAndHandle(flow), it will set an attribute
       // with remote ip before flow is materialized, rather than from the blueprint apply method
       override def modifyServer(server: ServerLayer): ServerLayer = {
-        BidiFlow.fromGraph(Fusing.aggressive(server).withAttributes(
+        BidiFlow.fromGraph(StreamUtils.fuseAggressive(server).withAttributes(
           HttpAttributes.remoteAddress(Some(new InetSocketAddress(theAddress, 8080)))
         ))
       }

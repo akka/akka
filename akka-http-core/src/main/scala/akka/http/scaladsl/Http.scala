@@ -84,7 +84,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     baseFlow: ServerLayerBidiFlow,
     handler:  Flow[HttpRequest, HttpResponse, Any])(implicit mat: Materializer): ServerLayerFlow =
     Flow.fromGraph(
-      Fusing.aggressive(
+      StreamUtils.fuseAggressive(
         Flow[HttpRequest]
           .watchTermination()(Keep.right)
           .viaMat(handler)(Keep.left)

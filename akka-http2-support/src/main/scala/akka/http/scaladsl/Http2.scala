@@ -13,12 +13,13 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprint }
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
+import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, Tcp }
-import akka.stream.{ Fusing, IgnoreComplete, Materializer }
+import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
 import com.typesafe.config.Config
 
@@ -84,7 +85,7 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
     }
 
     // Not reusable, see above.
-    def fullLayer(): Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(Fusing.aggressive(
+    def fullLayer(): Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(StreamUtils.fuseAggressive(
       Flow[HttpRequest]
         .watchTermination()(Keep.right)
         // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need

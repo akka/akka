@@ -16,3 +16,14 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.JavaMapp
 # changes to internal classes, #945
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils#ScheduleSupport.scheduleOnce")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.util.StreamUtils#ScheduleSupport.scheduleOnce")
+
+# removed unused internal methods
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$ReadableCell")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$OneTimeWriteCell")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$OneTimePublisherSink")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.oneTimeSource$default$2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.oneTimeSubscriberSource")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.failedPublisher")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.oneTimeSource")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.oneTimePublisherSink")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$OneTimeSubscriberSource")

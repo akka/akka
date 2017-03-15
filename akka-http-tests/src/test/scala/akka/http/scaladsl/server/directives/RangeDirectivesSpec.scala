@@ -5,6 +5,8 @@
 package akka.http.scaladsl.server
 package directives
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.http.scaladsl.model.StatusCodes._
@@ -120,7 +122,13 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
     "return a 'multipart/byteranges' for a ranged request with multiple ranges if entity data source isn't reusable" in {
       val content = "Some random and not super short entity."
-      def entityData() = StreamUtils.oneTimeSource(Source.single(ByteString(content)))
+
+      val usages = new AtomicInteger(0)
+      def entityData() = Source.single(ByteString(content)).mapMaterializedValue { _ ⇒
+        if (usages.incrementAndGet() > 1) throw new IllegalStateException("Source must only be used once.")
+
+        ()
+      }
 
       Get() ~> addHeader(Range(ByteRange(5, 10), ByteRange(0, 1), ByteRange(1, 2))) ~> {
         wrs { complete(HttpEntity.Default(ContentTypes.`text/plain(UTF-8)`, content.length, entityData())) }

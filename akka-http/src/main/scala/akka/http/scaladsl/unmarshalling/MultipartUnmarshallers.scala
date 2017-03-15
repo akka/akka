@@ -4,22 +4,20 @@
 
 package akka.http.scaladsl.unmarshalling
 
+import akka.event.{ LoggingAdapter, NoLogging }
+import akka.http.impl.engine.parsing.BodyPartParser
+import akka.http.impl.util.StreamUtils
+import akka.http.scaladsl.model.HttpCharsets._
+import akka.http.scaladsl.model.MediaRanges._
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.util.FastFuture
+import akka.stream.ActorMaterializerHelper
+import akka.stream.scaladsl._
 
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-import akka.util.ByteString
-import akka.event.{ LoggingAdapter, NoLogging }
-import akka.stream.{ ActorMaterializer, ActorMaterializerHelper }
-import akka.stream.impl.fusing.IteratorInterpreter
-import akka.stream.scaladsl._
-import akka.http.impl.engine.parsing.BodyPartParser
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.util.FastFuture
-import MediaRanges._
-import MediaTypes._
-import HttpCharsets._
-import akka.stream.impl.fusing.SubSource
 
 /**
  * Provides [[akka.http.scaladsl.model.Multipart]] marshallers.
@@ -67,7 +65,7 @@ trait MultipartUnmarshallers {
     createStreamed:       (MediaType.Multipart, Source[BP, Any]) ⇒ T,
     createStrictBodyPart: (HttpEntity.Strict, List[HttpHeader]) ⇒ BPS,
     createStrict:         (MediaType.Multipart, immutable.Seq[BPS]) ⇒ T)(implicit log: LoggingAdapter = NoLogging, parserSettings: ParserSettings = null): FromEntityUnmarshaller[T] =
-    Unmarshaller.withMaterializer { implicit ec ⇒ mat ⇒
+    Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒
       entity ⇒
         if (entity.contentType.mediaType.isMultipart && mediaRange.matches(entity.contentType.mediaType)) {
           entity.contentType.mediaType.params.get("boundary") match {
@@ -77,39 +75,42 @@ trait MultipartUnmarshallers {
               import BodyPartParser._
               val effectiveParserSettings = Option(parserSettings).getOrElse(ParserSettings(ActorMaterializerHelper.downcast(mat).system))
               val parser = new BodyPartParser(defaultContentType, boundary, log, effectiveParserSettings)
-              FastFuture.successful {
-                entity match {
-                  case HttpEntity.Strict(ContentType(mediaType: MediaType.Multipart, _), data) ⇒
-                    val builder = new VectorBuilder[BPS]()
-                    val iter = new IteratorInterpreter[ByteString, BodyPartParser.Output](
-                      Iterator.single(data), List(parser)).iterator
-                    // note that iter.next() will throw exception if stream fails
-                    iter.foreach {
-                      case BodyPartStart(headers, createEntity) ⇒
-                        val entity = createEntity(Source.empty) match {
-                          case x: HttpEntity.Strict ⇒ x
-                          case x                    ⇒ throw new IllegalStateException("Unexpected entity type from strict BodyPartParser: " + x)
-                        }
-                        builder += createStrictBodyPart(entity, headers)
-                      case ParseError(errorInfo) ⇒ throw ParsingException(errorInfo)
-                      case x                     ⇒ throw new IllegalStateException(s"Unexpected BodyPartParser result $x in strict case")
-                    }
-                    createStrict(mediaType, builder.result())
-                  case _ ⇒
-                    val bodyParts = entity.dataBytes
-                      .via(parser)
-                      .splitWhen(_.isInstanceOf[PartStart])
-                      .prefixAndTail(1)
-                      .collect {
-                        case (Seq(BodyPartStart(headers, createEntity)), entityParts) ⇒
-                          createBodyPart(createEntity(entityParts), headers)
-                        case (Seq(ParseError(errorInfo)), rest) ⇒
-                          SubSource.kill(rest)
-                          throw ParsingException(errorInfo)
+
+              entity match {
+                case HttpEntity.Strict(ContentType(mediaType: MediaType.Multipart, _), data) ⇒
+                  Source.single(data)
+                    .via(parser)
+                    .runFold(new VectorBuilder[BPS]()) { (builder, output) ⇒
+                      output match {
+                        case BodyPartStart(headers, createEntity) ⇒
+                          val entity = createEntity(Source.empty) match {
+                            case x: HttpEntity.Strict ⇒ x
+                            case x                    ⇒ throw new IllegalStateException("Unexpected entity type from strict BodyPartParser: " + x)
+                          }
+                          builder += createStrictBodyPart(entity, headers)
+                        case ParseError(errorInfo) ⇒ throw ParsingException(errorInfo)
+                        case x                     ⇒ throw new IllegalStateException(s"Unexpected BodyPartParser result $x in strict case")
                       }
-                      .concatSubstreams
+                    }.map { builder ⇒
+                      createStrict(mediaType, builder.result())
+                    }
+                case _ ⇒
+                  val bodyParts = entity.dataBytes
+                    .via(parser)
+                    .splitWhen(_.isInstanceOf[PartStart])
+                    .prefixAndTail(1)
+                    .collect {
+                      case (Seq(BodyPartStart(headers, createEntity)), entityParts) ⇒
+                        createBodyPart(createEntity(entityParts), headers)
+                      case (Seq(ParseError(errorInfo)), rest) ⇒
+                        StreamUtils.cancelSource(rest)
+                        throw ParsingException(errorInfo)
+                    }
+                    .concatSubstreams
+
+                  FastFuture.successful {
                     createStreamed(entity.contentType.mediaType.asInstanceOf[MediaType.Multipart], bodyParts)
-                }
+                  }
               }
           }
         } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(mediaRange))

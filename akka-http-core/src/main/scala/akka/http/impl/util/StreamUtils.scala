@@ -4,17 +4,14 @@
 
 package akka.http.impl.util
 
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
-
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.stream._
+import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.{ ByteString, OptionVal }
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future, Promise }
@@ -49,9 +46,6 @@ private[http] object StreamUtils {
       setHandlers(in, out, this)
     }
   }
-
-  def failedPublisher[T](ex: Throwable): Publisher[T] =
-    impl.ErrorPublisher(ex, "failed").asInstanceOf[Publisher[T]]
 
   def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
     val promise = Promise[Unit]()
@@ -148,79 +142,6 @@ private[http] object StreamUtils {
     }
 
   /**
-   * Returns a source that can only be used once for testing purposes.
-   */
-  def oneTimeSource[T, Mat](other: Source[T, Mat], errorMsg: String = "One time source can only be instantiated once"): Source[T, Mat] = {
-    val onlyOnceFlag = new AtomicBoolean(false)
-    other.mapMaterializedValue { elem ⇒
-      if (onlyOnceFlag.get() || !onlyOnceFlag.compareAndSet(false, true))
-        throw new IllegalStateException(errorMsg)
-      elem
-    }
-  }
-
-  def oneTimePublisherSink[In](cell: OneTimeWriteCell[Publisher[In]], name: String): Sink[In, Publisher[In]] =
-    new Sink[In, Publisher[In]](new OneTimePublisherSink(none, SinkShape(Inlet(name)), cell))
-  def oneTimeSubscriberSource[Out](cell: OneTimeWriteCell[Subscriber[Out]], name: String): Source[Out, Subscriber[Out]] =
-    new Source[Out, Subscriber[Out]](new OneTimeSubscriberSource(none, SourceShape(Outlet(name)), cell))
-
-  /** A copy of PublisherSink that allows access to the publisher through the cell but can only materialized once */
-  private class OneTimePublisherSink[In](attributes: Attributes, shape: SinkShape[In], cell: OneTimeWriteCell[Publisher[In]])
-    extends PublisherSink[In](attributes, shape) {
-    override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
-      val results = super.create(context)
-      cell.set(results._2)
-      results
-    }
-    override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-      new OneTimePublisherSink[In](attributes, shape, cell)
-
-    override def withAttributes(attr: Attributes): OneTimePublisherSink[In] =
-      new OneTimePublisherSink[In](attr, amendShape(attr), cell)
-  }
-  /** A copy of SubscriberSource that allows access to the subscriber through the cell but can only materialized once */
-  private class OneTimeSubscriberSource[Out](val attributes: Attributes, shape: SourceShape[Out], cell: OneTimeWriteCell[Subscriber[Out]])
-    extends SourceModule[Out, Subscriber[Out]](shape) {
-
-    override def create(context: MaterializationContext): (Publisher[Out], Subscriber[Out]) = {
-      val processor = new Processor[Out, Out] {
-        @volatile private var subscriber: Subscriber[_ >: Out] = null
-
-        override def subscribe(s: Subscriber[_ >: Out]): Unit = subscriber = s
-
-        override def onError(t: Throwable): Unit = subscriber.onError(t)
-        override def onSubscribe(s: Subscription): Unit = subscriber.onSubscribe(s)
-        override def onComplete(): Unit = subscriber.onComplete()
-        override def onNext(t: Out): Unit = subscriber.onNext(t)
-      }
-      cell.setValue(processor)
-
-      (processor, processor)
-    }
-
-    override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] =
-      new OneTimeSubscriberSource[Out](attributes, shape, cell)
-    override def withAttributes(attr: Attributes): OneTimeSubscriberSource[Out] =
-      new OneTimeSubscriberSource[Out](attr, amendShape(attr), cell)
-  }
-
-  trait ReadableCell[+T] {
-    def value: T
-  }
-  /** A one time settable cell */
-  class OneTimeWriteCell[T <: AnyRef] extends AtomicReference[T] with ReadableCell[T] {
-    def value: T = {
-      val value = get()
-      require(value != null, "Value wasn't set yet")
-      value
-    }
-
-    def setValue(value: T): Unit =
-      if (!compareAndSet(null.asInstanceOf[T], value))
-        throw new IllegalStateException("Value can be only set once.")
-  }
-
-  /**
    * Similar to Source.maybe but doesn't rely on materialization. Can only be used once.
    */
   trait OneTimeValve {
@@ -303,6 +224,52 @@ private[http] object StreamUtils {
 
     def runInContext(block: ⇒ Unit): Unit = getAsyncCallback[AnyRef](_ ⇒ block).invoke(null)
   }
+
+  private val EmptySource = Source.empty
+
+  /** Dummy name to signify that the caller asserts that cancelSource is only run from within a GraphInterpreter context */
+  val OnlyRunInGraphInterpreterContext: Materializer = null
+  /**
+   * Tries to guess whether a source needs to cancelled and how. In the best case no materialization should be needed.
+   */
+  def cancelSource(source: Source[_, _])(implicit materializer: Materializer): Unit = source match {
+    case EmptySource ⇒ // nothing to do with empty source
+    case x ⇒
+      val mat =
+        GraphInterpreter.currentInterpreterOrNull match {
+          case null if materializer ne null ⇒ materializer
+          case null                         ⇒ throw new IllegalStateException("Need to pass materializer to cancelSource if not run from GraphInterpreter context.")
+          case x                            ⇒ x.subFusingMaterializer // try to use fuse if already running in interpreter context
+        }
+      x.runWith(Sink.ignore)(mat)
+  }
+
+  private trait Fuser {
+    def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M]
+  }
+  private val fuser: Fuser =
+    try {
+      val cl = Class.forName("akka.stream.Fusing$")
+      val field = cl.getDeclaredField("MODULE$")
+      field.setAccessible(true)
+      type Fusing = { def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] }
+      val instance = field.get(null).asInstanceOf[Fusing]
+
+      new Fuser {
+        def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = instance.aggressive(g)
+      }
+    } catch {
+      case ex: ClassNotFoundException ⇒
+        new Fuser {
+          def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = g // no fusing
+        }
+    }
+
+  /**
+   * Try to fuse flow using Fusing.aggressive reflectively on Akka 2.4 or do nothing on Akka >= 2.5 (where explicit
+   * fusing is neither supported nor necessary).
+   */
+  def fuseAggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = fuser.aggressive(g)
 }
 
 /**
