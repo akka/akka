@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancellable, Deploy, ExtendedActorSystem, PoisonPill }
+import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
 import akka.stream.Attributes.InputBuffer
@@ -20,15 +21,12 @@ import akka.stream.impl.fusing._
 import akka.stream.impl.io.{ TLSActor, TlsModule }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+import org.reactivestreams.{ Processor, Publisher, Subscriber }
 
-import scala.collection.immutable.Map
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContextExecutor
 import scala.annotation.tailrec
-import akka.stream.impl.fusing.GraphInterpreter.DownstreamBoundaryStageLogic
-import akka.stream.impl.fusing.GraphInterpreter.UpstreamBoundaryStageLogic
-import akka.util.OptionVal
+import scala.collection.immutable.Map
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration.FiniteDuration
 
 object PhasedFusingActorMaterializer {
 
@@ -69,7 +67,7 @@ object PhasedFusingActorMaterializer {
     val streamSupervisor = context.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown)
       .withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName())
 
-    PhasedFusingActorMaterializer(
+    new PhasedFusingActorMaterializer(
       system,
       materializerSettings,
       system.dispatchers,
@@ -331,13 +329,13 @@ class IslandTracking(
 
 }
 
-case class PhasedFusingActorMaterializer(
-  system:                ActorSystem,
+class PhasedFusingActorMaterializer(
+  val system:            ActorSystem,
   override val settings: ActorMaterializerSettings,
-  dispatchers:           Dispatchers,
-  supervisor:            ActorRef,
-  haveShutDown:          AtomicBoolean,
-  flowNames:             SeqActorName) extends ExtendedActorMaterializer {
+  val dispatchers:       Dispatchers,
+  val supervisor:        ActorRef,
+  val haveShutDown:      AtomicBoolean,
+  val flowNames:         SeqActorName) extends ExtendedActorMaterializer {
   import PhasedFusingActorMaterializer._
 
   private val _logger = Logging.getLogger(system, this)
@@ -357,7 +355,7 @@ case class PhasedFusingActorMaterializer(
 
   override def isShutdown: Boolean = haveShutDown.get()
 
-  override def withNamePrefix(name: String): PhasedFusingActorMaterializer = this.copy(flowNames = flowNames.copy(name))
+  override def withNamePrefix(name: String): PhasedFusingActorMaterializer = this // FIXME .copy(flowNames = flowNames.copy(name))
 
   private[this] def createFlowName(): String = flowNames.next()
 
@@ -412,8 +410,16 @@ case class PhasedFusingActorMaterializer(
     materialize(
       _runnableGraph,
       initialAttributes,
-      PhasedFusingActorMaterializer.DefaultPhase,
-      PhasedFusingActorMaterializer.DefaultPhases)
+      defaultPhase,
+      defaultPhases)
+
+  /** INTERNAL API: Meant for very small modifications to materialization. Replace the default phase. */
+  @InternalApi protected def defaultPhases[Mat] =
+    PhasedFusingActorMaterializer.DefaultPhases
+
+  /** INTERNAL API: Meant for very small modifications to materialization. Replace the phases map. */
+  @InternalApi protected def defaultPhase[Mat] =
+    PhasedFusingActorMaterializer.DefaultPhase
 
   override def materialize[Mat](
     graph:             Graph[ClosedShape, Mat],
@@ -504,7 +510,7 @@ case class PhasedFusingActorMaterializer(
     matValueStack.peekLast().asInstanceOf[Mat]
   }
 
-  private def wireInlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any): Unit = {
+  protected def wireInlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any): Unit = {
     val inlets = mod.shape.inlets
     if (inlets.nonEmpty) {
       if (Shape.hasOnePort(inlets)) {
@@ -520,8 +526,8 @@ case class PhasedFusingActorMaterializer(
     }
   }
 
-  private def wireOutlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any,
-                          stageGlobalOffset: Int, outToSlot: Array[Int]): Unit = {
+  protected def wireOutlets(islandTracking: IslandTracking, mod: StreamLayout.AtomicModule[Shape, Any], logic: Any,
+                            stageGlobalOffset: Int, outToSlot: Array[Int]): Unit = {
     val outlets = mod.shape.outlets
     if (outlets.nonEmpty) {
       if (Shape.hasOnePort(outlets)) {
@@ -552,7 +558,7 @@ trait IslandTag
 trait Phase[M] {
   def apply(
     effectiveSettings: ActorMaterializerSettings,
-    materializer:      PhasedFusingActorMaterializer,
+    materializer:      PhasedFusingActorMaterializer, // FIXME this should be Materializer?
     islandName:        String): PhaseIsland[M]
 }
 
@@ -576,7 +582,7 @@ trait PhaseIsland[M] {
 
 object GraphStageTag extends IslandTag
 
-final class GraphStageIsland(
+private[akka] class GraphStageIsland(
   effectiveSettings: ActorMaterializerSettings,
   materializer:      PhasedFusingActorMaterializer,
   islandName:        String,
@@ -706,6 +712,10 @@ final class GraphStageIsland(
     shell.connections = finalConnections
     shell.logics = logics.toArray(logicArrayType)
 
+    onIslandReadyStartInterpreter(shell)
+  }
+
+  protected def onIslandReadyStartInterpreter(shell: GraphInterpreterShell): Unit = {
     subflowFuser match {
       case OptionVal.Some(fuseIntoExistingInterperter) ⇒
         fuseIntoExistingInterperter(shell)
