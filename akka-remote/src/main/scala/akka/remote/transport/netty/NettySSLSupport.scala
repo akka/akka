@@ -40,17 +40,13 @@ private[akka] class SSLSettings(config: Config) {
 
   val SSLRequireMutualAuthentication = getBoolean("require-mutual-authentication")
 
-  private val sslContext = new AtomicReference[SSLContext]()
-  @tailrec final def getOrCreateContext(log: MarkerLoggingAdapter): SSLContext =
-    sslContext.get() match {
-      case null ⇒
-        val newCtx = constructContext(log)
-        if (sslContext.compareAndSet(null, newCtx)) newCtx
-        else getOrCreateContext(log)
-      case ctx ⇒ ctx
-    }
+  // Note, it's important that this is done synchronously here (even if PRNG initialization may block for seconds
+  // waiting on /dev/random), so that ActorSystem creation will block on this, so that other Akka initialization
+  // like initial Cluster seed node contact which depends on Akka remoting will not run before Akka remoting is ready
+  // and run into timeouts. See #22579.
+  val sslContext = constructContext()
 
-  private def constructContext(log: MarkerLoggingAdapter): SSLContext =
+  private def constructContext(): SSLContext =
     try {
       def loadKeystore(filename: String, password: String): KeyStore = {
         val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
@@ -69,7 +65,7 @@ private[akka] class SSLSettings(config: Config) {
         trustManagerFactory.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword))
         trustManagerFactory.getTrustManagers
       }
-      val rng = createSecureRandom(log)
+      val rng = createSecureRandom()
 
       val ctx = SSLContext.getInstance(SSLProtocol)
       ctx.init(keyManagers, trustManagers, rng)
@@ -80,24 +76,18 @@ private[akka] class SSLSettings(config: Config) {
       case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
     }
 
-  def createSecureRandom(log: MarkerLoggingAdapter): SecureRandom = {
+  private[remote] def createSecureRandom(): SecureRandom = {
     val rng = SSLRandomNumberGenerator match {
       case r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG") ⇒
-        log.debug("SSL random number generator set to: {}", r)
         SecureRandom.getInstance(r, AkkaProvider)
       case s @ ("SHA1PRNG" | "NativePRNG") ⇒
-        log.debug("SSL random number generator set to: {}", s)
         // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
         // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
         SecureRandom.getInstance(s)
 
-      case "" ⇒
-        log.debug("SSLRandomNumberGenerator not specified, falling back to SecureRandom")
-        new SecureRandom
+      case ""      ⇒ new SecureRandom
 
-      case unknown ⇒
-        log.warning(LogMarker.Security, "Unknown SSLRandomNumberGenerator [{}] falling back to SecureRandom", unknown)
-        new SecureRandom
+      case unknown ⇒ throw new IllegalArgumentException(s"Unknown PRNG configured '$unknown'. Please change the setting at akka.remote.netty.ssl.random-number-generator.")
     }
     rng.nextInt() // prevent stall on first access
     rng
@@ -117,7 +107,8 @@ private[akka] object NettySSLSupport {
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
    */
   def apply(settings: SSLSettings, log: MarkerLoggingAdapter, isClient: Boolean): SslHandler = {
-    val sslEngine = settings.getOrCreateContext(log).createSSLEngine // TODO: pass host information to enable host verification
+    log.debug(s"Creating SslHandler with PRNG [${settings.SSLRandomNumberGenerator}]")
+    val sslEngine = settings.sslContext.createSSLEngine() // TODO: pass host information to enable host verification
     sslEngine.setUseClientMode(isClient)
     sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
     sslEngine.setEnabledProtocols(Array(settings.SSLProtocol))
