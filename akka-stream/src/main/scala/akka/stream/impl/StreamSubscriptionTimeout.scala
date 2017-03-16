@@ -12,7 +12,10 @@ import org.reactivestreams._
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NoStackTrace
 
-object StreamSubscriptionTimeoutSupport {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object StreamSubscriptionTimeoutSupport {
 
   /**
    * A subscriber who calls `cancel` directly from `onSubscribe` and ignores all other callbacks.

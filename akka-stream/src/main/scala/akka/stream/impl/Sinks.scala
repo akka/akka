@@ -129,7 +129,7 @@ import akka.util.OptionVal
  * INTERNAL API
  * Attaches a subscriber to this stream.
  */
-@InternalApi final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
+@InternalApi private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = (subscriber, NotUsed)
 
@@ -141,7 +141,7 @@ import akka.util.OptionVal
  * INTERNAL API
  * A sink that immediately cancels its upstream upon materialization.
  */
-final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, NotUsed](shape) {
+@InternalApi private[akka] final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extends SinkModule[Any, NotUsed](shape) {
   override def create(context: MaterializationContext): (Subscriber[Any], NotUsed) = (new CancellingSubscriber[Any], NotUsed)
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] = new CancelSink(attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[Any, NotUsed] = new CancelSink(attr, amendShape(attr))
@@ -152,7 +152,7 @@ final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extend
  * Creates and wraps an actor into [[org.reactivestreams.Subscriber]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorSubscriber]].
  */
-@InternalApi final class ActorSubscriberSink[In](props: Props, val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, ActorRef](shape) {
+@InternalApi private[akka] final class ActorSubscriberSink[In](props: Props, val attributes: Attributes, shape: SinkShape[In]) extends SinkModule[In, ActorRef](shape) {
 
   override def create(context: MaterializationContext) = {
     val subscriberRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
@@ -166,9 +166,9 @@ final class CancelSink(val attributes: Attributes, shape: SinkShape[Any]) extend
 /**
  * INTERNAL API
  */
-@InternalApi final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
-                                          val attributes: Attributes,
-                                          shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
+@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
+                                                        val attributes: Attributes,
+                                                        shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)

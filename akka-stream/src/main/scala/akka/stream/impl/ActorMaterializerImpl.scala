@@ -6,7 +6,7 @@ package akka.stream.impl
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor._
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.stream._
@@ -19,7 +19,7 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
 /**
  * ExtendedActorMaterializer used by subtypes which materializer using GraphInterpreterShell
  */
-abstract class ExtendedActorMaterializer extends ActorMaterializer {
+@DoNotInherit private[akka] abstract class ExtendedActorMaterializer extends ActorMaterializer {
 
   override def withNamePrefix(name: String): ExtendedActorMaterializer
 
@@ -155,7 +155,10 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
   case object PrintDebugDump
 }
 
-class StreamSupervisor(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean) extends Actor {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class StreamSupervisor(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
 
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
