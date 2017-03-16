@@ -28,15 +28,15 @@ Some examples
 
 Schedule to send the "foo"-message to the testActor after 50ms:
 
-.. includecode:: code/docs/actor/SchedulerDocTest.java
+.. includecode:: code/jdocs/actor/SchedulerDocTest.java
    :include: imports1
 
-.. includecode:: code/docs/actor/SchedulerDocTest.java
+.. includecode:: code/jdocs/actor/SchedulerDocTest.java
    :include: schedule-one-off-message
 
 Schedule a Runnable, that sends the current time to the testActor, to be executed after 50ms:
 
-.. includecode:: code/docs/actor/SchedulerDocTest.java
+.. includecode:: code/jdocs/actor/SchedulerDocTest.java
    :include: schedule-one-off-thunk
 
 .. warning::
@@ -50,10 +50,10 @@ Schedule a Runnable, that sends the current time to the testActor, to be execute
 
 Schedule to send the "Tick"-message to the ``tickActor`` after 0ms repeating every 50ms:
 
-.. includecode:: code/docs/actor/SchedulerDocTest.java
+.. includecode:: code/jdocs/actor/SchedulerDocTest.java
    :include: imports1,imports2
 
-.. includecode:: code/docs/actor/SchedulerDocTest.java
+.. includecode:: code/jdocs/actor/SchedulerDocTest.java
    :include: schedule-recurring
 
 From ``akka.actor.ActorSystem``

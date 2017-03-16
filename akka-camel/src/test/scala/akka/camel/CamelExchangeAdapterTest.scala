@@ -7,7 +7,7 @@ package akka.camel
 import akka.camel.TestSupport.SharedCamelSystem
 import akka.camel.internal.CamelExchangeAdapter
 import org.apache.camel.impl.DefaultExchange
-import org.apache.camel.{Exchange, ExchangePattern}
+import org.apache.camel.{ Exchange, ExchangePattern }
 import org.scalatest.FunSuite
 
 import scala.language.implicitConversions
@@ -141,4 +141,4 @@ class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem {
   }
 
   private def exchangeToAdapter(e: Exchange) = new CamelExchangeAdapter(e)
-} 
+}

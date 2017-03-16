@@ -47,7 +47,7 @@ Below is an example of an actor that schedules tick messages to itself and for e
 adds or removes elements from a ``ORSet`` (observed-remove set). It also subscribes to
 changes of this. 
 
-.. includecode:: code/docs/ddata/DataBot.java#data-bot
+.. includecode:: code/jdocs/ddata/DataBot.java#data-bot
 
 .. _replicator_update_java:
 
@@ -63,7 +63,7 @@ will then be replicated according to the given consistency level.
 
 The ``modify`` function is called by the ``Replicator`` actor and must therefore be a pure
 function that only uses the data parameter and stable fields from enclosing scope. It must
-for example not access ``sender()`` reference of an enclosing actor.
+for example not access the sender reference of an enclosing actor.
 
 ``Update`` is intended to only be sent from an actor running in same local ``ActorSystem`` as
  the ``Replicator``, because the ``modify`` function is typically not serializable.
@@ -86,7 +86,7 @@ When you specify to write to ``n`` out of ``x`` nodes, the update will first rep
  
 Note that ``WriteMajority`` has a ``minCap`` parameter that is useful to specify to achieve better safety for small clusters.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#update  
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#update
 
 As reply of the ``Update`` a ``Replicator.UpdateSuccess`` is sent to the sender of the
 ``Update`` if the value was successfully replicated according to the supplied consistency
@@ -95,9 +95,9 @@ sent back. Note that a ``Replicator.UpdateTimeout`` reply does not mean that the
 or was rolled back. It may still have been replicated to some nodes, and will eventually
 be replicated to all nodes with the gossip protocol.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#update-response1
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#update-response1
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#update-response2
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#update-response2
 
 You will always see your own writes. For example if you send two ``Update`` messages
 changing the value of the same ``key``, the ``modify`` function of the second message will
@@ -108,7 +108,7 @@ does not care about, but is included in the reply messages. This is a convenient
 way to pass contextual information (e.g. original sender) without having to use ``ask``
 or maintain local correlation data structures.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#update-request-context
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#update-request-context
 
 .. _replicator_get_java:
  
@@ -129,16 +129,16 @@ To retrieve the current value of a data you send ``Replicator.Get`` message to t
 
 Note that ``ReadMajority`` has a ``minCap`` parameter that is useful to specify to achieve better safety for small clusters.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#get
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#get
 
 As reply of the ``Get`` a ``Replicator.GetSuccess`` is sent to the sender of the
 ``Get`` if the value was successfully retrieved according to the supplied consistency
 level within the supplied timeout. Otherwise a ``Replicator.GetFailure`` is sent.
 If the key does not exist the reply will be ``Replicator.NotFound``.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#get-response1
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#get-response1
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#get-response2
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#get-response2
 
 You will always read your own writes. For example if you send a ``Update`` message
 followed by a ``Get`` of the same ``key`` the ``Get`` will retrieve the change that was
@@ -150,7 +150,7 @@ In the ``Get`` message you can pass an optional request context in the same way 
 ``Update`` message, described above. For example the original sender can be passed and replied
 to after receiving and transforming ``GetSuccess``.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#get-request-context
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#get-request-context
 
 Consistency
 -----------
@@ -193,11 +193,11 @@ the total size of the cluster.
 
 Here is an example of using ``writeMajority`` and ``readMajority``:
 
-.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#read-write-majority
+.. includecode:: ../../../akka-docs/rst/java/code/jdocs/ddata/ShoppingCart.java#read-write-majority
 
-.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#get-cart
+.. includecode:: ../../../akka-docs/rst/java/code/jdocs/ddata/ShoppingCart.java#get-cart
 
-.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#add-item
+.. includecode:: ../../../akka-docs/rst/java/code/jdocs/ddata/ShoppingCart.java#add-item
 
 In some rare cases, when performing an ``Update`` it is needed to first try to fetch latest data from
 other nodes. That can be done by first sending a ``Get`` with ``ReadMajority`` and then continue with
@@ -209,7 +209,7 @@ performed (hence the name observed-removed set).
 
 The following example illustrates how to do that:
 
-.. includecode:: ../../../akka-docs/rst/java/code/docs/ddata/ShoppingCart.java#remove-item
+.. includecode:: ../../../akka-docs/rst/java/code/jdocs/ddata/ShoppingCart.java#remove-item
 
 .. warning::
 
@@ -233,7 +233,7 @@ immediately.
 The subscriber is automatically removed if the subscriber is terminated. A subscriber can
 also be deregistered with the ``Replicator.Unsubscribe`` message.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#subscribe
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#subscribe
 
 Delete
 ------
@@ -251,7 +251,7 @@ data entries because that reduces the replication overhead when new nodes join t
 Subsequent ``Delete``, ``Update`` and ``Get`` requests will be replied with ``Replicator.DataDeleted``.
 Subscribers will receive ``Replicator.DataDeleted``.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#delete
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#delete
 
 .. warning::
 
@@ -317,7 +317,7 @@ It is tracking the increments (P) separate from the decrements (N). Both P and N
 as two internal ``GCounter``. Merge is handled by merging the internal P and N counters.
 The value of the counter is the value of the P counter minus the value of the N counter.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#pncounter
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#pncounter
 
 ``GCounter`` and ``PNCounter`` have support for :ref:`delta_crdt_java` and don't need causal
 delivery of deltas.
@@ -327,7 +327,7 @@ When the counters are placed in a ``PNCounterMap`` as opposed to placing them as
 values they are guaranteed to be replicated together as one unit, which is sometimes necessary for
 related data.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#pncountermap
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#pncountermap
 
 Sets
 ----
@@ -336,7 +336,7 @@ If you only need to add elements to a set and not remove elements the ``GSet`` (
 the data type to use. The elements can be any type of values that can be serialized.
 Merge is simply the union of the two sets.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#gset
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#gset
 
 ``GSet`` has support for :ref:`delta_crdt_java` and it doesn't require causal delivery of deltas.
 
@@ -349,7 +349,7 @@ The version for the node that added the element is also tracked for each element
 called "birth dot". The version vector and the dots are used by the ``merge`` function to
 track causality of the operations and resolve concurrent updates.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#orset
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#orset
 
 ``ORSet`` has support for :ref:`delta_crdt_java` and it requires causal delivery of deltas.
 
@@ -378,7 +378,7 @@ such as the following specialized maps.
 ``LWWMap`` (last writer wins map) is a specialized ``ORMap`` with ``LWWRegister`` (last writer wins register)
 values. 
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#ormultimap
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#ormultimap
 
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e.
 when you update a map the whole map is replicated. Therefore, instead of using one ``ORMap``
@@ -398,7 +398,7 @@ Flags and Registers
 ``Flag`` is a data type for a boolean value that is initialized to ``false`` and can be switched
 to ``true``. Thereafter it cannot be changed. ``true`` wins over ``false`` in merge.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#flag
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#flag
 
 ``LWWRegister`` (last writer wins register) can hold any (serializable) value.
 
@@ -409,13 +409,13 @@ value is not important for concurrent updates occurring within the clock skew.
 Merge takes the register updated by the node with lowest address (``UniqueAddress`` is ordered)
 if the timestamps are exactly the same.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#lwwregister
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#lwwregister
 
 Instead of using timestamps based on ``System.currentTimeMillis()`` time it is possible to
 use a timestamp value based on something else, for example an increasing version number
 from a database record that is used for optimistic concurrency control.
 
-.. includecode:: code/docs/ddata/DistributedDataDocTest.java#lwwregister-custom-clock
+.. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#lwwregister-custom-clock
 
 For first-write-wins semantics you can use the ``LWWRegister#reverseClock`` instead of the
 ``LWWRegister#defaultClock``.
@@ -441,7 +441,7 @@ Here is s simple implementation of a custom ``TwoPhaseSet`` that is using two in
 to keep track of addition and removals.  A ``TwoPhaseSet`` is a set where an element may be added and
 removed, but never added again thereafter.
 
-.. includecode:: code/docs/ddata/japi/TwoPhaseSet.java#twophaseset
+.. includecode:: code/jdocs/ddata/japi/TwoPhaseSet.java#twophaseset
 
 Data types should be immutable, i.e. "modifying" methods should return a new instance.
 
@@ -466,7 +466,7 @@ This is a protobuf representation of the above ``TwoPhaseSet``:
 
 The serializer for the ``TwoPhaseSet``:
 
-.. includecode:: code/docs/ddata/japi/protobuf/TwoPhaseSetSerializer.java#serializer
+.. includecode:: code/jdocs/ddata/japi/protobuf/TwoPhaseSetSerializer.java#serializer
 
 Note that the elements of the sets are sorted so the SHA-1 digests are the same
 for the same elements.
@@ -478,7 +478,7 @@ You register the serializer in configuration:
 Using compression can sometimes be a good idea to reduce the data size. Gzip compression is
 provided by the ``akka.cluster.ddata.protobuf.SerializationSupport`` trait:
 
-.. includecode:: code/docs/ddata/japi/protobuf/TwoPhaseSetSerializerWithCompression.java#compression
+.. includecode:: code/jdocs/ddata/japi/protobuf/TwoPhaseSetSerializerWithCompression.java#compression
  
 The two embedded ``GSet`` can be serialized as illustrated above, but in general when composing
 new data types from the existing built in types it is better to make use of the existing 
@@ -491,7 +491,7 @@ by the ``SerializationSupport`` trait to serialize and deserialize the ``GSet`` 
 works with any type that has a registered Akka serializer. This is how such an serializer would
 look like for the ``TwoPhaseSet``:
 
-.. includecode:: code/docs/ddata/japi/protobuf/TwoPhaseSetSerializer2.java#serializer
+.. includecode:: code/jdocs/ddata/japi/protobuf/TwoPhaseSetSerializer2.java#serializer
 
 .. _ddata_durable_java:
 

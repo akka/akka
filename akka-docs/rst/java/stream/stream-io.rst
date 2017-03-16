@@ -17,7 +17,7 @@ Accepting connections: Echo Server
 In order to implement a simple EchoServer we ``bind`` to a given address, which returns a ``Source<IncomingConnection, CompletionStage<ServerBinding>>``,
 which will emit an :class:`IncomingConnection` element for each new connection that the Server should handle:
 
-.. includecode:: ../code/docs/stream/io/StreamTcpDocTest.java#echo-server-simple-bind
+.. includecode:: ../code/jdocs/stream/io/StreamTcpDocTest.java#echo-server-simple-bind
 
 .. image:: ../../images/tcp-stream-bind.png
 
@@ -28,7 +28,7 @@ helper Flow from ``akka.stream.javadsl.Framing`` to chunk the inputs up into act
 argument indicates that we require an explicit line ending even for the last message before the connection is closed.
 In this example we simply add exclamation marks to each incoming text message and push it through the flow:
 
-.. includecode:: ../code/docs/stream/io/StreamTcpDocTest.java#echo-server-simple-handle
+.. includecode:: ../code/jdocs/stream/io/StreamTcpDocTest.java#echo-server-simple-handle
 
 .. image:: ../../images/tcp-stream-run.png
 
@@ -54,7 +54,7 @@ Let's say we know a server has exposed a simple command line interface over TCP,
 and would like to interact with it using Akka Streams over TCP. To open an outgoing connection socket we use
 the ``outgoingConnection`` method:
 
-.. includecode:: ../code/docs/stream/io/StreamTcpDocTest.java#repl-client
+.. includecode:: ../code/jdocs/stream/io/StreamTcpDocTest.java#repl-client
 
 The ``repl`` flow we use to handle the server interaction first prints the servers response, then awaits on input from
 the command line (this blocking call is used here just for the sake of simplicity) and converts it to a
@@ -86,7 +86,7 @@ Thankfully in most situations finding the right spot to start the conversation i
 to the protocol we are trying to implement using Streams. In chat-like applications, which our examples resemble,
 it makes sense to make the Server initiate the conversation by emitting a "hello" message:
 
-.. includecode:: ../code/docs/stream/io/StreamTcpDocTest.java#welcome-banner-chat-server
+.. includecode:: ../code/jdocs/stream/io/StreamTcpDocTest.java#welcome-banner-chat-server
 
 To emit the initial message we merge a ``Source`` with a single element, after the command processing but before the
 framing and transformation to ``ByteString`` s this way we do not have to repeat such logic.
@@ -105,7 +105,7 @@ on files.
 Streaming data from a file is as easy as creating a `FileIO.fromPath` given a target path, and an optional
 ``chunkSize`` which determines the buffer size determined as one "element" in such stream:
 
-.. includecode:: ../code/docs/stream/io/StreamFileDocTest.java#file-source
+.. includecode:: ../code/jdocs/stream/io/StreamFileDocTest.java#file-source
 
 Please note that these processing stages are backed by Actors and by default are configured to run on a pre-configured
 threadpool-backed dispatcher dedicated for File IO. This is very important as it isolates the blocking file IO operations from the rest
@@ -113,4 +113,4 @@ of the ActorSystem allowing each dispatcher to be utilised in the most efficient
 dispatcher for file IO operations globally, you can do so by changing the ``akka.stream.blocking-io-dispatcher``,
 or for a specific stage by specifying a custom Dispatcher in code, like this:
 
-.. includecode:: ../code/docs/stream/io/StreamFileDocTest.java#custom-dispatcher-code
+.. includecode:: ../code/jdocs/stream/io/StreamFileDocTest.java#custom-dispatcher-code

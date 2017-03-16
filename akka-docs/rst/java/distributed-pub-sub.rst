@@ -111,8 +111,8 @@ cluster aware router where the routees dynamically can register themselves.
 
 The message will be delivered to one recipient with a matching path, if any such
 exists in the registry. If several entries match the path because it has been registered
-on several nodes the message will be sent via the supplied ``RoutingLogic`` (default random) 
-to one destination. The sender() of the message can specify that local affinity is preferred,
+on several nodes the message will be sent via the supplied ``RoutingLogic`` (default random)
+to one destination. The sender of the message can specify that local affinity is preferred,
 i.e. the message is sent to an actor in the same local actor system as the used mediator actor,
 if any such exists, otherwise route to any other matching entry. 
 

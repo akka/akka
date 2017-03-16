@@ -21,10 +21,10 @@ which is very similar to a ``java.util.concurrent.Executor``. if you have an ``A
 it will use its default dispatcher as the ``ExecutionContext``, or you can use the factory methods provided
 by the ``ExecutionContexts`` class to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: imports1,imports7
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: diy-execution-context
 
 Use with Actors
@@ -36,10 +36,10 @@ which only works if the original sender was an ``AbstractActor``) and the second
 Using the ``ActorRef``\'s ``ask`` method to send a message will return a ``Future``.
 To wait for and retrieve the actual result the simplest method is:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: imports1
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: ask-blocking
 
 This will cause the current thread to block and wait for the ``AbstractActor`` to 'complete' the ``Future`` with it's reply.
@@ -57,7 +57,7 @@ That is why the cast to ``String`` is used in the above sample.
 
 To send the result of a ``Future`` to an ``Actor``, you can use the ``pipe`` construct:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: pipe-to
 
 Use Directly
@@ -67,10 +67,10 @@ A common use case within Akka is to have some computation performed concurrently
 the extra utility of an ``AbstractActor``. If you find yourself creating a pool of ``AbstractActor``\s for the sole reason
 of performing a calculation in parallel, there is an easier (and faster) way:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: imports2
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: future-eval
 
 In the above code the block passed to ``future`` will be executed by the default ``Dispatcher``,
@@ -80,21 +80,21 @@ and we also avoid the overhead of managing an ``AbstractActor``.
 
 You can also create already completed Futures using the ``Futures`` class, which can be either successes:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: successful
 
 Or failures:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: failed
 
 It is also possible to create an empty ``Promise``, to be filled later, and obtain the corresponding ``Future``:
 
-.. includecode:: code/docs/future/FutureDocTest.java#promise
+.. includecode:: code/jdocs/future/FutureDocTest.java#promise
 
 For these examples ``PrintResult`` is defined as follows:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: print-result
 
 Functional Futures
@@ -110,10 +110,10 @@ The first method for working with ``Future`` functionally is ``map``. This metho
 some operation on the result of the ``Future``, and returning a new result.
 The return value of the ``map`` method is another ``Future`` that will contain the new result:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: imports2
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: map
 
 In this example we are joining two strings together within a ``Future``. Instead of waiting for f1 to complete,
@@ -132,10 +132,10 @@ Composing Futures
 It is very often desirable to be able to combine different Futures with each other,
 below are some examples on how that can be done in a non-blocking fashion.
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: imports3
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: sequence
 
 To better explain what happened in the example, ``Future.sequence`` is taking the ``Iterable<Future<Integer>>``
@@ -145,10 +145,10 @@ and we aggregate the sum of the ``Iterable``.
 The ``traverse`` method is similar to ``sequence``, but it takes a sequence of ``A`` and applies a function from ``A`` to ``Future<B>``
 and returns a ``Future<Iterable<B>>``, enabling parallel ``map`` over the sequence, if you use ``Futures.future`` to create the ``Future``.
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: imports4
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: traverse
 
 It's as simple as that!
@@ -159,10 +159,10 @@ and the type of the futures and returns something with the same type as the star
 and then applies the function to all elements in the sequence of futures, non-blockingly,
 the execution will be started when the last of the Futures is completed.
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: imports5
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: fold
 
 That's all it takes!
@@ -172,10 +172,10 @@ If the sequence passed to ``fold`` is empty, it will return the start-value, in 
 In some cases you don't have a start-value and you're able to use the value of the first completing ``Future``
 in the sequence as the start-value, you can use ``reduce``, it works like this:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: imports6
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: reduce
 
 Same as with ``fold``, the execution will be started when the last of the Futures is completed, you can also parallelize
@@ -189,13 +189,13 @@ Callbacks
 Sometimes you just want to listen to a ``Future`` being completed, and react to that not by creating a new Future, but by side-effecting.
 For this Scala supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which the last two are specializations of the first.
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: onSuccess
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: onFailure
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: onComplete
 
 Ordering
@@ -207,7 +207,7 @@ But there's a solution! And it's name is ``andThen``, and it creates a new ``Fut
 the specified callback, a ``Future`` that will have the same result as the ``Future`` it's called on,
 which allows for ordering like in the following sample:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: and-then
 
 Auxiliary methods
@@ -216,13 +216,13 @@ Auxiliary methods
 ``Future`` ``fallbackTo`` combines 2 Futures into a new ``Future``, and will hold the successful value of the second ``Future``
 if the first ``Future`` fails.
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: fallback-to
 
 You can also combine two Futures into a new ``Future`` that will hold a tuple of the two Futures successful results,
 using the ``zip`` operation.
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: zip
 
 Exceptions
@@ -236,7 +236,7 @@ calling ``Await.result`` will cause it to be thrown again so it can be handled p
 It is also possible to handle an ``Exception`` by returning a different result.
 This is done with the ``recover`` method. For example:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: recover
 
 In this example, if the actor replied with a ``akka.actor.Status.Failure`` containing the ``ArithmeticException``,
@@ -247,7 +247,7 @@ it will behave as if we hadn't used the ``recover`` method.
 You can also use the ``recoverWith`` method, which has the same relationship to ``recover`` as ``flatMap`` has to ``map``,
 and is use like this:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: try-recover
 
 After
@@ -255,10 +255,10 @@ After
 
 ``akka.pattern.Patterns.after`` makes it easy to complete a ``Future`` with a value or exception after a timeout.
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: imports8
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: after
 
 Java 8, CompletionStage and CompletableFuture
@@ -290,7 +290,7 @@ Non-async methods
 When non-async methods are applied on a not yet completed ``CompletionStage``, they are completed by
 the thread which completes initial ``CompletionStage``:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: apply-completion-thread
 
 In this example Scala ``Future`` is converted to ``CompletionStage`` just like Akka does.
@@ -307,7 +307,7 @@ default ``thenApply`` breaks the chain and executes on ``ForkJoinPool.commonPool
 
 In the next example ``thenApply`` methods are executed on an already completed ``Future``/``CompletionStage``:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: apply-main-thread
 
 First ``thenApply`` is still executed on ``ForkJoinPool.commonPool()`` (because it is actually ``thenApplyAsync``
@@ -322,13 +322,13 @@ Async methods
 
 As mentioned above, default *async* methods are always executed on ``ForkJoinPool.commonPool()``:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: apply-async-default
 
 
 ``CompletionStage`` also has *async* methods which take ``Executor`` as a second parameter, just like ``Future``:
 
-.. includecode:: code/docs/future/FutureDocTest.java
+.. includecode:: code/jdocs/future/FutureDocTest.java
    :include: apply-async-executor
 
 This example is behaving like ``Future``: every stage is executed on an explicitly specified ``Executor``.
@@ -339,9 +339,9 @@ This example is behaving like ``Future``: every stage is executed on an explicit
 
 See also:
 
-- `CompletionStage <https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html>`_
+- `CompletionStage <https://docs.oracle.com/javase/8/jdocs/api/java/util/concurrent/CompletionStage.html>`_
 
-- `CompletableFuture <https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html>`_
+- `CompletableFuture <https://docs.oracle.com/javase/8/jdocs/api/java/util/concurrent/CompletableFuture.html>`_
 
 - `scala-java8-compat <https://github.com/scala/scala-java8-compat>`_
 

@@ -73,7 +73,7 @@ As you can see from the example above the following pattern is used to find an a
 
 Once you obtained a selection to the actor you can interact with it they same way you would with a local actor, e.g.::
 
-  selection.tell("Pretty awesome feature", self());
+  selection.tell("Pretty awesome feature", getSelf());
 
 To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to
 send a message to the selection and use the ``sender`` reference of the reply from
@@ -121,7 +121,7 @@ which in this sample corresponds to ``sampleActorSystem@127.0.0.1:2553``.
 
 Once you have configured the properties above you would do the following in code:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#sample-actor
+.. includecode:: code/jdocs/remoting/RemoteDeploymentDocTest.java#sample-actor
 
 The actor class ``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
@@ -158,15 +158,15 @@ precedence.
 
 With these imports:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#import
+.. includecode:: code/jdocs/remoting/RemoteDeploymentDocTest.java#import
 
 and a remote address like this:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#make-address
+.. includecode:: code/jdocs/remoting/RemoteDeploymentDocTest.java#make-address
 
 you can advise the system to create a child on that remote node like so:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#deploy
+.. includecode:: code/jdocs/remoting/RemoteDeploymentDocTest.java#deploy
 
 .. _remote-deployment-whitelist-java:
 
@@ -480,7 +480,7 @@ section of Lightbend's SSL-Config library.
 Since an Akka remoting is inherently :ref:`peer-to-peer <symmetric-communication>` both the key-store as well as trust-store 
 need to be configured on each remoting node participating in the cluster.
 
-The official `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
+The official `Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/jdocs/technotes/guides/security/jsse/JSSERefGuide.html>`_
 as well as the `Oracle documentation on creating KeyStore and TrustStores <https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html>`_
 are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
 and configuring SSL.
@@ -574,7 +574,7 @@ There are lots of configuration properties that are related to remoting in Akka.
    Setting properties like the listening IP and port number programmatically is
    best done by using something like the following:
 
-   .. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#programmatic
+   .. includecode:: code/jdocs/remoting/RemoteDeploymentDocTest.java#programmatic
 
 .. _remote-configuration-nat-java:
 
