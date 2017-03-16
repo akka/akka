@@ -10,7 +10,7 @@ import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.Timeout;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -37,7 +37,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
@@ -144,7 +144,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
 
   @Test
   public void work() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       //#global-limiter-flow
       public <T> Flow<T, T, NotUsed> limitGlobal(ActorRef limiter, FiniteDuration maxAllowedWait) {
         final int parallelism = 4;

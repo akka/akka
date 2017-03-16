@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import akka.NotUsed;
 import akka.japi.Pair;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,7 +25,6 @@ import akka.actor.Cancellable;
 import akka.dispatch.Futures;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.testkit.JavaTestKit;
 
 public class FlowDocTest extends AbstractJavaTest {
 
@@ -39,7 +39,7 @@ public class FlowDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

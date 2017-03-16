@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import akka.NotUsed;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,7 +30,6 @@ import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
-import akka.testkit.JavaTestKit;
 import akka.testkit.TestLatch;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
@@ -48,7 +48,7 @@ public class RateTransformationDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

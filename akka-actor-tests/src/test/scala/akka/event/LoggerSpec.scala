@@ -14,7 +14,6 @@ import akka.serialization.SerializationExtension
 import akka.event.Logging._
 import akka.util.Helpers
 import akka.event.Logging.InitializeLogger
-import scala.Some
 import akka.event.Logging.Warning
 
 object LoggerSpec {

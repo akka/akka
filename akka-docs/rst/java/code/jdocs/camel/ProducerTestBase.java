@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -20,7 +20,7 @@ public class ProducerTestBase {
     producer.tell("<order amount=\"100\" currency=\"PLN\" itemId=\"12345\"/>",
         ActorRef.noSender());
     //#TellProducer
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   @SuppressWarnings("unused")
@@ -32,7 +32,7 @@ public class ProducerTestBase {
     CompletionStage<Object> future = PatternsCS.ask(producer, "some request", 1000);
     //#AskProducer
     system.stop(producer);
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   public void correlate(){
@@ -46,6 +46,6 @@ public class ProducerTestBase {
       "itemId=\"12345\"/>",headers), ActorRef.noSender());
     //#Correlate
     system.stop(producer);
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 }

@@ -9,7 +9,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,14 +30,14 @@ public class RecipeSeq extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
 
   @Test
   public void drainSourceToList() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         final Source<String, NotUsed> mySource = Source.from(Arrays.asList("1", "2", "3"));
         //#draining-to-list-unsafe
@@ -52,7 +52,7 @@ public class RecipeSeq extends RecipeTest {
 
   @Test
   public void drainSourceToListWithLimit() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         final Source<String, NotUsed> mySource = Source.from(Arrays.asList("1", "2", "3"));
         //#draining-to-list-safe
@@ -70,7 +70,7 @@ public class RecipeSeq extends RecipeTest {
   }
 
   public void drainSourceToListWithTake() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         final Source<String, NotUsed> mySource = Source.from(Arrays.asList("1", "2", "3"));
         final int MAX_ALLOWED_SIZE = 100;

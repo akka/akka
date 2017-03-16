@@ -7,6 +7,7 @@ package jdocs.io.japi;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -26,7 +27,6 @@ import akka.io.TcpMessage;
 import akka.util.ByteString;
 //#imports
 
-import akka.testkit.JavaTestKit;
 import akka.testkit.AkkaSpec;
 
 public class IODocTest extends AbstractJavaTest {
@@ -160,7 +160,7 @@ public class IODocTest extends AbstractJavaTest {
 
   @Test
   public void testConnection() {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         @SuppressWarnings("unused")
         final ActorRef server = system.actorOf(Server.props(getRef()), "server1");

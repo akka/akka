@@ -4,6 +4,7 @@
 package jdocs.actor;
 
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -14,7 +15,6 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.testkit.JavaTestKit;
 
 //#import
 import akka.actor.Actor;
@@ -94,7 +94,7 @@ public class DependencyInjectionDocTest extends AbstractJavaTest {
       Props.create(DependencyInjector.class, applicationContext, "TheActor"),
         "TheActor");
     //#creating-indirectly
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         myActor.tell("hello", getRef());
         expectMsgEquals("...");

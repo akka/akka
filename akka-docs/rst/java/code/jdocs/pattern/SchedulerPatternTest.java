@@ -9,6 +9,7 @@ import akka.testkit.*;
 import akka.testkit.TestEvent.Mute;
 import akka.testkit.TestEvent.UnMute;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.*;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
@@ -109,7 +110,7 @@ public class SchedulerPatternTest extends AbstractJavaTest {
   @Ignore // no way to tag this as timing sensitive
   public void scheduleInConstructor() {
     new TestSchedule(system) {{
-      final JavaTestKit probe = new JavaTestKit(system);
+      final TestKit probe = new TestKit(system);
       final Props props = Props.create(ScheduleInConstructor.class, probe.getRef());
       testSchedule(probe, props, duration("3000 millis"), duration("2000 millis"));
     }};
@@ -119,7 +120,7 @@ public class SchedulerPatternTest extends AbstractJavaTest {
   @Ignore // no way to tag this as timing sensitive
   public void scheduleInReceive() {
     new TestSchedule(system) {{
-      final JavaTestKit probe = new JavaTestKit(system);
+      final TestKit probe = new TestKit(system);
       final Props props = Props.create(ScheduleInReceive.class, probe.getRef());
       testSchedule(probe, props, duration("3000 millis"), duration("2500 millis"));
     }};
@@ -130,7 +131,7 @@ public class SchedulerPatternTest extends AbstractJavaTest {
     // actorSystemResource.after is not called when all tests are ignored
   }
 
-  public static class TestSchedule extends JavaTestKit {
+  public static class TestSchedule extends TestKit {
     private ActorSystem system;
 
     public TestSchedule(ActorSystem system) {
@@ -138,7 +139,7 @@ public class SchedulerPatternTest extends AbstractJavaTest {
       this.system = system;
     }
 
-    public void testSchedule(final JavaTestKit probe, Props props,
+    public void testSchedule(final TestKit probe, Props props,
                              FiniteDuration startDuration,
                              FiniteDuration afterRestartDuration) {
       Iterable<akka.testkit.EventFilter> filter =
@@ -148,20 +149,20 @@ public class SchedulerPatternTest extends AbstractJavaTest {
         system.eventStream().publish(new Mute(filter));
 
         final ActorRef actor = system.actorOf(props);
-        new Within(startDuration) {
-          protected void run() {
-            probe.expectMsgEquals("tick");
-            probe.expectMsgEquals("tick");
-            probe.expectMsgEquals("tick");
-          }
-        };
+        within(startDuration, () -> {
+          probe.expectMsgEquals("tick");
+          probe.expectMsgEquals("tick");
+          probe.expectMsgEquals("tick");
+          return null;
+        });
+
         actor.tell("restart", getRef());
-        new Within(afterRestartDuration) {
-          protected void run() {
-            probe.expectMsgEquals("tick");
-            probe.expectMsgEquals("tick");
-          }
-        };
+        within(afterRestartDuration, () -> {
+          probe.expectMsgEquals("tick");
+          probe.expectMsgEquals("tick");
+          return null;
+        });
+
         system.stop(actor);
       }
       finally {

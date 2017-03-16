@@ -12,8 +12,8 @@ import akka.stream.actor.AbstractActorPublisher;
 import akka.stream.actor.ActorPublisherMessage;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,7 +34,7 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
@@ -120,7 +120,7 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateActorPublisherUsage() {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       private final SilenceSystemOut.System System = SilenceSystemOut.get(getTestActor());
 
       {

@@ -8,7 +8,7 @@ import akka.actor.*;
 import akka.japi.Option;
 import akka.persistence.PersistenceSpec;
 import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.testkit.TestProbe;
 import org.junit.ClassRule;
 
@@ -56,7 +56,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
 
     @Test
     public void fsmFunctionalTest() throws Exception {
-        new JavaTestKit(system) {{
+        new TestKit(system) {{
             String persistenceId = generateId();
             ActorRef fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
 
@@ -109,7 +109,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
 
     @Test
     public void fsmTimeoutTest() throws Exception {
-        new JavaTestKit(system) {{
+        new TestKit(system) {{
             String persistenceId = generateId();
             ActorRef fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
 
@@ -126,26 +126,19 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
-            new Within(duration("0.9 seconds"), remainingOrDefault()) {
-                @Override
-                protected void run() {
-                    PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
-                    assertTransition(stateTransition, fsmRef, UserState.SHOPPING, UserState.INACTIVE);
-                }
-            };
+            within(duration("0.9 seconds"), remainingOrDefault(), () -> {
+                PersistentFSM.Transition st = expectMsgClass(PersistentFSM.Transition.class);
+                assertTransition(st, fsmRef, UserState.SHOPPING, UserState.INACTIVE);
+                return null;
+            });
 
-            new Within(duration("1.9 seconds"), remainingOrDefault()) {
-                @Override
-                protected void run() {
-                    expectTerminated(fsmRef);
-                }
-            };
+            within(duration("1.9 seconds"), remainingOrDefault(), () -> expectTerminated(fsmRef));
         }};
     }
 
     @Test
     public void testSuccessfulRecoveryWithCorrectStateData() {
-        new JavaTestKit(system) {{
+        new TestKit(system) {{
             String persistenceId = generateId();
             ActorRef fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
 
@@ -214,7 +207,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
 
     @Test
     public void testExecutionOfDefinedActionsFollowingSuccessfulPersistence() {
-        new JavaTestKit(system) {{
+        new TestKit(system) {{
             String persistenceId = generateId();
 
             TestProbe reportActorProbe = new TestProbe(system);
@@ -251,7 +244,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
 
     @Test
     public void testExecutionOfDefinedActionsFollowingSuccessfulPersistenceOfFSMStop() {
-        new JavaTestKit(system) {{
+        new TestKit(system) {{
             String persistenceId = generateId();
 
             TestProbe reportActorProbe = new TestProbe(system);
@@ -283,7 +276,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
 
     @Test
     public void testCorrectStateTimeoutFollowingRecovery() {
-        new JavaTestKit(system) {{
+        new TestKit(system) {{
             String persistenceId = generateId();
             ActorRef fsmRef = system.actorOf(WebStoreCustomerFSM.props(persistenceId, dummyReportActorRef));
 
@@ -312,13 +305,11 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.SHOPPING);
 
-            new Within(duration("0.9 seconds"), remainingOrDefault()) {
-                @Override
-                protected void run() {
-                    PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
-                    assertTransition(stateTransition, recoveredFsmRef, UserState.SHOPPING, UserState.INACTIVE);
-                }
-            };
+            within(duration("0.9 seconds"), remainingOrDefault(), () -> {
+                PersistentFSM.Transition st = expectMsgClass(PersistentFSM.Transition.class);
+                assertTransition(st, recoveredFsmRef, UserState.SHOPPING, UserState.INACTIVE);
+                return null;
+            });
 
             expectNoMsg(duration("0.9 seconds")); //randomly chosen delay, less than the timeout, before stopping the FSM
             recoveredFsmRef.tell(PoisonPill.getInstance(), ActorRef.noSender());
@@ -331,12 +322,8 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.INACTIVE);
 
-            new Within(duration("1.9 seconds"), remainingOrDefault()) {
-                @Override
-                protected void run() {
-                    expectTerminated(recoveredFsmRef2);
-                }
-            };
+            within(duration("1.9 seconds"), remainingOrDefault(), () -> expectTerminated(recoveredFsmRef2));
+
         }};
     }
 

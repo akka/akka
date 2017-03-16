@@ -8,10 +8,10 @@ import akka.actor.*;
 import akka.japi.Creator;
 import akka.japi.Function;
 import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.JavaTestKit;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestProbe;
 
+import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
 
 import docs.testkit.MockedChild;
@@ -194,7 +194,7 @@ public class ParentChildTest extends AbstractJavaTest {
   @Test
   public void testProbeParentTest() throws Exception {
   //#test-TestProbe-parent
-    JavaTestKit parent = new JavaTestKit(system);
+    TestKit parent = new TestKit(system);
     ActorRef child = parent.childActorOf(Props.create(Child.class));
     
     parent.send(child, "ping");

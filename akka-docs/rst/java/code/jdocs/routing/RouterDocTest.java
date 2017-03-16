@@ -6,6 +6,7 @@ package jdocs.routing;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -22,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import akka.testkit.JavaTestKit;
 import akka.actor.ActorSystem;
 
 
@@ -394,19 +394,19 @@ public class RouterDocTest extends AbstractJavaTest {
   
   @Test
   public void demonstrateBroadcast() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       ActorRef router = system.actorOf(new RoundRobinPool(5).props(
         Props.create(Echo.class)));
       //#broadcastDavyJonesWarning
       router.tell(new Broadcast("Watch out for Davy Jones' locker"), getTestActor());
       //#broadcastDavyJonesWarning
-      assertEquals(5, receiveN(5).length);
+      assertEquals(5, receiveN(5).size());
     }};
   }
   
   @Test
   public void demonstratePoisonPill() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       ActorRef router = watch(system.actorOf(new RoundRobinPool(5).props(
         Props.create(Echo.class))));
       //#poisonPill
@@ -418,7 +418,7 @@ public class RouterDocTest extends AbstractJavaTest {
   
   @Test
   public void demonstrateBroadcastPoisonPill() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       ActorRef router = watch(system.actorOf(new RoundRobinPool(5).props(
         Props.create(Echo.class))));
       //#broadcastPoisonPill
@@ -430,7 +430,7 @@ public class RouterDocTest extends AbstractJavaTest {
   
   @Test
   public void demonstrateKill() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       ActorRef router = watch(system.actorOf(new RoundRobinPool(5).props(
         Props.create(Echo.class))));
       //#kill
@@ -442,7 +442,7 @@ public class RouterDocTest extends AbstractJavaTest {
   
   @Test
   public void demonstrateBroadcastKill() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       ActorRef router = watch(system.actorOf(new RoundRobinPool(5).props(
         Props.create(Echo.class))));
       //#broadcastKill

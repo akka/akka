@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.util.Optional;
 
 import akka.actor.*;
+import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
 import docs.ddata.DistributedDataDocSpec;
 import jdocs.AbstractJavaTest;
@@ -28,8 +29,6 @@ import akka.japi.pf.ReceiveBuilder;
 
 import static akka.cluster.ddata.Replicator.*;
 
-import akka.testkit.JavaTestKit;
-
 @SuppressWarnings({"unchecked", "unused"})
 public class DistributedDataDocTest extends AbstractJavaTest {
   
@@ -44,7 +43,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
   }
 

@@ -9,6 +9,14 @@ import akka.pattern.PatternsCS;
 import akka.testkit.*;
 import jdocs.AbstractJavaTest;
 import org.junit.Assert;
+import akka.japi.JavaPartialFunction;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.CallingThreadDispatcher;
+import akka.testkit.TestActor;
+import akka.testkit.TestActorRef;
+import akka.testkit.TestProbe;
+import akka.testkit.javadsl.EventFilter;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -24,6 +32,10 @@ import akka.actor.Terminated;
 import akka.actor.AbstractActor;
 import akka.testkit.TestActor.AutoPilot;
 import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
+
+import java.util.Arrays;
+import java.util.List;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -89,14 +101,12 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateWithin() {
     //#test-within
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      new Within(Duration.Zero(), Duration.create(1, "second")) {
-        // do not put code outside this method, will run afterwards
-        public void run() {
-          assertEquals((Integer) 42, expectMsgClass(Integer.class));
-        }
-      };
+      within(Duration.Zero(), Duration.create(1, "second"), () -> {
+        assertEquals((Integer) 42, expectMsgClass(Integer.class));
+        return null;
+      });
     }};
     //#test-within
   }
@@ -104,18 +114,15 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateExpectMsg() {
     //#test-expectmsg
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      final String out = new ExpectMsg<String>("match hint") {
-          // do not put code outside this method, will run afterwards
-          protected String match(Object in) {
-            if (in instanceof Integer) {
-              return "match";
-            } else {
-              throw noMatch();
-            }
-          }
-        }.get(); // this extracts the received message
+      final String out = expectMsgPF("match hint", in -> {
+        if (in instanceof Integer) {
+          return "match";
+        } else {
+          throw JavaPartialFunction.noMatch();
+        }
+      });
       assertEquals("match", out);
     }};
     //#test-expectmsg
@@ -124,39 +131,30 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateReceiveWhile() {
     //#test-receivewhile
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
       getRef().tell(43, ActorRef.noSender());
       getRef().tell("hello", ActorRef.noSender());
-      final String[] out =
-        new ReceiveWhile<String>(String.class, duration("1 second")) {
-          // do not put code outside this method, will run afterwards
-          protected String match(Object in) {
-            if (in instanceof Integer) {
-              return in.toString();
-            } else {
-              throw noMatch();
-            }
-          }
-        }.get(); // this extracts the received messages
-      assertArrayEquals(new String[] {"42", "43"}, out);
+
+      final List<String> out = receiveWhile(duration("1 second"), in -> {
+        if (in instanceof Integer) {
+          return in.toString();
+        } else {
+          throw JavaPartialFunction.noMatch();
+        }
+      });
+
+      assertArrayEquals(new String[] {"42", "43"}, out.toArray());
       expectMsgEquals("hello");
     }};
     //#test-receivewhile
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       //#test-receivewhile-full
-      new ReceiveWhile<String>(     // type of array to be created must match ...
-            String.class,           // ... this class which is needed to that end
-            duration("100 millis"), // maximum collect time
-            duration("50 millis"),  // maximum time between messages
-            12                      // maximum number of messages to collect
-            ) {
+      receiveWhile(duration("100 millis"), duration("50 millis"), 12, in -> {
         //#match-elided
-        protected String match(Object in) {
-          throw noMatch();
-        }
+        throw JavaPartialFunction.noMatch();
         //#match-elided
-      };
+      });
       //#test-receivewhile-full
     }};
   }
@@ -164,18 +162,9 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateAwaitCond() {
     //#test-awaitCond
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      new AwaitCond(
-            duration("1 second"),  // maximum wait time
-            duration("100 millis") // interval at which to check the condition
-            ) {
-        // do not put code outside this method, will run afterwards
-        protected boolean cond() {
-          // typically used to wait for something to start up
-          return msgAvailable();
-        }
-      };
+      awaitCond(duration("1 second"), duration("100 millis"), this::msgAvailable);
     }};
     //#test-awaitCond
   }
@@ -183,17 +172,12 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateAwaitAssert() {
     //#test-awaitAssert
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      new AwaitAssert(
-            duration("1 second"),  // maximum wait time
-            duration("100 millis") // interval at which to check the condition
-            ) {
-        // do not put code outside this method, will run afterwards
-        protected void check() {
-          assertEquals(msgAvailable(), true);
-        }
-      };
+      awaitAssert(duration("1 second"), duration("100 millis"), () -> {
+        assertEquals(msgAvailable(), true);
+        return null;
+      });
     }};
     //#test-awaitAssert
   }
@@ -201,7 +185,7 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   @SuppressWarnings({ "unchecked", "unused" }) // due to generic varargs
   public void demonstrateExpect() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       getRef().tell("hello", ActorRef.noSender());
       getRef().tell("hello", ActorRef.noSender());
       getRef().tell("hello", ActorRef.noSender());
@@ -210,8 +194,8 @@ public class TestKitDocTest extends AbstractJavaTest {
       getRef().tell(42, ActorRef.noSender());
       //#test-expect
       final String hello = expectMsgEquals("hello");
-      final Object   any = expectMsgAnyOf("hello", "world");
-      final Object[] all = expectMsgAllOf("hello", "world");
+      final String   any = expectMsgAnyOf("hello", "world");
+      final List<String> all = expectMsgAllOf("hello", "world");
       final int i        = expectMsgClass(Integer.class);
       final Number j     = expectMsgAnyClassOf(Integer.class, Long.class);
       expectNoMsg();
@@ -219,26 +203,22 @@ public class TestKitDocTest extends AbstractJavaTest {
       getRef().tell("receveN-1", ActorRef.noSender());
       getRef().tell("receveN-2", ActorRef.noSender());
       //#test-expect
-      final Object[] two = receiveN(2);
+      final List<Object> two = receiveN(2);
       //#test-expect
       assertEquals("hello", hello);
       assertEquals("hello", any);
       assertEquals(42, i);
       assertEquals(42, j);
-      assertArrayEquals(new String[] {"hello", "world"}, all);
+      assertArrayEquals(new String[] {"hello", "world"}, all.toArray());
     }};
   }
 
   @Test
   public void demonstrateIgnoreMsg() {
     //#test-ignoreMsg
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       // ignore all Strings
-      new IgnoreMsg() {
-        protected boolean ignore(Object msg) {
-          return msg instanceof String;
-        }
-      };
+      ignoreMsg(msg -> msg instanceof String);
       getRef().tell("hello", ActorRef.noSender());
       getRef().tell(42, ActorRef.noSender());
       expectMsgEquals(42);
@@ -253,8 +233,8 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateDilated() {
     //#duration-dilation
-    new JavaTestKit(system) {{
-      final Duration original = duration("1 second");
+    new TestKit(system) {{
+      final FiniteDuration original = duration("1 second");
       final Duration stretched = dilated(original);
       assertTrue("dilated", stretched.gteq(original));
     }};
@@ -264,7 +244,7 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateProbe() {
     //#test-probe
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       // simple actor which just forwards messages
       class Forwarder extends AbstractActor {
         final ActorRef target;
@@ -281,7 +261,7 @@ public class TestKitDocTest extends AbstractJavaTest {
       }
       
       // create a test probe
-      final JavaTestKit probe = new JavaTestKit(system);
+      final TestKit probe = new TestKit(system);
 
       // create a forwarder, injecting the probe’s testActor
       final Props props = Props.create(Forwarder.class, this, probe.getRef());
@@ -298,7 +278,7 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateTestProbeWithCustomName() {
     //#test-probe-with-custom-name
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       final TestProbe worker = new TestProbe(system, "worker");
       final TestProbe aggregator = new TestProbe(system, "aggregator");
 
@@ -311,8 +291,8 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateSpecialProbe() {
     //#test-special-probe
-    new JavaTestKit(system) {{
-      class MyProbe extends JavaTestKit {
+    new TestKit(system) {{
+      class MyProbe extends TestKit {
         public MyProbe() {
           super(system);
         }
@@ -332,8 +312,8 @@ public class TestKitDocTest extends AbstractJavaTest {
   public void demonstrateWatch() {
     final ActorRef target = system.actorOf(Props.create(MyActor.class));
     //#test-probe-watch
-    new JavaTestKit(system) {{
-      final JavaTestKit probe = new JavaTestKit(system);
+    new TestKit(system) {{
+      final TestKit probe = new TestKit(system);
       probe.watch(target);
       target.tell(PoisonPill.getInstance(), ActorRef.noSender());
       final Terminated msg = probe.expectMsgClass(Terminated.class);
@@ -345,8 +325,8 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateReply() {
     //#test-probe-reply
-    new JavaTestKit(system) {{
-      final JavaTestKit probe = new JavaTestKit(system);
+    new TestKit(system) {{
+      final TestKit probe = new TestKit(system);
       probe.getRef().tell("hello", getRef());
       probe.expectMsgEquals("hello");
       probe.reply("world");
@@ -359,8 +339,8 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateForward() {
     //#test-probe-forward
-    new JavaTestKit(system) {{
-      final JavaTestKit probe = new JavaTestKit(system);
+    new TestKit(system) {{
+      final TestKit probe = new TestKit(system);
       probe.getRef().tell("hello", getRef());
       probe.expectMsgEquals("hello");
       probe.forward(getRef());
@@ -374,13 +354,9 @@ public class TestKitDocTest extends AbstractJavaTest {
   public void demonstrateWithinProbe() {
     try {
     //#test-within-probe
-    new JavaTestKit(system) {{
-      final JavaTestKit probe = new JavaTestKit(system);
-      new Within(duration("1 second")) {
-        public void run() {
-          probe.expectMsgEquals("hello");
-        }
-      };
+    new TestKit(system) {{
+      final TestKit probe = new TestKit(system);
+      within(duration("1 second"), () -> probe.expectMsgEquals("hello"));
     }};
     //#test-within-probe
     } catch (AssertionError e) {
@@ -391,8 +367,8 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateAutoPilot() {
     //#test-auto-pilot
-    new JavaTestKit(system) {{
-      final JavaTestKit probe = new JavaTestKit(system);
+    new TestKit(system) {{
+      final TestKit probe = new TestKit(system);
       // install auto-pilot
       probe.setAutoPilot(new TestActor.AutoPilot() {
         public AutoPilot run(ActorRef sender, Object msg) {
@@ -422,17 +398,14 @@ public class TestKitDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateEventFilter() {
     //#test-event-filter
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       assertEquals("TestKitDocTest", system.name());
       final ActorRef victim = system.actorOf(Props.empty(), "victim");
 
-      final int result = new EventFilter<Integer>(ActorKilledException.class) {
-        protected Integer run() {
-          victim.tell(Kill.getInstance(), ActorRef.noSender());
-          return 42;
-        }
-      }.from("akka://TestKitDocTest/user/victim").occurrences(1).exec();
-
+      final int result = new EventFilter(ActorKilledException.class, system).from("akka://TestKitDocTest/user/victim").occurrences(1).intercept(() -> {
+        victim.tell(Kill.getInstance(), ActorRef.noSender());
+        return 42;
+      });
       assertEquals(42, result);
     }};
     //#test-event-filter

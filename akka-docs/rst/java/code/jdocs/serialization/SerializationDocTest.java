@@ -5,8 +5,7 @@ package jdocs.serialization;
 
 import java.io.UnsupportedEncodingException;
 
-import akka.testkit.JavaTestKit;
-
+import akka.testkit.javadsl.TestKit;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import java.nio.charset.StandardCharsets;
@@ -146,7 +145,7 @@ public class SerializationDocTest {
       identifier);
     // Then just use the ActorRef
     //#actorref-serializer
-    JavaTestKit.shutdownActorSystem(extendedSystem);
+    TestKit.shutdownActorSystem(extendedSystem);
   }
 
   static
@@ -267,6 +266,6 @@ public class SerializationDocTest {
     assertEquals(original, back);
 
     //#programmatic
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 }

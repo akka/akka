@@ -7,8 +7,8 @@ package jdocs.actor.fsm;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.testkit.JavaTestKit;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,13 +31,13 @@ public class BuncherTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
   }
 
   @Test
   public void testBuncherActorBatchesCorrectly() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       final ActorRef buncher =
         system.actorOf(Props.create(Buncher.class));
       final ActorRef probe = getRef();
@@ -64,7 +64,7 @@ public class BuncherTest extends AbstractJavaTest {
 
   @Test
   public void testBuncherActorDoesntBatchUninitialized() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       final ActorRef buncher =
         system.actorOf(Props.create(Buncher.class));
       final ActorRef probe = getRef();

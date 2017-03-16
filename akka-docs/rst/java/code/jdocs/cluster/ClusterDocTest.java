@@ -3,6 +3,7 @@
  */
 package jdocs.cluster;
 
+import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
 import jdocs.AbstractJavaTest;
 import org.junit.AfterClass;
@@ -11,7 +12,6 @@ import org.junit.Test;
 
 import akka.actor.ActorSystem;
 import akka.cluster.Cluster;
-import akka.testkit.JavaTestKit;
 
 
 public class ClusterDocTest extends AbstractJavaTest {
@@ -26,7 +26,7 @@ public class ClusterDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
   }
 

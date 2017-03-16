@@ -6,11 +6,14 @@ package akka.stream.testkit
 import java.io.PrintStream
 import java.lang.management.{ ManagementFactory, ThreadInfo }
 import java.util.Date
-import java.util.concurrent.{ TimeoutException, CountDownLatch }
-import scala.concurrent.{ Promise, Awaitable, CanAwait, Await }
+import java.util.concurrent.{ CountDownLatch, TimeoutException }
+
+import akka.testkit.TestDuration
+import akka.testkit.TestKit
+
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, Awaitable, CanAwait, Promise }
 import scala.util.control.NonFatal
-import akka.testkit.{ TestKit, TestDuration }
 
 /**
  * The Coroner can be used to print a diagnostic report of the JVM state,

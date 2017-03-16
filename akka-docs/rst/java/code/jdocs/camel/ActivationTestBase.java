@@ -6,7 +6,7 @@ package jdocs.camel;
     import akka.camel.Camel;
     import akka.camel.CamelExtension;
     import akka.camel.javaapi.UntypedConsumerActor;
-    import akka.testkit.JavaTestKit;
+    import akka.testkit.javadsl.TestKit;
     import akka.util.Timeout;
     import jdocs.AbstractJavaTest;
     import scala.concurrent.Future;
@@ -40,7 +40,7 @@ public class ActivationTestBase extends AbstractJavaTest {
     Future<ActorRef> deactivationFuture = camel.deactivationFutureFor(producer,
       timeout, system.dispatcher());
     //#CamelDeactivation
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   public static class MyConsumer extends UntypedConsumerActor {

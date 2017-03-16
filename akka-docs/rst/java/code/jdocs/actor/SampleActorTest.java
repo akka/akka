@@ -7,8 +7,8 @@ package jdocs.actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.testkit.JavaTestKit;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,14 +26,14 @@ public class SampleActorTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
   }
 
   @Test
   public void testSampleActor()
   {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       final ActorRef subject = system.actorOf(Props.create(SampleActor.class), "sample-actor");
       final ActorRef probeRef = getRef();
 

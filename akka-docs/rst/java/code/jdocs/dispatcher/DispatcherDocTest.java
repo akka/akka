@@ -6,6 +6,7 @@ package jdocs.dispatcher;
 import akka.dispatch.ControlMessage;
 import akka.dispatch.RequiresMessageQueue;
 import akka.testkit.AkkaSpec;
+import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
 import docs.dispatcher.DispatcherDocSpec;
 import jdocs.AbstractJavaTest;
@@ -28,7 +29,6 @@ import akka.event.LoggingAdapter;
 import akka.dispatch.PriorityGenerator;
 import akka.dispatch.UnboundedStablePriorityMailbox;
 import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.JavaTestKit;
 import com.typesafe.config.Config;
 
 //#imports-prio-mailbox
@@ -123,7 +123,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
 
   @Test
   public void priorityDispatcher() throws Exception {
-    JavaTestKit probe = new JavaTestKit(system);
+    TestKit probe = new TestKit(system);
     //#prio-dispatcher
 
     class Demo extends AbstractActor {
@@ -166,7 +166,7 @@ public class DispatcherDocTest extends AbstractJavaTest {
 
   @Test
   public void controlAwareDispatcher() throws Exception {
-    JavaTestKit probe = new JavaTestKit(system);
+    TestKit probe = new TestKit(system);
     //#control-aware-dispatcher
 
     class Demo extends AbstractActor {

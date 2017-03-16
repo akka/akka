@@ -723,3 +723,29 @@ Experimental modules
 
 We have previously marked modules that we did not want to freeze the APIs of a **experimental**, such modules will
 instead be marked as :ref:`may change <may-change>` from now on.
+
+Testkit
+=======
+
+``JavaTestKit`` has been deprecated since it does all kinds of tricks to achieve what Scala testkit does.
+Use ``akka.testkit.javadsl.TestKit`` instead which introduces nicer APIs.
+
+Old::
+
+  new JavaTestKit(system) {{
+    final JavaTestKit probe = new JavaTestKit(system);
+    new Within(duration("1 second")) {
+      public void run() {
+        probe.expectMsgEquals("hello");
+      }
+    };
+  }};
+
+
+
+New::
+
+  new TestKit(system) {{
+    final TestKit probe = new TestKit(system);
+    within(duration("1 second"), () -> probe.expectMsgEquals("hello"));
+  }};
