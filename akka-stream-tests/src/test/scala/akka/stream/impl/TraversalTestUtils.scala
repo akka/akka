@@ -74,8 +74,7 @@ object TraversalTestUtils {
     val outlets:               Array[OutPort],
     val matValue:              Any,
     val attributesAssignments: List[(AtomicModule[Shape, Any], Attributes)],
-    val islandAssignments:     List[(AtomicModule[Shape, Any], Attributes, IslandTag)]
-  ) {
+    val islandAssignments:     List[(AtomicModule[Shape, Any], Attributes, IslandTag)]) {
 
     override def toString = {
       outlets.iterator.zip(inlets.iterator).mkString("connections: ", ", ", "")
@@ -152,7 +151,7 @@ object TraversalTestUtils {
             val prev = matValueStack.removeLast()
             val result = transform(prev)
             matValueStack.addLast(result)
-          case compose: ComposeOp ⇒
+          case compose: Compose ⇒
             val second = matValueStack.removeLast()
             val first = matValueStack.removeLast()
             val result = compose(first, second)

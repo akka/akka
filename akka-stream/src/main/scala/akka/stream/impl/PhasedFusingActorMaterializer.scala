@@ -475,7 +475,7 @@ case class PhasedFusingActorMaterializer(
             val result = transform(prev)
             matValueStack.addLast(result)
             if (Debug) println(s"TRFM: $matValueStack")
-          case compose: ComposeOp ⇒
+          case compose: Compose ⇒
             val second = matValueStack.removeLast()
             val first = matValueStack.removeLast()
             val result = compose(first, second)
