@@ -11,6 +11,7 @@ import akka.util.LineNumbers
  * This object holds several behavior factories and combinators that can be
  * used to construct Behavior instances.
  */
+@deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
 object ScalaDSL {
 
   // FIXME check that all behaviors can cope with not getting PreStart as first message
@@ -20,17 +21,20 @@ object ScalaDSL {
      * Widen the type of this Behavior by providing a filter function that permits
      * only a subtype of the widened set of messages.
      */
+    @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
     def widen[U >: T](matcher: PartialFunction[U, T]): Behavior[U] = Widened(behavior, matcher)
     /**
      * Combine the two behaviors such that incoming messages are distributed
      * to both of them, each one evolving its state independently.
      */
+    @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
     def &&(other: Behavior[T]): Behavior[T] = And(behavior, other)
     /**
      * Combine the two behaviors such that incoming messages are given first to
      * the left behavior and are then only passed on to the right behavior if
      * the left one returned Unhandled.
      */
+    @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
     def ||(other: Behavior[T]): Behavior[T] = Or(behavior, other)
   }
 
@@ -40,6 +44,7 @@ object ScalaDSL {
    * at) and may transform the incoming message to place them into the wrapped
    * Behavior’s type hierarchy. Signals are not transformed.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Widened[T, U >: T](behavior: Behavior[T], matcher: PartialFunction[U, T]) extends Behavior[U] {
     private def postProcess(ctx: ActorContext[U], behv: Behavior[T]): Behavior[U] =
       if (isUnhandled(behv)) Unhandled
@@ -63,6 +68,7 @@ object ScalaDSL {
    * Wrap a behavior factory so that it runs upon PreStart, i.e. behavior creation
    * is deferred to the child actor instead of running within the parent.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Deferred[T](factory: () ⇒ Behavior[T]) extends Behavior[T] {
     override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
       if (msg != PreStart) throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
@@ -81,6 +87,7 @@ object ScalaDSL {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   def Same[T]: Behavior[T] = sameBehavior.asInstanceOf[Behavior[T]]
 
   /**
@@ -89,6 +96,7 @@ object ScalaDSL {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   def Unhandled[T]: Behavior[T] = unhandledBehavior.asInstanceOf[Behavior[T]]
 
   /*
@@ -104,16 +112,19 @@ object ScalaDSL {
    * signal that results from stopping this actor will NOT be passed to the
    * current behavior, it will be effectively ignored.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   def Stopped[T]: Behavior[T] = stoppedBehavior.asInstanceOf[Behavior[T]]
 
   /**
    * This behavior does not handle any inputs, it is completely inert.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   def Empty[T]: Behavior[T] = emptyBehavior.asInstanceOf[Behavior[T]]
 
   /**
    * This behavior does not handle any inputs, it is completely inert.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   def Ignore[T]: Behavior[T] = ignoreBehavior.asInstanceOf[Behavior[T]]
 
   /**
@@ -122,17 +133,20 @@ object ScalaDSL {
    * used by several of the behaviors defined in this DSL, see for example
    * [[Full]].
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   sealed trait MessageOrSignal[T]
   /**
    * A message bundled together with the current [[ActorContext]].
    */
   @SerialVersionUID(1L)
-  final case class Msg[T](ctx: ActorContext[T], msg: T) extends MessageOrSignal[T]
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
+  final case class Msg[T](ctx: scaladsl.ActorContext[T], msg: T) extends MessageOrSignal[T]
   /**
    * A signal bundled together with the current [[ActorContext]].
    */
   @SerialVersionUID(1L)
-  final case class Sig[T](ctx: ActorContext[T], signal: Signal) extends MessageOrSignal[T]
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
+  final case class Sig[T](ctx: scaladsl.ActorContext[T], signal: Signal) extends MessageOrSignal[T]
 
   /**
    * This type of behavior allows to handle all incoming messages within
@@ -144,9 +158,9 @@ object ScalaDSL {
    * For the lifecycle notifications pertaining to the actor itself this
    * behavior includes a fallback mechanism: an unhandled [[PreRestart]] signal
    * will terminate all child actors (transitively) and then emit a [[PostStop]]
-   * signal in addition, whereas an unhandled [[PostRestart]] signal will emit
-   * an additional [[PreStart]] signal.
+   * signal in addition.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Full[T](behavior: PartialFunction[MessageOrSignal[T], Behavior[T]]) extends Behavior[T] {
     override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
       lazy val fallback: (MessageOrSignal[T]) ⇒ Behavior[T] = {
@@ -173,6 +187,7 @@ object ScalaDSL {
    * to create the supplied function then any message not matching the list of
    * cases will fail this actor with a [[scala.MatchError]].
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class FullTotal[T](behavior: MessageOrSignal[T] ⇒ Behavior[T]) extends Behavior[T] {
     override def management(ctx: ActorContext[T], msg: Signal) = behavior(Sig(ctx, msg))
     override def message(ctx: ActorContext[T], msg: T) = behavior(Msg(ctx, msg))
@@ -189,6 +204,7 @@ object ScalaDSL {
    * This behavior type is most useful for leaf actors that do not create child
    * actors themselves.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Total[T](behavior: T ⇒ Behavior[T]) extends Behavior[T] {
     override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = msg match {
       case _ ⇒ Unhandled
@@ -207,6 +223,7 @@ object ScalaDSL {
    * This behavior type is most useful for leaf actors that do not create child
    * actors themselves.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Partial[T](behavior: PartialFunction[T, Behavior[T]]) extends Behavior[T] {
     override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = msg match {
       case _ ⇒ Unhandled
@@ -220,6 +237,7 @@ object ScalaDSL {
    * some action upon each received message or signal. It is most commonly used
    * for logging or tracing what a certain Actor does.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Tap[T](f: PartialFunction[MessageOrSignal[T], Unit], behavior: Behavior[T]) extends Behavior[T] {
     private def canonical(behv: Behavior[T]): Behavior[T] =
       if (isUnhandled(behv)) Unhandled
@@ -237,6 +255,7 @@ object ScalaDSL {
     override def toString = s"Tap(${LineNumbers(f)},$behavior)"
   }
   object Tap {
+    @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
     def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Tap[T] = Tap({ case Msg(_, msg) ⇒ monitor ! msg }, behavior)
   }
 
@@ -249,6 +268,7 @@ object ScalaDSL {
    * This behavior type is most useful for leaf actors that do not create child
    * actors themselves.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Static[T](behavior: T ⇒ Unit) extends Behavior[T] {
     override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = Unhandled
     override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
@@ -267,6 +287,7 @@ object ScalaDSL {
    * This decorator is useful for passing messages between the left and right
    * sides of [[And]] and [[Or]] combinators.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class SynchronousSelf[T](f: ActorRef[T] ⇒ Behavior[T]) extends Behavior[T] {
 
     private class B extends Behavior[T] {
@@ -308,9 +329,9 @@ object ScalaDSL {
    * A behavior combinator that feeds incoming messages and signals both into
    * the left and right sub-behavior and allows them to evolve independently of
    * each other. When one of the sub-behaviors terminates the other takes over
-   * exclusively. When both sub-behaviors respond to a [[Failed]] signal, the
-   * response with the higher precedence is chosen (see [[Failed$]]).
+   * exclusively.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class And[T](left: Behavior[T], right: Behavior[T]) extends Behavior[T] {
 
     override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
@@ -354,9 +375,9 @@ object ScalaDSL {
    * each other. The message or signal is passed first into the left sub-behavior
    * and only if that results in [[#Unhandled]] is it passed to the right
    * sub-behavior. When one of the sub-behaviors terminates the other takes over
-   * exclusively. When both sub-behaviors respond to a [[Failed]] signal, the
-   * response with the higher precedence is chosen (see [[Failed$]]).
+   * exclusively.
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Or[T](left: Behavior[T], right: Behavior[T]) extends Behavior[T] {
 
     override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] =
@@ -418,10 +439,14 @@ object ScalaDSL {
    * }
    * }}}
    */
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   def SelfAware[T](behavior: ActorRef[T] ⇒ Behavior[T]): Behavior[T] =
-    FullTotal {
-      case Sig(ctx, PreStart) ⇒ Behavior.preStart(behavior(ctx.self), ctx)
-      case msg                ⇒ throw new IllegalStateException(s"SelfAware must receive PreStart as first message (got $msg)")
+    new Behavior[T] {
+      override def management(ctx: ActorContext[T], sig: Signal): Behavior[T] =
+        if (sig == PreStart) Behavior.preStart(behavior(ctx.self), ctx)
+        else throw new IllegalStateException(s"SelfAware must receive PreStart as first message (got $sig)")
+      override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
+        throw new IllegalStateException(s"SelfAware must receive PreStart as first message (got $msg)")
     }
 
   /**
@@ -438,10 +463,14 @@ object ScalaDSL {
    * }
    * }}}
    */
-  def ContextAware[T](behavior: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
-    FullTotal {
-      case Sig(ctx, PreStart) ⇒ Behavior.preStart(behavior(ctx), ctx)
-      case msg                ⇒ throw new IllegalStateException(s"ContextAware must receive PreStart as first message (got $msg)")
+  @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
+  def ContextAware[T](behavior: scaladsl.ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
+    new Behavior[T] {
+      override def management(ctx: ActorContext[T], sig: Signal): Behavior[T] =
+        if (sig == PreStart) Behavior.preStart(behavior(ctx), ctx)
+        else throw new IllegalStateException(s"ContextAware must receive PreStart as first message (got $sig)")
+      override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
+        throw new IllegalStateException(s"ContextAware must receive PreStart as first message (got ${msg.getClass})")
     }
 
   /**

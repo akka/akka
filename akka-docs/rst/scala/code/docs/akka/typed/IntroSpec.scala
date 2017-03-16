@@ -5,8 +5,8 @@ package docs.akka.typed
 
 //#imports
 import akka.typed._
-import akka.typed.ScalaDSL._
-import akka.typed.AskPattern._
+import akka.typed.scaladsl.Actor._
+import akka.typed.scaladsl.AskPattern._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -21,7 +21,7 @@ object IntroSpec {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String)
 
-    val greeter = Static[Greet] { msg =>
+    val greeter = Stateless[Greet] { (_, msg) ⇒
       println(s"Hello ${msg.whom}!")
       msg.replyTo ! Greeted(msg.whom)
     }
@@ -50,22 +50,21 @@ object IntroSpec {
     //#chatroom-protocol
     //#chatroom-behavior
 
-    val behavior: Behavior[GetSession] =
-      ContextAware[Command] { ctx =>
-        var sessions = List.empty[ActorRef[SessionEvent]]
-
-        Static {
-          case GetSession(screenName, client) =>
-            sessions ::= client
+    def chatRoom(sessions: List[ActorRef[SessionEvent]] = List.empty): Behavior[Command] =
+      Stateful[Command] { (ctx, msg) ⇒
+        msg match {
+          case GetSession(screenName, client) ⇒
             val wrapper = ctx.spawnAdapter {
-              p: PostMessage => PostSessionMessage(screenName, p.message)
+              p: PostMessage ⇒ PostSessionMessage(screenName, p.message)
             }
             client ! SessionGranted(wrapper)
-          case PostSessionMessage(screenName, message) =>
+            chatRoom(client :: sessions)
+          case PostSessionMessage(screenName, message) ⇒
             val mp = MessagePosted(screenName, message)
             sessions foreach (_ ! mp)
+            Same
         }
-      }.narrow // only expose GetSession to the outside
+      }
     //#chatroom-behavior
   }
   //#chatroom-actor
@@ -76,6 +75,7 @@ class IntroSpec extends TypedSpec {
   import IntroSpec._
 
   def `must say hello`(): Unit = {
+    // TODO Implicits.global is not something we would like to encourage in docs
     //#hello-world
     import HelloWorld._
     // using global pool since we want to run tasks after system.terminate
@@ -86,8 +86,8 @@ class IntroSpec extends TypedSpec {
     val future: Future[Greeted] = system ? (Greet("world", _))
 
     for {
-      greeting <- future.recover { case ex => ex.getMessage }
-      done <- { println(s"result: $greeting"); system.terminate() }
+      greeting ← future.recover { case ex ⇒ ex.getMessage }
+      done ← { println(s"result: $greeting"); system.terminate() }
     } println("system terminated")
     //#hello-world
   }
@@ -96,32 +96,40 @@ class IntroSpec extends TypedSpec {
     //#chatroom-gabbler
     import ChatRoom._
 
-    val gabbler: Behavior[SessionEvent] =
-      Total {
-        case SessionDenied(reason) =>
-          println(s"cannot start chat room session: $reason")
-          Stopped
-        case SessionGranted(handle) =>
-          handle ! PostMessage("Hello World!")
-          Same
-        case MessagePosted(screenName, message) =>
-          println(s"message has been posted by '$screenName': $message")
-          Stopped
+    val gabbler =
+      Stateful[SessionEvent] { (_, msg) ⇒
+        msg match {
+          case SessionDenied(reason) ⇒
+            println(s"cannot start chat room session: $reason")
+            Stopped
+          case SessionGranted(handle) ⇒
+            handle ! PostMessage("Hello World!")
+            Same
+          case MessagePosted(screenName, message) ⇒
+            println(s"message has been posted by '$screenName': $message")
+            Stopped
+        }
       }
     //#chatroom-gabbler
 
     //#chatroom-main
     val main: Behavior[akka.NotUsed] =
-      Full {
-        case Sig(ctx, PreStart) =>
-          val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
-          val gabblerRef = ctx.spawn(gabbler, "gabbler")
-          ctx.watch(gabblerRef)
-          chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
-          Same
-        case Sig(_, Terminated(ref)) =>
-          Stopped
-      }
+      Stateful(
+        behavior = (_, _) ⇒ Unhandled,
+        signal = { (ctx, sig) ⇒
+        sig match {
+          case PreStart ⇒
+            val chatRoom = ctx.spawn(ChatRoom.chatRoom(), "chatroom")
+            val gabblerRef = ctx.spawn(gabbler, "gabbler")
+            ctx.watch(gabblerRef)
+            chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
+            Same
+          case Terminated(ref) ⇒
+            Stopped
+          case _ ⇒
+            Unhandled
+        }
+      })
 
     val system = ActorSystem("ChatRoomDemo", main)
     Await.result(system.whenTerminated, 1.second)
