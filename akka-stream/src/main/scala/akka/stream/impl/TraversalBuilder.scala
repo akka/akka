@@ -121,15 +121,14 @@ case object PushNotUsed extends MaterializedValueOp
 final case class Transform(mapper: AnyFunction1) extends MaterializedValueOp {
   def apply(arg: Any): Any = mapper.asInstanceOf[Any ⇒ Any](arg)
 }
-trait ComposeOp extends MaterializedValueOp {
-  def apply(arg1: Any, arg2: Any): Any
-}
-final case class Compose(composer: AnyFunction2) extends ComposeOp {
-  def apply(arg1: Any, arg2: Any): Any = composer.asInstanceOf[(Any, Any) ⇒ Any](arg1, arg2)
-}
-/** An optimization which applies the arguments in reverse order */
-final case class ComposeReversed(composer: AnyFunction2) extends ComposeOp {
-  def apply(arg1: Any, arg2: Any): Any = composer.asInstanceOf[(Any, Any) ⇒ Any](arg2, arg1)
+
+final case class Compose(composer: AnyFunction2, reverse: Boolean = false) extends MaterializedValueOp {
+  def apply(arg1: Any, arg2: Any): Any = {
+    if (reverse)
+      composer.asInstanceOf[(Any, Any) ⇒ Any](arg2, arg1)
+    else
+      composer.asInstanceOf[(Any, Any) ⇒ Any](arg1, arg2)
+  }
 }
 
 final case class PushAttributes(attributes: Attributes) extends Traversal
@@ -224,8 +223,8 @@ object TraversalBuilder {
         case PushNotUsed                        ⇒ prindent("push NotUsed")
         case Pop                                ⇒ prindent("pop mat")
         case _: Transform                       ⇒ prindent("transform mat")
-        case _: Compose                         ⇒ prindent("compose mat")
-        case _: ComposeReversed                 ⇒ prindent("compose reversed mat")
+        case Compose(_, false)                  ⇒ prindent("compose mat")
+        case Compose(_, true)                   ⇒ prindent("compose reversed mat")
         case PushAttributes(attr)               ⇒ prindent("push attr " + attr)
         case PopAttributes                      ⇒ prindent("pop attr")
         case EnterIsland(tag)                   ⇒ prindent("enter island " + tag)
@@ -544,7 +543,7 @@ object LinearTraversalBuilder {
     else if (matCompose eq Keep.none)
       t.concat(Pop).concat(Pop).concat(PushNotUsed)
     else
-      t.concat(ComposeReversed(matCompose))
+      t.concat(Compose(matCompose, reverse = true))
   }
 
   def fromBuilder(
