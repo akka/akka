@@ -150,10 +150,9 @@ import scala.collection.immutable.Map.Map1
 }
 
 /**
-  * INTERNAL API
-  */
-@InternalApi private[akka]
-final case class Compose(composer: AnyFunction2, reverse: Boolean = false) extends MaterializedValueOp {
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case class Compose(composer: AnyFunction2, reverse: Boolean = false) extends MaterializedValueOp {
   def apply(arg1: Any, arg2: Any): Any = {
     if (reverse)
       composer.asInstanceOf[(Any, Any) ⇒ Any](arg2, arg1)
