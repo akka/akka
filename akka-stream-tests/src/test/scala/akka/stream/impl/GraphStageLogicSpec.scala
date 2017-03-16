@@ -82,7 +82,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
     override def toString = "GraphStageLogicSpec.emitEmptyIterable"
   }
 
-  final case class ReadNEmitN(n: Int) extends GraphStage[FlowShape[Int, Int]] {
+  private case class ReadNEmitN(n: Int) extends GraphStage[FlowShape[Int, Int]] {
     override val shape = FlowShape(Inlet[Int]("readN.in"), Outlet[Int]("readN.out"))
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -93,7 +93,7 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
       }
   }
 
-  final case class ReadNEmitRestOnComplete(n: Int) extends GraphStage[FlowShape[Int, Int]] {
+  private case class ReadNEmitRestOnComplete(n: Int) extends GraphStage[FlowShape[Int, Int]] {
     override val shape = FlowShape(Inlet[Int]("readN.in"), Outlet[Int]("readN.out"))
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =

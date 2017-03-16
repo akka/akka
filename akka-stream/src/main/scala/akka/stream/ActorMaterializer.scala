@@ -433,7 +433,7 @@ final class ActorMaterializerSettings private (
    * this may cause an initial runtime overhead, but most of the time fusing is
    * desirable since it reduces the number of Actors that are created.
    */
-  @deprecated(since = "2.5.0", message = "Turning off fusing is no longer possible with the traversal based materializer")
+  @deprecated("Turning off fusing is no longer possible with the traversal based materializer", since = "2.5.0")
   def withAutoFusing(enable: Boolean): ActorMaterializerSettings =
     if (enable == this.autoFusing) this
     else copy(autoFusing = enable)

@@ -205,7 +205,7 @@ object DependencyHelpers {
    * dependent entries.
    */
   def versionDependentDeps(modules: ScalaVersionDependentModuleID*): Def.Setting[Seq[ModuleID]] =
-    libraryDependencies <++= scalaVersion(version => modules.flatMap(m => m.modules(version)))
+    libraryDependencies ++= modules.flatMap(m => m.modules(scalaVersion.value))
 
   val ScalaVersion = """\d\.\d+\.\d+(?:-(?:M|RC)\d+)?""".r
   val nominalScalaVersion: String => String = {

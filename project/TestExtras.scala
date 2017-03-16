@@ -41,15 +41,17 @@ object TestExtras {
         onlyTestTags := Params.testTagsOnly,
 
         // add filters for tests excluded by name
-        testOptions in Test <++= excludeTestNames map { _.toSeq.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
+        testOptions in Test ++= excludeTestNames.value.toSeq.map(exclude => Tests.Filter(test => !test.contains(exclude))),
 
         // add arguments for tests excluded by tag
-        testOptions in Test <++= excludeTestTags map { tags =>
+        testOptions in Test ++= {
+          val tags = excludeTestTags.value
           if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
         },
 
         // add arguments for running only tests by tag
-        testOptions in Test <++= onlyTestTags map { tags =>
+        testOptions in Test ++= {
+          val tags = onlyTestTags.value
           if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
         }
       )
