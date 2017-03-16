@@ -63,6 +63,9 @@ class TestKit(system: ActorSystem) {
     }
   }
 
+  /**
+   * Scale timeouts (durations) during tests with the configured
+   */
   def dilated(d: FiniteDuration): FiniteDuration = d.dilated(getSystem)
 
   /**
@@ -70,6 +73,9 @@ class TestKit(system: ActorSystem) {
    */
   def msgAvailable: Boolean = tp.msgAvailable
 
+  /**
+   * Get the last sender of the TestProbe
+   */
   def getLastSender: ActorRef = tp.lastSender
 
   /**
@@ -452,14 +458,28 @@ object TestKit {
     akka.testkit.TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }
 
+  /**
+   * Shut down an actor system and wait for termination.
+   * On failure debug output will be logged about the remaining actors in the system.
+   */
   def shutdownActorSystem(actorSystem: ActorSystem): Unit = {
     shutdownActorSystem(actorSystem, 10.seconds, false)
   }
 
+  /**
+   * Shut down an actor system and wait for termination.
+   * On failure debug output will be logged about the remaining actors in the system.
+   */
   def shutdownActorSystem(actorSystem: ActorSystem, duration: Duration): Unit = {
     shutdownActorSystem(actorSystem, duration, false)
   }
 
+  /**
+   * Shut down an actor system and wait for termination.
+   * On failure debug output will be logged about the remaining actors in the system.
+   *
+   * If verifySystemShutdown is true, then an exception will be thrown on failure.
+   */
   def shutdownActorSystem(actorSystem: ActorSystem, verifySystemShutdown: Boolean): Unit = {
     shutdownActorSystem(actorSystem, 10.seconds, verifySystemShutdown)
   }

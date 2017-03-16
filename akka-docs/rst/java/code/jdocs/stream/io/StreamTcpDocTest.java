@@ -8,14 +8,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import akka.NotUsed;
 import akka.stream.javadsl.Framing;
-<<<<<<< 3e4f44765cc7581e246dddae5c0ac62edb5ce992:akka-docs/rst/java/code/jdocs/stream/io/StreamTcpDocTest.java
 import jdocs.AbstractJavaTest;
 import jdocs.stream.SilenceSystemOut;
-=======
 import akka.testkit.javadsl.TestKit;
-import docs.AbstractJavaTest;
-import docs.stream.SilenceSystemOut;
->>>>>>> re-implement javadsl testkit:akka-docs/rst/java/code/docs/stream/io/StreamTcpDocTest.java
 import java.net.InetSocketAddress;
 
 import org.junit.AfterClass;
