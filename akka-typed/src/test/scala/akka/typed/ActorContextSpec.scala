@@ -5,7 +5,7 @@ import scala.concurrent.Future
 import com.typesafe.config.ConfigFactory
 import akka.actor.DeadLetterSuppression
 import akka.typed.scaladsl.Actor
-import akka.typed.scaladsl.Actor.SignalOrMessage
+import akka.typed.scaladsl.Actor.Stateful
 
 object ActorContextSpec {
 
@@ -74,8 +74,7 @@ object ActorContextSpec {
   final case class Adapter(a: ActorRef[Command]) extends Event
 
   def subject(monitor: ActorRef[Monitor]): Behavior[Command] =
-    Actor.SignalOrMessage(
-      (ctx, signal) ⇒ { monitor ! GotSignal(signal); Actor.Same },
+    Actor.Stateful(
       (ctx, message) ⇒ message match {
         case ReceiveTimeout ⇒
           monitor ! GotReceiveTimeout
@@ -142,20 +141,19 @@ object ActorContextSpec {
           }
         case BecomeCareless(replyTo) ⇒
           replyTo ! BecameCareless
-          Actor.SignalOrMessage(
+          Actor.Stateful(
+            (ctx, message) ⇒ Actor.Unhandled,
             (ctx, signal) ⇒ signal match {
               case Terminated(_) ⇒ Actor.Unhandled
               case sig ⇒
                 monitor ! GotSignal(sig)
                 Actor.Same
-            },
-            (ctx, message) ⇒ Actor.Unhandled
-          )
+            })
         case GetAdapter(replyTo, name) ⇒
           replyTo ! Adapter(ctx.spawnAdapter(identity, name))
           Actor.Same
-      }
-    )
+      },
+      (ctx, signal) ⇒ { monitor ! GotSignal(signal); Actor.Same })
 
   def oldSubject(monitor: ActorRef[Monitor]): Behavior[Command] = {
     import ScalaDSL._

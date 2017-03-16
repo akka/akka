@@ -52,11 +52,11 @@ public abstract class Actor {
   }
 
   private static class Stateful<T> extends Behavior<T> {
-    final Function2<ActorContext<T>, Signal, Behavior<T>> signal;
     final Function2<ActorContext<T>, T, Behavior<T>> message;
+    final Function2<ActorContext<T>, Signal, Behavior<T>> signal;
 
-    public Stateful(Function2<ActorContext<T>, Signal, Behavior<T>> signal,
-        Function2<ActorContext<T>, T, Behavior<T>> message) {
+    public Stateful(Function2<ActorContext<T>, T, Behavior<T>> message,
+        Function2<ActorContext<T>, Signal, Behavior<T>> signal) {
       this.signal = signal;
       this.message = message;
     }
@@ -158,29 +158,6 @@ public abstract class Actor {
   }
 
   /**
-   * Construct an actor behavior that can react both to lifecycle signals and
-   * incoming messages. After spawning this actor from another actor (or as the
-   * guardian of an {@link akka.typed.ActorSystem}) it will be executed within an
-   * {@link ActorContext} that allows access to the system, spawning and watching
-   * other actors, etc.
-   * 
-   * In either case—signal or message—the next behavior must be returned. If no
-   * change is desired, use {@link #same}.
-   * 
-   * @param signal
-   *          the function that describes how this actor reacts to the given
-   *          signal
-   * @param message
-   *          the function that describes how this actor reacts to the next
-   *          message
-   * @return the behavior
-   */
-  static public <T> Behavior<T> signalOrMessage(Function2<ActorContext<T>, Signal, Behavior<T>> signal,
-      Function2<ActorContext<T>, T, Behavior<T>> message) {
-    return new Stateful<T>(signal, message);
-  }
-
-  /**
    * Construct an actor behavior that can react to incoming messages but not to
    * lifecycle signals. After spawning this actor from another actor (or as the
    * guardian of an {@link akka.typed.ActorSystem}) it will be executed within an
@@ -197,7 +174,31 @@ public abstract class Actor {
    * @return the behavior
    */
   static public <T> Behavior<T> stateful(Function2<ActorContext<T>, T, Behavior<T>> message) {
-    return new Stateful<T>(unhandledFun(), message);
+    return new Stateful<T>(message, unhandledFun());
+  }
+  
+  /**
+   * Construct an actor behavior that can react to both incoming messages and 
+   * lifecycle signals. After spawning this actor from another actor (or as the
+   * guardian of an {@link akka.typed.ActorSystem}) it will be executed within an
+   * {@link ActorContext} that allows access to the system, spawning and watching
+   * other actors, etc.
+   * 
+   * This constructor is called stateful because processing the next message
+   * results in a new behavior that can potentially be different from this one.
+   * If no change is desired, use {@link #same}.
+   * 
+   * @param message
+   *          the function that describes how this actor reacts to the next
+   *          message
+   * @param signal
+   *          the function that describes how this actor reacts to the given
+   *          signal
+   * @return the behavior
+   */
+  static public <T> Behavior<T> stateful(Function2<ActorContext<T>, T, Behavior<T>> message,
+      Function2<ActorContext<T>, Signal, Behavior<T>> signal) {
+    return new Stateful<T>(message, signal);
   }
 
   /**

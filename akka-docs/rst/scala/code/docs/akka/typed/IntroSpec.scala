@@ -114,7 +114,8 @@ class IntroSpec extends TypedSpec {
 
     //#chatroom-main
     val main: Behavior[akka.NotUsed] =
-      SignalOrMessage(
+      Stateful(
+        behavior = (_, _) ⇒ Unhandled,
         signal = { (ctx, sig) ⇒
         sig match {
           case PreStart ⇒
@@ -128,8 +129,7 @@ class IntroSpec extends TypedSpec {
           case _ ⇒
             Unhandled
         }
-      },
-        mesg = (_, _) ⇒ Unhandled)
+      })
 
     val system = ActorSystem("ChatRoomDemo", main)
     Await.result(system.whenTerminated, 1.second)
