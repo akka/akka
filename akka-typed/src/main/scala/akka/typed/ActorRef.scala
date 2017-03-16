@@ -13,11 +13,11 @@ import scala.concurrent.Future
  * only during the Actor’s lifetime and allows messages to be sent to that
  * Actor instance. Sending a message to an Actor that has terminated before
  * receiving the message will lead to that message being discarded; such
- * messages are delivered to the [[akka.actor.DeadLetter]] channel of the
- * [[akka.event.EventStream]] on a best effort basis
+ * messages are delivered to the [[DeadLetter]] channel of the
+ * [[EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
  */
-abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[ActorRef[Nothing]] { this: internal.ActorRefImpl[T] ⇒
+abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[ActorRef[_]] { this: internal.ActorRefImpl[T] ⇒
 
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
@@ -49,7 +49,7 @@ abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[Act
   /**
    * Comparison takes path and the unique id of the actor cell into account.
    */
-  final override def compareTo(other: ActorRef[Nothing]) = {
+  final override def compareTo(other: ActorRef[_]) = {
     val x = this.path compareTo other.path
     if (x == 0) if (this.path.uid < other.path.uid) -1 else if (this.path.uid == other.path.uid) 0 else 1
     else x
