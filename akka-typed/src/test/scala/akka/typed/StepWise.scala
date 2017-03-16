@@ -106,7 +106,7 @@ object StepWise {
     def withKeepTraces(b: Boolean): StartWith[T] = new StartWith(b)
   }
 
-  def apply[T](f: (ActorContext[T], StartWith[T]) ⇒ Steps[T, _]): Behavior[T] =
+  def apply[T](f: (scaladsl.ActorContext[T], StartWith[T]) ⇒ Steps[T, _]): Behavior[T] =
     Full[Any] {
       case Sig(ctx, PreStart) ⇒ run(ctx, f(ctx.asInstanceOf[ActorContext[T]], new StartWith(keepTraces = false)).ops.reverse, ())
     }.narrow
@@ -127,7 +127,7 @@ object StepWise {
       }
     }
 
-  private def run[T](ctx: ActorContext[Any], ops: List[AST], value: Any): Behavior[Any] =
+  private def run[T](ctx: scaladsl.ActorContext[Any], ops: List[AST], value: Any): Behavior[Any] =
     ops match {
       case Thunk(f) :: tail  ⇒ run(ctx, tail, f())
       case ThunkV(f) :: tail ⇒ run(ctx, tail, f(value))

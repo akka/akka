@@ -25,6 +25,7 @@ import org.junit.runner.RunWith
 import scala.util.control.NonFatal
 import org.scalatest.exceptions.TestFailedException
 import akka.util.TypedMultiMap
+import akka.typed.scaladsl.AskPattern
 
 /**
  * Helper class for writing tests for typed Actors with ScalaTest.
