@@ -285,9 +285,9 @@ Creating your own Mailbox type
 
 An example is worth a thousand quacks:
 
-.. includecode:: code/jdocs/dispatcher/MyUnboundedJMailbox.java#mailbox-implementation-example
+.. includecode:: code/jdocs/dispatcher/MyUnboundedMailbox.java#mailbox-implementation-example
 
-.. includecode:: code/jdocs/dispatcher/MyUnboundedJMessageQueueSemantics.java#mailbox-implementation-example
+.. includecode:: code/jdocs/dispatcher/MyUnboundedMessageQueueSemantics.java#mailbox-implementation-example
 
 And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
 configuration, or the mailbox configuration.
