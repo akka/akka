@@ -464,41 +464,6 @@ object MiMa extends AutoPlugin {
       // #22208 remove extension key
       ProblemFilters.exclude[MissingClassProblem]("akka.event.Logging$Extension$"),
 
-      // #22224 DaemonMsgCreateSerializer using manifests
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesBytes"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesList"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesCount"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClasses"),
-      ProblemFilters.exclude[MissingFieldProblem]("akka.remote.WireFormats#PropsData.CLASSES_FIELD_NUMBER"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifest"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifestCount"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIdsList"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIds"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getHasManifestList"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getSerializerIdsCount"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClassesBytes"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClassesList"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClassesCount"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getClasses"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifestsBytes"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifests"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifestsList"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#PropsDataOrBuilder.getManifestsCount"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClassesBytes"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClassesList"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.addClassesBytes"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClassesCount"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.clearClasses"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.addClasses"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.getClasses"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.addAllClasses"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData#Builder.setClasses"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.serialize"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.deserialize"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.deserialize"),
-      ProblemFilters.exclude[FinalClassProblem]("akka.remote.serialization.DaemonMsgCreateSerializer"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.serialization"),
-
       // new materializer changes relating to old module structure
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.BidiShape.copyFromPorts"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.BidiShape.reversed"),
@@ -541,8 +506,8 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.ModuleExtractor"),
       ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.ModuleExtractor$"),
       ProblemFilters.excludePackage("akka.stream.impl"),
-      
-      // small changes in attributes 
+
+      // small changes in attributes
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSource.withAttributes"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSink.withAttributes")
 
@@ -1144,7 +1109,24 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.messageBuffers_="),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.totalBufferSize"),
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers_=")
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers_="),
+
+        // #22332 protobuf serializers for remote deployment
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getConfigManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasScopeManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getScopeManifestBytes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getConfigSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasRouterConfigSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasRouterConfigManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getRouterConfigSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getRouterConfigManifestBytes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getConfigManifestBytes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasConfigManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasScopeSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getRouterConfigManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasConfigSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getScopeSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getScopeManifest")
       )
       // make sure that
       //  * this list ends with the latest released version number

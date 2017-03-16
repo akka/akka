@@ -202,3 +202,25 @@ message UniqueAddress {
   // 64 bit uids but with backward wire compatibility
   optional uint32 uid2 = 3;
 }
+
+/****************************************
+ * Cluster routing
+ ****************************************/
+
+ message ClusterRouterPool {
+   required Pool pool = 1;
+   required ClusterRouterPoolSettings settings = 2;
+ }
+
+ message Pool {
+   required uint32 serializerId = 1;
+   required string manifest = 2;
+   required bytes data = 3;
+ }
+
+ message ClusterRouterPoolSettings {
+   required uint32 totalInstances = 1;
+   required uint32 maxInstancesPerNode = 2;
+   required bool allowLocalRoutees = 3;
+   optional string useRole = 4;
+ }
