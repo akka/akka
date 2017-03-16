@@ -1,9 +1,8 @@
 
 .. _scheduler-scala:
 
-###################
- Scheduler
-###################
+Scheduler
+#########
 
 Sometimes the need for making things happen in the future arises, and where do
 you go look then?  Look no further than ``ActorSystem``! There you find the
@@ -15,6 +14,20 @@ You can schedule sending of messages to actors and execution of tasks
 (functions or Runnable).  You will get a ``Cancellable`` back that you can call
 :meth:`cancel` on to cancel the execution of the scheduled operation.
 
+The scheduler in Akka is designed for high-throughput of thousands up to millions 
+of triggers. The prime use-case being triggering Actor receive timeouts, Future timeouts,
+circuit breakers and other time dependent events which happen all-the-time and in many 
+instances at the same time. The implementation is based on a Hashed Wheel Timer, which is
+a known datastructure and algorithm for handling such use cases, refer to the `Hashed and Hierarchical Timing Wheels`_ 
+whitepaper by Varghese and Lauck if you'd like to understand its inner workings. 
+
+The Akka scheduler is **not** designed for long-term scheduling (see `akka-quartz-scheduler`_ 
+instead for this use case) nor is it to be used for higly precise firing of the events.
+The maximum amount of time into the future you can schedule an event to trigger is around 8 months,
+which in practice is too much to be useful since this would assume the system never went down during that period.
+If you need long-term scheduling we highly recommend looking into alternative schedulers, as this
+is not the use-case the Akka scheduler is implemented for.
+
 .. warning::
 
     The default implementation of ``Scheduler`` used by Akka is based on job
@@ -22,6 +35,9 @@ You can schedule sending of messages to actors and execution of tasks
     execute tasks at the exact time, but on every tick, it will run everything
     that is (over)due.  The accuracy of the default Scheduler can be modified
     by the ``akka.scheduler.tick-duration`` configuration property.
+
+.. _akka-quartz-scheduler: https://github.com/enragedginger/akka-quartz-scheduler
+.. _Hashed and Hierarchical Timing Wheels: http://www.cs.columbia.edu/~nahum/w6998/papers/sosp87-timing-wheels.pdf
 
 Some examples
 -------------
