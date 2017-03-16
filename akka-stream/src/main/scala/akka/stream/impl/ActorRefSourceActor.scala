@@ -6,14 +6,15 @@ package akka.stream.impl
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.Status
+import akka.annotation.InternalApi
 import akka.stream.OverflowStrategies._
-import akka.stream.{ BufferOverflowException, OverflowStrategy, OverflowStrategies }
+import akka.stream.{ BufferOverflowException, OverflowStrategies, OverflowStrategy }
 import akka.stream.ActorMaterializerSettings
 
 /**
  * INTERNAL API
  */
-private[akka] object ActorRefSourceActor {
+@InternalApi private[akka] object ActorRefSourceActor {
   def props(bufferSize: Int, overflowStrategy: OverflowStrategy, settings: ActorMaterializerSettings) = {
     require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
     val maxFixedBufferSize = settings.maxFixedBufferSize
@@ -24,7 +25,7 @@ private[akka] object ActorRefSourceActor {
 /**
  * INTERNAL API
  */
-private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: OverflowStrategy, maxFixedBufferSize: Int)
+@InternalApi private[akka] class ActorRefSourceActor(bufferSize: Int, overflowStrategy: OverflowStrategy, maxFixedBufferSize: Int)
   extends akka.stream.actor.ActorPublisher[Any] with ActorLogging {
   import akka.stream.actor.ActorPublisherMessage._
 

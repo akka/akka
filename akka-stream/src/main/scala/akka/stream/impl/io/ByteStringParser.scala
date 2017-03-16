@@ -3,6 +3,7 @@
  */
 package akka.stream.impl.io
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.stage._
 import akka.util.ByteString
@@ -13,7 +14,7 @@ import scala.util.control.{ NoStackTrace, NonFatal }
 /**
  * INTERNAL API
  */
-private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[ByteString, T]] {
+@InternalApi private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[ByteString, T]] {
   import ByteStringParser._
 
   private val bytesIn = Inlet[ByteString]("bytesIn")
@@ -139,7 +140,7 @@ private[akka] abstract class ByteStringParser[T] extends GraphStage[FlowShape[By
 /**
  * INTERNAL API
  */
-private[akka] object ByteStringParser {
+@InternalApi private[akka] object ByteStringParser {
 
   val CompactionThreshold = 16
 

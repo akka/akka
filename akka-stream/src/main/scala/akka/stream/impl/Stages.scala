@@ -3,6 +3,7 @@
  */
 package akka.stream.impl
 
+import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.Attributes._
 import akka.stream.Supervision.Decider
@@ -11,7 +12,7 @@ import akka.stream._
 /**
  * INTERNAL API
  */
-object Stages {
+@InternalApi private[akka] object Stages {
 
   object DefaultAttributes {
     val IODispatcher = ActorAttributes.IODispatcher

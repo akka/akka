@@ -6,6 +6,7 @@ package akka.stream.impl.io
 import java.io.{ IOException, InputStream }
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingDeque, TimeUnit }
 
+import akka.annotation.InternalApi
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.InputStreamSinkStage._
@@ -36,7 +37,7 @@ private[stream] object InputStreamSinkStage {
 /**
  * INTERNAL API
  */
-final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
+@InternalApi final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration) extends GraphStageWithMaterializedValue[SinkShape[ByteString], InputStream] {
 
   val in = Inlet[ByteString]("InputStreamSink.in")
   override def initialAttributes: Attributes = DefaultAttributes.inputStreamSink
@@ -95,7 +96,7 @@ final private[stream] class InputStreamSinkStage(readTimeout: FiniteDuration) ex
  * INTERNAL API
  * InputStreamAdapter that interacts with InputStreamSinkStage
  */
-private[akka] class InputStreamAdapter(
+@InternalApi private[akka] class InputStreamAdapter(
   sharedBuffer: BlockingQueue[StreamToAdapterMessage],
   sendToStage:  (AdapterToStageMessage) ⇒ Unit,
   readTimeout:  FiniteDuration)

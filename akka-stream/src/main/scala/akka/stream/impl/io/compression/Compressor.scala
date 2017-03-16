@@ -3,6 +3,7 @@
  */
 package akka.stream.impl.io.compression
 
+import akka.annotation.InternalApi
 import akka.util.ByteString
 
 /**
@@ -10,7 +11,7 @@ import akka.util.ByteString
  *
  * A stateful object representing ongoing compression.
  */
-private[akka] abstract class Compressor {
+@InternalApi private[akka] abstract class Compressor {
   /**
    * Compresses the given input and returns compressed data. The implementation
    * can and will choose to buffer output data to improve compression. Use

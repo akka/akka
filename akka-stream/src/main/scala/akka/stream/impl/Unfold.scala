@@ -3,8 +3,9 @@
  */
 package akka.stream.impl
 
+import akka.annotation.InternalApi
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage.{ OutHandler, GraphStageLogic, GraphStage }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 import akka.stream._
 
 import scala.concurrent.Future
@@ -13,7 +14,7 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
-final class Unfold[S, E](s: S, f: S ⇒ Option[(S, E)]) extends GraphStage[SourceShape[E]] {
+@InternalApi private[akka] final class Unfold[S, E](s: S, f: S ⇒ Option[(S, E)]) extends GraphStage[SourceShape[E]] {
   val out: Outlet[E] = Outlet("Unfold.out")
   override val shape: SourceShape[E] = SourceShape(out)
   override def initialAttributes: Attributes = DefaultAttributes.unfold
@@ -36,7 +37,7 @@ final class Unfold[S, E](s: S, f: S ⇒ Option[(S, E)]) extends GraphStage[Sourc
 /**
  * INTERNAL API
  */
-final class UnfoldAsync[S, E](s: S, f: S ⇒ Future[Option[(S, E)]]) extends GraphStage[SourceShape[E]] {
+@InternalApi private[akka] final class UnfoldAsync[S, E](s: S, f: S ⇒ Future[Option[(S, E)]]) extends GraphStage[SourceShape[E]] {
   val out: Outlet[E] = Outlet("UnfoldAsync.out")
   override val shape: SourceShape[E] = SourceShape(out)
   override def initialAttributes: Attributes = DefaultAttributes.unfoldAsync

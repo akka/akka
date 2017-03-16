@@ -7,6 +7,7 @@ import akka.Done
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 
 import akka.actor.Cancellable
+import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream.FlowMonitorState._
@@ -27,7 +28,7 @@ import scala.util.Try
  * INTERNAL API
  */
 // TODO: Fix variance issues
-final case class GraphStageModule[+S <: Shape @uncheckedVariance, +M](
+@InternalApi private[akka] final case class GraphStageModule[+S <: Shape @uncheckedVariance, +M](
   shape:      S,
   attributes: Attributes,
   stage:      GraphStageWithMaterializedValue[S, M]) extends AtomicModule[S, M] {
@@ -44,18 +45,18 @@ final case class GraphStageModule[+S <: Shape @uncheckedVariance, +M](
 /**
  * INTERNAL API
  */
-object GraphStages {
+@InternalApi private[akka] object GraphStages {
 
   /**
    * INTERNAL API
    */
-  abstract class SimpleLinearGraphStage[T] extends GraphStage[FlowShape[T, T]] {
+  @InternalApi private[akka] abstract class SimpleLinearGraphStage[T] extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T](Logging.simpleName(this) + ".in")
     val out = Outlet[T](Logging.simpleName(this) + ".out")
     override val shape = FlowShape(in, out)
   }
 
-  object Identity extends SimpleLinearGraphStage[Any] {
+  private object Identity extends SimpleLinearGraphStage[Any] {
     override def initialAttributes = DefaultAttributes.identityOp
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -74,7 +75,7 @@ object GraphStages {
   /**
    * INTERNAL API
    */
-  final class Detacher[T] extends SimpleLinearGraphStage[T] {
+  @InternalApi private[akka] final class Detacher[T] extends SimpleLinearGraphStage[T] {
     override def initialAttributes = DefaultAttributes.detacher
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -302,7 +303,7 @@ object GraphStages {
    * INTERNAL API
    * Discards all received elements.
    */
-  object IgnoreSink extends GraphStageWithMaterializedValue[SinkShape[Any], Future[Done]] {
+  @InternalApi private[akka] object IgnoreSink extends GraphStageWithMaterializedValue[SinkShape[Any], Future[Done]] {
 
     val in = Inlet[Any]("Ignore.in")
     val shape = SinkShape(in)
@@ -344,7 +345,7 @@ object GraphStages {
    * This can either be implemented inside the stage itself, or this method can be used,
    * which adds a detacher stage to every input.
    */
-  private[stream] def withDetachedInputs[T](stage: GraphStage[UniformFanInShape[T, T]]) =
+  @InternalApi private[stream] def withDetachedInputs[T](stage: GraphStage[UniformFanInShape[T, T]]) =
     GraphDSL.create() { implicit builder ⇒
       import GraphDSL.Implicits._
       val concat = builder.add(stage)

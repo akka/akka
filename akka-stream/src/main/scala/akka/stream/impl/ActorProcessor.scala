@@ -4,16 +4,17 @@
 package akka.stream.impl
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
-import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnComplete, OnError }
-import org.reactivestreams.{ Subscriber, Subscription, Processor }
+import akka.stream.actor.ActorSubscriberMessage.{ OnComplete, OnError, OnNext }
+import org.reactivestreams.{ Processor, Subscriber, Subscription }
 import akka.event.Logging
 
 /**
  * INTERNAL API
  */
-private[akka] object ActorProcessor {
+@InternalApi private[akka] object ActorProcessor {
 
   def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
     val p = new ActorProcessor[I, O](impl)
@@ -26,7 +27,7 @@ private[akka] object ActorProcessor {
 /**
  * INTERNAL API
  */
-private[akka] class ActorProcessor[I, O](impl: ActorRef) extends ActorPublisher[O](impl)
+@InternalApi private[akka] class ActorProcessor[I, O](impl: ActorRef) extends ActorPublisher[O](impl)
   with Processor[I, O] {
   override def onSubscribe(s: Subscription): Unit = {
     ReactiveStreamsCompliance.requireNonNullSubscription(s)
@@ -46,7 +47,7 @@ private[akka] class ActorProcessor[I, O](impl: ActorRef) extends ActorPublisher[
 /**
  * INTERNAL API
  */
-private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) extends DefaultInputTransferStates {
+@InternalApi private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) extends DefaultInputTransferStates {
   if (size < 1) throw new IllegalArgumentException(s"buffer size must be positive (was: $size)")
   if ((size & (size - 1)) != 0) throw new IllegalArgumentException(s"buffer size must be a power of two (was: $size)")
 
@@ -158,7 +159,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
 /**
  * INTERNAL API
  */
-private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends DefaultOutputTransferStates {
+@InternalApi private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends DefaultOutputTransferStates {
   import ReactiveStreamsCompliance._
 
   protected var exposedPublisher: ActorPublisher[Any] = _
@@ -247,7 +248,7 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
 /**
  * INTERNAL API
  */
-private[akka] abstract class ActorProcessorImpl(val settings: ActorMaterializerSettings)
+@InternalApi private[akka] abstract class ActorProcessorImpl(val settings: ActorMaterializerSettings)
   extends Actor
   with ActorLogging
   with Pump {

@@ -365,7 +365,7 @@ class GraphDSLCompileSpec extends StreamSpec {
       import akka.stream.Attributes._
       val ga = GraphDSL.create() { implicit b ⇒
         import GraphDSL.Implicits._
-        val id = b.add(GraphStages.Identity)
+        val id = b.add(GraphStages.identity[Any])
 
         FlowShape(id.in, id.out)
       }.async.addAttributes(none).named("useless")

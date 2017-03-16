@@ -10,6 +10,7 @@ import javax.net.ssl.SSLEngineResult.Status._
 import javax.net.ssl._
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
@@ -25,7 +26,7 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API.
  */
-private[stream] object TLSActor {
+@InternalApi private[stream] object TLSActor {
 
   def props(
     settings:        ActorMaterializerSettings,
@@ -45,7 +46,7 @@ private[stream] object TLSActor {
 /**
  * INTERNAL API.
  */
-private[stream] class TLSActor(
+@InternalApi private[stream] class TLSActor(
   settings:        ActorMaterializerSettings,
   createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
   verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
@@ -455,7 +456,7 @@ private[stream] class TLSActor(
 /**
  * INTERNAL API
  */
-private[stream] object TlsUtils {
+@InternalApi private[stream] object TlsUtils {
   def applySessionParameters(engine: SSLEngine, sessionParameters: NegotiateNewSession): Unit = {
     sessionParameters.enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
     sessionParameters.enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))

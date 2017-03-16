@@ -6,18 +6,19 @@ package akka.stream.impl
 import java.util
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.{ Inlet, SinkShape, Attributes }
+import akka.stream.{ Attributes, Inlet, SinkShape }
 import akka.stream.Attributes.InputBuffer
 import akka.stream.stage._
 
 /**
  * INTERNAL API
  */
-private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessage: Any,
-                                                      ackMessage:        Any,
-                                                      onCompleteMessage: Any,
-                                                      onFailureMessage:  (Throwable) ⇒ Any)
+@InternalApi private[akka] class ActorRefBackpressureSinkStage[In](ref: ActorRef, onInitMessage: Any,
+                                                                   ackMessage:        Any,
+                                                                   onCompleteMessage: Any,
+                                                                   onFailureMessage:  (Throwable) ⇒ Any)
   extends GraphStage[SinkShape[In]] {
   val in: Inlet[In] = Inlet[In]("ActorRefBackpressureSink.in")
   override def initialAttributes = DefaultAttributes.actorRefWithAck

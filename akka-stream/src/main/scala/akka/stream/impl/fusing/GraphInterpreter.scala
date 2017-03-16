@@ -9,6 +9,8 @@ import akka.stream.stage._
 import akka.stream._
 import java.util.concurrent.ThreadLocalRandom
 
+import akka.annotation.InternalApi
+
 import scala.util.control.NonFatal
 
 /**
@@ -16,7 +18,7 @@ import scala.util.control.NonFatal
  *
  * (See the class for the documentation of the internals)
  */
-object GraphInterpreter {
+@InternalApi private[akka] object GraphInterpreter {
   /**
    * Compile time constant, enable it for debug logging to the console.
    */
@@ -84,9 +86,6 @@ object GraphInterpreter {
       else s"Connection($id, $portState, $slot, $inHandler, $outHandler)"
   }
 
-  /**
-   * INTERNAL API
-   */
   private val _currentInterpreter = new ThreadLocal[Array[AnyRef]] {
     /*
      * Using an Object-array avoids holding on to the GraphInterpreter class
@@ -187,7 +186,7 @@ object GraphInterpreter {
  * be modeled, or even dissolved (if preempted and a "stealing" external event is injected; for example the non-cycle
  * edge of a balance is pulled, dissolving the original cycle).
  */
-final class GraphInterpreter(
+@InternalApi private[akka] final class GraphInterpreter(
   val materializer: Materializer,
   val log:          LoggingAdapter,
   val logics:       Array[GraphStageLogic], // Array of stage logics
@@ -203,7 +202,7 @@ final class GraphInterpreter(
   /**
    * INTERNAL API
    */
-  private[stream] var activeStage: GraphStageLogic = _
+  @InternalApi private[stream] var activeStage: GraphStageLogic = _
 
   // The number of currently running stages. Once this counter reaches zero, the interpreter is considered to be
   // completed
@@ -245,7 +244,7 @@ final class GraphInterpreter(
   /**
    * INTERNAL API
    */
-  private[stream] def nonNull: GraphInterpreter = this
+  @InternalApi private[stream] def nonNull: GraphInterpreter = this
 
   /**
    * Dynamic handler changes are communicated from a GraphStageLogic by this method.

@@ -4,15 +4,19 @@
 
 package akka.stream.impl
 
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.TraversalBuilder.{ AnyFunction1, AnyFunction2 }
 import akka.stream.scaladsl.Keep
 import akka.util.OptionVal
+
 import scala.language.existentials
 import scala.collection.immutable.Map.Map1
 
 /**
+ * INTERNAL API
+ *
  * Graphs to be materialized are defined by their traversal. There is no explicit graph information tracked, instead
  * a sequence of steps required to "reconstruct" the graph.
  *
@@ -31,7 +35,7 @@ import scala.collection.immutable.Map.Map1
  * be encoded somehow. The two imports don't need any special treatment as they are at different positions in
  * the traversal. See [[MaterializeAtomic]] for more details.
  */
-sealed trait Traversal {
+@InternalApi private[akka] sealed trait Traversal {
 
   /**
    * Concatenates two traversals building a new Traversal which traverses both.
@@ -43,7 +47,10 @@ sealed trait Traversal {
   def rewireFirstTo(relativeOffset: Int): Traversal = null
 }
 
-object Concat {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object Concat {
 
   def normalizeConcat(first: Traversal, second: Traversal): Traversal = {
     if (second eq EmptyTraversal) first
@@ -70,9 +77,11 @@ object Concat {
 }
 
 /**
+ * INTERNAL API
+ *
  * A Traversal that consists of two traversals. The linked traversals must be traversed in first, next order.
  */
-final case class Concat(first: Traversal, next: Traversal) extends Traversal {
+@InternalApi private[akka] final case class Concat(first: Traversal, next: Traversal) extends Traversal {
   override def rewireFirstTo(relativeOffset: Int): Traversal = {
     val firstResult = first.rewireFirstTo(relativeOffset)
     if (firstResult ne null)
@@ -84,6 +93,8 @@ final case class Concat(first: Traversal, next: Traversal) extends Traversal {
 }
 
 /**
+ * INTERNAL API
+ *
  * Arriving at this step means that an atomic module needs to be materialized (or any other activity which
  * assigns something to wired output-input port pairs).
  *
@@ -101,28 +112,47 @@ final case class Concat(first: Traversal, next: Traversal) extends Traversal {
  *
  * See the `TraversalTestUtils` class and the `testMaterialize` method for a simple example.
  */
-final case class MaterializeAtomic(module: AtomicModule[Shape, Any], outToSlots: Array[Int]) extends Traversal {
+@InternalApi private[akka] final case class MaterializeAtomic(module: AtomicModule[Shape, Any], outToSlots: Array[Int]) extends Traversal {
   override def toString: String = s"MaterializeAtomic($module, ${outToSlots.mkString("[", ", ", "]")})"
 
   override def rewireFirstTo(relativeOffset: Int): Traversal = copy(outToSlots = Array(relativeOffset))
 }
 
 /**
+ * INTERNAL API
+ *
  * Traversal with no steps.
  */
-object EmptyTraversal extends Traversal {
+@InternalApi private[akka] object EmptyTraversal extends Traversal {
   override def concat(that: Traversal): Traversal = that
 }
 
-sealed trait MaterializedValueOp extends Traversal
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] sealed trait MaterializedValueOp extends Traversal
 
-case object Pop extends MaterializedValueOp
-case object PushNotUsed extends MaterializedValueOp
-final case class Transform(mapper: AnyFunction1) extends MaterializedValueOp {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] case object Pop extends MaterializedValueOp
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] case object PushNotUsed extends MaterializedValueOp
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case class Transform(mapper: AnyFunction1) extends MaterializedValueOp {
   def apply(arg: Any): Any = mapper.asInstanceOf[Any ⇒ Any](arg)
 }
 
-final case class Compose(composer: AnyFunction2, reverse: Boolean = false) extends MaterializedValueOp {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case class Compose(composer: AnyFunction2, reverse: Boolean = false) extends MaterializedValueOp {
   def apply(arg1: Any, arg2: Any): Any = {
     if (reverse)
       composer.asInstanceOf[(Any, Any) ⇒ Any](arg2, arg1)
@@ -131,13 +161,30 @@ final case class Compose(composer: AnyFunction2, reverse: Boolean = false) exten
   }
 }
 
-final case class PushAttributes(attributes: Attributes) extends Traversal
-final case object PopAttributes extends Traversal
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case class PushAttributes(attributes: Attributes) extends Traversal
 
-final case class EnterIsland(islandTag: IslandTag) extends Traversal
-final case object ExitIsland extends Traversal
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case object PopAttributes extends Traversal
 
-object TraversalBuilder {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case class EnterIsland(islandTag: IslandTag) extends Traversal
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case object ExitIsland extends Traversal
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object TraversalBuilder {
   // The most generic function1 and function2 (also completely useless, as we have thrown away all types)
   // needs to be casted once to be useful (pending runtime exception in cases of bugs).
   type AnyFunction1 = Nothing ⇒ Any
@@ -146,10 +193,12 @@ object TraversalBuilder {
   private val cachedEmptyCompleted = CompletedTraversalBuilder(PushNotUsed, 0, Map.empty, Attributes.none)
 
   /**
+   * INTERNAL API
+   *
    * Assign ports their id, which is their position inside the Shape. This is used both by the GraphInterpreter
    * and the layout system here.
    */
-  private[impl] def initShape(shape: Shape): Unit = {
+  @InternalApi private[impl] def initShape(shape: Shape): Unit = {
     // Initialize port IDs
     val inlets = shape.inlets
     if (inlets.nonEmpty) {
@@ -180,15 +229,20 @@ object TraversalBuilder {
     }
   }
 
-  def empty(attributes: Attributes = Attributes.none): TraversalBuilder = {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def empty(attributes: Attributes = Attributes.none): TraversalBuilder = {
     if (attributes eq Attributes.none) cachedEmptyCompleted
     else CompletedTraversalBuilder(PushNotUsed, 0, Map.empty, attributes)
   }
 
   /**
+   * INTERNAL API
+   *
    * Create a generic traversal builder starting from an atomic module.
    */
-  def atomic(module: AtomicModule[Shape, Any], attributes: Attributes): TraversalBuilder = {
+  @InternalApi private[akka] def atomic(module: AtomicModule[Shape, Any], attributes: Attributes): TraversalBuilder = {
     initShape(module.shape)
 
     val builder =
@@ -210,7 +264,10 @@ object TraversalBuilder {
     builder.setAttributes(attributes)
   }
 
-  def printTraversal(t: Traversal, indent: Int = 0): Unit = {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[impl] def printTraversal(t: Traversal, indent: Int = 0): Unit = {
     var current: Traversal = t
     var slot = 0
 
@@ -240,7 +297,10 @@ object TraversalBuilder {
     }
   }
 
-  def printWiring(t: Traversal, baseSlot: Int = 0): Int = {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[impl] def printWiring(t: Traversal, baseSlot: Int = 0): Int = {
     var current: Traversal = t
     var slot = baseSlot
 
@@ -271,6 +331,8 @@ object TraversalBuilder {
 }
 
 /**
+ * INTERNAL API
+ *
  * A builder for a Traversal. The purpose of subclasses of this trait is to eventually build a Traversal that
  * describes the graph. Depending on whether the graph is linear or generic different approaches can be used but
  * they still result in a Traversal.
@@ -279,7 +341,7 @@ object TraversalBuilder {
  * wired). The Traversal may be accessed earlier, depending on the type of the builder and certain conditions.
  * See [[CompositeTraversalBuilder]] and [[LinearTraversalBuilder]].
  */
-sealed trait TraversalBuilder {
+@DoNotInherit private[akka] sealed trait TraversalBuilder {
 
   /**
    * Adds a module to the builder. It is possible to add a module with a different Shape (import), in this
@@ -377,9 +439,11 @@ sealed trait TraversalBuilder {
 }
 
 /**
+ * INTERNAL API
+ *
  * Returned by [[CompositeTraversalBuilder]] once all output ports of a subgraph has been wired.
  */
-final case class CompletedTraversalBuilder(
+@InternalApi private[akka] final case class CompletedTraversalBuilder(
   traversalSoFar: Traversal,
   inSlots:        Int,
   inToOffset:     Map[InPort, Int],
@@ -438,10 +502,12 @@ final case class CompletedTraversalBuilder(
 }
 
 /**
+ * INTERNAL API
+ *
  * Represents a builder that contains a single atomic module. Its primary purpose is to track and build the
  * outToSlot array which will be then embedded in a [[MaterializeAtomic]] Traversal step.
  */
-final case class AtomicTraversalBuilder(
+@InternalApi private[akka] final case class AtomicTraversalBuilder(
   module:      AtomicModule[Shape, Any],
   outToSlot:   Array[Int],
   unwiredOuts: Int,
@@ -499,7 +565,10 @@ final case class AtomicTraversalBuilder(
     TraversalBuilder.empty().add(this, module.shape, Keep.right).makeIsland(islandTag)
 }
 
-object LinearTraversalBuilder {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object LinearTraversalBuilder {
 
   // TODO: Remove
   private val cachedEmptyLinear = LinearTraversalBuilder(OptionVal.None, OptionVal.None, 0, 0, PushNotUsed, OptionVal.None, Attributes.none)
@@ -594,6 +663,8 @@ object LinearTraversalBuilder {
 }
 
 /**
+ * INTERNAL API
+ *
  * Traversal builder that is optimized for linear graphs (those that contain modules with at most one input and
  * at most one output port). The Traversal is simply built up in reverse order and output ports are automatically
  * assigned to -1 due to the nature of the graph. The only exception is when composites created by
@@ -601,7 +672,7 @@ object LinearTraversalBuilder {
  * in a fixed location, therefore the last step of the Traversal might need to be changed in those cases from the
  * -1 relative offset to something else (see rewireLastOutTo).
  */
-final case class LinearTraversalBuilder(
+@InternalApi private[akka] final case class LinearTraversalBuilder(
   inPort:               OptionVal[InPort],
   outPort:              OptionVal[OutPort],
   inOffset:             Int,
@@ -978,19 +1049,31 @@ final case class LinearTraversalBuilder(
     }
 }
 
-sealed trait TraversalBuildStep
 /**
+ * INTERNAL API
+ */
+@DoNotInherit private[akka] sealed trait TraversalBuildStep
+
+/**
+ * INTERNAL API
+ *
  * Helper class that is only used to identify a [[TraversalBuilder]] in a [[CompositeTraversalBuilder]]. The
  * reason why this is needed is because the builder is referenced at various places, while it needs to be mutated.
  * In an immutable data structure this is best done with an indirection, i.e. places refer to this immutable key and
  * look up the current state in an extra Map.
  */
-final class BuilderKey extends TraversalBuildStep {
+@InternalApi private[akka] final class BuilderKey extends TraversalBuildStep {
   override def toString = s"K:$hashCode"
 }
-final case class AppendTraversal(traversal: Traversal) extends TraversalBuildStep
 
 /**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case class AppendTraversal(traversal: Traversal) extends TraversalBuildStep
+
+/**
+ * INTERNAL API
+ *
  * A generic builder that builds a traversal for graphs of arbitrary shape. The memory retained by this class
  * usually decreases as ports are wired since auxiliary data is only maintained for ports that are unwired.
  *
@@ -1011,7 +1094,7 @@ final case class AppendTraversal(traversal: Traversal) extends TraversalBuildSte
  * @param outOwners        Map of output ports to their parent builders (actually the BuilderKey)
  * @param unwiredOuts      Number of output ports that have not yet been wired/assigned
  */
-final case class CompositeTraversalBuilder(
+@InternalApi private[akka] final case class CompositeTraversalBuilder(
   finalSteps:         Traversal                         = EmptyTraversal,
   reverseBuildSteps:  List[TraversalBuildStep]          = AppendTraversal(PushNotUsed) :: Nil,
   inSlots:            Int                               = 0,
