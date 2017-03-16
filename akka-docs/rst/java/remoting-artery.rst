@@ -117,7 +117,7 @@ In order to communicate with an actor, it is necessary to have its :class:`Actor
 the creator of the actor (the caller of ``actorOf()``) is who gets the :class:`ActorRef` for an actor that it can
 then send to other actors. In other words:
 
-* An Actor can get a remote Actor's reference simply by receiving a message from it (as it's available as `sender()` then),
+* An Actor can get a remote Actor's reference simply by receiving a message from it (as it's available as ``getSender()`` then),
   or inside of a remote message (e.g. `PleaseReply(message: String, remoteActorRef: ActorRef)`)
 
 Alternatively, an actor can look up another located at a known path using
@@ -194,7 +194,7 @@ which in this sample corresponds to ``sampleActorSystem@127.0.0.1:2553``.
 
 Once you have configured the properties above you would do the following in code:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#sample-actor
+.. includecode:: code/jdocs/remoting/RemoteDeploymentDocTest.java#sample-actor
 
 The actor class ``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
@@ -229,15 +229,15 @@ precedence.
 
 With these imports:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#import
+.. includecode:: code/jdocs/remoting/RemoteDeploymentDocTest.java#import
 
 and a remote address like this:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#make-address-artery
+.. includecode:: code/jdocs/remoting/RemoteDeploymentDocTest.java#make-address-artery
 
 you can advise the system to create a child on that remote node like so:
 
-.. includecode:: code/docs/remoting/RemoteDeploymentDocTest.java#deploy
+.. includecode:: code/jdocs/remoting/RemoteDeploymentDocTest.java#deploy
 
 Remote deployment whitelist
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -472,7 +472,7 @@ remained the same, we recommend reading the :ref:`serialization-java` documentat
 
 Implementing an :class:`akka.serialization.ByteBufferSerializer` works the same way as any other serializer,
 
-.. includecode:: code/docs/actor/ByteBufferSerializerDocTest.java#ByteBufferSerializer-interface
+.. includecode:: code/jdocs/actor/ByteBufferSerializerDocTest.java#ByteBufferSerializer-interface
 
 Implementing a serializer for Artery is therefore as simple as implementing this interface, and binding the serializer 
 as usual (which is explained in :ref:`serialization-java`).
@@ -483,7 +483,7 @@ The array based methods will be used when ``ByteBuffer`` is not used, e.g. in Ak
  
 Note that the array based methods can be implemented by delegation like this:
 
-.. includecode:: code/docs/actor/ByteBufferSerializerDocTest.java#bytebufserializer-with-manifest
+.. includecode:: code/jdocs/actor/ByteBufferSerializerDocTest.java#bytebufserializer-with-manifest
 
 .. _disable-java-serializer-java-artery:
 
@@ -745,7 +745,7 @@ There are lots of configuration properties that are related to remoting in Akka.
    Setting properties like the listening IP and port number programmatically is
    best done by using something like the following:
 
-   .. includecode:: ../java/code/docs/remoting/RemoteDeploymentDocTest.java#programmatic-artery
+   .. includecode:: ../java/code/jdocs/remoting/RemoteDeploymentDocTest.java#programmatic-artery
 
 
 .. _remote-configuration-nat-artery-java:

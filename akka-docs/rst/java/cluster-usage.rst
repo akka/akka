@@ -79,7 +79,7 @@ ip-addresses or host names of the machines in ``application.conf`` instead of ``
 
 An actor that uses the cluster extension may look like this:
 
-.. literalinclude:: code/docs/cluster/SimpleClusterListener.java
+.. literalinclude:: code/jdocs/cluster/SimpleClusterListener.java
    :language: java
 
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
@@ -173,9 +173,9 @@ can be performed automatically or manually. By default it must be done manually,
 It can also be performed programmatically with ``Cluster.get(system).down(address)``.
 
 A pre-packaged solution for the downing problem is provided by
-`Split Brain Resolver <http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html>`_,
+`Split Brain Resolver <http://developer.lightbend.com/jdocs/akka-commercial-addons/current/split-brain-resolver.html>`_,
 which is part of the `Lightbend Reactive Platform <http://www.lightbend.com/platform>`_.
-If you don’t use RP, you should anyway carefully read the `documentation <http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html>`_
+If you don’t use RP, you should anyway carefully read the `documentation <http://developer.lightbend.com/jdocs/akka-commercial-addons/current/split-brain-resolver.html>`_
 of the Split Brain Resolver and make sure that the solution you are using handles the concerns
 described there.
 
@@ -217,7 +217,7 @@ A more graceful exit can be performed if you tell the cluster that a node shall 
 This can be performed using :ref:`cluster_jmx_java` or :ref:`cluster_http_java`.
 It can also be performed programmatically with:
 
-.. includecode:: code/docs/cluster/ClusterDocTest.java#leave
+.. includecode:: code/jdocs/cluster/ClusterDocTest.java#leave
 
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving.
@@ -261,7 +261,7 @@ Subscribe to Cluster Events
 You can subscribe to change notifications of the cluster membership by using
 ``Cluster.get(system).subscribe``.
 
-.. includecode:: code/docs/cluster/SimpleClusterListener2.java#subscribe
+.. includecode:: code/jdocs/cluster/SimpleClusterListener2.java#subscribe
 
 A snapshot of the full state, ``akka.cluster.ClusterEvent.CurrentClusterState``, is sent to the subscriber
 as the first message, followed by events for incremental updates.
@@ -278,7 +278,7 @@ the events corresponding to the current state to mimic what you would have seen 
 listening to the events when they occurred in the past. Note that those initial events only correspond
 to the current state and it is not the full history of all changes that actually has occurred in the cluster.
 
-.. includecode:: code/docs/cluster/SimpleClusterListener.java#subscribe
+.. includecode:: code/jdocs/cluster/SimpleClusterListener.java#subscribe
 
 The events to track the life-cycle of members are:
 
@@ -314,11 +314,11 @@ added or removed to the cluster dynamically.
 
 Messages:
 
-.. includecode:: code/docs/cluster/TransformationMessages.java#messages
+.. includecode:: code/jdocs/cluster/TransformationMessages.java#messages
 
 The backend worker that performs the transformation job:
 
-.. includecode:: code/docs/cluster/TransformationBackend.java#backend
+.. includecode:: code/jdocs/cluster/TransformationBackend.java#backend
 
 Note that the ``TransformationBackend`` actor subscribes to cluster events to detect new,
 potential, frontend nodes, and send them a registration message so that they know
@@ -326,7 +326,7 @@ that they can use the backend worker.
 
 The frontend that receives user jobs and delegates to one of the registered backend workers:
 
-.. includecode:: code/docs/cluster/TransformationFrontend.java#frontend
+.. includecode:: code/jdocs/cluster/TransformationFrontend.java#frontend
 
 Note that the ``TransformationFrontend`` actor watch the registered backend
 to be able to remove it from its list of available backend workers.
@@ -376,7 +376,7 @@ You can start the actors in a ``registerOnMemberUp`` callback, which will
 be invoked when the current member status is changed to 'Up', i.e. the cluster
 has at least the defined number of members.
 
-.. includecode:: code/docs/cluster/FactorialFrontendMain.java#registerOnUp
+.. includecode:: code/jdocs/cluster/FactorialFrontendMain.java#registerOnUp
 
 This callback can be used for other things than starting actors.
 
@@ -574,7 +574,7 @@ Set it to a lower value if you want to limit total number of routees.
 
 The same type of router could also have been defined in code:
 
-.. includecode:: code/docs/cluster/StatsService.java#router-lookup-in-code
+.. includecode:: code/jdocs/cluster/StatsService.java#router-lookup-in-code
 
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
@@ -592,17 +592,17 @@ the average number of characters per word when all results have been collected.
 
 Messages:
 
-.. includecode:: code/docs/cluster/StatsMessages.java#messages
+.. includecode:: code/jdocs/cluster/StatsMessages.java#messages
 
 The worker that counts number of characters in each word:
 
-.. includecode:: code/docs/cluster/StatsWorker.java#worker
+.. includecode:: code/jdocs/cluster/StatsWorker.java#worker
 
 The service that receives text from users and splits it up into words, delegates to workers and aggregates:
 
-.. includecode:: code/docs/cluster/StatsService.java#service
+.. includecode:: code/jdocs/cluster/StatsService.java#service
 
-.. includecode:: code/docs/cluster/StatsAggregator.java#aggregator
+.. includecode:: code/jdocs/cluster/StatsAggregator.java#aggregator
 
 
 Note, nothing cluster specific so far, just plain actors.
@@ -657,7 +657,7 @@ Set it to a lower value if you want to limit total number of routees.
 
 The same type of router could also have been defined in code:
 
-.. includecode:: code/docs/cluster/StatsService.java#router-deploy-in-code
+.. includecode:: code/jdocs/cluster/StatsService.java#router-deploy-in-code
 
 See :ref:`cluster_configuration_java` section for further descriptions of the settings.
 
@@ -668,12 +668,12 @@ Let's take a look at how to use a cluster aware router on single master node tha
 and deploys workers. To keep track of a single master we use the :ref:`cluster-singleton-java`
 in the cluster-tools module. The ``ClusterSingletonManager`` is started on each node.
 
-.. includecode:: code/docs/cluster/StatsSampleOneMasterMain.java#create-singleton-manager
+.. includecode:: code/jdocs/cluster/StatsSampleOneMasterMain.java#create-singleton-manager
 
 We also need an actor on each node that keeps track of where current single master exists and
 delegates jobs to the ``StatsService``. That is provided by the ``ClusterSingletonProxy``.
 
-.. includecode:: code/docs/cluster/StatsSampleOneMasterMain.java#singleton-proxy
+.. includecode:: code/jdocs/cluster/StatsSampleOneMasterMain.java#singleton-proxy
 
 The ``ClusterSingletonProxy`` receives text from users and delegates to the current ``StatsService``, the single
 master. It listens to cluster events to lookup the ``StatsService`` on the oldest node.
@@ -771,7 +771,7 @@ Run it without parameters to see instructions about how to use the script::
 
 
 To be able to use the script you must enable remote monitoring and management when starting the JVMs of the cluster nodes,
-as described in `Monitoring and Management Using JMX Technology <http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html>`_.
+as described in `Monitoring and Management Using JMX Technology <http://docs.oracle.com/javase/8/jdocs/technotes/guides/management/agent.html>`_.
 Make sure you understand the security implications of enabling remote monitoring and management.
 
 .. _cluster_configuration_java:

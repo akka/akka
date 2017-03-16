@@ -51,7 +51,7 @@ Such graph is simple to translate to the Graph DSL since each linear element cor
 and each circle corresponds to either a :class:`Junction` or a :class:`Source` or :class:`Sink` if it is beginning
 or ending a :class:`Flow`.
 
-.. includecode:: ../code/docs/stream/GraphDSLDocTest.java#simple-graph-dsl
+.. includecode:: ../code/jdocs/stream/GraphDSLDocTest.java#simple-graph-dsl
 
 .. note::
    Junction *reference equality* defines *graph node equality* (i.e. the same merge *instance* used in a GraphDSL
@@ -75,7 +75,7 @@ In the example below we prepare a graph that consists of two parallel streams,
 in which we re-use the same instance of :class:`Flow`, yet it will properly be
 materialized as two connections between the corresponding Sources and Sinks:
 
-.. includecode:: ../code/docs/stream/GraphDSLDocTest.java#graph-dsl-reusing-a-flow
+.. includecode:: ../code/jdocs/stream/GraphDSLDocTest.java#graph-dsl-reusing-a-flow
 
 .. _partial-graph-dsl-java:
 
@@ -97,7 +97,7 @@ Let's imagine we want to provide users with a specialized element that given 3 i
 the greatest int value of each zipped triple. We'll want to expose 3 input ports (unconnected sources) and one output port
 (unconnected sink).
 
-.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocTest.java#simple-partial-graph-dsl
+.. includecode:: ../code/jdocs/stream/StreamPartialGraphDSLDocTest.java#simple-partial-graph-dsl
 
 As you can see, first we construct the partial graph that describes how to compute the maximum of two input streams, then
 we reuse that twice while constructing the partial graph that extends this to three input streams,
@@ -136,12 +136,12 @@ be attached before this Source can run”.
 Refer to the example below, in which we create a Source that zips together two numbers, to see this graph
 construction in action:
 
-.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocTest.java#source-from-partial-graph-dsl
+.. includecode:: ../code/jdocs/stream/StreamPartialGraphDSLDocTest.java#source-from-partial-graph-dsl
 
 Similarly the same can be done for a ``Sink<T>`` using ``SinkShape.of`` in which case the provided value must be an
 ``Inlet<T>``. For defining a ``Flow<T>`` we need to expose both an undefined source and sink:
 
-.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocTest.java#flow-from-partial-graph-dsl
+.. includecode:: ../code/jdocs/stream/StreamPartialGraphDSLDocTest.java#flow-from-partial-graph-dsl
 
 Combining Sources and Sinks with simplified API
 -----------------------------------------------
@@ -150,11 +150,11 @@ There is simplified API you can use to combine sources and sinks with junctions 
 ``Merge<In>`` and ``Concat<A>`` without the need for using the Graph DSL. The combine method takes care of constructing
 the necessary graph underneath. In following example we combine two sources into one (fan-in):
 
-.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocTest.java#source-combine
+.. includecode:: ../code/jdocs/stream/StreamPartialGraphDSLDocTest.java#source-combine
 
 The same can be done for a ``Sink`` but in this case it will be fan-out:
 
-.. includecode:: ../code/docs/stream/StreamPartialGraphDSLDocTest.java#sink-combine
+.. includecode:: ../code/jdocs/stream/StreamPartialGraphDSLDocTest.java#sink-combine
 
 .. _bidi-flow-java:
 
@@ -178,7 +178,7 @@ called :class:`BidiShape` and is defined like this:
 A bidirectional flow is defined just like a unidirectional :class:`Flow` as
 demonstrated for the codec mentioned above:
 
-.. includecode:: ../code/docs/stream/BidiFlowDocTest.java
+.. includecode:: ../code/jdocs/stream/BidiFlowDocTest.java
    :include: codec
    :exclude: implementation-details-elided
 
@@ -187,7 +187,7 @@ case of a functional 1:1 transformation there is a concise convenience method
 as shown on the last line. The implementation of the two functions is not
 difficult either:
 
-.. includecode:: ../code/docs/stream/BidiFlowDocTest.java#codec-impl
+.. includecode:: ../code/jdocs/stream/BidiFlowDocTest.java#codec-impl
 
 In this way you could easily integrate any other serialization library that
 turns an object into a sequence of bytes.
@@ -197,11 +197,11 @@ a framing protocol means that any received chunk of bytes may correspond to
 zero or more messages. This is best implemented using a :class:`GraphStage`
 (see also :ref:`graphstage-java`).
 
-.. includecode:: ../code/docs/stream/BidiFlowDocTest.java#framing
+.. includecode:: ../code/jdocs/stream/BidiFlowDocTest.java#framing
 
 With these implementations we can build a protocol stack and test it:
 
-.. includecode:: ../code/docs/stream/BidiFlowDocTest.java#compose
+.. includecode:: ../code/jdocs/stream/BidiFlowDocTest.java#compose
 
 This example demonstrates how :class:`BidiFlow` subgraphs can be hooked 
 together and also turned around with the ``.reversed()`` method. The test
@@ -219,12 +219,12 @@ can be used in the graph as an ordinary source or outlet, and which will eventua
 If the materialized value is needed at more than one place, it is possible to call ``materializedValue`` any number of
 times to acquire the necessary number of outlets.
 
-.. includecode:: ../code/docs/stream/GraphDSLDocTest.java#graph-dsl-matvalue
+.. includecode:: ../code/jdocs/stream/GraphDSLDocTest.java#graph-dsl-matvalue
 
 Be careful not to introduce a cycle where the materialized value actually contributes to the materialized value.
 The following example demonstrates a case where the materialized ``CompletionStage`` of a fold is fed back to the fold itself.
 
-.. includecode:: ../code/docs/stream/GraphDSLDocTest.java#graph-dsl-matvalue-cycle
+.. includecode:: ../code/jdocs/stream/GraphDSLDocTest.java#graph-dsl-matvalue-cycle
 
 .. _graph-cycles-java:
 
@@ -243,7 +243,7 @@ The graph takes elements from the source, prints them, then broadcasts those ele
 to a consumer (we just used ``Sink.ignore`` for now) and to a feedback arc that is merged back into the main
 via a ``Merge`` junction.
 
-.. includecode:: ../code/docs/stream/GraphCyclesDocTest.java#deadlocked
+.. includecode:: ../code/jdocs/stream/GraphCyclesDocTest.java#deadlocked
 
 Running this we observe that after a few numbers have been printed, no more elements are logged to the console -
 all processing stops after some time. After some investigation we observe that:
@@ -261,7 +261,7 @@ If we modify our feedback loop by replacing the ``Merge`` junction with a ``Merg
 before trying the other lower priority input ports. Since we feed back through the preferred port it is always guaranteed
 that the elements in the cycles can flow.
 
-.. includecode:: ../code/docs/stream/GraphCyclesDocTest.java#unfair
+.. includecode:: ../code/jdocs/stream/GraphCyclesDocTest.java#unfair
 
 If we run the example we see that the same sequence of numbers are printed
 over and over again, but the processing does not stop. Hence, we avoided the deadlock, but ``source`` is still
@@ -276,7 +276,7 @@ of initial elements from ``source``.
 To make our cycle both live (not deadlocking) and fair we can introduce a dropping element on the feedback arc. In this
 case we chose the ``buffer()`` operation giving it a dropping strategy ``OverflowStrategy.dropHead``.
 
-.. includecode:: ../code/docs/stream/GraphCyclesDocTest.java#dropping
+.. includecode:: ../code/jdocs/stream/GraphCyclesDocTest.java#dropping
 
 If we run this example we see that
 
@@ -295,7 +295,7 @@ the beginning instead. To achieve this we modify our first graph by replacing th
 Since ``ZipWith`` takes one element from ``source`` *and* from the feedback arc to inject one element into the cycle,
 we maintain the balance of elements.
 
-.. includecode:: ../code/docs/stream/GraphCyclesDocTest.java#zipping-dead
+.. includecode:: ../code/jdocs/stream/GraphCyclesDocTest.java#zipping-dead
 
 Still, when we try to run the example it turns out that no element is printed at all! After some investigation we
 realize that:
@@ -307,7 +307,7 @@ These two conditions are a typical "chicken-and-egg" problem. The solution is to
 element into the cycle that is independent from ``source``. We do this by using a ``Concat`` junction on the backwards
 arc that injects a single element using ``Source.single``.
 
-.. includecode:: ../code/docs/stream/GraphCyclesDocTest.java#zipping-live
+.. includecode:: ../code/jdocs/stream/GraphCyclesDocTest.java#zipping-live
 
 When we run the above example we see that processing starts and never stops. The important takeaway from this example
 is that balanced cycles often need an initial "kick-off" element to be injected into the cycle.

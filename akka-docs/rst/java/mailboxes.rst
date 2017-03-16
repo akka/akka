@@ -17,7 +17,7 @@ It is possible to require a certain type of message queue for a certain type of 
 by having that actor implement the parameterized interface :class:`RequiresMessageQueue`. Here is
 an example:
 
-.. includecode:: code/docs/actorlambda/MyBoundedActor.java#my-bounded-untyped-actor
+.. includecode:: code/jdocs/actor/MyBoundedActor.java#my-bounded-untyped-actor
 
 The type parameter to the :class:`RequiresMessageQueue` interface needs to be mapped to a mailbox in
 configuration like this:
@@ -239,7 +239,7 @@ PriorityMailbox
 
 How to create a PriorityMailbox:
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#prio-mailbox
+.. includecode:: ../java/code/jdocs/dispatcher/DispatcherDocTest.java#prio-mailbox
 
 And then add it to the configuration:
 
@@ -247,7 +247,7 @@ And then add it to the configuration:
 
 And then an example on how you would use it:
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#prio-dispatcher
+.. includecode:: ../java/code/jdocs/dispatcher/DispatcherDocTest.java#prio-dispatcher
 
 It is also possible to configure a mailbox type directly like this:
 
@@ -256,11 +256,11 @@ It is also possible to configure a mailbox type directly like this:
 
 And then use it either from deployment like this:
 
-.. includecode:: code/docs/dispatcher/DispatcherDocTest.java#defining-mailbox-in-config
+.. includecode:: code/jdocs/dispatcher/DispatcherDocTest.java#defining-mailbox-in-config
 
 Or code like this:
 
-.. includecode:: code/docs/dispatcher/DispatcherDocTest.java#defining-mailbox-in-code
+.. includecode:: code/jdocs/dispatcher/DispatcherDocTest.java#defining-mailbox-in-code
 
 ControlAwareMailbox
 -------------------
@@ -274,20 +274,20 @@ It can be configured like this:
 
 Control messages need to extend the ``ControlMessage`` trait:
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#control-aware-mailbox-messages
+.. includecode:: ../java/code/jdocs/dispatcher/DispatcherDocTest.java#control-aware-mailbox-messages
 
 And then an example on how you would use it:
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#control-aware-dispatcher
+.. includecode:: ../java/code/jdocs/dispatcher/DispatcherDocTest.java#control-aware-dispatcher
 
 Creating your own Mailbox type
 ==============================
 
 An example is worth a thousand quacks:
 
-.. includecode:: code/docs/dispatcher/MyUnboundedJMailbox.java#mailbox-implementation-example
+.. includecode:: code/jdocs/dispatcher/MyUnboundedJMailbox.java#mailbox-implementation-example
 
-.. includecode:: code/docs/dispatcher/MyUnboundedJMessageQueueSemantics.java#mailbox-implementation-example
+.. includecode:: code/jdocs/dispatcher/MyUnboundedJMessageQueueSemantics.java#mailbox-implementation-example
 
 And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
 configuration, or the mailbox configuration.
@@ -309,7 +309,7 @@ You can also use the mailbox as a requirement on the dispatcher like this:
 
 Or by defining the requirement on your actor class like this:
 
-.. includecode:: code/docs/dispatcher/DispatcherDocTest.java#require-mailbox-on-actor
+.. includecode:: code/jdocs/dispatcher/DispatcherDocTest.java#require-mailbox-on-actor
 
 
 Special Semantics of ``system.actorOf``

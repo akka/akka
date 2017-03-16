@@ -19,7 +19,7 @@ A Simple Router
 
 The following example illustrates how to use a ``Router`` and manage the routees from within an actor.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#router-in-actor
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#router-in-actor
 
 We create a ``Router`` and specify that it should use ``RoundRobinRoutingLogic`` when routing the
 messages to the routees.
@@ -89,12 +89,12 @@ routees will be created as the router's children.
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-round-robin-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-pool-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#round-robin-pool-1
 
 Here is the same example, but with the router configuration provided programmatically instead of
 from configuration.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-pool-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#round-robin-pool-2
 
 Remote Deployed Routees
 ***********************
@@ -105,7 +105,7 @@ fashion. In order to deploy routees remotely, wrap the router configuration in a
 ``RemoteRouterConfig``, attaching the remote addresses of the nodes to deploy to. Remote
 deployment requires the ``akka-remote`` module to be included in the classpath.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#remoteRoutees
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#remoteRoutees
 
 Senders
 *******
@@ -114,13 +114,13 @@ Senders
 When a routee sends a message, it can :ref:`set itself as the sender
 <actors-tell-sender-java>`.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#reply-with-self
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#reply-with-self
 
 However, it is often useful for routees to set the *router* as a sender. For example, you might want
 to set the router as the sender if you want to hide the details of the routees behind the router.
 The following code snippet shows how to set the parent router as sender.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#reply-with-parent
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#reply-with-parent
 
 
 Supervision
@@ -150,7 +150,7 @@ by specifying the strategy when defining the router.
 
 Setting the strategy is easily done:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#supervision
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#supervision
 
 .. _note-router-terminated-children-java:
 
@@ -174,18 +174,18 @@ routee actors.
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-round-robin-group
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-group-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#round-robin-group-1
 
 Here is the same example, but with the router configuration provided programmatically instead of
 from configuration.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-group-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#round-robin-group-2
 
 The routee actors are created externally from the router:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#create-workers
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#create-workers
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#create-worker-actors
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#create-worker-actors
 
 The paths may contain protocol and address information for actors running on remote hosts.
 Remoting requires the ``akka-remote`` module to be included in the classpath.
@@ -201,7 +201,7 @@ The router actors in this section are created from within a top level actor name
 Note that deployment paths in the configuration starts with ``/parent/`` followed by the name
 of the router actor. 
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#create-parent
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#create-parent
 
 .. _round-robin-router-java:
 
@@ -214,21 +214,21 @@ RoundRobinPool defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-round-robin-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-pool-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#round-robin-pool-1
 
 RoundRobinPool defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-pool-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#round-robin-pool-2
 
 RoundRobinGroup defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-round-robin-group
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#round-robin-group-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#round-robin-group-1
 
 RoundRobinGroup defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java
    :include: paths,round-robin-group-2
 
 RandomPool and RandomGroup
@@ -240,21 +240,21 @@ RandomPool defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-random-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#random-pool-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#random-pool-1
 
 RandomPool defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#random-pool-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#random-pool-2
 
 RandomGroup defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-random-group
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#random-group-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#random-group-1
 
 RandomGroup defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java
    :include: paths,random-group-2
 
 .. _balancing-pool-java:
@@ -286,11 +286,11 @@ BalancingPool defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-balancing-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#balancing-pool-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#balancing-pool-1
 
 BalancingPool defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#balancing-pool-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#balancing-pool-2
 
 Addition configuration for the balancing dispatcher, which is used by the pool,
 can be configured in the ``pool-dispatcher`` section of the router deployment
@@ -343,11 +343,11 @@ SmallestMailboxPool defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-smallest-mailbox-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#smallest-mailbox-pool-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#smallest-mailbox-pool-1
 
 SmallestMailboxPool defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#smallest-mailbox-pool-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#smallest-mailbox-pool-2
 
 There is no Group variant of the SmallestMailboxPool because the size of the mailbox
 and the internal dispatching state of the actor is not practically available from the paths
@@ -362,21 +362,21 @@ BroadcastPool defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-broadcast-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcast-pool-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#broadcast-pool-1
 
 BroadcastPool defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcast-pool-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#broadcast-pool-2
 
 BroadcastGroup defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-broadcast-group
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcast-group-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#broadcast-group-1
 
 BroadcastGroup defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java
    :include: paths,broadcast-group-2
 
 .. note::
@@ -400,21 +400,21 @@ ScatterGatherFirstCompletedPool defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-scatter-gather-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#scatter-gather-pool-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#scatter-gather-pool-1
 
 ScatterGatherFirstCompletedPool defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#scatter-gather-pool-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#scatter-gather-pool-2
 
 ScatterGatherFirstCompletedGroup defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-scatter-gather-group
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#scatter-gather-group-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#scatter-gather-group-1
 
 ScatterGatherFirstCompletedGroup defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java
    :include: paths,scatter-gather-group-2
 
 TailChoppingPool and TailChoppingGroup
@@ -434,21 +434,21 @@ TailChoppingPool defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-tail-chopping-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#tail-chopping-pool-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#tail-chopping-pool-1
 
 TailChoppingPool defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#tail-chopping-pool-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#tail-chopping-pool-2
 
 TailChoppingGroup defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-tail-chopping-group
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#tail-chopping-group-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#tail-chopping-group-1
 
 TailChoppingGroup defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java
    :include: paths,tail-chopping-group-2
 
 ConsistentHashingPool and ConsistentHashingGroup
@@ -479,9 +479,9 @@ the same time for one router. The ``withHashMapper`` is tried first.
 
 Code example:
 
-.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java#cache-actor
+.. includecode:: code/jdocs/jrouting/ConsistentHashingRouterDocTest.java#cache-actor
 
-.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTest.java#consistent-hashing-router
+.. includecode:: code/jdocs/jrouting/ConsistentHashingRouterDocTest.java#consistent-hashing-router
 
 In the above example you see that the ``Get`` message implements ``ConsistentHashable`` itself,
 while the ``Entry`` message is wrapped in a ``ConsistentHashableEnvelope``. The ``Evict``
@@ -491,21 +491,21 @@ ConsistentHashingPool defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-consistent-hashing-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#consistent-hashing-pool-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#consistent-hashing-pool-1
 
 ConsistentHashingPool defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#consistent-hashing-pool-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#consistent-hashing-pool-2
 
 ConsistentHashingGroup defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-consistent-hashing-group
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#consistent-hashing-group-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#consistent-hashing-group-1
 
 ConsistentHashingGroup defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java
    :include: paths,consistent-hashing-group-2
 
 
@@ -536,7 +536,7 @@ matter how that router would normally route its messages.
 The example below shows how you would use a ``Broadcast`` message to send a very important message
 to every routee of a router.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcastDavyJonesWarning
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#broadcastDavyJonesWarning
 
 In this example the router receives the ``Broadcast`` message, extracts its payload
 (``"Watch out for Davy Jones' locker"``), and then sends the payload on to all of the router's
@@ -554,7 +554,7 @@ A ``PoisonPill`` message has special handling for all actors, including for rout
 receives a ``PoisonPill`` message, that actor will be stopped. See the :ref:`poison-pill-java`
 documentation for details.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#poisonPill
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#poisonPill
 
 For a router, which normally passes on messages to routees, it is important to realise that
 ``PoisonPill`` messages are processed by the router only. ``PoisonPill`` messages sent to a router
@@ -572,7 +572,7 @@ router. Instead you should wrap a ``PoisonPill`` message inside a ``Broadcast`` 
 routee will receive the ``PoisonPill`` message. Note that this will stop all routees, even if the
 routees aren't children of the router, i.e. even routees programmatically provided to the router.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcastPoisonPill
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#broadcastPoisonPill
 
 With the code shown above, each routee will receive a ``PoisonPill`` message. Each routee will
 continue to process its messages as normal, eventually processing the ``PoisonPill``. This will
@@ -600,14 +600,14 @@ Routees that are children of the router will also be suspended, and will be affe
 supervision directive that is applied to the router. Routees that are not the routers children, i.e.
 those that were created externally to the router, will not be affected.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#kill
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#kill
 
 As with the ``PoisonPill`` message, there is a distinction between killing a router, which
 indirectly kills its children (who happen to be routees), and killing routees directly (some of whom
 may not be children.) To kill routees directly the router should be sent a ``Kill`` message wrapped
 in a ``Broadcast`` message.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#broadcastKill
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#broadcastKill
 
 Management Messages
 -------------------
@@ -645,14 +645,14 @@ Pool with default resizer defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-resize-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#resize-pool-1
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#resize-pool-1
 
 Several more configuration options are available and described in ``akka.actor.deployment.default.resizer``
 section of the reference :ref:`configuration`.
 
 Pool with resizer defined in code:
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#resize-pool-2
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#resize-pool-2
 
 *It is also worth pointing out that if you define the ``router`` in the configuration file then this value
 will be used instead of any programmatically sent parameters.*
@@ -687,7 +687,7 @@ Pool with ``OptimalSizeExploringResizer`` defined in configuration:
 
 .. includecode:: ../scala/code/docs/routing/RouterDocSpec.scala#config-optimal-size-exploring-resize-pool
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#optimal-size-exploring-resize-pool
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#optimal-size-exploring-resize-pool
 
 Several more configuration options are available and described in ``akka.actor.deployment.default.optimal-size-exploring-resizer``
 section of the reference :ref:`configuration`.
@@ -743,7 +743,7 @@ The router created in this example is replicating each message to a few destinat
 
 Start with the routing logic:
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#routing-logic
+.. includecode:: code/jdocs/jrouting/CustomRouterDocTest.java#routing-logic
 
 ``select`` will be called for each message and in this example pick a few destinations by round-robin,
 by reusing the existing ``RoundRobinRoutingLogic`` and wrap the result in a ``SeveralRoutees``
@@ -753,7 +753,7 @@ The implementation of the routing logic must be thread safe, since it might be u
 
 A unit test of the routing logic: 
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#unit-test-logic
+.. includecode:: code/jdocs/jrouting/CustomRouterDocTest.java#unit-test-logic
 
 You could stop here and use the ``RedundancyRoutingLogic`` with a ``akka.routing.Router``
 as described in :ref:`simple-router-java`.
@@ -763,11 +763,11 @@ Let us continue and make this into a self contained, configurable, router actor.
 Create a class that extends ``PoolBase``, ``GroupBase`` or ``CustomRouterConfig``. That class is a factory
 for the routing logic and holds the configuration for the router. Here we make it a ``Group``.
 
-.. includecode:: code/docs/jrouting/RedundancyGroup.java#group
+.. includecode:: code/jdocs/jrouting/RedundancyGroup.java#group
 
 This can be used exactly as the router actors provided by Akka.
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#usage-1
+.. includecode:: code/jdocs/jrouting/CustomRouterDocTest.java#usage-1
 
 Note that we added a constructor in ``RedundancyGroup`` that takes a ``Config`` parameter.
 That makes it possible to define it in configuration.
@@ -779,7 +779,7 @@ Note the fully qualified class name in the ``router`` property. The router class
 constructor with one ``com.typesafe.config.Config`` parameter.
 The deployment section of the configuration is passed to the constructor.
 
-.. includecode:: code/docs/jrouting/CustomRouterDocTest.java#usage-2
+.. includecode:: code/jdocs/jrouting/CustomRouterDocTest.java#usage-2
  
 Configuring Dispatchers
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -809,7 +809,7 @@ the actor system’s default dispatcher. All standard routers allow setting this
 property in their constructor or factory method, custom routers have to
 implement the method in a suitable way.
 
-.. includecode:: code/docs/jrouting/RouterDocTest.java#dispatchers
+.. includecode:: code/jdocs/jrouting/RouterDocTest.java#dispatchers
 
 .. note::
 

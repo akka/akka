@@ -4,9 +4,10 @@
 
 package akka.actor
 
-import akka.annotation.ApiMayChange
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.japi.pf.ReceiveBuilder
 import akka.japi.pf.UnitPFBuilder
+
 import scala.runtime.BoxedUnit
 import java.util.Optional
 
@@ -39,7 +40,10 @@ object AbstractActor {
   /**
    * The actor context - the view of the actor cell from the actor.
    * Exposes contextual information for the actor and the current message.
+   *
+   * Not intended for public inheritance/implementation
    */
+  @DoNotInherit
   trait ActorContext extends akka.actor.ActorContext {
 
     /**
@@ -59,6 +63,20 @@ object AbstractActor {
      * Returns a reference to the named child if it exists.
      */
     def findChild(name: String): Optional[ActorRef]
+
+    /**
+     * Returns the supervisor of this actor.
+     *
+     * Same as `parent()`.
+     */
+    def getParent(): ActorRef
+
+    /**
+     * Returns the system this actor is running in.
+     *
+     * Same as `system()`
+     */
+    def getSystem(): ActorSystem
 
     /**
      * Changes the Actor's behavior to become the new 'Receive' handler.

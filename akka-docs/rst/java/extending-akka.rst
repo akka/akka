@@ -25,28 +25,28 @@ So let's create a sample extension that just lets us count the number of times s
 
 First, we define what our ``Extension`` should do:
 
-.. includecode:: code/docs/extension/ExtensionDocTest.java
+.. includecode:: code/jdocs/extension/ExtensionDocTest.java
    :include: imports
 
-.. includecode:: code/docs/extension/ExtensionDocTest.java
+.. includecode:: code/jdocs/extension/ExtensionDocTest.java
    :include: extension
 
 Then we need to create an ``ExtensionId`` for our extension so we can grab a hold of it.
 
-.. includecode:: code/docs/extension/ExtensionDocTest.java
+.. includecode:: code/jdocs/extension/ExtensionDocTest.java
    :include: imports
 
-.. includecode:: code/docs/extension/ExtensionDocTest.java
+.. includecode:: code/jdocs/extension/ExtensionDocTest.java
    :include: extensionid
 
 Wicked! Now all we need to do is to actually use it:
 
-.. includecode:: code/docs/extension/ExtensionDocTest.java
+.. includecode:: code/jdocs/extension/ExtensionDocTest.java
    :include: extension-usage
 
 Or from inside of an Akka Actor:
 
-.. includecode:: code/docs/extension/ExtensionDocTest.java
+.. includecode:: code/jdocs/extension/ExtensionDocTest.java
    :include: extension-usage-actor
 
 That's all there is to it!
@@ -83,15 +83,15 @@ Sample configuration:
 
 The ``Extension``:
 
-.. includecode:: code/docs/extension/SettingsExtensionDocTest.java
+.. includecode:: code/jdocs/extension/SettingsExtensionDocTest.java
    :include: imports
 
-.. includecode:: code/docs/extension/SettingsExtensionDocTest.java
+.. includecode:: code/jdocs/extension/SettingsExtensionDocTest.java
    :include: extension,extensionid
 
 Use it:
 
-.. includecode:: code/docs/extension/SettingsExtensionDocTest.java
+.. includecode:: code/jdocs/extension/SettingsExtensionDocTest.java
    :include: extension-usage-actor
 
 Library extensions
