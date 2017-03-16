@@ -22,18 +22,16 @@ class EmptySourceBenchmark {
   val materializerSettings = ActorMaterializerSettings(system).withDispatcher("akka.test.stream-dispatcher")
   implicit val materializer = ActorMaterializer(materializerSettings)
 
-
   @TearDown
   def shutdown(): Unit = {
     Await.result(system.terminate(), 5.seconds)
   }
 
   val setup = Source.empty[String].toMat(Sink.ignore)(Keep.right)
-  
-  @Benchmark def empty(): Unit = 
+
+  @Benchmark def empty(): Unit =
     Await.result(setup.run(), Duration.Inf)
 
-  
   /*
     (not serious benchmark, just sanity check: run on macbook 15, late 2013)
   
