@@ -277,6 +277,89 @@ import scala.util.Try
     override def toString: String = "SingleSource"
   }
 
+  final class FutureFlattenSource[T, M](
+    val future: Future[Graph[SourceShape[T], M]])
+    extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+
+    ReactiveStreamsCompliance.requireNonNullElement(future)
+
+    val out = Outlet[T]("FutureFlattenSource.out")
+    override val shape = SourceShape(out)
+
+    override def initialAttributes = DefaultAttributes.futureSource
+
+    override def createLogicAndMaterializedValue(attr: Attributes): (GraphStageLogic, Future[M]) = {
+      val materialized = Promise[M]()
+
+      val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        private val sinkIn = new SubSinkInlet[T]("FutureFlattenSource.in")
+
+        override def preStart(): Unit = {
+          val cb = getAsyncCallback[Try[Graph[SourceShape[T], M]]](onFutureSourceCompleted).invoke _
+          future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+        }
+
+        // initial handler (until future completes)
+        setHandler(out, new OutHandler {
+          def onPull(): Unit = {}
+
+          override def onDownstreamFinish(): Unit = {
+            if (!materialized.isCompleted) {
+              // make sure we always yield the matval if possible, even if downstream cancelled
+              // before the source was materialized
+              val matValFuture = future.map { gr ⇒
+                val runnable = Source.fromGraph(gr).to(Sink.ignore)
+                interpreter.subFusingMaterializer.materialize(runnable, initialAttributes = attr)
+              }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+              materialized.completeWith(matValFuture)
+            }
+            super.onDownstreamFinish()
+          }
+        })
+
+        def onPush(): Unit = {
+          push(out, sinkIn.grab())
+        }
+
+        def onPull(): Unit = {
+          sinkIn.pull()
+        }
+
+        override def onUpstreamFinish(): Unit =
+          completeStage()
+
+        override def postStop(): Unit = {
+          if (!sinkIn.isClosed) sinkIn.cancel()
+        }
+
+        def onFutureSourceCompleted(result: Try[Graph[SourceShape[T], M]]): Unit = {
+          result.map { graph ⇒
+            val runnable = Source.fromGraph(graph).toMat(sinkIn.sink)(Keep.left)
+            val matVal = interpreter.subFusingMaterializer.materialize(runnable, initialAttributes = attr)
+            materialized.success(matVal)
+
+            setHandler(out, this)
+            sinkIn.setHandler(this)
+
+            if (isAvailable(out)) {
+              sinkIn.pull()
+            }
+
+          }.recover {
+            case t ⇒
+              sinkIn.cancel()
+              materialized.failure(t)
+              failStage(t)
+          }
+        }
+      }
+
+      (logic, materialized.future)
+    }
+
+    override def toString: String = "FutureFlattenSource"
+  }
+
   final class FutureSource[T](val future: Future[T]) extends GraphStage[SourceShape[T]] {
     ReactiveStreamsCompliance.requireNonNullElement(future)
     val shape = SourceShape(Outlet[T]("future.out"))
