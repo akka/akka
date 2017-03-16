@@ -365,7 +365,8 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
   private[this] def createFlowName(): String = flowNames.next()
 
-  private val defaultInitialAttributes = {
+  /** INTERNAL API */
+  private[akka] val defaultInitialAttributes = {
     val a = Attributes(
       Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
         ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
