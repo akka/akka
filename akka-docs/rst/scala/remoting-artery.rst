@@ -747,7 +747,7 @@ There are lots of configuration properties that are related to remoting in Akka.
    Setting properties like the listening IP and port number programmatically is
    best done by using something like the following:
 
-   .. includecode:: ../java/code/docs/remoting/RemoteDeploymentDocTest.java#programmatic-artery
+   .. includecode:: ../java/code/jdocs/remoting/RemoteDeploymentDocTest.java#programmatic-artery
 
 
 .. _remote-configuration-nat-artery-scala:

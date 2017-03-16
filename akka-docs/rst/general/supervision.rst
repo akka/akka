@@ -221,8 +221,8 @@ because of a failure, in increasing intervals of 3, 6, 12, 24 and finally 30 sec
 
 The above is equivalent to this Java code:
 
-.. includecode:: ../java/code/docs/pattern/BackoffSupervisorDocTest.java#backoff-imports
-.. includecode:: ../java/code/docs/pattern/BackoffSupervisorDocTest.java#backoff-stop
+.. includecode:: ../java/code/jdocs/pattern/BackoffSupervisorDocTest.java#backoff-imports
+.. includecode:: ../java/code/jdocs/pattern/BackoffSupervisorDocTest.java#backoff-stop
 
 Using a ``randomFactor`` to add a little bit of additional variance to the backoff intervals
 is highly recommended, in order to avoid multiple actors re-start at the exact same point in time,
@@ -241,8 +241,8 @@ because of some exception, in increasing intervals of 3, 6, 12, 24 and finally 3
 
 The above is equivalent to this Java code:
 
-.. includecode:: ../java/code/docs/pattern/BackoffSupervisorDocTest.java#backoff-imports
-.. includecode:: ../java/code/docs/pattern/BackoffSupervisorDocTest.java#backoff-fail
+.. includecode:: ../java/code/jdocs/pattern/BackoffSupervisorDocTest.java#backoff-imports
+.. includecode:: ../java/code/jdocs/pattern/BackoffSupervisorDocTest.java#backoff-fail
 
 The ``akka.pattern.BackoffOptions`` can be used to customize the behavior of the back-off supervisor actor, below are some examples:
 
