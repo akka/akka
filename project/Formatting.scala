@@ -10,15 +10,15 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 object Formatting {
   lazy val formatSettings = Seq(
-    ScalariformKeys.preferences in Compile  <<= formattingPreferences,
-    ScalariformKeys.preferences in Test     <<= formattingPreferences,
-    ScalariformKeys.preferences in MultiJvm <<= formattingPreferences
+    ScalariformKeys.preferences in Compile  := formattingPreferences.value,
+    ScalariformKeys.preferences in Test     := formattingPreferences.value,
+    ScalariformKeys.preferences in MultiJvm := formattingPreferences.value
   )
 
   lazy val docFormatSettings = Seq(
-    ScalariformKeys.preferences in Compile  <<= docFormattingPreferences,
-    ScalariformKeys.preferences in Test     <<= docFormattingPreferences,
-    ScalariformKeys.preferences in MultiJvm <<= docFormattingPreferences
+    ScalariformKeys.preferences in Compile  := docFormattingPreferences.value,
+    ScalariformKeys.preferences in Test     := docFormattingPreferences.value,
+    ScalariformKeys.preferences in MultiJvm := docFormattingPreferences.value
   )
 
   def formattingPreferences = Def.setting {
