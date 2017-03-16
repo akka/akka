@@ -8,10 +8,10 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.io.Udp;
-import akka.testkit.JavaTestKit;
 import akka.testkit.SocketUtil;
 
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,7 +33,7 @@ public class JavaUdpMulticastTest extends AbstractJavaTest {
 
     @Test
     public void testUdpMulticast() throws Exception {
-        new JavaTestKit(system) {{
+        new TestKit(system) {{
             List<NetworkInterface> ipv6Ifaces = new ArrayList<>();
             for (Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces(); interfaces.hasMoreElements(); ) {
                 NetworkInterface interf = interfaces.nextElement();
@@ -94,7 +94,7 @@ public class JavaUdpMulticastTest extends AbstractJavaTest {
 
     @AfterClass
     public static void tearDown() {
-        JavaTestKit.shutdownActorSystem(system);
+        TestKit.shutdownActorSystem(system);
         system = null;
     }
 }

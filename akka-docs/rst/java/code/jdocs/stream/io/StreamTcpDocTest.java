@@ -10,6 +10,7 @@ import akka.NotUsed;
 import akka.stream.javadsl.Framing;
 import jdocs.AbstractJavaTest;
 import jdocs.stream.SilenceSystemOut;
+import akka.testkit.javadsl.TestKit;
 import java.net.InetSocketAddress;
 
 import org.junit.AfterClass;
@@ -20,7 +21,7 @@ import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.javadsl.Tcp.*;
-import akka.testkit.JavaTestKit;
+import akka.stream.stage.*;
 import akka.testkit.SocketUtil;
 import akka.testkit.TestProbe;
 import akka.util.ByteString;
@@ -38,7 +39,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

@@ -5,8 +5,8 @@
 package jdocs.actor.fsm;
 
 import akka.actor.*;
-import akka.testkit.JavaTestKit;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,7 +28,7 @@ public class FSMDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
   }
 
@@ -160,7 +160,7 @@ public class FSMDocTest extends AbstractJavaTest {
   @Test
   public void testLoggingFSM()
   {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       final ActorRef logger =
         system.actorOf(Props.create(MyFSM.class));
       final ActorRef probe = getRef();

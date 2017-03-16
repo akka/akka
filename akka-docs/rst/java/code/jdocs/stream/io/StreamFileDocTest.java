@@ -16,12 +16,12 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.FileIO;
 import jdocs.AbstractJavaTest;
 import jdocs.stream.SilenceSystemOut;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import akka.stream.*;
-import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
 
 public class StreamFileDocTest extends AbstractJavaTest {
@@ -38,7 +38,7 @@ public class StreamFileDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

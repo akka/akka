@@ -9,7 +9,7 @@ import akka.stream.*;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.stage.*;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,7 +34,7 @@ public class RecipeDigest extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
@@ -101,7 +101,7 @@ public class RecipeDigest extends RecipeTest {
 
   @Test
   public void work() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
 
       {
         Source<ByteString, NotUsed> data = Source.from(Arrays.asList(

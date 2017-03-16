@@ -10,11 +10,11 @@ import akka.actor.ActorSystem;
 import akka.japi.function.Creator;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
 import jdocs.AbstractJavaTest;
 import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
+import akka.testkit.javadsl.TestKit;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -49,7 +49,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
     storageProbe = null;
@@ -139,7 +139,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
 
   @Test
   public void reactiveStreamsPublisherViaFlowToSubscriber() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final TestProbe probe = new TestProbe(system);
 
       {
@@ -154,7 +154,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
 
   @Test
   public void flowAsPublisherAndSubscriber() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final TestProbe probe = new TestProbe(system);
 
       {
@@ -174,7 +174,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
 
   @Test
   public void sourceAsPublisher() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final TestProbe probe = new TestProbe(system);
 
       {
@@ -194,7 +194,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
 
   @Test
   public void sourceAsFanoutPublisher() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final TestProbe probe = new TestProbe(system);
 
       {
@@ -215,7 +215,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
 
   @Test
   public void sinkAsSubscriber() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final TestProbe probe = new TestProbe(system);
 
       {
@@ -237,7 +237,7 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
 
   @Test
   public void useProcessor() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         //#use-processor
         // An example Processor factory

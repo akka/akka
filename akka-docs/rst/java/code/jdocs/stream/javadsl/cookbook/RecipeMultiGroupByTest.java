@@ -12,7 +12,7 @@ import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SubSource;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,7 +38,7 @@ public class RecipeMultiGroupByTest extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
@@ -76,7 +76,7 @@ public class RecipeMultiGroupByTest extends RecipeTest {
 
   @Test
   public void work() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final List<Topic> extractTopics(Message m) {
         final List<Topic> topics = new ArrayList<>(2);
 

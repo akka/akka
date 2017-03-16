@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 
@@ -41,7 +42,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

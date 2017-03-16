@@ -11,6 +11,7 @@ import java.util.concurrent.CompletionStage;
 import akka.NotUsed;
 import akka.stream.ClosedShape;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -20,7 +21,6 @@ import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.javadsl.Tcp.OutgoingConnection;
-import akka.testkit.JavaTestKit;
 import akka.util.ByteString;
 
 public class CompositionDocTest extends AbstractJavaTest {
@@ -36,7 +36,7 @@ public class CompositionDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

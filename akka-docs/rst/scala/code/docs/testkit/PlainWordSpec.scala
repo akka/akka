@@ -5,12 +5,8 @@ package docs.testkit
 
 //#plain-spec
 import akka.actor.ActorSystem
-import akka.actor.Actor
-import akka.actor.Props
-import akka.testkit.{ TestActors, TestKit, ImplicitSender }
-import org.scalatest.WordSpecLike
-import org.scalatest.Matchers
-import org.scalatest.BeforeAndAfterAll
+import akka.testkit.{ ImplicitSender, TestActors, TestKit }
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 //#implicit-sender
 class MySpec() extends TestKit(ActorSystem("MySpec")) with ImplicitSender

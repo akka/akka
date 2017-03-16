@@ -20,8 +20,8 @@ import akka.stream.actor.MaxInFlightRequestStrategy;
 import akka.stream.actor.RequestStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
@@ -209,7 +209,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
 
   @Test
   public void demonstrateActorPublisherUsage() {
-    new JavaTestKit(system) {
+    new TestKit(system) {
 
       {
         final ActorRef replyTo = getTestActor();
@@ -228,7 +228,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
 
         watch(worker);
 
-        List<Object> got = Arrays.asList(receiveN(N));
+        List<Object> got = new ArrayList<>(receiveN(N));
         Collections.sort(got, new Comparator<Object>() {
           @Override
           public int compare(Object o1, Object o2) {

@@ -139,8 +139,8 @@ common operations might even be worked into nice DSLs.
 
 .. _async-integration-testing-java:
 
-Asynchronous Integration Testing with :class:`JavaTestKit`
-==========================================================
+Asynchronous Integration Testing with :class:`TestKit`
+======================================================
 
 When you are reasonably sure that your actor's business logic is correct, the
 next step is verifying that it works correctly within its intended environment.
@@ -153,12 +153,12 @@ test with a network of actors, apply stimuli at varying injection points and
 arrange results to be sent from different emission points, but the basic
 principle stays the same in that a single procedure drives the test.
 
-The :class:`JavaTestKit` class contains a collection of tools which makes this
+The :class:`TestKit` class contains a collection of tools which makes this
 common task easy.
 
 .. includecode:: code/jdocs/testkit/TestKitSampleTest.java#fullsample
 
-The :class:`JavaTestKit` contains an actor named :obj:`testActor` which is the
+The :class:`TestKit` contains an actor named :obj:`testActor` which is the
 entry point for messages to be examined with the various ``expectMsg...``
 assertions detailed below. The test actor’s reference is obtained using the
 :meth:`getRef()` method as demonstrated above.  The :obj:`testActor` may also
@@ -167,7 +167,7 @@ listener. There is a whole set of examination methods, e.g. receiving all
 consecutive messages matching certain criteria, receiving a whole sequence of
 fixed messages or classes, receiving nothing for some time, etc.
 
-The ActorSystem passed in to the constructor of JavaTestKit is accessible via the
+The ActorSystem passed in to the constructor of TestKit is accessible via the
 :meth:`getSystem()` method.
 
 .. note::
@@ -187,12 +187,18 @@ In these examples, the maximum durations you will find mentioned below are left
 out, in which case they use the default value from configuration item
 ``akka.test.single-expect-default`` which itself defaults to 3 seconds (or they
 obey the innermost enclosing :class:`Within` as detailed :ref:`below
-<JavaTestKit.within>`). The full signatures are:
+<TestKit.within>`). The full signatures are:
 
-  * :meth:`public <T> T expectMsgEquals(Duration max, T msg)`
+  * :meth:`public <T> T expectMsgEquals(FiniteDuration max, T msg)`
 
     The given message object must be received within the specified time; the
     object will be returned.
+
+  * :meth:`public <T> T expectMsgPF(Duration max, String hint, Function<Object, T> f)`
+
+    Within the given time period, a message must be received and the given
+    function must be defined for that message; the result from applying
+    the function to the received message is returned.
 
   * :meth:`public Object expectMsgAnyOf(Duration max, Object... msg)`
 
@@ -200,7 +206,7 @@ obey the innermost enclosing :class:`Within` as detailed :ref:`below
     (compared with ``equals()``) to at least one of the passed reference
     objects; the received object will be returned.
 
-  * :meth:`public Object[] expectMsgAllOf(Duration max, Object... msg)`
+  * :meth:`public List<Object> expectMsgAllOf(FiniteDuration max, Object... msg)`
 
     A number of objects matching the size of the supplied object array must be
     received within the given time, and for each of the given objects there
@@ -208,14 +214,14 @@ obey the innermost enclosing :class:`Within` as detailed :ref:`below
     with ``equals()``). The full sequence of received objects is returned in
     the order received.
 
-  * :meth:`public <T> T expectMsgClass(Duration max, Class<T> c)`
+  * :meth:`public <T> T expectMsgClass(FiniteDuration max, Class<T> c)`
 
     An object which is an instance of the given :class:`Class` must be received
     within the allotted time frame; the object will be returned. Note that this
     does a conformance check, if you need the class to be equal you need to
     verify that afterwards.
 
-  * :meth:`public <T> T expectMsgAnyClassOf(Duration max, Class<? extends T>... c)`
+  * :meth:`public <T> T expectMsgAnyClassOf(FiniteDuration max, Class<? extends T>... c)`
 
     An object must be received within the given time, and it must be an
     instance of at least one of the supplied :class:`Class` objects; the
@@ -227,71 +233,55 @@ obey the innermost enclosing :class:`Within` as detailed :ref:`below
       Because of a limitation in Java’s type system it may be necessary to add
       ``@SuppressWarnings("unchecked")`` when using this method.
 
-  * :meth:`public void expectNoMsg(Duration max)`
+  * :meth:`public void expectNoMsg(FiniteDuration max)`
 
     No message must be received within the given time. This also fails if a
     message has been received before calling this method which has not been
     removed from the queue using one of the other methods.
 
-  * :meth:`Object[] receiveN(int n, Duration max)`
+  * :meth:`List<Object> receiveN(int n, FiniteDuration max)`
 
     ``n`` messages must be received within the given time; the received
     messages are returned.
 
-For cases which require more refined conditions there are constructs which take
-code blocks:
+In addition to message reception assertions there are also methods which help
+with message flows:
 
-  * **ExpectMsg<T>**
+  * :meth:`public <T> List<T> receiveWhile(Duration max, Duration idle, Int messages, Function<Object, T> f)`
 
-    .. includecode:: code/jdocs/testkit/TestKitDocTest.java#test-expectmsg
+    .. includecode:: code/docs/testkit/TestKitDocTest.java#test-receivewhile-full
 
-    The :meth:`match(Object in)` method will be evaluated once a message has
-    been received within the allotted time (which may be given as constructor
-    argument). If it throws ``noMatch()`` (where it is sufficient to call that
-    method; the ``throw`` keyword is only needed in cases where the compiler
-    would otherwise complain about wrong return types—Java is lacking Scala’s
-    notion of a type which signifies “will not ever return normally”), then the
-    expectation fails with an :class:`AssertionError`, otherwise the matched
-    and possibly transformed object is stored for retrieval using the
-    :meth:`get()` method.
+    Collect messages as long as
 
-  * **ReceiveWhile<T>**
+    * they are matching the given function
+    * the given time interval is not used up
+    * the next message is received within the idle timeout
+    * the number of messages has not yet reached the maximum
 
-    .. includecode:: code/jdocs/testkit/TestKitDocTest.java#test-receivewhile
+    All collected messages are returned.
 
-    This construct works like ExpectMsg, but it continually collects messages
-    as long as they match the criteria, and it does not fail when a
-    non-matching one is encountered. Collecting messages also ends when the
-    time is up, when too much time passes between messages or when enough
-    messages have been received.
-
-    .. includecode:: code/jdocs/testkit/TestKitDocTest.java#test-receivewhile-full
-       :exclude: match-elided
-
-    The need to specify the ``String`` result type twice results from the need
-    to create a correctly typed array and Java’s inability to infer the class’s
-    type argument.
-
-  * **AwaitCond**
+  * :meth:`public void awaitCond(Duration max, Duration interval, Supplier<Boolean> p)`
 
     .. includecode:: code/jdocs/testkit/TestKitDocTest.java#test-awaitCond
 
-    This general construct is not connected with the test kit’s message
-    reception, the embedded condition can compute the boolean result from
-    anything in scope.
+    Poll the given condition every :obj:`interval` until it returns ``true`` or
+    the :obj:`max` duration is used up.
 
-    * **AwaitAssert**
+  * :meth:`public void awaitAssert(Duration max, Duration interval, Supplier<Object> a)`
 
     .. includecode:: code/jdocs/testkit/TestKitDocTest.java#test-awaitAssert
 
-    This general construct is not connected with the test kit’s message
-    reception, the embedded assert can check anything in scope.
+    Poll the given assert function every :obj:`interval` until it does not throw
+    an exception or the :obj:`max` duration is used up. If the timeout expires the
+    last exception is thrown.
 
 There are also cases where not all messages sent to the test kit are actually
 relevant to the test, but removing them would mean altering the actors under
 test. For this purpose it is possible to ignore certain messages:
 
-  * **IgnoreMsg**
+  * :meth:`public void ignoreMsg(Function<Object, Boolean> f)`
+
+    :meth:`public void ignoreMsg()`
 
     .. includecode:: code/jdocs/testkit/TestKitDocTest.java#test-ignoreMsg
 
@@ -307,10 +297,10 @@ exceptions:
 
 .. includecode:: code/jdocs/testkit/TestKitDocTest.java#test-event-filter
 
-If a number of occurrences is specific—as demonstrated above—then ``exec()``
+If a number of occurrences is specific—as demonstrated above—then ``intercept()``
 will block until that number of matching messages have been received or the
 timeout configured in ``akka.test.filter-leeway`` is used up (time starts
-counting after the ``run()`` method returns). In case of a timeout the test
+counting after the passed-in block of code returns). In case of a timeout the test
 fails.
 
 .. note::
@@ -321,7 +311,7 @@ fails.
 
      akka.loggers = [akka.testkit.TestEventListener]
 
-.. _JavaTestKit.within:
+.. _TestKit.within:
 
 Timing Assertions
 -----------------
@@ -335,7 +325,7 @@ for managing time constraints:
 
 .. includecode:: code/jdocs/testkit/TestKitDocTest.java#test-within
 
-The block in :meth:`Within.run()` must complete after a :ref:`Duration` which
+The block in :meth:`within` must complete after a :ref:`Duration` which
 is between :obj:`min` and :obj:`max`, where the former defaults to zero. The
 deadline calculated by adding the :obj:`max` parameter to the block's start
 time is implicitly available within the block to all examination methods, if
@@ -363,7 +353,7 @@ internally scaled by a factor taken from the :ref:`configuration`,
 ``akka.test.timefactor``, which defaults to 1.
 
 You can scale other durations with the same factor by using ``dilated`` method
-in :class:`JavaTestKit`.
+in :class:`TestKit`.
 
 .. includecode:: code/jdocs/testkit/TestKitDocTest.java#duration-dilation
 
@@ -372,7 +362,7 @@ Using Multiple Probe Actors
 
 When the actors under test are supposed to send various messages to different
 destinations, it may be difficult distinguishing the message streams arriving
-at the :obj:`testActor` when using the :class:`JavaTestKit` as shown until now.
+at the :obj:`testActor` when using the :class:`TestKit` as shown until now.
 Another approach is to use it for creation of simple probe actors to be
 inserted in the message flows. The functionality is best explained using a
 small example:
@@ -398,7 +388,7 @@ more concise and clear:
    :include: test-special-probe
 
 You have complete flexibility here in mixing and matching the
-:class:`JavaTestKit` facilities with your own checks and choosing an intuitive
+:class:`TestKit` facilities with your own checks and choosing an intuitive
 name for it. In real life your code will probably be a bit more complicated
 than the example given above; just use the power!
 
@@ -414,7 +404,7 @@ than the example given above; just use the power!
 Watching Other Actors from Probes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A :class:`JavaTestKit` can register itself for DeathWatch of any other actor:
+A :class:`TestKit` can register itself for DeathWatch of any other actor:
 
 .. includecode:: code/jdocs/testkit/TestKitDocTest.java
    :include: test-probe-watch
@@ -457,9 +447,9 @@ Caution about Timing Assertions
 
 The behavior of :meth:`within` blocks when using test probes might be perceived
 as counter-intuitive: you need to remember that the nicely scoped deadline as
-described :ref:`above <JavaTestKit.within>` is local to each probe. Hence, probes
+described :ref:`above <TestKit.within>` is local to each probe. Hence, probes
 do not react to each other's deadlines or to the deadline set in an enclosing
-:class:`JavaTestKit` instance:
+:class:`TestKit` instance:
 
 .. includecode:: code/jdocs/testkit/TestKitDocTest.java#test-within-probe
 
@@ -493,10 +483,10 @@ a child with a custom parent by passing an explicit reference to its parent inst
 
 .. includecode:: code/jdocs/testkit/ParentChildTest.java#test-dependentchild
 
-Create the child using JavaTestKit
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Create the child using TestKit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The ``JavaTestKit`` class can in fact create actors that will run with the test probe as parent.
+The ``TestKit`` class can in fact create actors that will run with the test probe as parent.
 This will cause any messages the child actor sends to `getContext().getParent()` to
 end up in the test probe.
 

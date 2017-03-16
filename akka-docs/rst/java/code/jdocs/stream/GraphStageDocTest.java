@@ -14,9 +14,9 @@ import akka.stream.stage.*;
 //#imports
 import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.TestSubscriber;
-import akka.testkit.JavaTestKit;
 import akka.japi.Function;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,7 +46,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

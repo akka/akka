@@ -8,13 +8,13 @@ import akka.event.japi.EventBus;
 import java.util.concurrent.TimeUnit;
 
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
 import akka.testkit.AkkaJUnitActorSystemResource;
-import akka.testkit.JavaTestKit;
 import akka.util.Subclassification;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -256,7 +256,7 @@ public class EventBusDocTest extends AbstractJavaTest {
   
   @Test
   public void demonstrateLookupClassification() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       //#lookup-bus-test
       LookupBusImpl lookupBus = new LookupBusImpl();
       lookupBus.subscribe(getTestActor(), "greetings");
@@ -269,7 +269,7 @@ public class EventBusDocTest extends AbstractJavaTest {
   
   @Test
   public void demonstrateSubchannelClassification() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       //#subchannel-bus-test
       SubchannelBusImpl subchannelBus = new SubchannelBusImpl();
       subchannelBus.subscribe(getTestActor(), "abc");
@@ -285,7 +285,7 @@ public class EventBusDocTest extends AbstractJavaTest {
   
   @Test
   public void demonstrateScanningClassification() {
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       //#scanning-bus-test
       ScanningBusImpl scanningBus = new ScanningBusImpl();
       scanningBus.subscribe(getTestActor(), 3);
@@ -301,10 +301,10 @@ public class EventBusDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateManagedActorClassification() {
       //#actor-bus-test
-      ActorRef observer1 = new JavaTestKit(system).getRef();
-      ActorRef observer2 = new JavaTestKit(system).getRef();
-      JavaTestKit probe1 = new JavaTestKit(system);
-      JavaTestKit probe2 = new JavaTestKit(system);
+      ActorRef observer1 = new TestKit(system).getRef();
+      ActorRef observer2 = new TestKit(system).getRef();
+      TestKit probe1 = new TestKit(system);
+      TestKit probe2 = new TestKit(system);
       ActorRef subscriber1 = probe1.getRef();
       ActorRef subscriber2 = probe2.getRef();
       ActorBusImpl actorBus = new ActorBusImpl(system);

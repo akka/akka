@@ -15,6 +15,8 @@ import java.net.BindException;
 
 import akka.Done;
 import akka.NotUsed;
+import akka.testkit.javadsl.EventFilter;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.Await;
@@ -28,7 +30,6 @@ import akka.japi.function.*;
 import akka.testkit.AkkaSpec;
 import akka.stream.testkit.TestUtils;
 import akka.util.ByteString;
-import akka.testkit.JavaTestKit;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 public class TcpTest extends StreamTest {
@@ -90,23 +91,20 @@ public class TcpTest extends StreamTest {
     final ServerBinding b = future.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertEquals(b.localAddress().getPort(), serverAddress.getPort());
 
-    new JavaTestKit(system) {{
-      new EventFilter<Void>(BindException.class) {
-        @Override
-        protected Void run() {
-          try {
-            binding.to(echoHandler).run(materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
-            assertTrue("Expected BindFailedException, but nothing was reported", false);
-          } catch (ExecutionException e) {
-            if (e.getCause() instanceof BindFailedException) {} // all good
-            else throw new AssertionError("failed", e);
-            // expected
-          } catch (Exception e) {
-            throw new AssertionError("failed", e);
-          }
-          return null;
+    new TestKit(system) {{
+      new EventFilter(BindException.class, system).occurrences(1).intercept(() -> {
+        try {
+          binding.to(echoHandler).run(materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
+          assertTrue("Expected BindFailedException, but nothing was reported", false);
+        } catch (ExecutionException e) {
+          if (e.getCause() instanceof BindFailedException) {} // all good
+          else throw new AssertionError("failed", e);
+          // expected
+        } catch (Exception e) {
+          throw new AssertionError("failed", e);
         }
-      }.occurrences(1).exec();
+        return null;
+      });
     }};
   }
 

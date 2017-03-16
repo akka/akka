@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import akka.NotUsed;
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,7 +18,6 @@ import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.testkit.JavaTestKit;
 
 public class StreamBuffersRateDocTest extends AbstractJavaTest {
 
@@ -34,7 +34,7 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

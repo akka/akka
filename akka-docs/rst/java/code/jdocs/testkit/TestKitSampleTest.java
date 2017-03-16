@@ -5,6 +5,7 @@ package jdocs.testkit;
 
 //#fullsample
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -14,7 +15,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.AbstractActor;
-import akka.testkit.JavaTestKit;
 import scala.concurrent.duration.Duration;
 
 public class TestKitSampleTest extends AbstractJavaTest {
@@ -46,7 +46,7 @@ public class TestKitSampleTest extends AbstractJavaTest {
   
   @AfterClass
   public static void teardown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
   }
 
@@ -56,42 +56,36 @@ public class TestKitSampleTest extends AbstractJavaTest {
      * Wrap the whole test procedure within a testkit constructor 
      * if you want to receive actor replies or use Within(), etc.
      */
-    new JavaTestKit(system) {{
+    new TestKit(system) {{
       final Props props = Props.create(SomeActor.class);
       final ActorRef subject = system.actorOf(props);
 
       // can also use JavaTestKit “from the outside”
-      final JavaTestKit probe = new JavaTestKit(system);
+      final TestKit probe = new TestKit(system);
       // “inject” the probe by passing it to the test subject
       // like a real resource would be passed in production
       subject.tell(probe.getRef(), getRef());
       // await the correct response
-      expectMsgEquals(duration("1 second"), "done");
+      expectMsg(duration("1 second"), "done");
       
       // the run() method needs to finish within 3 seconds
-      new Within(duration("3 seconds")) {
-        protected void run() {
+      within(duration("3 seconds"), () -> {
+        subject.tell("hello", getRef());
 
-          subject.tell("hello", getRef());
+        // This is a demo: would normally use expectMsgEquals().
+        // Wait time is bounded by 3-second deadline above.
+        awaitCond(probe::msgAvailable);
 
-          // This is a demo: would normally use expectMsgEquals().
-          // Wait time is bounded by 3-second deadline above.
-          new AwaitCond() {
-            protected boolean cond() {
-              return probe.msgAvailable();
-            }
-          };
+        // response must have been enqueued to us before probe
+        expectMsg(Duration.Zero(), "world");
+        // check that the probe we injected earlier got the msg
+        probe.expectMsg(Duration.Zero(), "hello");
+        Assert.assertEquals(getRef(), probe.getLastSender());
 
-          // response must have been enqueued to us before probe
-          expectMsgEquals(Duration.Zero(), "world");
-          // check that the probe we injected earlier got the msg
-          probe.expectMsgEquals(Duration.Zero(), "hello");
-          Assert.assertEquals(getRef(), probe.getLastSender());
-
-          // Will wait for the rest of the 3 seconds
-          expectNoMsg();
-        }
-      };
+        // Will wait for the rest of the 3 seconds
+        expectNoMsg();
+        return null;
+      });
     }};
   }
   

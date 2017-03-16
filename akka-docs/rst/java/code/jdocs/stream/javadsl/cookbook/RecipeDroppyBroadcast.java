@@ -8,7 +8,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,14 +29,14 @@ public class RecipeDroppyBroadcast extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
 
   @Test
   public void work() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       //#droppy-bcast
       // Makes a sink drop elements if too slow
       public <T> Sink<T, CompletionStage<Done>> droppySink(Sink<T, CompletionStage<Done>> sink, int size) {

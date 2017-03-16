@@ -14,7 +14,7 @@ import akka.stream.*;
 import akka.stream.impl.ConstantFun;
 import akka.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,7 +47,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseSimpleOperators() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final String[] lookup = {"a", "b", "c", "d", "e", "f"};
     final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
     final Source<Integer, NotUsed> ints = Source.from(input);
@@ -70,7 +70,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseVoidTypeInForeach() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final java.lang.Iterable<String> input = Arrays.asList("a", "b", "c");
     Source<String, NotUsed> ints = Source.from(input);
 
@@ -153,7 +153,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseConcat() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 
@@ -166,13 +166,13 @@ public class SourceTest extends StreamTest {
       }
     }, materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(6));
+    List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
   }
 
   @Test
   public void mustBeAbleToUsePrepend() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 
@@ -185,13 +185,13 @@ public class SourceTest extends StreamTest {
       }
     }, materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(6));
+    List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
   }
 
   @Test
   public void mustBeAbleToUseCallableInput() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<Integer> input1 = Arrays.asList(4, 3, 2, 1, 0);
     final Creator<Iterator<Integer>> input = new Creator<Iterator<Integer>>() {
       @Override
@@ -205,14 +205,14 @@ public class SourceTest extends StreamTest {
       }
     }, materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(5));
+    List<Object> output = probe.receiveN(5);
     assertEquals(Arrays.asList(4, 3, 2, 1, 0), output);
     probe.expectNoMsg(FiniteDuration.create(500, TimeUnit.MILLISECONDS));
   }
 
   @Test
   public void mustBeAbleToUseOnCompleteSuccess() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input = Arrays.asList("A", "B", "C");
 
     Source.from(input).runWith(Sink.<String>onComplete(new Procedure<Try<Done>>() {
@@ -227,7 +227,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseOnCompleteError() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input = Arrays.asList("A", "B", "C");
 
     Source.from(input)
@@ -246,7 +246,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseToFuture() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input = Arrays.asList("A", "B", "C");
     CompletionStage<String> future = Source.from(input).runWith(Sink.<String>head(), materializer);
     String result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -255,7 +255,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUsePrefixAndTail() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
     CompletionStage<Pair<List<Integer>, Source<Integer, NotUsed>>> future = Source.from(input).prefixAndTail(3)
       .runWith(Sink.<Pair<List<Integer>, Source<Integer, NotUsed>>>head(), materializer);
@@ -269,7 +269,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseConcatAllWithSources() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
     final Iterable<Integer> input2 = Arrays.asList(4, 5);
 
@@ -289,7 +289,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseFlatMapMerge() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<Integer> input1 = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
     final Iterable<Integer> input2 = Arrays.asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19);
     final Iterable<Integer> input3 = Arrays.asList(20, 21, 22, 23, 24, 25, 26, 27, 28, 29);
@@ -320,7 +320,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseBuffer() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     final CompletionStage<List<String>> future = Source.from(input).buffer(2, OverflowStrategy.backpressure()).grouped(4)
       .runWith(Sink.<List<String>>head(), materializer);
@@ -331,7 +331,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseConflate() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     CompletionStage<String> future = Source.from(input)
         .conflateWithSeed(s -> s, (aggr, in) -> aggr + in)
@@ -349,7 +349,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseExpand() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     CompletionStage<String> future = Source.from(input).expand(in -> Stream.iterate(in, i -> i).iterator()).runWith(Sink.<String>head(), materializer);
     String result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -358,7 +358,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustProduceTicks() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     Source<String, Cancellable> tickSource = Source.tick(FiniteDuration.create(1, TimeUnit.SECONDS),
         FiniteDuration.create(500, TimeUnit.MILLISECONDS), "tick");
     @SuppressWarnings("unused")
@@ -377,7 +377,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseMapFuture() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input = Arrays.asList("a", "b", "c");
     Source.from(input)
       .mapAsync(4, elem -> CompletableFuture.completedFuture(elem.toUpperCase()))
@@ -443,7 +443,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseActorRefSource() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<Integer, ActorRef> actorRefSource = Source.actorRef(10, OverflowStrategy.fail());
     final ActorRef ref = actorRefSource.to(Sink.foreach(new Procedure<Integer>() {
       public void apply(Integer elem) {
@@ -458,7 +458,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseStatefulMaponcat() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5);
     final Source<Integer, NotUsed> ints = Source.from(input).statefulMapConcat(
             () -> {
@@ -479,7 +479,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseIntersperse() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<String, NotUsed> source = Source.from(Arrays.asList("0", "1", "2", "3"))
                                                  .intersperse("[", ",", "]");
 
@@ -500,7 +500,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseIntersperseAndConcat() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<String, NotUsed> source = Source.from(Arrays.asList("0", "1", "2", "3"))
                                                  .intersperse(",");
 
@@ -520,7 +520,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseDropWhile() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3)).dropWhile
             (new Predicate<Integer>() {
               public boolean test(Integer elem) {
@@ -537,7 +537,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseTakeWhile() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3)).takeWhile
             (new Predicate<Integer>() {
               public boolean test(Integer elem) {
@@ -559,7 +559,7 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToRecover() throws Exception {
     final ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
 
     final Source<Integer, NotUsed> source =
         Source.fromPublisher(publisherProbe)
@@ -583,7 +583,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToCombine() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<Integer, NotUsed> source1 = Source.from(Arrays.asList(0, 1));
     final Source<Integer, NotUsed> source2 = Source.from(Arrays.asList(2, 3));
 
@@ -600,7 +600,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToZipN() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<Integer, NotUsed> source1 = Source.from(Arrays.asList(0, 1));
     final Source<Integer, NotUsed> source2 = Source.from(Arrays.asList(2, 3));
 
@@ -617,7 +617,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToZipWithN() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<Integer, NotUsed> source1 = Source.from(Arrays.asList(0, 1));
     final Source<Integer, NotUsed> source2 = Source.from(Arrays.asList(2, 3));
 
@@ -634,7 +634,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseMerge() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 
@@ -649,7 +649,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseZipWith() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 
@@ -670,7 +670,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseZip() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 
@@ -686,7 +686,7 @@ public class SourceTest extends StreamTest {
   }
   @Test
   public void mustBeAbleToUseMerge2() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 

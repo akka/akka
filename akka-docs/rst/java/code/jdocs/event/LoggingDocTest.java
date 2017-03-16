@@ -20,8 +20,8 @@ import akka.event.Logging.Debug;
 //#imports-listener
 
 import jdocs.AbstractJavaTest;
+import akka.testkit.javadsl.TestKit;
 import org.junit.Test;
-import akka.testkit.JavaTestKit;
 import java.util.Optional;
 
 //#imports-mdc
@@ -42,7 +42,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(Props.create(MyActor.class, this));
     myActor.tell("test", ActorRef.noSender());
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   @Test
@@ -50,7 +50,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     ActorSystem system = ActorSystem.create("MyDiagnosticSystem");
     ActorRef mdcActor = system.actorOf(Props.create(MdcActor.class, this));
     mdcActor.tell("some request", ActorRef.noSender());
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   @Test
@@ -60,7 +60,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
     system.eventStream().subscribe(actor, DeadLetter.class);
     //#deadletters
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   //#superclass-subscription-eventstream
@@ -113,7 +113,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     system.eventStream().publish(new Jazz("Sonny Rollins"));
 
     //#superclass-subscription-eventstream
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   @Test
@@ -125,7 +125,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     system.eventStream().subscribe(actor, SuppressedDeadLetter.class);
     //#suppressed-deadletters
 
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
   @Test
   public void subscribeToAllDeadLetters() {
@@ -136,7 +136,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     system.eventStream().subscribe(actor, AllDeadLetters.class);
     //#all-deadletters
 
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   @Test
@@ -146,7 +146,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     final Object[] args = new Object[] { "The", "brown", "fox", "jumps", 42 };
     system.log().debug("five parameters: {}, {}, {}, {}, {}", args);
     //#array
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
   }
 
   //#my-actor

@@ -10,7 +10,7 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.stage.*;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -38,7 +38,7 @@ public class RecipeByteStrings extends RecipeTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }
@@ -52,7 +52,7 @@ public class RecipeByteStrings extends RecipeTest {
 
   @Test
   public void chunker() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final int CHUNK_LIMIT = 2;
 
       //#bytestring-chunker
@@ -156,7 +156,7 @@ public class RecipeByteStrings extends RecipeTest {
 
   @Test
   public void limiterShouldWork() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       final int SIZE_LIMIT = 9;
 
       //#bytes-limiter
@@ -247,7 +247,7 @@ public class RecipeByteStrings extends RecipeTest {
 
   @Test
   public void compacting() throws Exception {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         final Source<ByteString, NotUsed> rawBytes = Source.from(Arrays.asList(
           ByteString.fromArray(new byte[] { 1, 2 }),

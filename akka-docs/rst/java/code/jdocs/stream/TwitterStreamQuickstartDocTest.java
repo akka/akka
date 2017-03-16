@@ -7,7 +7,6 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.JavaPartialFunction;
-import akka.testkit.JavaTestKit;
 //#imports
 import akka.stream.*;
 import akka.stream.javadsl.*;
@@ -16,6 +15,7 @@ import jdocs.AbstractJavaTest;
 import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Hashtag;
 import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
+import akka.testkit.javadsl.TestKit;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -50,7 +50,7 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void tearDown() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
     mat = null;
   }

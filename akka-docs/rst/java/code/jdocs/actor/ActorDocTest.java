@@ -5,12 +5,12 @@
 package jdocs.actor;
 
 import akka.actor.*;
+import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import jdocs.AbstractJavaTest;
 import static jdocs.actor.Messages.Swap.Swap;
 import static jdocs.actor.Messages.*;
-import static akka.japi.Util.immutableSeq;
 import akka.actor.CoordinatedShutdown;
 
 import akka.util.Timeout;
@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 import akka.testkit.TestActors;
 import scala.concurrent.Await;
 
-import akka.testkit.JavaTestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -473,14 +472,14 @@ public class ActorDocTest extends AbstractJavaTest {
     final ActorRef myActor = system.actorOf(Props.create(MyActor.class), "myactor");
     //#system-actorOf
     try {
-      new JavaTestKit(system) {
+      new TestKit(system) {
         {
           myActor.tell("hello", getRef());
           expectMsgEquals("hello");
         }
       };
     } finally {
-      JavaTestKit.shutdownActorSystem(system);
+      TestKit.shutdownActorSystem(system);
     }
   }
 
@@ -489,14 +488,14 @@ public class ActorDocTest extends AbstractJavaTest {
     final ActorSystem system = ActorSystem.create("MySystem", config);
     final ActorRef actor = system.actorOf(Props.create(GraduallyBuiltActor.class), "graduallyBuiltActor");
     try {
-      new JavaTestKit(system) {
+      new TestKit(system) {
         {
           actor.tell("hello", getRef());
           expectMsgEquals("hello");
         }
       };
     } finally {
-      JavaTestKit.shutdownActorSystem(system);
+      TestKit.shutdownActorSystem(system);
     }
   }
 
@@ -564,7 +563,7 @@ public class ActorDocTest extends AbstractJavaTest {
   @Test
   public void using_receiveTimeout() {
     final ActorRef myActor = system.actorOf(Props.create(ReceiveTimeoutActor.class));
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         myActor.tell("Hello", getRef());
         expectMsgEquals("Hello world");
@@ -617,7 +616,7 @@ public class ActorDocTest extends AbstractJavaTest {
   @Test
   public void using_hot_swap() {
     final ActorRef actor = system.actorOf(Props.create(HotSwapActor.class), "hot");
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         actor.tell("foo", getRef());
         actor.tell("foo", getRef());
@@ -690,7 +689,7 @@ public class ActorDocTest extends AbstractJavaTest {
   public void using_watch() {
     ActorRef actor = system.actorOf(Props.create(WatchActor.class));
 
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         actor.tell("kill", getRef());
         expectMsgEquals("finished");
@@ -737,7 +736,7 @@ public class ActorDocTest extends AbstractJavaTest {
     ActorRef a = system.actorOf(Props.empty());
     ActorRef b = system.actorOf(Props.create(Follower.class));
 
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         watch(b);
         system.stop(a);
@@ -748,7 +747,7 @@ public class ActorDocTest extends AbstractJavaTest {
   
   @Test
   public void usePatternsAskPipe() {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         ActorRef actorA = system.actorOf(TestActors.echoActorProps());
         ActorRef actorB = system.actorOf(TestActors.echoActorProps());
@@ -783,7 +782,7 @@ public class ActorDocTest extends AbstractJavaTest {
   
   @Test
   public void useKill() {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         ActorRef victim = system.actorOf(TestActors.echoActorProps());
         watch(victim);
@@ -797,7 +796,7 @@ public class ActorDocTest extends AbstractJavaTest {
   
   @Test
   public void usePoisonPill() {
-    new JavaTestKit(system) {
+    new TestKit(system) {
       {
         ActorRef victim = system.actorOf(TestActors.echoActorProps());
         watch(victim);
