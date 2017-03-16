@@ -1219,7 +1219,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val otherKeys = otherDigests.keySet
     val myKeys =
       if (totChunks == 1) dataEntries.keySet
-      else dataEntries.keysIterator.filter(key => math.abs(key.hashCode) % totChunks == chunk).toSet
+      else dataEntries.keysIterator.filter(key ⇒ math.abs(key.hashCode) % totChunks == chunk).toSet
     val otherMissingKeys = myKeys diff otherKeys
     val keys = (otherDifferentKeys ++ otherMissingKeys).take(maxDeltaElements)
     if (keys.nonEmpty) {
