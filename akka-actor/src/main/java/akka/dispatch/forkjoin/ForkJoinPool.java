@@ -1559,7 +1559,7 @@ public class ForkJoinPool extends AbstractExecutorService {
     private static final int SHUTDOWN    = 1 << 31;
     private static final int PL_LOCK     = 2;
     private static final int PL_SIGNAL   = 1;
-    private static final int PL_SPINS    = 1 << 8;
+    private static final int PL_SPINS    = Integer.getInteger("akka.dispatch.forkjoin.spins", 1 << 8);
 
     // access mode for WorkQueue
     static final int LIFO_QUEUE          =  0;
