@@ -5,6 +5,7 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
@@ -15,7 +16,7 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-object StreamLayout {
+@InternalApi private[stream] object StreamLayout {
 
   // compile-time constant
   final val Debug = false
@@ -31,7 +32,7 @@ object StreamLayout {
 /**
  * INTERNAL API
  */
-private[stream] object VirtualProcessor {
+@InternalApi private[stream] object VirtualProcessor {
   case object Inert {
     val subscriber = new CancellingSubscriber[Any]
   }
@@ -91,7 +92,7 @@ private[stream] object VirtualProcessor {
  * Publisher if things go wrong (like `request(0)` coming in from downstream) and
  * it must ensure that we drop the Subscriber reference when `cancel` is invoked.
  */
-private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] with Processor[T, T] {
+@InternalApi private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] with Processor[T, T] {
   import ReactiveStreamsCompliance._
   import VirtualProcessor._
 
@@ -312,7 +313,7 @@ private[stream] final class VirtualProcessor[T] extends AtomicReference[AnyRef] 
  * to the `Subscriber` after having hooked it up with the real `Publisher`, hence
  * the use of `Inert.subscriber` as a tombstone.
  */
-private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Publisher[T] {
+@InternalApi private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Publisher[T] {
   import ReactiveStreamsCompliance._
   import VirtualProcessor.Inert
 
@@ -346,7 +347,7 @@ private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Pub
 /**
  * INTERNAL API
  */
-final case class ProcessorModule[In, Out, Mat](
+@InternalApi private[akka] final case class ProcessorModule[In, Out, Mat](
   val createProcessor: () ⇒ (Processor[In, Out], Mat),
   attributes:          Attributes                     = DefaultAttributes.processor) extends StreamLayout.AtomicModule[FlowShape[In, Out], Mat] {
   val inPort = Inlet[In]("ProcessorModule.in")

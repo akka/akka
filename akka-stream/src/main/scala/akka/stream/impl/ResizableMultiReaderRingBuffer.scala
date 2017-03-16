@@ -6,6 +6,7 @@ package akka.stream.impl
 import scala.annotation.tailrec
 import scala.util.control.NoStackTrace
 import ResizableMultiReaderRingBuffer._
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
@@ -13,7 +14,7 @@ import ResizableMultiReaderRingBuffer._
  * Contrary to many other ring buffer implementations this one does not automatically overwrite the oldest
  * elements, rather, if full, the buffer tries to grow and rejects further writes if max capacity is reached.
  */
-private[akka] class ResizableMultiReaderRingBuffer[T](
+@InternalApi private[akka] class ResizableMultiReaderRingBuffer[T](
   initialSize: Int, // constructor param, not field
   maxSize:     Int, // constructor param, not field
   val cursors: Cursors) {
@@ -142,7 +143,7 @@ private[akka] class ResizableMultiReaderRingBuffer[T](
 /**
  * INTERNAL API
  */
-private[akka] object ResizableMultiReaderRingBuffer {
+@InternalApi private[akka] object ResizableMultiReaderRingBuffer {
   object NothingToReadException extends RuntimeException with NoStackTrace
 
   trait Cursors {

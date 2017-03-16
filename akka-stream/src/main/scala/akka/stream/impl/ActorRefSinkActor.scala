@@ -10,11 +10,12 @@ import akka.actor.Status
 import akka.stream.actor.WatermarkRequestStrategy
 import akka.actor.Props
 import akka.actor.Terminated
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
-private[akka] object ActorRefSinkActor {
+@InternalApi private[akka] object ActorRefSinkActor {
   def props(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any): Props =
     Props(new ActorRefSinkActor(ref, highWatermark, onCompleteMessage))
 }
@@ -22,7 +23,7 @@ private[akka] object ActorRefSinkActor {
 /**
  * INTERNAL API
  */
-private[akka] class ActorRefSinkActor(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any) extends ActorSubscriber {
+@InternalApi private[akka] class ActorRefSinkActor(ref: ActorRef, highWatermark: Int, onCompleteMessage: Any) extends ActorSubscriber {
   import ActorSubscriberMessage._
 
   override val requestStrategy = WatermarkRequestStrategy(highWatermark)

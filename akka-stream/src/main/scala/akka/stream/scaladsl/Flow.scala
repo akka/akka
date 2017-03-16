@@ -268,11 +268,11 @@ final class Flow[-In, +Out, +Mat](
 
 object Flow {
   private[stream] val identityTraversalBuilder =
-    LinearTraversalBuilder.fromBuilder(GraphStages.Identity.traversalBuilder, GraphStages.Identity.shape, Keep.right)
+    LinearTraversalBuilder.fromBuilder(GraphStages.identity.traversalBuilder, GraphStages.identity.shape, Keep.right)
 
   private[this] val identity: Flow[Any, Any, NotUsed] = new Flow[Any, Any, NotUsed](
     identityTraversalBuilder,
-    GraphStages.Identity.shape)
+    GraphStages.identity.shape)
 
   /**
    * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]

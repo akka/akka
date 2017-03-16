@@ -6,6 +6,7 @@ package akka.stream.impl.io
 import java.io.InputStream
 import java.nio.file.Path
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.IOResult
@@ -13,13 +14,14 @@ import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.impl.{ ErrorPublisher, SourceModule }
 import akka.util.ByteString
 import org.reactivestreams._
+
 import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API
  * Creates simple synchronous Source backed by the given file.
  */
-private[akka] final class FileSource(f: Path, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
+@InternalApi private[akka] final class FileSource(f: Path, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[IOResult]](shape) {
   require(chunkSize > 0, "chunkSize must be greater than 0")
   override def create(context: MaterializationContext) = {
@@ -49,7 +51,7 @@ private[akka] final class FileSource(f: Path, chunkSize: Int, val attributes: At
  * INTERNAL API
  * Source backed by the given input stream.
  */
-private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
+@InternalApi private[akka] final class InputStreamSource(createInputStream: () ⇒ InputStream, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[IOResult]](shape) {
   override def create(context: MaterializationContext) = {
     val materializer = ActorMaterializerHelper.downcast(context.materializer)

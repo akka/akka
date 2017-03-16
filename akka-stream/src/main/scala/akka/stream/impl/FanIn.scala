@@ -4,14 +4,15 @@
 package akka.stream.impl
 
 import akka.actor._
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings }
-import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
-import org.reactivestreams.{ Subscription, Subscriber }
+import akka.stream.actor.{ ActorSubscriber, ActorSubscriberMessage }
+import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
  * INTERNAL API
  */
-object FanIn {
+@InternalApi private[akka] object FanIn {
 
   final case class OnError(id: Int, cause: Throwable) extends DeadLetterSuppression with NoSerializationVerificationNeeded
   final case class OnComplete(id: Int) extends DeadLetterSuppression with NoSerializationVerificationNeeded
@@ -252,7 +253,7 @@ object FanIn {
 /**
  * INTERNAL API
  */
-abstract class FanIn(val settings: ActorMaterializerSettings, val inputCount: Int) extends Actor with ActorLogging with Pump {
+@DoNotInherit private[akka] class FanIn(val settings: ActorMaterializerSettings, val inputCount: Int) extends Actor with ActorLogging with Pump {
   import FanIn._
 
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)

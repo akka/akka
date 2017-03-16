@@ -7,7 +7,8 @@ import java.nio.channels.FileChannel
 import java.nio.file.{ Path, StandardOpenOption }
 
 import akka.Done
-import akka.actor.{ Deploy, ActorLogging, Props }
+import akka.actor.{ ActorLogging, Deploy, Props }
+import akka.annotation.InternalApi
 import akka.stream.IOResult
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
@@ -17,7 +18,7 @@ import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
-private[akka] object FileSubscriber {
+@InternalApi private[akka] object FileSubscriber {
   def props(f: Path, completionPromise: Promise[IOResult], bufSize: Int, openOptions: Set[StandardOpenOption]) = {
     require(bufSize > 0, "buffer size must be > 0")
     Props(classOf[FileSubscriber], f, completionPromise, bufSize, openOptions).withDeploy(Deploy.local)
@@ -25,7 +26,7 @@ private[akka] object FileSubscriber {
 }
 
 /** INTERNAL API */
-private[akka] class FileSubscriber(f: Path, completionPromise: Promise[IOResult], bufSize: Int, openOptions: Set[StandardOpenOption])
+@InternalApi private[akka] class FileSubscriber(f: Path, completionPromise: Promise[IOResult], bufSize: Int, openOptions: Set[StandardOpenOption])
   extends akka.stream.actor.ActorSubscriber
   with ActorLogging {
 
