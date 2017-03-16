@@ -538,37 +538,39 @@ class BehaviorSpec extends TypedSpec {
   object `A Static Behavior (native)` extends StaticBehavior with NativeSystem
   object `A Static Behavior (adapted)` extends StaticBehavior with AdaptedSystem
 
-  trait SignalOrMessageScalaBehavior extends Messages with BecomeWithLifecycle with Stoppable {
+  trait StatefulWithSignalScalaBehavior extends Messages with BecomeWithLifecycle with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
     def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
-      SActor.SignalOrMessage((ctx, sig) ⇒ {
-        monitor ! GotSignal(sig)
-        SActor.Same
-      }, (ctx, msg) ⇒ msg match {
-        case GetSelf ⇒
-          monitor ! Self(ctx.self)
+      SActor.Stateful(
+        (ctx, msg) ⇒ msg match {
+          case GetSelf ⇒
+            monitor ! Self(ctx.self)
+            SActor.Same
+          case Miss ⇒
+            monitor ! Missed
+            SActor.Unhandled
+          case Ignore ⇒
+            monitor ! Ignored
+            SActor.Same
+          case Ping ⇒
+            monitor ! Pong
+            behv(monitor, state)
+          case Swap ⇒
+            monitor ! Swapped
+            behv(monitor, state.next)
+          case GetState() ⇒
+            monitor ! state
+            SActor.Same
+          case Stop       ⇒ SActor.Stopped
+          case _: AuxPing ⇒ SActor.Unhandled
+        },
+        (ctx, sig) ⇒ {
+          monitor ! GotSignal(sig)
           SActor.Same
-        case Miss ⇒
-          monitor ! Missed
-          SActor.Unhandled
-        case Ignore ⇒
-          monitor ! Ignored
-          SActor.Same
-        case Ping ⇒
-          monitor ! Pong
-          behv(monitor, state)
-        case Swap ⇒
-          monitor ! Swapped
-          behv(monitor, state.next)
-        case GetState() ⇒
-          monitor ! state
-          SActor.Same
-        case Stop       ⇒ SActor.Stopped
-        case _: AuxPing ⇒ SActor.Unhandled
-      })
+        })
   }
-  object `A SignalOrMessage Behavior (scala,native)` extends SignalOrMessageScalaBehavior with NativeSystem
-  object `A SignalOrMessage Behavior (scala,adapted)` extends SignalOrMessageScalaBehavior with AdaptedSystem
+  object `A StatefulWithSignal Behavior (scala,native)` extends StatefulWithSignalScalaBehavior with NativeSystem
+  object `A StatefulWithSignal Behavior (scala,adapted)` extends StatefulWithSignalScalaBehavior with AdaptedSystem
 
   trait StatefulScalaBehavior extends Messages with Become with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
@@ -619,7 +621,7 @@ class BehaviorSpec extends TypedSpec {
   object `A Stateless Behavior (scala,native)` extends StatelessScalaBehavior with NativeSystem
   object `A Stateless Behavior (scala,adapted)` extends StatelessScalaBehavior with AdaptedSystem
 
-  trait WidenedScalaBehavior extends SignalOrMessageScalaBehavior with Reuse with Siphon {
+  trait WidenedScalaBehavior extends StatefulWithSignalScalaBehavior with Reuse with Siphon {
     import SActor.BehaviorDecorators
 
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
@@ -630,7 +632,7 @@ class BehaviorSpec extends TypedSpec {
   object `A widened Behavior (scala,native)` extends WidenedScalaBehavior with NativeSystem
   object `A widened Behavior (scala,adapted)` extends WidenedScalaBehavior with AdaptedSystem
 
-  trait DeferredScalaBehavior extends SignalOrMessageScalaBehavior {
+  trait DeferredScalaBehavior extends StatefulWithSignalScalaBehavior {
     override type Aux = Inbox[PreStart]
 
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
@@ -650,20 +652,19 @@ class BehaviorSpec extends TypedSpec {
   object `A deferred Behavior (scala,native)` extends DeferredScalaBehavior with NativeSystem
   object `A deferred Behavior (scala,adapted)` extends DeferredScalaBehavior with AdaptedSystem
 
-  trait TapScalaBehavior extends SignalOrMessageScalaBehavior with Reuse with SignalSiphon {
+  trait TapScalaBehavior extends StatefulWithSignalScalaBehavior with Reuse with SignalSiphon {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
       val inbox = Inbox[Either[Signal, Command]]("tapListener")
       (SActor.Tap(
         (_, sig) ⇒ inbox.ref ! Left(sig),
         (_, msg) ⇒ inbox.ref ! Right(msg),
-        super.behavior(monitor)._1
-      ), inbox)
+        super.behavior(monitor)._1), inbox)
     }
   }
   object `A tap Behavior (scala,native)` extends TapScalaBehavior with NativeSystem
   object `A tap Behavior (scala,adapted)` extends TapScalaBehavior with AdaptedSystem
 
-  trait RestarterScalaBehavior extends SignalOrMessageScalaBehavior with Reuse {
+  trait RestarterScalaBehavior extends StatefulWithSignalScalaBehavior with Reuse {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
       SActor.Restarter[Exception]().wrap(super.behavior(monitor)._1) → null
     }
@@ -703,37 +704,39 @@ class BehaviorSpec extends TypedSpec {
       override def apply(in: JActorContext[Command]) = f(in)
     }
 
-  trait SignalOrMessageJavaBehavior extends Messages with BecomeWithLifecycle with Stoppable {
+  trait StatefulWithSignalJavaBehavior extends Messages with BecomeWithLifecycle with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
     def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
-      JActor.signalOrMessage(fs((ctx, sig) ⇒ {
-        monitor ! GotSignal(sig)
-        SActor.Same
-      }), fc((ctx, msg) ⇒ msg match {
-        case GetSelf ⇒
-          monitor ! Self(ctx.getSelf)
+      JActor.stateful(
+        fc((ctx, msg) ⇒ msg match {
+          case GetSelf ⇒
+            monitor ! Self(ctx.getSelf)
+            SActor.Same
+          case Miss ⇒
+            monitor ! Missed
+            SActor.Unhandled
+          case Ignore ⇒
+            monitor ! Ignored
+            SActor.Same
+          case Ping ⇒
+            monitor ! Pong
+            behv(monitor, state)
+          case Swap ⇒
+            monitor ! Swapped
+            behv(monitor, state.next)
+          case GetState() ⇒
+            monitor ! state
+            SActor.Same
+          case Stop       ⇒ SActor.Stopped
+          case _: AuxPing ⇒ SActor.Unhandled
+        }),
+        fs((ctx, sig) ⇒ {
+          monitor ! GotSignal(sig)
           SActor.Same
-        case Miss ⇒
-          monitor ! Missed
-          SActor.Unhandled
-        case Ignore ⇒
-          monitor ! Ignored
-          SActor.Same
-        case Ping ⇒
-          monitor ! Pong
-          behv(monitor, state)
-        case Swap ⇒
-          monitor ! Swapped
-          behv(monitor, state.next)
-        case GetState() ⇒
-          monitor ! state
-          SActor.Same
-        case Stop       ⇒ SActor.Stopped
-        case _: AuxPing ⇒ SActor.Unhandled
-      }))
+        }))
   }
-  object `A SignalOrMessage Behavior (java,native)` extends SignalOrMessageJavaBehavior with NativeSystem
-  object `A SignalOrMessage Behavior (java,adapted)` extends SignalOrMessageJavaBehavior with AdaptedSystem
+  object `A StatefulWithSignal Behavior (java,native)` extends StatefulWithSignalJavaBehavior with NativeSystem
+  object `A StatefulWithSignal Behavior (java,adapted)` extends StatefulWithSignalJavaBehavior with AdaptedSystem
 
   trait StatefulJavaBehavior extends Messages with Become with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
@@ -786,7 +789,7 @@ class BehaviorSpec extends TypedSpec {
   object `A Stateless Behavior (java,native)` extends StatelessJavaBehavior with NativeSystem
   object `A Stateless Behavior (java,adapted)` extends StatelessJavaBehavior with AdaptedSystem
 
-  trait WidenedJavaBehavior extends SignalOrMessageJavaBehavior with Reuse with Siphon {
+  trait WidenedJavaBehavior extends StatefulWithSignalJavaBehavior with Reuse with Siphon {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
       val inbox = Inbox[Command]("widenedListener")
       JActor.widened(super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x ⇒ { inbox.ref ! x; x })))) → inbox
@@ -795,7 +798,7 @@ class BehaviorSpec extends TypedSpec {
   object `A widened Behavior (java,native)` extends WidenedJavaBehavior with NativeSystem
   object `A widened Behavior (java,adapted)` extends WidenedJavaBehavior with AdaptedSystem
 
-  trait DeferredJavaBehavior extends SignalOrMessageJavaBehavior {
+  trait DeferredJavaBehavior extends StatefulWithSignalJavaBehavior {
     override type Aux = Inbox[PreStart]
 
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
@@ -815,20 +818,19 @@ class BehaviorSpec extends TypedSpec {
   object `A deferred Behavior (java,native)` extends DeferredJavaBehavior with NativeSystem
   object `A deferred Behavior (java,adapted)` extends DeferredJavaBehavior with AdaptedSystem
 
-  trait TapJavaBehavior extends SignalOrMessageJavaBehavior with Reuse with SignalSiphon {
+  trait TapJavaBehavior extends StatefulWithSignalJavaBehavior with Reuse with SignalSiphon {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
       val inbox = Inbox[Either[Signal, Command]]("tapListener")
       (JActor.tap(
         ps((_, sig) ⇒ inbox.ref ! Left(sig)),
         pc((_, msg) ⇒ inbox.ref ! Right(msg)),
-        super.behavior(monitor)._1
-      ), inbox)
+        super.behavior(monitor)._1), inbox)
     }
   }
   object `A tap Behavior (java,native)` extends TapJavaBehavior with NativeSystem
   object `A tap Behavior (java,adapted)` extends TapJavaBehavior with AdaptedSystem
 
-  trait RestarterJavaBehavior extends SignalOrMessageJavaBehavior with Reuse {
+  trait RestarterJavaBehavior extends StatefulWithSignalJavaBehavior with Reuse {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
       JActor.restarter(classOf[Exception], JActor.OnFailure.RESTART, super.behavior(monitor)._1) → null
     }

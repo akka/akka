@@ -263,25 +263,7 @@ object Actor {
   def Ignore[T]: Behavior[T] = ignoreBehavior.asInstanceOf[Behavior[T]]
 
   /**
-   * Construct an actor behavior that can react both to lifecycle signals and
-   * incoming messages. After spawning this actor from another actor (or as the
-   * guardian of an [[akka.typed.ActorSystem]]) it will be executed within an
-   * [[ActorContext]] that allows access to the system, spawning and watching
-   * other actors, etc.
-   *
-   * In either case—signal or message—the next behavior must be returned. If no
-   * change is desired, use `Actor.same()`.
-   */
-  final case class SignalOrMessage[T](
-    signal: (ActorContext[T], Signal) ⇒ Behavior[T],
-    mesg:   (ActorContext[T], T) ⇒ Behavior[T]) extends Behavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = signal(ctx, msg)
-    override def message(ctx: AC[T], msg: T): Behavior[T] = mesg(ctx, msg)
-    override def toString = s"SignalOrMessage(${LineNumbers(signal)},${LineNumbers(mesg)})"
-  }
-
-  /**
-   * Construct an actor behavior that can react to incoming messages but not to
+   * Construct an actor behavior that can react to both incoming messages and
    * lifecycle signals. After spawning this actor from another actor (or as the
    * guardian of an [[akka.typed.ActorSystem]]) it will be executed within an
    * [[ActorContext]] that allows access to the system, spawning and watching
@@ -290,8 +272,11 @@ object Actor {
    * This constructor is called stateful because processing the next message
    * results in a new behavior that can potentially be different from this one.
    */
-  final case class Stateful[T](behavior: (ActorContext[T], T) ⇒ Behavior[T]) extends Behavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = Unhandled
+  final case class Stateful[T](
+    behavior: (ActorContext[T], T) ⇒ Behavior[T],
+    signal:   (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
+    extends Behavior[T] {
+    override def management(ctx: AC[T], msg: Signal): Behavior[T] = signal(ctx, msg)
     override def message(ctx: AC[T], msg: T) = behavior(ctx, msg)
     override def toString = s"Stateful(${LineNumbers(behavior)})"
   }

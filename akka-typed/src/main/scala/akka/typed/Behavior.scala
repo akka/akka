@@ -3,6 +3,8 @@
  */
 package akka.typed
 
+import akka.annotation.InternalApi
+
 /**
  * The behavior of an actor defines how it reacts to the messages that it
  * receives. The message may either be of the type that the Actor declares
@@ -92,6 +94,12 @@ object Behavior {
     override def message(ctx: ActorContext[Nothing], msg: Nothing): Behavior[Nothing] = throw new UnsupportedOperationException("Not Implemented")
     override def toString = "Unhandled"
   }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] val unhandledSignal: (ActorContext[Nothing], Signal) ⇒ Behavior[Nothing] =
+    (_, _) ⇒ unhandledBehavior
 
   /**
    * INTERNAL API.

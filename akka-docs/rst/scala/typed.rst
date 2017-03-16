@@ -248,7 +248,7 @@ Actor will perform its job on its own accord, we do not need to send messages
 from the outside, so we declare it to be of type ``NotUsed``. Actors receive not
 only external messages, they also are notified of certain system events,
 so-called Signals. In order to get access to those we choose to implement this
-particular one using the :class:`SignalOrMessage` behavior decorator. The
+particular one using the :class:`Stateful` behavior decorator. The
 provided ``signal`` function will be invoked for signals (subclasses of :class:`Signal`)
 or the ``mesg`` function for user messages.
 

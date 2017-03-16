@@ -26,7 +26,7 @@ public class ActorCompile {
     }
   }
 
-  Behavior<MyMsg> actor1 = signalOrMessage((ctx, signal) -> same(),  (ctx, msg) -> stopped());
+  Behavior<MyMsg> actor1 = stateful((ctx, msg) -> stopped(), (ctx, signal) -> same());
   Behavior<MyMsg> actor2 = stateful((ctx, msg) -> unhandled());
   Behavior<MyMsg> actor3 = stateless((ctx, msg) -> {});
   Behavior<MyMsg> actor4 = empty();
