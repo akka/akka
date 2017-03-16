@@ -30,8 +30,8 @@ supplies so that the :class:`HelloWorld` Actor can send back the confirmation
 message.
 
 The behavior of the Actor is defined as the :meth:`greeter` value with the help
-of the :class:`Static` behavior constructor—there are many different ways of
-formulating behaviors as we shall see in the following. The “static” behavior
+of the :class:`Stateless` behavior constructor—there are many different ways of
+formulating behaviors as we shall see in the following. The “stateless” behavior
 is not capable of changing in response to a message, it will stay the same
 until the Actor is stopped by its parent.
 
@@ -175,10 +175,11 @@ as the following:
 
 .. includecode:: code/docs/akka/typed/IntroSpec.scala#chatroom-behavior
 
-The core of this behavior is again static, the chat room itself does not change
+The core of this behavior is stateful, the chat room itself does not change
 into something else when sessions are established, but we introduce a variable
-that tracks the opened sessions. When a new :class:`GetSession` command comes
-in we add that client to the list and then we need to create the session’s
+that tracks the opened sessions. Note that by using a method parameter a ``var``
+is not needed. When a new :class:`GetSession` command comes in we add that client to the 
+list that is in the returned behavior. Then we also need to create the session’s
 :class:`ActorRef` that will be used to post messages. In this case we want to
 create a very simple Actor that just repackages the :class:`PostMessage`
 command into a :class:`PostSessionMessage` command which also includes the
@@ -194,15 +195,8 @@ clients. But we do not want to give the ability to send
 :class:`PostSessionMessage` commands to arbitrary clients, we reserve that
 right to the wrappers we create—otherwise clients could pose as completely
 different screen names (imagine the :class:`GetSession` protocol to include
-authentication information to further secure this). Therefore we narrow the
-behavior down to only accepting :class:`GetSession` commands before exposing it
-to the world, hence the type of the ``behavior`` value is
-:class:`Behavior[GetSession]` instead of :class:`Behavior[Command]`.
-
-Narrowing the type of a behavior is always a safe operation since it only
-restricts what clients can do. If we were to widen the type then clients could
-send other messages that were not foreseen while writing the source code for
-the behavior.
+authentication information to further secure this). Therefore :class:`PostSessionMessage`
+has ``private`` visibility and can't be created outside the actor.
 
 If we did not care about securing the correspondence between a session and a
 screen name then we could change the protocol such that :class:`PostMessage` is
@@ -215,13 +209,6 @@ can use a :class:`ActorRef[Command]` wherever an
 former simply speaks more languages than the latter. The opposite would be
 problematic, so passing an :class:`ActorRef[PostSessionMessage]` where
 :class:`ActorRef[Command]` is required will lead to a type error.
-
-The final piece of this behavior definition is the :class:`ContextAware`
-decorator that we use in order to obtain access to the :class:`ActorContext`
-within the :class:`Static` behavior definition. This decorator invokes the
-provided function when the first message is received and thereby creates the
-real behavior that will be used going forward—the decorator is discarded after
-it has done its job.
 
 Trying it out
 -------------
@@ -261,11 +248,9 @@ Actor will perform its job on its own accord, we do not need to send messages
 from the outside, so we declare it to be of type ``NotUsed``. Actors receive not
 only external messages, they also are notified of certain system events,
 so-called Signals. In order to get access to those we choose to implement this
-particular one using the :class:`Full` behavior decorator. The name stems from
-the fact that within this we have full access to all aspects of the Actor. The
-provided function will be invoked for signals (wrapped in :class:`Sig`) or user
-messages (wrapped in :class:`Msg`) and the wrapper also contains a reference to
-the :class:`ActorContext`.
+particular one using the :class:`SignalOrMessage` behavior decorator. The
+provided ``signal`` function will be invoked for signals (subclasses of :class:`Signal`)
+or the ``mesg`` function for user messages.
 
 This particular main Actor reacts to two signals: when it is started it will
 first receive the :class:`PreStart` signal, upon which the chat room and the
