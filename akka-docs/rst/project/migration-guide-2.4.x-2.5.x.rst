@@ -240,6 +240,17 @@ New::
     override def get(system: ActorSystem): MyExtension = super.get(system)
   }
 
+Actor Mailbox
+=============
+
+Scala 2.12 is using the standard JDK8 ForkJoinPool, which may cause performance regression for
+some Actor messaging scenarios. Therefore we have embedded the ForkJoinPool from Scala 2.11 in
+Akka. This breaks binary backwards compatibility for custom ``Mailbox`` implementations that were
+compiled with Akka 2.4.
+
+This is only a problem if you are using a library that provides a custom ``Mailbox`` implementation.
+The change is source compatible and such library should be recompiled and released for Akka 2.5.
+
 Streams
 =======
 
