@@ -36,6 +36,7 @@ abstract class Materializer {
    * stream. The result can be highly implementation specific, ranging from
    * local actor chains to remote-deployed processing networks.
    */
+  // TODO can we deprecate this overload?
   def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat
 
   /**
