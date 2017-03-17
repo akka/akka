@@ -21,13 +21,13 @@ import akka.annotation.ApiMayChange
 @DoNotInherit
 @ApiMayChange
 trait ActorContext[T] extends javadsl.ActorContext[T] with scaladsl.ActorContext[T] {
-  def getChild(name: String): Optional[ActorRef[Void]] =
+  override def getChild(name: String): Optional[ActorRef[Void]] =
     child(name) match {
       case Some(c) ⇒ Optional.of(c.upcast[Void])
       case None    ⇒ Optional.empty()
     }
 
-  def getChildren(): java.util.List[akka.typed.ActorRef[Void]] = {
+  override def getChildren(): java.util.List[akka.typed.ActorRef[Void]] = {
     val c = children
     val a = new ArrayList[ActorRef[Void]](c.size)
     val i = c.iterator
@@ -35,28 +35,28 @@ trait ActorContext[T] extends javadsl.ActorContext[T] with scaladsl.ActorContext
     a
   }
 
-  def getExecutionContext(): scala.concurrent.ExecutionContextExecutor =
+  override def getExecutionContext(): scala.concurrent.ExecutionContextExecutor =
     executionContext
 
-  def getMailboxCapacity(): Int =
+  override def getMailboxCapacity(): Int =
     mailboxCapacity
 
-  def getSelf(): akka.typed.ActorRef[T] =
+  override def getSelf(): akka.typed.ActorRef[T] =
     self
 
-  def getSystem(): akka.typed.ActorSystem[Void] =
+  override def getSystem(): akka.typed.ActorSystem[Void] =
     system.asInstanceOf[ActorSystem[Void]]
 
-  def spawn[U](behavior: akka.typed.Behavior[U], name: String): akka.typed.ActorRef[U] =
+  override def spawn[U](behavior: akka.typed.Behavior[U], name: String): akka.typed.ActorRef[U] =
     spawn(behavior, name, EmptyDeploymentConfig)
 
-  def spawnAnonymous[U](behavior: akka.typed.Behavior[U]): akka.typed.ActorRef[U] =
+  override def spawnAnonymous[U](behavior: akka.typed.Behavior[U]): akka.typed.ActorRef[U] =
     spawnAnonymous(behavior, EmptyDeploymentConfig)
 
-  def spawnAdapter[U](f: java.util.function.Function[U, T]): akka.typed.ActorRef[U] =
+  override def createAdapter[U](f: java.util.function.Function[U, T]): akka.typed.ActorRef[U] =
     spawnAdapter(f.apply _)
 
-  def spawnAdapter[U](f: java.util.function.Function[U, T], name: String): akka.typed.ActorRef[U] =
+  override def createAdapter[U](f: java.util.function.Function[U, T], name: String): akka.typed.ActorRef[U] =
     spawnAdapter(f.apply _, name)
 }
 
