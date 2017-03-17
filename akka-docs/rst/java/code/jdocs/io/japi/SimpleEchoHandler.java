@@ -51,7 +51,7 @@ public class SimpleEchoHandler extends AbstractActor {
   
       })
       .match(ConnectionClosed.class, msg -> {
-        getContext().stop(self());
+        getContext().stop(getSelf());
       })
       .build();
   }
@@ -71,7 +71,7 @@ public class SimpleEchoHandler extends AbstractActor {
           closing = true;
         } else {
           // could also be ErrorClosed, in which case we just give up
-          getContext().stop(self());
+          getContext().stop(getSelf());
         }
       })
       .build();
@@ -98,7 +98,7 @@ public class SimpleEchoHandler extends AbstractActor {
 
     if (stored > maxStored) {
       log.warning("drop connection to [{}] (buffer overrun)", remote);
-      getContext().stop(self());
+      getContext().stop(getSelf());
 
     } else if (stored > highWatermark) {
       log.debug("suspending reading");
@@ -120,7 +120,7 @@ public class SimpleEchoHandler extends AbstractActor {
     
     if (storage.isEmpty()) {
       if (closing) {
-        getContext().stop(self());
+        getContext().stop(getSelf());
       } else {
         getContext().unbecome();
       }

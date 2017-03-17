@@ -49,5 +49,5 @@ Step        Description
 Full Source Code of the Fault Tolerance Sample
 ------------------------------------------------------
 
-.. includecode:: code/jdocs/actor/japi/FaultHandlingDocSample.java#all
+.. includecode:: code/jdocs/actor/FaultHandlingDocSample.java#all
 

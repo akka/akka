@@ -51,7 +51,7 @@ public class FactorialFrontend extends AbstractActor {
           if (repeat)
             sendJobs();
           else
-            getContext().stop(self());
+            getContext().stop(getSelf());
         }
       })
       .match(ReceiveTimeout.class, x -> {

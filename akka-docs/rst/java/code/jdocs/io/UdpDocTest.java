@@ -35,7 +35,7 @@ public class UdpDocTest {
     public Receive createReceive() {
       return receiveBuilder()
         .match(Udp.SimpleSenderReady.class, message -> {
-          getContext().become(ready(sender()));
+          getContext().become(ready(getSender()));
           //#sender
           getSender().tell(UdpMessage.send(ByteString.fromString("hello"), remote), getSelf());
           //#sender
@@ -68,7 +68,7 @@ public class UdpDocTest {
       // request creation of a bound listen socket
       final ActorRef mgr = Udp.get(getContext().getSystem()).getManager();
       mgr.tell(
-          UdpMessage.bind(self(), new InetSocketAddress("localhost", 0)),
+          UdpMessage.bind(getSelf(), new InetSocketAddress("localhost", 0)),
          getSelf());
     }
 
@@ -116,14 +116,14 @@ public class UdpDocTest {
       
       // create a restricted a.k.a. “connected” socket
       final ActorRef mgr = UdpConnected.get(getContext().getSystem()).getManager();
-      mgr.tell(UdpConnectedMessage.connect(self(), remote), getSelf());
+      mgr.tell(UdpConnectedMessage.connect(getSelf(), remote), getSelf());
     }
 
     @Override
     public Receive createReceive() {
       return receiveBuilder()
         .match(UdpConnected.Connected.class, message -> {
-          getContext().become(ready(sender()));
+          getContext().become(ready(getSender()));
           //#connected
           getSender()
             .tell(UdpConnectedMessage.send(ByteString.fromString("hello")),
@@ -154,7 +154,7 @@ public class UdpDocTest {
           connection.tell(message, getSelf());
         })
         .match(UdpConnected.Disconnected.class, x -> {
-          getContext().stop(self());
+          getContext().stop(getSelf());
         })
         .build();
     }

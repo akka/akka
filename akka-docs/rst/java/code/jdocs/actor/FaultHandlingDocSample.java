@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.actor.japi;
+package jdocs.actor;
 
 //#all
 //#imports
@@ -14,6 +14,7 @@ import akka.actor.*;
 import akka.dispatch.Mapper;
 import akka.event.LoggingReceive;
 import akka.japi.pf.DeciderBuilder;
+import akka.pattern.Patterns;
 import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -27,10 +28,10 @@ import static akka.actor.SupervisorStrategy.escalate;
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
 
-import static jdocs.actor.japi.FaultHandlingDocSample.WorkerApi.*;
-import static jdocs.actor.japi.FaultHandlingDocSample.CounterServiceApi.*;
-import static jdocs.actor.japi.FaultHandlingDocSample.CounterApi.*;
-import static jdocs.actor.japi.FaultHandlingDocSample.StorageApi.*;
+import static jdocs.actor.FaultHandlingDocSample.WorkerApi.*;
+import static jdocs.actor.FaultHandlingDocSample.CounterServiceApi.*;
+import static jdocs.actor.FaultHandlingDocSample.CounterApi.*;
+import static jdocs.actor.FaultHandlingDocSample.StorageApi.*;
 
 //#imports
 
@@ -148,7 +149,7 @@ public class FaultHandlingDocSample {
           counterService.tell(new Increment(1), getSelf());
           counterService.tell(new Increment(1), getSelf());
           // Send current progress to the initial sender
-          pipe(ask(counterService, GetCurrentCount, askTimeout)
+          pipe(Patterns.ask(counterService, GetCurrentCount, askTimeout)
             .mapTo(classTag(CurrentCount.class))
             .map(new Mapper<CurrentCount, Progress>() {
               public Progress apply(CurrentCount c) {

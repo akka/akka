@@ -29,7 +29,7 @@ public class Watcher extends AbstractActor {
       })
       .match(Terminated.class, msg -> {
         latch.countDown();
-        if (latch.getCount() == 0) getContext().stop(self());
+        if (latch.getCount() == 0) getContext().stop(getSelf());
       })
       .build();
   }

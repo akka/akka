@@ -48,7 +48,7 @@ public class IODocTest extends AbstractJavaTest {
     @Override
     public void preStart() throws Exception {
       final ActorRef tcp = Tcp.get(getContext().getSystem()).manager();
-      tcp.tell(TcpMessage.bind(self(),
+      tcp.tell(TcpMessage.bind(getSelf(),
           new InetSocketAddress("localhost", 0), 100), getSelf());
     }
 
@@ -60,7 +60,7 @@ public class IODocTest extends AbstractJavaTest {
   
         })
         .match(CommandFailed.class, msg -> {
-          getContext().stop(self());
+          getContext().stop(getSelf());
         
         })
         .match(Connected.class, conn -> {
@@ -87,7 +87,7 @@ public class IODocTest extends AbstractJavaTest {
           getSender().tell(TcpMessage.write(data), getSelf());
         })
         .match(ConnectionClosed.class, msg -> {
-          getContext().stop(self());
+          getContext().stop(getSelf());
         })
         .build();
     }
@@ -118,13 +118,13 @@ public class IODocTest extends AbstractJavaTest {
       return receiveBuilder()
         .match(CommandFailed.class, msg -> {
           listener.tell("failed", getSelf());
-          getContext().stop(self());
+          getContext().stop(getSelf());
           
         })
         .match(Connected.class, msg -> {
           listener.tell(msg, getSelf());
-          getSender().tell(TcpMessage.register(self()), getSelf());
-          getContext().become(connected(sender()));
+          getSender().tell(TcpMessage.register(getSelf()), getSelf());
+          getContext().become(connected(getSender()));
         })
         .build();
     }
@@ -144,7 +144,7 @@ public class IODocTest extends AbstractJavaTest {
           connection.tell(TcpMessage.close(), getSelf());
         })
         .match(ConnectionClosed.class, msg -> {
-          getContext().stop(self());
+          getContext().stop(getSelf());
         })
         .build();
     }

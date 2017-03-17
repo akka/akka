@@ -398,7 +398,7 @@ public class ActorDocTest extends AbstractJavaTest {
             getSender().tell("service unavailable, shutting down", getSelf())
         )
         .match(Terminated.class, t -> t.actor().equals(worker), t -> 
-          getContext().stop(self())
+          getContext().stop(getSelf())
         )
         .build();
     }
@@ -716,7 +716,7 @@ public class ActorDocTest extends AbstractJavaTest {
           getContext().become(active(ref));
         })
         .match(ActorIdentity.class, id -> !id.getActorRef().isPresent(), id -> {
-          getContext().stop(self());
+          getContext().stop(getSelf());
         })
         .build();
     }
@@ -724,7 +724,7 @@ public class ActorDocTest extends AbstractJavaTest {
     final AbstractActor.Receive active(final ActorRef another) {
       return receiveBuilder()
         .match(Terminated.class, t -> t.actor().equals(another), t ->
-          getContext().stop(self())
+          getContext().stop(getSelf())
         )
         .build();
     }
