@@ -279,6 +279,28 @@ The actual logic for determining whether to close the connection is quite involv
 request's method, protocol and potential `Connection` header as well as the response's protocol, entity and
 potential `Connection` header. See @github[this test](/akka-http-core/src/test/scala/akka/http/impl/engine/rendering/ResponseRendererSpec.scala#L422) for a full table of what happens when.
 
+<a id="custom-headers-java"></a>
+## Custom Headers
+
+Sometimes you may need to model a custom header type which is not part of HTTP and still be able to use it
+as convenient as is possible with the built-in types.
+
+Because of the number of ways one may interact with headers (i.e. try to convert a `CustomHeader` to a `RawHeader`
+or the other way around etc), a couple of helper classes for custom Header types are provided by Akka HTTP.
+Thanks to extending `ModeledCustomHeader` instead of the plain `CustomHeader` the following methods are at your disposal:
+
+@@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #modeled-api-key-custom-header }
+
+Which allows the this modeled custom header to be used and created in the following ways:
+
+@@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #conversion-creation-custom-header }
+
+Including usage within the header directives like in the following @ref[headerValuePF](../routing-dsl/directives/header-directives/headerValuePF.md#headervaluepf) example:
+
+@@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #header-value-pf }
+
+One can also directly extend `CustomHeader` which requires less boilerplate, however that has the downside of
+having to deal with converting `HttpHeader` instances to your custom one. For only rendering such header however it would be enough.
 
 ## Parsing / Rendering
 
