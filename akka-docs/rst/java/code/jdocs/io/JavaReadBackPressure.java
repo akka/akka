@@ -46,7 +46,7 @@ public class JavaReadBackPressure {
             tcp = Tcp.get(getContext().getSystem()).manager();
             final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
             tcp.tell(
-               TcpMessage.bind(self(), new InetSocketAddress("localhost", 0), 100, options, true),
+               TcpMessage.bind(getSelf(), new InetSocketAddress("localhost", 0), 100, options, true),
               getSelf()
             );
             //#pull-mode-bind

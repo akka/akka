@@ -113,7 +113,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
           releaseWaiting();
         })
         .match(WantToPass.class, wtp -> {
-          waitQueue.add(sender());
+          waitQueue.add(getSender());
         })
         .build();
     }

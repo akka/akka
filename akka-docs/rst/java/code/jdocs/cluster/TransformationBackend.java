@@ -18,13 +18,13 @@ public class TransformationBackend extends AbstractActor {
   //subscribe to cluster changes, MemberUp
   @Override
   public void preStart() {
-    cluster.subscribe(self(), MemberUp.class);
+    cluster.subscribe(getSelf(), MemberUp.class);
   }
 
   //re-subscribe when restart
   @Override
   public void postStop() {
-    cluster.unsubscribe(self());
+    cluster.unsubscribe(getSelf());
   }
 
   @Override
