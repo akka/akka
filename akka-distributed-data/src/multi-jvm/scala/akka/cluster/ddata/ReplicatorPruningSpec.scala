@@ -47,6 +47,8 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
   val KeyA = GCounterKey("A")
   val KeyB = ORSetKey[String]("B")
   val KeyC = PNCounterMapKey[String]("C")
+  val KeyD = ORMultiMapKey[String, String]("D")
+  val KeyE = ORMapKey[String, GSet[String]]("E")
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
@@ -89,6 +91,12 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) { _ increment "x" increment "y" }
       expectMsg(UpdateSuccess(KeyC, None))
 
+      replicator ! Update(KeyD, ORMultiMap.empty[String, String], WriteAll(timeout)) { _ + ("a", Set("A")) }
+      expectMsg(UpdateSuccess(KeyD, None))
+
+      replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteAll(timeout)) { _ + ("a", GSet.empty[String].add("A")) }
+      expectMsg(UpdateSuccess(KeyE, None))
+
       enterBarrier("updates-done")
 
       replicator ! Get(KeyA, ReadLocal)
@@ -104,7 +112,23 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       oldMap.get("x") should be(Some(3))
       oldMap.get("y") should be(Some(3))
 
+      replicator ! Get(KeyD, ReadLocal)
+      val oldMultiMap = expectMsgType[GetSuccess[ORMultiMap[String, String]]].dataValue
+      oldMultiMap.get("a") should be(Some(Set("A")))
+
+      replicator ! Get(KeyE, ReadLocal)
+      val oldORMap = expectMsgType[GetSuccess[ORMap[String, GSet[String]]]].dataValue
+      val GSet(d) = oldORMap.entries("a")
+      d should be(Set("A"))
+
       enterBarrier("get-old")
+
+      runOn(third) {
+        replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteLocal) { _ - "a" }
+        expectMsg(UpdateSuccess(KeyE, None))
+      }
+
+      enterBarrier("remove-element")
 
       runOn(first) {
         cluster.leave(node(third).address)
@@ -152,6 +176,25 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
               case g @ GetSuccess(KeyC, _) ⇒
                 g.get(KeyC).entries should be(Map("x" → 3L, "y" → 3L))
                 g.get(KeyC).needPruningFrom(thirdUniqueAddress) should be(false)
+            }
+          }
+        }
+        within(5.seconds) {
+          awaitAssert {
+            replicator ! Get(KeyD, ReadLocal)
+            expectMsgPF() {
+              case g @ GetSuccess(KeyD, _) ⇒
+                g.get(KeyD).entries("a") should be(Set("A"))
+                g.get(KeyD).needPruningFrom(thirdUniqueAddress) should be(false)
+            }
+          }
+        }
+        within(5.seconds) {
+          awaitAssert {
+            replicator ! Get(KeyE, ReadLocal)
+            expectMsgPF() {
+              case g @ GetSuccess(KeyE, _) ⇒
+                g.get(KeyE).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
         }

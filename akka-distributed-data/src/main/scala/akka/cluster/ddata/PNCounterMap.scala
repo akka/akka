@@ -6,10 +6,12 @@ package akka.cluster.ddata
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import java.math.BigInteger
+
 import akka.annotation.InternalApi
+import akka.cluster.ddata.ORMap._
 
 object PNCounterMap {
-  def empty[A]: PNCounterMap[A] = new PNCounterMap(ORMap.empty)
+  def empty[A]: PNCounterMap[A] = new PNCounterMap(ORMap.emptyWithPNCounterMapTag)
   def apply[A](): PNCounterMap[A] = empty
   /**
    * Java API
@@ -30,9 +32,10 @@ object PNCounterMap {
 @SerialVersionUID(1L)
 final class PNCounterMap[A] private[akka] (
   private[akka] val underlying: ORMap[A, PNCounter])
-  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+  extends DeltaReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
 
   type T = PNCounterMap[A]
+  type D = ORMap.DeltaOp
 
   /** Scala API */
   def entries: Map[A, BigInt] = underlying.entries.map { case (k, c) ⇒ k → c.value }
@@ -123,6 +126,14 @@ final class PNCounterMap[A] private[akka] (
 
   override def merge(that: PNCounterMap[A]): PNCounterMap[A] =
     new PNCounterMap(underlying.merge(that.underlying))
+
+  override def resetDelta: PNCounterMap[A] =
+    new PNCounterMap(underlying.resetDelta)
+
+  override def delta: Option[D] = underlying.delta
+
+  override def mergeDelta(thatDelta: D): PNCounterMap[A] =
+    new PNCounterMap(underlying.mergeDelta(thatDelta))
 
   override def modifiedByNodes: Set[UniqueAddress] =
     underlying.modifiedByNodes
