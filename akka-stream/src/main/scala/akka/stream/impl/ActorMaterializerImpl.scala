@@ -96,7 +96,14 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
   override def executionContext: ExecutionContextExecutor = delegate.executionContext
 
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
-    delegate.materialize(runnable)
+    delegate match {
+      case am: PhasedFusingActorMaterializer ⇒
+        materialize(runnable, am.defaultInitialAttributes)
+
+      case other ⇒
+        throw new IllegalStateException(s"SubFusing only supported by [PhasedFusingActorMaterializer], " +
+          s"yet was used with [${other.getClass.getName}]!")
+    }
 
   override def materialize[Mat](runnable: Graph[ClosedShape, Mat], initialAttributes: Attributes): Mat = {
     if (PhasedFusingActorMaterializer.Debug) println(s"Using [${getClass.getSimpleName}] to materialize [${runnable}]")

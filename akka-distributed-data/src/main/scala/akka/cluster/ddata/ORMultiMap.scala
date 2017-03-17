@@ -22,7 +22,6 @@ object ORMultiMap {
    * Java API
    */
   def create[A, B](): ORMultiMap[A, B] = empty[A, B]
-  def createWithDeltaDelta[A, B](): ORMultiMap[A, B] = emptyWithValueDeltas[A, B]
 
   /**
    * Extract the [[ORMultiMap#entries]].
