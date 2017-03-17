@@ -39,7 +39,7 @@ public class Buncher extends AbstractFSM<State, Data> {
         // reuse this matcher
         final UnitMatch<Data> m = UnitMatch.create(
           matchData(Todo.class,
-            todo -> todo.getTarget().tell(new Batch(todo.getQueue()), self())));
+            todo -> todo.getTarget().tell(new Batch(todo.getQueue()), getSelf())));
         m.match(stateData());
       }).
       state(Idle, Active, () -> {/* Do something here */}));

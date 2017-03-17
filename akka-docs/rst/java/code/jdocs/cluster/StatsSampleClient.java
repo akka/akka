@@ -53,7 +53,7 @@ public class StatsSampleClient extends AbstractActor {
   //re-subscribe when restart
   @Override
   public void postStop() {
-    cluster.unsubscribe(self());
+    cluster.unsubscribe(getSelf());
     tickTask.cancel();
   }
 

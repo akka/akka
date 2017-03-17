@@ -131,10 +131,10 @@ public class FSMDocTest extends AbstractJavaTest {
           log().warning("Failure in state " + state + " with data " + data + "\n" +
             "Events leading up to this point:\n\t" + lastEvents);
           //#logging-fsm
-          target.tell(reason.cause(), self());
-          target.tell(state, self());
-          target.tell(data, self());
-          target.tell(lastEvents, self());
+          target.tell(reason.cause(), getSelf());
+          target.tell(state, getSelf());
+          target.tell(data, getSelf());
+          target.tell(lastEvents, getSelf());
           //#logging-fsm
         })
       );
@@ -143,11 +143,11 @@ public class FSMDocTest extends AbstractJavaTest {
       startWith(SomeState, Data.Foo);
       when(SomeState, matchEvent(ActorRef.class, Data.class, (ref, data) -> {
         target = ref;
-        target.tell("going active", self());
+        target.tell("going active", getSelf());
         return goTo(Active);
       }));
       when(Active, matchEventEquals("stop", (event, data) -> {
-        target.tell("stopping", self());
+        target.tell("stopping", getSelf());
         return stop(new Failure("This is not the error you're looking for"));
       }));
       initialize();
