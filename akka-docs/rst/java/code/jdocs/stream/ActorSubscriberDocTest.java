@@ -179,7 +179,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
           })
           .match(ActorSubscriberMessage.onCompleteInstance().getClass(), complete -> {
             if (queue.isEmpty()) {
-              getContext().stop(self());
+              getContext().stop(getSelf());
             }
           })
           .match(WorkerPoolProtocol.Reply.class, reply -> {
@@ -187,7 +187,7 @@ public class ActorSubscriberDocTest extends AbstractJavaTest {
             queue.get(id).tell(WorkerPoolProtocol.done(id), getSelf());
             queue.remove(id);
             if (canceled() && queue.isEmpty()) {
-              getContext().stop(self());
+              getContext().stop(getSelf());
             }
           })
           .build();

@@ -177,7 +177,7 @@ public class ParentChildTest extends AbstractJavaTest {
         public Receive createReceive() {
           return receiveBuilder()
             .matchAny(message -> {
-              if (sender().equals(child)) {
+              if (getSender().equals(child)) {
                 proxy.ref().forward(message, getContext());
               } else {
                 child.forward(message, getContext());

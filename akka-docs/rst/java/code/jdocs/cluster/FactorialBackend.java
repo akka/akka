@@ -18,7 +18,7 @@ public class FactorialBackend extends AbstractActor {
           CompletableFuture.supplyAsync(() -> factorial(n))
             .thenApply((factorial) -> new FactorialResult(n, factorial));
 
-        pipe(result, getContext().dispatcher()).to(sender());
+        pipe(result, getContext().dispatcher()).to(getSender());
 
       })
       .build();
