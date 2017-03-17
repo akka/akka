@@ -2864,7 +2864,7 @@ public class ForkJoinPool extends AbstractExecutorService {
      *         java.lang.RuntimePermission}{@code ("modifyThread")}
      */
     public ForkJoinPool(int parallelism,
-                        ForkJoinWorkerThreadFactory factory,
+                        ForkJoinPool.ForkJoinWorkerThreadFactory factory,
                         Thread.UncaughtExceptionHandler handler,
                         boolean asyncMode) {
         checkPermission();
@@ -2889,7 +2889,7 @@ public class ForkJoinPool extends AbstractExecutorService {
      * Basically the same as above, but uses smallest possible initial footprint.
      */
     ForkJoinPool(int parallelism, long ctl,
-                 ForkJoinWorkerThreadFactory factory,
+                 ForkJoinPool.ForkJoinWorkerThreadFactory factory,
                  Thread.UncaughtExceptionHandler handler) {
         this.config = parallelism;
         this.ctl = ctl;
