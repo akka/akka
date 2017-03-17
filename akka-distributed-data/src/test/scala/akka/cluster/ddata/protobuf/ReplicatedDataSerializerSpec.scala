@@ -184,6 +184,23 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(ORMap().put(address1, Flag(), GSet() + "A"))
     }
 
+    "serialize ORMap delta" in {
+      checkSerialization(ORMap().put(address1, "a", GSet() + "A").put(address2, "b", GSet() + "B").delta.get)
+      checkSerialization(ORMap().put(address1, "a", GSet() + "A").resetDelta.remove(address2, "a").delta.get)
+      checkSerialization(ORMap().put(address1, "a", GSet() + "A").remove(address2, "a").delta.get)
+      checkSerialization(ORMap().put(address1, 1, GSet() + "A").delta.get)
+      checkSerialization(ORMap().put(address1, 1L, GSet() + "A").delta.get)
+      checkSerialization(ORMap.empty[String, ORSet[String]]
+        .put(address1, "a", ORSet.empty[String].add(address1, "A"))
+        .put(address2, "b", ORSet.empty[String].add(address2, "B"))
+        .updated(address1, "a", ORSet.empty[String])(_.add(address1, "C")).delta.get)
+      checkSerialization(ORMap.empty[String, ORSet[String]]
+        .resetDelta
+        .updated(address1, "a", ORSet.empty[String])(_.add(address1, "C")).delta.get)
+      // use Flag for this test as object key because it is serializable
+      checkSerialization(ORMap().put(address1, Flag(), GSet() + "A").delta.get)
+    }
+
     "be compatible with old ORMap serialization" in {
       // Below blob was created with previous version of the serializer
       val oldBlobAsBase64 = "H4sIAAAAAAAAAOOax8jlyaXMJc8lzMWXX5KRWqSXkV9copdflC7wXEWUiYGBQRaIGQQkuJS45LiEuHiL83NTUdQwwtWIC6kQpUqVKAulGBOlGJOE+LkYE4W4uJi5GB0FuJUYnUACSRABJ7AAAOLO3C3DAAAA"
@@ -242,6 +259,22 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       // Below blob was created with previous version of the serializer
       val oldBlobAsBase64 = "H4sIAAAAAAAAAOPy51LhUuKS4xLi4i3Oz03Vy8gvLtHLL0oXeK4iysjAwCALxAwCakJEqZJiTBQK4QISxJmqSpSpqlKMjgDlsHjDpwAAAA=="
       checkCompatibility(oldBlobAsBase64, ORMultiMap())
+    }
+
+    "serialize ORMultiMap withValueDeltas" in {
+      checkSerialization(ORMultiMap._emptyWithValueDeltas)
+      checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, "a", "A"))
+      checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, 1, "A"))
+      checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, 1L, "A"))
+      checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, Flag(), "A"))
+      checkSerialization(ORMultiMap.emptyWithValueDeltas[String, String]
+        .addBinding(address1, "a", "A1")
+        .put(address2, "b", Set("B1", "B2", "B3"))
+        .addBinding(address2, "a", "A2"))
+
+      val m1 = ORMultiMap.emptyWithValueDeltas[String, String].addBinding(address1, "a", "A1").addBinding(address2, "a", "A2")
+      val m2 = ORMultiMap.emptyWithValueDeltas[String, String].put(address2, "b", Set("B1", "B2", "B3"))
+      checkSameContent(m1.merge(m2), m2.merge(m1))
     }
 
     "serialize DeletedData" in {

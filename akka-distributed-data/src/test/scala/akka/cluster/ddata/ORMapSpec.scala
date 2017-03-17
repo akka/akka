@@ -30,10 +30,41 @@ class ORMapSpec extends WordSpec with Matchers {
 
     }
 
+    "be able to add entries with deltas" in {
+      val m = ORMap().put(node1, "a", GSet() + "A").put(node1, "b", GSet() + "B")
+      val md = m.delta.get
+
+      val m1 = ORMap().mergeDelta(md)
+
+      val GSet(a) = m1.entries("a")
+      a should be(Set("A"))
+      val GSet(b) = m1.entries("b")
+      b should be(Set("B"))
+
+      val m2 = m1.put(node1, "a", GSet() + "C")
+      val GSet(a2) = m2.entries("a")
+      a2 should be(Set("C"))
+
+    }
+
     "be able to remove entry" in {
       val m = ORMap().put(node1, "a", GSet() + "A").put(node1, "b", GSet() + "B").remove(node1, "a")
       m.entries.keySet should not contain ("a")
       m.entries.keySet should contain("b")
+    }
+
+    "be able to remove entry using a delta" in {
+      val m = ORMap().put(node1, "a", GSet() + "A").put(node1, "b", GSet() + "B")
+      val addDelta = m.delta.get
+
+      val removeDelta = m.resetDelta.remove(node1, "a").delta.get
+
+      val m1 = ORMap().mergeDelta(addDelta)
+      m1.entries.keySet should contain("a")
+
+      val m2 = m1.mergeDelta(removeDelta)
+      m2.entries.keySet should not contain ("a")
+      m2.entries.keySet should contain("b")
     }
 
     "be able to add removed" in {
@@ -108,6 +139,330 @@ class ORMapSpec extends WordSpec with Matchers {
       // note that B is included, because GSet("B") is merged with GSet("B2")
       merged2.entries("b").elements should be(Set("B", "B2"))
       merged2.entries("c").elements should be(Set("C"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas" in {
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node1, "b", GSet.empty + "B")
+      val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
+
+      val merged1 = m1 merge m2
+
+      val m3 = merged1.resetDelta.remove(node1, "b")
+      val m4 = merged1.resetDelta.updated(node1, "b", GSet.empty[String])(_.add("B2"))
+
+      val merged2 = m3 merge m4
+
+      merged2.entries("a").elements should be(Set("A"))
+      // note that B is included, because GSet("B") is merged with GSet("B2")
+      merged2.entries("b").elements should be(Set("B", "B2"))
+      merged2.entries("c").elements should be(Set("C"))
+
+      val merged3 = m3 mergeDelta m4.delta.get
+
+      merged3.entries("a").elements should be(Set("A"))
+      // note that B is included, because GSet("B") is merged with GSet("B2")
+      merged3.entries("b").elements should be(Set("B", "B2"))
+      merged3.entries("c").elements should be(Set("C"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas 2" in {
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
+      val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
+
+      val merged1 = m1 merge m2
+
+      val m3 = merged1.resetDelta.remove(node1, "b")
+      val m4 = merged1.resetDelta.remove(node1, "b").updated(node1, "b", ORSet.empty[String])(_.add(node1, "B2"))
+
+      val merged2 = m3 merge m4
+
+      merged2.entries("a").elements should be(Set("A"))
+      // note that B is not included, because it was removed in both timelines
+      merged2.entries("b").elements should be(Set("B2"))
+      merged2.entries("c").elements should be(Set("C"))
+
+      val merged3 = m3 mergeDelta m4.delta.get
+
+      merged3.entries("a").elements should be(Set("A"))
+      // note that B is not included, because it was removed in both timelines
+      merged3.entries("b").elements should be(Set("B2"))
+      merged3.entries("c").elements should be(Set("C"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas 3" in {
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
+      val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
+
+      val merged1 = m1 merge m2
+
+      val m3 = merged1.resetDelta.remove(node1, "b")
+      val m4 = merged1.resetDelta.remove(node2, "b").updated(node2, "b", ORSet.empty[String])(_.add(node2, "B2"))
+
+      val merged2 = m3 merge m4
+
+      merged2.entries("a").elements should be(Set("A"))
+      // note that B is not included, because it was removed in both timelines
+      merged2.entries("b").elements should be(Set("B2"))
+      merged2.entries("c").elements should be(Set("C"))
+
+      val merged3 = m3 mergeDelta m4.delta.get
+
+      merged3.entries("a").elements should be(Set("A"))
+      // note that B is not included, because it was removed in both timelines
+      merged3.entries("b").elements should be(Set("B2"))
+      merged3.entries("c").elements should be(Set("C"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas 4" in {
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
+      val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
+
+      val merged1 = m1 merge m2
+
+      val m3 = merged1.resetDelta.remove(node1, "b")
+      val m4 = merged1.resetDelta.updated(node1, "b", ORSet.empty[String])(_.add(node1, "B2"))
+
+      val merged2 = m3 merge m4
+
+      merged2.entries("a").elements should be(Set("A"))
+      // note that B is included, because ORSet("B") is merged with ORSet("B2")
+      merged2.entries("b").elements should be(Set("B", "B2"))
+      merged2.entries("c").elements should be(Set("C"))
+
+      val merged3 = m3 mergeDelta m4.delta.get
+
+      merged3.entries("a").elements should be(Set("A"))
+      // note that B is included, because ORSet("B") is merged with ORSet("B2")
+      merged3.entries("b").elements should be(Set("B", "B2"))
+      merged3.entries("c").elements should be(Set("C"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas 5" in {
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node1, "b", GSet.empty + "B")
+      val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
+
+      val merged1 = m1 merge m2
+
+      val m3 = merged1.resetDelta.remove(node1, "b")
+      val m4 = merged1.resetDelta.put(node2, "b", GSet.empty + "B2")
+
+      val merged2 = m3 merge m4
+
+      merged2.entries("a").elements should be(Set("A"))
+      // note that B is not included, because it was removed in both timelines
+      merged2.entries("b").elements should be(Set("B2"))
+      merged2.entries("c").elements should be(Set("C"))
+
+      val merged3 = m3 mergeDelta m4.delta.get
+
+      merged3.entries("a").elements should be(Set("A"))
+      // note that B is not included, because it was removed in both timelines
+      merged3.entries("b").elements should be(Set("B2"))
+      merged3.entries("c").elements should be(Set("C"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas 6" in {
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
+      val m2 = ORMap.empty.put(node2, "b", ORSet.empty.add(node2, "B3"))
+
+      val merged1 = m1 merge m2
+
+      val m3 = merged1.resetDelta.remove(node1, "b")
+      val m4 = merged1.resetDelta.remove(node2, "b").updated(node2, "b", ORSet.empty[String])(_.add(node2, "B1"))
+        .updated(node2, "b", ORSet.empty[String])(_.add(node2, "B2"))
+
+      val merged2 = m3 merge m4
+
+      merged2.entries("a").elements should be(Set("A"))
+      // note that B is not included, because it was removed in both timelines
+      merged2.entries("b").elements should be(Set("B1", "B2"))
+
+      val merged3 = m3 mergeDelta m4.delta.get
+
+      merged3.entries("a").elements should be(Set("A"))
+      // note that B is not included, because it was removed in both timelines
+      merged3.entries("b").elements should be(Set("B1", "B2"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas 7" in {
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A"))
+        .put(node1, "b", ORSet.empty.add(node1, "B1")).remove(node1, "b")
+      val m2 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B2"))
+      val m2d = m2.resetDelta.remove(node1, "b")
+      val m2u = m2.resetDelta.updated(node1, "b", ORSet.empty[String])(_.add(node1, "B3"))
+        .updated(node2, "b", ORSet.empty[String])(_.add(node2, "B4"))
+
+      val merged1 = (m1 merge m2d) mergeDelta m2u.delta.get
+
+      merged1.entries("a").elements should be(Set("A"))
+      // note that B1 is lost as it was added and removed earlier in timeline than B2
+      merged1.entries("b").elements should be(Set("B2", "B3", "B4"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas 8" in {
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
+        .put(node1, "b", GSet.empty + "B").put(node2, "b", GSet.empty + "B")
+      val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
+
+      val merged1 = m1 merge m2
+
+      val m3 = merged1.resetDelta.remove(node1, "b").remove(node2, "b")
+      val m4 = merged1.resetDelta.put(node2, "b", GSet.empty + "B2").put(node2, "b", GSet.empty + "B3")
+
+      val merged2 = m3 merge m4
+
+      merged2.entries("a").elements should be(Set("A"))
+      merged2.entries("b").elements should be(Set("B3"))
+      merged2.entries("c").elements should be(Set("C"))
+
+      val merged3 = (merged1 mergeDelta m3.delta.get) mergeDelta m4.delta.get
+
+      merged3.entries("a").elements should be(Set("A"))
+      merged3.entries("b").elements should be(Set("B3"))
+      merged3.entries("c").elements should be(Set("C"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas 9" in {
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
+        .put(node1, "b", GSet.empty + "B").put(node2, "b", GSet.empty + "B")
+      val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
+
+      val merged1 = m1 merge m2
+
+      val m3 = merged1.resetDelta.remove(node1, "b").remove(node2, "b")
+      val m4 = merged1.resetDelta.updated(node2, "b", GSet.empty[String])(_.add("B2"))
+        .updated(node2, "b", GSet.empty[String])(_.add("B3"))
+
+      val merged2 = m3 merge m4
+
+      merged2.entries("a").elements should be(Set("A"))
+      merged2.entries("b").elements should be(Set("B2", "B3"))
+      merged2.entries("c").elements should be(Set("C"))
+
+      val merged3 = (merged1 mergeDelta m3.delta.get) mergeDelta m4.delta.get
+
+      merged3.entries("a").elements should be(Set("A"))
+      merged3.entries("b").elements should be(Set("B2", "B3"))
+      merged3.entries("c").elements should be(Set("C"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas 10" in {
+      val m1 = ORMap.empty.put(node2, "a", GSet.empty + "A")
+        .put(node2, "b", GSet.empty + "B")
+
+      val m3 = m1.resetDelta.remove(node2, "b")
+      val m4 = m3.resetDelta.put(node2, "b", GSet.empty + "B2").updated(node2, "b", GSet.empty[String])(_.add("B3"))
+
+      val merged2 = m3 merge m4
+
+      merged2.entries("a").elements should be(Set("A"))
+      merged2.entries("b").elements should be(Set("B2", "B3"))
+
+      val merged3 = m3 mergeDelta m4.delta.get
+
+      merged3.entries("a").elements should be(Set("A"))
+      merged3.entries("b").elements should be(Set("B2", "B3"))
+    }
+
+    "have the usual anomalies for remove+updated scenario" in {
+      // please note that the current ORMultiMap has the same anomaly
+      // because the condition of keeping global vvector is violated
+      // by removal of the whole entry for the removed key "b" which results in removal of it's value's vvector
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A")).put(node1, "b", ORSet.empty.add(node1, "B"))
+      val m2 = ORMap.empty.put(node2, "c", ORSet.empty.add(node2, "C"))
+
+      // m1 - node1 gets the update from m2
+      val merged1 = m1 merge m2
+      // m2 - node2 gets the update from m1
+      val merged2 = m2 merge m1
+
+      // RACE CONDITION ahead!
+      val m3 = merged1.resetDelta.remove(node1, "b")
+      // let's imagine that m3 (node1) update gets propagated here (full state or delta - doesn't matter)
+      // and is in flight, but in the meantime, an element is being added somewhere else (m4 - node2)
+      // and the update is propagated before the update from node1 is merged
+      val m4 = merged2.resetDelta.updated(node2, "b", ORSet.empty[String])(_.add(node2, "B2"))
+      // and later merged on node1
+      val merged3 = m3 merge m4
+      // and the other way round...
+      val merged4 = m4 merge m3
+
+      // result -  the element "B" is kept on both sides...
+      merged3.entries("a").elements should be(Set("A"))
+      merged3.entries("b").elements should be(Set("B", "B2"))
+      merged3.entries("c").elements should be(Set("C"))
+
+      merged4.entries("a").elements should be(Set("A"))
+      merged4.entries("b").elements should be(Set("B", "B2"))
+      merged4.entries("c").elements should be(Set("C"))
+
+      // but if the timing was slightly different, so that the update from node1
+      // would get merged just before update on node2:
+      val merged5 = (m2 merge m3).resetDelta.updated(node2, "b", ORSet.empty[String])(_.add(node2, "B2"))
+      // the update propagated ... and merged on node1:
+      val merged6 = m3 merge merged5
+
+      // then the outcome is different... because the vvector of value("b") was lost...
+      merged5.entries("a").elements should be(Set("A"))
+      // this time it's different...
+      merged5.entries("b").elements should be(Set("B2"))
+      merged5.entries("c").elements should be(Set("C"))
+
+      merged6.entries("a").elements should be(Set("A"))
+      // this time it's different...
+      merged6.entries("b").elements should be(Set("B2"))
+      merged6.entries("c").elements should be(Set("C"))
+    }
+
+    "work with deltas and updated for GSet elements type" in {
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
+      val m2 = m1.resetDelta.updated(node1, "a", GSet.empty[String])(_.add("B"))
+      val m3 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get)
+      val GSet(d3) = m3.entries("a")
+      d3 should be(Set("A", "B"))
+    }
+
+    "work with deltas and updated for ORSet elements type" in {
+      val m1 = ORMap.empty.put(node1, "a", ORSet.empty.add(node1, "A"))
+      val m2 = m1.resetDelta.updated(node1, "a", ORSet.empty[String])(_.add(node1, "B"))
+      val m3 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get)
+
+      val ORSet(d3) = m3.entries("a")
+      d3 should be(Set("A", "B"))
+    }
+
+    "work with aggregated deltas and updated for GSet elements type" in {
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
+      val m2 = m1.resetDelta.updated(node1, "a", GSet.empty[String])(_.add("B")).updated(node1, "a", GSet.empty[String])(_.add("C"))
+      val m3 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get)
+      val GSet(d3) = m3.entries("a")
+      d3 should be(Set("A", "B", "C"))
+    }
+
+    "work with deltas and updated for GCounter elements type" in {
+      val m1 = ORMap.empty.put(node1, "a", GCounter.empty)
+      val m2 = m1.resetDelta.updated(node1, "a", GCounter.empty)(_.increment(node1, 10))
+      val m3 = m2.resetDelta.updated(node2, "a", GCounter.empty)(_.increment(node2, 10))
+      val m4 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get).mergeDelta(m3.delta.get)
+      val GCounter(num) = m4.entries("a")
+      num should ===(20)
+    }
+
+    "work with deltas and updated for PNCounter elements type" in {
+      val m1 = ORMap.empty.put(node1, "a", PNCounter.empty)
+      val m2 = m1.resetDelta.updated(node1, "a", PNCounter.empty)(_.increment(node1, 10))
+      val m3 = m2.resetDelta.updated(node2, "a", PNCounter.empty)(_.decrement(node2, 10))
+      val m4 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get).mergeDelta(m3.delta.get)
+      val PNCounter(num) = m4.entries("a")
+      num should ===(0)
+    }
+
+    "work with deltas and updated for Flag elements type" in {
+      val m1 = ORMap.empty.put(node1, "a", Flag(false))
+      val m2 = m1.resetDelta.updated(node1, "a", Flag.empty)(_.switchOn)
+      val m3 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get)
+      val Flag(d3) = m3.entries("a")
+      d3 should be(true)
     }
 
     "not allow put for ORSet elements type" in {
