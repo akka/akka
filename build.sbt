@@ -64,6 +64,7 @@ lazy val root = Project(
     httpCore,
     http2Support,
     http,
+    httpCaching,
     httpTestkit,
     httpTests,
     httpMarshallersScala,
@@ -192,6 +193,10 @@ lazy val httpJackson =
     .settings(OSGi.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
+lazy val httpCaching = project("akka-http-caching")
+  .settings(Dependencies.httpCaching)
+  .dependsOn(http, httpCore, httpTestkit % "test")
+
 def project(name: String) =
   Project(id = name, base = file(name))
 
@@ -215,7 +220,7 @@ lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(
-    httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala,
+    httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
   )
   .settings(Dependencies.docs)
