@@ -129,6 +129,12 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
   def unmarshal(value: A, ec: ExecutionContext, mat: Materializer): CompletionStage[B] = asScala.apply(value)(ec, mat).toJava
 
   /**
+   * Apply this Unmarshaller to the given value. Uses the default materializer [[ExecutionContext]].
+   * If you expect the marshalling to be heavy, it is suggested to provide a specialized context for those operations.
+   */
+  def unmarshal(value: A, mat: Materializer): CompletionStage[B] = unmarshal(value, mat.executionContext, mat)
+
+  /**
    * Deprecated in favor of [[unmarshal]].
    */
   @deprecated("Use unmarshal instead.", "10.0.2")

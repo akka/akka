@@ -15,8 +15,8 @@ object Unmarshal {
 class Unmarshal[A](val value: A) {
   /**
    * Unmarshals the value to the given Type using the in-scope Unmarshaller.
-   
-   * Uses the default materializer [[ExecutionContext]] if no implicit execution context is provided. 
+   *
+   * Uses the default materializer [[ExecutionContext]] if no implicit execution context is provided.
    * If you expect the marshalling to be heavy, it is suggested to provide a specialized context for those operations.
    */
   def to[B](implicit um: Unmarshaller[A, B], ec: ExecutionContext = null, mat: Materializer): Future[B] = {

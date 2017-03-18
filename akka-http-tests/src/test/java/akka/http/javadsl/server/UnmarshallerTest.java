@@ -6,6 +6,7 @@ package akka.http.javadsl.server;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
+import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -16,6 +17,12 @@ import static org.junit.Assert.assertEquals;
 
 public class UnmarshallerTest extends JUnitRouteTest {
 
+  @Test
+  public void unmarshallerWithoutExecutionContext() throws Exception {
+      CompletionStage<Integer> cafe = StringUnmarshallers.INTEGER_HEX.unmarshal("CAFE", materializer());
+      assertEquals(51966, cafe.toCompletableFuture().get(3, TimeUnit.SECONDS).intValue());
+  }
+    
   @Test
   public void canChooseOneOfManyUnmarshallers() throws Exception {
     Unmarshaller<HttpEntity, String> jsonUnmarshaller =
