@@ -1,5 +1,38 @@
 # Release Notes
 
+## 10.0.5
+
+See the [announcement](http://akka.io/news/2017/03/17/akka-http-10.0.5-released.html) and
+closed tickets on the [10.0.5 milestone](https://github.com/akka/akka-http/milestone/22?closed=1).
+
+This is the fifth maintenance release of the Akka Http 10.0 series. It is primarily aimed at stability aligning the internals with the upcoming Akka 2.5 release. These steps are also the groundwork to enable Play to make use of Akka HTTP and the new Akka Streams materializer in the upcoming Play 2.6.
+
+### List of Changes
+
+#### Improvements:
+
+##### akka-http-core
+ * New docs and API for registering custom headers with JavaDSL ([#761](https://github.com/akka/akka-http/issues/761))
+ * Ssl-config upgraded to 0.2.2, allows disabling/changing hostname verification ([#943](https://github.com/akka/akka-http/issues/943))
+ * Don’t depend on Akka internal APIs, become compatible with Akka 2.5 ([#877](https://github.com/akka/akka-http/issues/877))
+ * Make default exception handler logging more informative ([#887](https://github.com/akka/akka-http/issues/887))
+
+##### akka-http
+ * Unmarshal.to now uses the materializer ExecutionContext if no other provided implicitly ([#947](https://github.com/akka/akka-http/pull/947))
+
+#### Bug fixes:
+
+##### akka-http-core
+ * Prevent longer-than-needed lingering streams by fixing DelayCancellationStage ([#945](https://github.com/akka/akka-http/issues/945))
+
+##### akka-http
+ * Avoid redirect-loop when redirectToNoTrailingSlashIfPresent was used for root path ([#878](https://github.com/akka/akka-http/issues/878))
+
+### Compatibility notes
+
+This version of Akka HTTP must be used with Akka in version at-least 2.4.17, however it is also compatible with Akka 2.5, which has just released its Release Candidate 1. 
+
+
 ## 10.0.4
 
 See the [announcement](http://akka.io/news/2017/01/26/akka-http-10.0.4-released.html) and
