@@ -56,6 +56,13 @@ object RemoteAddress {
     try IP(InetAddress.getByAddress(bytes)) catch { case _: UnknownHostException ⇒ Unknown }
   }
 
+  private[akka] val renderWithoutPort = new Renderer[RemoteAddress] {
+    def render[R <: Rendering](r: R, address: RemoteAddress): r.type = address match {
+      case IP(ip, _) ⇒ r ~~ ip.getHostAddress
+      case _         ⇒ r ~~ address
+    }
+  }
+
   JavaInitialization.initializeStaticFieldWith(
     Unknown, classOf[jm.RemoteAddress].getField("UNKNOWN"))
 
