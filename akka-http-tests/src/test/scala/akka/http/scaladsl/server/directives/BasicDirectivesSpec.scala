@@ -8,6 +8,8 @@ package directives
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import scala.concurrent.duration._
+import java.util.concurrent.ThreadLocalRandom
 
 class BasicDirectivesSpec extends RoutingSpec {
 
@@ -105,6 +107,39 @@ class BasicDirectivesSpec extends RoutingSpec {
           complete(matched.toString)
         }
       } ~> check { responseAs[String] shouldEqual "" }
+    }
+  }
+
+  "The `extractStrictEntity` directive" should {
+    "change request to contain strict entity for inner routes" in {
+      val chunks = () ⇒ List("Akka", "HTTP").map(HttpEntity.Chunk(_)).iterator
+      val entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, Source.fromIterator(chunks))
+
+      Post("/abc", entity) ~> {
+        extractRequestEntity { before ⇒
+          extractStrictEntity(200.millis) { _ ⇒
+            extractRequestEntity { after ⇒
+              complete(Seq(before, after).map(_.isInstanceOf[HttpEntity.Strict]).mkString(" => "))
+            }
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "false => true" }
+    }
+
+    "only consume data once when nested" in {
+      val randomStream = Iterator.continually(ThreadLocalRandom.current.nextInt(0, 2).toString).take(100)
+      val chunks = Source.fromIterator(() ⇒ randomStream.map(HttpEntity.Chunk(_)))
+      val entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, chunks)
+
+      Post("/abc", entity) ~> {
+        extractStrictEntity(200.millis) { outer ⇒
+          extractStrictEntity(200.millis) { inner ⇒
+            /* Check that the string representations of the outer and inner
+             * random number sequences are identical. */
+            complete(Seq(outer, inner).map(_.data.utf8String).distinct.size.toString)
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "1" }
     }
   }
 }

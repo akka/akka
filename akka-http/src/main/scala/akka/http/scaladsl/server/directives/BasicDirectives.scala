@@ -336,19 +336,7 @@ trait BasicDirectives {
    * @group basic
    */
   def extractStrictEntity(timeout: FiniteDuration): Directive1[HttpEntity.Strict] =
-    extract { ctx ⇒
-      import ctx.materializer
-
-      ctx.request.entity.toStrict(timeout)
-
-    }.flatMap { entity ⇒
-      import FutureDirectives._
-
-      onComplete(entity).flatMap {
-        case Success(x) ⇒ provide(x)
-        case Failure(t) ⇒ StandardRoute(_.fail(t))
-      }
-    }
+    toStrictEntity(timeout) & extract(_.request.entity.asInstanceOf[HttpEntity.Strict])
 
   /**
    * WARNING: This will read the entire request entity into memory regardless of size and effectively disable streaming.
