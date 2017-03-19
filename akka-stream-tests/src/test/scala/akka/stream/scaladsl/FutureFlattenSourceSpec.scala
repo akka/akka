@@ -5,12 +5,12 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.{ CompletableFuture, TimeUnit }
 
+import akka.Done
 import akka.stream._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, GraphStageWithMaterializedValue }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue }
 import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.testkit.TestLatch
-import akka.{ Done, NotUsed }
 
 import scala.concurrent.{ Await, Future, Promise }
 
@@ -24,6 +24,35 @@ class FutureFlattenSourceSpec extends StreamSpec {
     val underlying: Source[Int, String] =
       Source(List(1, 2, 3)).mapMaterializedValue(_ ⇒ "foo")
 
+    "emit the elements of the already successful future source" in assertAllStagesStopped {
+      val (sourceMatVal, sinkMatVal) =
+        Source.fromFutureSource(Future.successful(underlying))
+          .toMat(Sink.seq)(Keep.both)
+          .run()
+
+      // should complete as soon as inner source has been materialized
+      sourceMatVal.futureValue should ===("foo")
+      sinkMatVal.futureValue should ===(List(1, 2, 3))
+    }
+
+    "emit no elements before the future of source successful" in assertAllStagesStopped {
+      val c = TestSubscriber.manualProbe[Int]()
+      val sourcePromise = Promise[Source[Int, String]]()
+      val p = Source.fromFutureSource(sourcePromise.future)
+        .runWith(Sink.asPublisher(true))
+        .subscribe(c)
+      val sub = c.expectSubscription()
+      import scala.concurrent.duration._
+      c.expectNoMsg(100.millis)
+      sub.request(3)
+      c.expectNoMsg(100.millis)
+      sourcePromise.success(underlying)
+      c.expectNext(1)
+      c.expectNext(2)
+      c.expectNext(3)
+      c.expectComplete()
+    }
+
     "emit the elements of the future source" in assertAllStagesStopped {
 
       val sourcePromise = Promise[Source[Int, String]]()
@@ -31,7 +60,6 @@ class FutureFlattenSourceSpec extends StreamSpec {
         Source.fromFutureSource(sourcePromise.future)
           .toMat(Sink.seq)(Keep.both)
           .run()
-
       sourcePromise.success(underlying)
       // should complete as soon as inner source has been materialized
       sourceMatVal.futureValue should ===("foo")
