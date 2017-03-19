@@ -5,7 +5,7 @@
 See the [announcement](http://akka.io/news/2017/03/17/akka-http-10.0.5-released.html) and
 closed tickets on the [10.0.5 milestone](https://github.com/akka/akka-http/milestone/22?closed=1).
 
-This is the fifth maintenance release of the Akka Http 10.0 series. It is primarily aimed at stability aligning the internals with the upcoming Akka 2.5 release. These steps are also the groundwork to enable Play to make use of Akka HTTP and the new Akka Streams materializer in the upcoming Play 2.6.
+This is the fifth maintenance release of the Akka HTTP 10.0 series. It is primarily aimed at stability aligning the internals with the upcoming Akka 2.5 release. These steps are also the groundwork to enable Play to make use of Akka HTTP and the new Akka Streams materializer in the upcoming Play 2.6.
 
 ### List of Changes
 
