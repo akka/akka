@@ -25,6 +25,11 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
     akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.log-dead-letters-during-shutdown = off
+    akka.actor {
+      serialize-messages = off
+      serialize-creators = off
+      allow-java-serialization = off
+    }
     """))
 
   testTransport(on = true)
@@ -182,8 +187,8 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
           deltaReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ increment key._2)
         }
         List(KeyD, KeyE, KeyF).foreach { key ⇒
-          fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ + (key._2, Set("a")))
-          deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ + (key._2, Set("a")))
+          fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ + (key._2 → Set("a")))
+          deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ + (key._2 → Set("a")))
         }
       }
       enterBarrier("updated-1")
