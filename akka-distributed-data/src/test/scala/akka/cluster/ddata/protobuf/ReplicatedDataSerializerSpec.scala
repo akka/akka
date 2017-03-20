@@ -277,6 +277,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, 1, "A"))
       checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, 1L, "A"))
       checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, Flag(), "A"))
+      checkSerialization(ORMultiMap.emptyWithValueDeltas[String, String].addBinding(address1, "a", "A").remove(address1, "a").delta.get)
       checkSerialization(ORMultiMap.emptyWithValueDeltas[String, String]
         .addBinding(address1, "a", "A1")
         .put(address2, "b", Set("B1", "B2", "B3"))
