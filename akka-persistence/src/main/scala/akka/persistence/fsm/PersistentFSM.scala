@@ -54,6 +54,16 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
   private var currentStateTimeout: Option[FiniteDuration] = None
 
   /**
+   * "akka.persistence.fsm.enable-snapshot-after"
+   */
+  private val enableSnapshotAfter = context.system.settings.config.getBoolean("akka.persistence.fsm.enable-snapshot-after")
+
+  /**
+   * "akka.persistence.fsm.snapshot-after"
+   */
+  private val snapshotAfter = context.system.settings.config.getInt("akka.persistence.fsm.snapshot-after")
+
+  /**
    * Override this handler to define the action on Domain Event
    *
    * @param domainEvent domain event to apply
@@ -111,6 +121,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
       //Persist the events and apply the new state after all event handlers were executed
       var nextData: D = stateData
       var handlersExecutedCounter = 0
+      var doSnapshot: Boolean = false
 
       def applyStateOnLastHandler() = {
         handlersExecutedCounter += 1
@@ -118,14 +129,20 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
           super.applyState(nextState using nextData)
           currentStateTimeout = nextState.timeout
           nextState.afterTransitionDo(stateData)
+          if (enableSnapshotAfter && doSnapshot) {
+            log.info("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
+            saveStateSnapshot()
+          }
         }
       }
 
       persistAll[Any](eventsToPersist) {
         case domainEventTag(event) ⇒
           nextData = applyEvent(event, nextData)
+          doSnapshot = doSnapshot || lastSequenceNr % snapshotAfter == 0
           applyStateOnLastHandler()
         case StateChangeEvent(stateIdentifier, timeout) ⇒
+          doSnapshot = doSnapshot || lastSequenceNr % snapshotAfter == 0
           applyStateOnLastHandler()
       }
     }
