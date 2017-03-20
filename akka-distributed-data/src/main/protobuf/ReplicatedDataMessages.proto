@@ -78,7 +78,7 @@ message ORMap {
 message ORMapDeltaGroup {
   message MapEntry {
     optional string stringKey = 1;
-    required OtherMessage value = 2;
+    optional OtherMessage value = 2;
     optional sint32 intKey = 3;
     optional sint64 longKey = 4;
     optional OtherMessage otherKey = 5;
