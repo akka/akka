@@ -22,6 +22,11 @@ object ReplicatorORSetDeltaSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.log-dead-letters-during-shutdown = off
+    akka.actor {
+      serialize-messages = off
+      serialize-creators = off
+      allow-java-serialization = off
+    }
     """))
 
   testTransport(on = true)
