@@ -170,10 +170,13 @@ trait SerializationSupport {
 
   def otherMessageFromProto(other: dm.OtherMessage): AnyRef = {
     val manifest = if (other.hasMessageManifest) other.getMessageManifest.toStringUtf8 else ""
-    serialization.deserialize(
+    val x = serialization.deserialize(
       other.getEnclosedMessage.toByteArray,
       other.getSerializerId,
       manifest).get
+    if (x.isInstanceOf[String])
+      println(s"# otherMessageFromProto: $x") // FIXME
+    x
   }
 
 }

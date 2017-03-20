@@ -639,7 +639,6 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
           val map = singleMapEntryFromProto(entry.getEntryData, (v: dm.OtherMessage) ⇒ otherMessageFromProto(v).asInstanceOf[ReplicatedData])
           ORMap.PutDeltaOp(ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying)), map.head, zeroTagFromCode(entry.getZeroTag))
         } else if (entry.getOperation == rd.ORMapDeltaOp.ORMapRemove) {
-          val map = singleMapEntryFromProto(entry.getEntryData, (v: dm.OtherMessage) ⇒ otherMessageFromProto(v).asInstanceOf[ReplicatedData])
           ORMap.RemoveDeltaOp(ORSet.RemoveDeltaOp(orsetFromProto(entry.getUnderlying)), zeroTagFromCode(entry.getZeroTag))
         } else if (entry.getOperation == rd.ORMapDeltaOp.ORMapRemoveKey) {
           val map = singleMapEntryFromProto(entry.getEntryData, (v: dm.OtherMessage) ⇒ otherMessageFromProto(v).asInstanceOf[ReplicatedData])
@@ -653,20 +652,20 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     ORMap.DeltaGroup(ops)
   }
 
-  private def ormapPutToProto(addDelta: ORMap.PutDeltaOp[_, _]): rd.ORMapDeltaGroup = {
-    ormapDeltaGroupToProto(ORMap.DeltaGroup(scala.collection.immutable.IndexedSeq(addDelta.asInstanceOf[ORMap.DeltaOp])))
+  private def ormapPutToProto(deltaOp: ORMap.PutDeltaOp[_, _]): rd.ORMapDeltaGroup = {
+    ormapDeltaGroupToProto(ORMap.DeltaGroup(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp])))
   }
 
-  private def ormapRemoveToProto(addDelta: ORMap.RemoveDeltaOp[_, _]): rd.ORMapDeltaGroup = {
-    ormapDeltaGroupToProto(ORMap.DeltaGroup(scala.collection.immutable.IndexedSeq(addDelta.asInstanceOf[ORMap.DeltaOp])))
+  private def ormapRemoveToProto(deltaOp: ORMap.RemoveDeltaOp[_, _]): rd.ORMapDeltaGroup = {
+    ormapDeltaGroupToProto(ORMap.DeltaGroup(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp])))
   }
 
-  private def ormapRemoveKeyToProto(addDelta: ORMap.RemoveKeyDeltaOp[_, _]): rd.ORMapDeltaGroup = {
-    ormapDeltaGroupToProto(ORMap.DeltaGroup(scala.collection.immutable.IndexedSeq(addDelta.asInstanceOf[ORMap.DeltaOp])))
+  private def ormapRemoveKeyToProto(deltaOp: ORMap.RemoveKeyDeltaOp[_, _]): rd.ORMapDeltaGroup = {
+    ormapDeltaGroupToProto(ORMap.DeltaGroup(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp])))
   }
 
-  private def ormapUpdateToProto(addDelta: ORMap.UpdateDeltaOp[_, _]): rd.ORMapDeltaGroup = {
-    ormapDeltaGroupToProto(ORMap.DeltaGroup(scala.collection.immutable.IndexedSeq(addDelta.asInstanceOf[ORMap.DeltaOp])))
+  private def ormapUpdateToProto(deltaOp: ORMap.UpdateDeltaOp[_, _]): rd.ORMapDeltaGroup = {
+    ormapDeltaGroupToProto(ORMap.DeltaGroup(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp])))
   }
 
   private def ormapDeltaGroupToProto(deltaGroup: ORMap.DeltaGroup[_, _]): rd.ORMapDeltaGroup = {
@@ -698,7 +697,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
       case ORMap.RemoveDeltaOp(op, zt) ⇒
         b.addEntries(createEntry(rd.ORMapDeltaOp.ORMapRemove, op.asInstanceOf[ORSet.RemoveDeltaOp[_]].underlying, Map.empty, zt.value))
       case ORMap.RemoveKeyDeltaOp(op, k, zt) ⇒
-        b.addEntries(createEntry(rd.ORMapDeltaOp.ORMapRemove, op.asInstanceOf[ORSet.RemoveDeltaOp[_]].underlying, Map(k → k), zt.value))
+        b.addEntries(createEntry(rd.ORMapDeltaOp.ORMapRemoveKey, op.asInstanceOf[ORSet.RemoveDeltaOp[_]].underlying, Map(k → k), zt.value))
       case ORMap.UpdateDeltaOp(op, m, zt) ⇒
         b.addEntries(createEntry(rd.ORMapDeltaOp.ORMapUpdate, op.asInstanceOf[ORSet.AddDeltaOp[_]].underlying, m, zt.value))
       case ORMap.DeltaGroup(u) ⇒
