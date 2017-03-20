@@ -953,8 +953,10 @@ final case class `WWW-Authenticate`(challenges: immutable.Seq[HttpChallenge]) ex
 // http://en.wikipedia.org/wiki/X-Forwarded-For
 object `X-Forwarded-For` extends ModeledCompanion[`X-Forwarded-For`] {
   def apply(first: RemoteAddress, more: RemoteAddress*): `X-Forwarded-For` = apply(immutable.Seq(first +: more: _*))
-  implicit val addressRenderer = RemoteAddress.renderWithoutPort
-  implicit val addressesRenderer = Renderer.defaultSeqRenderer[RemoteAddress] // cache
+  implicit val addressesRenderer = {
+    implicit val singleAddressRenderer = RemoteAddress.renderWithoutPort
+    Renderer.defaultSeqRenderer[RemoteAddress] // cache
+  }
 }
 final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) extends jm.headers.XForwardedFor
   with RequestHeader {
