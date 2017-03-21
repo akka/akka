@@ -118,6 +118,13 @@ abstract class RouteDirectives extends RespondWithDirectives {
   }
 
   /**
+   * Completes the request using the given status code, headers, and response entity.
+   */
+  @deprecated("This directive is for binary compatibility only", "10.0.6")
+  def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: RequestEntity): RouteAdapter =
+    complete(status, headers, entity.asInstanceOf[ResponseEntity])
+
+  /**
    * Completes the request using the given status code, marshalling the given value as response entity.
    */
   def complete[T](status: StatusCode, value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
@@ -130,6 +137,12 @@ abstract class RouteDirectives extends RespondWithDirectives {
   def complete(status: StatusCode, entity: ResponseEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(status = status.asScala, entity = entity.asScala))
   }
+
+  /**
+   * Completes the request using the given status code and response entity.
+   */
+  @deprecated("This directive is for binary compatibility only", "10.0.6")
+  def complete(status: StatusCode, entity: RequestEntity): RouteAdapter = complete(status, entity.asInstanceOf[ResponseEntity])
 
   /**
    * Completes the request using the given status code and the given body as UTF-8.
@@ -153,6 +166,13 @@ abstract class RouteDirectives extends RespondWithDirectives {
   }
 
   /**
+   * Completes the request as HTTP 200 OK, adding the given headers and response entity.
+   */
+  @deprecated("This directive is for binary compatibility only", "10.0.6")
+  def complete(headers: java.lang.Iterable[HttpHeader], entity: RequestEntity): RouteAdapter =
+    complete(headers, entity.asInstanceOf[ResponseEntity])
+
+  /**
    * Completes the request as HTTP 200 OK, marshalling the given value as response entity.
    */
   @CorrespondsTo("complete")
@@ -166,6 +186,12 @@ abstract class RouteDirectives extends RespondWithDirectives {
   def complete(entity: ResponseEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(entity = entity.asScala))
   }
+
+  /**
+   * Completes the request as HTTP 200 OK with the given value as response entity.
+   */
+  @deprecated("This directive is for binary compatibility only", "10.0.6")
+  def complete(entity: RequestEntity): RouteAdapter = complete(entity.asInstanceOf[ResponseEntity])
 
   // --- manual "magnet" for Scala Future ---
 
