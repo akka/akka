@@ -238,7 +238,7 @@ graphs.
 In the following examples runnable graphs are created but do not run because each have some issue and will deadlock after start.
 ``Source`` variable is not defined as the nature and number of element does not matter for described problems.
 
-The first example demonstrates a graph that contains a naive cycle.
+The first example demonstrates a graph that contains a naïve cycle.
 The graph takes elements from the source, prints them, then broadcasts those elements
 to a consumer (we just used ``Sink.ignore`` for now) and to a feedback arc that is merged back into the main
 via a ``Merge`` junction.
