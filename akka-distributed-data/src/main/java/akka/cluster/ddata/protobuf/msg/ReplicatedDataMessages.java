@@ -9846,17 +9846,17 @@ public final class ReplicatedDataMessages {
       akka.protobuf.ByteString
           getStringKeyBytes();
 
-      // required .akka.cluster.ddata.OtherMessage value = 2;
+      // optional .akka.cluster.ddata.OtherMessage value = 2;
       /**
-       * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
        */
       boolean hasValue();
       /**
-       * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getValue();
       /**
-       * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getValueOrBuilder();
 
@@ -10069,23 +10069,23 @@ public final class ReplicatedDataMessages {
         }
       }
 
-      // required .akka.cluster.ddata.OtherMessage value = 2;
+      // optional .akka.cluster.ddata.OtherMessage value = 2;
       public static final int VALUE_FIELD_NUMBER = 2;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value_;
       /**
-       * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       /**
-       * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getValue() {
         return value_;
       }
       /**
-       * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getValueOrBuilder() {
         return value_;
@@ -10157,13 +10157,11 @@ public final class ReplicatedDataMessages {
         byte isInitialized = memoizedIsInitialized;
         if (isInitialized != -1) return isInitialized == 1;
 
-        if (!hasValue()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
-        if (!getValue().isInitialized()) {
-          memoizedIsInitialized = 0;
-          return false;
+        if (hasValue()) {
+          if (!getValue().isInitialized()) {
+            memoizedIsInitialized = 0;
+            return false;
+          }
         }
         if (hasOtherKey()) {
           if (!getOtherKey().isInitialized()) {
@@ -10452,13 +10450,11 @@ public final class ReplicatedDataMessages {
         }
 
         public final boolean isInitialized() {
-          if (!hasValue()) {
-            
-            return false;
-          }
-          if (!getValue().isInitialized()) {
-            
-            return false;
+          if (hasValue()) {
+            if (!getValue().isInitialized()) {
+              
+              return false;
+            }
           }
           if (hasOtherKey()) {
             if (!getOtherKey().isInitialized()) {
@@ -10562,18 +10558,18 @@ public final class ReplicatedDataMessages {
           return this;
         }
 
-        // required .akka.cluster.ddata.OtherMessage value = 2;
+        // optional .akka.cluster.ddata.OtherMessage value = 2;
         private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
         private akka.protobuf.SingleFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> valueBuilder_;
         /**
-         * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
          */
         public boolean hasValue() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
         /**
-         * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getValue() {
           if (valueBuilder_ == null) {
@@ -10583,7 +10579,7 @@ public final class ReplicatedDataMessages {
           }
         }
         /**
-         * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
          */
         public Builder setValue(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
           if (valueBuilder_ == null) {
@@ -10599,7 +10595,7 @@ public final class ReplicatedDataMessages {
           return this;
         }
         /**
-         * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
          */
         public Builder setValue(
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder builderForValue) {
@@ -10613,7 +10609,7 @@ public final class ReplicatedDataMessages {
           return this;
         }
         /**
-         * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
          */
         public Builder mergeValue(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value) {
           if (valueBuilder_ == null) {
@@ -10632,7 +10628,7 @@ public final class ReplicatedDataMessages {
           return this;
         }
         /**
-         * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
          */
         public Builder clearValue() {
           if (valueBuilder_ == null) {
@@ -10645,7 +10641,7 @@ public final class ReplicatedDataMessages {
           return this;
         }
         /**
-         * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder getValueBuilder() {
           bitField0_ |= 0x00000002;
@@ -10653,7 +10649,7 @@ public final class ReplicatedDataMessages {
           return getValueFieldBuilder().getBuilder();
         }
         /**
-         * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getValueOrBuilder() {
           if (valueBuilder_ != null) {
@@ -10663,7 +10659,7 @@ public final class ReplicatedDataMessages {
           }
         }
         /**
-         * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
          */
         private akka.protobuf.SingleFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
@@ -18396,7 +18392,7 @@ public final class ReplicatedDataMessages {
       "age\"\263\003\n\017ORMapDeltaGroup\022:\n\007entries\030\001 \003(\013" +
       "2).akka.cluster.ddata.ORMapDeltaGroup.En" +
       "try\032\243\001\n\010MapEntry\022\021\n\tstringKey\030\001 \001(\t\022/\n\005v" +
-      "alue\030\002 \002(\0132 .akka.cluster.ddata.OtherMes" +
+      "alue\030\002 \001(\0132 .akka.cluster.ddata.OtherMes" +
       "sage\022\016\n\006intKey\030\003 \001(\021\022\017\n\007longKey\030\004 \001(\022\0222\n" +
       "\010otherKey\030\005 \001(\0132 .akka.cluster.ddata.Oth" +
       "erMessage\032\275\001\n\005Entry\0223\n\toperation\030\001 \002(\0162 ",
