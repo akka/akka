@@ -139,6 +139,26 @@ object PersistentActorStashingSpec {
     }
   }
 
+  class StashWithinHandlerPersistentActor(name: String) extends NamedPersistentActor(name) {
+    val receiveRecover: Receive = {
+      case _ ⇒ // ignore
+    }
+
+    def stashWithinHandler(evt: Evt) = {
+      try stash()
+      catch {
+        case ex: IllegalStateException if ex.getMessage.startsWith("Do not call stash") ⇒
+          sender ! evt.data
+      }
+    }
+
+    val receiveCommand: Receive = {
+      case Cmd("a") ⇒ persist(Evt("a"))(stashWithinHandler)
+      case Cmd("b") ⇒ persistAsync(Evt("b"))(stashWithinHandler)
+      case Cmd("c") ⇒ deferAsync(Evt("c"))(stashWithinHandler)
+    }
+
+  }
 }
 
 abstract class PersistentActorStashingSpec(config: Config) extends PersistenceSpec(config)
@@ -194,6 +214,20 @@ abstract class PersistentActorStashingSpec(config: Config) extends PersistenceSp
     behave like stashUnderFailures[UserStashWithinHandlerFailureCallbackPersistentActor]()
   }
 
+  "Stashing(stash called in handler) in a persistent actor" must {
+    "fail when calling stash in persist handler" in {
+      val actor = namedPersistentActor[StashWithinHandlerPersistentActor]
+
+      actor ! Cmd("a")
+      expectMsg("a")
+
+      actor ! Cmd("b")
+      expectMsg("b")
+
+      actor ! Cmd("c")
+      expectMsg("c")
+    }
+  }
 }
 
 class SteppingInMemPersistentActorStashingSpec extends PersistenceSpec(

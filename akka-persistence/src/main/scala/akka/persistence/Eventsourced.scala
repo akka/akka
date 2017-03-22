@@ -62,6 +62,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   private var writeInProgress = false
   private var sequenceNr: Long = 0L
   private var _lastSequenceNr: Long = 0L
+  private var withinHandler = false
 
   // safely null because we initialize it with a proper `waitingRecoveryPermit` state in aroundPreStart before any real action happens
   private var currentState: State = null
@@ -358,7 +359,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   final private[akka] def internalDeferAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
     if (recoveryRunning) throw new IllegalStateException("Cannot defer during replay. Events can be deferred when receiving RecoveryCompleted or later.")
     if (pendingInvocations.isEmpty) {
-      handler(event)
+      applyHandler(handler, event)
     } else {
       pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
       eventBatch = NonPersistentRepr(event, sender()) :: eventBatch
@@ -388,6 +389,12 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * Returns `true` if this persistent actor has successfully finished recovery.
    */
   def recoveryFinished: Boolean = !recoveryRunning
+
+  override def stash(): Unit = {
+    if (withinHandler)
+      throw new IllegalStateException("Do not call stash inside of persist callback.")
+    else super.stash()
+  }
 
   override def unstashAll() {
     // Internally, all messages are processed by unstashing them from
@@ -589,8 +596,14 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     flushJournalBatch()
   }
 
+  private def applyHandler[A](handler: A ⇒ Unit, payload: A): Unit = {
+    withinHandler = true
+    try handler(payload)
+    finally withinHandler = false
+  }
+
   private def peekApplyHandler(payload: Any): Unit =
-    try pendingInvocations.peek().handler(payload)
+    try applyHandler(pendingInvocations.peek().handler, payload)
     finally flushBatch()
 
   /**
