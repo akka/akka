@@ -67,8 +67,7 @@ If you want to verify that your ``Props`` are serializable you can enable the fo
 
 .. warning::
 
-   We recommend having these config options turned on **only** when you're running tests. It is completely pointless to have these turned on in other scenarios (e.g. production). The resulting performance loss can be dramatic. 
-
+   We recommend having these config options turned on **only** when you're running tests. Turning these options on in production is pointless, as it would negatively impact the performance of local message passing without giving any gain. 
 
 Programmatic
 ------------
