@@ -59,14 +59,9 @@ to disable a default serializer, map its marker type to “none”::
 Verification
 ------------
 
-If you want to verify that your messages are serializable you can enable the following config option:
+Normally, messages sent between local actors (i.e. same JVM) do not undergo serialization. For testing, sometimes, it may be desirable to force serialization on all messages (both remote and local). If you want to do this in order to verify that your messages are serializable you can enable the following config option:
 
 .. includecode:: ../scala/code/docs/serialization/SerializationDocSpec.scala#serialize-messages-config
-
-.. warning::
-
-   We only recommend using the config option turned on when you're running tests.
-   It is completely pointless to have it turned on in other scenarios.
 
 If you want to verify that your ``Props`` are serializable you can enable the following config option:
 
@@ -74,8 +69,8 @@ If you want to verify that your ``Props`` are serializable you can enable the fo
 
 .. warning::
 
-   We only recommend using the config option turned on when you're running tests.
-   It is completely pointless to have it turned on in other scenarios.
+   We recommend having these config options turned on **only** when you're running tests. It is completely pointless to have these turned on in other scenarios (e.g. production). The resulting performance loss can be dramatic.
+
 
 Programmatic
 ------------
