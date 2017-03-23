@@ -6,6 +6,7 @@ package akka.cluster.ddata
 
 import akka.actor.Address
 import akka.cluster.UniqueAddress
+import akka.cluster.ddata.ORSet.AddDeltaOp
 import akka.cluster.ddata.Replicator.Changed
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
@@ -139,6 +140,30 @@ class ORMapSpec extends WordSpec with Matchers {
       // note that B is included, because GSet("B") is merged with GSet("B2")
       merged2.entries("b").elements should be(Set("B", "B2"))
       merged2.entries("c").elements should be(Set("C"))
+    }
+
+    "do not have divergence in dot versions between the underlying map and ormap delta" in {
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
+
+      val deltaVersion = m1.delta.get match {
+        case ORMap.PutDeltaOp(delta, v, dt) ⇒
+          delta match {
+            case AddDeltaOp(u) ⇒
+              if (u.elementsMap.contains("a"))
+                Some(u.elementsMap("a").versionAt(node1))
+              else
+                None
+            case _ ⇒ None
+          }
+        case _ ⇒ None
+      }
+
+      val fullVersion =
+        if (m1.keys.elementsMap.contains("a"))
+          Some(m1.keys.elementsMap("a").versionAt(node1))
+        else
+          None
+      deltaVersion should ===(fullVersion)
     }
 
     "not have anomalies for remove+updated scenario and deltas" in {
