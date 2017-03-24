@@ -150,8 +150,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
             highSeqNr ⇒ RecoverySuccess(highSeqNr)
           }.recover {
             case e ⇒ ReplayMessagesFailure(e)
-          }.pipeTo(replyTo).onSuccess {
-            case _ ⇒ if (publish) context.system.eventStream.publish(r)
+          }.pipeTo(replyTo).foreach {
+            _ ⇒ if (publish) context.system.eventStream.publish(r)
           }
 
       case d @ DeleteMessagesTo(persistenceId, toSequenceNr, persistentActor) ⇒

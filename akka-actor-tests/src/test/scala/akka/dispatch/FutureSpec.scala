@@ -20,6 +20,7 @@ import java.lang.{ IllegalStateException, ArithmeticException }
 import java.util.concurrent._
 import scala.reflect.{ ClassTag, classTag }
 import scala.util.{ Failure, Success, Try }
+import akka.compat
 
 object FutureSpec {
 
@@ -404,7 +405,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "fold" in {
-        Await.result(Future.fold((1 to 10).toList map { i ⇒ Future(i) })(0)(_ + _), remainingOrDefault) should ===(55)
+        Await.result(compat.Future.fold((1 to 10).toList map { i ⇒ Future(i) })(0)(_ + _), remainingOrDefault) should ===(55)
       }
 
       "zip" in {
@@ -436,7 +437,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             case 6 ⇒ Future(throw new IllegalArgumentException("shouldFoldResultsWithException: expected"))
             case i ⇒ Future(i)
           }
-          intercept[Throwable] { Await.result(Future.fold(futures)(0)(_ + _), remainingOrDefault) }.getMessage should ===("shouldFoldResultsWithException: expected")
+          intercept[Throwable] { Await.result(compat.Future.fold(futures)(0)(_ + _), remainingOrDefault) }.getMessage should ===("shouldFoldResultsWithException: expected")
         }
       }
 
@@ -444,7 +445,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         import scala.collection.mutable.ArrayBuffer
         def test(testNumber: Int) {
           val fs = (0 to 1000) map (i ⇒ Future(i))
-          val f = Future.fold(fs)(ArrayBuffer.empty[AnyRef]) {
+          val f = compat.Future.fold(fs)(ArrayBuffer.empty[AnyRef]) {
             case (l, i) if i % 2 == 0 ⇒ l += i.asInstanceOf[AnyRef]
             case (l, _)               ⇒ l
           }
@@ -457,12 +458,12 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "return zero value if folding empty list" in {
-        Await.result(Future.fold(List[Future[Int]]())(0)(_ + _), timeout.duration) should ===(0)
+        Await.result(compat.Future.fold(List[Future[Int]]())(0)(_ + _), timeout.duration) should ===(0)
       }
 
       "reduce results" in {
         val futures = (1 to 10).toList map { i ⇒ Future(i) }
-        assert(Await.result(Future.reduce(futures)(_ + _), remainingOrDefault) === 55)
+        assert(Await.result(compat.Future.reduce(futures)(_ + _), remainingOrDefault) === 55)
       }
 
       "reduce results with Exception" in {
@@ -471,20 +472,20 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             case 6 ⇒ Future(throw new IllegalArgumentException("shouldReduceResultsWithException: expected"))
             case i ⇒ Future(i)
           }
-          intercept[Throwable] { Await.result(Future.reduce(futures)(_ + _), remainingOrDefault) }.getMessage should ===("shouldReduceResultsWithException: expected")
+          intercept[Throwable] { Await.result(compat.Future.reduce(futures)(_ + _), remainingOrDefault) }.getMessage should ===("shouldReduceResultsWithException: expected")
         }
       }
 
       "throw IllegalArgumentException on empty input to reduce" in {
         filterException[IllegalArgumentException] {
-          intercept[java.util.NoSuchElementException] { Await.result(Future.reduce(List[Future[Int]]())(_ + _), timeout.duration) }
+          intercept[java.util.NoSuchElementException] { Await.result(compat.Future.reduce(List[Future[Int]]())(_ + _), timeout.duration) }
         }
       }
 
-      "execute onSuccess when received ask reply" in {
+      "execute foreach when received ask reply" in {
         val latch = new TestLatch
         val actor = system.actorOf(Props[TestActor])
-        actor ? "Hello" onSuccess { case "World" ⇒ latch.open() }
+        actor ? "Hello" foreach { case "World" ⇒ latch.open() }
         FutureSpec.ready(latch, 5 seconds)
         system.stop(actor)
       }
@@ -518,12 +519,12 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           val latch = new TestLatch
           val f2 = Future { FutureSpec.ready(latch, 5 seconds); "success" }
           f2 foreach (_ ⇒ throw new ThrowableTest("dispatcher foreach"))
-          f2 onSuccess { case _ ⇒ throw new ThrowableTest("dispatcher receive") }
+          f2 foreach { _ ⇒ throw new ThrowableTest("dispatcher receive") }
           val f3 = f2 map (s ⇒ s.toUpperCase)
           latch.open()
           assert(Await.result(f2, timeout.duration) === "success")
           f2 foreach (_ ⇒ throw new ThrowableTest("current thread foreach"))
-          f2 onSuccess { case _ ⇒ throw new ThrowableTest("current thread receive") }
+          f2 foreach { _ ⇒ throw new ThrowableTest("current thread receive") }
           assert(Await.result(f3, timeout.duration) === "SUCCESS")
         }
       }
@@ -675,7 +676,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "perform action on result" in {
       f { (future, result) ⇒
         val p = Promise[Any]()
-        future.onSuccess { case x ⇒ p.success(x) }
+        future.foreach { x ⇒ p.success(x) }
         Await.result(p.future, timeout.duration) should ===(result)
       }
     }
@@ -715,7 +716,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "perform action on exception" in {
       f { (future, message) ⇒
         val p = Promise[Any]()
-        future.onFailure { case _ ⇒ p.success(message) }
+        future.failed.foreach { _ ⇒ p.success(message) }
         Await.result(p.future, timeout.duration) should ===(message)
       }
     }

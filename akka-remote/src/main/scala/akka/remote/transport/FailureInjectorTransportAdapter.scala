@@ -81,11 +81,11 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
     listenAddress:  Address,
     listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener] = {
     log.warning("FailureInjectorTransport is active on this system. Gremlins might munch your packets.")
-    listenerFuture.onSuccess {
+    listenerFuture.foreach {
       // Side effecting: As this class is not an actor, the only way to safely modify state is through volatile vars.
       // Listen is called only during the initialization of the stack, and upstreamListener is not read before this
       // finishes.
-      case listener: AssociationEventListener ⇒ upstreamListener = Some(listener)
+      listener ⇒ upstreamListener = Some(listener)
     }
     Future.successful(this)
   }
@@ -151,8 +151,8 @@ private[remote] final case class FailureInjectorHandle(
   @volatile private var upstreamListener: HandleEventListener = null
 
   override val readHandlerPromise: Promise[HandleEventListener] = Promise()
-  readHandlerPromise.future.onSuccess {
-    case listener: HandleEventListener ⇒
+  readHandlerPromise.future.foreach {
+    listener ⇒
       upstreamListener = listener
       wrappedHandle.readHandlerPromise.success(this)
   }
