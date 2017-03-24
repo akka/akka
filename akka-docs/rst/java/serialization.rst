@@ -5,11 +5,9 @@
  Serialization
 #####################
 
-Akka has a built-in Extension for serialization,
-and it is both possible to use the built-in serializers and to write your own.
+The messages that Akka actors send to each other are JVM objects (e.g.  instances of Scala case classes). Message passing between actors that live on the same JVM is straightforward. It is simply done via reference passing. However, messages that have to escape the JVM to reach an actor running on a different host have to undergo some form of serialization (i.e. the objects have to be converted to and from byte arrays).
 
-The serialization mechanism is both used by Akka internally to serialize messages,
-and available for ad-hoc serialization of whatever you might need it for.
+Akka itself uses Protocol Buffers to serialize internal messages (i.e. cluster gossip messages). However, the serialization mechanism in Akka allows you to write custom serializers and to define which serializer to use for what. 
 
 Usage
 =====
