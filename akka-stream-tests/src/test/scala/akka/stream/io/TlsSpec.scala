@@ -396,15 +396,15 @@ class TlsSpec extends StreamSpec("akka.loglevel=DEBUG\nakka.actor.debug.receive=
       // under error conditions, and has the bonus of matching most actual SSL deployments.
       val (server, serverErr) = Tcp()
         .bind("localhost", 0)
-        .map(c ⇒ {
+        .mapAsync(1)(c ⇒
           c.flow.joinMat(serverTls(IgnoreBoth).reversed.joinMat(simple)(Keep.right))(Keep.right).run()
-        })
+        )
         .toMat(Sink.head)(Keep.both).run()
 
       val clientErr = simple.join(badClientTls(IgnoreBoth))
         .join(Tcp().outgoingConnection(Await.result(server, 1.second).localAddress)).run()
 
-      Await.result(serverErr.flatMap(identity), 1.second).getMessage should include("certificate_unknown")
+      Await.result(serverErr, 1.second).getMessage should include("certificate_unknown")
       Await.result(clientErr, 1.second).getMessage should equal("General SSLEngine problem")
     }
 
