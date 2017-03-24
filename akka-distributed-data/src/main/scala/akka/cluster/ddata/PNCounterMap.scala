@@ -11,7 +11,15 @@ import akka.annotation.InternalApi
 import akka.cluster.ddata.ORMap._
 
 object PNCounterMap {
-  def empty[A]: PNCounterMap[A] = new PNCounterMap(ORMap.emptyWithPNCounterMapTag)
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] case object PNCounterMapTag extends ZeroTag {
+    override def zero: DeltaReplicatedData = PNCounterMap.empty
+    override final val value: Int = 1
+  }
+
+  def empty[A]: PNCounterMap[A] = new PNCounterMap(new ORMap(ORSet.empty, Map.empty, zeroTag = PNCounterMapTag))
   def apply[A](): PNCounterMap[A] = empty
   /**
    * Java API

@@ -10906,19 +10906,30 @@ public final class ReplicatedDataMessages {
        */
       int getZeroTag();
 
-      // optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;
+      // repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;
       /**
-       * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+       * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
        */
-      boolean hasEntryData();
+      java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry> 
+          getEntryDataList();
       /**
-       * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+       * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
        */
-      akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry getEntryData();
+      akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry getEntryData(int index);
       /**
-       * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+       * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
        */
-      akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder getEntryDataOrBuilder();
+      int getEntryDataCount();
+      /**
+       * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+       */
+      java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder> 
+          getEntryDataOrBuilderList();
+      /**
+       * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+       */
+      akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder getEntryDataOrBuilder(
+          int index);
     }
     /**
      * Protobuf type {@code akka.cluster.ddata.ORMapDeltaGroup.Entry}
@@ -11001,16 +11012,11 @@ public final class ReplicatedDataMessages {
                 break;
               }
               case 34: {
-                akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder subBuilder = null;
-                if (((bitField0_ & 0x00000008) == 0x00000008)) {
-                  subBuilder = entryData_.toBuilder();
+                if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+                  entryData_ = new java.util.ArrayList<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry>();
+                  mutable_bitField0_ |= 0x00000008;
                 }
-                entryData_ = input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.PARSER, extensionRegistry);
-                if (subBuilder != null) {
-                  subBuilder.mergeFrom(entryData_);
-                  entryData_ = subBuilder.buildPartial();
-                }
-                bitField0_ |= 0x00000008;
+                entryData_.add(input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.PARSER, extensionRegistry));
                 break;
               }
             }
@@ -11021,6 +11027,9 @@ public final class ReplicatedDataMessages {
           throw new akka.protobuf.InvalidProtocolBufferException(
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
+          if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+            entryData_ = java.util.Collections.unmodifiableList(entryData_);
+          }
           this.unknownFields = unknownFields.build();
           makeExtensionsImmutable();
         }
@@ -11107,33 +11116,47 @@ public final class ReplicatedDataMessages {
         return zeroTag_;
       }
 
-      // optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;
+      // repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;
       public static final int ENTRYDATA_FIELD_NUMBER = 4;
-      private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry entryData_;
+      private java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry> entryData_;
       /**
-       * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+       * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
        */
-      public boolean hasEntryData() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
-      }
-      /**
-       * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
-       */
-      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry getEntryData() {
+      public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry> getEntryDataList() {
         return entryData_;
       }
       /**
-       * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+       * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
        */
-      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder getEntryDataOrBuilder() {
+      public java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder> 
+          getEntryDataOrBuilderList() {
         return entryData_;
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+       */
+      public int getEntryDataCount() {
+        return entryData_.size();
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry getEntryData(int index) {
+        return entryData_.get(index);
+      }
+      /**
+       * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+       */
+      public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder getEntryDataOrBuilder(
+          int index) {
+        return entryData_.get(index);
       }
 
       private void initFields() {
         operation_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaOp.ORMapPut;
         underlying_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.getDefaultInstance();
         zeroTag_ = 0;
-        entryData_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.getDefaultInstance();
+        entryData_ = java.util.Collections.emptyList();
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
@@ -11156,8 +11179,8 @@ public final class ReplicatedDataMessages {
           memoizedIsInitialized = 0;
           return false;
         }
-        if (hasEntryData()) {
-          if (!getEntryData().isInitialized()) {
+        for (int i = 0; i < getEntryDataCount(); i++) {
+          if (!getEntryData(i).isInitialized()) {
             memoizedIsInitialized = 0;
             return false;
           }
@@ -11178,8 +11201,8 @@ public final class ReplicatedDataMessages {
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           output.writeSInt32(3, zeroTag_);
         }
-        if (((bitField0_ & 0x00000008) == 0x00000008)) {
-          output.writeMessage(4, entryData_);
+        for (int i = 0; i < entryData_.size(); i++) {
+          output.writeMessage(4, entryData_.get(i));
         }
         getUnknownFields().writeTo(output);
       }
@@ -11202,9 +11225,9 @@ public final class ReplicatedDataMessages {
           size += akka.protobuf.CodedOutputStream
             .computeSInt32Size(3, zeroTag_);
         }
-        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        for (int i = 0; i < entryData_.size(); i++) {
           size += akka.protobuf.CodedOutputStream
-            .computeMessageSize(4, entryData_);
+            .computeMessageSize(4, entryData_.get(i));
         }
         size += getUnknownFields().getSerializedSize();
         memoizedSerializedSize = size;
@@ -11335,11 +11358,11 @@ public final class ReplicatedDataMessages {
           zeroTag_ = 0;
           bitField0_ = (bitField0_ & ~0x00000004);
           if (entryDataBuilder_ == null) {
-            entryData_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.getDefaultInstance();
+            entryData_ = java.util.Collections.emptyList();
+            bitField0_ = (bitField0_ & ~0x00000008);
           } else {
             entryDataBuilder_.clear();
           }
-          bitField0_ = (bitField0_ & ~0x00000008);
           return this;
         }
 
@@ -11384,10 +11407,11 @@ public final class ReplicatedDataMessages {
             to_bitField0_ |= 0x00000004;
           }
           result.zeroTag_ = zeroTag_;
-          if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-            to_bitField0_ |= 0x00000008;
-          }
           if (entryDataBuilder_ == null) {
+            if (((bitField0_ & 0x00000008) == 0x00000008)) {
+              entryData_ = java.util.Collections.unmodifiableList(entryData_);
+              bitField0_ = (bitField0_ & ~0x00000008);
+            }
             result.entryData_ = entryData_;
           } else {
             result.entryData_ = entryDataBuilder_.build();
@@ -11417,8 +11441,31 @@ public final class ReplicatedDataMessages {
           if (other.hasZeroTag()) {
             setZeroTag(other.getZeroTag());
           }
-          if (other.hasEntryData()) {
-            mergeEntryData(other.getEntryData());
+          if (entryDataBuilder_ == null) {
+            if (!other.entryData_.isEmpty()) {
+              if (entryData_.isEmpty()) {
+                entryData_ = other.entryData_;
+                bitField0_ = (bitField0_ & ~0x00000008);
+              } else {
+                ensureEntryDataIsMutable();
+                entryData_.addAll(other.entryData_);
+              }
+              onChanged();
+            }
+          } else {
+            if (!other.entryData_.isEmpty()) {
+              if (entryDataBuilder_.isEmpty()) {
+                entryDataBuilder_.dispose();
+                entryDataBuilder_ = null;
+                entryData_ = other.entryData_;
+                bitField0_ = (bitField0_ & ~0x00000008);
+                entryDataBuilder_ = 
+                  akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                     getEntryDataFieldBuilder() : null;
+              } else {
+                entryDataBuilder_.addAllMessages(other.entryData_);
+              }
+            }
           }
           this.mergeUnknownFields(other.getUnknownFields());
           return this;
@@ -11441,8 +11488,8 @@ public final class ReplicatedDataMessages {
             
             return false;
           }
-          if (hasEntryData()) {
-            if (!getEntryData().isInitialized()) {
+          for (int i = 0; i < getEntryDataCount(); i++) {
+            if (!getEntryData(i).isInitialized()) {
               
               return false;
             }
@@ -11655,116 +11702,239 @@ public final class ReplicatedDataMessages {
           return this;
         }
 
-        // optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;
-        private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry entryData_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.getDefaultInstance();
-        private akka.protobuf.SingleFieldBuilder<
-            akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder> entryDataBuilder_;
-        /**
-         * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
-         */
-        public boolean hasEntryData() {
-          return ((bitField0_ & 0x00000008) == 0x00000008);
+        // repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;
+        private java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry> entryData_ =
+          java.util.Collections.emptyList();
+        private void ensureEntryDataIsMutable() {
+          if (!((bitField0_ & 0x00000008) == 0x00000008)) {
+            entryData_ = new java.util.ArrayList<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry>(entryData_);
+            bitField0_ |= 0x00000008;
+           }
         }
+
+        private akka.protobuf.RepeatedFieldBuilder<
+            akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder> entryDataBuilder_;
+
         /**
-         * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
          */
-        public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry getEntryData() {
+        public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry> getEntryDataList() {
           if (entryDataBuilder_ == null) {
-            return entryData_;
+            return java.util.Collections.unmodifiableList(entryData_);
           } else {
-            return entryDataBuilder_.getMessage();
+            return entryDataBuilder_.getMessageList();
           }
         }
         /**
-         * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
          */
-        public Builder setEntryData(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry value) {
+        public int getEntryDataCount() {
+          if (entryDataBuilder_ == null) {
+            return entryData_.size();
+          } else {
+            return entryDataBuilder_.getCount();
+          }
+        }
+        /**
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry getEntryData(int index) {
+          if (entryDataBuilder_ == null) {
+            return entryData_.get(index);
+          } else {
+            return entryDataBuilder_.getMessage(index);
+          }
+        }
+        /**
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         */
+        public Builder setEntryData(
+            int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry value) {
           if (entryDataBuilder_ == null) {
             if (value == null) {
               throw new NullPointerException();
             }
-            entryData_ = value;
+            ensureEntryDataIsMutable();
+            entryData_.set(index, value);
             onChanged();
           } else {
-            entryDataBuilder_.setMessage(value);
+            entryDataBuilder_.setMessage(index, value);
           }
-          bitField0_ |= 0x00000008;
           return this;
         }
         /**
-         * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
          */
         public Builder setEntryData(
+            int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder builderForValue) {
+          if (entryDataBuilder_ == null) {
+            ensureEntryDataIsMutable();
+            entryData_.set(index, builderForValue.build());
+            onChanged();
+          } else {
+            entryDataBuilder_.setMessage(index, builderForValue.build());
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         */
+        public Builder addEntryData(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry value) {
+          if (entryDataBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            ensureEntryDataIsMutable();
+            entryData_.add(value);
+            onChanged();
+          } else {
+            entryDataBuilder_.addMessage(value);
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         */
+        public Builder addEntryData(
+            int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry value) {
+          if (entryDataBuilder_ == null) {
+            if (value == null) {
+              throw new NullPointerException();
+            }
+            ensureEntryDataIsMutable();
+            entryData_.add(index, value);
+            onChanged();
+          } else {
+            entryDataBuilder_.addMessage(index, value);
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         */
+        public Builder addEntryData(
             akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder builderForValue) {
           if (entryDataBuilder_ == null) {
-            entryData_ = builderForValue.build();
+            ensureEntryDataIsMutable();
+            entryData_.add(builderForValue.build());
             onChanged();
           } else {
-            entryDataBuilder_.setMessage(builderForValue.build());
+            entryDataBuilder_.addMessage(builderForValue.build());
           }
-          bitField0_ |= 0x00000008;
           return this;
         }
         /**
-         * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
          */
-        public Builder mergeEntryData(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry value) {
+        public Builder addEntryData(
+            int index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder builderForValue) {
           if (entryDataBuilder_ == null) {
-            if (((bitField0_ & 0x00000008) == 0x00000008) &&
-                entryData_ != akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.getDefaultInstance()) {
-              entryData_ =
-                akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.newBuilder(entryData_).mergeFrom(value).buildPartial();
-            } else {
-              entryData_ = value;
-            }
+            ensureEntryDataIsMutable();
+            entryData_.add(index, builderForValue.build());
             onChanged();
           } else {
-            entryDataBuilder_.mergeFrom(value);
+            entryDataBuilder_.addMessage(index, builderForValue.build());
           }
-          bitField0_ |= 0x00000008;
           return this;
         }
         /**
-         * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         */
+        public Builder addAllEntryData(
+            java.lang.Iterable<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry> values) {
+          if (entryDataBuilder_ == null) {
+            ensureEntryDataIsMutable();
+            super.addAll(values, entryData_);
+            onChanged();
+          } else {
+            entryDataBuilder_.addAllMessages(values);
+          }
+          return this;
+        }
+        /**
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
          */
         public Builder clearEntryData() {
           if (entryDataBuilder_ == null) {
-            entryData_ = akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.getDefaultInstance();
+            entryData_ = java.util.Collections.emptyList();
+            bitField0_ = (bitField0_ & ~0x00000008);
             onChanged();
           } else {
             entryDataBuilder_.clear();
           }
-          bitField0_ = (bitField0_ & ~0x00000008);
           return this;
         }
         /**
-         * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
          */
-        public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder getEntryDataBuilder() {
-          bitField0_ |= 0x00000008;
-          onChanged();
-          return getEntryDataFieldBuilder().getBuilder();
+        public Builder removeEntryData(int index) {
+          if (entryDataBuilder_ == null) {
+            ensureEntryDataIsMutable();
+            entryData_.remove(index);
+            onChanged();
+          } else {
+            entryDataBuilder_.remove(index);
+          }
+          return this;
         }
         /**
-         * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
          */
-        public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder getEntryDataOrBuilder() {
-          if (entryDataBuilder_ != null) {
-            return entryDataBuilder_.getMessageOrBuilder();
-          } else {
-            return entryData_;
+        public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder getEntryDataBuilder(
+            int index) {
+          return getEntryDataFieldBuilder().getBuilder(index);
+        }
+        /**
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder getEntryDataOrBuilder(
+            int index) {
+          if (entryDataBuilder_ == null) {
+            return entryData_.get(index);  } else {
+            return entryDataBuilder_.getMessageOrBuilder(index);
           }
         }
         /**
-         * <code>optional .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
          */
-        private akka.protobuf.SingleFieldBuilder<
+        public java.util.List<? extends akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder> 
+             getEntryDataOrBuilderList() {
+          if (entryDataBuilder_ != null) {
+            return entryDataBuilder_.getMessageOrBuilderList();
+          } else {
+            return java.util.Collections.unmodifiableList(entryData_);
+          }
+        }
+        /**
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder addEntryDataBuilder() {
+          return getEntryDataFieldBuilder().addBuilder(
+              akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.getDefaultInstance());
+        }
+        /**
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         */
+        public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder addEntryDataBuilder(
+            int index) {
+          return getEntryDataFieldBuilder().addBuilder(
+              index, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.getDefaultInstance());
+        }
+        /**
+         * <code>repeated .akka.cluster.ddata.ORMapDeltaGroup.MapEntry entryData = 4;</code>
+         */
+        public java.util.List<akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder> 
+             getEntryDataBuilderList() {
+          return getEntryDataFieldBuilder().getBuilderList();
+        }
+        private akka.protobuf.RepeatedFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder> 
             getEntryDataFieldBuilder() {
           if (entryDataBuilder_ == null) {
-            entryDataBuilder_ = new akka.protobuf.SingleFieldBuilder<
+            entryDataBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
                 akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaGroup.MapEntryOrBuilder>(
                     entryData_,
+                    ((bitField0_ & 0x00000008) == 0x00000008),
                     getParentForChildren(),
                     isClean());
             entryData_ = null;
@@ -18398,7 +18568,7 @@ public final class ReplicatedDataMessages {
       "erMessage\032\275\001\n\005Entry\0223\n\toperation\030\001 \002(\0162 ",
       ".akka.cluster.ddata.ORMapDeltaOp\022-\n\nunde" +
       "rlying\030\002 \002(\0132\031.akka.cluster.ddata.ORSet\022" +
-      "\017\n\007zeroTag\030\003 \002(\021\022?\n\tentryData\030\004 \001(\0132,.ak" +
+      "\017\n\007zeroTag\030\003 \002(\021\022?\n\tentryData\030\004 \003(\0132,.ak" +
       "ka.cluster.ddata.ORMapDeltaGroup.MapEntr" +
       "y\"\206\002\n\006LWWMap\022\'\n\004keys\030\001 \002(\0132\031.akka.cluste" +
       "r.ddata.ORSet\0221\n\007entries\030\002 \003(\0132 .akka.cl" +
