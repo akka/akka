@@ -953,7 +953,10 @@ final case class `WWW-Authenticate`(challenges: immutable.Seq[HttpChallenge]) ex
 // http://en.wikipedia.org/wiki/X-Forwarded-For
 object `X-Forwarded-For` extends ModeledCompanion[`X-Forwarded-For`] {
   def apply(first: RemoteAddress, more: RemoteAddress*): `X-Forwarded-For` = apply(immutable.Seq(first +: more: _*))
-  implicit val addressesRenderer = Renderer.defaultSeqRenderer[RemoteAddress] // cache
+  implicit val addressesRenderer = {
+    implicit val singleAddressRenderer = RemoteAddress.renderWithoutPort
+    Renderer.defaultSeqRenderer[RemoteAddress] // cache
+  }
 }
 final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) extends jm.headers.XForwardedFor
   with RequestHeader {
@@ -966,9 +969,12 @@ final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) exte
   def getAddresses: Iterable[jm.RemoteAddress] = addresses.asJava
 }
 
-object `X-Real-Ip` extends ModeledCompanion[`X-Real-Ip`]
+object `X-Real-Ip` extends ModeledCompanion[`X-Real-Ip`] {
+  implicit val addressRenderer = RemoteAddress.renderWithoutPort // cache
+}
 final case class `X-Real-Ip`(address: RemoteAddress) extends jm.headers.XRealIp
   with RequestHeader {
+  import `X-Real-Ip`.addressRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ address
   protected def companion = `X-Real-Ip`
 }

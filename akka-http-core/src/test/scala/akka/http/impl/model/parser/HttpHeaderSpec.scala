@@ -576,6 +576,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "X-Forwarded-For" in {
       "X-Forwarded-For: 1.2.3.4" =!= `X-Forwarded-For`(remoteAddress("1.2.3.4"))
+      "X-Forwarded-For: 1.2.3.4" <=!= `X-Forwarded-For`(remoteAddress("1.2.3.4", Some(56789)))
       "X-Forwarded-For: 234.123.5.6, 8.8.8.8" =!= `X-Forwarded-For`(remoteAddress("234.123.5.6"), remoteAddress("8.8.8.8"))
       "X-Forwarded-For: 1.2.3.4, unknown" =!= `X-Forwarded-For`(remoteAddress("1.2.3.4"), RemoteAddress.Unknown)
       "X-Forwarded-For: 192.0.2.43, 2001:db8:cafe:0:0:0:0:17" =!= `X-Forwarded-For`(remoteAddress("192.0.2.43"), remoteAddress("2001:db8:cafe::17"))
@@ -583,6 +584,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "X-Forwarded-For: 1234:567:9a:d:2:67:abc:ef00" =!= `X-Forwarded-For`(remoteAddress("1234:567:9a:d:2:67:abc:ef00"))
       "X-Forwarded-For: 2001:db8:85a3::8a2e:370:7334" =!=> "2001:db8:85a3:0:0:8a2e:370:7334"
       "X-Forwarded-For: 1:2:3:4:5:6:7:8" =!= `X-Forwarded-For`(remoteAddress("1:2:3:4:5:6:7:8"))
+      "X-Forwarded-For: 1:2:3:4:5:6:7:8" <=!= `X-Forwarded-For`(remoteAddress("1:2:3:4:5:6:7:8", Some(9)))
       "X-Forwarded-For: ::2:3:4:5:6:7:8" =!=> "0:2:3:4:5:6:7:8"
       "X-Forwarded-For: ::3:4:5:6:7:8" =!=> "0:0:3:4:5:6:7:8"
       "X-Forwarded-For: ::4:5:6:7:8" =!=> "0:0:0:4:5:6:7:8"
@@ -612,11 +614,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "X-Real-Ip" in {
       "X-Real-Ip: 1.2.3.4" =!= `X-Real-Ip`(remoteAddress("1.2.3.4"))
+      "X-Real-Ip: 1.2.3.4" <=!= `X-Real-Ip`(remoteAddress("1.2.3.4", Some(56789)))
       "X-Real-Ip: 2001:db8:cafe:0:0:0:0:17" =!= `X-Real-Ip`(remoteAddress("2001:db8:cafe:0:0:0:0:17"))
       "X-Real-Ip: 1234:5678:9abc:def1:2345:6789:abcd:ef00" =!= `X-Real-Ip`(remoteAddress("1234:5678:9abc:def1:2345:6789:abcd:ef00"))
       "X-Real-Ip: 1234:567:9a:d:2:67:abc:ef00" =!= `X-Real-Ip`(remoteAddress("1234:567:9a:d:2:67:abc:ef00"))
       "X-Real-Ip: 2001:db8:85a3::8a2e:370:7334" =!=> "2001:db8:85a3:0:0:8a2e:370:7334"
       "X-Real-Ip: 1:2:3:4:5:6:7:8" =!= `X-Real-Ip`(remoteAddress("1:2:3:4:5:6:7:8"))
+      "X-Real-Ip: 1:2:3:4:5:6:7:8" <=!= `X-Real-Ip`(remoteAddress("1:2:3:4:5:6:7:8", Some(9)))
       "X-Real-Ip: ::2:3:4:5:6:7:8" =!=> "0:2:3:4:5:6:7:8"
       "X-Real-Ip: ::3:4:5:6:7:8" =!=> "0:0:3:4:5:6:7:8"
       "X-Real-Ip: ::4:5:6:7:8" =!=> "0:0:0:4:5:6:7:8"
@@ -680,6 +684,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
   implicit class TestLine(line: String) {
     def =!=(testHeader: TestExample) = testHeader(line)
+    def <=!=(header: HttpHeader) = {
+      header.toString shouldEqual line
+    }
     def =!=>(expectedRendering: String) = {
       val Array(name, value) = line.split(": ", 2)
       val HttpHeader.ParsingResult.Ok(header, Nil) = HttpHeader.parse(name, value)
@@ -741,5 +748,5 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         fail(s"Input `${header.header}` failed to parse:\n${info.summary}\n${info.detail}")
     }
 
-  def remoteAddress(ip: String) = RemoteAddress(InetAddress.getByName(ip))
+  def remoteAddress(ip: String, port: Option[Int] = None) = RemoteAddress(InetAddress.getByName(ip), port)
 }
