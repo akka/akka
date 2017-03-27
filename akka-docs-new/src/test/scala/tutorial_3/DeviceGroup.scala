@@ -3,7 +3,7 @@
  */
 package tutorial_3
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, Cancellable, Props, Stash, Terminated }
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
 import tutorial_3.DeviceGroup._
 import tutorial_3.DeviceManager.RequestTrackDevice
 import scala.concurrent.duration._
@@ -12,125 +12,64 @@ object DeviceGroup {
 
   def props(groupId: String): Props = Props(new DeviceGroup(groupId))
 
-  case class RequestDeviceList(requestId: Long)
-  case class ReplyDeviceList(requestId: Long, ids: Set[String])
+  final case class RequestDeviceList(requestId: Long)
+  final case class ReplyDeviceList(requestId: Long, ids: Set[String])
 
-  case class RequestAllTemperatures(requestId: Long)
-  case class RespondAllTemperatures(requestId: Long, temperatures: Map[String, Option[Double]])
+  final case class RequestAllTemperatures(requestId: Long)
+  final case class RespondAllTemperatures(requestId: Long, temperatures: Map[String, TemperatureReading])
 
-  case class CollectionTimeout(requestId: Long)
+  sealed trait TemperatureReading
+  final case class Temperature(value: Double) extends TemperatureReading
+  case object TemperatureNotAvailable extends TemperatureReading
+  case object DeviceNotAvailable extends TemperatureReading
+  case object DeviceTimedOut extends TemperatureReading
 }
 
-class DeviceGroup(groupId: String) extends Actor with ActorLogging with Stash {
+class DeviceGroup(groupId: String) extends Actor with ActorLogging {
   var deviceIdToActor = Map.empty[String, ActorRef]
   var actorToDeviceId = Map.empty[ActorRef, String]
   var nextCollectionId = 0L
 
-  override def preStart(): Unit = log.info(s"DeviceGroup $groupId started")
+  override def preStart(): Unit = log.info("DeviceGroup {} started", groupId)
 
-  override def postStop(): Unit = log.info(s"DeviceGroup $groupId stopped")
+  override def postStop(): Unit = log.info("DeviceGroup {} stopped", groupId)
 
-  override def receive: Receive = waitingForRequest orElse generalManagement
-
-  def waitingForRequest: Receive = {
-    case RequestAllTemperatures(requestId) =>
-      import context.dispatcher
-
-      val collectionId = nextCollectionId
-      val requester = sender()
-      nextCollectionId += 1
-      val answersSoFar = deviceIdToActor.mapValues(_ => None)
-      context.children.foreach(_ ! Device.ReadTemperature(collectionId))
-      val collectionTimeoutTimer = context.system.scheduler.scheduleOnce(3.seconds, self, CollectionTimeout(collectionId))
-
-      context.become(
-        collectResults(
-          collectionTimeoutTimer,
-          collectionId,
-          requester,
-          requestId,
-          answersSoFar.size,
-          answersSoFar) orElse generalManagement,
-        discardOld = false
-      )
-  }
-
-  def generalManagement: Receive = {
+  override def receive: Receive = {
     // Note the backticks
     case trackMsg @ RequestTrackDevice(`groupId`, _) =>
-      handleTrackMessage(trackMsg)
+      deviceIdToActor.get(trackMsg.deviceId) match {
+        case Some(ref) =>
+          ref forward trackMsg
+        case None =>
+          log.info("Creating device actor for {}", trackMsg.deviceId)
+          val deviceActor = context.actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId)
+          context.watch(deviceActor)
+          deviceActor forward trackMsg
+          deviceIdToActor += trackMsg.deviceId -> deviceActor
+          actorToDeviceId += deviceActor -> trackMsg.deviceId
+      }
 
     case RequestTrackDevice(groupId, deviceId) =>
-      log.warning(s"Ignoring TrackDevice request for $groupId. This actor is responsible for ${this.groupId}.")
+      log.warning(
+        "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
+        groupId, this.groupId)
 
     case RequestDeviceList(requestId) =>
       sender() ! ReplyDeviceList(requestId, deviceIdToActor.keySet)
 
     case Terminated(deviceActor) =>
-      removeDeviceActor(deviceActor)
-  }
-
-  def handleTrackMessage(trackMsg: RequestTrackDevice): Unit = {
-    deviceIdToActor.get(trackMsg.deviceId) match {
-      case Some(ref) =>
-        ref forward trackMsg
-      case None =>
-        log.info(s"Creating device actor for ${trackMsg.deviceId}")
-        val deviceActor = context.actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId)
-        context.watch(deviceActor)
-        deviceActor forward trackMsg
-        deviceIdToActor += trackMsg.deviceId -> deviceActor
-        actorToDeviceId += deviceActor -> trackMsg.deviceId
-    }
-  }
-
-  def removeDeviceActor(deviceActor: ActorRef): Unit = {
-    val deviceId = actorToDeviceId(deviceActor)
-    log.info(s"Device actor for $deviceId has been terminated")
-    actorToDeviceId -= deviceActor
-    deviceIdToActor -= deviceId
-  }
-
-  def collectResults(
-    timer:        Cancellable,
-    expectedId:   Long,
-    requester:    ActorRef,
-    requestId:    Long,
-    waiting:      Int,
-    answersSoFar: Map[String, Option[Double]]
-  ): Receive = {
-
-    case Device.RespondTemperature(`expectedId`, temperatureOption) =>
-      val deviceActor = sender()
       val deviceId = actorToDeviceId(deviceActor)
-      val newAnswers = answersSoFar + (deviceId -> temperatureOption)
+      log.info("Device actor for {} has been terminated", deviceId)
+      actorToDeviceId -= deviceActor
+      deviceIdToActor -= deviceId
 
-      if (waiting == 1) {
-        requester ! RespondAllTemperatures(requestId, newAnswers)
-        finishCollection(timer)
-      } else {
-        context.become(collectResults(timer, expectedId, requester, requestId, waiting - 1, newAnswers))
-      }
-
-    case Terminated(deviceActor) =>
-      val deviceId = actorToDeviceId(deviceActor)
-      removeDeviceActor(deviceActor)
-      val newAnswers = answersSoFar + (deviceId -> None)
-
-      if (waiting == 1) {
-        requester ! RespondAllTemperatures(requestId, newAnswers)
-        finishCollection(timer: Cancellable)
-      } else {
-        context.become(collectResults(timer, expectedId, requester, requestId, waiting - 1, newAnswers))
-      }
-
-    case CollectionTimeout(`expectedId`) =>
-      requester ! RespondAllTemperatures(requestId, answersSoFar)
-  }
-
-  def finishCollection(timer: Cancellable): Unit = {
-    context.unbecome()
-    timer.cancel()
+    case RequestAllTemperatures(requestId) =>
+      context.actorOf(DeviceGroupQuery.props(
+        actorToDeviceId = actorToDeviceId,
+        requestId = requestId,
+        requester = sender(),
+        3.seconds
+      ))
   }
 
 }

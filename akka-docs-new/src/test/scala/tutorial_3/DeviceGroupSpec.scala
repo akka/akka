@@ -17,18 +17,18 @@ class DeviceGroupSpec extends AkkaSpec {
       val probe = TestProbe()
       val groupActor = system.actorOf(DeviceGroup.props("group"))
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device1"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device1"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
       val deviceActor1 = probe.lastSender
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device2"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device2"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
       val deviceActor2 = probe.lastSender
 
       // Check that the device actors are working
-      probe.send(deviceActor1, Device.RecordTemperature(requestId = 0, 1.0))
+      deviceActor1.tell(Device.RecordTemperature(requestId = 0, 1.0), probe.ref)
       probe.expectMsg(Device.TemperatureRecorded(requestId = 0))
-      probe.send(deviceActor2, Device.RecordTemperature(requestId = 1, 2.0))
+      deviceActor2.tell(Device.RecordTemperature(requestId = 1, 2.0), probe.ref)
       probe.expectMsg(Device.TemperatureRecorded(requestId = 1))
     }
 
@@ -36,7 +36,7 @@ class DeviceGroupSpec extends AkkaSpec {
       val probe = TestProbe()
       val groupActor = system.actorOf(DeviceGroup.props("group"))
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("wrongGroup", "device1"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("wrongGroup", "device1"), probe.ref)
       probe.expectNoMsg(500.milliseconds)
     }
 
@@ -44,11 +44,11 @@ class DeviceGroupSpec extends AkkaSpec {
       val probe = TestProbe()
       val groupActor = system.actorOf(DeviceGroup.props("group"))
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device1"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device1"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
       val deviceActor1 = probe.lastSender
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device1"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device1"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
       val deviceActor2 = probe.lastSender
 
@@ -59,13 +59,13 @@ class DeviceGroupSpec extends AkkaSpec {
       val probe = TestProbe()
       val groupActor = system.actorOf(DeviceGroup.props("group"))
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device1"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device1"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device2"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device2"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
 
-      probe.send(groupActor, DeviceGroup.RequestDeviceList(requestId = 0))
+      groupActor.tell(DeviceGroup.RequestDeviceList(requestId = 0), probe.ref)
       probe.expectMsg(DeviceGroup.ReplyDeviceList(requestId = 0, Set("device1", "device2")))
     }
 
@@ -73,55 +73,55 @@ class DeviceGroupSpec extends AkkaSpec {
       val probe = TestProbe()
       val groupActor = system.actorOf(DeviceGroup.props("group"))
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device1"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device1"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
       val toShutDown = probe.lastSender
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device2"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device2"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
 
-      probe.send(groupActor, DeviceGroup.RequestDeviceList(requestId = 0))
+      groupActor.tell(DeviceGroup.RequestDeviceList(requestId = 0), probe.ref)
       probe.expectMsg(DeviceGroup.ReplyDeviceList(requestId = 0, Set("device1", "device2")))
 
       probe.watch(toShutDown)
       toShutDown ! PoisonPill
       probe.expectTerminated(toShutDown)
 
-      probe.send(groupActor, DeviceGroup.RequestDeviceList(requestId = 0))
-      probe.expectMsg(DeviceGroup.ReplyDeviceList(requestId = 0, Set("device2")))
+      groupActor.tell(DeviceGroup.RequestDeviceList(requestId = 1), probe.ref)
+      probe.expectMsg(DeviceGroup.ReplyDeviceList(requestId = 1, Set("device2")))
     }
 
     "be able to collect temperatures from all active devices" in {
       val probe = TestProbe()
       val groupActor = system.actorOf(DeviceGroup.props("group"))
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device1"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device1"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
       val deviceActor1 = probe.lastSender
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device2"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device2"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
       val deviceActor2 = probe.lastSender
 
-      probe.send(groupActor, DeviceManager.RequestTrackDevice("group", "device3"))
+      groupActor.tell(DeviceManager.RequestTrackDevice("group", "device3"), probe.ref)
       probe.expectMsg(DeviceManager.DeviceRegistered)
       val deviceActor3 = probe.lastSender
 
       // Check that the device actors are working
-      probe.send(deviceActor1, Device.RecordTemperature(requestId = 0, 1.0))
+      deviceActor1.tell(Device.RecordTemperature(requestId = 0, 1.0), probe.ref)
       probe.expectMsg(Device.TemperatureRecorded(requestId = 0))
-      probe.send(deviceActor2, Device.RecordTemperature(requestId = 1, 2.0))
+      deviceActor2.tell(Device.RecordTemperature(requestId = 1, 2.0), probe.ref)
       probe.expectMsg(Device.TemperatureRecorded(requestId = 1))
       // No temperature for device3
 
-      probe.send(groupActor, DeviceGroup.RequestAllTemperatures(requestId = 0))
+      groupActor.tell(DeviceGroup.RequestAllTemperatures(requestId = 0), probe.ref)
       probe.expectMsg(
         DeviceGroup.RespondAllTemperatures(
           requestId = 0,
           temperatures = Map(
-            "device1" -> Some(1.0),
-            "device2" -> Some(2.0),
-            "device3" -> None
+            "device1" -> DeviceGroup.Temperature(1.0),
+            "device2" -> DeviceGroup.Temperature(2.0),
+            "device3" -> DeviceGroup.TemperatureNotAvailable
           )
         )
       )
