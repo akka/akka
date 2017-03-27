@@ -1,3 +1,3 @@
 import akka._
 
-//OSGi.httpCore
+OSGi.httpCore

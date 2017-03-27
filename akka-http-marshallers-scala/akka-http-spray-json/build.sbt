@@ -1,5 +1,5 @@
 import akka._
 
-//OSGi.httpSprayJson
+OSGi.httpSprayJson
 Dependencies.httpSprayJson
 

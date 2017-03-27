@@ -1,4 +1,4 @@
 import akka._
 
-//OSGi.httpXml
+OSGi.httpXml
 Dependencies.httpXml

@@ -5,6 +5,7 @@ import Dependencies.{ h2specName, h2specExe }
 
 Dependencies.http2
 Dependencies.http2Support
+OSGi.http2Support
 
 fork in run in Test := true
 fork in Test := true

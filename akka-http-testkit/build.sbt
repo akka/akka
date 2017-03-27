@@ -1,6 +1,6 @@
 import akka._
 
-//OSGi.httpTestkit
+OSGi.httpTestkit
 Dependencies.httpTestkit
 
 scalacOptions in Compile  += "-language:postfixOps"

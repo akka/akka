@@ -1,6 +1,6 @@
 import akka._
 
-//OSGi.httpJackson
+OSGi.httpJackson
 Dependencies.httpJackson
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)

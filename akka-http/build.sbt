@@ -1,6 +1,6 @@
 import akka._
 
-//OSGi.http
+OSGi.http
 
 Dependencies.http
 scalacOptions in Compile += "-language:_"
