@@ -761,9 +761,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
         // tear down the upstream hub part if downstream lane fails
         // lanes are not completed with success by themselves so we don't have to care about onSuccess
-        completed.onFailure {
-          case reason: Throwable ⇒ hubKillSwitch.abort(reason)
-        }
+        completed.failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
 
         (resourceLife, compressionAccess, completed)
       }
@@ -788,7 +786,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
     implicit val ec = materializer.executionContext
-    streamCompleted.onFailure {
+    streamCompleted.failed.foreach {
       case ShutdownSignal     ⇒ // shutdown as expected
       case _: AeronTerminated ⇒ // shutdown already in progress
       case cause if isShutdown ⇒

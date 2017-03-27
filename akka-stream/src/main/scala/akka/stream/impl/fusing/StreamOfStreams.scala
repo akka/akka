@@ -23,7 +23,7 @@ import akka.stream.impl.PublisherSource
 import akka.stream.impl.CancellingSubscriber
 import akka.stream.impl.{ Buffer ⇒ BufferImpl }
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
  * INTERNAL API
@@ -245,13 +245,13 @@ import scala.collection.JavaConversions._
 
     private def tryCompleteAll(): Boolean =
       if (activeSubstreamsMap.isEmpty || (!hasNextElement && firstPushCounter == 0)) {
-        for (value ← activeSubstreamsMap.values()) value.complete()
+        for (value ← activeSubstreamsMap.values().asScala) value.complete()
         completeStage()
         true
       } else false
 
     private def fail(ex: Throwable): Unit = {
-      for (value ← activeSubstreamsMap.values()) value.fail(ex)
+      for (value ← activeSubstreamsMap.values().asScala) value.fail(ex)
       failStage(ex)
     }
 

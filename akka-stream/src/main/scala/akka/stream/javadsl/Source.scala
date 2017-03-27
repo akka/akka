@@ -395,7 +395,7 @@ object Source {
     read:   function.Function[S, Optional[T]],
     close:  function.Procedure[S]): javadsl.Source[T, NotUsed] =
     new Source(scaladsl.Source.unfoldResource[T, S](
-      create.create,
+      create.create _,
       (s: S) ⇒ read.apply(s).asScala, close.apply))
 
   /**

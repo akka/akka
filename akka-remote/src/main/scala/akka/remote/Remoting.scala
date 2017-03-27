@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ByteString.UTF_8
 import akka.util.OptionVal
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -575,10 +576,9 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
   val accepting: Receive = {
     case ManagementCommand(cmd) ⇒
-      val allStatuses = transportMapping.values map { transport ⇒
-        transport.managementCommand(cmd)
-      }
-      Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender()
+      val allStatuses: immutable.Seq[Future[Boolean]] =
+        transportMapping.values.map(transport ⇒ transport.managementCommand(cmd))(scala.collection.breakOut)
+      akka.compat.Future.fold(allStatuses)(true)(_ && _) map ManagementCommandAck pipeTo sender()
 
     case Quarantine(address, uidToQuarantineOption) ⇒
       // Stop writers

@@ -293,8 +293,8 @@ import scala.util.control.NonFatal
       }
     }
 
-    private def onResourceReady(f: (S) ⇒ Unit): Unit = resource.future.onSuccess {
-      case resource ⇒ f(resource)
+    private def onResourceReady(f: (S) ⇒ Unit): Unit = resource.future.foreach {
+      resource ⇒ f(resource)
     }
 
     val errorHandler: PartialFunction[Throwable, Unit] = {
@@ -337,7 +337,7 @@ import scala.util.control.NonFatal
       resource = Promise[S]()
       createStream(true)
     })
-    private def closeStage(): Unit = closeAndThen(completeStage)
+    private def closeStage(): Unit = closeAndThen(completeStage _)
 
   }
   override def toString = "UnfoldResourceSourceAsync"
