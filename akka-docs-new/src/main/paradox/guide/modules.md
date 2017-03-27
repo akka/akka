@@ -13,7 +13,7 @@ Unlike objects, actors encapsulate not only their
 state but their execution. Communication with actors is not via method calls but by passing messages. While this 
 difference seems to be minor, this is actually what allows us to break clean from the limitations of OOP when it 
 comes to concurrency and remote communication. Don’t worry if this description feels too high level to fully grasp 
-yet, in the next chapter we will explain actors in detail. For now, the important point that this is a model that 
+yet, in the next chapter we will explain actors in detail. For now, the important point is that this is a model that 
 handles concurrency and distribution at the fundamental level instead of ad hoc patched attempts to bring these 
 features to OOP.
 
@@ -45,8 +45,8 @@ Some of the problems Remoting solves are
 If you have a set of actor systems that cooperate to solve some business problem, then you likely want to manage these set of 
 systems in a disciplined way. While Remoting solves the problem of addressing and communicating with components of 
 remote systems, Clustering gives you the ability to organize these into a "meta-system" tied together by a membership
-protocol. **In most of the cases, you want to use the Cluster module instead of using Remoting directly.** 
-Cluster provides an additional set of services on top of Remoting that most of the real world applications need. 
+protocol. **In most cases, you want to use the Cluster module instead of using Remoting directly.** 
+Cluster provides an additional set of services on top of Remoting that most real world applications need. 
 
 The problems the Cluster module solves (among others) are
 
@@ -56,36 +56,6 @@ The problems the Cluster module solves (among others) are
 * How to remove failed hosts/systems (or scale down the system) so that all remaining members agree on the remaining subset of the cluster?
 * How to distribute computations among the current set of members?
 * How do I designate members of the cluster to a certain role, in other words to provide certain services and not others?
-
-### Persistence
-
-Just like objects in OOP actors keep their state in volatile memory. Once the system is shut down, gracefully or
-because of a crash, all data that was in memory is lost. Persistence provide patterns to enable actors to persist 
-events that lead to their current state. Upon startup events can be replayed to restore the state of the entity hosted 
-by the actor. The event stream can be queried and fed into additional processing pipelines (an external Big Data 
-cluster for example) or alternate views (like reports).
- 
-Persistence tackles the following problems:
- 
-* How do I restore the state of an entity/actor when system restarts or crashes?
-* How do I implement a [CQRS system](https://msdn.microsoft.com/en-us/library/jj591573.aspx)?
-* How do I ensure reliable delivery of messages in face of network errors and system crashes?
-* How do I introspect domain events that has lead an entity to its current state?
-
-### Cluster Singleton
-
-A common (in fact, a bit too common) use case in distributed systems is to have a single entity responsible 
-for a given task which is shared among other members of the cluster and migrated if the host system fails. 
-While this undeniably introduces a common bottleneck for the whole cluster that limits scaling,
-there are scenarios where the use of this pattern is unavoidable. Cluster singleton allows a cluster to elect an 
-actor system which will host a particular actor while other systems can always access said service independently from 
-where it is.
-
-The Singleton module can be used to solve these problems:
-
-* How do I ensure that only one instance is running of a service in the whole cluster?
-* How do I ensure that the service is up even if the system hosting it currently crashes or shut down during the process of scaling down?
-* How do I reach this instance from any member of the cluster assuming that it can migrate to other systems over time?
 
 ### Cluster Sharding
 
@@ -101,6 +71,21 @@ The problem space that Sharding targets:
 * How do I ensure migrating entities from a crashed system without losing state?
 * How do I ensure that an entity does not exist on multiple systems at the same time and hence kept consistent?
 
+### Cluster Singleton
+
+A common (in fact, a bit too common) use case in distributed systems is to have a single entity responsible 
+for a given task which is shared among other members of the cluster and migrated if the host system fails. 
+While this undeniably introduces a common bottleneck for the whole cluster that limits scaling,
+there are scenarios where the use of this pattern is unavoidable. Cluster singleton allows a cluster to elect an 
+actor system which will host a particular actor while other systems can always access said service independently from 
+where it is.
+
+The Singleton module can be used to solve these problems:
+
+* How do I ensure that only one instance is running of a service in the whole cluster?
+* How do I ensure that the service is up even if the system hosting it currently crashes or shut down during the process of scaling down?
+* How do I reach this instance from any member of the cluster assuming that it can migrate to other systems over time?  
+
 ### Cluster Publish-Subscribe
 
 For coordination among systems it is often necessary to distribute messages to all, or one system of a set of 
@@ -111,6 +96,21 @@ to broadcast or anycast messages to subscribers of that topic.
 * How do I broadcast messages to an interested set of parties in a cluster?
 * How do I anycast messages to a member from an interested set of parties in a cluster?
 * How to subscribe and unsubscribe for events of a certain topic in the cluster?
+
+### Persistence
+
+Just like objects in OOP actors keep their state in volatile memory. Once the system is shut down, gracefully or
+because of a crash, all data that was in memory is lost. Persistence provide patterns to enable actors to persist 
+events that lead to their current state. Upon startup events can be replayed to restore the state of the entity hosted 
+by the actor. The event stream can be queried and fed into additional processing pipelines (an external Big Data 
+cluster for example) or alternate views (like reports).
+ 
+Persistence tackles the following problems:
+ 
+* How do I restore the state of an entity/actor when system restarts or crashes?
+* How do I implement a [CQRS system](https://msdn.microsoft.com/en-us/library/jj591573.aspx)?
+* How do I ensure reliable delivery of messages in face of network errors and system crashes?
+* How do I introspect domain events that has lead an entity to its current state?
 
 ### Streams
 
@@ -152,14 +152,4 @@ it into a streaming BigData engine. Take the output of that engine as a Stream, 
 operators and expose it as websocket connections served by a load balanced set of HTTP servers hosted by your cluster 
 to power your real-time business analytics tool.
  
-Got you interested? 
-
-
-
-
-
-
-
-
-
-
+Got you interested?

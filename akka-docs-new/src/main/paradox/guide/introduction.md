@@ -10,7 +10,7 @@ crash without responding, messages get lost without a trace on the wire, and net
 These problems occur regularly in carefully managed intra-datacenter environments - even more so in virtualized 
 architectures.
 
-To deal with these realities, Akka provides
+To deal with these realities, Akka provides:
 
  * Multi-threaded behavior without use of low-level concurrency constructs like 
    atomics or locks. You do not even need to think about memory visibility issues.
@@ -36,7 +36,7 @@ But relatively recently, their applicability to the challenges of modern computi
 proved to be effective.
 
 The actor model provides an abstraction that allows you to think about your code in terms of communication, not unlike
-people in a large organization. The basic characteristic of actors that they model the world as stateful entities
+people in a large organization. The basic characteristic of actors is that they model the world as stateful entities
 communicating with each other by explicit message passing.
 
 As computational entities, actors have these characteristics:

@@ -13,7 +13,7 @@ it can only modified by invoking a set of curated methods. The object is respons
 that protect the invariant nature of its encapsulated data.
 
 For example, operations on an ordered binary tree implementation must not allow violation of the tree ordering 
-constraint. Callers rely on the ordering being intact. For example, when querying the tree for a certain piece of 
+invariant. Callers rely on the ordering being intact. For example, when querying the tree for a certain piece of 
 data, you need to be able to rely on this constraint.
 
 When we analyze OOP runtime behavior, we sometimes draw a message sequence chart showing the interactions of 
@@ -40,14 +40,14 @@ can be interleaved in arbitrary ways which eliminates any hope for keeping the i
 type of coordination between two threads. Now, imagine this issue compounded by the existence of many threads.
 
 The common approach for solving this problem is to add a lock around these methods. While this ensures that at most 
-ne thread will enter the method at any given time, this is a very costly strategy:
+one thread will enter the method at any given time, this is a very costly strategy:
  * Locks _seriously limit_ concurrency, they are very costly on modern CPU architectures, 
    requiring heavy-lifting from the operating system to suspend the thread and restore it later.
  * The caller thread is now blocked, so it cannot do any other meaningful work. Even in desktop applications this is 
    unacceptable, we want to keep user facing parts of an applications (its UI) to be responsive even when a 
    long background job is running. In backend, server settings, this is outright wasteful. 
    One might think that this can be compensated by launching new threads, but threads are also a costly abstraction.
- * Locks introduce a new menace, deadlocks.     
+ * Locks introduce a new menace: deadlocks.     
  	  
 These realities result in a no-win situation:
  * Without sufficient locks, state gets corrupted. 	
@@ -190,8 +190,10 @@ Instead, the receiving actor delivers the results in a reply message.
 The second key change we need in our model is to reinstate encapsulation. Actors react to messages just like objects 
 "react" to methods invoked on them. The difference is that instead of multiple threads "protruding" into our actor and 
 wreaking havoc to internal state and invariants, actors execute independently from the senders of a message, and they 
-react to incoming messages sequentially, one at a time. There is always at most one message being processed, meaning 
-that invariants can be kept without synchronization. This happens automatically without using locks:
+react to incoming messages sequentially, one at a time. While each actor processes messages sent to it sequentially, 
+different actors work concurrently with each other so an actor system can process as many messages simultaneously
+as many processor cores are available on the machine. Since there is always at most one message being processed per actor 
+the invariants of an actor can be kept without synchronization. This happens automatically without using locks:
 
 TODO: SERIALIZED-TIMELINE-INVARIANTS
 
