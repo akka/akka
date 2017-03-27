@@ -133,8 +133,8 @@ class Registrar(val start: Int, val number: Int, activationsPromise: Promise[Lis
       actorRefs.foreach { aref ⇒
         context.stop(aref)
         val result = camel.deactivationFutureFor(aref)
-        result.onFailure {
-          case e ⇒ log.error("deactivationFutureFor {} failed: {}", aref, e.getMessage)
+        result.failed.foreach {
+          e ⇒ log.error("deactivationFutureFor {} failed: {}", aref, e.getMessage)
         }
         deActivations += result
         if (deActivations.size == number * 2) {
@@ -147,8 +147,8 @@ class Registrar(val start: Int, val number: Int, activationsPromise: Promise[Lis
     val ref = context.actorOf(Props(actor), name)
     actorRefs = actorRefs + ref
     val result = camel.activationFutureFor(ref)
-    result.onFailure {
-      case e ⇒ log.error("activationFutureFor {} failed: {}", ref, e.getMessage)
+    result.failed.foreach {
+      e ⇒ log.error("activationFutureFor {} failed: {}", ref, e.getMessage)
     }
     activations += result
   }

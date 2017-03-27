@@ -243,7 +243,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "fail if getting the supplier fails" in {
       def failedSupplier(): Supplier[Array[Int]] = throw TE("")
       val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(failedSupplier, accumulator, combiner, finisher)))
+        () ⇒ new TestCollector(failedSupplier _, accumulator _, combiner _, finisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -254,7 +254,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         override def get(): Array[Int] = throw TE("")
       }
       val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(failedSupplier, accumulator, combiner, finisher)))
+        () ⇒ new TestCollector(failedSupplier _, accumulator _, combiner _, finisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -264,7 +264,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       def failedAccumulator(): BiConsumer[Array[Int], Int] = throw TE("")
 
       val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(supplier, failedAccumulator, combiner, finisher)))
+        () ⇒ new TestCollector(supplier _, failedAccumulator _, combiner _, finisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -276,7 +276,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       }
 
       val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(supplier, failedAccumulator, combiner, finisher)))
+        () ⇒ new TestCollector(supplier _, failedAccumulator _, combiner _, finisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -286,7 +286,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       def failedFinisher(): function.Function[Array[Int], Int] = throw TE("")
 
       val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(supplier, accumulator, combiner, failedFinisher)))
+        () ⇒ new TestCollector(supplier _, accumulator _, combiner _, failedFinisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }
@@ -297,7 +297,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         override def apply(a: Array[Int]): Int = throw TE("")
       }
       val future = Source(1 to 100).runWith(StreamConverters.javaCollector(
-        () ⇒ new TestCollector(supplier, accumulator, combiner, failedFinisher)))
+        () ⇒ new TestCollector(supplier _, accumulator _, combiner _, failedFinisher _)))
       a[TE] shouldBe thrownBy {
         Await.result(future, 300.millis)
       }

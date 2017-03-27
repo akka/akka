@@ -549,7 +549,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
 
   def ormapToProto(ormap: ORMap[_, _]): rd.ORMap = {
     val ormapBuilder = rd.ORMap.newBuilder()
-    val entries: jl.Iterable[rd.ORMap.Entry] = getEntries(ormap.values, rd.ORMap.Entry.newBuilder, otherMessageToProto)
+    val entries: jl.Iterable[rd.ORMap.Entry] = getEntries(ormap.values, rd.ORMap.Entry.newBuilder _, otherMessageToProto)
     ormapBuilder.setKeys(orsetToProto(ormap.keys)).addAllEntries(entries).build()
   }
 
@@ -731,7 +731,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
 
   def lwwmapToProto(lwwmap: LWWMap[_, _]): rd.LWWMap = {
     val lwwmapBuilder = rd.LWWMap.newBuilder()
-    val entries: jl.Iterable[rd.LWWMap.Entry] = getEntries(lwwmap.underlying.entries, rd.LWWMap.Entry.newBuilder, lwwRegisterToProto)
+    val entries: jl.Iterable[rd.LWWMap.Entry] = getEntries(lwwmap.underlying.entries, rd.LWWMap.Entry.newBuilder _, lwwRegisterToProto)
     lwwmapBuilder.setKeys(orsetToProto(lwwmap.underlying.keys)).addAllEntries(entries).build()
   }
 
@@ -747,7 +747,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
 
   def pncountermapToProto(pncountermap: PNCounterMap[_]): rd.PNCounterMap = {
     val pncountermapBuilder = rd.PNCounterMap.newBuilder()
-    val entries: jl.Iterable[rd.PNCounterMap.Entry] = getEntries(pncountermap.underlying.entries, rd.PNCounterMap.Entry.newBuilder, pncounterToProto)
+    val entries: jl.Iterable[rd.PNCounterMap.Entry] = getEntries(pncountermap.underlying.entries, rd.PNCounterMap.Entry.newBuilder _, pncounterToProto)
     pncountermapBuilder.setKeys(orsetToProto(pncountermap.underlying.keys)).addAllEntries(entries).build()
   }
 
@@ -763,7 +763,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
 
   def multimapToProto(multimap: ORMultiMap[_, _]): rd.ORMultiMap = {
     val ormultimapBuilder = rd.ORMultiMap.newBuilder()
-    val entries: jl.Iterable[rd.ORMultiMap.Entry] = getEntries(multimap.underlying.entries, rd.ORMultiMap.Entry.newBuilder, orsetToProto)
+    val entries: jl.Iterable[rd.ORMultiMap.Entry] = getEntries(multimap.underlying.entries, rd.ORMultiMap.Entry.newBuilder _, orsetToProto)
     ormultimapBuilder.setKeys(orsetToProto(multimap.underlying.keys)).addAllEntries(entries)
     if (multimap.withValueDeltas)
       ormultimapBuilder.setWithValueDeltas(true)

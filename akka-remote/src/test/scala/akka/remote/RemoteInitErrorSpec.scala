@@ -8,7 +8,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import org.scalatest.concurrent.Eventually._
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.collection.mutable.Set
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -38,7 +38,7 @@ class RemoteInitErrorSpec extends FlatSpec with Matchers {
 
   def currentThreadIds(): Set[Long] = {
     val threads = Thread.getAllStackTraces().keySet()
-    threads.collect({ case t: Thread if (!t.isDaemon()) ⇒ t.getId() })
+    threads.asScala.collect({ case t: Thread if (!t.isDaemon()) ⇒ t.getId() })
   }
 
   "Remoting" must "shut down properly on RemoteActorRefProvider initialization failure" in {

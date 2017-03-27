@@ -616,10 +616,10 @@ private[remote] class Association(
       val completed = Future.sequence(laneCompletedValues).flatMap(_ ⇒ aeronSinkCompleted)
 
       // tear down all parts if one part fails or completes
-      completed.onFailure {
-        case reason: Throwable ⇒ streamKillSwitch.abort(reason)
+      completed.failed.foreach {
+        reason ⇒ streamKillSwitch.abort(reason)
       }
-      (laneCompletedValues :+ aeronSinkCompleted).foreach(_.onSuccess { case _ ⇒ streamKillSwitch.shutdown() })
+      (laneCompletedValues :+ aeronSinkCompleted).foreach(_.foreach { _ ⇒ streamKillSwitch.shutdown() })
 
       queueValues.zip(wrappers).zipWithIndex.foreach {
         case ((q, w), i) ⇒
@@ -675,7 +675,7 @@ private[remote] class Association(
     }
 
     implicit val ec = materializer.executionContext
-    streamCompleted.onFailure {
+    streamCompleted.failed.foreach {
       case ArteryTransport.ShutdownSignal ⇒
         // shutdown as expected
         // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
