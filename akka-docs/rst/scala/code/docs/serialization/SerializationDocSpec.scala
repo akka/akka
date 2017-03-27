@@ -19,7 +19,7 @@ package docs.serialization {
 
   //#my-own-serializer
   class MyOwnSerializer extends Serializer {
-    
+
     // If you need logging here, introduce a constructor that takes an ExtendedActorSystem.
     // class MyOwnSerializer(actorSystem: ExtendedActorSystem) extends Serializer
     // Get a logger using:
