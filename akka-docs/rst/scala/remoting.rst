@@ -474,22 +474,23 @@ Next the actual SSL/TLS parameters have to be configured::
 
   akka {
     remote {
-      netty.ssl.security {
+      netty.ssl {
         hostname = "127.0.0.1"
         port = "3553"
+        security {
+          key-store = "/example/path/to/mykeystore.jks"
+          trust-store = "/example/path/to/mytruststore.jks"
 
-        key-store = "/example/path/to/mykeystore.jks"
-        trust-store = "/example/path/to/mytruststore.jks"
-        
-        key-store-password = "changeme"
-        key-password = "changeme"
-        trust-store-password = "changeme"
-        
-        protocol = "TLSv1.2"
-        
-        enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
-        
-        random-number-generator = "AES128CounterSecureRNG"
+          key-store-password = "changeme"
+          key-password = "changeme"
+          trust-store-password = "changeme"
+
+          protocol = "TLSv1.2"
+
+          enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
+
+          random-number-generator = "AES128CounterSecureRNG"
+        }
       }
     }
   }
