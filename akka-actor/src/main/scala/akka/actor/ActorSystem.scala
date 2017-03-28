@@ -688,6 +688,15 @@ private[akka] class ActorSystemImpl(
         cause match {
           case NonFatal(_) | _: InterruptedException | _: NotImplementedError | _: ControlThrowable ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
           case _ ⇒
+            if (cause.isInstanceOf[IncompatibleClassChangeError] && cause.getMessage.startsWith("akka"))
+              System.err.println(
+                s"""Detected ${cause.getClass.getName} error, which MAY be caused by incompatible Akka versions on the classpath.
+                  | Please note that a given Akka version MUST be the same across all modules of Akka that you are using,
+                  | e.g. if you use akka-actor [${akka.Version.current} (resolved from current classpath)] all other core
+                  | Akka modules MUST be of the same version. External projects like Alpakka, Persistence plugins or Akka
+                  | HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries.
+                 """.stripMargin.replaceAll("[\r\n]", ""))
+
             if (settings.JvmExitOnFatalError) {
               try {
                 markerLogging.error(LogMarker.Security, cause, "Uncaught error from thread [{}] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled", thread.getName)
