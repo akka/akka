@@ -5,15 +5,17 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.TimeoutException
 
+import akka.NotUsed
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Supervision._
 import akka.stream._
+import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
 
-import scala.concurrent.{ Promise, Future, Await }
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 
 class LazySinkSpec extends StreamSpec {
@@ -140,6 +142,25 @@ class LazySinkSpec extends StreamSpec {
     "fail future when zero throws exception" in assertAllStagesStopped {
       val futureProbe = Source.empty.runWith(Sink.lazyInit[Int, Future[Int]](_ ⇒ Future.successful(Sink.fold[Int, Int](0)(_ + _)), () ⇒ throw ex))
       a[TE] shouldBe thrownBy { Await.result(futureProbe, 300.millis) }
+    }
+
+    "fail correctly when materialization of inner sink fails" in assertAllStagesStopped {
+      val matFail = TE("fail!")
+      object FailingInnerMat extends GraphStage[SinkShape[String]] {
+        val in = Inlet[String]("in")
+        val shape = SinkShape(in)
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+          throw matFail
+        }
+      }
+
+      val result = Source.single("whatever")
+        .runWith(
+          Sink.lazyInit[String, NotUsed](
+            str ⇒ Future.successful(Sink.fromGraph(FailingInnerMat)),
+            () ⇒ NotUsed))
+
+      result.failed.futureValue should ===(matFail)
     }
   }
 

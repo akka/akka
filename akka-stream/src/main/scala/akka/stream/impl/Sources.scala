@@ -379,10 +379,15 @@ final class LazySource[T, M](sourceFactory: () ⇒ Source[T, M]) extends GraphSt
           }
         })
 
-        matPromise.tryComplete(
-          Try {
-            subFusingMaterializer.materialize(source.toMat(subSink.sink)(Keep.left), inheritedAttributes)
-          })
+        try {
+          val matVal = subFusingMaterializer.materialize(source.toMat(subSink.sink)(Keep.left), inheritedAttributes)
+          matPromise.trySuccess(matVal)
+        } catch {
+          case NonFatal(ex) ⇒
+            subSink.cancel()
+            failStage(ex)
+            matPromise.tryFailure(ex)
+        }
       }
 
       setHandler(out, this)
