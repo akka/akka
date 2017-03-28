@@ -383,12 +383,17 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
       case putOp: PutDeltaOp[A, B] ⇒
         val key = putOp.value._1
         thatValueDeltas += (key → (putOp.value :: Nil)) // put is destructive!
-      case _: RemoveDeltaOp[A, B] ⇒
-      // remove delta is only for the side effect of key being removed
-      // please note that if it is not preceded by update clearing the value
-      // anomalies will result
+      case removeOp: RemoveDeltaOp[A, B] ⇒
+        val removedKey = removeOp.underlying match {
+          // if op is RemoveDeltaOp then it must have exactly one element in the elements
+          case op: ORSet.RemoveDeltaOp[_] ⇒ op.underlying.elements.head.asInstanceOf[A]
+        }
+        thatValueDeltas -= removedKey
+      // please note that if RemoveDelta is not preceded by update clearing the value
+      // anomalies may result
       case removeKeyOp: RemoveKeyDeltaOp[A, B] ⇒
         tombstonedVals = tombstonedVals + removeKeyOp.removedKey
+        thatValueDeltas -= removeKeyOp.removedKey
       case updateOp: UpdateDeltaOp[A, _] ⇒
         val key = updateOp.values.head._1
         val value = (key, updateOp.values.head._2)

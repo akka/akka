@@ -6,8 +6,7 @@ package akka.cluster.ddata
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.duration._
-
-import akka.cluster.Cluster
+import akka.cluster.{ Cluster, ddata }
 import akka.cluster.ddata.Replicator._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -38,21 +37,38 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
   final case class Delay(n: Int) extends Op
   final case class Incr(ki: (PNCounterMapKey[String], String), n: Int, consistency: WriteConsistency) extends Op
   final case class Decr(ki: (PNCounterMapKey[String], String), n: Int, consistency: WriteConsistency) extends Op
-  final case class Add(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency) extends Op
-  final case class Remove(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency) extends Op
+  // AddVD and RemoveVD for variant of ORMultiMap with Value Deltas, NoVD - for the vanilla ORMultiMap
+  final case class AddVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency) extends Op
+  final case class RemoveVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency) extends Op
+  final case class AddNoVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency) extends Op
+  final case class RemoveNoVD(ki: (ORMultiMapKey[String, String], String), elem: String, consistency: WriteConsistency) extends Op
+  // AddOM and RemoveOM for Vanilla ORMap holding ORSet inside
+  final case class AddOM(ki: (ORMapKey[String, ORSet[String]], String), elem: String, consistency: WriteConsistency) extends Op
+  final case class RemoveOM(ki: (ORMapKey[String, ORSet[String]], String), elem: String, consistency: WriteConsistency) extends Op
 
   val timeout = 5.seconds
   val writeTwo = WriteTo(2, timeout)
   val writeMajority = WriteMajority(timeout)
 
   val KeyPN = PNCounterMapKey[String]("A")
-  val KeyMM = ORMultiMapKey[String, String]("D")
+  // VD and NoVD as above
+  val KeyMMVD = ORMultiMapKey[String, String]("D")
+  val KeyMMNoVD = ORMultiMapKey[String, String]("G")
+  // OM as above
+  val KeyOM = ORMapKey[String, ORSet[String]]("J")
+
   val KeyA: (PNCounterMapKey[String], String) = (KeyPN, "a")
   val KeyB: (PNCounterMapKey[String], String) = (KeyPN, "b")
   val KeyC: (PNCounterMapKey[String], String) = (KeyPN, "c")
-  val KeyD: (ORMultiMapKey[String, String], String) = (KeyMM, "d")
-  val KeyE: (ORMultiMapKey[String, String], String) = (KeyMM, "e")
-  val KeyF: (ORMultiMapKey[String, String], String) = (KeyMM, "f")
+  val KeyD: (ORMultiMapKey[String, String], String) = (KeyMMVD, "d")
+  val KeyE: (ORMultiMapKey[String, String], String) = (KeyMMVD, "e")
+  val KeyF: (ORMultiMapKey[String, String], String) = (KeyMMVD, "f")
+  val KeyG: (ORMultiMapKey[String, String], String) = (KeyMMNoVD, "g")
+  val KeyH: (ORMultiMapKey[String, String], String) = (KeyMMNoVD, "h")
+  val KeyI: (ORMultiMapKey[String, String], String) = (KeyMMNoVD, "i")
+  val KeyJ: (ORMapKey[String, ORSet[String]], String) = (KeyOM, "j")
+  val KeyK: (ORMapKey[String, ORSet[String]], String) = (KeyOM, "k")
+  val KeyL: (ORMapKey[String, ORSet[String]], String) = (KeyOM, "l")
 
   def generateOperations(onNode: RoleName): Vector[Op] = {
     val rnd = ThreadLocalRandom.current()
@@ -73,11 +89,27 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
       }
     }
 
-    def rndOrSetkey(): (ORMultiMapKey[String, String], String) = {
+    def rndOrSetkeyVD(): (ORMultiMapKey[String, String], String) = {
       rnd.nextInt(3) match {
         case 0 ⇒ KeyD
         case 1 ⇒ KeyE
         case 2 ⇒ KeyF
+      }
+    }
+
+    def rndOrSetkeyNoVD(): (ORMultiMapKey[String, String], String) = {
+      rnd.nextInt(3) match {
+        case 0 ⇒ KeyG
+        case 1 ⇒ KeyH
+        case 2 ⇒ KeyI
+      }
+    }
+
+    def rndOrSetkeyOM(): (ORMapKey[String, ORSet[String]], String) = {
+      rnd.nextInt(3) match {
+        case 0 ⇒ KeyJ
+        case 1 ⇒ KeyK
+        case 2 ⇒ KeyL
       }
     }
 
@@ -97,23 +129,52 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
         availableForRemove.toVector(rnd.nextInt(availableForRemove.size))
     }
 
-    (0 to (30 + rnd.nextInt(10))).map { _ ⇒
-      rnd.nextInt(4) match {
+    (0 to (60 + rnd.nextInt(10))).map { _ ⇒
+      rnd.nextInt(6) match {
         case 0 ⇒ Delay(rnd.nextInt(500))
         case 1 ⇒ Incr(rndPnCounterkey(), rnd.nextInt(100), consistency())
         case 2 ⇒ Decr(rndPnCounterkey(), rnd.nextInt(10), consistency())
         case 3 ⇒
-          // ORSet
-          val key = rndOrSetkey()
+          // ORMultiMap.withValueDeltas
+          val key = rndOrSetkeyVD()
           // only removals for KeyF on node first
           if (key == KeyF && onNode == first && rnd.nextBoolean())
-            Remove(key, rndRemoveElement(), consistency())
+            RemoveVD(key, rndRemoveElement(), consistency())
           else
-            Add(key, rndAddElement(), consistency())
+            AddVD(key, rndAddElement(), consistency())
+        case 4 ⇒
+          // ORMultiMap - vanilla variant - without Value Deltas
+          val key = rndOrSetkeyNoVD()
+          // only removals for KeyI on node first
+          if (key == KeyI && onNode == first && rnd.nextBoolean())
+            RemoveNoVD(key, rndRemoveElement(), consistency())
+          else
+            AddNoVD(key, rndAddElement(), consistency())
+        case 5 ⇒
+          // Vanilla ORMap - with ORSet inside
+          val key = rndOrSetkeyOM()
+          // only removals for KeyL on node first
+          if (key == KeyL && onNode == first && rnd.nextBoolean())
+            RemoveOM(key, rndRemoveElement(), consistency())
+          else
+            AddOM(key, rndAddElement(), consistency())
       }
     }.toVector
   }
 
+  def addElementToORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(implicit node: Cluster) =
+    om.updated(node, key, ORSet.empty[String])(_.add(node, element))
+
+  def removeElementFromORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(implicit node: Cluster) =
+    om.updated(node, key, ORSet.empty[String])(_.remove(node, element))
+
+  def orsetOptionToSetOption(os: Option[ORSet[String]]): Option[Set[String]] =
+    os match {
+      case None ⇒ None
+      case Some(x) ⇒
+        val ORSet(s) = x
+        Some(s.asInstanceOf[Set[String]])
+    }
 }
 
 class ReplicatorMapDeltaSpecMultiJvmNode1 extends ReplicatorMapDeltaSpec
@@ -190,6 +251,14 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
           fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ + (key._2 → Set("a")))
           deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ + (key._2 → Set("a")))
         }
+        List(KeyG, KeyH, KeyI).foreach { key ⇒
+          fullStateReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ + (key._2 → Set("a")))
+          deltaReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ + (key._2 → Set("a")))
+        }
+        List(KeyJ, KeyK, KeyL).foreach { key ⇒
+          fullStateReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(_ + (key._2 → (ORSet.empty + "a")))
+          deltaReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(_ + (key._2 → (ORSet.empty + "a")))
+        }
       }
       enterBarrier("updated-1")
 
@@ -205,7 +274,22 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
           val p = TestProbe()
           List(KeyD, KeyE, KeyF).foreach { key ⇒
             fullStateReplicator.tell(Get(key._1, ReadLocal), p.ref)
+            val res = p.expectMsgType[GetSuccess[ORMultiMap[String, String]]].dataValue.get(key._2) should ===(Some(Set("a")))
+          }
+        }
+        awaitAssert {
+          val p = TestProbe()
+          List(KeyG, KeyH, KeyI).foreach { key ⇒
+            fullStateReplicator.tell(Get(key._1, ReadLocal), p.ref)
             p.expectMsgType[GetSuccess[ORMultiMap[String, String]]].dataValue.get(key._2) should ===(Some(Set("a")))
+          }
+        }
+        awaitAssert {
+          val p = TestProbe()
+          List(KeyJ, KeyK, KeyL).foreach { key ⇒
+            fullStateReplicator.tell(Get(key._1, ReadLocal), p.ref)
+            val res = p.expectMsgType[GetSuccess[ORMap[String, ORSet[String]]]].dataValue.get(key._2)
+            orsetOptionToSetOption(res) should ===(Some(Set("a")))
           }
         }
       }
@@ -230,17 +314,41 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
             case Decr(key, n, consistency) ⇒
               fullStateReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ decrement (key._2, n))
               deltaReplicator ! Update(key._1, PNCounterMap.empty[String], WriteLocal)(_ decrement (key._2, n))
-            case Add(key, elem, consistency) ⇒
+            case AddVD(key, elem, consistency) ⇒
               // to have an deterministic result when mixing add/remove we can only perform
               // the ORSet operations from one node
               runOn((if (key == KeyF) List(first) else List(first, second, third)): _*) {
                 fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ addBinding (key._2, elem))
                 deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ addBinding (key._2, elem))
               }
-            case Remove(key, elem, consistency) ⇒
+            case RemoveVD(key, elem, consistency) ⇒
               runOn(first) {
                 fullStateReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ removeBinding (key._2, elem))
                 deltaReplicator ! Update(key._1, ORMultiMap.emptyWithValueDeltas[String, String], WriteLocal)(_ removeBinding (key._2, elem))
+              }
+            case AddNoVD(key, elem, consistency) ⇒
+              // to have an deterministic result when mixing add/remove we can only perform
+              // the ORSet operations from one node
+              runOn((if (key == KeyI) List(first) else List(first, second, third)): _*) {
+                fullStateReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ addBinding (key._2, elem))
+                deltaReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ addBinding (key._2, elem))
+              }
+            case RemoveNoVD(key, elem, consistency) ⇒
+              runOn(first) {
+                fullStateReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ removeBinding (key._2, elem))
+                deltaReplicator ! Update(key._1, ORMultiMap.empty[String, String], WriteLocal)(_ removeBinding (key._2, elem))
+              }
+            case AddOM(key, elem, consistency) ⇒
+              // to have an deterministic result when mixing add/remove we can only perform
+              // the ORSet operations from one node
+              runOn((if (key == KeyI) List(first) else List(first, second, third)): _*) {
+                fullStateReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om ⇒ addElementToORMap(om, key._2, elem))
+                deltaReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om ⇒ addElementToORMap(om, key._2, elem))
+              }
+            case RemoveOM(key, elem, consistency) ⇒
+              runOn(first) {
+                fullStateReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om ⇒ removeElementFromORMap(om, key._2, elem))
+                deltaReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om ⇒ removeElementFromORMap(om, key._2, elem))
               }
           }
         }
@@ -269,6 +377,32 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
               deltaReplicator.tell(Get(key._1, ReadLocal), p.ref)
               val deltaValue = p.expectMsgType[GetSuccess[ORMultiMap[String, String]]].dataValue.get(key._2)
               deltaValue should ===(fullStateValue)
+            }
+          }
+        }
+
+        List(KeyG, KeyH, KeyI).foreach { key ⇒
+          within(5.seconds) {
+            awaitAssert {
+              val p = TestProbe()
+              fullStateReplicator.tell(Get(key._1, ReadLocal), p.ref)
+              val fullStateValue = p.expectMsgType[GetSuccess[ORMultiMap[String, String]]].dataValue.get(key._2)
+              deltaReplicator.tell(Get(key._1, ReadLocal), p.ref)
+              val deltaValue = p.expectMsgType[GetSuccess[ORMultiMap[String, String]]].dataValue.get(key._2)
+              deltaValue should ===(fullStateValue)
+            }
+          }
+        }
+
+        List(KeyJ, KeyK, KeyL).foreach { key ⇒
+          within(5.seconds) {
+            awaitAssert {
+              val p = TestProbe()
+              fullStateReplicator.tell(Get(key._1, ReadLocal), p.ref)
+              val fullStateValue = p.expectMsgType[GetSuccess[ORMap[String, ORSet[String]]]].dataValue.get(key._2)
+              deltaReplicator.tell(Get(key._1, ReadLocal), p.ref)
+              val deltaValue = p.expectMsgType[GetSuccess[ORMap[String, ORSet[String]]]].dataValue.get(key._2)
+              orsetOptionToSetOption(deltaValue) should ===(orsetOptionToSetOption(fullStateValue))
             }
           }
         }

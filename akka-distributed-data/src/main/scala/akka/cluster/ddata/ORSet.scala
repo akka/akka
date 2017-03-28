@@ -438,7 +438,7 @@ final class ORSet[A] private[akka] (
     def deleteDots = that.vvector.versionsIterator
     def deleteDotsNodes = deleteDots.map { case (dotNode, _) ⇒ dotNode }
     val newElementsMap =
-      if (deleteDots.forall { case (dotNode, dotV) ⇒ this.vvector.versionAt(dotNode) <= dotV }) {
+      if (deleteDots.forall { case (dotNode, dotV) ⇒ this.elementsMap.contains(elem) && this.elementsMap(elem).versionAt(dotNode) <= dotV }) {
         elementsMap.get(elem) match {
           case Some(thisDot) ⇒
             if (thisDot.versionsIterator.forall { case (thisDotNode, _) ⇒ deleteDotsNodes.contains(thisDotNode) })
