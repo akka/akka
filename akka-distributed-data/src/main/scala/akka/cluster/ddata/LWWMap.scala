@@ -6,10 +6,18 @@ package akka.cluster.ddata
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.annotation.InternalApi
-import akka.cluster.ddata.ORMap.LWWMapTag
+import akka.cluster.ddata.ORMap.ZeroTag
 
 object LWWMap {
-  private val _empty: LWWMap[Any, Any] = new LWWMap(ORMap.emptyWithLWWMapTag)
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] case object LWWMapTag extends ZeroTag {
+    override def zero: DeltaReplicatedData = LWWMap.empty
+    override final val value: Int = 4
+  }
+
+  private val _empty: LWWMap[Any, Any] = new LWWMap(new ORMap(ORSet.empty, Map.empty, zeroTag = LWWMapTag))
   def empty[A, B]: LWWMap[A, B] = _empty.asInstanceOf[LWWMap[A, B]]
   def apply(): LWWMap[Any, Any] = _empty
   /**
