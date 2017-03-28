@@ -3,26 +3,25 @@
  */
 package akka.stream.impl.fusing
 
-import akka.Done
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 
+import akka.Done
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream.FlowMonitorState._
-import akka.stream.{ Shape, _ }
-import akka.stream.scaladsl._
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage._
-
-import scala.concurrent.{ Future, Promise }
-import scala.concurrent.duration.FiniteDuration
 import akka.stream.impl.StreamLayout._
 import akka.stream.impl.{ LinearTraversalBuilder, ReactiveStreamsCompliance }
+import akka.stream.scaladsl._
+import akka.stream.stage._
+import akka.stream.{ Shape, _ }
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.{ Failure, Success, Try }
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API
@@ -372,11 +371,20 @@ import scala.util.{ Failure, Success, Try }
     override def createLogic(attr: Attributes) =
       new GraphStageLogic(shape) with OutHandler {
         def onPull(): Unit = {
-          val cb = getAsyncCallback[Try[T]] {
-            case scala.util.Success(v) ⇒ emit(out, v, () ⇒ completeStage())
-            case scala.util.Failure(t) ⇒ failStage(t)
-          }.invoke _
-          future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+          if (future.isCompleted) {
+            onFutureCompleted(future.value.get)
+          } else {
+            val cb = getAsyncCallback[Try[T]](onFutureCompleted).invoke _
+            future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+          }
+
+          def onFutureCompleted(result: Try[T]): Unit = {
+            result match {
+              case scala.util.Success(v) ⇒ emit(out, v, () ⇒ completeStage())
+              case scala.util.Failure(t) ⇒ failStage(t)
+            }
+          }
+
           setHandler(out, eagerTerminateOutput) // After first pull we won't produce anything more
         }
 

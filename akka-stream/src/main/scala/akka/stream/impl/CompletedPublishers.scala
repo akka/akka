@@ -79,8 +79,8 @@ import scala.concurrent.{ ExecutionContext, Promise }
     try {
       requireNonNullSubscriber(subscriber)
       tryOnSubscribe(subscriber, new MaybeSubscription(subscriber))
-      promise.future onFailure {
-        case error ⇒ tryOnError(subscriber, error)
+      promise.future.failed.foreach {
+        error ⇒ tryOnError(subscriber, error)
       }
     } catch {
       case sv: SpecViolation ⇒ ec.reportFailure(sv)

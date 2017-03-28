@@ -654,7 +654,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * handler upon receiving the `onPush()` signal (before invoking the `andThen` function).
    */
   final protected def read[T](in: Inlet[T], andThen: Procedure[T], onClose: Effect): Unit = {
-    read(in)(andThen.apply, onClose.apply)
+    read(in)(andThen.apply, onClose.apply _)
   }
 
   /**

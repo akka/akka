@@ -5,7 +5,7 @@ package akka.osgi
 
 import de.kalpatec.pojosr.framework.launch.{ BundleDescriptor, PojoServiceRegistryFactory, ClasspathScanner }
 
-import scala.collection.JavaConversions.seqAsJavaList
+import scala.collection.JavaConverters._
 import org.apache.commons.io.IOUtils.copy
 
 import org.osgi.framework._
@@ -40,7 +40,7 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
     System.setProperty("org.osgi.framework.storage", "target/akka-osgi/" + UUID.randomUUID().toString)
 
     val bundles = new ClasspathScanner().scanForBundles()
-    bundles.addAll(testBundles)
+    bundles.addAll(testBundles.asJava)
     config.put(PojoServiceRegistryFactory.BUNDLE_DESCRIPTORS, bundles)
 
     val oldErr = System.err
