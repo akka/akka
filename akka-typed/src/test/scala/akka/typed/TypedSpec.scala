@@ -60,8 +60,8 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
   implicit def scheduler = nativeSystem.scheduler
 
   override def afterAll(): Unit = {
-    Await.result(nativeSystem ? (Terminate(_)), timeout.duration): Status
-    Await.result(adaptedSystem ? (Terminate(_)), timeout.duration): Status
+    Await.result(nativeSystem.terminate(), timeout.duration)
+    Await.result(adaptedSystem.terminate(), timeout.duration)
   }
 
   // TODO remove after basing on ScalaTest 3 with async support
