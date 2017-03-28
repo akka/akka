@@ -19,9 +19,9 @@ import akka.stream.stage._
 import akka.stream.{ Shape, _ }
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.util.{ Failure, Success, Try }
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
-import scala.util.Try
 
 /**
  * INTERNAL API
@@ -277,15 +277,14 @@ import scala.util.Try
   }
 
   final class FutureFlattenSource[T, M](
-    val future: Future[Graph[SourceShape[T], M]])
+    futureSource: Future[Graph[SourceShape[T], M]])
     extends GraphStageWithMaterializedValue[SourceShape[T], Future[M]] {
+    ReactiveStreamsCompliance.requireNonNullElement(futureSource)
 
-    ReactiveStreamsCompliance.requireNonNullElement(future)
-
-    val out = Outlet[T]("FutureFlattenSource.out")
+    val out: Outlet[T] = Outlet("FutureFlattenSource.out")
     override val shape = SourceShape(out)
 
-    override def initialAttributes = DefaultAttributes.futureSource
+    override def initialAttributes = DefaultAttributes.futureFlattenSource
 
     override def createLogicAndMaterializedValue(attr: Attributes): (GraphStageLogic, Future[M]) = {
       val materialized = Promise[M]()
@@ -293,14 +292,15 @@ import scala.util.Try
       val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
         private val sinkIn = new SubSinkInlet[T]("FutureFlattenSource.in")
 
-        override def preStart(): Unit = {
-          if (future.isCompleted) {
-            onFutureSourceCompleted(future.value.get)
-          } else {
-            val cb = getAsyncCallback[Try[Graph[SourceShape[T], M]]](onFutureSourceCompleted).invoke _
-            future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+        override def preStart(): Unit =
+          futureSource.value match {
+            case Some(it) ⇒
+              // this optimisation avoids going through any execution context, in similar vein to FastFuture
+              onFutureSourceCompleted(it)
+            case _ ⇒
+              val cb = getAsyncCallback[Try[Graph[SourceShape[T], M]]](onFutureSourceCompleted).invoke _
+              futureSource.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext) // could be optimised FastFuture-like
           }
-        }
 
         // initial handler (until future completes)
         setHandler(out, new OutHandler {
@@ -310,30 +310,30 @@ import scala.util.Try
             if (!materialized.isCompleted) {
               // make sure we always yield the matval if possible, even if downstream cancelled
               // before the source was materialized
-              val matValFuture = future.map { gr ⇒
-                val runnable = Source.fromGraph(gr).to(Sink.ignore)
-                interpreter.subFusingMaterializer.materialize(runnable, initialAttributes = attr)
-              }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+              val matValFuture = futureSource.map { gr ⇒
+                // downstream finish means it cancelled, so we push that signal through into the future materialized source
+                Source.fromGraph(gr).to(Sink.cancelled)
+                  .withAttributes(attr)
+                  .run()(subFusingMaterializer)
+              }(ExecutionContexts.sameThreadExecutionContext)
               materialized.completeWith(matValFuture)
             }
+
             super.onDownstreamFinish()
           }
         })
 
-        def onPush(): Unit = {
+        def onPush(): Unit =
           push(out, sinkIn.grab())
-        }
 
-        def onPull(): Unit = {
+        def onPull(): Unit =
           sinkIn.pull()
-        }
 
         override def onUpstreamFinish(): Unit =
           completeStage()
 
-        override def postStop(): Unit = {
+        override def postStop(): Unit =
           if (!sinkIn.isClosed) sinkIn.cancel()
-        }
 
         def onFutureSourceCompleted(result: Try[Graph[SourceShape[T], M]]): Unit = {
           result.map { graph ⇒
@@ -365,7 +365,7 @@ import scala.util.Try
 
   final class FutureSource[T](val future: Future[T]) extends GraphStage[SourceShape[T]] {
     ReactiveStreamsCompliance.requireNonNullElement(future)
-    val shape = SourceShape(Outlet[T]("future.out"))
+    val shape = SourceShape(Outlet[T]("FutureSource.out"))
     val out = shape.out
     override def initialAttributes: Attributes = DefaultAttributes.futureSource
     override def createLogic(attr: Attributes) =

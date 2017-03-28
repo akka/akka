@@ -167,30 +167,47 @@ class FutureFlattenSourceSpec extends StreamSpec {
       subscriber.expectComplete()
     }
 
+    "carry through cancellation to later materialized source" in assertAllStagesStopped {
+      val subscriber = TestSubscriber.probe[Int]()
+      val publisher = TestPublisher.probe[Int]()
+
+      val sourcePromise = Promise[Source[Int, String]]()
+
+      val matVal = Source.fromFutureSource(sourcePromise.future)
+        .to(Sink.fromSubscriber(subscriber))
+        .run()
+
+      subscriber.ensureSubscription()
+
+      sourcePromise.success(Source.fromPublisher(publisher).mapMaterializedValue(_ ⇒ "woho"))
+
+      // materialized value completes but still no demand
+      matVal.futureValue should ===("woho")
+
+      // cancelling the outer source should carry through to the internal one
+      subscriber.ensureSubscription()
+      subscriber.cancel()
+      publisher.expectCancellation()
+    }
+
     class FailingMatGraphStage extends GraphStageWithMaterializedValue[SourceShape[Int], String] {
       val out = Outlet[Int]("whatever")
       override val shape: SourceShape[Int] = SourceShape(out)
       override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, String) = {
-        throw TE("argh, materialization failed")
+        throw TE("INNER_FAILED")
       }
 
     }
 
-    // Behaviour when inner source throws during materialization is undefined (leaks ActorGraphInterpreters)
-    // until ticket #22358 has been fixed, this test fails because of it
-    "fail when the future source materialization fails" in pendingUntilFixed(assertAllStagesStopped {
-      val failure = TE("MatEx")
-
-      val (sourceMatVal, sinkMatVal) =
-        Source.fromFutureSource(
-          Future.successful(Source.fromGraph(new FailingMatGraphStage))
-        ).toMat(Sink.seq)(Keep.both)
+    "fail when the future source materialization fails" in assertAllStagesStopped {
+      val inner = Future.successful(Source.fromGraph(new FailingMatGraphStage))
+      val (innerSourceMat: Future[String], outerSinkMat: Future[Seq[Int]]) =
+        Source.fromFutureSource(inner)
+          .toMat(Sink.seq)(Keep.both)
           .run()
 
-      sinkMatVal.failed.futureValue should ===(failure)
-      println(sourceMatVal.futureValue)
-      sourceMatVal.failed.futureValue should ===(failure)
-
-    })
+      outerSinkMat.failed.futureValue should ===(TE("INNER_FAILED"))
+      innerSourceMat.failed.futureValue should ===(TE("INNER_FAILED"))
+    }
   }
 }
