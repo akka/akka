@@ -8,9 +8,24 @@ import akka.annotation.InternalApi
 import akka.cluster.ddata.ORMap._
 
 object ORMultiMap {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] case object ORMultiMapTag extends ZeroTag {
+    override def zero: DeltaReplicatedData = ORMultiMap.empty
+    override final val value: Int = 2
+  }
 
-  val _empty: ORMultiMap[Any, Any] = new ORMultiMap(ORMap.emptyWithORMultiMapTag, false)
-  val _emptyWithValueDeltas: ORMultiMap[Any, Any] = new ORMultiMap(ORMap.emptyWithORMultiMapTag, true)
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] case object ORMultiMapWithValueDeltasTag extends ZeroTag {
+    override def zero: DeltaReplicatedData = ORMultiMap.emptyWithValueDeltas
+    override final val value: Int = 3
+  }
+
+  val _empty: ORMultiMap[Any, Any] = new ORMultiMap(new ORMap(ORSet.empty, Map.empty, zeroTag = ORMultiMapTag), false)
+  val _emptyWithValueDeltas: ORMultiMap[Any, Any] = new ORMultiMap(new ORMap(ORSet.empty, Map.empty, zeroTag = ORMultiMapWithValueDeltasTag), true)
   /**
    * Provides an empty multimap.
    */
