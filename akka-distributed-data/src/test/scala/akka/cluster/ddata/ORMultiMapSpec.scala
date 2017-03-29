@@ -111,6 +111,22 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     merged4.entries should be(expectedMerged)
   }
 
+  "not have anomalies for remove+updated scenario and deltas" in {
+    val m2a = ORMultiMap.empty[String, String].addBinding(node1, "q", "Q").removeBinding(node1, "q", "Q")
+    val m1 = ORMultiMap.empty[String, String].addBinding(node1, "z", "Z").addBinding(node2, "x", "X")
+      .removeBinding(node1, "z", "Z")
+
+    val m2 = m2a.resetDelta.removeBinding(node2, "a", "A")
+
+    val merged1 = m1 merge m2
+
+    merged1.contains("a") should be(false)
+
+    val merged2 = m1 mergeDelta m2.delta.get
+
+    merged2.contains("a") should be(false)
+  }
+
   "be able to get all bindings for an entry and then reduce them upon putting them back" in {
     val m = ORMultiMap().addBinding(node1, "a", "A1").addBinding(node1, "a", "A2").addBinding(node1, "b", "B1")
     val Some(a) = m.get("a")
@@ -158,6 +174,18 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     merged3.entries("a") should be(Set("A"))
     merged3.entries("b") should be(Set("B2"))
     merged3.entries("c") should be(Set("C"))
+
+    val merged4 = merged1 mergeDelta m3.delta.get mergeDelta m4.delta.get
+
+    merged4.entries("a") should be(Set("A"))
+    merged4.entries("b") should be(Set("B", "B2"))
+    merged4.entries("c") should be(Set("C"))
+
+    val merged5 = merged1 mergeDelta m3.delta.get.merge(m4.delta.get)
+
+    merged5.entries("a") should be(Set("A"))
+    merged5.entries("b") should be(Set("B", "B2"))
+    merged5.entries("c") should be(Set("C"))
   }
 
   "not have usual anomalies for remove+addBinding scenario and delta-deltas 2" in {
@@ -206,20 +234,215 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     merged6.entries("c") should be(Set("C"))
   }
 
-  "not have anomalies for remove+updated scenario and deltas" in {
-    val m2a = ORMultiMap.empty[String, String].addBinding(node1, "q", "Q").removeBinding(node1, "q", "Q")
-    val m1 = ORMultiMap.empty[String, String].addBinding(node1, "z", "Z").addBinding(node2, "x", "X")
-      .removeBinding(node1, "z", "Z")
-
-    val m2 = m2a.resetDelta.removeBinding(node2, "a", "A")
+  "work with delta-coalescing scenario 1" in {
+    val m1 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
+    val m2 = m1.resetDelta.put(node2, "b", Set("B2")).addBinding(node2, "b", "B3")
 
     val merged1 = m1 merge m2
 
-    merged1.contains("a") should be(false)
+    merged1.entries("a") should be(Set("A"))
+    merged1.entries("b") should be(Set("B2", "B3"))
 
     val merged2 = m1 mergeDelta m2.delta.get
 
-    merged2.contains("a") should be(false)
+    merged2.entries("a") should be(Set("A"))
+    merged2.entries("b") should be(Set("B2", "B3"))
+
+    val m3 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
+    val m4 = m3.resetDelta.put(node2, "b", Set("B2")).put(node2, "b", Set("B3"))
+
+    val merged3 = m3 merge m4
+
+    merged3.entries("a") should be(Set("A"))
+    merged3.entries("b") should be(Set("B3"))
+
+    val merged4 = m3 mergeDelta m4.delta.get
+
+    merged4.entries("a") should be(Set("A"))
+    merged4.entries("b") should be(Set("B3"))
+
+    val m5 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
+    val m6 = m5.resetDelta.put(node2, "b", Set("B2")).addBinding(node2, "b", "B3").addBinding(node2, "b", "B4")
+
+    val merged5 = m5 merge m6
+
+    merged5.entries("a") should be(Set("A"))
+    merged5.entries("b") should be(Set("B2", "B3", "B4"))
+
+    val merged6 = m5 mergeDelta m6.delta.get
+
+    merged6.entries("a") should be(Set("A"))
+    merged6.entries("b") should be(Set("B2", "B3", "B4"))
+
+    val m7 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
+    val m8 = m7.resetDelta.put(node2, "d", Set("D")).addBinding(node2, "b", "B3").put(node2, "b", Set("B4"))
+
+    val merged7 = m7 merge m8
+
+    merged7.entries("a") should be(Set("A"))
+    merged7.entries("b") should be(Set("B4"))
+    merged7.entries("d") should be(Set("D"))
+
+    val merged8 = m7 mergeDelta m8.delta.get
+
+    merged8.entries("a") should be(Set("A"))
+    merged8.entries("b") should be(Set("B4"))
+    merged8.entries("d") should be(Set("D"))
+
+    val m9 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
+    val m10 = m9.resetDelta.addBinding(node2, "b", "B3").addBinding(node2, "b", "B4")
+
+    val merged9 = m9 merge m10
+
+    merged9.entries("a") should be(Set("A"))
+    merged9.entries("b") should be(Set("B", "B3", "B4"))
+
+    val merged10 = m9 mergeDelta m10.delta.get
+
+    merged10.entries("a") should be(Set("A"))
+    merged10.entries("b") should be(Set("B", "B3", "B4"))
+
+    val m11 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B", "B1"))
+      .remove(node1, "b")
+    val m12 = m11.resetDelta.addBinding(node2, "b", "B2").addBinding(node2, "b", "B3")
+
+    val merged11 = m11 merge m12
+
+    merged11.entries("a") should be(Set("A"))
+    merged11.entries("b") should be(Set("B2", "B3"))
+
+    val merged12 = m11 mergeDelta m12.delta.get
+
+    merged12.entries("a") should be(Set("A"))
+    merged12.entries("b") should be(Set("B2", "B3"))
+
+    val m13 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B", "B1"))
+      .remove(node1, "b")
+    val m14 = m13.resetDelta.addBinding(node2, "b", "B2").put(node2, "b", Set("B3"))
+
+    val merged13 = m13 merge m14
+
+    merged13.entries("a") should be(Set("A"))
+    merged13.entries("b") should be(Set("B3"))
+
+    val merged14 = m13 mergeDelta m14.delta.get
+
+    merged14.entries("a") should be(Set("A"))
+    merged14.entries("b") should be(Set("B3"))
+
+    val m15 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B", "B1"))
+      .put(node1, "c", Set("C"))
+    val m16 = m15.resetDelta.addBinding(node2, "b", "B2").addBinding(node2, "c", "C1")
+
+    val merged15 = m15 merge m16
+
+    merged15.entries("a") should be(Set("A"))
+    merged15.entries("b") should be(Set("B", "B1", "B2"))
+    merged15.entries("c") should be(Set("C", "C1"))
+
+    val merged16 = m15 mergeDelta m16.delta.get
+
+    merged16.entries("a") should be(Set("A"))
+    merged16.entries("b") should be(Set("B", "B1", "B2"))
+    merged16.entries("c") should be(Set("C", "C1"))
+
+    // somewhat artificial setup
+    val m17 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B", "B1"))
+    val m18 = m17.resetDelta.addBinding(node2, "b", "B2")
+    val m19 = ORMultiMap.emptyWithValueDeltas[String, String].resetDelta.put(node2, "b", Set("B3"))
+
+    val merged17 = m17 merge m18 merge m19
+
+    merged17.entries("a") should be(Set("A"))
+    merged17.entries("b") should be(Set("B", "B1", "B3"))
+
+    val merged18 = m17 mergeDelta m18.delta.get.merge(m19.delta.get)
+
+    merged18.entries("a") should be(Set("A"))
+    merged18.entries("b") should be(Set("B", "B1", "B3"))
+  }
+
+  "work with delta-coalescing scenario 2" in {
+    val m1 = ORMultiMap.empty[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
+    val m2 = m1.resetDelta.put(node2, "b", Set("B2")).addBinding(node2, "b", "B3")
+
+    val merged1 = m1 merge m2
+
+    merged1.entries("a") should be(Set("A"))
+    merged1.entries("b") should be(Set("B2", "B3"))
+
+    val merged2 = m1 mergeDelta m2.delta.get
+
+    merged2.entries("a") should be(Set("A"))
+    merged2.entries("b") should be(Set("B2", "B3"))
+
+    val m3 = ORMultiMap.empty[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
+    val m4 = m3.resetDelta.put(node2, "b", Set("B2")).put(node2, "b", Set("B3"))
+
+    val merged3 = m3 merge m4
+
+    merged3.entries("a") should be(Set("A"))
+    merged3.entries("b") should be(Set("B3"))
+
+    val merged4 = m3 mergeDelta m4.delta.get
+
+    merged4.entries("a") should be(Set("A"))
+    merged4.entries("b") should be(Set("B3"))
+
+    val m5 = ORMultiMap.empty[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
+    val m6 = m5.resetDelta.put(node2, "b", Set("B2")).addBinding(node2, "b", "B3").addBinding(node2, "b", "B4")
+
+    val merged5 = m5 merge m6
+
+    merged5.entries("a") should be(Set("A"))
+    merged5.entries("b") should be(Set("B2", "B3", "B4"))
+
+    val merged6 = m5 mergeDelta m6.delta.get
+
+    merged6.entries("a") should be(Set("A"))
+    merged6.entries("b") should be(Set("B2", "B3", "B4"))
+
+    val m7 = ORMultiMap.empty[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
+    val m8 = m7.resetDelta.put(node2, "d", Set("D")).addBinding(node2, "b", "B3").put(node2, "b", Set("B4"))
+
+    val merged7 = m7 merge m8
+
+    merged7.entries("a") should be(Set("A"))
+    merged7.entries("b") should be(Set("B4"))
+    merged7.entries("d") should be(Set("D"))
+
+    val merged8 = m7 mergeDelta m8.delta.get
+
+    merged8.entries("a") should be(Set("A"))
+    merged8.entries("b") should be(Set("B4"))
+    merged8.entries("d") should be(Set("D"))
+
+    val m9 = ORMultiMap.empty[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
+    val m10 = m9.resetDelta.addBinding(node2, "b", "B3").addBinding(node2, "b", "B4")
+
+    val merged9 = m9 merge m10
+
+    merged9.entries("a") should be(Set("A"))
+    merged9.entries("b") should be(Set("B", "B3", "B4"))
+
+    val merged10 = m9 mergeDelta m10.delta.get
+
+    merged10.entries("a") should be(Set("A"))
+    merged10.entries("b") should be(Set("B", "B3", "B4"))
+
+    val m11 = ORMultiMap.empty[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B", "B1"))
+      .remove(node1, "b")
+    val m12 = ORMultiMap.empty[String, String].addBinding(node2, "b", "B2").addBinding(node2, "b", "B3")
+
+    val merged11 = m11 merge m12
+
+    merged11.entries("a") should be(Set("A"))
+    merged11.entries("b") should be(Set("B2", "B3"))
+
+    val merged12 = m11 mergeDelta m12.delta.get
+
+    merged12.entries("a") should be(Set("A"))
+    merged12.entries("b") should be(Set("B2", "B3"))
   }
 
   "have unapply extractor" in {
