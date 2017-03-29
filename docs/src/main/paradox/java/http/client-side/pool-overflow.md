@@ -2,7 +2,7 @@
 
 @ref[Request-Level Client-Side API](request-level.md#request-level-api) and @ref[Host-Level Client-Side API](host-level.md#host-level-api)
 use a connection pool underneath. The connection pool will open a limited number of concurrent connections to one host
-(see the `akka.http.client.host-connection-pool.max-connections` setting). This will limit the rate of requests a pool
+(see the `akka.http.host-connection-pool.max-connections` setting). This will limit the rate of requests a pool
 to a single host can handle.
 
 When you use the @ref[stream-based host-level API](host-level.md#using-the-host-level-api-in-a-streaming-fashion)
