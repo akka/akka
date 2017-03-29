@@ -51,8 +51,8 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
                             expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): HttpMessageParser.StateResult
 
   protected final def initialHeaderBuffer: ListBuffer[HttpHeader] =
-    if (settings.includeTlsSessionInfoHeader && tlsSessionInfoHeader != null) ListBuffer(tlsSessionInfoHeader)
-    else ListBuffer()
+    if (settings.includeTlsSessionInfoHeader && tlsSessionInfoHeader != null) new ListBuffer() += tlsSessionInfoHeader
+    else new ListBuffer()
 
   final def parseSessionBytes(input: SessionBytes): Output = {
     if (input.session ne lastSession) {
