@@ -346,6 +346,14 @@ Similarily to the media types registration, you can register custom status codes
 
 @@snip [CustomStatusCodesExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomStatusCodesExampleTest.java) { #application-custom-java }
 
+<a id="registeringcustommethod-java"></a>
+## Registering Custom HTTP Method
+
+Akka HTTP also allows you to define custome HTTP methods, other than the well-known methods @javadoc[predefined](akka.http.javadsl.model.HttpMethods) in Akka HTTP.
+To use a custom HTTP method, you need to define it, and then add it to parser settings like below:
+
+@@snip [CustomHttpMethodsExampleTest.java](../../../../../test/java/docs/http/javadsl/server/directives/CustomHttpMethodExamplesTest.java) { #customHttpMethod }
+
 ## The URI model
 
 Akka HTTP offers its own specialised URI model class which is tuned for both performance and idiomatic usage within

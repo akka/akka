@@ -359,6 +359,14 @@ Similarily to the media types registration, you can register custom status codes
 
 @@snip [CustomStatusCodesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
 
+<a id="registeringcustommethod"></a>
+## Registering Custom HTTP Method
+
+Akka HTTP also allows you to define custome HTTP methods, other than the well-known methods @scaladoc[predefined](akka.http.scaladsl.model.HttpMethods$) in Akka HTTP.
+To use a custom HTTP method, you need to define it, and then add it to parser settings like below:
+
+@@snip [CustomHttpMethodSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
+
 ## The URI model
 
 Akka HTTP offers its own specialised URI model class which is tuned for both performance and idiomatic usage within

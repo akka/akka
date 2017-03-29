@@ -38,8 +38,12 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     String host = "127.0.0.1";
 
     //#customHttpMethod
+
+    // define custom method type:
     HttpMethod BOLT =
       HttpMethods.createCustom("BOLT", false, true, Expected);
+
+    // add custom method to parser settings:
     final ParserSettings parserSettings =
       ParserSettings.create(system).withCustomMethods(BOLT);
     final ServerSettings serverSettings =

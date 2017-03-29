@@ -30,7 +30,7 @@ class CustomHttpMethodSpec extends AkkaSpec with ScalaFutures
       //#application-custom
       import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
 
-      // define custom media type:
+      // define custom method type:
       val BOLT = HttpMethod.custom("BOLT", safe = false,
         idempotent = true, requestEntityAcceptance = Expected)
 
