@@ -50,7 +50,7 @@ final class Flow[-In, +Out, +Mat](override val module: Module)
         if (combine == Keep.left) {
           if (IgnorableMatValComp(m)) Ignore else Transform(_ ⇒ NotUsed, Atomic(m))
         } else Combine(combine.asInstanceOf[(Any, Any) ⇒ Any], Ignore, Atomic(m))
-      new Flow(CompositeModule(Set(m), m.shape, empty, empty, mat, Attributes.none))
+      new Flow(CompositeModule(Set(m), m.shape, m.downstreams, m.upstreams, mat, m.attributes))
     } else {
       val flowCopy = flow.module.carbonCopy
       new Flow(

@@ -593,8 +593,21 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
       import Attributes._
       val f: Flow[Int, Int, NotUsed] = Flow[Int].map(_ + 1).async.addAttributes(none).named("name")
 
-      f.module.attributes.getFirst[Name] shouldEqual Some(Name("name"))
-      f.module.attributes.getFirst[Attributes.AsyncBoundary.type] shouldEqual Some(AsyncBoundary)
+      f.module.attributes.get[Name] shouldEqual Some(Name("name"))
+      f.module.attributes.get[Attributes.AsyncBoundary.type] shouldEqual Some(AsyncBoundary)
+    }
+
+    "work without fusing #22585" in {
+      val noFusingMaterializer =
+        ActorMaterializer(ActorMaterializerSettings(system)
+          .withAutoFusing(false)
+          .withInputBuffer(1, 1)
+        )
+
+      import scala.concurrent.duration._
+      // The map followed by a filter is to ensure that it is a CompositeModule passed in to Flow[Int].via(...)
+      val sink = Flow[Int].via(Flow[Int].map(_ + 1).filter(_ ⇒ true)).toMat(Sink.head)(Keep.right)
+      Await.result(Source.single(4711).runWith(sink)(noFusingMaterializer), 3.seconds) should ===(4712)
     }
   }
 
