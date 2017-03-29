@@ -16,10 +16,10 @@ proficient with testing actors very early.
 We will build a simple IoT application with the bare essentials to demonstrate designing an Akka based system. The 
 application will consist of two main components:
 
- * *Device data collection:* This component has the responsibility to maintain a local representation of the
+ * **Device data collection:** This component has the responsibility to maintain a local representation of the
    otherwise remote devices. The devices will be organized into device groups, grouping together sensors belonging
    to a home.
- * *User dashboards:* This component has the responsibility to periodically collect data from the devices for a
+ * **User dashboards:** This component has the responsibility to periodically collect data from the devices for a
    logged in user and present the results as a report.
    
 For simplicity, we will only collect temperature data for the devices, but in a real application our local representations
@@ -55,7 +55,7 @@ actors in the system:
 
  - `/` the so called _root guardian_. This is the parent of all actors in the system, and the last one to stop
    when the system itself is terminated.
- - `/user` the _guardian_. *This is the parent actor for all user created actors*. The name `user` should not confuse
+ - `/user` the _guardian_. **This is the parent actor for all user created actors**. The name `user` should not confuse
    you, it has nothing to do with the logged in user, nor user handling in general. This name really means _userspace_
    as this is the place where actors that do not access Akka internals live, i.e. all the actors created by users
    of the Akka library. Every actor you will create will have the constant path `/user/` prepended to it.
@@ -107,7 +107,7 @@ This is usually not something the user needs to be concerned with, and we leave 
 
 ### Hierarchy and lifecycle of actors
 
-We have so far seen that actors are organized into a *strict hierarchy*. This hierarchy consists of a predefined
+We have so far seen that actors are organized into a **strict hierarchy**. This hierarchy consists of a predefined
 upper layer of three actors (the root guardian, the user guardian and the system guardian), then the user created
 top-level actors (those directly living under `/user`) and the children of those. We understand now how the hierarchy
 looks like, but there is the nagging question left: _Why do we need this hierarchy? What is it used for?_
@@ -118,8 +118,8 @@ too. This is a very useful property and greatly simplifies cleaning up resources
 sockets files, etc.). In fact, one of the overlooked difficulties when dealing with low-level multi-threaded code is
 the management of the lifecycle of various concurrent resources.
 
-Stopping an actor can be done by the call `context.stop(actorRef)`. *It is considered a bad practice to stop arbitrary
-actors this way*. The recommended pattern is to call `context.stop(self)` inside an actor to stop itself, usually as
+Stopping an actor can be done by the call `context.stop(actorRef)`. **It is considered a bad practice to stop arbitrary
+actors this way**. The recommended pattern is to call `context.stop(self)` inside an actor to stop itself, usually as
 a response to some user defined stop message or when the actor is done with its job.
  
 The actor API exposes many lifecycle hooks that the actor implementation can override. The most commonly used are
@@ -186,8 +186,8 @@ exception that was handled, in this case our test exception. We only used here `
 which are the default to be called after and before restarts, so we cannot distinguish from inside the actor if it
 was started for the first time or restarted. This is usually the right thing to do, the purpose of the restart is to
 set the actor in a known-good state, which usually means a clean starting stage. What actually happens though is
-that *the preRestart()` and `postRestart()` methods are called which, if not overridden, by default delegate to
-`postStop()` and `preStart()` respectively*. You can experiment with overriding these additional methods and see
+that **the preRestart()` and `postRestart()` methods are called which, if not overridden, by default delegate to
+`postStop()` and `preStart()` respectively**. You can experiment with overriding these additional methods and see
 how the output changes.
 
 For the impatient, we also recommend looking into the supervision reference page (TODO: reference) for more in-depth
@@ -227,7 +227,7 @@ This application does very little for now, but we have the first actor in place 
 
 ## What is next?
 
-In the following chapters we will grow the application step-by-step
+In the following chapters we will grow the application step-by-step:
  
  1. We will create the representation for a device
  2. We create the device management component
