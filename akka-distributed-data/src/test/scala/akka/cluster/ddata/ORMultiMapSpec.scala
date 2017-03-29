@@ -84,6 +84,31 @@ class ORMultiMapSpec extends WordSpec with Matchers {
       val merged4 = m2 mergeDelta m1.delta.get
       merged4.entries should be(expectedMerged)
     }
+
+    "be able to have its entries correctly merged with another ORMultiMap with overlapping entries 2" in {
+      val m1 = ORMultiMap()
+        .addBinding(node1, "b", "B1")
+      val m2 = ORMultiMap()
+        .addBinding(node2, "b", "B2")
+        .remove(node2, "b")
+
+      // merge both ways
+
+      val expectedMerged = Map(
+        "b" → Set("B1"))
+
+      val merged1 = m1 merge m2
+      merged1.entries should be(expectedMerged)
+
+      val merged2 = m2 merge m1
+      merged2.entries should be(expectedMerged)
+
+      val merged3 = m1 mergeDelta m2.delta.get
+      merged3.entries should be(expectedMerged)
+
+      val merged4 = m2 mergeDelta m1.delta.get
+      merged4.entries should be(expectedMerged)
+    }
   }
 
   "be able to get all bindings for an entry and then reduce them upon putting them back" in {
