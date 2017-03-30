@@ -294,6 +294,9 @@ class ORSetSpec extends WordSpec with Matchers {
       s1.mergeDelta(d4) should ===(s3)
       s2.mergeDelta(d4) should ===(s3)
 
+      // FIXME use full state for removals, until issue #22648 is fixed
+      pending
+
       val s5 = s3.resetDelta.remove(node1, "b")
       val d5 = s5.delta.get
       val d6 = (d4 merge d5).asInstanceOf[ORSet.DeltaGroup[String]]
@@ -312,6 +315,9 @@ class ORSetSpec extends WordSpec with Matchers {
     }
 
     "work for removals" in {
+      // FIXME use full state for removals, until issue #22648 is fixed
+      pending
+
       val s1 = ORSet.empty[String]
       val s2 = s1.add(node1, "a").add(node1, "b").resetDelta
       val s3 = s2.remove(node1, "b")
@@ -357,6 +363,9 @@ class ORSetSpec extends WordSpec with Matchers {
     }
 
     "handle a mixed add/remove scenario" in {
+      // FIXME use full state for removals, until issue #22648 is fixed
+      pending
+
       val s1 = ORSet.empty[String]
       val s2 = s1.resetDelta.remove(node1, "e")
       val s3 = s2.resetDelta.add(node1, "b")
@@ -376,6 +385,9 @@ class ORSetSpec extends WordSpec with Matchers {
     }
 
     "handle a mixed add/remove scenario 2" in {
+      // FIXME use full state for removals, until issue #22648 is fixed
+      pending
+
       val s1 = ORSet.empty[String]
       val s2 = s1.resetDelta.add(node1, "a")
       val s3 = s2.resetDelta.add(node1, "b")
@@ -398,6 +410,9 @@ class ORSetSpec extends WordSpec with Matchers {
     }
 
     "handle a mixed add/remove scenario 3" in {
+      // FIXME use full state for removals, until issue #22648 is fixed
+      pending
+
       val s1 = ORSet.empty[String]
       val s2 = s1.resetDelta.add(node1, "a")
       val s3 = s2.resetDelta.add(node1, "b")
