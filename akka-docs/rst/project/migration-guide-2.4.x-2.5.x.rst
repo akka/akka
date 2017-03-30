@@ -229,7 +229,7 @@ Old::
 
 New::
 
-  object MyExtension extends extends ExtensionId[MyExtension] with ExtensionIdProvider {
+  object MyExtension extends ExtensionId[MyExtension] with ExtensionIdProvider {
 
     override def lookup = MyExtension
 
