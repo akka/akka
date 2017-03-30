@@ -167,14 +167,6 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
 
   def removeElementFromORMap(om: ORMap[String, ORSet[String]], key: String, element: String)(implicit node: Cluster) =
     om.updated(node, key, ORSet.empty[String])(_.remove(node, element))
-
-  def orsetOptionToSetOption(os: Option[ORSet[String]]): Option[Set[String]] =
-    os match {
-      case None ⇒ None
-      case Some(x) ⇒
-        val ORSet(s) = x
-        Some(s.asInstanceOf[Set[String]])
-    }
 }
 
 class ReplicatorMapDeltaSpecMultiJvmNode1 extends ReplicatorMapDeltaSpec
@@ -289,7 +281,7 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
           List(KeyJ, KeyK, KeyL).foreach { key ⇒
             fullStateReplicator.tell(Get(key._1, ReadLocal), p.ref)
             val res = p.expectMsgType[GetSuccess[ORMap[String, ORSet[String]]]].dataValue.get(key._2)
-            orsetOptionToSetOption(res) should ===(Some(Set("a")))
+            res.map(_.elements) should ===(Some(Set("a")))
           }
         }
       }
@@ -402,7 +394,7 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
               val fullStateValue = p.expectMsgType[GetSuccess[ORMap[String, ORSet[String]]]].dataValue.get(key._2)
               deltaReplicator.tell(Get(key._1, ReadLocal), p.ref)
               val deltaValue = p.expectMsgType[GetSuccess[ORMap[String, ORSet[String]]]].dataValue.get(key._2)
-              orsetOptionToSetOption(deltaValue) should ===(orsetOptionToSetOption(fullStateValue))
+              deltaValue.map(_.elements) should ===(fullStateValue.map(_.elements))
             }
           }
         }
