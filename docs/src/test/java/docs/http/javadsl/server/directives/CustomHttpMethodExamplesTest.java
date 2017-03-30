@@ -23,7 +23,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
-import static akka.http.javadsl.model.HttpProtocols.HTTP_1_0;
+import static akka.http.javadsl.model.HttpProtocols.HTTP_1_1;
 import static akka.http.javadsl.model.RequestEntityAcceptances.Expected;
 
 public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
