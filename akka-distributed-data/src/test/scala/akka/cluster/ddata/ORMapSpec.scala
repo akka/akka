@@ -389,6 +389,20 @@ class ORMapSpec extends WordSpec with Matchers {
       merged3.entries("b").elements should be(Set("B2", "B3"))
     }
 
+    "not have anomalies for remove+updated scenario and deltas 11" in {
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
+
+      val m2 = ORMap.empty.put(node2, "a", GSet.empty[String]).remove(node2, "a")
+
+      val merged1 = m1 merge m2
+
+      merged1.entries("a").elements should be(Set("A"))
+
+      val merged2 = m1 mergeDelta m2.delta.get
+
+      merged2.entries("a").elements should be(Set("A"))
+    }
+
     "have the usual anomalies for remove+updated scenario" in {
       // please note that the current ORMultiMap has the same anomaly
       // because the condition of keeping global vvector is violated

@@ -86,6 +86,47 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     }
   }
 
+  "be able to have its entries correctly merged with another ORMultiMap with overlapping entries 2" in {
+    val m1 = ORMultiMap()
+      .addBinding(node1, "b", "B1")
+    val m2 = ORMultiMap()
+      .addBinding(node2, "b", "B2")
+      .remove(node2, "b")
+
+    // merge both ways
+
+    val expectedMerged = Map(
+      "b" → Set("B1"))
+
+    val merged1 = m1 merge m2
+    merged1.entries should be(expectedMerged)
+
+    val merged2 = m2 merge m1
+    merged2.entries should be(expectedMerged)
+
+    val merged3 = m1 mergeDelta m2.delta.get
+    merged3.entries should be(expectedMerged)
+
+    val merged4 = m2 mergeDelta m1.delta.get
+    merged4.entries should be(expectedMerged)
+  }
+
+  "not have anomalies for remove+updated scenario and deltas" in {
+    val m2a = ORMultiMap.empty[String, String].addBinding(node1, "q", "Q").removeBinding(node1, "q", "Q")
+    val m1 = ORMultiMap.empty[String, String].addBinding(node1, "z", "Z").addBinding(node2, "x", "X")
+      .removeBinding(node1, "z", "Z")
+
+    val m2 = m2a.resetDelta.removeBinding(node2, "a", "A")
+
+    val merged1 = m1 merge m2
+
+    merged1.contains("a") should be(false)
+
+    val merged2 = m1 mergeDelta m2.delta.get
+
+    merged2.contains("a") should be(false)
+  }
+
   "be able to get all bindings for an entry and then reduce them upon putting them back" in {
     val m = ORMultiMap().addBinding(node1, "a", "A1").addBinding(node1, "a", "A2").addBinding(node1, "b", "B1")
     val Some(a) = m.get("a")
@@ -134,11 +175,17 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     merged3.entries("b") should be(Set("B2"))
     merged3.entries("c") should be(Set("C"))
 
-    val merged4 = merged1 mergeDelta m3.delta.get.merge(m4.delta.get)
+    val merged4 = merged1 mergeDelta m3.delta.get mergeDelta m4.delta.get
 
     merged4.entries("a") should be(Set("A"))
-    merged4.entries("b") should be(Set("B2"))
+    merged4.entries("b") should be(Set("B", "B2"))
     merged4.entries("c") should be(Set("C"))
+
+    val merged5 = merged1 mergeDelta m3.delta.get.merge(m4.delta.get)
+
+    merged5.entries("a") should be(Set("A"))
+    merged5.entries("b") should be(Set("B", "B2"))
+    merged5.entries("c") should be(Set("C"))
   }
 
   "not have usual anomalies for remove+addBinding scenario and delta-deltas 2" in {

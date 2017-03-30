@@ -419,6 +419,40 @@ class ORSetSpec extends WordSpec with Matchers {
       t4.elements should ===(Set("b", "a"))
     }
 
+    "not have anomalies for ORSet in complex but realistic scenario" in {
+      val node1_1 = ORSet.empty[String].add(node1, "q").remove(node1, "q")
+      val delta1_1 = node1_1.delta.get
+      val node1_2 = node1_1.resetDelta.resetDelta.add(node1, "z").remove(node1, "z")
+      val delta1_2 = node1_2.delta.get
+      // we finished doing stuff on node1 - there are two separate deltas that will be propagated
+      // node2 is created, then gets first delta from node1 and then adds an element "x"
+      val node2_1 = ORSet.empty[String].mergeDelta(delta1_1).resetDelta.add(node2, "x")
+      val delta2_1 = node2_1.delta.get
+      // node2 continues its existence adding and later removing the element
+      // it still didn't get the second update from node1 (that is fully legit :) )
+      val node2_2 = node2_1.resetDelta.add(node2, "a").remove(node2, "a")
+      val delta2_2 = node2_2.delta.get
+
+      // in the meantime there is some node3
+      // there is not much activity on it, it just gets the first delta from node1 then it gets
+      // first delta from node2
+      // then it gets the second delta from node1 (that node2 still didn't get, but, hey!, this is fine)
+      val node3_1 = ORSet.empty[String].mergeDelta(delta1_1).mergeDelta(delta2_1).mergeDelta(delta1_2)
+
+      // and node3_1 receives full update from node2 via gossip
+      val merged1 = node3_1 merge node2_2
+
+      merged1.contains("a") should be(false)
+
+      // and node3_1 receives delta update from node2 (it just needs to get the second delta,
+      // as it already got the first delta just a second ago)
+
+      val merged2 = node3_1 mergeDelta delta2_2
+
+      val ORSet(mg2) = merged2
+      mg2 should be(Set("x")) // !!!
+    }
+
     "require causal delivery of deltas" in {
       // This test illustrates why we need causal delivery of deltas.
       // Otherwise the following could happen.
