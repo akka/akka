@@ -67,7 +67,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     HttpRequest request = HttpRequest.create()
       .withUri("http://" + host + ":" + Integer.toString(port))
       .withMethod(BOLT)
-      .withProtocol(HTTP_1_0);
+      .withProtocol(HTTP_1_1);
 
     CompletionStage<HttpResponse> response = http.singleRequest(request, materializer);
     //#customHttpMethod
