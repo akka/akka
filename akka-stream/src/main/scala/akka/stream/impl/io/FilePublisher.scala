@@ -20,12 +20,13 @@ import scala.util.control.NonFatal
 
 /** INTERNAL API */
 private[akka] object FilePublisher {
-  def props(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int) = {
+  def props(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, startPosition: Long, initialBuffer: Int, maxBuffer: Int) = {
     require(chunkSize > 0, s"chunkSize must be > 0 (was $chunkSize)")
+    require(startPosition >= 0, s"startPosition must be >= 0 (was $startPosition)")
     require(initialBuffer > 0, s"initialBuffer must be > 0 (was $initialBuffer)")
     require(maxBuffer >= initialBuffer, s"maxBuffer must be >= initialBuffer (was $maxBuffer)")
 
-    Props(classOf[FilePublisher], f, completionPromise, chunkSize, initialBuffer, maxBuffer)
+    Props(classOf[FilePublisher], f, completionPromise, chunkSize, startPosition, initialBuffer, maxBuffer)
       .withDeploy(Deploy.local)
   }
 
@@ -35,7 +36,7 @@ private[akka] object FilePublisher {
 }
 
 /** INTERNAL API */
-private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, initialBuffer: Int, maxBuffer: Int)
+private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IOResult], chunkSize: Int, startPosition: Long, initialBuffer: Int, maxBuffer: Int)
   extends akka.stream.actor.ActorPublisher[ByteString] with ActorLogging {
   import FilePublisher._
 
@@ -50,6 +51,9 @@ private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IORe
   override def preStart() = {
     try {
       chan = FileChannel.open(f, FilePublisher.Read)
+      if (startPosition > 0) {
+        chan = chan.position(startPosition)
+      }
     } catch {
       case NonFatal(ex) ⇒
         completionPromise.trySuccess(IOResult(0L, Failure(ex)))

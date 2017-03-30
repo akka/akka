@@ -20,16 +20,17 @@ import scala.concurrent.{ Future, Promise }
  * INTERNAL API
  * Creates simple synchronous Source backed by the given file.
  */
-private[akka] final class FileSource(f: Path, chunkSize: Int, val attributes: Attributes, shape: SourceShape[ByteString])
+private[akka] final class FileSource(f: Path, chunkSize: Int, startPosition: Long, val attributes: Attributes, shape: SourceShape[ByteString])
   extends SourceModule[ByteString, Future[IOResult]](shape) {
   require(chunkSize > 0, "chunkSize must be greater than 0")
+  require(startPosition >= 0, "startPosition must be equal or greater than 0")
   override def create(context: MaterializationContext) = {
     // FIXME rewrite to be based on GraphStage rather than dangerous downcasts
     val materializer = ActorMaterializerHelper.downcast(context.materializer)
     val settings = materializer.effectiveSettings(context.effectiveAttributes)
 
     val ioResultPromise = Promise[IOResult]()
-    val props = FilePublisher.props(f, ioResultPromise, chunkSize, settings.initialInputBufferSize, settings.maxInputBufferSize)
+    val props = FilePublisher.props(f, ioResultPromise, chunkSize, startPosition, settings.initialInputBufferSize, settings.maxInputBufferSize)
     val dispatcher = context.effectiveAttributes.get[Dispatcher](IODispatcher).dispatcher
 
     val ref = materializer.actorOf(context, props.withDispatcher(dispatcher))
@@ -38,10 +39,10 @@ private[akka] final class FileSource(f: Path, chunkSize: Int, val attributes: At
   }
 
   override protected def newInstance(shape: SourceShape[ByteString]): SourceModule[ByteString, Future[IOResult]] =
-    new FileSource(f, chunkSize, attributes, shape)
+    new FileSource(f, chunkSize, startPosition, attributes, shape)
 
   override def withAttributes(attr: Attributes): Module =
-    new FileSource(f, chunkSize, attr, amendShape(attr))
+    new FileSource(f, chunkSize, startPosition, attr, amendShape(attr))
 
   override protected def label: String = s"FileSource($f, $chunkSize)"
 }
