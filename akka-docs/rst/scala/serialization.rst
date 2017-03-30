@@ -81,13 +81,12 @@ For more information, have a look at the ``ScalaDoc`` for ``akka.serialization._
 Customization
 =============
 
-So, lets say that you want to create your own ``Serializer``,
-you saw the ``docs.serialization.MyOwnSerializer`` in the config example above?
+The first code snippet on this page contains a configuration file that references a custom serializer ``docs.serialization.MyOwnSerializer``. How would we go about creating such a custom serializer?
 
 Creating new Serializers
 ------------------------
 
-First you need to create a class definition of your ``Serializer`` like so:
+A custom ``Serializer`` has to inherit from ``akka.serialization.Serializer`` and can be defined like the following:
 
 .. includecode:: code/docs/serialization/SerializationDocSpec.scala
    :include: imports,my-own-serializer
