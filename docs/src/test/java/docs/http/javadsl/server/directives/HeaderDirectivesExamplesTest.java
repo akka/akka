@@ -22,6 +22,9 @@ import akka.japi.JavaPartialFunction;
 import akka.http.javadsl.testkit.TestRoute;
 import scala.PartialFunction;
 
+import static akka.http.javadsl.server.Directives.*;
+import static akka.http.javadsl.common.PartialApplication.*;
+
 public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
@@ -36,34 +39,60 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
     };
 
     final Route route = headerValue(extractHostPort, host ->
-        complete("The port was " + host.port())
+      complete("The port was " + host.port())
     );
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
-                    .assertEntity("The port was 5043");
+      .assertEntity("The port was 5043");
 
     testRoute(route).run(HttpRequest.GET("/"))
-                    .assertStatusCode(StatusCodes.NOT_FOUND)
-                    .assertEntity("The requested resource could not be found.");
+      .assertStatusCode(StatusCodes.NOT_FOUND)
+      .assertEntity("The requested resource could not be found.");
     //#headerValue
+  }
+
+  @Test
+  public void testHeaderValueWithDefault() {
+    //#headerValue-with-default
+    final Function<HttpHeader, Optional<String>> extractExampleHeader = header -> {
+      if (header.is("x-example-header")) {
+        return Optional.of(header.value());
+      } else {
+        return Optional.empty();
+      }
+    };
+
+    final Route route = anyOf(
+      bindParameter(this::headerValue, extractExampleHeader),
+      bindParameter(this::provide, "newValue"),
+      (String value) -> complete("header is " + value));
+
+    // tests:
+    final RawHeader exampleHeader = RawHeader.create("X-Example-Header", "theHeaderValue");
+    testRoute(route).run(HttpRequest.GET("/").addHeader(exampleHeader))
+      .assertEntity("header is theHeaderValue");
+
+    testRoute(route).run(HttpRequest.GET("/"))
+      .assertEntity("header is newValue");
+    //#headerValue-with-default
   }
 
   @Test
   public void testHeaderValueByName() {
     //#headerValueByName
     final Route route = headerValueByName("X-User-Id", userId ->
-        complete("The user is " + userId)
+      complete("The user is " + userId)
     );
 
     // tests:
     final RawHeader header = RawHeader.create("X-User-Id", "Joe42");
     testRoute(route).run(HttpRequest.GET("/").addHeader(header))
-                    .assertEntity("The user is Joe42");
+      .assertEntity("The user is Joe42");
 
     testRoute(route).run(HttpRequest.GET("/"))
-                    .assertStatusCode(StatusCodes.BAD_REQUEST)
-                    .assertEntity("Request is missing required HTTP header 'X-User-Id'");
+      .assertStatusCode(StatusCodes.BAD_REQUEST)
+      .assertEntity("Request is missing required HTTP header 'X-User-Id'");
     //#headerValueByName
   }
 
@@ -71,7 +100,7 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
   public void testHeaderValueByType() {
     //#headerValueByType
     final Route route = headerValueByType(Origin.class, origin ->
-        complete("The first origin was " + origin.getOrigins().iterator().next())
+      complete("The first origin was " + origin.getOrigins().iterator().next())
     );
 
     // tests:
@@ -79,11 +108,11 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
     final Origin originHeader = Origin.create(HttpOrigin.create("http", host));
 
     testRoute(route).run(HttpRequest.GET("abc").addHeader(originHeader))
-                    .assertEntity("The first origin was http://localhost:8080");
+      .assertEntity("The first origin was http://localhost:8080");
 
     testRoute(route).run(HttpRequest.GET("abc"))
-                    .assertStatusCode(StatusCodes.BAD_REQUEST)
-                    .assertEntity("Request is missing required HTTP header 'Origin'");
+      .assertStatusCode(StatusCodes.BAD_REQUEST)
+      .assertEntity("Request is missing required HTTP header 'Origin'");
     //#headerValueByType
   }
 
@@ -91,32 +120,32 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
   public void testHeaderValuePF() {
     //#headerValuePF
     final PartialFunction<HttpHeader, Integer> extractHostPort =
-        new JavaPartialFunction<HttpHeader, Integer>() {
-      @Override
-      public Integer apply(HttpHeader x, boolean isCheck) throws Exception {
-        if (x instanceof Host) {
-          if (isCheck) {
-            return null;
+      new JavaPartialFunction<HttpHeader, Integer>() {
+        @Override
+        public Integer apply(HttpHeader x, boolean isCheck) throws Exception {
+          if (x instanceof Host) {
+            if (isCheck) {
+              return null;
+            } else {
+              return ((Host) x).port();
+            }
           } else {
-            return ((Host) x).port();
+            throw noMatch();
           }
-        } else {
-          throw noMatch();
         }
-      }
-    };
+      };
 
     final Route route = headerValuePF(extractHostPort, port ->
-        complete("The port was " + port)
+      complete("The port was " + port)
     );
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
-                    .assertEntity("The port was 5043");
+      .assertEntity("The port was 5043");
 
     testRoute(route).run(HttpRequest.GET("/"))
-                    .assertStatusCode(StatusCodes.NOT_FOUND)
-                    .assertEntity("The requested resource could not be found.");
+      .assertStatusCode(StatusCodes.NOT_FOUND)
+      .assertEntity("The requested resource could not be found.");
     //#headerValuePF
   }
 
@@ -141,10 +170,10 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
-                    .assertEntity("The port was 5043");
+      .assertEntity("The port was 5043");
 
     testRoute(route).run(HttpRequest.GET("/"))
-                    .assertEntity("The port was not provided explicitly");
+      .assertEntity("The port was not provided explicitly");
     //#optionalHeaderValue
   }
 
@@ -162,7 +191,7 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
     // tests:
     final RawHeader header = RawHeader.create("X-User-Id", "Joe42");
     testRoute(route).run(HttpRequest.GET("/").addHeader(header))
-                    .assertEntity("The user is Joe42");
+      .assertEntity("The user is Joe42");
 
     testRoute(route).run(HttpRequest.GET("/")).assertEntity("No user was provided");
     //#optionalHeaderValueByName
@@ -185,7 +214,7 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
     Host host = Host.create("localhost", 8080);
     Origin originHeader = Origin.create(HttpOrigin.create("http", host));
     testRoute(route).run(HttpRequest.GET("abc").addHeader(originHeader))
-                    .assertEntity("The first origin was http://localhost:8080");
+      .assertEntity("The first origin was http://localhost:8080");
 
     // extract None if no header of the given type is present
     testRoute(route).run(HttpRequest.GET("abc")).assertEntity("No Origin header found.");
@@ -197,20 +226,20 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
   public void testOptionalHeaderValuePF() {
     //#optionalHeaderValuePF
     final PartialFunction<HttpHeader, Integer> extractHostPort =
-        new JavaPartialFunction<HttpHeader, Integer>() {
-      @Override
-      public Integer apply(HttpHeader x, boolean isCheck) throws Exception {
-        if (x instanceof Host) {
-          if (isCheck) {
-            return null;
+      new JavaPartialFunction<HttpHeader, Integer>() {
+        @Override
+        public Integer apply(HttpHeader x, boolean isCheck) throws Exception {
+          if (x instanceof Host) {
+            if (isCheck) {
+              return null;
+            } else {
+              return ((Host) x).port();
+            }
           } else {
-            return ((Host) x).port();
+            throw noMatch();
           }
-        } else {
-          throw noMatch();
         }
-      }
-    };
+      };
 
     final Route route = optionalHeaderValuePF(extractHostPort, port -> {
       if (port.isPresent()) {
@@ -222,10 +251,10 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
-                    .assertEntity("The port was 5043");
+      .assertEntity("The port was 5043");
 
     testRoute(route).run(HttpRequest.GET("/"))
-                    .assertEntity("The port was not provided explicitly");
+      .assertEntity("The port was not provided explicitly");
     //#optionalHeaderValuePF
   }
 
@@ -233,29 +262,29 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
   public void testCheckSameOrigin() {
     //#checkSameOrigin
     final HttpOrigin validOriginHeader =
-            HttpOrigin.create("http://localhost", Host.create("8080"));
+      HttpOrigin.create("http://localhost", Host.create("8080"));
 
     final HttpOriginRange validOriginRange = HttpOriginRange.create(validOriginHeader);
 
     final TestRoute route = testRoute(
-            checkSameOrigin(validOriginRange,
-                    () -> complete("Result")));
+      checkSameOrigin(validOriginRange,
+        () -> complete("Result")));
 
     route
-            .run(HttpRequest.create().addHeader(Origin.create(validOriginHeader)))
-            .assertStatusCode(StatusCodes.OK)
-            .assertEntity("Result");
+      .run(HttpRequest.create().addHeader(Origin.create(validOriginHeader)))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Result");
 
     route
-            .run(HttpRequest.create())
-            .assertStatusCode(StatusCodes.BAD_REQUEST);
+      .run(HttpRequest.create())
+      .assertStatusCode(StatusCodes.BAD_REQUEST);
 
     final HttpOrigin invalidOriginHeader =
-            HttpOrigin.create("http://invalid.com", Host.create("8080"));
+      HttpOrigin.create("http://invalid.com", Host.create("8080"));
 
     route
-            .run(HttpRequest.create().addHeader(Origin.create(invalidOriginHeader)))
-            .assertStatusCode(StatusCodes.FORBIDDEN);
+      .run(HttpRequest.create().addHeader(Origin.create(invalidOriginHeader)))
+      .assertStatusCode(StatusCodes.FORBIDDEN);
     //#checkSameOrigin
   }
 }
