@@ -1,6 +1,6 @@
 package tutorial_2
 
-import tutorial_3.Device.{ReadTemperature, RecordTemperature, RespondTemperature, TemperatureRecorded}
+import tutorial_5.Device.{ ReadTemperature, RecordTemperature, RespondTemperature, TemperatureRecorded }
 
 object DeviceInProgress1 {
 
@@ -17,23 +17,21 @@ object DeviceInProgress2 {
 
   //#read-protocol-2
   object Device {
-
+    //#dummy
     final case class ReadTemperature(requestId: Long)
-
     final case class RespondTemperature(requestId: Long, value: Option[Double])
-
+    //#dummy
   }
 
   //#read-protocol-2
 
   //#device-with-read
-  import akka.actor.{Actor, ActorLogging}
+  import akka.actor.{ Actor, ActorLogging }
 
   class Device(groupId: String, deviceId: String) extends Actor with ActorLogging {
     var lastTemperatureReading: Option[Double] = None
 
     override def preStart(): Unit = log.info("Device actor {}-{} started", groupId, deviceId)
-
     override def postStop(): Unit = log.info("Device actor {}-{} stopped", groupId, deviceId)
 
     override def receive: Receive = {

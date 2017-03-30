@@ -2,22 +2,17 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package tutorial_3
+package tutorial_5
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import tutorial_3.DeviceManager.RequestTrackDevice
+import tutorial_5.DeviceManager.RequestTrackDevice
 
-//#device-manager-full
-//#device-manager-msgs
 object DeviceManager {
-  //#device-manager-msgs
   def props(): Props = Props(new DeviceManager)
 
-  //#device-manager-msgs
   final case class RequestTrackDevice(groupId: String, deviceId: String)
   case object DeviceRegistered
 }
-//#device-manager-msgs
 
 class DeviceManager extends Actor with ActorLogging {
   var groupIdToActor = Map.empty[String, ActorRef]
@@ -50,4 +45,3 @@ class DeviceManager extends Actor with ActorLogging {
   }
 
 }
-//#device-manager-full

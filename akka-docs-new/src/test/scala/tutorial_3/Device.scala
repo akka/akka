@@ -7,6 +7,7 @@ import akka.actor.{ Actor, ActorLogging, Props }
 import tutorial_3.Device.{ ReadTemperature, RecordTemperature, RespondTemperature, TemperatureRecorded }
 import tutorial_3.DeviceManager.{ DeviceRegistered, RequestTrackDevice }
 
+//#device-with-register
 object Device {
 
   def props(groupId: String, deviceId: String): Props = Props(new Device(groupId, deviceId))
@@ -43,3 +44,4 @@ class Device(groupId: String, deviceId: String) extends Actor with ActorLogging 
       sender() ! RespondTemperature(id, lastTemperatureReading)
   }
 }
+//#device-with-register
