@@ -23,7 +23,7 @@ import scala.reflect.ClassTag
  *     when(2) {
  *       case Event("world", _) =&gt; goto(1)
  *     }
- *   }
+ *   })
  * assert (fsm.stateName == 1)
  * fsm ! "hallo"
  * assert (fsm.stateName == 2)
