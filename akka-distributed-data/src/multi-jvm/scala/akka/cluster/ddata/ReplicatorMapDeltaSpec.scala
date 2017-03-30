@@ -333,7 +333,7 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
             case AddOM(key, elem, consistency) ⇒
               // to have an deterministic result when mixing add/remove we can only perform
               // the ORSet operations from one node
-              runOn((if (key == KeyI) List(first) else List(first, second, third)): _*) {
+              runOn((if (key == KeyL) List(first) else List(first, second, third)): _*) {
                 fullStateReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om ⇒ addElementToORMap(om, key._2, elem))
                 deltaReplicator ! Update(key._1, ORMap.empty[String, ORSet[String]], WriteLocal)(om ⇒ addElementToORMap(om, key._2, elem))
               }

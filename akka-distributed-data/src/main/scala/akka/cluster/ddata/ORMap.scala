@@ -383,6 +383,7 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
         val removedKey = removeOp.underlying match {
           // if op is RemoveDeltaOp then it must have exactly one element in the elements
           case op: ORSet.RemoveDeltaOp[_] ⇒ op.underlying.elements.head.asInstanceOf[A]
+          case _                          ⇒ throw new IllegalArgumentException("ORMap.RemoveDeltaOp must contain ORSet.RemoveDeltaOp inside")
         }
         thatValueDeltas -= removedKey
       // please note that if RemoveDelta is not preceded by update clearing the value
