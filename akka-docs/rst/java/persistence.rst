@@ -273,8 +273,8 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 Deferring actions until preceding persist handlers have executed
 ----------------------------------------------------------------
 
-Sometimes when working with ``persistAsync`` you may find that it would be nice to define some actions in terms of
-''happens-after the previous ``persistAsync`` handlers have been invoked''. ``PersistentActor`` provides an utility method
+Sometimes when working with ``persistAsync`` or ``persist`` you may find that it would be nice to define some actions in terms of
+''happens-after the previous ``persistAsync``/``persist`` handlers have been invoked''. ``PersistentActor`` provides an utility method
 called ``deferAsync``, which works similarly to ``persistAsync`` yet does not persist the passed in event. It is recommended to
 use it for *read* operations, and actions which do not have corresponding events in your domain model.
 
@@ -287,6 +287,10 @@ Notice that the ``getSender()`` method is **safe** to call in the handler callba
 of the command for which this ``deferAsync`` handler was called.
 
 .. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#defer-caller
+
+You can also call ``deferAsync`` with ``persist``.
+
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#defer-with-persist
 
 .. warning::
   The callback will not be invoked if the actor is restarted (or stopped) in between the call to
