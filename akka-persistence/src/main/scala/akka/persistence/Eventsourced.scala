@@ -351,7 +351,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    */
   @InternalApi
   final private[akka] def internalDeferAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
-    if (recoveryRunning) throw new IllegalStateException("Cannot persist during replay. Events can be persisted when receiving RecoveryCompleted or later.")
+    if (recoveryRunning) throw new IllegalStateException("Cannot defer during replay. Events can be deferred when receiving RecoveryCompleted or later.")
     if (pendingInvocations.isEmpty) {
       handler(event)
     } else {
