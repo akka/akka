@@ -29,6 +29,25 @@ object ReplicatorDeltaSpec extends MultiNodeConfig {
 
   testTransport(on = true)
 
+  case class Highest(n: Int, delta: Option[Highest] = None)
+    extends DeltaReplicatedData with RequiresCausalDeliveryOfDeltas with ReplicatedDelta {
+    type T = Highest
+    type D = Highest
+
+    override def merge(other: Highest): Highest =
+      if (n >= other.n) this else other
+
+    override def mergeDelta(other: Highest): Highest = merge(other)
+
+    override def zero: Highest = Highest(0)
+
+    override def resetDelta: Highest = Highest(n)
+
+    def incr(i: Int): Highest = Highest(n + i, Some(Highest(n + i)))
+
+    def incrNoDelta(i: Int): Highest = Highest(n + i, None)
+  }
+
   sealed trait Op
   final case class Delay(n: Int) extends Op
   final case class Incr(key: PNCounterKey, n: Int, consistency: WriteConsistency) extends Op
@@ -40,6 +59,7 @@ object ReplicatorDeltaSpec extends MultiNodeConfig {
   val writeTwo = WriteTo(2, timeout)
   val writeMajority = WriteMajority(timeout)
 
+  val KeyHigh = new Key[Highest]("High") {}
   val KeyA = PNCounterKey("A")
   val KeyB = PNCounterKey("B")
   val KeyC = PNCounterKey("C")
@@ -246,6 +266,81 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
       enterBarrier("write-3")
       fullStateReplicator.tell(Get(KeyD, ReadLocal), p.ref)
       p.expectMsgType[GetSuccess[ORSet[String]]].dataValue.elements should ===(Set("a", "A", "B", "C", "D"))
+
+      enterBarrierAfterTestStep()
+    }
+
+    "preserve causal consistency for None delta" in {
+      runOn(first) {
+        val p1 = TestProbe()
+        deltaReplicator.tell(Update(KeyHigh, Highest(0), WriteLocal)(_.incr(1)), p1.ref)
+        p1.expectMsgType[UpdateSuccess[_]]
+      }
+      enterBarrier("write-1")
+
+      runOn(first) {
+        val p = TestProbe()
+        deltaReplicator.tell(Get(KeyHigh, ReadLocal), p.ref)
+        p.expectMsgType[GetSuccess[Highest]].dataValue.n should ===(1)
+      }
+      runOn(second, third, fourth) {
+        within(5.seconds) {
+          awaitAssert {
+            val p = TestProbe()
+            deltaReplicator.tell(Get(KeyHigh, ReadLocal), p.ref)
+            p.expectMsgType[GetSuccess[Highest]].dataValue.n should ===(1)
+          }
+        }
+      }
+      enterBarrier("read-1")
+
+      runOn(first) {
+        val p1 = TestProbe()
+        deltaReplicator.tell(Update(KeyHigh, Highest(0), writeAll)(_.incr(2)), p1.ref)
+        p1.expectMsgType[UpdateSuccess[_]]
+        deltaReplicator.tell(Update(KeyHigh, Highest(0), WriteLocal)(_.incrNoDelta(5)), p1.ref)
+        deltaReplicator.tell(Update(KeyHigh, Highest(0), WriteLocal)(_.incr(10)), p1.ref)
+        p1.expectMsgType[UpdateSuccess[_]]
+        p1.expectMsgType[UpdateSuccess[_]]
+      }
+      enterBarrier("write-2")
+
+      runOn(first) {
+        val p = TestProbe()
+        deltaReplicator.tell(Get(KeyHigh, ReadLocal), p.ref)
+        p.expectMsgType[GetSuccess[Highest]].dataValue.n should ===(18)
+      }
+      runOn(second, third, fourth) {
+        within(5.seconds) {
+          awaitAssert {
+            val p = TestProbe()
+            deltaReplicator.tell(Get(KeyHigh, ReadLocal), p.ref)
+            // the incrNoDelta(5) is not propagated as delta, and then incr(10) is also skipped
+            p.expectMsgType[GetSuccess[Highest]].dataValue.n should ===(3)
+          }
+        }
+      }
+      enterBarrier("read-2")
+
+      runOn(first) {
+        val p1 = TestProbe()
+        // WriteAll will send full state when delta can't be applied and thereby syncing the
+        // delta versions again. Same would happen via full state gossip.
+        // Thereafter delta can be propagated and applied again.
+        deltaReplicator.tell(Update(KeyHigh, Highest(0), writeAll)(_.incr(100)), p1.ref)
+        p1.expectMsgType[UpdateSuccess[_]]
+        deltaReplicator.tell(Update(KeyHigh, Highest(0), WriteLocal)(_.incr(4)), p1.ref)
+        p1.expectMsgType[UpdateSuccess[_]]
+      }
+      enterBarrier("write-3")
+
+      within(5.seconds) {
+        awaitAssert {
+          val p = TestProbe()
+          deltaReplicator.tell(Get(KeyHigh, ReadLocal), p.ref)
+          p.expectMsgType[GetSuccess[Highest]].dataValue.n should ===(122)
+        }
+      }
 
       enterBarrierAfterTestStep()
     }
