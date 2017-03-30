@@ -294,6 +294,9 @@ private[http] class ByteArrayRendering(sizeHint: Int) extends Rendering {
     size = neededSize.toInt
     oldSize
   }
+
+  def remainingCapacity: Int = array.length - size
+  def asByteString: ByteString = ByteString.ByteString1(array, 0, size)
 }
 
 /**

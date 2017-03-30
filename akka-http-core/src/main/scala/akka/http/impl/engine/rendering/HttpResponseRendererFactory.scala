@@ -117,7 +117,7 @@ private[http] class HttpResponseRendererFactory(
         }
 
         def render(ctx: ResponseRenderingContext): StrictOrStreamed = {
-          val r = new ByteStringRendering(responseHeaderSizeHint)
+          val r = new ByteArrayRendering(responseHeaderSizeHint)
 
           import ctx.response._
           val noEntity = entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD
@@ -220,7 +220,7 @@ private[http] class HttpResponseRendererFactory(
             if (status.allowsEntity) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
 
           def byteStrings(entityBytes: ⇒ Source[ByteString, Any]): Source[ResponseRenderingOutput, Any] =
-            renderByteStrings(r, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
+            renderByteStrings(r.asByteString, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
 
           @tailrec def completeResponseRendering(entity: ResponseEntity): StrictOrStreamed =
             entity match {
@@ -229,12 +229,18 @@ private[http] class HttpResponseRendererFactory(
                 renderEntityContentType(r, entity)
                 renderContentLengthHeader(data.length) ~~ CrLf
 
-                if (!noEntity) r ~~ data
+                val finalBytes = {
+                  if (!noEntity)
+                    if (data.size < r.remainingCapacity) (r ~~ data).asByteString
+                    else r.asByteString ++ data
+                  else
+                    r.asByteString
+                }
 
                 Strict {
                   closeMode match {
-                    case SwitchToWebSocket(handler) ⇒ ResponseRenderingOutput.SwitchToWebSocket(r.get, handler)
-                    case _                          ⇒ ResponseRenderingOutput.HttpData(r.get)
+                    case SwitchToWebSocket(handler) ⇒ ResponseRenderingOutput.SwitchToWebSocket(finalBytes, handler)
+                    case _                          ⇒ ResponseRenderingOutput.HttpData(finalBytes)
                   }
                 }
 

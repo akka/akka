@@ -2,3 +2,6 @@
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.transformEntityDataBytes")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpResponse.encoding")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.transformEntityDataBytes")
+
+# Internal API changes
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.rendering.RenderSupport.renderByteStrings")

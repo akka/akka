@@ -65,9 +65,9 @@ private object RenderSupport {
     } else r // don't render
   }
 
-  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString, Any],
+  def renderByteStrings(header: ByteString, entityBytes: ⇒ Source[ByteString, Any],
                         skipEntity: Boolean = false): Source[ByteString, Any] = {
-    val messageStart = Source.single(r.get)
+    val messageStart = Source.single(header)
     val messageBytes =
       if (!skipEntity) (messageStart ++ entityBytes).mapMaterializedValue(_ ⇒ ())
       else CancelSecond(messageStart, entityBytes)
