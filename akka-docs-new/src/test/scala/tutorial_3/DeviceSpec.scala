@@ -11,6 +11,7 @@ class DeviceSpec extends AkkaSpec {
 
   "Device actor" must {
 
+    //#device-registration-tests
     "reply to registration requests" in {
       val probe = TestProbe()
       val deviceActor = system.actorOf(Device.props("group", "device"))
@@ -30,6 +31,7 @@ class DeviceSpec extends AkkaSpec {
       deviceActor.tell(DeviceManager.RequestTrackDevice("group", "Wrongdevice"), probe.ref)
       probe.expectNoMsg(500.milliseconds)
     }
+    //#device-registration-tests
 
     "reply with empty reading if no temperature is known" in {
       val probe = TestProbe()

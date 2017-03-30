@@ -4,7 +4,7 @@
 package tutorial_1
 
 //#iot-supervisor
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{ Actor, ActorLogging, Props }
 
 object IotSupervisor {
   def props(): Props = Props(new IotSupervisor)
