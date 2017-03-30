@@ -1,0 +1,4 @@
+# Provide Decoding Response example for Java #760
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.transformEntityDataBytes")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpResponse.encoding")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.transformEntityDataBytes")

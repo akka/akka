@@ -4,5 +4,3 @@
 # would provide a RejectionHandler and someone would call `mapRejectionResponse` against it from 10.0.1
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.RejectionHandler#Handler.mapResponse")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.RejectionHandler.mapRejectionResponse")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.coding.Encoder.encodeMessage")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.coding.Decoder.decodeMessage")

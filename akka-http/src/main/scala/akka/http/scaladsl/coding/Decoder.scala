@@ -17,13 +17,13 @@ import scala.concurrent.Future
 trait Decoder {
   def encoding: HttpEncoding
 
-  def decodeMessage(message: HttpMessage): HttpMessage#Self =
+  def decodeMessage(message: HttpMessage): message.Self =
     if (message.headers exists Encoder.isContentEncodingHeader)
       message.transformEntityDataBytes(decoderFlow).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
     else message.self
 
-  def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self =
-    decodeMessage(message).asInstanceOf[T#Self]
+  @deprecated("Use Decoder#decodeMessage instead. No need for implicit mapper.", since = "10.0.6")
+  def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self = decodeMessage(message)
 
   def decodeData[T](t: T)(implicit mapper: DataMapper[T]): T = mapper.transformDataBytes(t, decoderFlow)
 

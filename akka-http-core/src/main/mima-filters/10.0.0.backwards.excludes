@@ -13,4 +13,3 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Ur
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.getUserInfo")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.getPort")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.getScheme")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.transformEntityDataBytes")

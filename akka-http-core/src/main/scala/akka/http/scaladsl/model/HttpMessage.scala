@@ -31,7 +31,7 @@ import headers._
  * Common base class of HttpRequest and HttpResponse.
  */
 sealed trait HttpMessage extends jm.HttpMessage {
-  type Self <: HttpMessage
+  type Self <: HttpMessage { type Self = HttpMessage.this.Self }
   def self: Self
 
   def isRequest: Boolean

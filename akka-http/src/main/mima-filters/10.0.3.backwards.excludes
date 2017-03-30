@@ -13,7 +13,3 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshal
 
 # make httpApp abstract class
 ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.http.scaladsl.server.HttpApp")
-
-# Provide Decoding Response example for Java #760
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.coding.Encoder.encodeMessage")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.coding.Decoder.decodeMessage")

@@ -18,13 +18,13 @@ trait Encoder {
 
   def messageFilter: HttpMessage ⇒ Boolean
 
-  def encodeMessage(message: HttpMessage): HttpMessage#Self =
+  def encodeMessage(message: HttpMessage): message.Self =
     if (messageFilter(message) && !message.headers.exists(Encoder.isContentEncodingHeader))
       message.transformEntityDataBytes(encoderFlow).withHeaders(`Content-Encoding`(encoding) +: message.headers)
     else message.self
 
-  def encode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self =
-    encodeMessage(message).asInstanceOf[T#Self]
+  @deprecated("Use Decoder#encodeMessage instead. No need for implicit mapper.", since = "10.0.6")
+  def encode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self = encodeMessage(message)
 
   def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T =
     mapper.transformDataBytes(t, Flow[ByteString].via(newEncodeTransformer))
