@@ -89,6 +89,11 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
+      "a response with no reason phrase and no trailing space" in new Test {
+        s"""HTTP/1.1 200${newLine}Content-Length: 0${newLine}${newLine}""".stripMargin should parseTo(HEAD, HttpResponse())
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
       "a response funky `Transfer-Encoding` header" in new Test {
         override def parserSettings: ParserSettings =
           super.parserSettings.withCustomStatusCodes(ServerOnTheMove)
@@ -241,11 +246,6 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
       "a too-long response status reason" in new Test {
         Seq("HTTP/1.1 204 12345678", s"90123456789012${newLine}") should generalMultiParseTo(Left(
           MessageStartError(400: StatusCode, ErrorInfo("Response reason phrase exceeds the configured limit of 21 characters"))))
-      }
-
-      "with a missing reason phrase and no trailing space" in new Test {
-        Seq(s"HTTP/1.1 200${newLine}Content-Length: 0${newLine}${newLine}") should generalMultiParseTo(Left(MessageStartError(
-          400: StatusCode, ErrorInfo("Status code misses trailing space"))))
       }
     }
   }
