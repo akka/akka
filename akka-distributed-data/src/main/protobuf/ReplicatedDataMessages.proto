@@ -85,9 +85,10 @@ message ORMapDeltaGroup {
   }
   message Entry {
     required ORMapDeltaOp operation = 1;
-    required ORSet underlying = 2;
-    required sint32 zeroTag = 3;
-    repeated MapEntry entryData = 4;
+    required sint32 zeroTag = 2;
+    optional ORSet underlying = 3;
+    optional ORMap full = 4;
+    repeated MapEntry entryData = 5;
   }
 
   repeated Entry entries = 1;
@@ -98,6 +99,7 @@ enum ORMapDeltaOp {
   ORMapRemove = 1;
   ORMapRemoveKey = 2;
   ORMapUpdate = 3;
+  ORMapFull = 4;
 }
 
 message LWWMap {

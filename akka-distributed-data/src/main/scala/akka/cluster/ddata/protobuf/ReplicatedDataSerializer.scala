@@ -201,6 +201,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
   private val ORMapRemoveKeyManifest = "Hk"
   private val ORMapUpdateManifest = "Hu"
   private val ORMapDeltaGroupManifest = "Hg"
+  private val ORMapFullManifest = "Hf"
   private val LWWMapManifest = "I"
   private val LWWMapKeyManifest = "i"
   private val PNCounterMapManifest = "J"
@@ -226,6 +227,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     ORMapRemoveKeyManifest → ormapRemoveKeyFromBinary,
     ORMapUpdateManifest → ormapUpdateFromBinary,
     ORMapDeltaGroupManifest → ormapDeltaGroupFromBinary,
+    ORMapFullManifest → ormapFullFromBinary,
     LWWMapManifest → lwwmapFromBinary,
     PNCounterMapManifest → pncountermapFromBinary,
     ORMultiMapManifest → multimapFromBinary,
@@ -275,8 +277,9 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     case _: ORMultiMapKey[_, _]          ⇒ ORMultiMapKeyManifest
 
     case _: ORSet.DeltaGroup[_]          ⇒ ORSetDeltaGroupManifest
-    case _: ORMap.DeltaGroup[_, _]       ⇒ ORMapDeltaGroupManifest
     case _: ORSet.FullStateDeltaOp[_]    ⇒ ORSetFullManifest
+    case _: ORMap.DeltaGroup[_, _]       ⇒ ORMapDeltaGroupManifest
+    case _: ORMap.FullStateDeltaOp[_, _] ⇒ ORMapFullManifest
 
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
@@ -303,8 +306,9 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     case m: VersionVector                ⇒ versionVectorToProto(m).toByteArray
     case Key(id)                         ⇒ keyIdToBinary(id)
     case m: ORSet.DeltaGroup[_]          ⇒ orsetDeltaGroupToProto(m).toByteArray
-    case m: ORMap.DeltaGroup[_, _]       ⇒ ormapDeltaGroupToProto(m).toByteArray
     case m: ORSet.FullStateDeltaOp[_]    ⇒ orsetToProto(m.underlying).toByteArray
+    case m: ORMap.DeltaGroup[_, _]       ⇒ ormapDeltaGroupToProto(m).toByteArray
+    case m: ORMap.FullStateDeltaOp[_, _] ⇒ compress(ormapFullToProto(m))
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -630,6 +634,15 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
       throw new NotSerializableException("Improper ORMap delta update operation size or kind")
   }
 
+  // wire protocol is always delta group
+  private def ormapFullFromBinary(bytes: Array[Byte]): ORMap.FullStateDeltaOp[Any, ReplicatedData] = {
+    val ops = ormapDeltaGroupOpsFromBinary(decompress(bytes))
+    if (ops.size == 1 && ops.head.isInstanceOf[ORMap.FullStateDeltaOp[_, _]])
+      ops.head.asInstanceOf[ORMap.FullStateDeltaOp[Any, ReplicatedData]]
+    else
+      throw new NotSerializableException("Improper ORMap delta full operation size or kind")
+  }
+
   // this can be made client-extendable in the same way as Http codes in Spray are
   private def zeroTagFromCode(code: Int) = code match {
     case ORMap.VanillaORMapTag.value ⇒ ORMap.VanillaORMapTag
@@ -659,6 +672,8 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
         } else if (entry.getOperation == rd.ORMapDeltaOp.ORMapUpdate) {
           val map = mapTypeFromProto(entry.getEntryDataList, (v: dm.OtherMessage) ⇒ otherMessageFromProto(v).asInstanceOf[ReplicatedDelta])
           ORMap.UpdateDeltaOp(ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying)), map, zeroTagFromCode(entry.getZeroTag))
+        } else if (entry.getOperation == rd.ORMapDeltaOp.ORMapFull) {
+          ORMap.FullStateDeltaOp(ormapFromProto(entry.getFull), zeroTagFromCode(entry.getZeroTag))
         } else
           throw new NotSerializableException(s"Unknown ORMap delta operation ${entry.getOperation}")
       }(collection.breakOut)
@@ -683,6 +698,10 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
 
   private def ormapDeltaGroupToProto(deltaGroup: ORMap.DeltaGroup[_, _]): rd.ORMapDeltaGroup = {
     ormapDeltaGroupOpsToProto(deltaGroup.ops)
+  }
+
+  private def ormapFullToProto(deltaOp: ORMap.FullStateDeltaOp[_, _]): rd.ORMapDeltaGroup = {
+    ormapDeltaGroupOpsToProto(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
   }
 
   private def ormapDeltaGroupOpsToProto(deltaGroupOps: scala.collection.immutable.IndexedSeq[ORMap.DeltaOp]): rd.ORMapDeltaGroup = {
@@ -720,6 +739,13 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
       builder
     }
 
+    def createFullEntry(full: ORMap[_, _], zt: Int) = {
+      rd.ORMapDeltaGroup.Entry.newBuilder()
+        .setOperation(rd.ORMapDeltaOp.ORMapFull)
+        .setFull(ormapToProto(full))
+        .setZeroTag(zt)
+    }
+
     val b = rd.ORMapDeltaGroup.newBuilder()
     deltaGroupOps.foreach {
       case ORMap.PutDeltaOp(op, pair, zt) ⇒
@@ -730,6 +756,8 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
         b.addEntries(createEntryWithKey(rd.ORMapDeltaOp.ORMapRemoveKey, op.asInstanceOf[ORSet.RemoveDeltaOp[_]].underlying, k, zt.value))
       case ORMap.UpdateDeltaOp(op, m, zt) ⇒
         b.addEntries(createEntry(rd.ORMapDeltaOp.ORMapUpdate, op.asInstanceOf[ORSet.AddDeltaOp[_]].underlying, m, zt.value))
+      case ORMap.FullStateDeltaOp(full, zt) ⇒
+        b.addEntries(createFullEntry(full, zt.value))
       case ORMap.DeltaGroup(u) ⇒
         throw new IllegalArgumentException("ORMap.DeltaGroup should not be nested")
     }
