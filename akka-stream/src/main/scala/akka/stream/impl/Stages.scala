@@ -91,6 +91,7 @@ import akka.stream._
     val iterableSource = name("iterableSource")
     val cycledSource = name("cycledSource")
     val futureSource = name("futureSource")
+    val futureFlattenSource = name("futureFlattenSource")
     val tickSource = name("tickSource")
     val singleSource = name("singleSource")
     val emptySource = name("emptySource")

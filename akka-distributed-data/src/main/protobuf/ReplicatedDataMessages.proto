@@ -87,7 +87,7 @@ message ORMapDeltaGroup {
     required ORMapDeltaOp operation = 1;
     required ORSet underlying = 2;
     required sint32 zeroTag = 3;
-    optional MapEntry entryData = 4;
+    repeated MapEntry entryData = 4;
   }
 
   repeated Entry entries = 1;

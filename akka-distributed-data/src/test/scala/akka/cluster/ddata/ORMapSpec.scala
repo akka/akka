@@ -453,6 +453,77 @@ class ORMapSpec extends WordSpec with Matchers {
       merged6.entries("c").elements should be(Set("C"))
     }
 
+    "work with delta-coalescing scenario 1" in {
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
+      val m2 = m1.resetDelta.put(node2, "b", GSet.empty + "B2").updated(node2, "b", GSet.empty[String])(_.add("B3"))
+
+      val merged1 = m1 merge m2
+
+      merged1.entries("a").elements should be(Set("A"))
+      merged1.entries("b").elements should be(Set("B", "B2", "B3"))
+
+      val merged2 = m1 mergeDelta m2.delta.get
+
+      merged2.entries("a").elements should be(Set("A"))
+      merged2.entries("b").elements should be(Set("B", "B2", "B3"))
+
+      val m3 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
+      val m4 = m3.resetDelta.put(node2, "b", GSet.empty + "B2").put(node2, "b", GSet.empty + "B3")
+
+      val merged3 = m3 merge m4
+
+      merged3.entries("a").elements should be(Set("A"))
+      merged3.entries("b").elements should be(Set("B", "B3"))
+
+      val merged4 = m3 mergeDelta m4.delta.get
+
+      merged4.entries("a").elements should be(Set("A"))
+      merged4.entries("b").elements should be(Set("B", "B3"))
+
+      val m5 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
+      val m6 = m5.resetDelta.put(node2, "b", GSet.empty + "B2").updated(node2, "b", GSet.empty[String])(_.add("B3"))
+        .updated(node2, "b", GSet.empty[String])(_.add("B4"))
+
+      val merged5 = m5 merge m6
+
+      merged5.entries("a").elements should be(Set("A"))
+      merged5.entries("b").elements should be(Set("B", "B2", "B3", "B4"))
+
+      val merged6 = m5 mergeDelta m6.delta.get
+
+      merged6.entries("a").elements should be(Set("A"))
+      merged6.entries("b").elements should be(Set("B", "B2", "B3", "B4"))
+
+      val m7 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
+      val m8 = m7.resetDelta.put(node2, "b", GSet.empty + "B2").put(node2, "d", GSet.empty + "D").put(node2, "b", GSet.empty + "B3")
+
+      val merged7 = m7 merge m8
+
+      merged7.entries("a").elements should be(Set("A"))
+      merged7.entries("b").elements should be(Set("B", "B3"))
+      merged7.entries("d").elements should be(Set("D"))
+
+      val merged8 = m7 mergeDelta m8.delta.get
+
+      merged8.entries("a").elements should be(Set("A"))
+      merged8.entries("b").elements should be(Set("B", "B3"))
+      merged8.entries("d").elements should be(Set("D"))
+
+      val m9 = ORMap.empty.put(node1, "a", GSet.empty + "A").put(node2, "b", GSet.empty + "B")
+      val m10 = m9.resetDelta.put(node2, "b", GSet.empty + "B2").put(node2, "d", GSet.empty + "D")
+        .remove(node2, "d").put(node2, "b", GSet.empty + "B3")
+
+      val merged9 = m9 merge m10
+
+      merged9.entries("a").elements should be(Set("A"))
+      merged9.entries("b").elements should be(Set("B", "B3"))
+
+      val merged10 = m9 mergeDelta m10.delta.get
+
+      merged10.entries("a").elements should be(Set("A"))
+      merged10.entries("b").elements should be(Set("B", "B3"))
+    }
+
     "work with deltas and updated for GSet elements type" in {
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
       val m2 = m1.resetDelta.updated(node1, "a", GSet.empty[String])(_.add("B"))

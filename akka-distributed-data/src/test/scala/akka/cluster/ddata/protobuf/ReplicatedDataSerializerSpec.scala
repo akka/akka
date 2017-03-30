@@ -263,6 +263,10 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       val m1 = ORMultiMap.empty[String, String].addBinding(address1, "a", "A1").addBinding(address2, "a", "A2")
       val m2 = ORMultiMap.empty[String, String].put(address2, "b", Set("B1", "B2", "B3"))
       checkSameContent(m1.merge(m2), m2.merge(m1))
+      checkSerialization(ORMultiMap.empty[String, String].addBinding(address1, "a", "A1").addBinding(address1, "a", "A2").delta.get)
+      val m3 = ORMultiMap.empty[String, String].addBinding(address1, "a", "A1")
+      val d3 = m3.resetDelta.addBinding(address1, "a", "A2").addBinding(address1, "a", "A3").delta.get
+      checkSerialization(d3)
     }
 
     "be compatible with old ORMultiMap serialization" in {
