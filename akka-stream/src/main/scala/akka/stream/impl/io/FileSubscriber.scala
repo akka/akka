@@ -39,7 +39,7 @@ private[akka] class FileSubscriber(f: Path, completionPromise: Promise[IOResult]
   override def preStart(): Unit = try {
     chan = FileChannel.open(f, openOptions.asJava)
     if (startPosition > 0) {
-      chan = chan.position(startPosition)
+      chan.position(startPosition)
     }
 
     super.preStart()
