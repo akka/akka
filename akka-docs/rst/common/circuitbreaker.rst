@@ -32,9 +32,9 @@ appropriate while the breaker is open.
 The Akka library provides an implementation of a circuit breaker called 
 :class:`akka.pattern.CircuitBreaker` which has the behavior described below.
 
-=================
+================
 What do they do?
-=================
+================
 * During normal operation, a circuit breaker is in the `Closed` state:
 	* Exceptions or calls exceeding the configured `callTimeout` increment a failure counter
 	* Successes reset the failure count to zero 
@@ -119,6 +119,48 @@ Java
 	There is also a :class:`CircuitBreakerProxy` actor that you can use, which is an alternative implementation of the pattern.
 	The main difference is that it is intended to be used only for request-reply interactions with another actor. See :ref:`Circuit Breaker Actor <circuit-breaker-proxy>`
 
+--------------------------------
+Control failure count explicitly
+--------------------------------
+
+By default, the circuit breaker treat :class:`Exception` as failure in synchronized API, or failed :class:`Future` as failure in future based API.
+Failure will increment failure count, when failure count reach the `maxFailures`, circuit breaker will be opened.
+However, some applications might requires certain exception to not increase failure count, or vice versa,
+sometime we want to increase the failure count even if the call succeeded.
+Akka circuit breaker provides a way to achieve such use case:
+
+   * `withCircuitBreaker`
+   * `withSyncCircuitBreaker`
+
+   * `callWithCircuitBreaker`
+   * `callWithCircuitBreakerCS`
+   * `callWithSyncCircuitBreaker`
+
+All methods above accepts an argument ``defineFailureFn``
+
+~~~~~
+Scala
+~~~~~
+
+Type of ``defineFailureFn``: ``Try[T] ⇒ Boolean``
+
+This is a function which takes in a :class:`Try[T]` and return a :class:`Boolean`. The :class:`Try[T]` correspond to the :class:`Future[T]` of the protected call. This function should return ``true`` if the call should increase failure count, else false.
+
+.. includecode:: code/docs/circuitbreaker/CircuitBreakerDocSpec.scala
+   :include: even-no-as-failure
+
+~~~~
+Java
+~~~~
+
+Type of ``defineFailureFn``:  :class:`BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]`
+
+For Java Api, the signature is a bit different as there's no :class:`Try` in Java, so the response of protected call is modelled using :class:`Optional[T]` for succeeded return value and :class:`Optional[Throwable]` for exception, and the rules of return type is the same.
+Ie. this function should return ``true`` if the call should increase failure count, else false.
+
+.. includecode:: code/docs/circuitbreaker/EvenNoFailureJavaExample.java
+   :include: even-no-as-failure
+
 -------------
 Low level API
 -------------
@@ -140,9 +182,9 @@ Scala
    :include: circuit-breaker-tell-pattern
 
 
-~~~~~
+~~~~
 Java
-~~~~~
+~~~~
 
 .. includecode:: code/docs/circuitbreaker/TellPatternJavaActor.java
    :include: circuit-breaker-tell-pattern

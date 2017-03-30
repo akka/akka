@@ -11,6 +11,7 @@ import akka.pattern.pipe
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 
 import scala.concurrent.Future
+import scala.util.{ Failure, Success, Try }
 
 //#imports1
 
@@ -75,4 +76,30 @@ class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
     }
   }
   //#circuit-breaker-tell-pattern
+}
+
+class EvenNoFailureActor extends Actor {
+  import context.dispatcher
+  //#even-no-as-failure
+  def luckyNumber(): Future[Int] = {
+    val evenNumberAsFailure: Try[Int] => Boolean = {
+      case Success(n) => n % 2 == 0
+      case Failure(_) => true
+    }
+
+    val breaker =
+      new CircuitBreaker(
+        context.system.scheduler,
+        maxFailures = 5,
+        callTimeout = 10.seconds,
+        resetTimeout = 1.minute)
+
+    // this call will return 8888 and increase failure count at the same time
+    breaker.withCircuitBreaker(Future(8888), evenNumberAsFailure)
+  }
+  //#even-no-as-failure
+
+  override def receive = {
+    case x: Int =>
+  }
 }
