@@ -102,6 +102,43 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       }
     }
 
+    "allow writing from specific position to the file" in assertAllStagesStopped {
+      targetFile { f ⇒
+        val TestLinesCommon = {
+          val b = ListBuffer[String]()
+          b.append("a" * 1000 + "\n")
+          b.append("b" * 1000 + "\n")
+          b.append("c" * 1000 + "\n")
+          b.append("d" * 1000 + "\n")
+          b.toList
+        }
+
+        val commonByteString = TestLinesCommon.map(ByteString(_)).foldLeft[ByteString](ByteString.empty)((acc, line) ⇒ acc ++ line).compact
+        val startPosition = commonByteString.size
+
+        val testLinesPart2: List[String] = {
+          val b = ListBuffer[String]()
+          b.append("x" * 1000 + "\n")
+          b.append("x" * 1000 + "\n")
+          b.toList
+        }
+
+        def write(lines: List[String] = TestLines, startPosition: Long = 0) =
+          Source(lines)
+            .map(ByteString(_))
+            .runWith(FileIO.toPath(f, startPosition = startPosition))
+
+        val completion1 = write()
+        val result1 = Await.result(completion1, 3.seconds)
+
+        val completion2 = write(testLinesPart2, startPosition)
+        val result2 = Await.result(completion2, 3.seconds)
+
+        Files.size(f) should ===(startPosition + result2.count)
+        checkFileContents(f, TestLinesCommon.mkString("") + testLinesPart2.mkString(""))
+      }
+    }
+
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)

@@ -20,7 +20,7 @@ import scala.concurrent.{ Future, Promise }
  * Creates simple synchronous Sink which writes all incoming elements to the given file
  * (creating it before hand if necessary).
  */
-private[akka] final class FileSink(f: Path, options: Set[StandardOpenOption], val attributes: Attributes, shape: SinkShape[ByteString])
+private[akka] final class FileSink(f: Path, startPosition: Long, options: Set[StandardOpenOption], val attributes: Attributes, shape: SinkShape[ByteString])
   extends SinkModule[ByteString, Future[IOResult]](shape) {
 
   override protected def label: String = s"FileSink($f, $options)"
@@ -30,7 +30,7 @@ private[akka] final class FileSink(f: Path, options: Set[StandardOpenOption], va
     val settings = materializer.effectiveSettings(context.effectiveAttributes)
 
     val ioResultPromise = Promise[IOResult]()
-    val props = FileSubscriber.props(f, ioResultPromise, settings.maxInputBufferSize, options)
+    val props = FileSubscriber.props(f, ioResultPromise, settings.maxInputBufferSize, startPosition, options)
     val dispatcher = context.effectiveAttributes.get[Dispatcher](IODispatcher).dispatcher
 
     val ref = materializer.actorOf(context, props.withDispatcher(dispatcher))
@@ -38,10 +38,10 @@ private[akka] final class FileSink(f: Path, options: Set[StandardOpenOption], va
   }
 
   override protected def newInstance(shape: SinkShape[ByteString]): SinkModule[ByteString, Future[IOResult]] =
-    new FileSink(f, options, attributes, shape)
+    new FileSink(f, startPosition, options, attributes, shape)
 
   override def withAttributes(attr: Attributes): Module =
-    new FileSink(f, options, attr, amendShape(attr))
+    new FileSink(f, startPosition, options, attr, amendShape(attr))
 }
 
 /**

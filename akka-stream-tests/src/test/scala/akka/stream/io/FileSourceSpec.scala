@@ -109,6 +109,34 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       c.expectComplete()
     }
 
+    "read partial contents from a file" in assertAllStagesStopped {
+      val chunkSize = 512
+      val startPosition = 1000
+      val bufferAttributes = Attributes.inputBuffer(1, 2)
+
+      val p = FileIO.fromPath(testFile, chunkSize, startPosition)
+        .withAttributes(bufferAttributes)
+        .runWith(Sink.asPublisher(false))
+      val c = TestSubscriber.manualProbe[ByteString]()
+      p.subscribe(c)
+      val sub = c.expectSubscription()
+
+      var remaining = TestText.drop(1000)
+      def nextChunk() = {
+        val (chunk, rest) = remaining.splitAt(chunkSize)
+        remaining = rest
+        chunk
+      }
+
+      sub.request(5000)
+
+      for (_ ← 1 to 10) {
+        c.expectNext().utf8String should ===(nextChunk().toString)
+      }
+
+      c.expectComplete()
+    }
+
     "complete only when all contents of a file have been signalled" in assertAllStagesStopped {
       val chunkSize = 256
       val bufferAttributes = Attributes.inputBuffer(4, 8)

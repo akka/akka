@@ -80,6 +80,22 @@ object FileIO {
     new Sink(scaladsl.FileIO.toPath(f, options.asScala.toSet).toCompletionStage())
 
   /**
+   * Creates a Sink that writes incoming [[ByteString]] elements to the given file path.
+   *
+   * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
+   * and a possible exception if IO operation was not completed successfully.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * @param f The file path to write to
+   * @param options File open options
+   * @param startPosition startPosition the start position to read from, defaults to 0
+   */
+  def toPath(f: Path, options: util.Set[StandardOpenOption], startPosition: Long): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+    new Sink(scaladsl.FileIO.toPath(f, options.asScala.toSet, startPosition).toCompletionStage())
+
+  /**
    * Creates a Source from a files contents.
    * Emitted elements are [[ByteString]] elements, chunked by default by 8192 bytes,
    * except the last element, which will be up to 8192 in size.
@@ -143,4 +159,22 @@ object FileIO {
    */
   def fromPath(f: Path, chunkSize: Int): javadsl.Source[ByteString, CompletionStage[IOResult]] =
     new Source(scaladsl.FileIO.fromPath(f, chunkSize).toCompletionStage())
+
+  /**
+   * Creates a synchronous Source from a files contents.
+   * Emitted elements are `chunkSize` sized [[ByteString]] elements,
+   * except the last element, which will be up to `chunkSize` in size.
+   *
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * set it for a given Source by using [[ActorAttributes]].
+   *
+   * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
+   * and a possible exception if IO operation was not completed successfully.
+   *
+   * @param f         the file path to read from
+   * @param chunkSize the size of each read operation
+   * @param startPosition startPosition the start position to read from, defaults to 0
+   */
+  def fromPath(f: Path, chunkSize: Int, startPosition: Long): javadsl.Source[ByteString, CompletionStage[IOResult]] =
+    new Source(scaladsl.FileIO.fromPath(f, chunkSize, startPosition).toCompletionStage())
 }

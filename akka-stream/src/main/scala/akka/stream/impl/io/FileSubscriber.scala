@@ -18,14 +18,15 @@ import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 private[akka] object FileSubscriber {
-  def props(f: Path, completionPromise: Promise[IOResult], bufSize: Int, openOptions: Set[StandardOpenOption]) = {
+  def props(f: Path, completionPromise: Promise[IOResult], bufSize: Int, startPosition: Long, openOptions: Set[StandardOpenOption]) = {
     require(bufSize > 0, "buffer size must be > 0")
-    Props(classOf[FileSubscriber], f, completionPromise, bufSize, openOptions).withDeploy(Deploy.local)
+    require(startPosition >= 0, s"startPosition must be >= 0 (was $startPosition)")
+    Props(classOf[FileSubscriber], f, completionPromise, bufSize, startPosition, openOptions).withDeploy(Deploy.local)
   }
 }
 
 /** INTERNAL API */
-private[akka] class FileSubscriber(f: Path, completionPromise: Promise[IOResult], bufSize: Int, openOptions: Set[StandardOpenOption])
+private[akka] class FileSubscriber(f: Path, completionPromise: Promise[IOResult], bufSize: Int, startPosition: Long, openOptions: Set[StandardOpenOption])
   extends akka.stream.actor.ActorSubscriber
   with ActorLogging {
 
@@ -37,6 +38,9 @@ private[akka] class FileSubscriber(f: Path, completionPromise: Promise[IOResult]
 
   override def preStart(): Unit = try {
     chan = FileChannel.open(f, openOptions.asJava)
+    if (startPosition > 0) {
+      chan = chan.position(startPosition)
+    }
 
     super.preStart()
   } catch {
