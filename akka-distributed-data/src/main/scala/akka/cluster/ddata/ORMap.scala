@@ -298,8 +298,11 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
   @InternalApi private[akka] def remove(node: UniqueAddress, key: A): ORMap[A, B] = {
     // for removals the delta values map emitted will be empty
     val newKeys = keys.resetDelta.remove(node, key)
-    val removeDeltaOp = RemoveDeltaOp(newKeys.delta.get, zeroTag)
-    new ORMap(newKeys, values - key, zeroTag, Some(newDelta(removeDeltaOp)))
+    // FIXME use full state for removals, until issue #22648 is fixed
+    //    val removeDeltaOp = RemoveDeltaOp(newKeys.delta.get, zeroTag)
+    //    new ORMap(newKeys, values - key, zeroTag, Some(newDelta(removeDeltaOp)))
+    new ORMap(newKeys, values - key, zeroTag, delta = None)
+
   }
 
   /**
@@ -309,8 +312,10 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
    */
   @InternalApi private[akka] def removeKey(node: UniqueAddress, key: A): ORMap[A, B] = {
     val newKeys = keys.resetDelta.remove(node, key)
-    val removeKeyDeltaOp = RemoveKeyDeltaOp(newKeys.delta.get, key, zeroTag)
-    new ORMap(newKeys, values, zeroTag, Some(newDelta(removeKeyDeltaOp)))
+    // FIXME use full state for removals, until issue #22648 is fixed
+    //    val removeKeyDeltaOp = RemoveKeyDeltaOp(newKeys.delta.get, key, zeroTag)
+    //    new ORMap(newKeys, values, zeroTag, Some(newDelta(removeKeyDeltaOp)))
+    new ORMap(newKeys, values, zeroTag, delta = None)
   }
 
   private def dryMerge(that: ORMap[A, B], mergedKeys: ORSet[A], valueKeysIterator: Iterator[A]): ORMap[A, B] = {
@@ -389,7 +394,7 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
         updateOp.values.foreach {
           case (key, value) ⇒
             if (thatValueDeltas.contains(key))
-              thatValueDeltas = thatValueDeltas + (key → (thatValueDeltas(key) :+ (key, value)))
+              thatValueDeltas = thatValueDeltas + (key → (thatValueDeltas(key) :+ (key → value)))
             else
               thatValueDeltas += (key → ((key, value) :: Nil))
         }
