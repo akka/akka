@@ -118,11 +118,12 @@ object ReplicatorDeltaSpec extends MultiNodeConfig {
         case 3 ⇒
           // ORSet
           val key = rndOrSetkey()
-          // only removals for KeyF on node first
-          if (key == KeyF && onNode == first && rnd.nextBoolean())
-            Remove(key, rndRemoveElement(), consistency())
-          else
-            Add(key, rndAddElement(), consistency())
+          // FIXME use full state for removals, until issue #22648 is fixed
+          //          // only removals for KeyF on node first
+          //          if (key == KeyF && onNode == first && rnd.nextBoolean())
+          //            Remove(key, rndRemoveElement(), consistency())
+          //          else
+          Add(key, rndAddElement(), consistency())
       }
     }.toVector
   }

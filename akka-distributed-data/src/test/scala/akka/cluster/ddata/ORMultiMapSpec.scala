@@ -78,6 +78,9 @@ class ORMultiMapSpec extends WordSpec with Matchers {
       val merged2 = m2 merge m1
       merged2.entries should be(expectedMerged)
 
+      // FIXME use full state for removals, until issue #22648 is fixed
+      pending
+
       val merged3 = m1 mergeDelta m2.delta.get
       merged3.entries should be(expectedMerged)
 
@@ -114,6 +117,9 @@ class ORMultiMapSpec extends WordSpec with Matchers {
   }
 
   "not have usual anomalies for remove+addBinding scenario and delta-deltas" in {
+    // FIXME use full state for removals, until issue #22648 is fixed
+    pending
+
     val m1 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
     val m2 = ORMultiMap.emptyWithValueDeltas[String, String].put(node2, "c", Set("C"))
 
@@ -142,6 +148,9 @@ class ORMultiMapSpec extends WordSpec with Matchers {
   }
 
   "not have usual anomalies for remove+addBinding scenario and delta-deltas 2" in {
+    // FIXME use full state for removals, until issue #22648 is fixed
+    pending
+
     // the new delta-delta ORMultiMap is free from this anomaly
     val m1 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
     val m2 = ORMultiMap.emptyWithValueDeltas[String, String].put(node2, "c", Set("C"))
