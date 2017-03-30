@@ -3,6 +3,7 @@
  */
 package akka.stream.io
 
+import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
 import java.nio.file.{ Files, Path, StandardOpenOption }
 
 import akka.actor.ActorSystem
@@ -126,7 +127,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         def write(lines: List[String] = TestLines, startPosition: Long = 0) =
           Source(lines)
             .map(ByteString(_))
-            .runWith(FileIO.toPath(f, startPosition = startPosition))
+            .runWith(FileIO.toPath(f, options = Set(WRITE, CREATE), startPosition = startPosition))
 
         val completion1 = write()
         val result1 = Await.result(completion1, 3.seconds)

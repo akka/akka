@@ -52,7 +52,7 @@ private[akka] final class FilePublisher(f: Path, completionPromise: Promise[IORe
     try {
       chan = FileChannel.open(f, FilePublisher.Read)
       if (startPosition > 0) {
-        chan = chan.position(startPosition)
+        chan.position(startPosition)
       }
     } catch {
       case NonFatal(ex) ⇒
