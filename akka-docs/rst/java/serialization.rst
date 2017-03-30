@@ -95,7 +95,7 @@ For more information, have a look at the ``ScalaDoc`` for ``akka.serialization._
 Customization
 =============
 
-The first code snippet on this page contains a configuration file that references a custom serializer ``docs.serialization.MyOwnSerializer``. How would we go about creating such a custom serializer ?
+The first code snippet on this page contains a configuration file that references a custom serializer ``docs.serialization.MyOwnSerializer``. How would we go about creating such a custom serializer?
 
 Creating new Serializers
 ------------------------
