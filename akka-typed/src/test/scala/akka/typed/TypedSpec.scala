@@ -7,24 +7,27 @@ import org.scalatest.refspec.RefSpec
 import org.scalatest.Matchers
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit.AkkaSpec
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.util.Timeout
+
 import scala.reflect.ClassTag
 import akka.actor.ActorInitializationException
+
 import language.existentials
-import akka.testkit.EventFilter
 import akka.testkit.TestEvent.Mute
+import akka.typed.scaladsl.Actor._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalactic.CanEqual
 import org.junit.runner.RunWith
+
 import scala.util.control.NonFatal
 import org.scalatest.exceptions.TestFailedException
-import akka.util.TypedMultiMap
 import akka.typed.scaladsl.AskPattern
 
 /**
@@ -68,7 +71,7 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
   import akka.testkit._
   def await[T](f: Future[T]): T = Await.result(f, timeout.duration * 1.1)
 
-  lazy val blackhole = await(nativeSystem ? Create(ScalaDSL.Full[Any] { case _ ⇒ ScalaDSL.Same }, "blackhole"))
+  lazy val blackhole = await(nativeSystem ? Create(Stateful[Any] { case _ ⇒ Same }, "blackhole"))
 
   /**
    * Run an Actor-based test. The test procedure is most conveniently
@@ -146,8 +149,20 @@ object TypedSpec {
   case object Timedout extends Status
 
   def guardian(outstanding: Map[ActorRef[_], ActorRef[Status]] = Map.empty): Behavior[Command] =
-    FullTotal {
-      case Sig(ctx, t @ Terminated(test)) ⇒
+    Stateful[Command]({
+      case (ctx, r: RunTest[t]) ⇒
+        val test = ctx.spawn(r.behavior, r.name)
+        ctx.schedule(r.timeout, r.replyTo, Timedout)
+        ctx.watch(test)
+        guardian(outstanding + ((test, r.replyTo)))
+      case (_, Terminate(reply)) ⇒
+        reply ! Success
+        Stopped
+      case (ctx, c: Create[t]) ⇒
+        c.replyTo ! ctx.spawn(c.behavior, c.name)
+        Same
+    }, {
+      case (ctx, t @ Terminated(test)) ⇒
         outstanding get test match {
           case Some(reply) ⇒
             if (t.failure eq null) reply ! Success
@@ -155,19 +170,9 @@ object TypedSpec {
             guardian(outstanding - test)
           case None ⇒ Same
         }
-      case _: Sig[_] ⇒ Same
-      case Msg(ctx, r: RunTest[t]) ⇒
-        val test = ctx.spawn(r.behavior, r.name)
-        ctx.schedule(r.timeout, r.replyTo, Timedout)
-        ctx.watch(test)
-        guardian(outstanding + ((test, r.replyTo)))
-      case Msg(_, Terminate(reply)) ⇒
-        reply ! Success
-        Stopped
-      case Msg(ctx, c: Create[t]) ⇒
-        c.replyTo ! ctx.spawn(c.behavior, c.name)
-        Same
-    }
+      case _ ⇒ Same
+
+    })
 
   def getCallerName(clazz: Class[_]): String = {
     val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)

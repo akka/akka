@@ -49,9 +49,7 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
   }
   def hasEffects: Boolean = effectQueue.peek() != null
 
-  private var current = _initialBehavior
-
-  if (Behavior.isAlive(current)) signal(PreStart)
+  private var current = Behavior.preStart(_initialBehavior, this)
 
   def currentBehavior: Behavior[T] = current
   def isAlive: Boolean = Behavior.isAlive(current)

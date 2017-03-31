@@ -28,15 +28,6 @@ final case class DeadLetter(msg: Any)
 sealed trait Signal
 
 /**
- * Lifecycle signal that is fired upon creation of the Actor. This will be the
- * first message that the actor processes.
- */
-sealed abstract class PreStart extends Signal
-final case object PreStart extends PreStart {
-  def instance: PreStart = this
-}
-
-/**
  * Lifecycle signal that is fired upon restart of the Actor before replacing
  * the behavior with the fresh one (i.e. this signal is received within the
  * behavior that failed). The replacement behavior will receive PreStart as its

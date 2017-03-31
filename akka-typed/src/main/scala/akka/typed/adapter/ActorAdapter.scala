@@ -56,6 +56,7 @@ private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Ac
     next(Behavior.interpretSignal(behavior, ctx, PreRestart), PreRestart)
   override def postRestart(reason: Throwable): Unit =
     behavior = Behavior.preStart(behavior, ctx)
-  override def postStop(): Unit =
+  override def postStop(): Unit = {
     next(Behavior.interpretSignal(behavior, ctx, PostStop), PostStop)
+  }
 }

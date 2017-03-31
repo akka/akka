@@ -5,18 +5,20 @@ package akka.typed.patterns
 
 import Receptionist._
 import akka.typed.scaladsl.AskPattern._
+
 import scala.concurrent.duration._
 import akka.typed._
+import akka.typed.scaladsl.Actor.Stateless
 
 class ReceptionistSpec extends TypedSpec {
 
   trait ServiceA
   case object ServiceKeyA extends ServiceKey[ServiceA]
-  val behaviorA = Static[ServiceA](msg ⇒ ())
+  val behaviorA = Stateless[ServiceA] { case (_, msg) ⇒ () }
 
   trait ServiceB
   case object ServiceKeyB extends ServiceKey[ServiceB]
-  val behaviorB = Static[ServiceB](msg ⇒ ())
+  val behaviorB = Stateless[ServiceB] { case (_, msg) ⇒ () }
 
   trait CommonTests {
     implicit def system: ActorSystem[TypedSpec.Command]

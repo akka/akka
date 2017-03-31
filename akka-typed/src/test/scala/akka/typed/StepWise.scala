@@ -5,6 +5,9 @@ package akka.typed
 
 import scala.concurrent.duration.FiniteDuration
 import java.util.concurrent.TimeoutException
+
+import akka.typed.scaladsl.Actor._
+
 import scala.concurrent.duration.Deadline
 
 /**
@@ -106,8 +109,8 @@ object StepWise {
   }
 
   def apply[T](f: (scaladsl.ActorContext[T], StartWith[T]) ⇒ Steps[T, _]): Behavior[T] =
-    Full[Any] {
-      case Sig(ctx, PreStart) ⇒ run(ctx, f(ctx.asInstanceOf[ActorContext[T]], new StartWith(keepTraces = false)).ops.reverse, ())
+    Deferred[Any] { ctx ⇒
+      run(ctx, f(ctx.asInstanceOf[ActorContext[T]], new StartWith(keepTraces = false)).ops.reverse, ())
     }.narrow
 
   private def throwTimeout(trace: Trace, message: String): Nothing =
@@ -132,61 +135,66 @@ object StepWise {
       case ThunkV(f) :: tail ⇒ run(ctx, tail, f(value))
       case Message(t, f, trace) :: tail ⇒
         ctx.setReceiveTimeout(t, ReceiveTimeout)
-        Full {
-          case Msg(_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for a message")
-          case Msg(_, msg) ⇒
+        Stateful({
+          case (_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for a message")
+          case (_, msg) ⇒
             ctx.cancelReceiveTimeout()
             run(ctx, tail, f(msg, value))
-          case Sig(_, other) ⇒ throwIllegalState(trace, s"unexpected $other while waiting for a message")
-        }
+        }, {
+          case (_, other) ⇒ throwIllegalState(trace, s"unexpected $other while waiting for a message")
+        })
       case MultiMessage(t, c, f, trace) :: tail ⇒
         val deadline = Deadline.now + t
         def behavior(count: Int, acc: List[Any]): Behavior[Any] = {
           ctx.setReceiveTimeout(deadline.timeLeft, ReceiveTimeout)
-          Full {
-            case Msg(_, ReceiveTimeout) ⇒
+          Stateful({
+            case (_, ReceiveTimeout) ⇒
               throwTimeout(trace, s"timeout of $t expired while waiting for $c messages (got only $count)")
-            case Msg(_, msg) ⇒
+            case (_, msg) ⇒
               val nextCount = count + 1
               if (nextCount == c) {
                 ctx.cancelReceiveTimeout()
                 run(ctx, tail, f((msg :: acc).reverse, value))
               } else behavior(nextCount, msg :: acc)
-            case Sig(_, other) ⇒ throwIllegalState(trace, s"unexpected $other while waiting for $c messages (got $count valid ones)")
-          }
+          }, {
+            case (_, other) ⇒ throwIllegalState(trace, s"unexpected $other while waiting for $c messages (got $count valid ones)")
+          })
         }
         behavior(0, Nil)
       case Multi(t, c, f, trace) :: tail ⇒
         val deadline = Deadline.now + t
         def behavior(count: Int, acc: List[Either[Signal, Any]]): Behavior[Any] = {
           ctx.setReceiveTimeout(deadline.timeLeft, ReceiveTimeout)
-          Full {
-            case Msg(_, ReceiveTimeout) ⇒
+          Stateful[Any]({
+            case (_, ReceiveTimeout) ⇒
               throwTimeout(trace, s"timeout of $t expired while waiting for $c messages (got only $count)")
-            case Msg(_, msg) ⇒
+            case (_, msg) ⇒
               val nextCount = count + 1
               if (nextCount == c) {
                 ctx.cancelReceiveTimeout()
                 run(ctx, tail, f((Right(msg) :: acc).reverse, value))
               } else behavior(nextCount, Right(msg) :: acc)
-            case Sig(_, other) ⇒
+          }, {
+            case (_, other) ⇒
               val nextCount = count + 1
               if (nextCount == c) {
                 ctx.cancelReceiveTimeout()
                 run(ctx, tail, f((Left(other) :: acc).reverse, value))
               } else behavior(nextCount, Left(other) :: acc)
-          }
+          })
         }
         behavior(0, Nil)
       case Termination(t, f, trace) :: tail ⇒
         ctx.setReceiveTimeout(t, ReceiveTimeout)
-        Full {
-          case Msg(_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for termination")
-          case Sig(_, t: Terminated) ⇒
+        Stateful[Any]({
+          case (_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for termination")
+          case other               ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
+        }, {
+          case (_, t: Terminated) ⇒
             ctx.cancelReceiveTimeout()
             run(ctx, tail, f(t, value))
           case other ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
-        }
+        })
       case Nil ⇒ Stopped
     }
 }

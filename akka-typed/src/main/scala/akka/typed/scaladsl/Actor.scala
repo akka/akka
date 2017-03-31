@@ -300,23 +300,25 @@ object Actor {
    * for logging or tracing what a certain Actor does.
    */
   final case class Tap[T](
-    onSignal: (ActorContext[T], Signal) ⇒ _,
-    onMsg:    (ActorContext[T], T) ⇒ _,
-    behavior: Behavior[T]) extends ExtensibleBehavior[T] {
+    onSignal:  (ActorContext[T], Signal) ⇒ _,
+    onMessage: (ActorContext[T], T) ⇒ _,
+    behavior:  Behavior[T]
+  ) extends ExtensibleBehavior[T] {
+
     private def canonical(behv: Behavior[T]): Behavior[T] =
       if (isUnhandled(behv)) Unhandled
       else if (behv eq SameBehavior) Same
-      else if (isAlive(behv)) Tap(onSignal, onMsg, behv)
+      else if (isAlive(behv)) Tap(onSignal, onMessage, behv)
       else Stopped
     override def management(ctx: AC[T], signal: Signal): Behavior[T] = {
       onSignal(ctx, signal)
       canonical(Behavior.interpretSignal(behavior, ctx, signal))
     }
     override def message(ctx: AC[T], msg: T): Behavior[T] = {
-      onMsg(ctx, msg)
+      onMessage(ctx, msg)
       canonical(Behavior.interpretMessage(behavior, ctx, msg))
     }
-    override def toString = s"Tap(${LineNumbers(onSignal)},${LineNumbers(onMsg)},$behavior)"
+    override def toString = s"Tap(${LineNumbers(onSignal)},${LineNumbers(onMessage)},$behavior)"
   }
 
   /**

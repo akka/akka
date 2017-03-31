@@ -4,17 +4,17 @@
 package akka.typed
 package internal
 
+import akka.Done
+import akka.typed.scaladsl.Actor._
+import akka.util.Timeout
 import org.junit.runner.RunWith
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest._
-import org.scalatest.exceptions.TestFailedException
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
-import akka.util.Timeout
-import akka.Done
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually with ConversionCheckedTripleEquals {
@@ -40,7 +40,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
     }
 
     def `must start the guardian actor and terminate when it terminates`(): Unit = {
-      val t = withSystem("a", Total[Probe] { p ⇒ p.replyTo ! p.msg; Stopped }, doTerminate = false) { sys ⇒
+      val t = withSystem("a", Stateful[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; Stopped }, doTerminate = false) { sys ⇒
         val inbox = Inbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually { inbox.hasMessages should ===(true) }
@@ -53,11 +53,14 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
 
     def `must terminate the guardian actor`(): Unit = {
       val inbox = Inbox[String]("terminate")
-      val sys = system("terminate", Full[Probe] {
-        case Sig(ctx, PostStop) ⇒
+      val sys = system("terminate", Stateful[Probe]({
+        case (_, _) ⇒ Unhandled
+      }, {
+        case (ctx, PostStop) ⇒
           inbox.ref ! "done"
           Same
-      })
+      }
+      ))
       sys.terminate().futureValue
       inbox.receiveAll() should ===("done" :: Nil)
     }
@@ -113,7 +116,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
 
         case class Doner(ref: ActorRef[Done])
 
-        val ref1, ref2 = sys.systemActorOf(Static[Doner](_.ref ! Done), "empty").futureValue
+        val ref1, ref2 = sys.systemActorOf(Stateless[Doner] { case (_, doner) ⇒ doner.ref ! Done }, "empty").futureValue
         (ref1 ? Doner).futureValue should ===(Done)
         (ref2 ? Doner).futureValue should ===(Done)
         val RE = "(\\d+)-empty".r

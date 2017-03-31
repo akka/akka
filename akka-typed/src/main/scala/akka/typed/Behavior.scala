@@ -138,6 +138,15 @@ object Behavior {
    */
   @SerialVersionUID(1L)
   private[akka] object StoppedBehavior extends Behavior[Nothing] {
+    /*
+    override def management(ctx: ActorContext[Nothing], msg: Signal): Behavior[Nothing] = {
+      assert(
+        msg == PostStop || msg.isInstanceOf[Terminated],
+        s"stoppedBehavior received $msg (only PostStop or Terminated expected)")
+      this
+    }
+    override def message(ctx: ActorContext[Nothing], msg: Nothing): Behavior[Nothing] = throw new UnsupportedOperationException("Not Implemented")
+    */
     override def toString = "Stopped"
   }
 
@@ -210,10 +219,11 @@ object Behavior {
 
   private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] = {
     val result: Behavior[T] = behavior match {
-      case StoppedBehavior | SameBehavior | StoppedBehavior | UnhandledBehavior ⇒ throw new IllegalArgumentException(s"cannot execute with $behavior as behavior")
-      case _: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred should not be passed to interpreter")
-      case IgnoreBehavior ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
-      case EmptyBehavior ⇒ EmptyBehavior.asInstanceOf[Behavior[T]]
+      case SameBehavior | UnhandledBehavior ⇒ throw new IllegalArgumentException(s"cannot execute with $behavior as behavior")
+      case _: DeferredBehavior[_]           ⇒ throw new IllegalArgumentException(s"deferred should not be passed to interpreter")
+      case IgnoreBehavior                   ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
+      case StoppedBehavior                  ⇒ StoppedBehavior.asInstanceOf[Behavior[T]]
+      case EmptyBehavior                    ⇒ EmptyBehavior.asInstanceOf[Behavior[T]]
       case ext: ExtensibleBehavior[_] ⇒
         val actualBehavior = ext.asInstanceOf[ExtensibleBehavior[T]]
         msg match {
