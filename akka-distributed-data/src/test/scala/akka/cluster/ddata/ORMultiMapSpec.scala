@@ -78,15 +78,53 @@ class ORMultiMapSpec extends WordSpec with Matchers {
       val merged2 = m2 merge m1
       merged2.entries should be(expectedMerged)
 
-      // FIXME use full state for removals, until issue #22648 is fixed
-      pending
-
       val merged3 = m1 mergeDelta m2.delta.get
       merged3.entries should be(expectedMerged)
 
       val merged4 = m2 mergeDelta m1.delta.get
       merged4.entries should be(expectedMerged)
     }
+  }
+
+  "be able to have its entries correctly merged with another ORMultiMap with overlapping entries 2" in {
+    val m1 = ORMultiMap()
+      .addBinding(node1, "b", "B1")
+    val m2 = ORMultiMap()
+      .addBinding(node2, "b", "B2")
+      .remove(node2, "b")
+
+    // merge both ways
+
+    val expectedMerged = Map(
+      "b" → Set("B1"))
+
+    val merged1 = m1 merge m2
+    merged1.entries should be(expectedMerged)
+
+    val merged2 = m2 merge m1
+    merged2.entries should be(expectedMerged)
+
+    val merged3 = m1 mergeDelta m2.delta.get
+    merged3.entries should be(expectedMerged)
+
+    val merged4 = m2 mergeDelta m1.delta.get
+    merged4.entries should be(expectedMerged)
+  }
+
+  "not have anomalies for remove+updated scenario and deltas" in {
+    val m2a = ORMultiMap.empty[String, String].addBinding(node1, "q", "Q").removeBinding(node1, "q", "Q")
+    val m1 = ORMultiMap.empty[String, String].addBinding(node1, "z", "Z").addBinding(node2, "x", "X")
+      .removeBinding(node1, "z", "Z")
+
+    val m2 = m2a.resetDelta.removeBinding(node2, "a", "A")
+
+    val merged1 = m1 merge m2
+
+    merged1.contains("a") should be(false)
+
+    val merged2 = m1 mergeDelta m2.delta.get
+
+    merged2.contains("a") should be(false)
   }
 
   "be able to get all bindings for an entry and then reduce them upon putting them back" in {
@@ -117,16 +155,13 @@ class ORMultiMapSpec extends WordSpec with Matchers {
   }
 
   "not have usual anomalies for remove+addBinding scenario and delta-deltas" in {
-    // FIXME use full state for removals, until issue #22648 is fixed
-    pending
-
     val m1 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
     val m2 = ORMultiMap.emptyWithValueDeltas[String, String].put(node2, "c", Set("C"))
 
     val merged1 = m1 merge m2
 
     val m3 = merged1.resetDelta.remove(node1, "b")
-    val m4 = merged1.resetDelta.addBinding(node1, "b", "B2")
+    val m4 = m3.resetDelta.addBinding(node1, "b", "B2")
 
     val merged2 = m3 merge m4
 
@@ -140,17 +175,26 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     merged3.entries("b") should be(Set("B2"))
     merged3.entries("c") should be(Set("C"))
 
-    val merged4 = merged1 mergeDelta m3.delta.get.merge(m4.delta.get)
+    val merged4 = merged1 merge m3 merge m4
 
     merged4.entries("a") should be(Set("A"))
     merged4.entries("b") should be(Set("B2"))
     merged4.entries("c") should be(Set("C"))
+
+    val merged5 = merged1 mergeDelta m3.delta.get mergeDelta m4.delta.get
+
+    merged5.entries("a") should be(Set("A"))
+    merged5.entries("b") should be(Set("B2"))
+    merged5.entries("c") should be(Set("C"))
+
+    val merged6 = merged1 mergeDelta m3.delta.get.merge(m4.delta.get)
+
+    merged6.entries("a") should be(Set("A"))
+    merged6.entries("b") should be(Set("B2"))
+    merged6.entries("c") should be(Set("C"))
   }
 
   "not have usual anomalies for remove+addBinding scenario and delta-deltas 2" in {
-    // FIXME use full state for removals, until issue #22648 is fixed
-    pending
-
     // the new delta-delta ORMultiMap is free from this anomaly
     val m1 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).put(node1, "b", Set("B"))
     val m2 = ORMultiMap.emptyWithValueDeltas[String, String].put(node2, "c", Set("C"))
@@ -405,6 +449,80 @@ class ORMultiMapSpec extends WordSpec with Matchers {
 
     merged12.entries("a") should be(Set("A"))
     merged12.entries("b") should be(Set("B2", "B3"))
+  }
+
+  "work with tombstones for ORMultiMap.withValueDeltas and its delta-delta operations" in {
+    // ORMultiMap.withValueDeltas has the following (public) interface:
+    // put - place (or replace) a value in a destructive way - no tombstone is created
+    //       this can be seen in the relevant delta: PutDeltaOp(AddDeltaOp(ORSet(a)),(a,ORSet()),ORMultiMapWithValueDeltasTag)
+    // remove - to avoid anomalies that ORMultiMap has, value for the key being removed is being cleared
+    //          before key removal, this can be seen in the following deltas created by the remove op (depending on situation):
+    //          DeltaGroup(Vector(PutDeltaOp(AddDeltaOp(ORSet(a)),(a,ORSet()),ORMultiMapWithValueDeltasTag), RemoveKeyDeltaOp(RemoveDeltaOp(ORSet(a)),a,ORMultiMapWithValueDeltasTag)))
+    //          DeltaGroup(Vector(UpdateDeltaOp(AddDeltaOp(ORSet(c)),Map(c -> FullStateDeltaOp(ORSet())),ORMultiMapWithValueDeltasTag), RemoveKeyDeltaOp(RemoveDeltaOp(ORSet(c)),c,ORMultiMapWithValueDeltasTag)))
+    //          after applying the remove operation the tombstone for the given map looks as follows: Map(a -> ORSet()) (or Map(c -> ORSet()) )
+
+    val m1 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A"))
+    val m2 = m1.resetDelta.remove(node1, "a")
+
+    val m3 = m1.mergeDelta(m2.delta.get)
+    val m4 = m1.merge(m2)
+
+    m3.underlying.values("a").elements should ===(Set()) // tombstone for 'a' - but we can probably optimize that away, read on
+    m4.underlying.values("a").elements should ===(Set()) // tombstone for 'a' - but we can probably optimize that away, read on
+
+    val m5 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A1"))
+    (m3 mergeDelta m5.delta.get).entries("a") should ===(Set("A1"))
+    (m4 mergeDelta m5.delta.get).entries("a") should ===(Set("A1"))
+    (m4 merge m5).entries("a") should ===(Set("A1"))
+
+    // addBinding - add a binding for a certain value - no tombstone is created
+    //              this operation works through "updated" call of the underlying ORMap, that is not exposed
+    //              in the ORMultiMap interface
+    //              the side-effect of addBinding is that it can lead to anomalies with the standard "ORMultiMap"
+
+    // removeBinding - remove binding for a certain value, and if there are no more remaining elements, remove
+    //                 the now superfluous key, please note that for .withValueDeltas variant tombstone will be created
+
+    val um1 = ORMultiMap.emptyWithValueDeltas[String, String].addBinding(node1, "a", "A")
+    val um2 = um1.resetDelta.removeBinding(node1, "a", "A")
+
+    val um3 = um1.mergeDelta(um2.delta.get)
+    val um4 = um1.merge(um2)
+
+    um3.underlying.values("a").elements should ===(Set()) // tombstone for 'a' - but we can probably optimize that away, read on
+    um4.underlying.values("a").elements should ===(Set()) // tombstone for 'a' - but we can probably optimize that away, read on
+
+    val um5 = ORMultiMap.emptyWithValueDeltas[String, String].addBinding(node1, "a", "A1")
+    (um3 mergeDelta um5.delta.get).entries("a") should ===(Set("A1"))
+    (um4 mergeDelta um5.delta.get).entries("a") should ===(Set("A1"))
+    (um4 merge um5).entries("a") should ===(Set("A1"))
+
+    // replaceBinding - that would first addBinding for new binding and then removeBinding for old binding
+    //                  so no tombstone would be created
+
+    // so the only option to create a tombstone with non-zero (!= Set() ) contents would be to call removeKey (not remove!)
+    // for the underlying ORMap (or have a removeKeyOp delta that does exactly that)
+    // but this is not possible in applications, as both remove and removeKey operations are API of internal ORMap
+    // and are not externally exposed in the ORMultiMap, and deltas are causal, so removeKeyOp delta cannot arise
+    // without previous delta containing 'clear' or 'put' operation setting the tombstone at Set()
+    // the example shown below cannot happen in practice
+
+    val tm1 = new ORMultiMap(ORMultiMap.emptyWithValueDeltas[String, String].addBinding(node1, "a", "A").underlying.removeKey(node1, "a"), true)
+    tm1.underlying.values("a").elements should ===(Set("A")) // tombstone
+    tm1.addBinding(node1, "a", "A1").entries("a") should be(Set("A", "A1"))
+    val tm2 = ORMultiMap.emptyWithValueDeltas[String, String].put(node1, "a", Set("A")).resetDelta.addBinding(node1, "a", "A1")
+    tm1.mergeDelta(tm2.delta.get).entries("a") should be(Set("A", "A1"))
+    tm1.merge(tm2).entries("a") should be(Set("A", "A1"))
+    val tm3 = new ORMultiMap(ORMultiMap.emptyWithValueDeltas[String, String].addBinding(node1, "a", "A").underlying.remove(node1, "a"), true)
+    tm3.underlying.contains("a") should ===(false) // no tombstone, because remove not removeKey
+    tm3.mergeDelta(tm2.delta.get).entries should ===(Map.empty[String, String]) // no tombstone - update delta could not be applied
+    tm3.merge(tm2).entries should ===(Map.empty[String, String])
+
+    // This situation gives us possibility of removing the impact of tombstones altogether, as the only valid value for tombstone
+    // created by means of either API call or application of delta propagation would be Set()
+    // then the tombstones being only empty sets can be entirely cleared up
+    // because the merge delta operation will use in that case the natural zero from the delta.
+    // Thus in case of valid API usage and normal operation of delta propagation no tombstones will be created.
   }
 
   "have unapply extractor" in {
