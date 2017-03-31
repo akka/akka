@@ -377,7 +377,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           (subj, child, log)
       }.expectMessage(expectTimeout) {
         case (msg, (subj, child, log)) ⇒
-          msg should equal(ChildEvent(GotSignal(PreRestart)) :: Nil)
+          msg should ===(ChildEvent(GotSignal(PreRestart)))
           log.assertDone(expectTimeout)
           child ! BecomeInert(self) // necessary to avoid PostStop/Terminated interference
           (subj, child)

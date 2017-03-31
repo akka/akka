@@ -7,6 +7,7 @@ package patterns
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 import akka.event.Logging
+import akka.typed.Behavior.{ DeferredBehavior, SameBehavior, StoppedBehavior, UnhandledBehavior }
 import akka.typed.scaladsl.Actor._
 
 /**
@@ -20,36 +21,51 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
   behavior: Behavior[T] = initialBehavior) extends ExtensibleBehavior[T] {
 
   private def restart(ctx: ActorContext[T]): Behavior[T] = {
-    Behavior.preStart(behavior, ctx)
+    try Behavior.interpretSignal(behavior, ctx, PreRestart) catch { case NonFatal(_) ⇒ }
+    Behavior.preStart(initialBehavior, ctx)
   }
 
-  private def canonical(b: Behavior[T]): Behavior[T] =
+  private def canonical(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
     if (Behavior.isUnhandled(b)) Unhandled
     else if (b eq Behavior.SameBehavior) Same
     else if (!Behavior.isAlive(b)) Stopped
     else if (b eq behavior) Same
-    else Restarter[T, Thr](initialBehavior, resume)(b)
+    else {
+      b match {
+        case d: DeferredBehavior[_] ⇒ canonical(Behavior.undefer(d.asInstanceOf[DeferredBehavior[T]], ctx), ctx)
+        case b                      ⇒ Restarter[T, Thr](initialBehavior, resume)(b)
+      }
+    }
+
+  private def preStart(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] = b match {
+    case d: DeferredBehavior[_] ⇒ Behavior.undefer(d.asInstanceOf[DeferredBehavior[T]], ctx)
+    case b                      ⇒ b
+  }
 
   override def management(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     val b =
-      try Behavior.interpretSignal(behavior, ctx, signal)
-      catch {
+      try {
+        val startedBehavior = preStart(behavior, ctx)
+        Behavior.interpretSignal(startedBehavior, ctx, signal)
+      } catch {
         case ex: Thr ⇒
           ctx.system.eventStream.publish(Logging.Error(ex, ctx.self.toString, behavior.getClass, ex.getMessage))
           if (resume) behavior else restart(ctx)
       }
-    canonical(b)
+    canonical(b, ctx)
   }
 
   override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
     val b =
-      try Behavior.interpretMessage(behavior, ctx, msg)
-      catch {
+      try {
+        val startedBehavior = preStart(behavior, ctx)
+        Behavior.interpretMessage(startedBehavior, ctx, msg)
+      } catch {
         case ex: Thr ⇒
           ctx.system.eventStream.publish(Logging.Error(ex, ctx.self.toString, behavior.getClass, ex.getMessage))
           if (resume) behavior else restart(ctx)
       }
-    canonical(b)
+    canonical(b, ctx)
   }
 }
 
@@ -62,13 +78,19 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
  */
 final case class MutableRestarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], resume: Boolean) extends ExtensibleBehavior[T] {
 
-  private[this] var current: Behavior[T] = initialBehavior
+  private[this] var current: Behavior[T] = _
+  private def startCurrent(ctx: ActorContext[T]) = {
+    // we need to pre-start it the first time we have access to a context
+    if (current eq null) current = Behavior.preStart(initialBehavior, ctx)
+  }
 
   private def restart(ctx: ActorContext[T]): Behavior[T] = {
+    try Behavior.interpretSignal(current, ctx, PreRestart) catch { case NonFatal(_) ⇒ }
     Behavior.preStart(initialBehavior, ctx)
   }
 
   override def management(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
+    startCurrent(ctx)
     current =
       try {
         Behavior.interpretSignal(current, ctx, signal)
@@ -81,6 +103,7 @@ final case class MutableRestarter[T, Thr <: Throwable: ClassTag](initialBehavior
   }
 
   override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
+    startCurrent(ctx)
     current =
       try Behavior.interpretMessage(current, ctx, msg)
       catch {

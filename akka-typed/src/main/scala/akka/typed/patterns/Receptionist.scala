@@ -84,6 +84,7 @@ object Receptionist {
   }, {
     case (ctx, Terminated(ref)) ⇒
       behavior(map valueRemoved ref)
+    case x ⇒ Unhandled
   })
 }
 
