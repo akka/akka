@@ -27,10 +27,7 @@ class GraphBuilderBenchmark {
     MaterializationBenchmark.graphWithJunctionsBuilder(complexity)
 
   @Benchmark
-  def graph_with_nested_imports(): RunnableGraph[NotUsed] =
-    MaterializationBenchmark.graphWithNestedImportsBuilder(complexity)
-
-  @Benchmark
   def graph_with_imported_flow(): RunnableGraph[NotUsed] =
     MaterializationBenchmark.graphWithImportedFlowBuilder(complexity)
+
 }
