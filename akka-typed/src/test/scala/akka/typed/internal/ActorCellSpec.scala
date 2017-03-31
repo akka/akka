@@ -100,7 +100,8 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
       val parent = new DebugRef[String](sys.path / "terminate", true)
       val self = new DebugRef[String](sys.path / "terminateSelf", true)
       val ex = new AssertionError
-      val cell = new ActorCell(sys, Deferred[String](_ ⇒ { parent ! "created"; Stateful[String] { case (s, _) ⇒ throw ex } }), ec, 1000, parent)
+      val behavior = Deferred[String](_ ⇒ { parent ! "created"; Stateful[String] { case (s, _) ⇒ throw ex } })
+      val cell = new ActorCell(sys, behavior, ec, 1000, parent)
       cell.setSelf(self)
       debugCell(cell) {
         ec.queueSize should ===(0)

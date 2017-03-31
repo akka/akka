@@ -31,10 +31,10 @@ object ActorSystemImpl {
   val systemGuardianBehavior: Behavior[SystemCommand] = {
     // TODO avoid depending on dsl here?
     import scaladsl.Actor._
-    Deferred { ctx ⇒
+    Deferred { _ ⇒
       var i = 1
       Stateless {
-        case (_, create: CreateSystemActor[t]) ⇒
+        case (ctx, create: CreateSystemActor[t]) ⇒
           val name = s"$i-${create.name}"
           i += 1
           create.replyTo ! ctx.spawn(create.behavior, name, create.deployment)

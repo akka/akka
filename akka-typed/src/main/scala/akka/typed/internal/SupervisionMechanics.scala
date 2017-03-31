@@ -4,10 +4,11 @@
 package akka.typed
 package internal
 
-import scala.annotation.{ tailrec, switch }
+import scala.annotation.{ switch, tailrec }
 import scala.util.control.NonFatal
 import scala.util.control.Exception.Catcher
 import akka.event.Logging
+import akka.typed.Behavior.DeferredBehavior
 
 /**
  * INTERNAL API
@@ -66,9 +67,10 @@ private[typed] trait SupervisionMechanics[T] {
   }
 
   private def create(): Boolean = {
-    behavior = Behavior.preStart(initialBehavior, ctx)
+    behavior = initialBehavior
     if (system.settings.untyped.DebugLifecycle)
       publish(Logging.Debug(self.path.toString, clazz(behavior), "started"))
+    behavior = Behavior.preStart(behavior, ctx)
     if (!Behavior.isAlive(behavior)) self.sendSystem(Terminate())
     true
   }
@@ -88,7 +90,7 @@ private[typed] trait SupervisionMechanics[T] {
     /*
      * The following order is crucial for things to work properly. Only change this if you're very confident and lucky.
      */
-    try if (a ne null) Behavior.interpretSignal(a, ctx, PostStop)
+    try if (a ne null) Behavior.canonicalize(Behavior.interpretSignal(a, ctx, PostStop), a, ctx)
     catch { case NonFatal(ex) ⇒ publish(Logging.Error(ex, self.path.toString, clazz(a), "failure during PostStop")) }
     finally try tellWatchersWeDied()
     finally try parent.sendSystem(DeathWatchNotification(self, failed))

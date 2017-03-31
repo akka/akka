@@ -40,6 +40,7 @@ private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Ac
 
   override def unhandled(msg: Any): Unit = msg match {
     case Terminated(ref) ⇒ throw a.DeathPactException(toUntyped(ref))
+    case msg: Signal     ⇒ // that's ok
     case other           ⇒ super.unhandled(other)
   }
 

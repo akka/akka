@@ -165,11 +165,13 @@ object Behavior {
     }
 
   def undefer[T](deferredBehavior: DeferredBehavior[T], ctx: ActorContext[T]): Behavior[T] = {
-    deferredBehavior(ctx) match {
+    val behavior = deferredBehavior(ctx)
+
+    behavior match {
       case innerDeffered: DeferredBehavior[T] ⇒ undefer(innerDeffered, ctx)
-      case ext: ExtensibleBehavior[T]         ⇒ ext
-      case StoppedBehavior                    ⇒ StoppedBehavior.asInstanceOf[Behavior[T]]
-      case x                                  ⇒ throw new IllegalStateException(s"deferred cannot return $x as behavior")
+      case ext: ExtensibleBehavior[T] ⇒ ext
+      case StoppedBehavior | EmptyBehavior | UnhandledBehavior | SameBehavior ⇒ behavior
+      case x ⇒ throw new IllegalStateException(s"deferred cannot return $x as behavior")
     }
   }
 
@@ -190,7 +192,7 @@ object Behavior {
    */
   def preStart[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
     validateAsInitial(behavior) match {
-      case d: DeferredBehavior[_] ⇒ undefer(d.asInstanceOf[DeferredBehavior[T]], ctx)
+      case d: DeferredBehavior[_] ⇒ validateAsInitial(undefer(d.asInstanceOf[DeferredBehavior[T]], ctx))
       case x                      ⇒ x
     }
   }
@@ -206,13 +208,13 @@ object Behavior {
   def isUnhandled[T](behavior: Behavior[T]): Boolean = behavior eq UnhandledBehavior
 
   /**
-   * Execute the behavior with the given message and canonicalize the resulting behavior
+   * Execute the behavior with the given message
    */
   def interpretMessage[T](behavior: Behavior[T], ctx: ActorContext[T], msg: T): Behavior[T] =
     interpret(behavior, ctx, msg)
 
   /**
-   * Execute the behavior with the given signal and canonicalize the resulting behavior
+   * Execute the behavior with the given signal
    */
   def interpretSignal[T](behavior: Behavior[T], ctx: ActorContext[T], signal: Signal): Behavior[T] =
     interpret(behavior, ctx, signal)
@@ -223,7 +225,7 @@ object Behavior {
       case _: DeferredBehavior[_]           ⇒ throw new IllegalArgumentException(s"deferred should not be passed to interpreter")
       case IgnoreBehavior                   ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case StoppedBehavior                  ⇒ StoppedBehavior.asInstanceOf[Behavior[T]]
-      case EmptyBehavior                    ⇒ EmptyBehavior.asInstanceOf[Behavior[T]]
+      case EmptyBehavior                    ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case ext: ExtensibleBehavior[_] ⇒
         val actualBehavior = ext.asInstanceOf[ExtensibleBehavior[T]]
         msg match {
@@ -232,6 +234,10 @@ object Behavior {
         }
     }
 
-    canonicalize(result, behavior, ctx)
+    result match {
+      case d: DeferredBehavior[_] ⇒ undefer(d.asInstanceOf[DeferredBehavior[T]], ctx)
+      case _                      ⇒ result
+    }
+
   }
 }

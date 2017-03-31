@@ -58,6 +58,7 @@ object ActorCell {
   final val SuspendedState = 1
   final val SuspendedWaitForChildrenState = 2
 
+  /** compile time constant */
   final val Debug = false
 }
 
@@ -323,7 +324,7 @@ private[typed] class ActorCell[T](
 
   protected def next(b: Behavior[T], msg: Any): Unit = {
     if (Behavior.isUnhandled(b)) unhandled(msg)
-    behavior = b
+    behavior = Behavior.canonicalize(b, behavior, ctx)
     if (!Behavior.isAlive(behavior)) self.sendSystem(Terminate())
   }
 
@@ -351,7 +352,7 @@ private[typed] class ActorCell[T](
    */
   private def processMessage(msg: T): Unit = {
     if (Debug) println(s"[$thread] $self processing message $msg")
-    next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+    next(Behavior.interpretMessage(behavior, this, msg), msg)
     if (Thread.interrupted())
       throw new InterruptedException("Interrupted while processing actor messages")
   }

@@ -140,14 +140,15 @@ object ActorContextSpec {
           }
         case BecomeCareless(replyTo) ⇒
           replyTo ! BecameCareless
-          Actor.Stateful(
-            (ctx, message) ⇒ Actor.Unhandled,
-            (ctx, signal) ⇒ signal match {
-              case Terminated(_) ⇒ Actor.Unhandled
-              case sig ⇒
-                monitor ! GotSignal(sig)
-                Actor.Same
-            })
+          Actor.Stateful[Command]({
+            case (_, _) ⇒ Actor.Unhandled
+          }, {
+            case (_, Terminated(_)) ⇒ Actor.Unhandled
+            case (_, sig) ⇒
+              monitor ! GotSignal(sig)
+              Actor.Same
+
+          })
         case GetAdapter(replyTo, name) ⇒
           replyTo ! Adapter(ctx.spawnAdapter(identity, name))
           Actor.Same
