@@ -129,7 +129,7 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
         availableForRemove.toVector(rnd.nextInt(availableForRemove.size))
     }
 
-    (0 to (60 + rnd.nextInt(10))).map { _ ⇒
+    (0 to (120 + rnd.nextInt(10))).map { _ ⇒
       rnd.nextInt(6) match {
         case 0 ⇒ Delay(rnd.nextInt(500))
         case 1 ⇒ Incr(rndPnCounterkey(), rnd.nextInt(100), consistency())
