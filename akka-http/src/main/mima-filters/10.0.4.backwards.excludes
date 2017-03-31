@@ -1,3 +1,0 @@
-# Provide Decoding Response example for Java #760
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.coding.Encoder.encodeMessage")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.coding.Decoder.decodeMessage")

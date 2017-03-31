@@ -6,8 +6,11 @@ package docs.http.scaladsl
 
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.concurrent.ScalaFutures
+import scala.concurrent.duration._
+import akka.testkit.AkkaSpec
 
-class HttpClientDecodingExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
+class HttpClientDecodingExampleSpec extends AkkaSpec with CompileOnlySpec with ScalaFutures {
   "single-request-decoding-example" in compileOnlySpec {
     //#single-request-decoding-example
     import akka.actor.ActorSystem
@@ -40,11 +43,15 @@ class HttpClientDecodingExampleSpec extends WordSpec with Matchers with CompileO
           NoCoding
       }
 
-      decoder.decode(response)
+      decoder.decodeMessage(response)
     }
 
     val futureResponses: Future[Seq[HttpResponse]] =
       Future.traverse(requests)(http.singleRequest(_).map(decodeResponse))
+
+    futureResponses.futureValue.foreach { resp =>
+      system.log.info(s"response is ${resp.toStrict(1.second).futureValue}")
+    }
 
     system.terminate()
     //#single-request-decoding-example
