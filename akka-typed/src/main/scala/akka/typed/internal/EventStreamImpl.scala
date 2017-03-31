@@ -27,7 +27,6 @@ import akka.typed.scaladsl.AskPattern
  */
 private[typed] class EventStreamImpl(private val debug: Boolean)(implicit private val timeout: Timeout) extends EventStream {
   import e.Logging._
-  import ScalaDSL._
   import EventStreamImpl._
 
   private val unsubscriberPromise = Promise[ActorRef[Command]]
@@ -40,26 +39,30 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
   def startUnsubscriber(sys: ActorSystem[Nothing]): Unit =
     unsubscriberPromise.completeWith(sys.systemActorOf(unsubscriberBehavior, "eventStreamUnsubscriber"))
 
-  private val unsubscriberBehavior = Deferred { () ⇒
-    if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $this"))
-    Full[Command] {
-      case Msg(ctx, Register(actor)) ⇒
-        if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
-        ctx.watch[Nothing](actor)
-        Same
+  private val unsubscriberBehavior = {
+    // TODO avoid depending on dsl here?
+    import scaladsl.Actor.{ Deferred, Stateful, Same }
+    Deferred[Command] { _ ⇒
+      if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $this"))
+      Stateful[Command]({
+        case (ctx, Register(actor)) ⇒
+          if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
+          ctx.watch[Nothing](actor)
+          Same
 
-      case Msg(ctx, UnregisterIfNoMoreSubscribedChannels(actor)) if hasSubscriptions(actor) ⇒ Same
-      // hasSubscriptions can be slow, but it's better for this actor to take the hit than the EventStream
+        case (ctx, UnregisterIfNoMoreSubscribedChannels(actor)) if hasSubscriptions(actor) ⇒ Same
+        // hasSubscriptions can be slow, but it's better for this actor to take the hit than the EventStream
 
-      case Msg(ctx, UnregisterIfNoMoreSubscribedChannels(actor)) ⇒
-        if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unwatching $actor, since has no subscriptions"))
-        ctx.unwatch[Nothing](actor)
-        Same
-
-      case Sig(ctx, Terminated(actor)) ⇒
-        if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unsubscribe $actor from $this, because it was terminated"))
-        unsubscribe(actor)
-        Same
+        case (ctx, UnregisterIfNoMoreSubscribedChannels(actor)) ⇒
+          if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unwatching $actor, since has no subscriptions"))
+          ctx.unwatch[Nothing](actor)
+          Same
+      }, {
+        case (_, Terminated(actor)) ⇒
+          if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unsubscribe $actor from $this, because it was terminated"))
+          unsubscribe(actor)
+          Same
+      })
     }
   }
 
@@ -142,9 +145,13 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
 
   private val StandardOutLogger = new StandardOutLogger
 
-  private val UnhandledMessageForwarder = Static[a.UnhandledMessage] {
-    case a.UnhandledMessage(msg, sender, rcp) ⇒
-      publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
+  private val UnhandledMessageForwarder = {
+    // TODO avoid depending on dsl here?
+    import scaladsl.Actor.Stateless
+    Stateless[a.UnhandledMessage] {
+      case (_, a.UnhandledMessage(msg, sender, rcp)) ⇒
+        publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
+    }
   }
 
   def startStdoutLogger(settings: Settings) {

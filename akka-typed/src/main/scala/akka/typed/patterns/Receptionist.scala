@@ -3,11 +3,11 @@
  */
 package akka.typed.patterns
 
-import akka.typed.ScalaDSL._
 import akka.typed.ActorRef
 import akka.typed.Behavior
 import akka.typed.Terminated
 import akka.util.TypedMultiMap
+import akka.typed.scaladsl.Actor._
 
 /**
  * A Receptionist is an entry point into an Actor hierarchy where select Actors
@@ -72,18 +72,19 @@ object Receptionist {
 
   private type KV[K <: AbstractServiceKey] = ActorRef[K#Type]
 
-  private def behavior(map: TypedMultiMap[AbstractServiceKey, KV]): Behavior[Command] = Full {
-    case Msg(ctx, r: Register[t]) ⇒
+  private def behavior(map: TypedMultiMap[AbstractServiceKey, KV]): Behavior[Command] = Stateful[Command]({
+    case (ctx, r: Register[t]) ⇒
       ctx.watch(r.address)
       r.replyTo ! Registered(r.key, r.address)
       behavior(map.inserted(r.key)(r.address))
-    case Msg(ctx, f: Find[t]) ⇒
+    case (ctx, f: Find[t]) ⇒
       val set = map get f.key
       f.replyTo ! Listing(f.key, set)
       Same
-    case Sig(ctx, Terminated(ref)) ⇒
+  }, {
+    case (ctx, Terminated(ref)) ⇒
       behavior(map valueRemoved ref)
-  }
+  })
 }
 
 abstract class Receptionist

@@ -6,6 +6,8 @@ package akka.typed
 import akka.{ event ⇒ e }
 import akka.event.Logging.{ LogEvent, LogLevel, StdOutLogger }
 import akka.testkit.{ EventFilter, TestEvent ⇒ TE }
+import akka.typed.Behavior.DeferredBehavior
+
 import scala.annotation.tailrec
 
 /**
@@ -66,14 +68,15 @@ object Logger {
 }
 
 class DefaultLogger extends Logger with StdOutLogger {
-  import ScalaDSL._
   import Logger._
 
-  val initialBehavior =
-    ContextAware[Command] { ctx ⇒
-      Total {
-        case Initialize(eventStream, replyTo) ⇒
-          val log = ctx.spawn(Deferred[AnyRef] { () ⇒
+  val initialBehavior = {
+    // TODO avoid depending on dsl here?
+    import scaladsl.Actor._
+    Deferred[Command] { _ ⇒
+      scaladsl.Actor.Stateful[Command] {
+        case (ctx, Initialize(eventStream, replyTo)) ⇒
+          val log = ctx.spawn(Deferred[AnyRef] { childCtx ⇒
             var filters: List[EventFilter] = Nil
 
             def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
@@ -89,19 +92,23 @@ class DefaultLogger extends Logger with StdOutLogger {
               filters = removeFirst(filters)
             }
 
-            Static {
-              case TE.Mute(filters)   ⇒ filters foreach addFilter
-              case TE.UnMute(filters) ⇒ filters foreach removeFilter
-              case event: LogEvent    ⇒ if (!filter(event)) print(event)
+            Stateless[AnyRef] {
+              case (_, TE.Mute(filters))   ⇒ filters foreach addFilter
+              case (_, TE.UnMute(filters)) ⇒ filters foreach removeFilter
+              case (_, event: LogEvent)    ⇒ if (!filter(event)) print(event)
+              case _                       ⇒ Unhandled
             }
           }, "logger")
+
           eventStream.subscribe(log, classOf[TE.Mute])
           eventStream.subscribe(log, classOf[TE.UnMute])
           ctx.watch(log) // sign death pact
           replyTo ! log
+
           Empty
       }
     }
+  }
 }
 
 class DefaultLoggingFilter(settings: Settings, eventStream: EventStream) extends e.DefaultLoggingFilter(() ⇒ eventStream.logLevel)

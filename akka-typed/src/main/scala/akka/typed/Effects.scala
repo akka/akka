@@ -56,8 +56,8 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
   def currentBehavior: Behavior[T] = current
   def isAlive: Boolean = Behavior.isAlive(current)
 
-  def run(msg: T): Unit = current = Behavior.canonicalize(current.message(this, msg), current)
-  def signal(signal: Signal): Unit = current = Behavior.canonicalize(current.management(this, signal), current)
+  def run(msg: T): Unit = current = Behavior.interpretMessage(current, this, msg)
+  def signal(signal: Signal): Unit = current = Behavior.interpretSignal(current, this, signal)
 
   override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] = {
     val ref = super.spawnAnonymous(behavior)

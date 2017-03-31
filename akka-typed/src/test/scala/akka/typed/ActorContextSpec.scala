@@ -156,7 +156,6 @@ object ActorContextSpec {
       (ctx, signal) ⇒ { monitor ! GotSignal(signal); Actor.Same })
 
   def oldSubject(monitor: ActorRef[Monitor]): Behavior[Command] = {
-    import ScalaDSL._
     FullTotal {
       case Sig(ctx, signal) ⇒
         monitor ! GotSignal(signal)
@@ -660,7 +659,6 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   object `An ActorContext (old-adapted)` extends NormalOld with AdaptedSystem
 
   trait WidenedOld extends Tests {
-    import ScalaDSL._
     override def suite = "widened"
     override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
       oldSubject(ctx.self).widen { case x ⇒ x }

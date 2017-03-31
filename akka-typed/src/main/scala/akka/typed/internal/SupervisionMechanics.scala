@@ -66,11 +66,10 @@ private[typed] trait SupervisionMechanics[T] {
   }
 
   private def create(): Boolean = {
-    behavior = initialBehavior
+    behavior = Behavior.preStart(initialBehavior, ctx)
     if (system.settings.untyped.DebugLifecycle)
       publish(Logging.Debug(self.path.toString, clazz(behavior), "started"))
-    if (Behavior.isAlive(behavior)) next(behavior.management(ctx, PreStart), PreStart)
-    else self.sendSystem(Terminate())
+    if (!Behavior.isAlive(behavior)) self.sendSystem(Terminate())
     true
   }
 
@@ -89,7 +88,7 @@ private[typed] trait SupervisionMechanics[T] {
     /*
      * The following order is crucial for things to work properly. Only change this if you're very confident and lucky.
      */
-    try if (a ne null) a.management(ctx, PostStop)
+    try if (a ne null) Behavior.interpretSignal(a, ctx, PostStop)
     catch { case NonFatal(ex) ⇒ publish(Logging.Error(ex, self.path.toString, clazz(a), "failure during PostStop")) }
     finally try tellWatchersWeDied()
     finally try parent.sendSystem(DeathWatchNotification(self, failed))

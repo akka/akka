@@ -130,7 +130,6 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
 }
 
 object TypedSpec {
-  import ScalaDSL._
   import akka.{ typed ⇒ t }
 
   sealed abstract class Start

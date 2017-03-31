@@ -13,8 +13,6 @@ import org.junit.runner.RunWith
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with ConversionCheckedTripleEquals {
 
-  import ScalaDSL._
-
   val sys = new ActorSystemStub("ActorCellSpec")
   def ec = sys.controlledExecutor
 

@@ -3,7 +3,6 @@
  */
 package akka.typed
 
-import ScalaDSL._
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.junit.runner.RunWith

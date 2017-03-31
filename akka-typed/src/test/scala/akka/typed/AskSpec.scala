@@ -10,8 +10,6 @@ import org.scalatest.concurrent.ScalaFutures
 
 import akka.util.Timeout
 import akka.pattern.AskTimeoutException
-
-import ScalaDSL._
 import akka.typed.scaladsl.AskPattern._
 
 object AskSpec {

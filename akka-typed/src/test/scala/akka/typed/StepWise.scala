@@ -35,7 +35,6 @@ import scala.concurrent.duration.Deadline
  */
 @deprecated("to be replaced by process DSL", "2.4-M2")
 object StepWise {
-  import ScalaDSL._
 
   sealed trait AST
   private final case class Thunk(f: () ⇒ Any) extends AST

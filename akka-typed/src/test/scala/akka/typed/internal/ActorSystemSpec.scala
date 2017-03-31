@@ -18,7 +18,6 @@ import akka.Done
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually with ConversionCheckedTripleEquals {
-  import ScalaDSL._
 
   override implicit val patienceConfig = PatienceConfig(1.second)
 

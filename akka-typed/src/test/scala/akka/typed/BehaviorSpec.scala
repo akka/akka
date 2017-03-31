@@ -180,7 +180,7 @@ class BehaviorSpec extends TypedSpec {
   trait Unhandled extends Common {
     def `must return Unhandled`(): Unit = {
       val Setup(ctx, inbox, aux) = mkCtx()
-      ctx.currentBehavior.message(ctx, Miss) should be(Behavior.unhandledBehavior)
+      ctx.currentBehavior.message(ctx, Miss) should be(Behavior.UnhandledBehavior)
       inbox.receiveAll() should ===(Missed :: Nil)
       checkAux(Miss, aux)
     }
@@ -190,7 +190,7 @@ class BehaviorSpec extends TypedSpec {
     def `must stop`(): Unit = {
       val Setup(ctx, inbox, aux) = mkCtx()
       ctx.run(Stop)
-      ctx.currentBehavior should be(Behavior.stoppedBehavior)
+      ctx.currentBehavior should be(Behavior.StoppedBehavior)
       checkAux(Stop, aux)
     }
   }
@@ -254,7 +254,6 @@ class BehaviorSpec extends TypedSpec {
   }
 
   private def mkFull(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] = {
-    import ScalaDSL.{ Full, Msg, Sig, Same, Unhandled, Stopped }
     Full {
       case Sig(ctx, signal) ⇒
         monitor ! GotSignal(signal)
@@ -290,7 +289,6 @@ class BehaviorSpec extends TypedSpec {
   trait FullTotalBehavior extends Messages with BecomeWithLifecycle with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
     private def behv(monitor: ActorRef[Event], state: State): Behavior[Command] = {
-      import ScalaDSL.{ FullTotal, Msg, Sig, Same, Unhandled, Stopped }
       FullTotal {
         case Sig(ctx, signal) ⇒
           monitor ! GotSignal(signal)
@@ -357,7 +355,6 @@ class BehaviorSpec extends TypedSpec {
   object `A matching Tap Behavior (adapted)` extends MatchingTapBehavior with AdaptedSystem
 
   trait SynchronousSelfBehavior extends Messages with BecomeWithLifecycle with Stoppable {
-    import ScalaDSL._
 
     type Aux = Inbox[Command]
 

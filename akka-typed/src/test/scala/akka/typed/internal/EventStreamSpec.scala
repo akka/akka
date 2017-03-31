@@ -7,7 +7,6 @@ package internal
 import scala.concurrent.duration._
 import akka.Done
 import akka.event.Logging._
-import akka.typed.ScalaDSL._
 import akka.typed.scaladsl.AskPattern._
 import com.typesafe.config.ConfigFactory
 import java.util.concurrent.Executor
