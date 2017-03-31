@@ -86,7 +86,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.2032242"
-     inkscape:cx="245.59014"
+     inkscape:cx="131.80328"
      inkscape:cy="554.19549"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
@@ -104,7 +104,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -128,7 +128,7 @@
          id="tspan3682"
          x="39.623203"
          y="35.7644"
-         style="stroke-width:0.26458332">Object1</tspan></text>
+         style="stroke-width:0.26458332">Actor1</tspan></text>
     <path
        inkscape:connector-curvature="0"
        id="path3686"
@@ -145,7 +145,7 @@
          y="35.7644"
          x="67.291245"
          id="tspan3688"
-         sodipodi:role="line">Object2</tspan><tspan
+         sodipodi:role="line">Actor2</tspan><tspan
          style="stroke-width:0.26458332"
          y="41.938011"
          x="67.291245"
@@ -167,7 +167,7 @@
          id="tspan3694"
          x="94.959274"
          y="35.7644"
-         style="stroke-width:0.26458332">Object3</tspan><tspan
+         style="stroke-width:0.26458332">Actor3</tspan><tspan
          sodipodi:role="line"
          x="94.959274"
          y="41.938011"

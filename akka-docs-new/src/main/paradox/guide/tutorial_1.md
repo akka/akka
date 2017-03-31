@@ -32,7 +32,7 @@ we just build an actor based API which such a network protocol could use. We wil
 
 The architecture of the application will look like this:
 
-ARCH_BOXES_DIAGRAM
+![box diagram of the architecture](diagrams/arch_boxes_diagram.png)
 
 ## Top level architecture
 
@@ -47,7 +47,7 @@ As we have seen in the previous chapters, to create a top-level actor one must c
 not create a "freestanding" actor though, instead, it injects the corresponding actor as a child into an already
 existing tree:
 
-TREE_DIAGRAM
+![box diagram of the architecture](diagrams/actor_top_tree.png)
 
 As you see, creating actors from the "top" injects those actors under the path `/user/`, so for example creating
 an actor named `myActor` will end up having the path `/user/myActor`. In fact, there are three already existing
@@ -200,7 +200,7 @@ are responsible to decide on the fate of failed children. At first, it might not
 to such a tree, but in practice, this is easier than it looks. All we need to do is to rewrite our architecture diagram
 that contained nested boxes into a tree:
 
-ARCH_TREE_DIAGRAM
+![actor tree diagram of the architecture](diagrams/arch_tree_diagram.png)
 
 In simple terms, every component manages the lifecycle of the subcomponents. No subcomponent can outlive the parent
 component. This is exactly how the actor hierarchy works. Also, it is desirable that a component handles the failure
