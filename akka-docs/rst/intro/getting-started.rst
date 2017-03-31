@@ -14,14 +14,11 @@ for Java 6 in case your project can not upgrade to Java 8 just yet. It also incl
 Getting Started Guides and Template Projects
 --------------------------------------------
 
-The best way to start learning Akka is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-and try out one of Akka Template Projects.
-
 Download
 --------
 
 There are several ways to download Akka. You can download it as part of the Lightbend Platform
-(as described above). You can download the full distribution, which includes all modules. 
+(as described above). You can download the full distribution, which includes all modules.
 Or you can use a build tool like Maven or SBT to download dependencies from the Akka Maven repository.
 
 Modules
@@ -108,9 +105,8 @@ For previous Akka versions:
 Using Akka with Maven
 ---------------------
 
-The simplest way to get started with Akka and Maven is to check out the
-`Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-tutorial named `Akka Main in Java <http://www.lightbend.com/activator/template/akka-sample-main-java>`_.
+The simplest way to get started with Akka and Maven is to download the ready to run sample
+named `Akka Main in Java <@exampleCodeService@/akka-samples-main-java>`_.
 
 Since Akka is published to Maven Central (for versions since 2.1-M2), it is
 enough to add the Akka dependencies to the POM. For example, here is the
@@ -144,8 +140,11 @@ For snapshot versions, the snapshot repository needs to be added as well:
 Using Akka with SBT
 -------------------
 
-The simplest way to get started with Akka and SBT is to use
-`Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ with one of the SBT `templates <https://www.lightbend.com/activator/templates>`_.
+The simplest way to get started with Akka and SBT is to use a `Gitter8 <http://www.foundweekends.org/giter8/>`_ template
+named `Hello Akka! <https://github.com/akka/hello-akka.g8>`_. If you have `sbt` already installed, you can create a project
+from this template by running::
+
+   sbt new akka/hello-akka.g8
 
 Summary of the essential parts for using Akka with SBT:
 

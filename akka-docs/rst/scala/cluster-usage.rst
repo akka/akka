@@ -79,9 +79,10 @@ An actor that uses the cluster extension may look like this:
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
-The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-and open the tutorial named `Akka Cluster Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-cluster-scala>`_.
-It contains instructions of how to run the ``SimpleClusterApp``.
+The easiest way to run this example yourself is to download the ready to run
+`Akka Cluster Sample with Scala <@exampleCodeService@/akka-samples-cluster-scala>`_
+together with the tutorial. It contains instructions on how to run the ``SimpleClusterApp``.
+The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-cluster-scala>`_.
 
 Joining to Seed Nodes
 ^^^^^^^^^^^^^^^^^^^^^
@@ -169,7 +170,7 @@ It can also be performed programmatically with ``Cluster(system).down(address)``
 
 A pre-packaged solution for the downing problem is provided by
 `Split Brain Resolver <http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html>`_,
-which is part of the `Lightbend Reactive Platform <http://www.lightbend.com/platform>`_. 
+which is part of the `Lightbend Reactive Platform <http://www.lightbend.com/platform>`_.
 If you don’t use RP, you should anyway carefully read the `documentation <http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html>`_
 of the Split Brain Resolver and make sure that the solution you are using handles the concerns
 described there.
@@ -218,13 +219,13 @@ It can also be performed programmatically with:
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving.
 
-The :ref:`coordinated-shutdown-scala` will automatically run when the cluster node sees itself as 
-``Exiting``, i.e. leaving from another node will trigger the shutdown process on the leaving node. 
-Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and 
-Cluster Sharding are added automatically when Akka Cluster is used, i.e. running the shutdown 
-process will also trigger the graceful leaving if it's not already in progress. 
+The :ref:`coordinated-shutdown-scala` will automatically run when the cluster node sees itself as
+``Exiting``, i.e. leaving from another node will trigger the shutdown process on the leaving node.
+Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and
+Cluster Sharding are added automatically when Akka Cluster is used, i.e. running the shutdown
+process will also trigger the graceful leaving if it's not already in progress.
 
-Normally this is handled automatically, but in case of network failures during this process it might still 
+Normally this is handled automatically, but in case of network failures during this process it might still
 be necessary to set the node’s status to ``Down`` in order to complete the removal.
 
 .. _weakly_up_scala:
@@ -236,7 +237,7 @@ If a node is ``unreachable`` then gossip convergence is not possible and therefo
 ``leader`` actions are also not possible. However, we still might want new nodes to join
 the cluster in this scenario.
 
-``Joining`` members will be promoted to ``WeaklyUp`` and become part of the cluster if 
+``Joining`` members will be promoted to ``WeaklyUp`` and become part of the cluster if
 convergence can't be reached. Once gossip convergence is reached, the leader will move ``WeaklyUp``
 members to ``Up``.
 
@@ -332,9 +333,10 @@ network failures and JVM crashes, in addition to graceful termination of watched
 actor. Death watch generates the ``Terminated`` message to the watching actor when the
 unreachable cluster node has been downed and removed.
 
-The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ tutorial named
-`Akka Cluster Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-cluster-scala>`_.
-contains the full source code and instructions of how to run the **Worker Dial-in Example**.
+The easiest way to run **Worker Dial-in Example** example yourself is to download the ready to run
+`Akka Cluster Sample with Scala <@exampleCodeService@/akka-samples-cluster-scala>`_
+together with the tutorial. It contains instructions on how to run the **Worker Dial-in Example** sample.
+The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-cluster-scala>`_.
 
 Node Roles
 ^^^^^^^^^^
@@ -624,9 +626,10 @@ The router is configured with ``routees.paths``:::
 This means that user requests can be sent to ``StatsService`` on any node and it will use
 ``StatsWorker`` on all nodes.
 
-The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ tutorial named
-`Akka Cluster Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-cluster-scala>`_.
-contains the full source code and instructions of how to run the **Router Example with Group of Routees**.
+The easiest way to run **Router Example with Group of Routees** example yourself is to download the ready to run
+`Akka Cluster Sample with Scala <@exampleCodeService@/akka-samples-cluster-scala>`_
+together with the tutorial. It contains instructions on how to run the **Router Example with Group of Routees** sample.
+The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-cluster-scala>`_.
 
 Router with Pool of Remote Deployed Routees
 -------------------------------------------
@@ -700,9 +703,10 @@ All nodes start ``ClusterSingletonProxy`` and the ``ClusterSingletonManager``. T
       }
     }
 
-The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ tutorial named
-`Akka Cluster Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-cluster-scala>`_.
-contains the full source code and instructions of how to run the **Router Example with Pool of Remote Deployed Routees**.
+The easiest way to run **Router Example with Pool of Remote Deployed Routees** example yourself is to download the ready to run
+`Akka Cluster Sample with Scala <@exampleCodeService@/akka-samples-cluster-scala>`_
+together with the tutorial. It contains instructions on how to run the **Router Example with Pool of Remote Deployed Routees** sample.
+The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-cluster-scala>`_.
 
 Cluster Metrics
 ^^^^^^^^^^^^^^^
@@ -775,7 +779,7 @@ Management
 HTTP
 ----
 
-Information and management of the cluster is available with a HTTP API. 
+Information and management of the cluster is available with a HTTP API.
 See documentation of `akka/akka-cluster-management <https://github.com/akka/akka-cluster-management>`_.
 
 .. _cluster_jmx_scala:
@@ -803,7 +807,7 @@ Command Line
 ------------
 
 .. warning::
-  **Deprecation warning** - The command line script has been deprecated and is scheduled for removal 
+  **Deprecation warning** - The command line script has been deprecated and is scheduled for removal
   in the next major version. Use the :ref:`cluster_http_scala` API with `curl <https://curl.haxx.se/>`_
   or similar instead.
 

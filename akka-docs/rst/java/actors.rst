@@ -1,7 +1,7 @@
 .. _actors-java:
 
 ########
- Actors 
+ Actors
 ########
 
 The `Actor Model`_ provides a higher level of abstraction for writing concurrent
@@ -196,8 +196,7 @@ __ Props_
 Techniques for dependency injection and integration with dependency injection frameworks
 are described in more depth in the
 `Using Akka with Dependency Injection <http://letitcrash.com/post/55958814293/akka-dependency-injection>`_
-guideline and the `Akka Java Spring <http://www.lightbend.com/activator/template/akka-java-spring>`_ tutorial
-in Lightbend Activator.
+guideline and the `Akka Java Spring <https://github.com/typesafehub/activator-akka-java-spring>`_ tutorial.
 
 The Inbox
 ---------
@@ -617,7 +616,7 @@ the :meth:`createReceive` method in the :class:`AbstractActor`:
 .. includecode:: code/jdocs/actor/ActorDocTest.java#createReceive
 
 
-The return type is :class:`AbstractActor.Receive` that defines which messages your Actor can handle, 
+The return type is :class:`AbstractActor.Receive` that defines which messages your Actor can handle,
 along with the implementation of how the messages should be processed.
 You can build such behavior with a builder named ``ReceiveBuilder``.
 
@@ -632,7 +631,7 @@ trail, you can split the creation of the builder into multiple statements as in 
 .. includecode:: code/jdocs/actor/GraduallyBuiltActor.java
    :include: imports,actor
 
-Using small methods is a good practice, also in actors. It's recommended to delegate the 
+Using small methods is a good practice, also in actors. It's recommended to delegate the
 actual work of the message processing to methods instead of defining a huge ``ReceiveBuilder``
 with lots of code in each lambda. A well structured actor can look like this:
 
@@ -652,10 +651,10 @@ to `Javaslang Pattern Matching DSL <http://www.javaslang.io/javaslang-jdocs/#_pa
 
 If the validation of the ``ReceiveBuilder`` match logic turns out to be a bottleneck for some of your
 actors you can consider to implement it at lower level by extending ``UntypedAbstractActor`` instead
-of ``AbstractActor``. The partial functions created by the ``ReceiveBuilder`` consist of multiple lambda 
+of ``AbstractActor``. The partial functions created by the ``ReceiveBuilder`` consist of multiple lambda
 expressions for every match statement, where each lambda is referencing the code to be run. This is something
-that the JVM can have problems optimizing and the resulting code might not be as performant as the 
-untyped version. When extending ``UntypedAbstractActor`` each message is received as an untyped 
+that the JVM can have problems optimizing and the resulting code might not be as performant as the
+untyped version. When extending ``UntypedAbstractActor`` each message is received as an untyped
 ``Object`` and you have to inspect and cast it to the actual message type in other ways, like this:
 
 .. includecode:: code/jdocs/actor/ActorDocTest.java#optimized
@@ -786,12 +785,12 @@ before stopping the target actor. Simple cleanup tasks can be handled in ``postS
   within a supervisor you control and only in response to a :class:`Terminated`
   message, i.e. not for top-level actors.
 
-.. _coordinated-shutdown-java:  
-  
+.. _coordinated-shutdown-java:
+
 Coordinated Shutdown
 --------------------
 
-There is an extension named ``CoordinatedShutdown`` that will stop certain actors and 
+There is an extension named ``CoordinatedShutdown`` that will stop certain actors and
 services in a specific order and perform registered tasks during the shutdown process.
 
 The order of the shutdown phases is defined in configuration ``akka.coordinated-shutdown.phases``.
@@ -803,26 +802,26 @@ More phases can be be added in the application's configuration if needed by over
 additional ``depends-on``. Especially the phases ``before-service-unbind``, ``before-cluster-shutdown`` and
 ``before-actor-system-terminate`` are intended for application specific phases or tasks.
 
-The default phases are defined in a single linear order, but the phases can be ordered as a 
+The default phases are defined in a single linear order, but the phases can be ordered as a
 directed acyclic graph (DAG) by defining the dependencies between the phases.
-The phases are ordered with `topological <https://en.wikipedia.org/wiki/Topological_sorting>`_ sort of the DAG. 
+The phases are ordered with `topological <https://en.wikipedia.org/wiki/Topological_sorting>`_ sort of the DAG.
 
 Tasks can be added to a phase with:
 
 .. includecode:: code/jdocs/actor/ActorDocTest.java#coordinated-shutdown-addTask
 
 The returned ``CompletionStage<Done>`` should be completed when the task is completed. The task name parameter
-is only used for debugging/logging. 
+is only used for debugging/logging.
 
-Tasks added to the same phase are executed in parallel without any ordering assumptions. 
+Tasks added to the same phase are executed in parallel without any ordering assumptions.
 Next phase will not start until all tasks of previous phase have been completed.
 
 If tasks are not completed within a configured timeout (see :ref:`reference.conf <config-akka-actor>`)
 the next phase will be started anyway. It is possible to configure ``recover=off`` for a phase
 to abort the rest of the shutdown process if a task fails or is not completed within the timeout.
 
-Tasks should typically be registered as early as possible after system startup. When running 
-the coordinated shutdown tasks that have been registered will be performed but tasks that are 
+Tasks should typically be registered as early as possible after system startup. When running
+the coordinated shutdown tasks that have been registered will be performed but tasks that are
 added too late will not be run.
 
 To start the coordinated shutdown process you can invoke ``runAll`` on the ``CoordinatedShutdown``
@@ -840,9 +839,9 @@ To enable a hard ``System.exit`` as a final action you can configure::
 
 When using :ref:`Akka Cluster <cluster_usage_java>` the ``CoordinatedShutdown`` will automatically run
 when the cluster node sees itself as ``Exiting``, i.e. leaving from another node will trigger
-the shutdown process on the leaving node. Tasks for graceful leaving of cluster including graceful 
-shutdown of Cluster Singletons and Cluster Sharding are added automatically when Akka Cluster is used, 
-i.e. running the shutdown process will also trigger the graceful leaving if it's not already in progress. 
+the shutdown process on the leaving node. Tasks for graceful leaving of cluster including graceful
+shutdown of Cluster Singletons and Cluster Sharding are added automatically when Akka Cluster is used,
+i.e. running the shutdown process will also trigger the graceful leaving if it's not already in progress.
 
 By default, the ``CoordinatedShutdown`` will be run when the JVM process exits, e.g.
 via ``kill SIGTERM`` signal (``SIGINT`` ctrl-c doesn't work). This behavior can be disabled with::
@@ -850,13 +849,13 @@ via ``kill SIGTERM`` signal (``SIGINT`` ctrl-c doesn't work). This behavior can 
   akka.coordinated-shutdown.run-by-jvm-shutdown-hook=off
 
 If you have application specific JVM shutdown hooks it's recommended that you register them via the
-``CoordinatedShutdown`` so that they are running before Akka internal shutdown hooks, e.g. 
+``CoordinatedShutdown`` so that they are running before Akka internal shutdown hooks, e.g.
 those shutting down Akka Remoting (Artery).
 
 .. includecode:: code/jdocs/actor/ActorDocTest.java#coordinated-shutdown-jvm-hook
 
 For some tests it might be undesired to terminate the ``ActorSystem`` via ``CoordinatedShutdown``.
-You can disable that by adding the following to the configuration of the ``ActorSystem`` that is 
+You can disable that by adding the following to the configuration of the ``ActorSystem`` that is
 used in the test::
 
   # Don't terminate ActorSystem via CoordinatedShutdown in tests

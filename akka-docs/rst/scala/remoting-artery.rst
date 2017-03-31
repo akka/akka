@@ -88,7 +88,7 @@ The example above only illustrates the bare minimum of properties you have to ad
 All settings are described in :ref:`remote-configuration-artery-scala`.
 
 .. note::
-  Aeron requires 64bit JVM to work reliably. 
+  Aeron requires 64bit JVM to work reliably.
 
 Canonical address
 ^^^^^^^^^^^^^^^^^
@@ -249,8 +249,8 @@ remote system. This still however may pose a security risk, and one may want to 
 only a specific set of known actors by enabling the whitelist feature.
 
 To enable remote deployment whitelisting set the ``akka.remote.deployment.enable-whitelist`` value to ``on``.
-The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which 
-others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or 
+The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which
+others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
 .. includecode:: ../../../akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala#whitelist-config
@@ -269,7 +269,7 @@ so if network security is not considered as enough protection the classic remoti
 
 Best practice is that Akka remoting nodes should only be accessible from the adjacent network.
 
-It is also security best practice to :ref:`disable the Java serializer <disable-java-serializer-java-artery>` because of 
+It is also security best practice to :ref:`disable the Java serializer <disable-java-serializer-java-artery>` because of
 its multiple `known attack surfaces <https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_.
 
 Untrusted Mode
@@ -291,12 +291,12 @@ a denial of service attack). :class:`PossiblyHarmful` covers the predefined
 messages like :class:`PoisonPill` and :class:`Kill`, but it can also be added
 as a marker trait to user-defined messages.
 
-.. warning:: 
-  
+.. warning::
+
   Untrusted mode does not give full protection against attacks by itself.
   It makes it slightly harder to perform malicious or unintended actions but
   it should be complemented with :ref:`disabled Java serializer <disable-java-serializer-scala-artery>`.
-  Additional protection can be achieved when running in an untrusted network by 
+  Additional protection can be achieved when running in an untrusted network by
   network security (e.g. firewalls).
 
 Messages sent with actor selection are by default discarded in untrusted mode, but
@@ -342,7 +342,7 @@ may not be delivered to the destination:
 
 * during a network partition and the Aeron session is broken, this automatically recovered once the partition is over
 * when sending too many messages without flow control and thereby filling up the outbound send queue (``outbound-message-queue-size`` config)
-* if serialization or deserialization of a message fails (only that message will be dropped) 
+* if serialization or deserialization of a message fails (only that message will be dropped)
 * if an unexpected exception occurs in the remoting infrastructure
 
 In short, Actor message delivery is “at-most-once” as described in :ref:`message-delivery-reliability`
@@ -350,39 +350,39 @@ In short, Actor message delivery is “at-most-once” as described in :ref:`mes
 Some messages in Akka are called system messages and those cannot be dropped because that would result
 in an inconsistent state between the systems. Such messages are used for essentially two features; remote death
 watch and remote deployment. These messages are delivered by Akka remoting with “exactly-once” guarantee by
-confirming each message and resending unconfirmed messages. If a system message anyway cannot be delivered the 
-association with the destination system is irrecoverable failed, and Terminated is signaled for all watched 
+confirming each message and resending unconfirmed messages. If a system message anyway cannot be delivered the
+association with the destination system is irrecoverable failed, and Terminated is signaled for all watched
 actors on the remote system. It is placed in a so called quarantined state. Quarantine usually does not
 happen if remote watch or remote deployment is not used.
 
 Each ``ActorSystem`` instance has an unique identifier (UID), which is important for differentiating between
 incarnations of a system when it is restarted with the same hostname and port. It is the specific
-incarnation (UID) that is quarantined. The only way to recover from this state is to restart one of the 
-actor systems. 
+incarnation (UID) that is quarantined. The only way to recover from this state is to restart one of the
+actor systems.
 
 Messages that are sent to and received from a quarantined system will be dropped. However, it is possible to
 send messages with ``actorSelection`` to the address of a quarantined system, which is useful to probe if the
 system has been restarted.
 
-An association will be quarantined when: 
+An association will be quarantined when:
 
 * Cluster node is removed from the cluster membership.
 * Remote failure detector triggers, i.e. remote watch is used. This is different when :ref:`Akka Cluster <cluster_usage_scala>`
   is used. The unreachable observation by the cluster failure detector can go back to reachable if the network
-  partition heals. A cluster member is not quarantined when the failure detector triggers. 
-* Overflow of the system message delivery buffer, e.g. because of too many ``watch`` requests at the same time 
+  partition heals. A cluster member is not quarantined when the failure detector triggers.
+* Overflow of the system message delivery buffer, e.g. because of too many ``watch`` requests at the same time
   (``system-message-buffer-size`` config).
 * Unexpected exception occurs in the control subchannel of the remoting infrastructure.
 
 The UID of the ``ActorSystem`` is exchanged in a two-way handshake when the first message is sent to
 a destination. The handshake will be retried until the other system replies and no other messages will
-pass through until the handshake is completed. If the handshake cannot be established within a timeout 
+pass through until the handshake is completed. If the handshake cannot be established within a timeout
 (``handshake-timeout`` config) the association is stopped (freeing up resources). Queued messages will be
 dropped if the handshake cannot be established. It will not be quarantined, because the UID is unknown.
 New handshake attempt will start when next message is sent to the destination.
 
-Handshake requests are actually also sent periodically to be able to establish a working connection 
-when the destination system has been restarted. 
+Handshake requests are actually also sent periodically to be able to establish a working connection
+when the destination system has been restarted.
 
 Watching Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -459,12 +459,12 @@ For more information please see :ref:`serialization-scala`.
 ByteBuffer based serialization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Artery introduces a new serialization mechanism which allows the ``ByteBufferSerializer`` to directly write into a 
+Artery introduces a new serialization mechanism which allows the ``ByteBufferSerializer`` to directly write into a
 shared :class:`java.nio.ByteBuffer` instead of being forced to allocate and return an ``Array[Byte]`` for each serialized
 message. For high-throughput messaging this API change can yield significant performance benefits, so we recommend
 changing your serializers to use this new mechanism.
 
-This new API also plays well with new versions of Google Protocol Buffers and other serialization libraries, which gained 
+This new API also plays well with new versions of Google Protocol Buffers and other serialization libraries, which gained
 the ability to serialize directly into and from ByteBuffers.
 
 As the new feature only changes how bytes are read and written, and the rest of the serialization infrastructure
@@ -474,13 +474,13 @@ Implementing an :class:`akka.serialization.ByteBufferSerializer` works the same 
 
 .. includecode:: ../../../akka-actor/src/main/scala/akka/serialization/Serializer.scala#ByteBufferSerializer
 
-Implementing a serializer for Artery is therefore as simple as implementing this interface, and binding the serializer 
+Implementing a serializer for Artery is therefore as simple as implementing this interface, and binding the serializer
 as usual (which is explained in :ref:`serialization-scala`).
 
-Implementations should typically extend ``SerializerWithStringManifest`` and in addition to the ``ByteBuffer`` based 
-``toBinary`` and ``fromBinary`` methods also implement the array based ``toBinary`` and ``fromBinary`` methods. 
+Implementations should typically extend ``SerializerWithStringManifest`` and in addition to the ``ByteBuffer`` based
+``toBinary`` and ``fromBinary`` methods also implement the array based ``toBinary`` and ``fromBinary`` methods.
 The array based methods will be used when ``ByteBuffer`` is not used, e.g. in Akka Persistence.
- 
+
 Note that the array based methods can be implemented by delegation like this:
 
 .. includecode:: code/docs/actor/ByteBufferSerializerDocSpec.scala#bytebufserializer-with-manifest
@@ -492,40 +492,40 @@ Disabling the Java Serializer
 
 It is possible to completely disable Java Serialization for the entire Actor system.
 
-Java serialization is known to be slow and `prone to attacks 
-<https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_ 
-of various kinds - it never was designed for high throughput messaging after all. However, it is very 
-convenient to use, thus it remained the default serialization mechanism that Akka used to 
+Java serialization is known to be slow and `prone to attacks
+<https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995>`_
+of various kinds - it never was designed for high throughput messaging after all. However, it is very
+convenient to use, thus it remained the default serialization mechanism that Akka used to
 serialize user messages as well as some of its internal messages in previous versions.
 Since the release of Artery, Akka internals do not rely on Java serialization anymore (exceptions to that being ``java.lang.Throwable`` and "remote deployment").
 
-.. note:: 
+.. note::
   Akka does not use Java Serialization for any of its internal messages.
   It is highly encouraged to disable java serialization, so please plan to do so at the earliest possibility you have in your project.
 
   One may think that network bandwidth and latency limit the performance of remote messaging, but serialization is a more typical bottleneck.
-  
-For user messages, the default serializer, implemented using Java serialization, remains available and enabled.
-We do however recommend to disable it entirely and utilise a proper serialization library instead in order effectively utilise 
-the improved performance and ability for rolling deployments using Artery. Libraries that we recommend to use include, 
-but are not limited to, `Kryo`_ by using the `akka-kryo-serialization`_ library or `Google Protocol Buffers`_ if you want
-more control over the schema evolution of your messages. 
 
-In order to completely disable Java Serialization in your Actor system you need to add the following configuration to 
+For user messages, the default serializer, implemented using Java serialization, remains available and enabled.
+We do however recommend to disable it entirely and utilise a proper serialization library instead in order effectively utilise
+the improved performance and ability for rolling deployments using Artery. Libraries that we recommend to use include,
+but are not limited to, `Kryo`_ by using the `akka-kryo-serialization`_ library or `Google Protocol Buffers`_ if you want
+more control over the schema evolution of your messages.
+
+In order to completely disable Java Serialization in your Actor system you need to add the following configuration to
 your ``application.conf``:
 
 .. code-block:: ruby
 
   akka.actor.allow-java-serialization = off
 
-This will completely disable the use of ``akka.serialization.JavaSerialization`` by the 
-Akka Serialization extension, instead ``DisabledJavaSerializer`` will 
+This will completely disable the use of ``akka.serialization.JavaSerialization`` by the
+Akka Serialization extension, instead ``DisabledJavaSerializer`` will
 be inserted which will fail explicitly if attempts to use java serialization are made.
 
 It will also enable the above mentioned `enable-additional-serialization-bindings`.
 
-The log messages emitted by such serializer SHOULD be be treated as potential 
-attacks which the serializer prevented, as they MAY indicate an external operator 
+The log messages emitted by such serializer SHOULD be be treated as potential
+attacks which the serializer prevented, as they MAY indicate an external operator
 attempting to send malicious messages intending to use java serialization as attack vector.
 The attempts are logged with the SECURITY marker.
 
@@ -563,9 +563,9 @@ That is not done by the router.
 Remoting Sample
 ---------------
 
-There is a more extensive remote example that comes with `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_.
-The tutorial named `Akka Remote Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-remote-scala>`_
-demonstrates both remote deployment and look-up of remote actors.
+You can download a ready to run `remoting sample <@exampleCodeService@/akka-samples-remote-scala>`_
+together with a tutorial for a more hands-on experience. The source code of this sample can be found in the
+`Akka Samples Repository <@samples@/akka-sample-remote-scala>`_.
 
 Performance tuning
 ------------------
@@ -607,7 +607,7 @@ Messages destined for actors not matching any of these patterns are sent using t
 External, shared Aeron media driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Aeron transport is running in a so called `media driver <https://github.com/real-logic/Aeron/wiki/Media-Driver-Operation>`_. 
+The Aeron transport is running in a so called `media driver <https://github.com/real-logic/Aeron/wiki/Media-Driver-Operation>`_.
 By default, Akka starts the media driver embedded in the same JVM process as application. This is
 convenient and simplifies operational concerns by only having one process to start and monitor.
 
@@ -625,15 +625,15 @@ The needed classpath::
 
   Agrona-0.5.4.jar:aeron-driver-1.0.1.jar:aeron-client-1.0.1.jar
 
-You find those jar files on `maven central <http://search.maven.org/>`_, or you can create a 
+You find those jar files on `maven central <http://search.maven.org/>`_, or you can create a
 package with your preferred build tool.
 
-You can pass `Aeron properties <https://github.com/real-logic/Aeron/wiki/Configuration-Options>`_ as 
+You can pass `Aeron properties <https://github.com/real-logic/Aeron/wiki/Configuration-Options>`_ as
 command line `-D` system properties::
 
   -Daeron.dir=/dev/shm/aeron
 
-You can also define Aeron properties in a file:: 
+You can also define Aeron properties in a file::
 
   java io.aeron.driver.MediaDriver config/aeron.properties
 
@@ -645,21 +645,21 @@ An example of such a properties file::
 	aeron.rcv.buffer.length=16384
 	aeron.rcv.initial.window.length=2097152
 	agrona.disable.bounds.checks=true
-	
+
 	aeron.threading.mode=SHARED_NETWORK
-	
+
 	# low latency settings
 	#aeron.threading.mode=DEDICATED
 	#aeron.sender.idle.strategy=org.agrona.concurrent.BusySpinIdleStrategy
 	#aeron.receiver.idle.strategy=org.agrona.concurrent.BusySpinIdleStrategy
-	
-	# use same director in akka.remote.artery.advanced.aeron-dir config 
-	# of the Akka application 
+
+	# use same director in akka.remote.artery.advanced.aeron-dir config
+	# of the Akka application
 	aeron.dir=/dev/shm/aeron
 
 Read more about the media driver in the `Aeron documentation <https://github.com/real-logic/Aeron/wiki/Media-Driver-Operation>`_.
 
-To use the external media driver from the Akka application you need to define the following two 
+To use the external media driver from the Akka application you need to define the following two
 configuration properties::
 
   akka.remote.artery.advanced {
