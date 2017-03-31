@@ -19,19 +19,19 @@ data, you need to be able to rely on this constraint.
 When we analyze OOP runtime behavior, we sometimes draw a message sequence chart showing the interactions of 
 method calls. For example:
 
-TODO: SEQ-CHART
+![sequence chart](diagrams/seq_chart.png)
 
 Unfortunately, the above diagram does not accurately represent the _lifelines_ of the instances during execution. 
 In reality, a _thread_ executes all these calls, and the enforcement of invariants occurs on the same thread from 
 which the method was called. Updating the diagram with the thread of execution, it looks like this:
 
-TODO: SEQ-CHART-THREAD
+![sequence chart with thread](diagrams/seq_chart_thread.png)
 
 The significance of this clarification becomes clear when you try to model what happens with _multiple threads_. 
 Suddenly, our neatly drawn diagram becomes inadequate. We can try to illustrate multiple threads accessing 
 the same instance:
 
-TODO: SEQ-CHART-MULTI-THREAD
+![sequence chart with threads interacting](diagrams/seq_chart_multi_thread.png)
 
 There is a section of execution where two threads enter the same method. Unfortunately, the encapsulation model 
 of objects does not guarantee anything about what happens in that section. In fact, we also see one thread calling 
@@ -41,6 +41,7 @@ type of coordination between two threads. Now, imagine this issue compounded by 
 
 The common approach for solving this problem is to add a lock around these methods. While this ensures that at most 
 one thread will enter the method at any given time, this is a very costly strategy:
+
  * Locks _seriously limit_ concurrency, they are very costly on modern CPU architectures, 
    requiring heavy-lifting from the operating system to suspend the thread and restore it later.
  * The caller thread is now blocked, so it cannot do any other meaningful work. Even in desktop applications this is 
@@ -50,6 +51,7 @@ one thread will enter the method at any given time, this is a very costly strate
  * Locks introduce a new menace: deadlocks.     
  	  
 These realities result in a no-win situation:
+
  * Without sufficient locks, state gets corrupted. 	
  * With many locks in place, performance suffers and very easily leads to deadlocks.
 
@@ -62,13 +64,13 @@ In Object Oriented languages we rarely think about threads, or linear execution 
 We often envision a system as a network of object instances that react to method calls, modify their internal state, 
 then communicate with each other via method calls driving the whole application state forward:
 
-TODO: OBJECT-GRAPH
+![network of interacting objects](diagrams/object_graph.png)
 
 However, in a multi-threaded distributed environment, what actually happens is more like the game Snake, 
-in the sense that threads “traverse” this network of object instances by following method calls. 
+in the sense that threads "traverse" this network of object instances by following method calls. 
 As a result, threads are what really drive execution:
 
-TODO: OBJECT-GRAPH-SNAKES
+![network of interactive objects traversed by threads](diagrams/object_graph_snakes.png)
 
 **In summary**:
 
@@ -81,15 +83,15 @@ TODO: OBJECT-GRAPH-SNAKES
 
 ### The illusion of shared memory on modern computer architectures
 
-Programming models of the 80’-90’s conceptualize that writing to a variable means writing to a memory location directly 
+Programming models of the 80'-90's conceptualize that writing to a variable means writing to a memory location directly 
 (somewhat muddies the water that local variables might exist only in registers). On modern architectures - 
 if we simplify things a bit - CPUs are writing to [cache lines](https://en.wikipedia.org/wiki/CPU_cache) 
 instead of writing to memory directly. Most of these caches are local to the CPU core, that is, writes by one core 
 are not visible by another. In order to make local changes visible to another core (and hence, to another thread) 
-the cache line needs to be shipped to the other processor’s cache.
+the cache line needs to be shipped to the other processor's cache.
 
 On the JVM, we have to explicitly denote memory locations to be shared across threads by using _volatile_ markers 
-or `Atomic` wrappers. Otherwise, we can access them only in a locked section. Why can’t we just mark all variables as 
+or `Atomic` wrappers. Otherwise, we can access them only in a locked section. Why can't we just mark all variables as 
 volatile? Because shipping cache lines across cores is a very costly operation. It implicitly stalls the cores 
 involved from doing additional work, and results in bottlenecks on the cache coherence protocol (the protocol CPUs
 use to transfer cache lines between main memory and other CPUs). 
@@ -122,7 +124,7 @@ The first issue is, how can the "caller" be notified of the completion of the ta
 when a task fails with an exception. Where does the exception propagate to? It will propagate to the exception handler 
 of the worker thread completely ignoring who the actual "caller" was:
 
-TODO: EXCEPTION-PROP
+![exceptions cannot propagate between different threads](diagrams/exception_prop.png)
 
 This is a serious problem. How does the worker thread deal with the situation? It likely cannot fix the issue as it is 
 usually oblivious of the purpose of the failed task. The "caller" thread needs to be notified somehow, 
@@ -143,6 +145,7 @@ the task state is fully lost! **We have lost a message even though this is local
 involved (where message losses are expected).**
 
 **In summary:**
+
  * **To achieve any meaningful concurrency and performance on current systems	threads must delegate tasks among each 
    other in an efficient way without blocking. With this style of task-delegating concurrency 
    (and even more so with networked/distributed computing) callstack-based error handling breaks down and new, 
@@ -157,7 +160,7 @@ involved (where message losses are expected).**
 
 As described in the sections above, common programming practices cannot properly address the needs of modern concurrent
 and distributed systems. 
-Thankfully, we don’t need to scrap everything we know. Instead, the actor model addresses these shortcomings in a 
+Thankfully, we don't need to scrap everything we know. Instead, the actor model addresses these shortcomings in a 
 principled way, allowing systems to behave in a way that better matches our mental model.
 
 In particular, we would like to:
@@ -179,12 +182,12 @@ With objects, when a method returns, it releases control of its executing thread
 much like objects, they react to messages and return execution when they finish processing the current message. 
 In this way, actors actually achieve the execution we imagined for objects:
 
-TODO: ACTOR-GRAPH
+![actors interact with each other by sending messages](diagrams/actor_graph.png)
 
 An important consequence of passing messages instead of calling methods is that messages have no return value. 
 By sending a message, an actor delegates work to another actor. As we saw in [The illusion of a call stack], 
 if it expected a return value, the sending actor would either need to block (issue: locks and sacrifice of a thread), 
-or to execute the other actor’s work on the same thread (issue: "snakes-in-a-maze"). 
+or to execute the other actor's work on the same thread (issue: "snakes-in-a-maze"). 
 Instead, the receiving actor delivers the results in a reply message.
 
 The second key change we need in our model is to reinstate encapsulation. Actors react to messages just like objects 
@@ -195,7 +198,7 @@ different actors work concurrently with each other so an actor system can proces
 as many processor cores are available on the machine. Since there is always at most one message being processed per actor 
 the invariants of an actor can be kept without synchronization. This happens automatically without using locks:
 
-TODO: SERIALIZED-TIMELINE-INVARIANTS
+![messages don't invalidat invarants as they are processed sequentially](diagrams/serialized_timeline_invariants.png)
 
 In summary, this is what happens when an actor receives a message. It:
 
@@ -249,7 +252,7 @@ error situations differently. There are two kinds of errors we need to consider:
    its parent actor is notified and it can react to the failure. Also, if the parent actor is stopped, 
    all of its children are recursively stopped, too. This service is called supervision and it is central to Akka.
      
-TODO: ACTOR-TREE-SUPERVISION     
+![actors supervise and handle the failures of child actors](diagrams/actor_tree_supervision.png)
   
 A supervisor (parent) can decide to restart its child actors on certain types of failures, or stop them completely on 
 others. Children never go silently dead (with the notable exception of entering an infinite loop) instead they are 
