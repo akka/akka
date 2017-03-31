@@ -20,7 +20,7 @@ a component in the future. In a final system, the steps for connecting a device 
 We are only concerned with steps 4 and 5 now. We will model the device manager component as an actor tree with three
 levels:
 
-DEVICE_MANAGER_TREE_DIAGRAM
+![device manager tree](diagrams/device_manager_tree.png)
 
  * The top level is the supervisor actor representing the component. It is also the entry point to look up or create
    group and device actors
