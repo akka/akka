@@ -195,8 +195,9 @@ message send/receive.
 .. includecode:: ../../../akka-remote-tests/src/multi-jvm/scala/akka/remote/sample/MultiNodeSample.scala
   :include: package,spec
 
-The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-and open the tutorial named `Akka Multi-Node Testing Sample with Scala <http://www.lightbend.com/activator/template/akka-sample-multi-node-scala>`_.
+The easiest way to run this example yourself is to download the ready to run
+`Akka Multi-Node Testing Sample with Scala <@exampleCodeService@/akka-samples-multi-node-scala>`_
+together with the tutorial. The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-multi-node-scala>`_.
 
 Things to Keep in Mind
 ======================
@@ -206,7 +207,7 @@ surprising ways.
 
   * Don't issue a shutdown of the first node. The first node is the controller and if it shuts down your test will break.
 
-  * To be able to use ``blackhole``, ``passThrough``, and ``throttle`` you must activate the failure injector and 
+  * To be able to use ``blackhole``, ``passThrough``, and ``throttle`` you must activate the failure injector and
     throttler transport adapters by specifying ``testTransport(on = true)`` in your MultiNodeConfig.
 
   * Throttling, shutdown and other failure injections can only be done from the first node, which again is the controller.

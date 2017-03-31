@@ -322,10 +322,10 @@ also :ref:`camel-examples` that implements both, an asynchronous
 consumer and an asynchronous producer, with the jetty component.
 
 If the used Camel component is blocking it might be necessary to use a separate
-:ref:`dispatcher <dispatchers-scala>` for the producer. The Camel processor is 
-invoked by a child actor of the producer and the dispatcher can be defined in 
-the deployment section of the configuration. For example, if your producer actor 
-has path ``/user/integration/output`` the dispatcher of the child actor can be 
+:ref:`dispatcher <dispatchers-scala>` for the producer. The Camel processor is
+invoked by a child actor of the producer and the dispatcher can be defined in
+the deployment section of the configuration. For example, if your producer actor
+has path ``/user/integration/output`` the dispatcher of the child actor can be
 defined with::
 
   akka.actor.deployment {
@@ -473,13 +473,12 @@ __ https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/j
 Examples
 ========
 
-The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-tutorial named `Akka Camel Samples with Scala <http://www.lightbend.com/activator/template/akka-sample-camel-scala>`_
+The sample named `Akka Camel Samples with Scala <@exampleCodeService@/akka-samples-camel-scala>`_ (`source code <@samples@/akka-sample-camel-scala>`_)
 contains 3 samples:
 
- * Asynchronous routing and transformation - This example demonstrates how to implement consumer and 
+ * Asynchronous routing and transformation - This example demonstrates how to implement consumer and
    producer actors that support :ref:`camel-asynchronous-routing` with their Camel endpoints.
- 
+
  * Custom Camel route - Demonstrates the combined usage of a ``Producer`` and a
    ``Consumer`` actor as well as the inclusion of a custom Camel route.
 

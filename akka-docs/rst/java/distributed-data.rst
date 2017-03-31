@@ -7,7 +7,7 @@
 
 *Akka Distributed Data* is useful when you need to share data between nodes in an
 Akka Cluster. The data is accessed with an actor providing a key-value store like API.
-The keys are unique identifiers with type information of the data values. The values 
+The keys are unique identifiers with type information of the data values. The values
 are *Conflict Free Replicated Data Types* (CRDTs).
 
 All data entries are spread to all nodes, or nodes with a certain role, in the cluster
@@ -21,21 +21,21 @@ Several useful data types for counters, sets, maps and registers are provided an
 you can also implement your own custom data types.
 
 It is eventually consistent and geared toward providing high read and write availability
-(partition tolerance), with low latency. Note that in an eventually consistent system a read may return an 
+(partition tolerance), with low latency. Note that in an eventually consistent system a read may return an
 out-of-date value.
 
 Using the Replicator
 ====================
 
 The ``akka.cluster.ddata.Replicator`` actor provides the API for interacting with the data.
-The ``Replicator`` actor must be started on each node in the cluster, or group of nodes tagged 
-with a specific role. It communicates with other ``Replicator`` instances with the same path 
+The ``Replicator`` actor must be started on each node in the cluster, or group of nodes tagged
+with a specific role. It communicates with other ``Replicator`` instances with the same path
 (without address) that are running on other nodes . For convenience it can be used with the
 ``akka.cluster.ddata.DistributedData`` extension but it can also be started as an ordinary
 actor using the ``Replicator.props``. If it is started as an ordinary actor it is important
 that it is given the same name, started on same path, on all nodes.
 
-Cluster members with status :ref:`WeaklyUp <weakly_up_java>`, 
+Cluster members with status :ref:`WeaklyUp <weakly_up_java>`,
 will participate in Distributed Data. This means that the data will be replicated to the
 :ref:`WeaklyUp <weakly_up_java>` nodes with the background gossip protocol. Note that it
 will not participate in any actions where the consistency mode is to read/write from all
@@ -43,9 +43,9 @@ nodes or the majority of nodes. The :ref:`WeaklyUp <weakly_up_java>` node is not
 as part of the cluster. So 3 nodes + 5 :ref:`WeaklyUp <weakly_up_java>` is essentially a
 3 node cluster as far as consistent actions are concerned.
 
-Below is an example of an actor that schedules tick messages to itself and for each tick 
+Below is an example of an actor that schedules tick messages to itself and for each tick
 adds or removes elements from a ``ORSet`` (observed-remove set). It also subscribes to
-changes of this. 
+changes of this.
 
 .. includecode:: code/jdocs/ddata/DataBot.java#data-bot
 
@@ -83,7 +83,7 @@ You supply a write consistency level which has the following meaning:
 When you specify to write to ``n`` out of ``x`` nodes, the update will first replicate to ``n`` nodes. If there are not
  enough Acks after 1/5th of the timeout, the update will be replicated to ``n`` other nodes. If there are less than n nodes
  left all of the remaining nodes are used. Reachable nodes are prefered over unreachable nodes.
- 
+
 Note that ``WriteMajority`` has a ``minCap`` parameter that is useful to specify to achieve better safety for small clusters.
 
 .. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#update
@@ -111,7 +111,7 @@ or maintain local correlation data structures.
 .. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#update-request-context
 
 .. _replicator_get_java:
- 
+
 Get
 ---
 
@@ -159,7 +159,7 @@ The consistency level that is supplied in the :ref:`replicator_update_java` and 
 specifies per request how many replicas that must respond successfully to a write and read request.
 
 For low latency reads you use ``ReadLocal`` with the risk of retrieving stale data, i.e. updates
-from other nodes might not be visible yet. 
+from other nodes might not be visible yet.
 
 When using ``writeLocal`` the update is only written to the local replica and then disseminated
 in the background with the gossip protocol, which can take few seconds to spread to all nodes.
@@ -171,7 +171,7 @@ and you will not receive the value.
 If consistency is important, you can ensure that a read always reflects the most recent
 write by using the following formula::
 
-    (nodes_written + nodes_read) > N 
+    (nodes_written + nodes_read) > N
 
 where N is the total number of nodes in the cluster, or the number of nodes with the role that is
 used for the ``Replicator``.
@@ -181,15 +181,15 @@ and reading from 4 nodes, or writing to 5 nodes and reading from 3 nodes.
 
 By combining ``WriteMajority`` and ``ReadMajority`` levels a read always reflects the most recent write.
 The ``Replicator`` writes and reads to a majority of replicas, i.e. **N / 2 + 1**. For example,
-in a 5 node cluster it writes to 3 nodes and reads from 3 nodes. In a 6 node cluster it writes 
+in a 5 node cluster it writes to 3 nodes and reads from 3 nodes. In a 6 node cluster it writes
 to 4 nodes and reads from 4 nodes.
 
-For small clusters (<7) the risk of membership changes between a WriteMajority and ReadMajority 
+For small clusters (<7) the risk of membership changes between a WriteMajority and ReadMajority
 is rather high and then the nice properties of combining majority write and reads are not
-guaranteed. Therefore the ``ReadMajority`` and ``WriteMajority`` have a ``minCap`` parameter that 
-is useful to specify to achieve better safety for small clusters. It means that if the cluster 
-size is smaller than the majority size it will use the ``minCap`` number of nodes but at most 
-the total size of the cluster. 
+guaranteed. Therefore the ``ReadMajority`` and ``WriteMajority`` have a ``minCap`` parameter that
+is useful to specify to achieve better safety for small clusters. It means that if the cluster
+size is smaller than the majority size it will use the ``minCap`` number of nodes but at most
+the total size of the cluster.
 
 Here is an example of using ``writeMajority`` and ``readMajority``:
 
@@ -202,7 +202,7 @@ Here is an example of using ``writeMajority`` and ``readMajority``:
 In some rare cases, when performing an ``Update`` it is needed to first try to fetch latest data from
 other nodes. That can be done by first sending a ``Get`` with ``ReadMajority`` and then continue with
 the ``Update`` when the ``GetSuccess``, ``GetFailure`` or ``NotFound`` reply is received. This might be
-needed when you need to base a decision on latest information or when removing entries from ``ORSet`` 
+needed when you need to base a decision on latest information or when removing entries from ``ORSet``
 or ``ORMap``. If an entry is added to an ``ORSet`` or ``ORMap`` from one node and removed from another
 node the entry will only be removed if the added entry is visible on the node where the removal is
 performed (hence the name observed-removed set).
@@ -215,11 +215,11 @@ The following example illustrates how to do that:
 
   *Caveat:* Even if you use ``writeMajority`` and ``readMajority`` there is small risk that you may
   read stale data if the cluster membership has changed between the ``Update`` and the ``Get``.
-  For example, in cluster of 5 nodes when you ``Update`` and that change is written to 3 nodes: 
-  n1, n2, n3. Then 2 more nodes are added and a ``Get`` request is reading from 4 nodes, which 
-  happens to be n4, n5, n6, n7, i.e. the value on n1, n2, n3 is not seen in the response of the 
+  For example, in cluster of 5 nodes when you ``Update`` and that change is written to 3 nodes:
+  n1, n2, n3. Then 2 more nodes are added and a ``Get`` request is reading from 4 nodes, which
+  happens to be n4, n5, n6, n7, i.e. the value on n1, n2, n3 is not seen in the response of the
   ``Get`` request.
-  
+
 Subscribe
 ---------
 
@@ -255,10 +255,10 @@ Subscribers will receive ``Replicator.DataDeleted``.
 
 .. warning::
 
-  As deleted keys continue to be included in the stored data on each node as well as in gossip 
-  messages, a continuous series of updates and deletes of top-level entities will result in 
-  growing memory usage until an ActorSystem runs out of memory. To use Akka Distributed Data 
-  where frequent adds and removes are required, you should use a fixed number of top-level data 
+  As deleted keys continue to be included in the stored data on each node as well as in gossip
+  messages, a continuous series of updates and deletes of top-level entities will result in
+  growing memory usage until an ActorSystem runs out of memory. To use Akka Distributed Data
+  where frequent adds and removes are required, you should use a fixed number of top-level data
   types that support both updates and removals, for example ``ORMap`` or ``ORSet``.
 
 .. _delta_crdt_java:
@@ -280,7 +280,7 @@ to nodes in different order than the causal order of the updates. For this examp
 can result in that set ``{'a', 'b', 'd'}`` can be seen before element 'c' is seen. Eventually
 it will be ``{'a', 'b', 'c', 'd'}``.
 
-Note that the full state is occasionally also replicated for delta-CRDTs, for example when 
+Note that the full state is occasionally also replicated for delta-CRDTs, for example when
 new nodes are added to the cluster or when deltas could not be propagated because
 of network partitions or similar problems.
 
@@ -294,7 +294,7 @@ Data Types
 The data types must be convergent (stateful) CRDTs and implement the ``ReplicatedData`` trait,
 i.e. they provide a monotonic merge function and the state changes always converge.
 
-You can use your own custom ``AbstractReplicatedData`` or ``AbstractDeltaReplicatedData`` types, 
+You can use your own custom ``AbstractReplicatedData`` or ``AbstractDeltaReplicatedData`` types,
 and several types are provided by this package, such as:
 
 * Counters: ``GCounter``, ``PNCounter``
@@ -307,7 +307,7 @@ Counters
 
 ``GCounter`` is a "grow only counter". It only supports increments, no decrements.
 
-It works in a similar way as a vector clock. It keeps track of one counter per node and the total 
+It works in a similar way as a vector clock. It keeps track of one counter per node and the total
 value is the sum of these counters. The ``merge`` is implemented by taking the maximum count for
 each node.
 
@@ -372,18 +372,18 @@ such as the following specialized maps.
 ``ORMultiMap`` (observed-remove multi-map) is a multi-map implementation that wraps an
 ``ORMap`` with an ``ORSet`` for the map's value.
 
-``PNCounterMap`` (positive negative counter map) is a map of named counters. It is a specialized 
+``PNCounterMap`` (positive negative counter map) is a map of named counters. It is a specialized
 ``ORMap`` with ``PNCounter`` values.
 
 ``LWWMap`` (last writer wins map) is a specialized ``ORMap`` with ``LWWRegister`` (last writer wins register)
-values. 
+values.
 
 .. includecode:: code/jdocs/ddata/DistributedDataDocTest.java#ormultimap
 
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e.
 when you update a map the whole map is replicated. Therefore, instead of using one ``ORMap``
-with 1000 elements it is more efficient to split that up in 10 top level ``ORMap`` entries 
-with 100 elements each. Top level entries are replicated individually, which has the 
+with 1000 elements it is more efficient to split that up in 10 top level ``ORMap`` entries
+with 100 elements each. Top level entries are replicated individually, which has the
 trade-off that different entries may not be replicated at the same time and you may see
 inconsistencies between related entries. Separate top level entries cannot be updated atomically
 together.
@@ -472,16 +472,16 @@ Note that the elements of the sets are sorted so the SHA-1 digests are the same
 for the same elements.
 
 You register the serializer in configuration:
- 
+
 .. includecode:: ../scala/code/docs/ddata/DistributedDataDocSpec.scala#japi-serializer-config
 
 Using compression can sometimes be a good idea to reduce the data size. Gzip compression is
 provided by the ``akka.cluster.ddata.protobuf.SerializationSupport`` trait:
 
 .. includecode:: code/jdocs/ddata/protobuf/TwoPhaseSetSerializerWithCompression.java#compression
- 
+
 The two embedded ``GSet`` can be serialized as illustrated above, but in general when composing
-new data types from the existing built in types it is better to make use of the existing 
+new data types from the existing built in types it is better to make use of the existing
 serializer for those types. This can be done by declaring those as bytes fields in protobuf:
 
 .. includecode:: ../../src/main/protobuf/TwoPhaseSetMessages.proto#twophaseset2
@@ -498,12 +498,12 @@ look like for the ``TwoPhaseSet``:
 Durable Storage
 ---------------
 
-By default the data is only kept in memory. It is redundant since it is replicated to other nodes 
-in the cluster, but if you stop all nodes the data is lost, unless you have saved it 
-elsewhere. 
+By default the data is only kept in memory. It is redundant since it is replicated to other nodes
+in the cluster, but if you stop all nodes the data is lost, unless you have saved it
+elsewhere.
 
 Entries can be configured to be durable, i.e. stored on local disk on each node. The stored data will be loaded
-next time the replicator is started, i.e. when actor system is restarted. This means data will survive as 
+next time the replicator is started, i.e. when actor system is restarted. This means data will survive as
 long as at least one node from the old cluster takes part in a new cluster. The keys of the durable entries
 are configured with::
 
@@ -515,10 +515,10 @@ All entries can be made durable by specifying::
 
   akka.cluster.distributed-data.durable.keys = ["*"]
 
-`LMDB <https://github.com/lmdbjava/lmdbjava/>`_ is the default storage implementation. It is 
-possible to replace that with another implementation by implementing the actor protocol described in 
+`LMDB <https://github.com/lmdbjava/lmdbjava/>`_ is the default storage implementation. It is
+possible to replace that with another implementation by implementing the actor protocol described in
 ``akka.cluster.ddata.DurableStore`` and defining the ``akka.cluster.distributed-data.durable.store-actor-class``
-property for the new implementation. 
+property for the new implementation.
 
 The location of the files for the data is configured with::
 
@@ -532,35 +532,35 @@ The location of the files for the data is configured with::
 
 When running in production you may want to configure the directory to a specific
 path (alt 2), since the default directory contains the remote port of the
-actor system to make the name unique. If using a dynamically assigned 
-port (0) it will be different each time and the previously stored data 
+actor system to make the name unique. If using a dynamically assigned
+port (0) it will be different each time and the previously stored data
 will not be loaded.
 
 Making the data durable has of course a performance cost. By default, each update is flushed
-to disk before the ``UpdateSuccess`` reply is sent. For better performance, but with the risk of losing 
+to disk before the ``UpdateSuccess`` reply is sent. For better performance, but with the risk of losing
 the last writes if the JVM crashes, you can enable write behind mode. Changes are then accumulated during
 a time period before it is written to LMDB and flushed to disk. Enabling write behind is especially
-efficient when performing many writes to the same key, because it is only the last value for each key 
-that will be serialized and stored. The risk of losing writes if the JVM crashes is small since the 
+efficient when performing many writes to the same key, because it is only the last value for each key
+that will be serialized and stored. The risk of losing writes if the JVM crashes is small since the
 data is typically replicated to other nodes immediately according to the given ``WriteConsistency``.
 
 ::
 
   akka.cluster.distributed-data.lmdb.write-behind-interval = 200 ms
 
-Note that you should be prepared to receive ``WriteFailure`` as reply to an ``Update`` of a 
+Note that you should be prepared to receive ``WriteFailure`` as reply to an ``Update`` of a
 durable entry if the data could not be stored for some reason. When enabling ``write-behind-interval``
 such errors will only be logged and ``UpdateSuccess`` will still be the reply to the ``Update``.
 
 There is one important caveat when it comes pruning of :ref:`crdt_garbage_java` for durable data.
-If and old data entry that was never pruned is injected and merged with existing data after 
+If and old data entry that was never pruned is injected and merged with existing data after
 that the pruning markers have been removed the value will not be correct. The time-to-live
-of the markers is defined by configuration 
+of the markers is defined by configuration
 ``akka.cluster.distributed-data.durable.remove-pruning-marker-after`` and is in the magnitude of days.
 This would be possible if a node with durable data didn't participate in the pruning
-(e.g. it was shutdown) and later started after this time. A node with durable data should not 
+(e.g. it was shutdown) and later started after this time. A node with durable data should not
 be stopped for longer time than this duration and if it is joining again after this
-duration its data should first be manually removed (from the lmdb directory).  
+duration its data should first be manually removed (from the lmdb directory).
 
 .. _crdt_garbage_java:
 
@@ -573,19 +573,19 @@ from one node it will associate the identifier of that node forever. That can be
 for long running systems with many cluster nodes being added and removed. To solve this problem
 the ``Replicator`` performs pruning of data associated with nodes that have been removed from the
 cluster. Data types that need pruning have to implement the ``RemovedNodePruning`` trait. See the
-API documentation of the ``Replicator`` for details. 
+API documentation of the ``Replicator`` for details.
 
 Samples
 =======
 
-Several interesting samples are included and described in the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-tutorial named `Akka Distributed Data Samples with Java <http://www.lightbend.com/activator/template/akka-sample-distributed-data-java>`_.
+Several interesting samples are included and described in the
+tutorial named `Akka Distributed Data Samples with Java <@exampleCodeService@/akka-samples-distributed-data-java>`_ (`source code <@samples@/akka-sample-distributed-data-java>`_)
 
 * Low Latency Voting Service
 * Highly Available Shopping Cart
 * Distributed Service Registry
 * Replicated Cache
-* Replicated Metrics 
+* Replicated Metrics
 
 Limitations
 ===========
@@ -598,7 +598,7 @@ all domains. Sometimes you need strong consistency.
 It is not intended for *Big Data*. The number of top level entries should not exceed 100000.
 When a new node is added to the cluster all these entries are transferred (gossiped) to the
 new node. The entries are split up in chunks and all existing nodes collaborate in the gossip,
-but it will take a while (tens of seconds) to transfer all entries and this means that you 
+but it will take a while (tens of seconds) to transfer all entries and this means that you
 cannot have too many top level entries. The current recommended limit is 100000. We will
 be able to improve this if needed, but the design is still not intended for billions of entries.
 
@@ -607,7 +607,7 @@ All data is held in memory, which is another reason why it is not intended for *
 When a data entry is changed the full state of that entry may be replicated to other nodes
 if it doesn't support :ref:`delta_crdt_java`. The full state is also replicated for delta-CRDTs,
 for example when new nodes are added to the cluster or when deltas could not be propagated because
-of network partitions or similar problems. This means that you cannot have too large 
+of network partitions or similar problems. This means that you cannot have too large
 data entries, because then the remote message size will be too large.
 
 Learn More about CRDTs
@@ -641,8 +641,7 @@ maven::
 
 Configuration
 =============
-  
+
 The ``DistributedData`` extension can be configured with the following properties:
 
 .. includecode:: ../../../akka-distributed-data/src/main/resources/reference.conf#distributed-data
- 
