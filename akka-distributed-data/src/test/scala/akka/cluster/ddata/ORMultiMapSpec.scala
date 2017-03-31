@@ -161,7 +161,7 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     val merged1 = m1 merge m2
 
     val m3 = merged1.resetDelta.remove(node1, "b")
-    val m4 = merged1.resetDelta.addBinding(node1, "b", "B2")
+    val m4 = m3.resetDelta.addBinding(node1, "b", "B2")
 
     val merged2 = m3 merge m4
 
@@ -175,17 +175,23 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     merged3.entries("b") should be(Set("B2"))
     merged3.entries("c") should be(Set("C"))
 
-    val merged4 = merged1 mergeDelta m3.delta.get mergeDelta m4.delta.get
+    val merged4 = merged1 merge m3 merge m4
 
     merged4.entries("a") should be(Set("A"))
-    merged4.entries("b") should be(Set("B", "B2"))
+    merged4.entries("b") should be(Set("B2"))
     merged4.entries("c") should be(Set("C"))
 
-    val merged5 = merged1 mergeDelta m3.delta.get.merge(m4.delta.get)
+    val merged5 = merged1 mergeDelta m3.delta.get mergeDelta m4.delta.get
 
     merged5.entries("a") should be(Set("A"))
-    merged5.entries("b") should be(Set("B", "B2"))
+    merged5.entries("b") should be(Set("B2"))
     merged5.entries("c") should be(Set("C"))
+
+    val merged6 = merged1 mergeDelta m3.delta.get.merge(m4.delta.get)
+
+    merged6.entries("a") should be(Set("A"))
+    merged6.entries("b") should be(Set("B2"))
+    merged6.entries("c") should be(Set("C"))
   }
 
   "not have usual anomalies for remove+addBinding scenario and delta-deltas 2" in {
