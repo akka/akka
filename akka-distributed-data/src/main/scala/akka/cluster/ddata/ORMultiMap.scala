@@ -253,7 +253,10 @@ final class ORMultiMap[A, B] private[akka] (
   override def delta: Option[D] = underlying.delta
 
   override def mergeDelta(thatDelta: D): ORMultiMap[A, B] =
-    new ORMultiMap(underlying.mergeDelta(thatDelta), withValueDeltas)
+    if (withValueDeltas)
+      new ORMultiMap(underlying.mergeDeltaRetainingDeletedValues(thatDelta), withValueDeltas)
+    else
+      new ORMultiMap(underlying.mergeDelta(thatDelta), withValueDeltas)
 
   override def modifiedByNodes: Set[UniqueAddress] =
     underlying.modifiedByNodes

@@ -55,9 +55,6 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "be able to remove entry using a delta" in {
-      // FIXME use full state for removals, until issue #22648 is fixed
-      pending
-
       val m = ORMap().put(node1, "a", GSet() + "A").put(node1, "b", GSet() + "B")
       val addDelta = m.delta.get
 
@@ -328,9 +325,6 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 8" in {
-      // FIXME use full state for removals, until issue #22648 is fixed
-      pending
-
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
         .put(node1, "b", GSet.empty + "B").put(node2, "b", GSet.empty + "B")
       val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
@@ -354,9 +348,6 @@ class ORMapSpec extends WordSpec with Matchers {
     }
 
     "not have anomalies for remove+updated scenario and deltas 9" in {
-      // FIXME use full state for removals, until issue #22648 is fixed
-      pending
-
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
         .put(node1, "b", GSet.empty + "B").put(node2, "b", GSet.empty + "B")
       val m2 = ORMap.empty.put(node2, "c", GSet.empty + "C")
@@ -396,6 +387,20 @@ class ORMapSpec extends WordSpec with Matchers {
 
       merged3.entries("a").elements should be(Set("A"))
       merged3.entries("b").elements should be(Set("B2", "B3"))
+    }
+
+    "not have anomalies for remove+updated scenario and deltas 11" in {
+      val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
+
+      val m2 = ORMap.empty.put(node2, "a", GSet.empty[String]).remove(node2, "a")
+
+      val merged1 = m1 merge m2
+
+      merged1.entries("a").elements should be(Set("A"))
+
+      val merged2 = m1 mergeDelta m2.delta.get
+
+      merged2.entries("a").elements should be(Set("A"))
     }
 
     "have the usual anomalies for remove+updated scenario" in {
