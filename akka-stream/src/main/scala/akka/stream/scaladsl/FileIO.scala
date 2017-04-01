@@ -1,10 +1,10 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.scaladsl
 
 import java.io.File
-import java.nio.file.{ Path, StandardOpenOption }
+import java.nio.file.{ OpenOption, Path, StandardOpenOption }
 import java.nio.file.StandardOpenOption._
 
 import akka.stream.impl.Stages.DefaultAttributes
@@ -28,7 +28,7 @@ object FileIO {
    * except the final element, which will be up to `chunkSize` in size.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -46,7 +46,7 @@ object FileIO {
    * except the final element, which will be up to `chunkSize` in size.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -82,13 +82,13 @@ object FileIO {
    * and a possible exception if IO operation was not completed successfully.
    *
    * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
-   * unless configured otherwise by using [[ActorAttributes]].
+   * unless configured otherwise by using [[akka.stream.ActorAttributes]].
    *
    * @param f the file to write to
    * @param options File open options, defaults to Set(WRITE, CREATE)
    */
   @deprecated("Use `toPath` instead", "2.4.5")
-  def toFile(f: File, options: Set[StandardOpenOption] = Set(WRITE, CREATE)): Sink[ByteString, Future[IOResult]] =
+  def toFile(f: File, options: Set[OpenOption] = Set(WRITE, CREATE)): Sink[ByteString, Future[IOResult]] =
     toPath(f.toPath, options)
 
   /**
@@ -98,12 +98,12 @@ object FileIO {
    * and a possible exception if IO operation was not completed successfully.
    *
    * This source is backed by an Actor which will use the dedicated `akka.stream.blocking-io-dispatcher`,
-   * unless configured otherwise by using [[ActorAttributes]].
+   * unless configured otherwise by using [[akka.stream.ActorAttributes]].
    *
    * @param f the file path to write to
    * @param options File open options, defaults to Set(WRITE, CREATE)
    */
-  def toPath(f: Path, options: Set[StandardOpenOption] = Set(WRITE, CREATE)): Sink[ByteString, Future[IOResult]] =
+  def toPath(f: Path, options: Set[OpenOption] = Set(WRITE, CREATE)): Sink[ByteString, Future[IOResult]] =
     toPath(f, options, startPosition = 0)
 
   /**
@@ -119,6 +119,6 @@ object FileIO {
    * @param options File open options, defaults to Set(WRITE, CREATE)
    * @param startPosition the start position to write to
    */
-  def toPath(f: Path, options: Set[StandardOpenOption], startPosition: Long): Sink[ByteString, Future[IOResult]] =
+  def toPath(f: Path, options: Set[OpenOption], startPosition: Long): Sink[ByteString, Future[IOResult]] =
     new Sink(new FileSink(f, startPosition, options, DefaultAttributes.fileSink, sinkShape("FileSink")))
 }
