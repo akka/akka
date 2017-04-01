@@ -1,13 +1,14 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl.io
 
 import java.nio.channels.FileChannel
-import java.nio.file.{ Path, StandardOpenOption }
+import java.nio.file.{ Path, OpenOption }
 
 import akka.Done
-import akka.actor.{ Deploy, ActorLogging, Props }
+import akka.actor.{ ActorLogging, Deploy, Props }
+import akka.annotation.InternalApi
 import akka.stream.IOResult
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
@@ -17,8 +18,8 @@ import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
-private[akka] object FileSubscriber {
-  def props(f: Path, completionPromise: Promise[IOResult], bufSize: Int, startPosition: Long, openOptions: Set[StandardOpenOption]) = {
+@InternalApi private[akka] object FileSubscriber {
+  def props(f: Path, completionPromise: Promise[IOResult], bufSize: Int, startPosition: Long, openOptions: Set[OpenOption]) = {
     require(bufSize > 0, "buffer size must be > 0")
     require(startPosition >= 0, s"startPosition must be >= 0 (was $startPosition)")
     Props(classOf[FileSubscriber], f, completionPromise, bufSize, startPosition, openOptions).withDeploy(Deploy.local)
@@ -26,7 +27,7 @@ private[akka] object FileSubscriber {
 }
 
 /** INTERNAL API */
-private[akka] class FileSubscriber(f: Path, completionPromise: Promise[IOResult], bufSize: Int, startPosition: Long, openOptions: Set[StandardOpenOption])
+@InternalApi private[akka] class FileSubscriber(f: Path, completionPromise: Promise[IOResult], bufSize: Int, startPosition: Long, openOptions: Set[OpenOption])
   extends akka.stream.actor.ActorSubscriber
   with ActorLogging {
 
