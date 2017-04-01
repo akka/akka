@@ -4,7 +4,7 @@
 package akka.stream.impl.io
 
 import java.io.OutputStream
-import java.nio.file.{ Path, StandardOpenOption }
+import java.nio.file.{ OpenOption, Path, StandardOpenOption }
 
 import akka.annotation.InternalApi
 import akka.stream._
@@ -13,6 +13,7 @@ import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.ActorAttributes.Dispatcher
 import akka.util.ByteString
 
+import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 
 /**
@@ -20,7 +21,7 @@ import scala.concurrent.{ Future, Promise }
  * Creates simple synchronous Sink which writes all incoming elements to the given file
  * (creating it before hand if necessary).
  */
-@InternalApi private[akka] final class FileSink(f: Path, options: Set[StandardOpenOption], val attributes: Attributes, shape: SinkShape[ByteString])
+@InternalApi private[akka] final class FileSink(f: Path, options: immutable.Set[OpenOption], val attributes: Attributes, shape: SinkShape[ByteString])
   extends SinkModule[ByteString, Future[IOResult]](shape) {
 
   override protected def label: String = s"FileSink($f, $options)"
