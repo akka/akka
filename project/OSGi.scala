@@ -37,13 +37,13 @@ object OSGi {
   val http = osgiPkgHeaders(
     exports = Seq(
       "akka.http.scaladsl.client.*",
-      "akka.http.$DSL$.server.*",
-      "akka.http.$DSL$.coding.*",
-      "akka.http.$DSL$.common.*",
-      "akka.http.$DSL$.marshalling.*",
-      "akka.http.$DSL$.unmarshalling.*"
+      "akka.http.#DSL#.server.*",
+      "akka.http.#DSL#.coding.*",
+      "akka.http.#DSL#.common.*",
+      "akka.http.#DSL#.marshalling.*",
+      "akka.http.#DSL#.unmarshalling.*"
     ) flatMap { p =>
-      Seq(p.replace("$DSL$", "scaladsl"), p.replace("$DSL$", "javadsl"))
+      Seq(p.replace("#DSL#", "scaladsl"), p.replace("#DSL#", "javadsl"))
     },
     imports = Seq(scalaJava8CompatImport, akkaParboiledImport)
   )
