@@ -76,7 +76,7 @@ The problem space that Sharding targets:
 A common (in fact, a bit too common) use case in distributed systems is to have a single entity responsible 
 for a given task which is shared among other members of the cluster and migrated if the host system fails. 
 While this undeniably introduces a common bottleneck for the whole cluster that limits scaling,
-there are scenarios where the use of this pattern is unavoidable. Cluster singleton allows a cluster to elect an 
+there are scenarios where the use of this pattern is unavoidable. Cluster singleton allows a cluster to select an
 actor system which will host a particular actor while other systems can always access said service independently from 
 where it is.
 
