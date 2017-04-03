@@ -3,9 +3,10 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream._
 import akka.stream.testkit.Utils._
 
 import scala.util.control.NoStackTrace
@@ -135,6 +136,24 @@ class FlowRecoverWithSpec extends StreamSpec {
       intercept[IllegalArgumentException] {
         Flow[Int].recoverWithRetries(-2, { case t: Throwable ⇒ Source.empty[Int] })
       }
+    }
+
+    "fail correctly when materialization of recover source fails" in assertAllStagesStopped {
+      val matFail = TE("fail!")
+      object FailingInnerMat extends GraphStage[SourceShape[String]] {
+        val out = Outlet[String]("out")
+        val shape = SourceShape(out)
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+          throw matFail
+        }
+      }
+
+      val result = Source.failed(TE("trigger")).recoverWithRetries(1, {
+        case _: TE ⇒ Source.fromGraph(FailingInnerMat)
+      }).runWith(Sink.ignore)
+
+      result.failed.futureValue should ===(matFail)
+
     }
   }
 }

@@ -116,6 +116,22 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       attributes should contain(Attributes.Name("outer"))
       attributes.indexOf(Attributes.Name("outer")) < attributes.indexOf(Attributes.Name("inner")) should be(true)
     }
+
+    "fail correctly when materialization of inner source fails" in assertAllStagesStopped {
+      val matFail = TE("fail!")
+      object FailingInnerMat extends GraphStage[SourceShape[String]] {
+        val out = Outlet[String]("out")
+        val shape = SourceShape(out)
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+          throw matFail
+        }
+      }
+
+      val result = Source.lazily(() ⇒ Source.fromGraph(FailingInnerMat)).to(Sink.ignore).run()
+
+      result.failed.futureValue should ===(matFail)
+
+    }
   }
 
 }

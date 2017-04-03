@@ -532,7 +532,14 @@ final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]
         }
 
         switchToFirstElementHandlers()
-        promise.trySuccess(Source.fromGraph(sourceOut.source).runWith(sink)(interpreter.subFusingMaterializer))
+        try {
+          val matVal = Source.fromGraph(sourceOut.source).runWith(sink)(interpreter.subFusingMaterializer)
+          promise.trySuccess(matVal)
+        } catch {
+          case NonFatal(ex) ⇒
+            promise.tryFailure(ex)
+            failStage(ex)
+        }
       }
 
     }
