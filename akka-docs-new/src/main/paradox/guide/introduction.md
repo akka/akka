@@ -31,7 +31,7 @@ efficiently.
 ## What is the actor model?
 
 The characteristics of today's computing environments are vastly different from the ones in use when the programming 
-models of yesterday were conceived. Actors were invented decades ago by Carl Hewitt (reference).
+models of yesterday were conceived. Actors were invented decades ago by @extref[Carl Hewitt](wikipedia:Carl_Hewitt#Actor_model).
 But relatively recently, their applicability to the challenges of modern computing systems has been recognized and 
 proved to be effective.
 
