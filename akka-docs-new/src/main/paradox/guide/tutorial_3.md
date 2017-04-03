@@ -77,7 +77,7 @@ is known upfront: groups and device actors are created on-demand. The steps of r
  4. If the group already has an actor for the device ID, it forwards the request to it. Otherwise it first creates
     a new one and then forwards the request.
  5. The device actor receives the request, and acknowledges it to the original sender. Since he is the sender of
-    the acknowledgement, the recevier will be able to learn its `ActorRef` and send direct messages to it in the future.
+    the acknowledgement, the receiver will be able to learn its `ActorRef` and send direct messages to it in the future.
     
 Now that the steps are defined, we only need to define the messages that we will use to communicate requests and
 their acknowledgement:
@@ -201,7 +201,7 @@ actor.
 We have now a hierarchic component for registering and tracking devices and recording measurements. We have seen
 some conversation patterns like
 
- * request-respond (for temperature recorings)
+ * request-respond (for temperature recordings)
  * delegate-respond (for registration of devices)
  * create-watch-terminate (for creating group and device actor as children)
  
