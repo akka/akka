@@ -5,6 +5,7 @@ package akka.testkit;
 
 import akka.actor.ActorSystem;
 
+import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.Config;
 import org.junit.rules.ExternalResource;
 
@@ -80,7 +81,7 @@ public class AkkaJUnitActorSystemResource extends ExternalResource {
 
   @Override
   protected void after() {
-    JavaTestKit.shutdownActorSystem(system);
+    TestKit.shutdownActorSystem(system);
     system = null;
   }
 

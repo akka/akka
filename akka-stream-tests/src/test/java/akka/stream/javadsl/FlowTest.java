@@ -17,7 +17,7 @@ import akka.stream.javadsl.GraphDSL.Builder;
 import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -29,6 +29,7 @@ import scala.concurrent.duration.FiniteDuration;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -51,7 +52,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseSimpleOperators() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final String[] lookup = { "a", "b", "c", "d", "e", "f" };
     final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
     final Source<Integer, NotUsed> ints = Source.from(input);
@@ -87,7 +88,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseDropWhile() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3));
     final Flow<Integer, Integer, NotUsed> flow =
         Flow.of(Integer.class).dropWhile(elem -> elem < 2);
@@ -102,7 +103,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseStatefulMaponcat() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5);
     final Source<Integer, NotUsed> ints = Source.from(input);
     final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).statefulMapConcat(
@@ -124,7 +125,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseIntersperse() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<String, NotUsed> source = Source.from(Arrays.asList("0", "1", "2", "3"));
     final Flow<String, String, NotUsed> flow = Flow.of(String.class).intersperse("[", ",", "]");
 
@@ -145,7 +146,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseIntersperseAndConcat() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<String, NotUsed> source = Source.from(Arrays.asList("0", "1", "2", "3"));
     final Flow<String, String, NotUsed> flow = Flow.of(String.class).intersperse(",");
 
@@ -165,7 +166,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseTakeWhile() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Source<Integer, NotUsed> source = Source.from(Arrays.asList(0, 1, 2, 3));
     final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).takeWhile
             (new Predicate<Integer>() {
@@ -189,7 +190,7 @@ public class FlowTest extends StreamTest {
 
   @Ignore("StatefulStage to be converted to GraphStage when Java Api is available (#18817)") @Test
   public void mustBeAbleToUseTransform() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
     // duplicate each element, stop after 4 elements, and emit sum to the end
     final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).via(new GraphStage<FlowShape<Integer, Integer>>() {
@@ -382,8 +383,57 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUsefromSourceCompletionStage() throws Exception {
+    final Flow<String, String, NotUsed> f1 =
+        Flow.of(String.class).via(FlowTest.this.<String> op()).named("f1");
+
+    final Flow<String, String, NotUsed> f2 =
+        Flow.of(String.class).via(FlowTest.this.<String> op()).named("f2");
+
+    @SuppressWarnings("unused")
+    final Flow<String, String, NotUsed> f3 =
+        Flow.of(String.class).via(FlowTest.this.<String> op()).named("f3");
+
+    final Source<String, NotUsed> in1 = Source.from(Arrays.asList("a", "b", "c"));
+    final Source<String, NotUsed> in2 = Source.from(Arrays.asList("d", "e", "f"));
+
+    final Sink<String, Publisher<String>> publisher = Sink.asPublisher(AsPublisher.WITHOUT_FANOUT);
+
+    final Graph<SourceShape<String>, NotUsed> graph = Source.fromGraph(
+            GraphDSL.create(new Function<GraphDSL.Builder<NotUsed>, SourceShape<String>>() {
+              @Override
+              public SourceShape<String> apply(Builder<NotUsed> b)
+                  throws Exception {
+                  final UniformFanInShape<String, String> merge =
+                  b.add(Merge.<String>create(2));
+                  b.from(b.add(in1)).via(b.add(f1)).toInlet(merge.in(0));
+                  b.from(b.add(in2)).via(b.add(f2)).toInlet(merge.in(1));
+                  return new SourceShape<String>(merge.out());
+              }
+                }));
+
+    final Supplier<Graph<SourceShape<String>, NotUsed>> fn =
+        new Supplier<Graph<SourceShape<String>, NotUsed>>() {
+            public Graph<SourceShape<String>, NotUsed> get() { return graph; }
+        };
+
+    final CompletionStage<Graph<SourceShape<String>, NotUsed>> stage =
+        CompletableFuture.supplyAsync(fn);
+
+    final Source<String, CompletionStage<NotUsed>> source =
+        Source.fromSourceCompletionStage(stage);
+
+    // collecting
+    final Publisher<String> pub = source.runWith(publisher, materializer);
+    final CompletionStage<List<String>> all = Source.fromPublisher(pub).limit(100).runWith(Sink.<String>seq(), materializer);
+
+    final List<String> result = all.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
+  }
+
+  @Test
   public void mustBeAbleToUseZip() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<Integer> input2 = Arrays.asList(1, 2, 3);
 
@@ -407,7 +457,7 @@ public class FlowTest extends StreamTest {
       }
     })).run(materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(3));
+    List<Object> output = probe.receiveN(3);
     List<Pair<String, Integer>> expected = Arrays.asList(new Pair<String, Integer>("A", 1), new Pair<String, Integer>(
         "B", 2), new Pair<String, Integer>("C", 3));
     assertEquals(expected, output);
@@ -415,7 +465,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseConcat() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 
@@ -428,13 +478,13 @@ public class FlowTest extends StreamTest {
       }
     }, materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(6));
+    List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
   }
 
   @Test
   public void mustBeAbleToUsePrepend() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 
@@ -447,13 +497,13 @@ public class FlowTest extends StreamTest {
       }
     }, materializer);
 
-    List<Object> output = Arrays.asList(probe.receiveN(6));
+    List<Object> output = probe.receiveN(6);
     assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
   }
 
   @Test
   public void mustBeAbleToUsePrefixAndTail() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
     final Flow<Integer, Pair<List<Integer>, Source<Integer, NotUsed>>, NotUsed> flow = Flow.of(Integer.class).prefixAndTail(3);
     CompletionStage<Pair<List<Integer>, Source<Integer, NotUsed>>> future =
@@ -468,7 +518,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseConcatAllWithSources() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
     final Iterable<Integer> input2 = Arrays.asList(4, 5);
 
@@ -488,7 +538,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseFlatMapMerge() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<Integer> input1 = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
     final Iterable<Integer> input2 = Arrays.asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19);
     final Iterable<Integer> input3 = Arrays.asList(20, 21, 22, 23, 24, 25, 26, 27, 28, 29);
@@ -520,7 +570,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseBuffer() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     final Flow<String, List<String>, NotUsed> flow = Flow.of(String.class).buffer(2, OverflowStrategy.backpressure()).grouped(4);
     final CompletionStage<List<String>> future = Source.from(input).via(flow)
@@ -542,7 +592,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseConflate() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     final Flow<String, String, NotUsed> flow = Flow.of(String.class).conflateWithSeed(new Function<String, String>() {
       @Override
@@ -568,7 +618,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseBatch() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     final Flow<String, String, NotUsed> flow = Flow.of(String.class).batch(3L, new Function<String, String>() {
       @Override
@@ -588,7 +638,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseBatchWeighted() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     final Flow<String, String, NotUsed> flow = Flow.of(String.class).batchWeighted(3L, new Function<String, Object>() {
       @Override
@@ -613,7 +663,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseExpand() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     final Flow<String, String, NotUsed> flow = Flow.of(String.class).expand(in -> Stream.iterate(in, i -> i).iterator());
     final Sink<String, CompletionStage<String>> sink = Sink.<String>head();
@@ -624,7 +674,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseMapAsync() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input = Arrays.asList("a", "b", "c");
     final Flow<String, String, NotUsed> flow = Flow.of(String.class).mapAsync(4, elem -> CompletableFuture.completedFuture(elem.toUpperCase()));
     Source.from(input).via(flow).runForeach(new Procedure<String>() {
@@ -640,7 +690,7 @@ public class FlowTest extends StreamTest {
   @Test
   public void mustBeAbleToRecover() throws Exception {
     final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
 
     final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
     final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).map(
@@ -674,7 +724,7 @@ public class FlowTest extends StreamTest {
   @Test
   public void mustBeAbleToRecoverWithSource() throws Exception {
     final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<Integer> recover = Arrays.asList(55, 0);
 
     final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
@@ -709,7 +759,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToMaterializeIdentityWithJavaFlow() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
 
     Flow<String,String,NotUsed> otherFlow = Flow.of(String.class);
@@ -726,7 +776,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToMaterializeIdentityToJavaSink() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     Flow<String,String,NotUsed> otherFlow = Flow.of(String.class);
 
@@ -755,7 +805,7 @@ public class FlowTest extends StreamTest {
         }
       }));
 
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     Source<String, ActorRef> source = Source.actorRef(1, OverflowStrategy.dropNew());
     final ActorRef actor = source.toMat(sink, Keep.<ActorRef, NotUsed>left()).run(materializer);
     probe.watch(actor);
@@ -765,7 +815,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseZipWith() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 
@@ -786,7 +836,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseZip2() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 
@@ -804,7 +854,7 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseMerge2() {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 

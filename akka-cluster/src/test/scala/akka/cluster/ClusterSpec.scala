@@ -12,6 +12,7 @@ import akka.actor.Address
 import akka.cluster.InternalClusterAction._
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName
+
 import akka.testkit.TestProbe
 import akka.actor.ActorSystem
 import akka.actor.Props
@@ -19,6 +20,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.CoordinatedShutdown
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent._
+
 import scala.concurrent.Await
 
 object ClusterSpec {
@@ -213,6 +215,38 @@ akka.loglevel=DEBUG
       } finally {
         shutdown(sys3)
       }
+    }
+
+    "register multiple cluster JMX MBeans with akka.cluster.jmx.multi-mbeans-in-same-jvm = on" in {
+      def getConfig = (port: Int) ⇒ ConfigFactory.parseString(
+        s"""
+             akka.cluster.jmx.multi-mbeans-in-same-jvm = on
+             akka.remote.netty.tcp.port = ${port}
+             akka.remote.artery.canonical.port = ${port}
+          """
+      ).withFallback(ConfigFactory.parseString(ClusterSpec.config))
+
+      val sys1 = ActorSystem("ClusterSpec4", getConfig(2552))
+      val sys2 = ActorSystem("ClusterSpec4", getConfig(2553))
+
+      try {
+        Cluster(sys1)
+        Cluster(sys2)
+
+        val name1 = new ObjectName(s"akka:type=Cluster,port=2552")
+        val info1 = ManagementFactory.getPlatformMBeanServer.getMBeanInfo(name1)
+        info1.getAttributes.length should be > (0)
+        info1.getOperations.length should be > (0)
+
+        val name2 = new ObjectName(s"akka:type=Cluster,port=2553")
+        val info2 = ManagementFactory.getPlatformMBeanServer.getMBeanInfo(name2)
+        info2.getAttributes.length should be > (0)
+        info2.getOperations.length should be > (0)
+      } finally {
+        shutdown(sys1)
+        shutdown(sys2)
+      }
+
     }
   }
 }

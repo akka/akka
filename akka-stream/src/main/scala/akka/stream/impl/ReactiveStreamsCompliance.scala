@@ -3,13 +3,15 @@
  */
 package akka.stream.impl
 
+import akka.annotation.InternalApi
+
 import scala.util.control.NonFatal
 import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
  * INTERNAL API
  */
-private[stream] object ReactiveStreamsCompliance {
+@InternalApi private[stream] object ReactiveStreamsCompliance {
 
   final val CanNotSubscribeTheSameSubscriberMultipleTimes =
     "can not subscribe the same subscriber multiple times (see reactive-streams specification, rules 1.10 and 2.12)"

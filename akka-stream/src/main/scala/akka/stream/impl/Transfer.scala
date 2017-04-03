@@ -4,12 +4,13 @@
 package akka.stream.impl
 
 import scala.util.control.NonFatal
-import akka.actor.{ Actor }
+import akka.actor.Actor
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
-private[akka] class SubReceive(initial: Actor.Receive) extends Actor.Receive {
+@InternalApi private[akka] class SubReceive(initial: Actor.Receive) extends Actor.Receive {
   private var currentReceive = initial
 
   override def isDefinedAt(msg: Any): Boolean = currentReceive.isDefinedAt(msg)
@@ -23,7 +24,7 @@ private[akka] class SubReceive(initial: Actor.Receive) extends Actor.Receive {
 /**
  * INTERNAL API
  */
-private[akka] trait Inputs {
+@InternalApi private[akka] trait Inputs {
   def NeedsInput: TransferState
   def NeedsInputOrComplete: TransferState
 
@@ -42,7 +43,7 @@ private[akka] trait Inputs {
 /**
  * INTERNAL API
  */
-private[akka] trait DefaultInputTransferStates extends Inputs {
+@InternalApi private[akka] trait DefaultInputTransferStates extends Inputs {
   override val NeedsInput: TransferState = new TransferState {
     def isReady = inputsAvailable
     def isCompleted = inputsDepleted
@@ -56,7 +57,7 @@ private[akka] trait DefaultInputTransferStates extends Inputs {
 /**
  * INTERNAL API
  */
-private[akka] trait Outputs {
+@InternalApi private[akka] trait Outputs {
   def NeedsDemand: TransferState
   def NeedsDemandOrCancel: TransferState
 
@@ -78,7 +79,7 @@ private[akka] trait Outputs {
 /**
  * INTERNAL API
  */
-private[akka] trait DefaultOutputTransferStates extends Outputs {
+@InternalApi private[akka] trait DefaultOutputTransferStates extends Outputs {
   override val NeedsDemand: TransferState = new TransferState {
     def isReady = demandAvailable
     def isCompleted = isClosed
@@ -93,7 +94,7 @@ private[akka] trait DefaultOutputTransferStates extends Outputs {
 /**
  * INTERNAL API
  */
-private[akka] trait TransferState {
+@InternalApi private[akka] trait TransferState {
   def isReady: Boolean
   def isCompleted: Boolean
   def isExecutable = isReady && !isCompleted
@@ -112,7 +113,7 @@ private[akka] trait TransferState {
 /**
  * INTERNAL API
  */
-private[akka] object Completed extends TransferState {
+@InternalApi private[akka] object Completed extends TransferState {
   def isReady = false
   def isCompleted = true
 }
@@ -120,7 +121,7 @@ private[akka] object Completed extends TransferState {
 /**
  * INTERNAL API
  */
-private[akka] object NotInitialized extends TransferState {
+@InternalApi private[akka] object NotInitialized extends TransferState {
   def isReady = false
   def isCompleted = false
 }
@@ -128,7 +129,7 @@ private[akka] object NotInitialized extends TransferState {
 /**
  * INTERNAL API
  */
-private[akka] case class WaitingForUpstreamSubscription(remaining: Int, andThen: TransferPhase) extends TransferState {
+@InternalApi private[akka] case class WaitingForUpstreamSubscription(remaining: Int, andThen: TransferPhase) extends TransferState {
   def isReady = false
   def isCompleted = false
 }
@@ -136,7 +137,7 @@ private[akka] case class WaitingForUpstreamSubscription(remaining: Int, andThen:
 /**
  * INTERNAL API
  */
-private[akka] object Always extends TransferState {
+@InternalApi private[akka] object Always extends TransferState {
   def isReady = true
   def isCompleted = false
 }
@@ -144,12 +145,12 @@ private[akka] object Always extends TransferState {
 /**
  * INTERNAL API
  */
-private[akka] final case class TransferPhase(precondition: TransferState)(val action: () ⇒ Unit)
+@InternalApi private[akka] final case class TransferPhase(precondition: TransferState)(val action: () ⇒ Unit)
 
 /**
  * INTERNAL API
  */
-private[akka] trait Pump {
+@InternalApi private[akka] trait Pump {
   private var transferState: TransferState = NotInitialized
   private var currentAction: () ⇒ Unit =
     () ⇒ throw new IllegalStateException("Pump has been not initialized with a phase")

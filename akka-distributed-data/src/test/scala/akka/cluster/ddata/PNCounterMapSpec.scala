@@ -46,6 +46,27 @@ class PNCounterMapSpec extends WordSpec with Matchers {
       (m3 merge m4).entries should be(Map("a" → 1, "b" → 13, "c" → 7))
     }
 
+    "be able to work with deltas" in {
+      val m1 = PNCounterMap().increment(node1, "a", 1).increment(node1, "b", 3).increment(node1, "c", 2)
+      val m2 = PNCounterMap().increment(node2, "c", 5)
+
+      val expected = Map("a" → 1, "b" → 3, "c" → 7)
+      (PNCounterMap() mergeDelta m1.delta.get mergeDelta m2.delta.get).entries should be(expected)
+      (PNCounterMap() mergeDelta m2.delta.get mergeDelta m1.delta.get).entries should be(expected)
+
+      val merged1 = m1 merge m2
+
+      // FIXME use full state for removals, until issue #22648 is fixed
+      pending
+
+      val m3 = merged1.resetDelta.remove(node1, "b")
+      (merged1 mergeDelta m3.delta.get).entries should be(Map("a" → 1, "c" → 7))
+
+      // but if there is a conflicting update the entry is not removed
+      val m4 = merged1.resetDelta.increment(node2, "b", 10)
+      (m3 mergeDelta m4.delta.get).entries should be(Map("a" → 1, "b" → 13, "c" → 7))
+    }
+
     "have unapply extractor" in {
       val m1 = PNCounterMap.empty.increment(node1, "a", 1).increment(node2, "b", 2)
       val PNCounterMap(entries1) = m1

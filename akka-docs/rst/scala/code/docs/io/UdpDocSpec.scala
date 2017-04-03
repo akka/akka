@@ -160,7 +160,7 @@ class ScalaUdpDocSpec extends UdpDocSpec {
 }
 
 class JavaUdpDocSpec extends UdpDocSpec {
-  import UdpDocTest._
+  import jdocs.io.UdpDocTest._
 
   override def listenerProps(next: ActorRef) = Props(new Listener(next))
   override def simpleSenderProps(remote: InetSocketAddress) = Props(new SimpleSender(remote))

@@ -6,16 +6,14 @@ package docs.circuitbreaker;
 //#imports1
 
 import akka.actor.AbstractActor;
-import scala.concurrent.Future;
 import akka.event.LoggingAdapter;
 import scala.concurrent.duration.Duration;
 import akka.pattern.CircuitBreaker;
 import akka.event.Logging;
 
-import static akka.pattern.Patterns.pipe;
-import static akka.dispatch.Futures.future;
+import static akka.pattern.PatternsCS.pipe;
 
-import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 
 //#imports1
 
@@ -29,11 +27,7 @@ public class DangerousJavaActor extends AbstractActor {
     this.breaker = new CircuitBreaker(
       getContext().dispatcher(), getContext().system().scheduler(),
       5, Duration.create(10, "s"), Duration.create(1, "m"))
-      .onOpen(new Runnable() {
-        public void run() {
-          notifyMeOnOpen();
-        }
-      });
+      .onOpen(this::notifyMeOnOpen);
   }
 
   public void notifyMeOnOpen() {
@@ -49,17 +43,14 @@ public class DangerousJavaActor extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder().
-      match(String.class, m -> "is my middle name".equals(m), m -> {
-        pipe(
-          breaker.callWithCircuitBreaker(() -> 
-            future(() -> dangerousCall(), getContext().dispatcher())
-          ), getContext().dispatcher()
-        ).to(sender());
-      })
-      .match(String.class, m -> "block for me".equals(m), m -> {
+      match(String.class, "is my middle name"::equals, m -> pipe(
+        breaker.callWithCircuitBreakerCS(() ->
+          CompletableFuture.supplyAsync(this::dangerousCall)
+        ), getContext().dispatcher()
+      ).to(sender()))
+      .match(String.class, "block for me"::equals, m -> {
         sender().tell(breaker
-          .callWithSyncCircuitBreaker(
-            () -> dangerousCall()), self());
+          .callWithSyncCircuitBreaker(this::dangerousCall), self());
       })
       .build();
   }

@@ -159,13 +159,21 @@ object PersistenceDocSpec {
     class MyPersistentActor extends PersistentActor {
       override def persistenceId = "my-stable-persistence-id"
 
+      def updateState(event: String): Unit = {}
+
       //#save-snapshot
       var state: Any = _
 
+      val snapShotInterval = 1000
       override def receiveCommand: Receive = {
-        case "snap"                                => saveSnapshot(state)
         case SaveSnapshotSuccess(metadata)         => // ...
         case SaveSnapshotFailure(metadata, reason) => // ...
+        case cmd: String =>
+          persist(s"evt-$cmd") { e =>
+            updateState(e)
+            if (lastSequenceNr % snapShotInterval == 0 && lastSequenceNr != 0)
+              saveSnapshot(state)
+          }
       }
       //#save-snapshot
 
@@ -270,6 +278,28 @@ object PersistenceDocSpec {
     // evt-b-3
 
     //#defer-caller
+  }
+
+  object DeferWithPersist {
+    //#defer-with-persist
+    class MyPersistentActor extends PersistentActor {
+
+      override def persistenceId = "my-stable-persistence-id"
+
+      override def receiveRecover: Receive = {
+        case _ => // handle recovery here
+      }
+
+      override def receiveCommand: Receive = {
+        case c: String => {
+          sender() ! c
+          persist(s"evt-$c-1") { e => sender() ! e }
+          persist(s"evt-$c-2") { e => sender() ! e }
+          deferAsync(s"evt-$c-3") { e => sender() ! e }
+        }
+      }
+    }
+    //#defer-with-persist
   }
 
   object NestedPersists {

@@ -12,7 +12,7 @@ import akka.util.Timeout
 import akka.pattern.AskTimeoutException
 
 import ScalaDSL._
-import AskPattern._
+import akka.typed.scaladsl.AskPattern._
 
 object AskSpec {
 
@@ -37,7 +37,7 @@ class AskSpec extends TypedSpec with ScalaFutures {
         foo.replyTo ! "foo"
         Same
       case Stop(r) ⇒
-        r ! ()
+        r ! (())
         Stopped
     }
 

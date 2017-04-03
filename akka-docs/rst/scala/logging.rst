@@ -20,7 +20,7 @@ as illustrated in this example:
 .. includecode:: code/docs/event/LoggingDocSpec.scala
    :include: my-actor
 
-For convenience you can mixin the ``log`` member into actors, instead of defining it as above.
+For convenience, you can mix in the ``log`` member into actors, instead of defining it as above.
 
 .. code-block:: scala
 
@@ -34,11 +34,11 @@ The source object is translated to a String according to the following rules:
   * if it is an Actor or ActorRef, its path is used
   * in case of a String it is used as is
   * in case of a class an approximation of its simpleName
-  * and in all other cases a compile error occurs unless and implicit
+  * and in all other cases a compile error occurs unless an implicit
     :class:`LogSource[T]` is in scope for the type in question.
 
 The log message may contain argument placeholders ``{}``, which will be
-substituted if the log level is enabled. Giving more arguments as there are
+substituted if the log level is enabled. Giving more arguments than
 placeholders results in a warning being appended to the log statement (i.e. on
 the same line with the same severity). You may pass an array as the only
 substitution argument to have its elements be treated individually:
@@ -56,7 +56,7 @@ Logging of Dead Letters
 -----------------------
 
 By default messages sent to dead letters are logged at info level. Existence of dead letters
-does not necessarily indicate a problem, but it might be, and therefore they are logged by default.
+does not necessarily indicate a problem, but they are logged by default for the sake of caution.
 After a few messages this logging is turned off, to avoid flooding the logs.
 You can disable this logging completely or adjust how many dead letters that are
 logged. During system shutdown it is likely that you see dead letters, since pending
@@ -76,8 +76,7 @@ to the :ref:`event-stream-scala`.
 Auxiliary logging options
 -------------------------
 
-Akka has a couple of configuration options for very low level debugging, that makes most sense in
-for developers and not for operations.
+Akka has a few configuration options for very low level debugging. These make more sense in development than in production. 
 
 You almost definitely need to have logging set to DEBUG to use any of the options below:
 
@@ -181,8 +180,7 @@ If you want to monitor subscriptions (subscribe/unsubscribe) on the ActorSystem.
 Auxiliary remote logging options
 --------------------------------
 
-If you want to see all messages that are sent through remoting at DEBUG log level:
-(This is logged as they are sent by the transport layer, not by the Actor)
+If you want to see all messages that are sent through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are sent by the transport layer, not by an actor.
 
 .. code-block:: ruby
 
@@ -194,8 +192,7 @@ If you want to see all messages that are sent through remoting at DEBUG log leve
       }
     }
 
-If you want to see all messages that are received through remoting at DEBUG log level:
-(This is logged as they are received by the transport layer, not by any Actor)
+If you want to see all messages that are received through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are received by the transport layer, not by an actor.
 
 .. code-block:: ruby
 
@@ -272,12 +269,12 @@ Loggers
 =======
 
 Logging is performed asynchronously through an event bus. Log events are processed by an event handler actor
-and it will receive the log events in the same order as they were emitted. 
+that receives the log events in the same order they were emitted. 
 
 .. note::
   The event handler actor does not have a bounded inbox and is run on the default dispatcher. This means
-  that logging extreme amounts of data may affect your application badly. It can be somewhat mitigated by
-  making sure to use an async logging backend though. (See :ref:`slf4j-directly-scala`)
+  that logging extreme amounts of data may affect your application badly. This can be somewhat mitigated by
+using an async logging backend though. (See :ref:`slf4j-directly-scala`)
 
 You can configure which event handlers are created at system start-up and listen to logging events. That is done using the 
 ``loggers`` element in the :ref:`configuration`.
@@ -318,7 +315,7 @@ SLF4J
 =====
 
 Akka provides a logger for `SL4FJ <http://www.slf4j.org/>`_. This module is available in the 'akka-slf4j.jar'.
-It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4J backend, we recommend `Logback <http://logback.qos.ch/>`_:
+It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend `Logback <http://logback.qos.ch/>`_:
 
   .. code-block:: scala
 
@@ -436,9 +433,9 @@ MDC values defined by the application
 -------------------------------------
 
 One useful feature available in Slf4j is `MDC <http://logback.qos.ch/manual/mdc.html>`_,
-Akka has a way for let the application specify custom values, you just need to get a
+Akka has a way to let the application specify custom values, you just need to get a
 specialized :class:`LoggingAdapter`, the :class:`DiagnosticLoggingAdapter`. In order to
-get it you will use the factory receiving an Actor as logSource:
+get it you can use the factory, providing an Actor as logSource:
 
 .. code-block:: scala
 
@@ -446,7 +443,7 @@ get it you will use the factory receiving an Actor as logSource:
     val log: DiagnosticLoggingAdapter = Logging(this);
 
 Once you have the logger, you just need to add the custom values before you log something.
-This way, the values will dologbe put in the SLF4J MDC right before appending the log and removed after.
+This way, the values will be put in the SLF4J MDC right before appending the log and removed after.
 
 .. note::
 
@@ -456,7 +453,7 @@ This way, the values will dologbe put in the SLF4J MDC right before appending th
 
 .. includecode:: code/docs/event/LoggingDocSpec.scala#mdc
 
-For convenience you can mixin the ``log`` member into actors, instead of defining it as above.
+For convenience, you can mix in the ``log`` member into actors, instead of defining it as above.
 This trait also lets you override ``def mdc(msg: Any): MDC`` for specifying MDC values
 depending on current message and lets you forget about the cleanup as well, since it already does it for you.
 

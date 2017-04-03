@@ -1,13 +1,12 @@
 /**
  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
-import akka.NotUsed
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{ Balance, Broadcast, Merge, Zip }
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ OverflowStrategy, Attributes }
-import akka.stream.scaladsl.{ Merge, Broadcast, Balance, Zip }
-import GraphInterpreter._
 
 class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   import GraphStages._
@@ -45,18 +44,10 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       val sink = new DownstreamProbe[Int]("sink")
 
       // Constructing an assembly by hand and resolving ambiguities
-      val assembly = new GraphAssembly(
-        stages = Array(identity, identity),
-        originalAttributes = Array(Attributes.none, Attributes.none),
-        ins = Array(identity.in, identity.in, null),
-        inOwners = Array(0, 1, -1),
-        outs = Array(null, identity.out, identity.out),
-        outOwners = Array(-1, 0, 1))
+      val (logics, _, _) = GraphInterpreterSpecKit.createLogics(Array(identity), Array(source), Array(sink))
+      val connections = GraphInterpreterSpecKit.createLinearFlowConnections(logics)
 
-      manualInit(assembly)
-      interpreter.attachDownstreamBoundary(2, sink)
-      interpreter.attachUpstreamBoundary(0, source)
-      interpreter.init(null)
+      manualInit(logics, connections)
 
       lastEvents() should ===(Set.empty)
 
@@ -66,7 +57,6 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       source.onNext(1)
       lastEvents() should ===(Set(OnNext(sink, 1)))
     }
-
     "implement detacher stage" in new TestSetup {
       val source = new UpstreamProbe[Int]("source")
       val sink = new DownstreamProbe[Int]("sink")
@@ -371,3 +361,4 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   }
 
 }
+

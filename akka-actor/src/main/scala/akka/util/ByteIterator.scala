@@ -13,7 +13,6 @@ import scala.reflect.ClassTag
 
 object ByteIterator {
   object ByteArrayIterator {
-    private val emptyArray: Array[Byte] = Array.ofDim[Byte](0)
 
     protected[akka] def apply(array: Array[Byte]): ByteArrayIterator =
       new ByteArrayIterator(array, 0, array.length)
@@ -21,7 +20,7 @@ object ByteIterator {
     protected[akka] def apply(array: Array[Byte], from: Int, until: Int): ByteArrayIterator =
       new ByteArrayIterator(array, from, until)
 
-    val empty: ByteArrayIterator = apply(emptyArray)
+    val empty: ByteArrayIterator = apply(Array.emptyByteArray)
   }
 
   class ByteArrayIterator private (private var array: Array[Byte], private var from: Int, private var until: Int) extends ByteIterator {
@@ -38,7 +37,7 @@ object ByteIterator {
       else { val i = from; from = from + 1; array(i) }
     }
 
-    def clear(): Unit = { this.array = ByteArrayIterator.emptyArray; from = 0; until = from }
+    def clear(): Unit = { this.array = Array.emptyByteArray; from = 0; until = from }
 
     final override def length: Int = { val l = len; clear(); l }
 
@@ -460,7 +459,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   }
 
   override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = {
-    val target = Array.ofDim[B](len)
+    val target = new Array[B](len)
     copyToArray(target)
     target
   }

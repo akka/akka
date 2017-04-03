@@ -3,7 +3,9 @@
  */
 package akka.pattern
 
+import java.util.Optional
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
+import java.util.function.Consumer
 
 import akka.AkkaException
 import akka.actor.Scheduler
@@ -11,12 +13,13 @@ import akka.util.Unsafe
 
 import scala.util.control.NoStackTrace
 import java.util.concurrent.{ Callable, CompletionStage, CopyOnWriteArrayList }
+import java.util.function.BiFunction
 
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
 import scala.concurrent.TimeoutException
 import scala.util.control.NonFatal
-import scala.util.Success
+import scala.util.{ Failure, Success, Try }
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
 import scala.compat.java8.FutureConverters
@@ -40,6 +43,7 @@ object CircuitBreaker {
    */
   def apply(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration): CircuitBreaker =
     new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(sameThreadExecutionContext)
+
   /**
    * Java API: Create a new CircuitBreaker.
    *
@@ -54,6 +58,29 @@ object CircuitBreaker {
    */
   def create(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration): CircuitBreaker =
     apply(scheduler, maxFailures, callTimeout, resetTimeout)
+
+  private val exceptionAsFailure: Try[_] ⇒ Boolean = {
+    case _: Success[_] ⇒ false
+    case _             ⇒ true
+  }
+
+  private def exceptionAsFailureJava[T]: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean] =
+    new BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean] {
+      override def apply(t: Optional[T], err: Optional[Throwable]) = {
+        if (err.isPresent)
+          true
+        else
+          false
+      }
+    }
+
+  protected def convertJavaFailureFnToScala[T](javaFn: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]): Try[T] ⇒ Boolean = {
+    val failureFnInScala: Try[T] ⇒ Boolean = {
+      case Success(t)   ⇒ javaFn(Optional.of(t), Optional.empty())
+      case Failure(err) ⇒ javaFn(Optional.empty(), Optional.of(err))
+    }
+    failureFnInScala
+  }
 }
 
 /**
@@ -154,11 +181,22 @@ class CircuitBreaker(
    * Wraps invocations of asynchronous calls that need to be protected
    *
    * @param body Call needing protected
+   * @param defineFailureFn function that define what should be consider failure and thus increase failure count
+   * @return [[scala.concurrent.Future]] containing the call result or a
+   *   `scala.concurrent.TimeoutException` if the call timed out
+   */
+  def withCircuitBreaker[T](body: ⇒ Future[T], defineFailureFn: Try[T] ⇒ Boolean): Future[T] =
+    currentState.invoke(body, defineFailureFn)
+
+  /**
+   * Wraps invocations of asynchronous calls that need to be protected
+   *
+   * @param body Call needing protected
    * @return [[scala.concurrent.Future]] containing the call result or a
    *   `scala.concurrent.TimeoutException` if the call timed out
    *
    */
-  def withCircuitBreaker[T](body: ⇒ Future[T]): Future[T] = currentState.invoke(body)
+  def withCircuitBreaker[T](body: ⇒ Future[T]): Future[T] = currentState.invoke(body, CircuitBreaker.exceptionAsFailure)
 
   /**
    * Java API for [[#withCircuitBreaker]]
@@ -167,7 +205,22 @@ class CircuitBreaker(
    * @return [[scala.concurrent.Future]] containing the call result or a
    *   `scala.concurrent.TimeoutException` if the call timed out
    */
-  def callWithCircuitBreaker[T](body: Callable[Future[T]]): Future[T] = withCircuitBreaker(body.call)
+  def callWithCircuitBreaker[T](body: Callable[Future[T]]): Future[T] =
+    callWithCircuitBreaker(body, CircuitBreaker.exceptionAsFailureJava[T])
+
+  /**
+   * Java API for [[#withCircuitBreaker]]
+   *
+   * @param body Call needing protected
+   * @param defineFailureFn function that define what should be consider failure and thus increase failure count
+   * @return [[scala.concurrent.Future]] containing the call result or a
+   *   `scala.concurrent.TimeoutException` if the call timed out
+   */
+  def callWithCircuitBreaker[T](body: Callable[Future[T]], defineFailureFn: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]): Future[T] = {
+    val failureFnInScala = CircuitBreaker.convertJavaFailureFnToScala(defineFailureFn)
+
+    withCircuitBreaker(body.call, failureFnInScala)
+  }
 
   /**
    * Java API (8) for [[#withCircuitBreaker]]
@@ -177,9 +230,22 @@ class CircuitBreaker(
    *   `scala.concurrent.TimeoutException` if the call timed out
    */
   def callWithCircuitBreakerCS[T](body: Callable[CompletionStage[T]]): CompletionStage[T] =
+    callWithCircuitBreakerCS(body, CircuitBreaker.exceptionAsFailureJava)
+
+  /**
+   * Java API (8) for [[#withCircuitBreaker]]
+   *
+   * @param body Call needing protected
+   * @param defineFailureFn function that define what should be consider failure and thus increase failure count
+   * @return [[java.util.concurrent.CompletionStage]] containing the call result or a
+   *   `scala.concurrent.TimeoutException` if the call timed out
+   */
+  def callWithCircuitBreakerCS[T](
+    body:            Callable[CompletionStage[T]],
+    defineFailureFn: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]): CompletionStage[T] =
     FutureConverters.toJava[T](callWithCircuitBreaker(new Callable[Future[T]] {
       override def call(): Future[T] = FutureConverters.toScala(body.call())
-    }))
+    }, defineFailureFn))
 
   /**
    * Wraps invocations of synchronous calls that need to be protected
@@ -194,8 +260,26 @@ class CircuitBreaker(
    * @return The result of the call
    */
   def withSyncCircuitBreaker[T](body: ⇒ T): T =
+    withSyncCircuitBreaker(body, CircuitBreaker.exceptionAsFailure)
+
+  /**
+   * Wraps invocations of synchronous calls that need to be protected
+   *
+   * Calls are run in caller's thread. Because of the synchronous nature of
+   * this call the  `scala.concurrent.TimeoutException` will only be thrown
+   * after the body has completed.
+   *
+   * Throws java.util.concurrent.TimeoutException if the call timed out.
+   *
+   * @param body Call needing protected
+   * @param defineFailureFn function that define what should be consider failure and thus increase failure count
+   * @return The result of the call
+   */
+  def withSyncCircuitBreaker[T](body: ⇒ T, defineFailureFn: Try[T] ⇒ Boolean): T =
     Await.result(
-      withCircuitBreaker(try Future.successful(body) catch { case NonFatal(t) ⇒ Future.failed(t) }),
+      withCircuitBreaker(
+        try Future.successful(body) catch { case NonFatal(t) ⇒ Future.failed(t) },
+        defineFailureFn),
       callTimeout)
 
   /**
@@ -204,7 +288,20 @@ class CircuitBreaker(
    * @param body Call needing protected
    * @return The result of the call
    */
-  def callWithSyncCircuitBreaker[T](body: Callable[T]): T = withSyncCircuitBreaker(body.call)
+  def callWithSyncCircuitBreaker[T](body: Callable[T]): T =
+    callWithSyncCircuitBreaker(body, CircuitBreaker.exceptionAsFailureJava[T])
+
+  /**
+   * Java API for [[#withSyncCircuitBreaker]]. Throws [[java.util.concurrent.TimeoutException]] if the call timed out.
+   *
+   * @param body Call needing protected
+   * @param defineFailureFn function that define what should be consider failure and thus increase failure count
+   * @return The result of the call
+   */
+  def callWithSyncCircuitBreaker[T](body: Callable[T], defineFailureFn: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]): T = {
+    val failureFnInScala = CircuitBreaker.convertJavaFailureFnToScala(defineFailureFn)
+    withSyncCircuitBreaker(body.call, failureFnInScala)
+  }
 
   /**
    * Mark a successful call through CircuitBreaker. Sometimes the callee of CircuitBreaker sends back a message to the
@@ -262,7 +359,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
-  def onOpen(callback: ⇒ Unit): CircuitBreaker = onOpen(new Runnable { def run = callback })
+  def onOpen(callback: ⇒ Unit): CircuitBreaker = addOnOpenListener(new Runnable { def run = callback })
 
   /**
    * Java API for onOpen
@@ -270,7 +367,16 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
-  def onOpen(callback: Runnable): CircuitBreaker = {
+  @deprecated("Use addOnOpenListener instead", "2.5.0")
+  def onOpen(callback: Runnable): CircuitBreaker = addOnOpenListener(callback)
+
+  /**
+   * Java API for onOpen
+   *
+   * @param callback Handler to be invoked on state change
+   * @return CircuitBreaker for fluent usage
+   */
+  def addOnOpenListener(callback: Runnable): CircuitBreaker = {
     Open addListener callback
     this
   }
@@ -282,7 +388,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
-  def onHalfOpen(callback: ⇒ Unit): CircuitBreaker = onHalfOpen(new Runnable { def run = callback })
+  def onHalfOpen(callback: ⇒ Unit): CircuitBreaker = addOnHalfOpenListener(new Runnable { def run = callback })
 
   /**
    * JavaAPI for onHalfOpen
@@ -290,7 +396,16 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
-  def onHalfOpen(callback: Runnable): CircuitBreaker = {
+  @deprecated("Use addOnHalfOpenListener instead", "2.5.0")
+  def onHalfOpen(callback: Runnable): CircuitBreaker = addOnHalfOpenListener(callback)
+
+  /**
+   * JavaAPI for onHalfOpen
+   *
+   * @param callback Handler to be invoked on state change
+   * @return CircuitBreaker for fluent usage
+   */
+  def addOnHalfOpenListener(callback: Runnable): CircuitBreaker = {
     HalfOpen addListener callback
     this
   }
@@ -303,7 +418,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
-  def onClose(callback: ⇒ Unit): CircuitBreaker = onClose(new Runnable { def run = callback })
+  def onClose(callback: ⇒ Unit): CircuitBreaker = addOnCloseListener(new Runnable { def run = callback })
 
   /**
    * JavaAPI for onClose
@@ -311,8 +426,107 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
-  def onClose(callback: Runnable): CircuitBreaker = {
+  @deprecated("Use addOnCloseListener instead", "2.5.0")
+  def onClose(callback: Runnable): CircuitBreaker = addOnCloseListener(callback)
+
+  /**
+   * JavaAPI for onClose
+   *
+   * @param callback Handler to be invoked on state change
+   * @return CircuitBreaker for fluent usage
+   */
+  def addOnCloseListener(callback: Runnable): CircuitBreaker = {
     Closed addListener callback
+    this
+  }
+
+  /**
+   * Adds a callback to execute when call finished with success.
+   *
+   * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
+   *
+   * @param callback Handler to be invoked on successful call, where passed value is elapsed time in nanoseconds.
+   * @return CircuitBreaker for fluent usage
+   */
+  def onCallSuccess(callback: Long ⇒ Unit): CircuitBreaker = addOnCallSuccessListener(new Consumer[Long] {
+    def accept(result: Long): Unit = callback(result)
+  })
+
+  /**
+   * JavaAPI for onCallSuccess
+   *
+   * @param callback Handler to be invoked on successful call, where passed value is elapsed time in nanoseconds.
+   * @return CircuitBreaker for fluent usage
+   */
+  def addOnCallSuccessListener(callback: Consumer[Long]): CircuitBreaker = {
+    successListeners add callback
+    this
+  }
+
+  /**
+   * Adds a callback to execute when call finished with failure.
+   *
+   * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
+   *
+   * @param callback Handler to be invoked on failed call, where passed value is elapsed time in nanoseconds.
+   * @return CircuitBreaker for fluent usage
+   */
+  def onCallFailure(callback: Long ⇒ Unit): CircuitBreaker = addOnCallFailureListener(new Consumer[Long] {
+    def accept(result: Long): Unit = callback(result)
+  })
+
+  /**
+   * JavaAPI for onCallFailure
+   *
+   * @param callback Handler to be invoked on failed call, where passed value is elapsed time in nanoseconds.
+   * @return CircuitBreaker for fluent usage
+   */
+  def addOnCallFailureListener(callback: Consumer[Long]): CircuitBreaker = {
+    callFailureListeners add callback
+    this
+  }
+
+  /**
+   * Adds a callback to execute when call finished with timeout.
+   *
+   * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
+   *
+   * @param callback Handler to be invoked on call finished with timeout, where passed value is elapsed time in nanoseconds.
+   * @return CircuitBreaker for fluent usage
+   */
+  def onCallTimeout(callback: Long ⇒ Unit): CircuitBreaker = addOnCallTimeoutListener(new Consumer[Long] {
+    def accept(result: Long): Unit = callback(result)
+  })
+
+  /**
+   * JavaAPI for onCallTimeout
+   *
+   * @param callback Handler to be invoked on call finished with timeout, where passed value is elapsed time in nanoseconds.
+   * @return CircuitBreaker for fluent usage
+   */
+  def addOnCallTimeoutListener(callback: Consumer[Long]): CircuitBreaker = {
+    callTimeoutListeners add callback
+    this
+  }
+
+  /**
+   * Adds a callback to execute when call was failed due to open breaker.
+   *
+   * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
+   *
+   * @param callback Handler to be invoked on call failed due to open breaker.
+   * @return CircuitBreaker for fluent usage
+   */
+  def onCallBreakerOpen(callback: ⇒ Unit): CircuitBreaker = addOnCallBreakerOpenListener(new Runnable { def run = callback })
+
+  /**
+   * JavaAPI for onCallBreakerOpen.
+   *
+   * @param callback Handler to be invoked on call failed due to open breaker.
+   * @return CircuitBreaker for fluent usage
+   */
+  def addOnCallBreakerOpenListener(callback: Runnable): CircuitBreaker = {
+    callBreakerOpenListeners add callback
     this
   }
 
@@ -349,12 +563,79 @@ class CircuitBreaker(
   private def resetBreaker(): Unit = transition(HalfOpen, Closed)
 
   /**
+   * Invokes all onSuccess callback handlers.
+   *
+   * @param start time in nanoseconds of call invocation
+   */
+  private def notifyCallSuccessListeners(start: Long): Unit = if (!successListeners.isEmpty) {
+    val elapsed = System.nanoTime() - start
+    val iterator = successListeners.iterator()
+    while (iterator.hasNext) {
+      val listener = iterator.next()
+      executor.execute(new Runnable {
+        def run() = listener.accept(elapsed)
+      })
+    }
+  }
+
+  /**
+   * Invokes all onCallFailure callback handlers.
+   *
+   * @param start time in nanoseconds of call invocation
+   */
+  private def notifyCallFailureListeners(start: Long): Unit = if (!callFailureListeners.isEmpty) {
+    val elapsed = System.nanoTime() - start
+    val iterator = callFailureListeners.iterator()
+    while (iterator.hasNext) {
+      val listener = iterator.next()
+      executor.execute(new Runnable {
+        def run() = listener.accept(elapsed)
+      })
+    }
+  }
+
+  /**
+   * Invokes all onCallTimeout callback handlers.
+   *
+   * @param start time in nanoseconds of call invocation
+   */
+  private def notifyCallTimeoutListeners(start: Long): Unit = if (!callTimeoutListeners.isEmpty) {
+    val elapsed = System.nanoTime() - start
+    val iterator = callTimeoutListeners.iterator()
+    while (iterator.hasNext) {
+      val listener = iterator.next()
+      executor.execute(new Runnable {
+        def run() = listener.accept(elapsed)
+      })
+    }
+  }
+
+  /**
+   * Invokes all onCallBreakerOpen callback handlers.
+   */
+  private def notifyCallBreakerOpenListeners(): Unit = if (!callBreakerOpenListeners.isEmpty) {
+    val iterator = callBreakerOpenListeners.iterator()
+    while (iterator.hasNext) {
+      val listener = iterator.next()
+      executor.execute(listener)
+    }
+  }
+
+  /**
    * Attempts to reset breaker by transitioning to a half-open state.  This is valid from an Open state only.
    *
    */
   private def attemptReset(): Unit = transition(Open, HalfOpen)
 
-  private val timeoutFuture = Future.failed(new TimeoutException("Circuit Breaker Timed out.") with NoStackTrace)
+  private val timeoutEx = new TimeoutException("Circuit Breaker Timed out.") with NoStackTrace
+
+  private val callFailureListeners = new CopyOnWriteArrayList[Consumer[Long]]
+
+  private val callTimeoutListeners = new CopyOnWriteArrayList[Consumer[Long]]
+
+  private val callBreakerOpenListeners = new CopyOnWriteArrayList[Runnable]
+
+  private val successListeners = new CopyOnWriteArrayList[Consumer[Long]]
 
   /**
    * Internal state abstraction
@@ -396,34 +677,79 @@ class CircuitBreaker(
      * call timeout is counted as a failed call, otherwise a successful call
      *
      * @param body Implementation of the call
+     * @param defineFailureFn function that define what should be consider failure and thus increase failure count
      * @return Future containing the result of the call
      */
-    def callThrough[T](body: ⇒ Future[T]): Future[T] = {
+    def callThrough[T](body: ⇒ Future[T], defineFailureFn: Try[T] ⇒ Boolean): Future[T] = {
 
       def materialize[U](value: ⇒ Future[U]): Future[U] = try value catch { case NonFatal(t) ⇒ Future.failed(t) }
 
       if (callTimeout == Duration.Zero) {
-        materialize(body)
+        val start = System.nanoTime()
+        val f = materialize(body)
+
+        f.onComplete {
+          case s: Success[_] ⇒
+            notifyCallSuccessListeners(start)
+            callSucceeds()
+          case Failure(ex) ⇒
+            notifyCallFailureListeners(start)
+            callFails()
+        }
+
+        f
       } else {
+        val start = System.nanoTime()
         val p = Promise[T]()
 
         implicit val ec = sameThreadExecutionContext
-        p.future.onComplete {
-          case s: Success[_] ⇒ callSucceeds()
-          case _             ⇒ callFails()
+
+        p.future.onComplete { fResult ⇒
+          if (defineFailureFn(fResult)) {
+            callFails()
+          } else {
+            notifyCallSuccessListeners(start)
+            callSucceeds()
+          }
         }
 
         val timeout = scheduler.scheduleOnce(callTimeout) {
-          p tryCompleteWith timeoutFuture
+          if (p tryFailure timeoutEx) {
+            notifyCallTimeoutListeners(start)
+          }
         }
 
-        materialize(body).onComplete { result ⇒
-          p tryComplete result
-          timeout.cancel
+        materialize(body).onComplete {
+          case Success(result) ⇒
+            p.trySuccess(result)
+            timeout.cancel
+          case Failure(ex) ⇒
+            if (p.tryFailure(ex)) {
+              notifyCallFailureListeners(start)
+            }
+            timeout.cancel
         }
         p.future
       }
     }
+
+    /**
+     * Shared implementation of call across all states.  Thrown exception or execution of the call beyond the allowed
+     * call timeout is counted as a failed call, otherwise a successful call
+     *
+     * @param body Implementation of the call
+     * @return Future containing the result of the call
+     */
+    def callThrough[T](body: ⇒ Future[T]): Future[T] = callThrough(body, CircuitBreaker.exceptionAsFailure)
+
+    /**
+     * Abstract entry point for all states
+     *
+     * @param body Implementation of the call that needs protected
+     * @param defineFailureFn function that define what should be consider failure and thus increase failure count
+     * @return Future containing result of protected call
+     */
+    def invoke[T](body: ⇒ Future[T], defineFailureFn: Try[T] ⇒ Boolean): Future[T]
 
     /**
      * Abstract entry point for all states
@@ -431,7 +757,7 @@ class CircuitBreaker(
      * @param body Implementation of the call that needs protected
      * @return Future containing result of protected call
      */
-    def invoke[T](body: ⇒ Future[T]): Future[T]
+    def invoke[T](body: ⇒ Future[T]): Future[T] = invoke(body, CircuitBreaker.exceptionAsFailure)
 
     /**
      * Invoked when call succeeds
@@ -473,7 +799,8 @@ class CircuitBreaker(
      * @param body Implementation of the call that needs protected
      * @return Future containing result of protected call
      */
-    override def invoke[T](body: ⇒ Future[T]): Future[T] = callThrough(body)
+    override def invoke[T](body: ⇒ Future[T], defineFailureFn: Try[T] ⇒ Boolean): Future[T] =
+      callThrough(body, defineFailureFn)
 
     /**
      * On successful call, the failure count is reset to 0
@@ -520,8 +847,13 @@ class CircuitBreaker(
      * @param body Implementation of the call that needs protected
      * @return Future containing result of protected call
      */
-    override def invoke[T](body: ⇒ Future[T]): Future[T] =
-      if (compareAndSet(true, false)) callThrough(body) else Promise.failed[T](new CircuitBreakerOpenException(0.seconds)).future
+    override def invoke[T](body: ⇒ Future[T], defineFailureFn: Try[T] ⇒ Boolean): Future[T] =
+      if (compareAndSet(true, false))
+        callThrough(body, defineFailureFn)
+      else {
+        notifyCallBreakerOpenListeners()
+        Promise.failed[T](new CircuitBreakerOpenException(0.seconds)).future
+      }
 
     /**
      * Reset breaker on successful call.
@@ -563,8 +895,10 @@ class CircuitBreaker(
      * @param body Implementation of the call that needs protected
      * @return Future containing result of protected call
      */
-    override def invoke[T](body: ⇒ Future[T]): Future[T] =
+    override def invoke[T](body: ⇒ Future[T], defineFailureFn: Try[T] ⇒ Boolean): Future[T] = {
+      notifyCallBreakerOpenListeners()
       Promise.failed[T](new CircuitBreakerOpenException(remainingDuration())).future
+    }
 
     /**
      * Calculate remaining duration until reset to inform the caller in case a backoff algorithm is useful

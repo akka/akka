@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import akka.testkit.DefaultTimeout
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Span, Millis }
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NoStackTrace
@@ -48,7 +48,6 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       p.subscribe(c2)
       c2.expectSubscriptionAndError()
     }
-
   }
 
   "Empty Source" must {
@@ -417,5 +416,4 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       closed should ===(true)
     }
   }
-
 }

@@ -1,13 +1,14 @@
 package akka.stream.impl
 
-import akka.actor.{ Deploy, Props, Actor, ActorRef }
+import akka.actor.{ Actor, ActorRef, Deploy, Props }
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream.ActorMaterializerSettings
 import org.reactivestreams.Subscriber
 
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanoutOutputs(
+@DoNotInherit private[akka] abstract class FanoutOutputs(
   val maxBufferSize:     Int,
   val initialBufferSize: Int,
   self:                  ActorRef,
@@ -92,14 +93,17 @@ private[akka] abstract class FanoutOutputs(
 
 }
 
-private[akka] object FanoutProcessorImpl {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object FanoutProcessorImpl {
   def props(actorMaterializerSettings: ActorMaterializerSettings): Props =
     Props(new FanoutProcessorImpl(actorMaterializerSettings)).withDeploy(Deploy.local)
 }
 /**
  * INTERNAL API
  */
-private[akka] class FanoutProcessorImpl(_settings: ActorMaterializerSettings)
+@InternalApi private[akka] class FanoutProcessorImpl(_settings: ActorMaterializerSettings)
   extends ActorProcessorImpl(_settings) {
 
   override val primaryOutputs: FanoutOutputs =

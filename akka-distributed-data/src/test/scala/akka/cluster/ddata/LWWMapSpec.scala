@@ -47,6 +47,30 @@ class LWWMapSpec extends WordSpec with Matchers {
       (m3 merge m4).entries should be(Map("a" → 1, "b" → 22, "c" → 3))
     }
 
+    "be able to work with deltas" in {
+      val m1 = LWWMap.empty.put(node1, "a", 1, defaultClock[Int]).put(node1, "b", 2, defaultClock[Int])
+      val m2 = LWWMap.empty.put(node2, "c", 3, defaultClock[Int])
+
+      val expected = Map("a" → 1, "b" → 2, "c" → 3)
+      (m1 merge m2).entries should be(expected)
+      (m2 merge m1).entries should be(expected)
+
+      LWWMap.empty.mergeDelta(m1.delta.get).mergeDelta(m2.delta.get).entries should be(expected)
+      LWWMap.empty.mergeDelta(m2.delta.get).mergeDelta(m1.delta.get).entries should be(expected)
+
+      val merged1 = m1 merge m2
+
+      // FIXME use full state for removals, until issue #22648 is fixed
+      pending
+
+      val m3 = merged1.resetDelta.remove(node1, "b")
+      (merged1 mergeDelta m3.delta.get).entries should be(Map("a" → 1, "c" → 3))
+
+      // but if there is a conflicting update the entry is not removed
+      val m4 = merged1.resetDelta.put(node2, "b", 22, defaultClock[Int])
+      (m3 mergeDelta m4.delta.get).entries should be(Map("a" → 1, "b" → 22, "c" → 3))
+    }
+
     "have unapply extractor" in {
       val m1 = LWWMap.empty.put(node1, "a", 1L, defaultClock[Long])
       val LWWMap(entries1) = m1

@@ -9,7 +9,6 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Attributes._
 import akka.stream.impl.SinkModule
-import akka.stream.impl.StreamLayout.Module
 import akka.util.ByteString
 
 import scala.annotation.tailrec
@@ -26,7 +25,6 @@ import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
-
 import java.util.concurrent.ThreadLocalRandom
 
 object FlowGroupBySpec {
@@ -433,7 +431,7 @@ class FlowGroupBySpec extends StreamSpec {
           (probe, probe)
         }
         override protected def newInstance(shape: SinkShape[ByteString]): SinkModule[ByteString, TestSubscriber.Probe[ByteString]] = new ProbeSink(attributes, shape)
-        override def withAttributes(attr: Attributes): Module = new ProbeSink(attr, amendShape(attr))
+        override def withAttributes(attr: Attributes): SinkModule[ByteString, TestSubscriber.Probe[ByteString]] = new ProbeSink(attr, amendShape(attr))
       }
 
       @tailrec
@@ -463,7 +461,7 @@ class FlowGroupBySpec extends StreamSpec {
 
       val publisherProbe = TestPublisher.manualProbe[ByteString]()
       Source.fromPublisher[ByteString](publisherProbe)
-        .groupBy(100, elem ⇒ Math.abs(elem.head % 100)).to(new Sink(new ProbeSink(none, SinkShape(Inlet("ProbeSink.in"))))).run()(mat)
+        .groupBy(100, elem ⇒ Math.abs(elem.head % 100)).to(Sink.fromGraph(new ProbeSink(none, SinkShape(Inlet("ProbeSink.in"))))).run()(mat)
 
       val upstreamSubscription = publisherProbe.expectSubscription()
 

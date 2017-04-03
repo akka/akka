@@ -5,6 +5,7 @@ package akka.stream.impl
 
 import java.util.concurrent.{ TimeUnit, TimeoutException }
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -23,7 +24,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  *  - if the timer fires before the event happens, these stages all fail the stream
  *  - otherwise, these streams do not interfere with the element flow, ordinary completion or failure
  */
-object Timers {
+@InternalApi private[akka] object Timers {
   private def idleTimeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
     import scala.concurrent.duration._
     FiniteDuration(

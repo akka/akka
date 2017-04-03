@@ -218,10 +218,10 @@ maximum stash capacity in the mailbox configuration::
 
 Note that the stash capacity is per actor. If you have many persistent actors, e.g. when using cluster sharding,
 you may need to define a small stash capacity to ensure that the total number of stashed messages in the system
-don't consume too much memory. Additionally, The persistent actor defines three strategies to handle failure when the 
+doesn't consume too much memory. Additionally, the persistent actor defines three strategies to handle failure when the 
 internal stash capacity is exceeded. The default overflow strategy is the ``ThrowOverflowExceptionStrategy``, which 
-discards the current received message and throws a ``StashOverflowException``, causing actor restart if default 
-supervision strategy is used. you can override the ``internalStashOverflowStrategy`` method to return 
+discards the current received message and throws a ``StashOverflowException``, causing actor restart if the default 
+supervision strategy is used. You can override the ``internalStashOverflowStrategy`` method to return 
 ``DiscardToDeadLetterStrategy`` or ``ReplyToStrategy`` for any "individual" persistent actor, or define the "default" 
 for all persistent actors by providing FQCN, which must be a subclass of ``StashOverflowStrategyConfigurator``, in the 
 persistence configuration::
@@ -232,7 +232,7 @@ persistence configuration::
 The ``DiscardToDeadLetterStrategy`` strategy also has a pre-packaged companion configurator 
 ``akka.persistence.DiscardConfigurator``.
 
-You can also query default strategy via the Akka persistence extension singleton::
+You can also query the default strategy via the Akka persistence extension singleton::
 
     Persistence(context.system).defaultInternalStashOverflowStrategy
 
@@ -273,8 +273,8 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 Deferring actions until preceding persist handlers have executed
 ----------------------------------------------------------------
 
-Sometimes when working with ``persistAsync`` you may find that it would be nice to define some actions in terms of
-''happens-after the previous ``persistAsync`` handlers have been invoked''. ``PersistentActor`` provides an utility method
+Sometimes when working with ``persistAsync`` or ``persist`` you may find that it would be nice to define some actions in terms of
+''happens-after the previous ``persistAsync``/``persist`` handlers have been invoked''. ``PersistentActor`` provides an utility method
 called ``deferAsync``, which works similarly to ``persistAsync`` yet does not persist the passed in event. It is recommended to
 use it for *read* operations, and actions which do not have corresponding events in your domain model.
 
@@ -289,6 +289,10 @@ of the command for which this ``deferAsync`` handler was called.
 The calling side will get the responses in this (guaranteed) order:
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#defer-caller
+
+You can also call ``deferAsync`` with ``persist``.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#defer-with-persist
 
 .. warning::
   The callback will not be invoked if the actor is restarted (or stopped) in between the call to

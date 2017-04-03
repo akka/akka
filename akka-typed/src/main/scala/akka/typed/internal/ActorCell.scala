@@ -106,6 +106,7 @@ private[typed] class ActorCell[T](
     val dispatcher = deployment.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
     val capacity = deployment.firstOrElse(MailboxCapacity(system.settings.DefaultMailboxCapacity))
     val cell = new ActorCell[U](system, Behavior.validateAsInitial(behavior), system.dispatchers.lookup(dispatcher), capacity.capacity, self)
+    // TODO uid is still needed
     val ref = new LocalActorRef[U](self.path / name, cell)
     cell.setSelf(ref)
     childrenMap = childrenMap.updated(name, ref)
@@ -120,7 +121,7 @@ private[typed] class ActorCell[T](
     spawn(behavior, name, deployment)
   }
 
-  override def stop(child: ActorRef[Nothing]): Boolean = {
+  override def stop(child: ActorRef[_]): Boolean = {
     val name = child.path.name
     childrenMap.get(name) match {
       case None                      ⇒ false

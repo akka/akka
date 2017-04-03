@@ -12,7 +12,6 @@ import java.io._
 import scala.concurrent.Await
 import akka.util.Timeout
 import scala.concurrent.duration._
-import scala.beans.BeanInfo
 import com.typesafe.config._
 import akka.pattern.ask
 import org.apache.commons.codec.binary.Hex.encodeHex
@@ -44,9 +43,8 @@ object SerializationTests {
     }
   """
 
-  @BeanInfo
   final case class Address(no: String, street: String, city: String, zip: String) { def this() = this("", "", "", "") }
-  @BeanInfo
+
   final case class Person(name: String, age: Int, address: Address) { def this() = this("", 0, null) }
 
   final case class Record(id: Int, person: Person)

@@ -16,7 +16,7 @@ site.publishSite
 SphinxDoc.sphinxPreprocessing
 SphinxDoc.docsSettings
 
-unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
+unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
 additionalTasks in ValidatePR += generate in Sphinx
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)

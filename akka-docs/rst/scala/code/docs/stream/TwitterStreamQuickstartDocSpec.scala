@@ -108,8 +108,8 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   trait HiddenDefinitions {
     //#graph-dsl-broadcast
-    val writeAuthors: Sink[Author, Unit] = ???
-    val writeHashtags: Sink[Hashtag, Unit] = ???
+    val writeAuthors: Sink[Author, NotUsed] = ???
+    val writeHashtags: Sink[Hashtag, NotUsed] = ???
     //#graph-dsl-broadcast
   }
 

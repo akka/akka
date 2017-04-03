@@ -10,7 +10,6 @@ import akka.actor.ActorSystem
 import akka.actor.Actor
 import akka.actor.Props
 import akka.testkit.TestKit
-import akka.testkit.ImplicitSender
 import akka.contrib.throttle.Throttler._
 import org.scalatest.WordSpecLike
 import org.scalatest.Matchers

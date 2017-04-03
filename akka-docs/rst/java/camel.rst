@@ -36,7 +36,7 @@ Consumer
 --------
 Here's an example of using Camel's integration components in Akka.
 
-.. includecode:: code/docs/camel/MyEndpoint.java#Consumer-mina
+.. includecode:: code/jdocs/camel/MyEndpoint.java#Consumer-mina
 
 The above example exposes an actor over a TCP endpoint via Apache
 Camel's `Mina component`_. The actor implements the `getEndpointUri` method to define
@@ -55,14 +55,14 @@ Producer
 Actors can also trigger message exchanges with external systems i.e. produce to
 Camel endpoints.
 
-.. includecode:: code/docs/camel/Orders.java#Producer
+.. includecode:: code/jdocs/camel/Orders.java#Producer
 
 In the above example, any message sent to this actor will be sent to
 the JMS queue ``Orders``. Producer actors may choose from the same set of Camel
 components as Consumer actors do.
 Below an example of how to send a message to the Orders producer.
 
-.. includecode:: code/docs/camel/ProducerTestBase.java#TellProducer
+.. includecode:: code/jdocs/camel/ProducerTestBase.java#TellProducer
 
 CamelMessage
 ------------
@@ -90,7 +90,7 @@ The ``CamelExtension`` object provides access to the `Camel`_ interface.
 The `Camel`_ interface in turn provides access to two important Apache Camel objects, the `CamelContext`_ and the `ProducerTemplate`_.
 Below you can see how you can get access to these Apache Camel objects.
 
-.. includecode:: code/docs/camel/CamelExtensionTest.java#CamelExtension
+.. includecode:: code/jdocs/camel/CamelExtensionTest.java#CamelExtension
 
 One ``CamelExtension`` is only loaded once for every one ``ActorSystem``, which makes it safe to call the ``CamelExtension`` at any point in your code to get to the
 Apache Camel objects associated with it. There is one `CamelContext`_ and one `ProducerTemplate`_ for every one ``ActorSystem`` that uses a ``CamelExtension``.
@@ -102,7 +102,7 @@ This interface define a single method ``getContext()`` used to load the `CamelCo
 
 Below an example on how to add the ActiveMQ component to the `CamelContext`_, which is required when you would like to use the ActiveMQ component.
 
-.. includecode:: code/docs/camel/CamelExtensionTest.java#CamelExtensionAddComponent
+.. includecode:: code/jdocs/camel/CamelExtensionTest.java#CamelExtensionAddComponent
 
 The `CamelContext`_ joins the lifecycle of the ``ActorSystem`` and ``CamelExtension`` it is associated with; the `CamelContext`_ is started when
 the ``CamelExtension`` is created, and it is shut down when the associated ``ActorSystem`` is shut down. The same is true for the `ProducerTemplate`_.
@@ -117,12 +117,12 @@ Publication is done asynchronously; setting up an endpoint may still be in progr
 requested the actor to be created. Some Camel components can take a while to startup, and in some cases you might want to know when the endpoints are activated and ready to be used.
 The `Camel`_ interface allows you to find out when the endpoint is activated or deactivated.
 
-.. includecode:: code/docs/camel/ActivationTestBase.java#CamelActivation
+.. includecode:: code/jdocs/camel/ActivationTestBase.java#CamelActivation
 
 The above code shows that you can get a ``Future`` to the activation of the route from the endpoint to the actor, or you can wait in a blocking fashion on the activation of the route.
 An ``ActivationTimeoutException`` is thrown if the endpoint could not be activated within the specified timeout. Deactivation works in a similar fashion:
 
-.. includecode:: code/docs/camel/ActivationTestBase.java#CamelDeactivation
+.. includecode:: code/jdocs/camel/ActivationTestBase.java#CamelDeactivation
 
 Deactivation of a Consumer or a Producer actor happens when the actor is terminated. For a Consumer, the route to the actor is stopped. For a Producer, the `SendProcessor`_ is stopped.
 A ``DeActivationTimeoutException`` is thrown if the associated camel objects could not be deactivated within the specified timeout.
@@ -143,7 +143,7 @@ messages from the ``file:data/input/actor`` Camel endpoint.
 
 .. _UntypedConsumerActor: @github@/akka-camel/src/main/scala/akka/camel/javaapi/UntypedConsumer.scala
 
-.. includecode:: code/docs/camel/Consumer1.java#Consumer1
+.. includecode:: code/jdocs/camel/Consumer1.java#Consumer1
 
 Whenever a file is put into the data/input/actor directory, its content is
 picked up by the Camel `file component`_ and sent as message to the
@@ -162,11 +162,11 @@ from localhost on port 8877.
 .. _Jetty component: http://camel.apache.org/jetty.html
 .. _Jetty: http://www.eclipse.org/jetty/
 
-.. includecode:: code/docs/camel/Consumer2.java#Consumer2
+.. includecode:: code/jdocs/camel/Consumer2.java#Consumer2
 
 After starting the actor, clients can send messages to that actor by POSTing to
 ``http://localhost:8877/camel/default``. The actor sends a response by using the
-sender().tell method. For returning a message body and headers to the HTTP
+``getSender().tell`` method. For returning a message body and headers to the HTTP
 client the response type should be `CamelMessage`_. For any other response type, a
 new CamelMessage object is created by akka-camel with the actor response as message
 body.
@@ -193,7 +193,7 @@ In this case, consumer actors must reply either with a
 special akka.camel.Ack message (positive acknowledgement) or a akka.actor.Status.Failure (negative
 acknowledgement).
 
-.. includecode:: code/docs/camel/Consumer3.java#Consumer3
+.. includecode:: code/jdocs/camel/Consumer3.java#Consumer3
 
 .. _camel-timeout-java:
 
@@ -214,7 +214,7 @@ and the actor replies to the endpoint when the response is ready. The ask reques
 result in the `Exchange`_ failing with a TimeoutException set on the failure of the `Exchange`_.
 The timeout on the consumer actor can be overridden with the ``replyTimeout``, as shown below.
 
-.. includecode:: code/docs/camel/Consumer4.java#Consumer4
+.. includecode:: code/jdocs/camel/Consumer4.java#Consumer4
 .. _Exchange: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java
 .. _ask: @github@/akka-actor/src/main/scala/akka/pattern/Patterns.scala
 
@@ -223,7 +223,7 @@ Producer Actors
 
 For sending messages to Camel endpoints, actors need to inherit from the `UntypedProducerActor`_ class and implement the getEndpointUri method.
 
-.. includecode:: code/docs/camel/Producer1.java#Producer1
+.. includecode:: code/jdocs/camel/Producer1.java#Producer1
 
 Producer1 inherits a default implementation of the onReceive method from the
 `UntypedProducerActor`_ class. To customize a producer actor's default behavior you must override the `UntypedProducerActor`_.onTransformResponse and
@@ -237,7 +237,7 @@ configured endpoint) will, by default, be returned to the original sender. The
 following example uses the ask pattern to send a message to a
 Producer actor and waits for a response.
 
-.. includecode:: code/docs/camel/ProducerTestBase.java#AskProducer
+.. includecode:: code/jdocs/camel/ProducerTestBase.java#AskProducer
 
 The future contains the response CamelMessage, or an ``AkkaCamelException`` when an error occurred, which contains the headers of the response.
 
@@ -251,14 +251,14 @@ response processing by overriding the onRouteResponse method. In the following e
 message is forwarded to a target actor instead of being replied to the original
 sender.
 
-.. includecode:: code/docs/camel/ResponseReceiver.java#RouteResponse
-.. includecode:: code/docs/camel/Forwarder.java#RouteResponse
-.. includecode:: code/docs/camel/OnRouteResponseTestBase.java#RouteResponse
+.. includecode:: code/jdocs/camel/ResponseReceiver.java#RouteResponse
+.. includecode:: code/jdocs/camel/Forwarder.java#RouteResponse
+.. includecode:: code/jdocs/camel/OnRouteResponseTestBase.java#RouteResponse
 
 Before producing messages to endpoints, producer actors can pre-process them by
 overriding the `UntypedProducerActor`_.onTransformOutgoingMessage method.
 
-.. includecode:: code/docs/camel/Transformer.java#TransformOutgoingMessage
+.. includecode:: code/jdocs/camel/Transformer.java#TransformOutgoingMessage
 
 Producer configuration options
 ------------------------------
@@ -268,7 +268,7 @@ one-way or two-way (by initiating in-only or in-out message exchanges,
 respectively). By default, the producer initiates an in-out message exchange
 with the endpoint. For initiating an in-only exchange, producer actors have to override the isOneway method to return true.
 
-.. includecode:: code/docs/camel/OnewaySender.java#Oneway
+.. includecode:: code/jdocs/camel/OnewaySender.java#Oneway
 
 Message correlation
 -------------------
@@ -276,7 +276,7 @@ Message correlation
 To correlate request with response messages, applications can set the
 `Message.MessageExchangeId` message header.
 
-.. includecode:: code/docs/camel/ProducerTestBase.java#Correlate
+.. includecode:: code/jdocs/camel/ProducerTestBase.java#Correlate
 
 ProducerTemplate
 ----------------
@@ -284,12 +284,12 @@ ProducerTemplate
 The `UntypedProducerActor`_ class is a very convenient way for actors to produce messages to Camel endpoints.
 Actors may also use a Camel `ProducerTemplate`_ for producing messages to endpoints.
 
-.. includecode:: code/docs/camel/MyActor.java#ProducerTemplate
+.. includecode:: code/jdocs/camel/MyActor.java#ProducerTemplate
 
 For initiating a two-way message exchange, one of the
 ``ProducerTemplate.request*`` methods must be used.
 
-.. includecode:: code/docs/camel/RequestBodyActor.java#RequestProducerTemplate
+.. includecode:: code/jdocs/camel/RequestBodyActor.java#RequestProducerTemplate
 
 .. _UntypedProducerActor: @github@/akka-camel/src/main/scala/akka/camel/javaapi/UntypedProducerActor.scala
 .. _ProducerTemplate: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/ProducerTemplate.java
@@ -304,7 +304,7 @@ designed to be asynchronous. This is the case for both, consumer and producer
 actors.
 
 * A consumer endpoint sends request messages to its consumer actor using the ``tell``
-  method and the actor returns responses with ``sender().tell`` once they are
+  method and the actor returns responses with ``getSender().tell`` once they are
   ready.
 
 * A producer actor sends request messages to its endpoint using Camel's
@@ -426,9 +426,9 @@ Here's an actor endpoint URI example containing an actor path::
 In the following example, a custom route to an actor is created, using the
 actor's path.
 
-.. includecode:: code/docs/camel/Responder.java#CustomRoute
-.. includecode:: code/docs/camel/CustomRouteBuilder.java#CustomRoute
-.. includecode:: code/docs/camel/CustomRouteTestBase.java#CustomRoute
+.. includecode:: code/jdocs/camel/Responder.java#CustomRoute
+.. includecode:: code/jdocs/camel/CustomRouteBuilder.java#CustomRoute
+.. includecode:: code/jdocs/camel/CustomRouteTestBase.java#CustomRoute
 
 The `CamelPath.toCamelUri` converts the `ActorRef` to the Camel actor component URI format which points to the actor endpoint as described above.
 When a message is received on the jetty endpoint, it is routed to the Responder actor, which in return replies back to the client of
@@ -453,7 +453,7 @@ Extensions can be defined with Camel's `Java DSL`_ or `Scala DSL`_. For example,
 The following examples demonstrate how to extend a route to a consumer actor for
 handling exceptions thrown by that actor.
 
-.. includecode:: code/docs/camel/ErrorThrowingConsumer.java#ErrorThrowingConsumer
+.. includecode:: code/jdocs/camel/ErrorThrowingConsumer.java#ErrorThrowingConsumer
 
 The above ErrorThrowingConsumer sends the Failure back to the sender in preRestart
 because the Exception that is thrown in the actor would

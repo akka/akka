@@ -87,6 +87,9 @@ As you can see in the example above there are four things you need to add to get
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
 All settings are described in :ref:`remote-configuration-artery-scala`.
 
+.. note::
+  Aeron requires 64bit JVM to work reliably. 
+
 Canonical address
 ^^^^^^^^^^^^^^^^^
 
@@ -744,7 +747,7 @@ There are lots of configuration properties that are related to remoting in Akka.
    Setting properties like the listening IP and port number programmatically is
    best done by using something like the following:
 
-   .. includecode:: ../java/code/docs/remoting/RemoteDeploymentDocTest.java#programmatic-artery
+   .. includecode:: ../java/code/jdocs/remoting/RemoteDeploymentDocTest.java#programmatic-artery
 
 
 .. _remote-configuration-nat-artery-scala:

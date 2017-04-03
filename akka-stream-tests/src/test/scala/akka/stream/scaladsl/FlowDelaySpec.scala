@@ -67,6 +67,26 @@ class FlowDelaySpec extends StreamSpec {
       c.expectComplete()
     }
 
+    "deliver delayed elements that arrive within the same timeout as preceding group of elements" taggedAs TimingTest in assertAllStagesStopped {
+      val c = TestSubscriber.manualProbe[Int]()
+      val p = TestPublisher.manualProbe[Int]()
+
+      Source.fromPublisher(p).delay(300.millis).to(Sink.fromSubscriber(c)).run()
+      val cSub = c.expectSubscription()
+      val pSub = p.expectSubscription()
+      cSub.request(100)
+      pSub.sendNext(1)
+      pSub.sendNext(2)
+      c.expectNoMsg(200.millis)
+      pSub.sendNext(3)
+      c.expectNext(1)
+      c.expectNext(2)
+      c.expectNoMsg(150.millis)
+      c.expectNext(3)
+      pSub.sendComplete()
+      c.expectComplete()
+    }
+
     "drop tail for internal buffer if it's full in DropTail mode" in assertAllStagesStopped {
       Await.result(
         Source(1 to 20).delay(1.seconds, DelayOverflowStrategy.dropTail).withAttributes(inputBuffer(16, 16))

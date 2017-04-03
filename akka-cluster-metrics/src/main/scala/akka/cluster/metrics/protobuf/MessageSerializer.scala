@@ -7,16 +7,19 @@ package akka.cluster.metrics.protobuf
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 import java.{ lang ⇒ jl }
+
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages ⇒ cm }
-import akka.cluster.metrics.{ EWMA, Metric, MetricsGossip, MetricsGossipEnvelope, NodeMetrics }
-import akka.serialization.BaseSerializer
+import akka.cluster.metrics._
+import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.util.ClassLoaderObjectInputStream
 import akka.protobuf.{ ByteString, MessageLite }
+
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.{ asJavaIterableConverter, asScalaBufferConverter, setAsJavaSetConverter }
-import akka.serialization.SerializerWithStringManifest
 import java.io.NotSerializableException
+
+import akka.dispatch.Dispatchers
 
 /**
  * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.
@@ -26,16 +29,32 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
   private final val BufferSize = 4 * 1024
 
   private val MetricsGossipEnvelopeManifest = "a"
+  private val AdaptiveLoadBalancingPoolManifest = "b"
+  private val MixMetricsSelectorManifest = "c"
+  private val CpuMetricsSelectorManifest = "d"
+  private val HeapMetricsSelectorManifest = "e"
+  private val SystemLoadAverageMetricsSelectorManifest = "f"
+
+  private lazy val serialization = SerializationExtension(system)
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: MetricsGossipEnvelope ⇒ MetricsGossipEnvelopeManifest
+    case _: MetricsGossipEnvelope         ⇒ MetricsGossipEnvelopeManifest
+    case _: AdaptiveLoadBalancingPool     ⇒ AdaptiveLoadBalancingPoolManifest
+    case _: MixMetricsSelector            ⇒ MixMetricsSelectorManifest
+    case CpuMetricsSelector               ⇒ CpuMetricsSelectorManifest
+    case HeapMetricsSelector              ⇒ HeapMetricsSelectorManifest
+    case SystemLoadAverageMetricsSelector ⇒ SystemLoadAverageMetricsSelectorManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: MetricsGossipEnvelope ⇒
-      compress(metricsGossipEnvelopeToProto(m))
+    case m: MetricsGossipEnvelope         ⇒ compress(metricsGossipEnvelopeToProto(m))
+    case alb: AdaptiveLoadBalancingPool   ⇒ adaptiveLoadBalancingPoolToBinary(alb)
+    case mms: MixMetricsSelector          ⇒ mixMetricSelectorToBinary(mms)
+    case CpuMetricsSelector               ⇒ Array.emptyByteArray
+    case HeapMetricsSelector              ⇒ Array.emptyByteArray
+    case SystemLoadAverageMetricsSelector ⇒ Array.emptyByteArray
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -66,7 +85,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-    case MetricsGossipEnvelopeManifest ⇒ metricsGossipEnvelopeFromBinary(bytes)
+    case MetricsGossipEnvelopeManifest            ⇒ metricsGossipEnvelopeFromBinary(bytes)
+    case AdaptiveLoadBalancingPoolManifest        ⇒ adaptiveLoadBalancingPoolFromBinary(bytes)
+    case MixMetricsSelectorManifest               ⇒ mixMetricSelectorFromBinary(bytes)
+    case CpuMetricsSelectorManifest               ⇒ CpuMetricsSelector
+    case HeapMetricsSelectorManifest              ⇒ HeapMetricsSelector
+    case SystemLoadAverageMetricsSelectorManifest ⇒ SystemLoadAverageMetricsSelector
     case _ ⇒ throw new NotSerializableException(
       s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}")
   }
@@ -75,6 +99,48 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     case Address(protocol, actorSystem, Some(host), Some(port)) ⇒
       cm.Address.newBuilder().setSystem(actorSystem).setHostname(host).setPort(port).setProtocol(protocol)
     case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
+  }
+
+  def adaptiveLoadBalancingPoolToBinary(alb: AdaptiveLoadBalancingPool): Array[Byte] = {
+    val builder = cm.AdaptiveLoadBalancingPool.newBuilder()
+    if (alb.metricsSelector != MixMetricsSelector) {
+      builder.setMetricsSelector(metricsSelectorToProto(alb.metricsSelector))
+    }
+    if (alb.routerDispatcher != Dispatchers.DefaultDispatcherId) {
+      builder.setRouterDispatcher(alb.routerDispatcher)
+    }
+    builder.setNrOfInstances(alb.nrOfInstances)
+    builder.setUsePoolDispatcher(alb.usePoolDispatcher)
+
+    builder.build().toByteArray
+  }
+
+  private def metricsSelectorToProto(selector: MetricsSelector): cm.MetricsSelector = {
+    val builder = cm.MetricsSelector.newBuilder()
+    val serializer = serialization.findSerializerFor(selector)
+
+    builder.setData(ByteString.copyFrom(serializer.toBinary(selector)))
+      .setSerializerId(serializer.identifier)
+
+    serializer match {
+      case ser2: SerializerWithStringManifest ⇒
+        val manifest = ser2.manifest(selector)
+        builder.setManifest(manifest)
+      case _ ⇒
+        builder.setManifest(
+          if (serializer.includeManifest) selector.getClass.getName
+          else ""
+        )
+    }
+    builder.build()
+  }
+
+  private def mixMetricSelectorToBinary(mms: MixMetricsSelector): Array[Byte] = {
+    val builder = cm.MixMetricsSelector.newBuilder()
+    mms.selectors.foreach { selector ⇒
+      builder.addSelectors(metricsSelectorToProto(selector))
+    }
+    builder.build().toByteArray
   }
 
   @volatile
@@ -199,5 +265,40 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
 
     MetricsGossipEnvelope(addressFromProto(envelope.getFrom), MetricsGossip(nodeMetrics), envelope.getReply)
   }
+
+  def adaptiveLoadBalancingPoolFromBinary(bytes: Array[Byte]): AdaptiveLoadBalancingPool = {
+    val alb = cm.AdaptiveLoadBalancingPool.parseFrom(bytes)
+
+    val selector =
+      if (alb.hasMetricsSelector) {
+        val ms = alb.getMetricsSelector
+        serialization.deserialize(
+          ms.getData.toByteArray,
+          ms.getSerializerId,
+          ms.getManifest
+        ).get.asInstanceOf[MetricsSelector]
+      } else MixMetricsSelector
+
+    AdaptiveLoadBalancingPool(
+      metricsSelector = selector,
+      nrOfInstances = alb.getNrOfInstances,
+      routerDispatcher = if (alb.hasRouterDispatcher) alb.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
+      usePoolDispatcher = alb.getUsePoolDispatcher
+    )
+  }
+
+  def mixMetricSelectorFromBinary(bytes: Array[Byte]): MixMetricsSelector = {
+    val mm = cm.MixMetricsSelector.parseFrom(bytes)
+    MixMetricsSelector(mm.getSelectorsList.asScala
+      // should be safe because we serialized only the right subtypes of MetricsSelector
+      .map(s ⇒ metricSelectorFromProto(s).asInstanceOf[CapacityMetricsSelector]).toIndexedSeq)
+  }
+
+  def metricSelectorFromProto(selector: cm.MetricsSelector): MetricsSelector =
+    serialization.deserialize(
+      selector.getData.toByteArray,
+      selector.getSerializerId,
+      selector.getManifest
+    ).get.asInstanceOf[MetricsSelector]
 
 }

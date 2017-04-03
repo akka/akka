@@ -4,10 +4,11 @@
 package akka.stream.scaladsl
 
 import java.util.stream.Collectors
+
 import akka.actor.ActorSystem
-import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.impl.{ StreamSupervisor, ActorMaterializerImpl }
 import akka.stream._
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSource
@@ -53,7 +54,7 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       try {
         TestSource.probe[ByteString].runWith(StreamConverters.asJavaStream())(materializer)
-        materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "asJavaStream").get
         assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
       } finally shutdown(sys)

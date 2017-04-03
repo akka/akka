@@ -38,7 +38,7 @@ object ORSet {
    */
   @InternalApi private[akka]type Dot = VersionVector
 
-  sealed trait DeltaOp extends ReplicatedDelta with RequiresCausalDeliveryOfDeltas {
+  sealed trait DeltaOp extends ReplicatedDelta with RequiresCausalDeliveryOfDeltas with ReplicatedDataSerialization {
     type T = DeltaOp
   }
 
@@ -91,7 +91,10 @@ object ORSet {
     }
   }
 
-  final case class DeltaGroup[A](ops: immutable.IndexedSeq[DeltaOp]) extends DeltaOp {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] final case class DeltaGroup[A](ops: immutable.IndexedSeq[DeltaOp]) extends DeltaOp {
     override def merge(that: DeltaOp): DeltaOp = that match {
       case thatAdd: AddDeltaOp[A] ⇒
         // merge AddDeltaOp into last AddDeltaOp in the group, if possible
@@ -342,13 +345,15 @@ final class ORSet[A] private[akka] (
    * INTERNAL API
    */
   @InternalApi private[akka] def remove(node: UniqueAddress, element: A): ORSet[A] = {
-    val deltaDot = VersionVector(node, vvector.versionAt(node))
-    val rmOp = ORSet.RemoveDeltaOp(new ORSet(Map(element → deltaDot), vvector))
-    val newDelta = delta match {
-      case None    ⇒ rmOp
-      case Some(d) ⇒ d.merge(rmOp)
-    }
-    assignAncestor(copy(elementsMap = elementsMap - element, delta = Some(newDelta)))
+    // FIXME use full state for removals, until issue #22648 is fixed
+    //    val deltaDot = VersionVector(node, vvector.versionAt(node))
+    //    val rmOp = ORSet.RemoveDeltaOp(new ORSet(Map(element → deltaDot), vvector))
+    //    val newDelta = delta match {
+    //      case None    ⇒ rmOp
+    //      case Some(d) ⇒ d.merge(rmOp)
+    //    }
+    //    assignAncestor(copy(elementsMap = elementsMap - element, delta = Some(newDelta)))
+    assignAncestor(copy(elementsMap = elementsMap - element, delta = None))
   }
 
   /**

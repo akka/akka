@@ -28,11 +28,11 @@ There are three ways to handle exceptions from application code:
 By default the stopping strategy is used for all exceptions, i.e. the stream will be completed with
 failure when an exception is thrown.
 
-.. includecode:: ../code/docs/stream/FlowErrorDocTest.java#stop
+.. includecode:: ../code/jdocs/stream/FlowErrorDocTest.java#stop
 
 The default supervision strategy for a stream can be defined on the settings of the materializer.
 
-.. includecode:: ../code/docs/stream/FlowErrorDocTest.java#resume
+.. includecode:: ../code/jdocs/stream/FlowErrorDocTest.java#resume
 
 Here you can see that all ``ArithmeticException`` will resume the processing, i.e. the
 elements that cause the division by zero are effectively dropped.
@@ -44,12 +44,12 @@ elements that cause the division by zero are effectively dropped.
 
 The supervision strategy can also be defined for all operators of a flow.
 
-.. includecode:: ../code/docs/stream/FlowErrorDocTest.java#resume-section
+.. includecode:: ../code/jdocs/stream/FlowErrorDocTest.java#resume-section
 
 ``Restart`` works in a similar way as ``Resume`` with the addition that accumulated state,
 if any, of the failing processing stage will be reset.
 
-.. includecode:: ../code/docs/stream/FlowErrorDocTest.java#restart-section
+.. includecode:: ../code/jdocs/stream/FlowErrorDocTest.java#restart-section
 
 Errors from mapAsync
 ====================
@@ -61,11 +61,11 @@ discard those that cannot be found.
 
 We start with the tweet stream of authors:
 
-.. includecode:: ../code/docs/stream/IntegrationDocTest.java#tweet-authors
+.. includecode:: ../code/jdocs/stream/IntegrationDocTest.java#tweet-authors
 
 Assume that we can lookup their email address using:
 
-.. includecode:: ../code/docs/stream/IntegrationDocTest.java#email-address-lookup2
+.. includecode:: ../code/jdocs/stream/IntegrationDocTest.java#email-address-lookup2
 
 The ``CompletionStage`` is completed normally if the email is not found.
 
@@ -73,7 +73,7 @@ Transforming the stream of authors to a stream of email addresses by using the `
 service can be done with ``mapAsync`` and we use ``Supervision.getResumingDecider`` to drop
 unknown email addresses:
 
-.. includecode:: ../code/docs/stream/IntegrationDocTest.java#email-addresses-mapAsync-supervision
+.. includecode:: ../code/jdocs/stream/IntegrationDocTest.java#email-addresses-mapAsync-supervision
 
 If we would not use ``Resume`` the default stopping strategy would complete the stream
 with failure on the first ``CompletionStage`` that was completed exceptionally.

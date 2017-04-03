@@ -5,13 +5,15 @@ package akka.stream.javadsl
 
 import java.util
 import java.util.Optional
+
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
-import akka.stream.impl.{ ConstantFun, StreamLayout, SourceQueueAdapter }
+import akka.stream.impl.{ ConstantFun, LinearTraversalBuilder, SourceQueueAdapter, StreamLayout }
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -21,6 +23,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
+
 import scala.compat.java8.FutureConverters._
 
 /** Java API */
@@ -168,13 +171,25 @@ object Source {
     new Source(scaladsl.Source.fromFuture(future))
 
   /**
-   * Start a new `Source` from the given `CompletionStage`. The stream will consist of
+   * Starts a new `Source` from the given `CompletionStage`. The stream will consist of
    * one element when the `CompletionStage` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `CompletionStage` is completed with a failure.
    */
   def fromCompletionStage[O](future: CompletionStage[O]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.fromCompletionStage(future))
+
+  /**
+   * Streams the elements of the given future source once it successfully completes.
+   * If the future fails the stream is failed.
+   */
+  def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): javadsl.Source[T, Future[M]] = new Source(scaladsl.Source.fromFutureSource(future))
+
+  /**
+   * Streams the elements of an asynchronous source once its given `completion` stage completes.
+   * If the `completion` fails the stream is failed with that exception.
+   */
+  def fromSourceCompletionStage[T, M](completion: CompletionStage[Graph[SourceShape[T], M]]): javadsl.Source[T, CompletionStage[M]] = new Source(scaladsl.Source.fromSourceCompletionStage(completion))
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -380,7 +395,7 @@ object Source {
     read:   function.Function[S, Optional[T]],
     close:  function.Procedure[S]): javadsl.Source[T, NotUsed] =
     new Source(scaladsl.Source.unfoldResource[T, S](
-      create.create,
+      create.create _,
       (s: S) ⇒ read.apply(s).asScala, close.apply))
 
   /**
@@ -423,7 +438,7 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
 
   override def shape: SourceShape[Out] = delegate.shape
 
-  def module: StreamLayout.Module = delegate.module
+  override def traversalBuilder: LinearTraversalBuilder = delegate.traversalBuilder
 
   override def toString: String = delegate.toString
 

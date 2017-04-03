@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
 import java.util.concurrent.CountDownLatch
@@ -256,7 +257,6 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       EventFilter[IllegalArgumentException](pattern = "Error in stage.*", occurrences = 1).intercept {
         Await.result(Source.fromGraph(failyStage).runWith(Sink.ignore), 3.seconds)
       }
-
     }
 
     "be able to properly handle case where a stage fails before subscription happens" in assertAllStagesStopped {
@@ -392,3 +392,4 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
   }
 }
+

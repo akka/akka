@@ -18,7 +18,7 @@ object DispatcherDocSpec {
   val javaConfig = """
      //#prio-dispatcher-config-java
      prio-dispatcher {
-       mailbox-type = "docs.dispatcher.DispatcherDocTest$MyPrioMailbox"
+       mailbox-type = "jdocs.dispatcher.DispatcherDocTest$MyPrioMailbox"
        //Other dispatcher configuration goes here
      }
      //#prio-dispatcher-config-java
@@ -33,16 +33,16 @@ object DispatcherDocSpec {
     //#custom-mailbox-config-java
     custom-dispatcher {
       mailbox-requirement =
-      "docs.dispatcher.MyUnboundedJMessageQueueSemantics"
+      "jdocs.dispatcher.MyUnboundedMessageQueueSemantics"
     }
 
     akka.actor.mailbox.requirements {
-      "docs.dispatcher.MyUnboundedJMessageQueueSemantics" =
+      "jdocs.dispatcher.MyUnboundedMessageQueueSemantics" =
       custom-dispatcher-mailbox
     }
 
     custom-dispatcher-mailbox {
-      mailbox-type = "docs.dispatcher.MyUnboundedJMailbox"
+      mailbox-type = "jdocs.dispatcher.MyUnboundedMailbox"
     }
     //#custom-mailbox-config-java
   """

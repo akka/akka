@@ -13,14 +13,13 @@ import akka.stream.testkit._
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import akka.stream.impl.SinkModule
-import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.SinkholeSubscriber
 
 object AttributesSpec {
 
   object AttributesSink {
     def apply(): Sink[Nothing, Future[Attributes]] =
-      new Sink(new AttributesSink(Attributes.name("attributesSink"), Sink.shape("attributesSink")))
+      Sink.fromGraph[Nothing, Future[Attributes]](new AttributesSink(Attributes.name("attributesSink"), Sink.shape("attributesSink")))
   }
 
   final class AttributesSink(val attributes: Attributes, shape: SinkShape[Nothing]) extends SinkModule[Nothing, Future[Attributes]](shape) {
@@ -30,7 +29,7 @@ object AttributesSpec {
     override protected def newInstance(shape: SinkShape[Nothing]): SinkModule[Nothing, Future[Attributes]] =
       new AttributesSink(attributes, shape)
 
-    override def withAttributes(attr: Attributes): Module =
+    override def withAttributes(attr: Attributes): SinkModule[Nothing, Future[Attributes]] =
       new AttributesSink(attr, amendShape(attr))
   }
 

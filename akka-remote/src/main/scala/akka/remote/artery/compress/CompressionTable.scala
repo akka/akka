@@ -31,8 +31,8 @@ private[remote] final case class CompressionTable[T](originUid: Long, version: B
       require(dictionary.values.sum + dictionary.size == expectedGaplessSum, "Given compression map does not seem to be gap-less and starting from zero, " +
         "which makes compressing it into an Array difficult, bailing out! Map was: " + dictionary)
 
-      val tups = Array.ofDim[(Object, Int)](dictionary.size).asInstanceOf[Array[(T, Int)]]
-      val ts = Array.ofDim[Object](dictionary.size).asInstanceOf[Array[T]]
+      val tups = new Array[(Object, Int)](dictionary.size).asInstanceOf[Array[(T, Int)]]
+      val ts = new Array[Object](dictionary.size).asInstanceOf[Array[T]]
 
       var i = 0
       val mit = dictionary.iterator

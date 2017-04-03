@@ -111,7 +111,7 @@ object TLS {
         case None ⇒ (_, _) ⇒ Success(())
       }
 
-    new scaladsl.BidiFlow(TlsModule(Attributes.none, createSSLEngine, verifySession, closing))
+    scaladsl.BidiFlow.fromGraph(TlsModule(Attributes.none, createSSLEngine, verifySession, closing))
   }
 
   /**
@@ -166,7 +166,7 @@ object TLS {
     verifySession:   SSLSession ⇒ Try[Unit], // we don't offer the internal API that provides `ActorSystem` here, see #21753
     closing:         TLSClosing
   ): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    new scaladsl.BidiFlow(TlsModule(Attributes.none, _ ⇒ createSSLEngine(), (_, session) ⇒ verifySession(session), closing))
+    scaladsl.BidiFlow.fromGraph(TlsModule(Attributes.none, _ ⇒ createSSLEngine(), (_, session) ⇒ verifySession(session), closing))
 
   /**
    * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. This is a low-level interface.

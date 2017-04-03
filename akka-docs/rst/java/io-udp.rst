@@ -23,7 +23,7 @@ Unconnected UDP
 Simple Send
 ^^^^^^^^^^^
 
-.. includecode:: code/docs/io/UdpDocTest.java#sender
+.. includecode:: code/jdocs/io/UdpDocTest.java#sender
 
 The simplest form of UDP usage is to just send datagrams without the need of
 getting a reply. To this end a “simple sender” facility is provided as
@@ -43,7 +43,7 @@ destinations; in this example it will just send any UTF-8 encoded
 Bind (and Send)
 ^^^^^^^^^^^^^^^
 
-.. includecode:: code/docs/io/UdpDocTest.java#listener
+.. includecode:: code/jdocs/io/UdpDocTest.java#listener
 
 If you want to implement a UDP server which listens on a socket for incoming
 datagrams then you need to use the :meth:`bind` command as shown above. The
@@ -69,7 +69,7 @@ bind-and-send service we saw earlier, but the main difference is that a
 connection is only able to send to the ``remoteAddress`` it was connected to,
 and will receive datagrams only from that address.
 
-.. includecode:: code/docs/io/UdpDocTest.java#connected
+.. includecode:: code/jdocs/io/UdpDocTest.java#connected
 
 Consequently the example shown here looks quite similar to the previous one,
 the biggest difference is the absence of remote address information in
@@ -95,12 +95,12 @@ To select a Protocol Family you must extend ``akka.io.Inet.DatagramChannelCreato
 class which implements ``akka.io.Inet.SocketOption``. Provide custom logic
 for opening a datagram channel by overriding :meth:`create` method.
 
-.. includecode:: code/docs/io/JavaUdpMulticast.java#inet6-protocol-family
+.. includecode:: code/jdocs/io/JavaUdpMulticast.java#inet6-protocol-family
 
 Another socket option will be needed to join a multicast group.
 
-.. includecode:: code/docs/io/JavaUdpMulticast.java#multicast-group
+.. includecode:: code/jdocs/io/JavaUdpMulticast.java#multicast-group
 
 Socket options must be provided to :meth:`UdpMessage.bind` command.
 
-.. includecode:: code/docs/io/JavaUdpMulticast.java#bind
+.. includecode:: code/jdocs/io/JavaUdpMulticast.java#bind

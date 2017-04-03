@@ -4,13 +4,18 @@
 package akka.stream.impl
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.stream.StreamSubscriptionTimeoutTerminationMode.{ CancelTermination, NoopTermination, WarnTermination }
 import akka.stream.StreamSubscriptionTimeoutSettings
 import org.reactivestreams._
+
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NoStackTrace
 
-object StreamSubscriptionTimeoutSupport {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object StreamSubscriptionTimeoutSupport {
 
   /**
    * A subscriber who calls `cancel` directly from `onSubscribe` and ignores all other callbacks.
@@ -37,7 +42,7 @@ object StreamSubscriptionTimeoutSupport {
    * Subscription timeout which does not start any scheduled events and always returns `true`.
    * This specialized implementation is to be used for "noop" timeout mode.
    */
-  case object NoopSubscriptionTimeout extends Cancellable {
+  @InternalApi private[akka] case object NoopSubscriptionTimeout extends Cancellable {
     override def cancel() = true
     override def isCancelled = true
   }
@@ -50,7 +55,7 @@ object StreamSubscriptionTimeoutSupport {
  *
  * See `akka.stream.materializer.subscription-timeout` for configuration options.
  */
-private[akka] trait StreamSubscriptionTimeoutSupport {
+@InternalApi private[akka] trait StreamSubscriptionTimeoutSupport {
   this: Actor with ActorLogging ⇒
 
   import StreamSubscriptionTimeoutSupport._
@@ -112,4 +117,4 @@ private[akka] trait StreamSubscriptionTimeoutSupport {
 /**
  * INTERNAL API
  */
-private[akka] class SubscriptionTimeoutException(msg: String) extends RuntimeException(msg)
+@InternalApi private[akka] class SubscriptionTimeoutException(msg: String) extends RuntimeException(msg)

@@ -5,11 +5,9 @@
  Serialization
 #####################
 
-Akka has a built-in Extension for serialization,
-and it is both possible to use the built-in serializers and to write your own.
+The messages that Akka actors send to each other are JVM objects (e.g.  instances of Scala case classes). Message passing between actors that live on the same JVM is straightforward. It is simply done via reference passing. However, messages that have to escape the JVM to reach an actor running on a different host have to undergo some form of serialization (i.e. the objects have to be converted to and from byte arrays).
 
-The serialization mechanism is both used by Akka internally to serialize messages,
-and available for ad-hoc serialization of whatever you might need it for.
+Akka itself uses Protocol Buffers to serialize internal messages (i.e. cluster gossip messages). However, the serialization mechanism in Akka allows you to write custom serializers and to define which serializer to use for what. 
 
 Usage
 =====
@@ -59,14 +57,9 @@ to disable a default serializer, map its marker type to “none”::
 Verification
 ------------
 
-If you want to verify that your messages are serializable you can enable the following config option:
+Normally, messages sent between local actors (i.e. same JVM) do not undergo serialization. For testing, sometimes, it may be desirable to force serialization on all messages (both remote and local). If you want to do this in order to verify that your messages are serializable you can enable the following config option:
 
 .. includecode:: ../scala/code/docs/serialization/SerializationDocSpec.scala#serialize-messages-config
-
-.. warning::
-
-   We only recommend using the config option turned on when you're running tests.
-   It is completely pointless to have it turned on in other scenarios.
 
 If you want to verify that your ``Props`` are serializable you can enable the following config option:
 
@@ -74,8 +67,7 @@ If you want to verify that your ``Props`` are serializable you can enable the fo
 
 .. warning::
 
-   We only recommend using the config option turned on when you're running tests.
-   It is completely pointless to have it turned on in other scenarios.
+   We recommend having these config options turned on **only** when you're running tests. Turning these options on in production is pointless, as it would negatively impact the performance of local message passing without giving any gain.
 
 Programmatic
 ------------
@@ -83,10 +75,10 @@ Programmatic
 If you want to programmatically serialize/deserialize using Akka Serialization,
 here's some examples:
 
-.. includecode:: code/docs/serialization/SerializationDocTest.java
+.. includecode:: code/jdocs/serialization/SerializationDocTest.java
    :include: imports
 
-.. includecode:: code/docs/serialization/SerializationDocTest.java
+.. includecode:: code/jdocs/serialization/SerializationDocTest.java
    :include: programmatic
 
 For more information, have a look at the ``ScalaDoc`` for ``akka.serialization._``
@@ -95,19 +87,17 @@ For more information, have a look at the ``ScalaDoc`` for ``akka.serialization._
 Customization
 =============
 
-So, lets say that you want to create your own ``Serializer``,
-you saw the ``docs.serialization.MyOwnSerializer`` in the config example above?
+The first code snippet on this page contains a configuration file that references a custom serializer ``docs.serialization.MyOwnSerializer``. How would we go about creating such a custom serializer?
 
 Creating new Serializers
 ------------------------
 
-First you need to create a class definition of your ``Serializer``,
-which is done by extending ``akka.serialization.JSerializer``, like this:
+A custom ``Serializer`` has to inherit from ``akka.serialization.JSerializer`` and can be defined like the following:
 
-.. includecode:: code/docs/serialization/SerializationDocTest.java
+.. includecode:: code/jdocs/serialization/SerializationDocTest.java
    :include: imports
 
-.. includecode:: code/docs/serialization/SerializationDocTest.java
+.. includecode:: code/jdocs/serialization/SerializationDocTest.java
    :include: my-own-serializer
    :exclude: ...
 
@@ -140,7 +130,7 @@ class name if you used ``includeManifest=true``, otherwise it will be the empty 
 
 This is how a ``SerializerWithStringManifest`` looks like:
 
-.. includecode:: code/docs/serialization/SerializationDocTest.java#my-own-serializer2
+.. includecode:: code/jdocs/serialization/SerializationDocTest.java#my-own-serializer2
 
 You must also bind it to a name in your :ref:`configuration` and then list which classes
 that should be serialized using it.
@@ -164,10 +154,10 @@ In the general case, the local address to be used depends on the type of remote
 address which shall be the recipient of the serialized information. Use
 :meth:`Serialization.serializedActorPath(actorRef)` like this:
 
-.. includecode:: code/docs/serialization/SerializationDocTest.java
+.. includecode:: code/jdocs/serialization/SerializationDocTest.java
    :include: imports
 
-.. includecode:: code/docs/serialization/SerializationDocTest.java
+.. includecode:: code/jdocs/serialization/SerializationDocTest.java
    :include: actorref-serializer
 
 This assumes that serialization happens in the context of sending a message
@@ -183,7 +173,7 @@ transport per se, which makes this question a bit more interesting. To find out
 the appropriate address to use when sending to ``remoteAddr`` you can use
 :meth:`ActorRefProvider.getExternalAddressFor(remoteAddr)` like this:
 
-.. includecode:: code/docs/serialization/SerializationDocTest.java
+.. includecode:: code/jdocs/serialization/SerializationDocTest.java
    :include: external-address
 
 .. note::
@@ -209,7 +199,7 @@ lenient as Akka’s RemoteActorRefProvider).
 There is also a default remote address which is the one used by cluster support
 (and typical systems have just this one); you can get it like this:
 
-.. includecode:: code/docs/serialization/SerializationDocTest.java
+.. includecode:: code/jdocs/serialization/SerializationDocTest.java
    :include: external-address-default
 
 Deep serialization of Actors
@@ -241,9 +231,6 @@ incompatibility as Java serialization does.
 
 External Akka Serializers
 =========================
-
-`Akka-protostuff by Roman Levenstein <https://github.com/romix/akka-protostuff-serialization>`_
-
 
 `Akka-quickser by Roman Levenstein <https://github.com/romix/akka-quickser-serialization>`_
 

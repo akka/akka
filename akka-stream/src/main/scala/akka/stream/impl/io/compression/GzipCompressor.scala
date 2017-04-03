@@ -5,10 +5,11 @@ package akka.stream.impl.io.compression
 
 import java.util.zip.{ CRC32, Deflater }
 
+import akka.annotation.InternalApi
 import akka.util.ByteString
 
 /** INTERNAL API */
-private[akka] class GzipCompressor extends DeflateCompressor {
+@InternalApi private[akka] class GzipCompressor extends DeflateCompressor {
   override protected lazy val deflater = new Deflater(Deflater.BEST_COMPRESSION, true)
   private val checkSum = new CRC32 // CRC32 of uncompressed data
   private var headerSent = false
