@@ -198,7 +198,7 @@ different actors work concurrently with each other so an actor system can proces
 as many processor cores are available on the machine. Since there is always at most one message being processed per actor 
 the invariants of an actor can be kept without synchronization. This happens automatically without using locks:
 
-![messages don't invalidat invarants as they are processed sequentially](diagrams/serialized_timeline_invariants.png)
+![messages don't invalidate invariants as they are processed sequentially](diagrams/serialized_timeline_invariants.png)
 
 In summary, this is what happens when an actor receives a message. It:
 
