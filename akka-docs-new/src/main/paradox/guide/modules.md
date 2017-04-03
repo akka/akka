@@ -89,11 +89,12 @@ The Singleton module can be used to solve these problems:
 
 For coordination among systems it is often necessary to distribute messages to all, or one system of a set of 
 interested systems in a cluster. This pattern is usually called publish-subscribe and this module solves this exact 
-problem. It is possible to subscribe to topics and receive messages published to that topic and it is also possible 
-to broadcast or anycast messages to subscribers of that topic.
+problem. It is possible to broadcast messages to all subscribers of a topic, or send a message to an arbitrary actor that has expressed interest.
+
+Cluster Publish-Subscribe is intended to solve the following problems:
 
 * How do I broadcast messages to an interested set of parties in a cluster?
-* How do I anycast messages to a member from an interested set of parties in a cluster?
+* How do I send a message to a member from an interested set of parties in a cluster?
 * How to subscribe and unsubscribe for events of a certain topic in the cluster?
 
 ### Persistence
