@@ -59,10 +59,9 @@ The problems the Cluster module solves (among others) are
 
 ### Cluster Sharding
 
-Persistence solves the problem of restoring an actor’s state from persistent storage after system restart or crash. 
-It does not solve itself the problem of distributing a set of such actors among members of an Akka cluster. 
+Sharding helps to solve the problem of distributing a set of actors among members of an Akka cluster.
 Sharding is a pattern that mostly used together with Persistence to balance a large set of persistent entities 
-(backed by actors) to members of a cluster and also migrate them to other systems if one of the members crash.
+(backed by actors) to members of a cluster and also migrate them to other nodes when members crash or leave.
  
 The problem space that Sharding targets:
 
