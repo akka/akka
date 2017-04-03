@@ -185,7 +185,7 @@ In this way, actors actually achieve the execution we imagined for objects:
 ![actors interact with each other by sending messages](diagrams/actor_graph.png)
 
 An important consequence of passing messages instead of calling methods is that messages have no return value. 
-By sending a message, an actor delegates work to another actor. As we saw in [The illusion of a call stack], 
+By sending a message, an actor delegates work to another actor. As we saw in @ref:[The illusion of a call stack](actors-intro.md#the-illusion-of-a-call-stack),
 if it expected a return value, the sending actor would either need to block (issue: locks and sacrifice of a thread), 
 or to execute the other actor's work on the same thread (issue: "snakes-in-a-maze"). 
 Instead, the receiving actor delivers the results in a reply message.
