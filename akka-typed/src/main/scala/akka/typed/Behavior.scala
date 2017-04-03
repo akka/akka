@@ -4,7 +4,8 @@
 package akka.typed
 
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.util.LineNumbers
+
+import scala.annotation.tailrec
 
 /**
  * The behavior of an actor defines how it reacts to the messages that it
@@ -102,8 +103,6 @@ object Behavior {
   @InternalApi
   @SerialVersionUID(1L)
   private[akka] object UnhandledBehavior extends Behavior[Nothing] {
-    // override def management(ctx: ActorContext[Nothing], msg: Signal): Behavior[Nothing] = throw new UnsupportedOperationException("Not Implemented")
-    // override def message(ctx: ActorContext[Nothing], msg: Nothing): Behavior[Nothing] = throw new UnsupportedOperationException("Not Implemented")
     override def toString = "Unhandled"
   }
 
@@ -138,15 +137,6 @@ object Behavior {
    */
   @SerialVersionUID(1L)
   private[akka] object StoppedBehavior extends Behavior[Nothing] {
-    /*
-    override def management(ctx: ActorContext[Nothing], msg: Signal): Behavior[Nothing] = {
-      assert(
-        msg == PostStop || msg.isInstanceOf[Terminated],
-        s"stoppedBehavior received $msg (only PostStop or Terminated expected)")
-      this
-    }
-    override def message(ctx: ActorContext[Nothing], msg: Nothing): Behavior[Nothing] = throw new UnsupportedOperationException("Not Implemented")
-    */
     override def toString = "Stopped"
   }
 
@@ -164,14 +154,13 @@ object Behavior {
       case other                         ⇒ other
     }
 
+  @tailrec
   def undefer[T](deferredBehavior: DeferredBehavior[T], ctx: ActorContext[T]): Behavior[T] = {
     val behavior = deferredBehavior(ctx)
 
     behavior match {
-      case innerDeffered: DeferredBehavior[T] ⇒ undefer(innerDeffered, ctx)
-      case ext: ExtensibleBehavior[T] ⇒ ext
-      case StoppedBehavior | EmptyBehavior | UnhandledBehavior | SameBehavior ⇒ behavior
-      case x ⇒ throw new IllegalStateException(s"deferred cannot return $x as behavior")
+      case innerDeferred: DeferredBehavior[T] @unchecked ⇒ undefer(innerDeferred, ctx)
+      case _ ⇒ behavior
     }
   }
 
@@ -192,8 +181,8 @@ object Behavior {
    */
   def preStart[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
     validateAsInitial(behavior) match {
-      case d: DeferredBehavior[_] ⇒ validateAsInitial(undefer(d.asInstanceOf[DeferredBehavior[T]], ctx))
-      case x                      ⇒ x
+      case d: DeferredBehavior[T] @unchecked ⇒ validateAsInitial(undefer(d, ctx))
+      case x                                 ⇒ x
     }
   }
 
@@ -226,11 +215,10 @@ object Behavior {
       case IgnoreBehavior                   ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case StoppedBehavior                  ⇒ StoppedBehavior.asInstanceOf[Behavior[T]]
       case EmptyBehavior                    ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
-      case ext: ExtensibleBehavior[_] ⇒
-        val actualBehavior = ext.asInstanceOf[ExtensibleBehavior[T]]
+      case ext: ExtensibleBehavior[T] @unchecked ⇒
         msg match {
-          case signal: Signal ⇒ actualBehavior.management(ctx, signal)
-          case msg            ⇒ actualBehavior.message(ctx, msg.asInstanceOf[T])
+          case signal: Signal ⇒ ext.management(ctx, signal)
+          case msg            ⇒ ext.message(ctx, msg.asInstanceOf[T])
         }
     }
 
