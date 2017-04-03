@@ -19,7 +19,7 @@ that we know about. However, during the lifecycle of the query
 There are many approaches that can be taken to address these issues, but the important point is to settle on what is
 the desired behavior. We will pick the following two guarantees:
 
- * when a query arrives to the group, the group actor takes a _snaphsot_ of the existing device actors and will only
+ * when a query arrives to the group, the group actor takes a _snapshot_ of the existing device actors and will only
    ask those for the temperature. Actors that are started _after_ the arrival of the query are simply ignored.
  * when an actor stops during the query without answering (i.e. before all the actors we asked for the temperature
    responded) we simply report back the fact to the sender of the query message
