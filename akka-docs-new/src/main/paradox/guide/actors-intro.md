@@ -223,6 +223,7 @@ messages (like sending more messages and/or changing state). The Execution Envir
 to drive all these actions completely transparently.
 
 This is a very simple model and it solves the issues enumerated previously:	
+
  * Encapsulation is preserved by decoupling execution from signaling (method calls transfer execution, 
    message passing does not).	
  * There is no need for locks. Modifying the internal state of an actor is only possible via messages, which are 
