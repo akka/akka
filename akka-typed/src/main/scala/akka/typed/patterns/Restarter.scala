@@ -15,13 +15,13 @@ import akka.typed.scaladsl.Actor._
  * failures of type Thr.
  *
  * FIXME add limited restarts and back-off (with limited buffering or vacation responder)
- * FIXME write tests that ensure that restart is canonicalizing PreStart result correctly
  */
 final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], resume: Boolean)(
   behavior: Behavior[T] = initialBehavior) extends ExtensibleBehavior[T] {
 
-  private def restart(ctx: ActorContext[T]): Behavior[T] = {
-    try Behavior.interpretSignal(behavior, ctx, PreRestart) catch { case NonFatal(_) ⇒ }
+  private def restart(ctx: ActorContext[T], startedBehavior: Behavior[T]): Behavior[T] = {
+    try Behavior.interpretSignal(startedBehavior, ctx, PreRestart) catch { case NonFatal(_) ⇒ }
+    // no need to canonicalize, it's done in the calling methods
     Behavior.preStart(initialBehavior, ctx)
   }
 
@@ -43,27 +43,27 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
   }
 
   override def management(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
+    val startedBehavior = preStart(behavior, ctx)
     val b =
       try {
-        val startedBehavior = preStart(behavior, ctx)
         Behavior.interpretSignal(startedBehavior, ctx, signal)
       } catch {
         case ex: Thr ⇒
           ctx.system.eventStream.publish(Logging.Error(ex, ctx.self.toString, behavior.getClass, ex.getMessage))
-          if (resume) behavior else restart(ctx)
+          if (resume) startedBehavior else restart(ctx, startedBehavior)
       }
     canonical(b, ctx)
   }
 
   override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
+    val startedBehavior = preStart(behavior, ctx)
     val b =
       try {
-        val startedBehavior = preStart(behavior, ctx)
         Behavior.interpretMessage(startedBehavior, ctx, msg)
       } catch {
         case ex: Thr ⇒
           ctx.system.eventStream.publish(Logging.Error(ex, ctx.self.toString, behavior.getClass, ex.getMessage))
-          if (resume) behavior else restart(ctx)
+          if (resume) startedBehavior else restart(ctx, startedBehavior)
       }
     canonical(b, ctx)
   }
