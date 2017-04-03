@@ -113,6 +113,19 @@ Persistence tackles the following problems:
 * How do I introspect domain events that has lead an entity to its current state?
 * How do I leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in my application to support long-running processes while the project continues to evolve.
 
+### Distributed Data
+
+In situations where eventual consistency is acceptable it is possible to share data between nodes in
+an Akka Cluster and accept both reads and writes even in the face of cluster partitions. This can be
+achieved using Conflict Free Replicated Data Types (CRDTs), where writes on different nodes can
+happen concurrently and are merged in a predictable way afterwards. The Distributed Data module
+provides infrastructure to share data and a number of useful data types.
+
+Distributed Data is intended to solve the following challenges:
+
+* How can I accept writes even in the face of cluster partitions?
+* How can I share data while at the same time ensuring low-latency local read and write access?
+
 ### Streams
 
 Actors are a fundamental model for concurrency, but there are common patterns where their use requires the user 
