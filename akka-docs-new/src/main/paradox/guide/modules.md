@@ -111,6 +111,7 @@ Persistence tackles the following problems:
 * How do I implement a [CQRS system](https://msdn.microsoft.com/en-us/library/jj591573.aspx)?
 * How do I ensure reliable delivery of messages in face of network errors and system crashes?
 * How do I introspect domain events that has lead an entity to its current state?
+* How do I leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in my application to support long-running processes while the project continues to evolve.
 
 ### Streams
 
