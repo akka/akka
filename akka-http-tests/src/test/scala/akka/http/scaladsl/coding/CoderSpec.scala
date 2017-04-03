@@ -66,7 +66,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
     }
     "properly round-trip encode/decode an HttpRequest" in {
       val request = HttpRequest(POST, entity = HttpEntity(largeText))
-      Coder.decode(Coder.encode(request)).toStrict(3.seconds.dilated).awaitResult(3.seconds.dilated) should equal(request)
+      Coder.decodeMessage(Coder.encodeMessage(request)).toStrict(3.seconds.dilated).awaitResult(3.seconds.dilated) should equal(request)
     }
 
     if (corruptInputCheck) {

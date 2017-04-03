@@ -22,11 +22,11 @@ class DecoderSpec extends WordSpec with CodecSpecSupport {
   "A Decoder" should {
     "not transform the message if it doesn't contain a Content-Encoding header" in {
       val request = HttpRequest(POST, entity = HttpEntity(smallText))
-      DummyDecoder.decode(request) shouldEqual request
+      DummyDecoder.decodeMessage(request) shouldEqual request
     }
     "correctly transform the message if it contains a Content-Encoding header" in {
       val request = HttpRequest(POST, entity = HttpEntity(smallText), headers = List(`Content-Encoding`(DummyDecoder.encoding)))
-      val decoded = DummyDecoder.decode(request)
+      val decoded = DummyDecoder.decodeMessage(request)
       decoded.headers shouldEqual Nil
       decoded.entity.toStrict(3.seconds.dilated).awaitResult(3.seconds.dilated) shouldEqual HttpEntity(dummyDecompress(smallText))
     }
