@@ -14,10 +14,7 @@ import java.util.function.Function;
 import akka.japi.function.Function2;
 import akka.japi.function.Procedure2;
 import akka.japi.pf.PFBuilder;
-import akka.typed.ActorRef;
-import akka.typed.Behavior;
-import akka.typed.PreStart;
-import akka.typed.Signal;
+import akka.typed.*;
 import akka.typed.patterns.Restarter;
 import akka.typed.scaladsl.Actor.Widened;
 import scala.reflect.ClassTag;
@@ -30,7 +27,7 @@ public abstract class Actor {
 	 * same runtime performance (especially concerning allocations for function converters).
 	 */
 
-  private static class Deferred<T> extends Behavior<T> {
+  private static class Deferred<T> extends Behavior.DeferredBehavior<T> {
     final akka.japi.function.Function<ActorContext<T>, Behavior<T>> producer;
 
     public Deferred(akka.japi.function.Function<ActorContext<T>, Behavior<T>> producer) {
@@ -38,20 +35,12 @@ public abstract class Actor {
     }
 
     @Override
-    public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
-      if (msg instanceof PreStart) {
-        return Behavior.preStart(producer.apply(ctx), ctx);
-      } else
-        throw new IllegalStateException("Deferred behavior must receive PreStart as first signal");
-    }
-
-    @Override
-    public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
-      throw new IllegalStateException("Deferred behavior must receive PreStart as first signal");
+    public Behavior<T> apply(akka.typed.ActorContext<T> ctx) throws Exception {
+      return producer.apply(ctx);
     }
   }
 
-  private static class Stateful<T> extends Behavior<T> {
+  private static class Stateful<T> extends ExtensibleBehavior<T> {
     final Function2<ActorContext<T>, T, Behavior<T>> message;
     final Function2<ActorContext<T>, Signal, Behavior<T>> signal;
 
@@ -72,7 +61,7 @@ public abstract class Actor {
     }
   }
 
-  private static class Stateless<T> extends Behavior<T> {
+  private static class Stateless<T> extends ExtensibleBehavior<T> {
     final Procedure2<ActorContext<T>, T> message;
 
     public Stateless(Procedure2<ActorContext<T>, T> message) {
@@ -91,7 +80,7 @@ public abstract class Actor {
     }
   }
 
-  private static class Tap<T> extends Behavior<T> {
+  private static class Tap<T> extends ExtensibleBehavior<T> {
     final Procedure2<ActorContext<T>, Signal> signal;
     final Procedure2<ActorContext<T>, T> message;
     final Behavior<T> behavior;
@@ -115,15 +104,15 @@ public abstract class Actor {
     }
 
     @Override
-    public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
-      signal.apply(ctx, msg);
-      return canonicalize(behavior.management(ctx, msg));
+    public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal signal) throws Exception {
+      this.signal.apply(ctx, signal);
+      return canonicalize(Behavior.interpretSignal(behavior, ctx, signal));
     }
 
     @Override
     public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
       message.apply(ctx, msg);
-      return canonicalize(behavior.message(ctx, msg));
+      return canonicalize(Behavior.interpretMessage(behavior, ctx, msg));
     }
   }
 

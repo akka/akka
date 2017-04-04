@@ -78,7 +78,7 @@ private[typed] trait DeathWatch[T] {
       }
       if (maySend) {
         val t = Terminated(actor)(failure)
-        next(behavior.management(ctx, t), t)
+        next(Behavior.interpretSignal(behavior, ctx, t), t)
       }
     }
     if (isTerminating && terminatingMap.isEmpty) {

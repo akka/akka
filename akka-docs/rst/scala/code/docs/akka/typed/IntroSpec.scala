@@ -114,22 +114,24 @@ class IntroSpec extends TypedSpec {
 
     //#chatroom-main
     val main: Behavior[akka.NotUsed] =
-      Stateful(
-        behavior = (_, _) ⇒ Unhandled,
-        signal = { (ctx, sig) ⇒
-        sig match {
-          case PreStart ⇒
-            val chatRoom = ctx.spawn(ChatRoom.chatRoom(), "chatroom")
-            val gabblerRef = ctx.spawn(gabbler, "gabbler")
-            ctx.watch(gabblerRef)
-            chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
-            Same
-          case Terminated(ref) ⇒
-            Stopped
-          case _ ⇒
-            Unhandled
+      Deferred { ctx =>
+        val chatRoom = ctx.spawn(ChatRoom.chatRoom(), "chatroom")
+        val gabblerRef = ctx.spawn(gabbler, "gabbler")
+        ctx.watch(gabblerRef)
+        chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
+
+        Stateful(
+          behavior = (_, _) ⇒ Unhandled,
+          signal = { (ctx, sig) ⇒
+          sig match {
+            case Terminated(ref) ⇒
+              Stopped
+            case _ ⇒
+              Unhandled
+          }
         }
-      })
+        )
+      }
 
     val system = ActorSystem("ChatRoomDemo", main)
     Await.result(system.whenTerminated, 1.second)

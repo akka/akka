@@ -150,8 +150,6 @@ trait ActorContext[T] { this: akka.typed.javadsl.ActorContext[T] ⇒
 object Actor {
   import Behavior._
 
-  // FIXME check that all behaviors can cope with not getting PreStart as first message
-
   final implicit class BehaviorDecorators[T](val behavior: Behavior[T]) extends AnyVal {
     /**
      * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
@@ -185,21 +183,21 @@ object Actor {
    * }
    * }}}
    */
-  final case class Widened[T, U](behavior: Behavior[T], matcher: PartialFunction[U, T]) extends Behavior[U] {
-    private def postProcess(behv: Behavior[T]): Behavior[U] =
+  final case class Widened[T, U](behavior: Behavior[T], matcher: PartialFunction[U, T]) extends ExtensibleBehavior[U] {
+    private def postProcess(behv: Behavior[T], ctx: AC[T]): Behavior[U] =
       if (isUnhandled(behv)) Unhandled
       else if (isAlive(behv)) {
-        val next = canonicalize(behv, behavior)
+        val next = canonicalize(behv, behavior, ctx)
         if (next eq behavior) Same else Widened(next, matcher)
       } else Stopped
 
-    override def management(ctx: AC[U], msg: Signal): Behavior[U] =
-      postProcess(behavior.management(ctx.as[T], msg))
+    override def management(ctx: AC[U], signal: Signal): Behavior[U] =
+      postProcess(Behavior.interpretSignal(behavior, ctx.as[T], signal), ctx.as[T])
 
     override def message(ctx: AC[U], msg: U): Behavior[U] =
       matcher.applyOrElse(msg, nullFun) match {
         case null        ⇒ Unhandled
-        case transformed ⇒ postProcess(behavior.message(ctx.as[T], transformed))
+        case transformed ⇒ postProcess(Behavior.interpretMessage(behavior, ctx.as[T], transformed), ctx.as[T])
       }
 
     override def toString: String = s"${behavior.toString}.widen(${LineNumbers(matcher)})"
@@ -209,14 +207,9 @@ object Actor {
    * Wrap a behavior factory so that it runs upon PreStart, i.e. behavior creation
    * is deferred to the child actor instead of running within the parent.
    */
-  final case class Deferred[T](factory: ActorContext[T] ⇒ Behavior[T]) extends Behavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = {
-      if (msg != PreStart) throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
-      Behavior.preStart(factory(ctx), ctx)
-    }
-
-    override def message(ctx: AC[T], msg: T): Behavior[T] =
-      throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
+  final case class Deferred[T](factory: ActorContext[T] ⇒ Behavior[T]) extends DeferredBehavior[T] {
+    /** "undefer" the deferred behavior */
+    override def apply(ctx: AC[T]): Behavior[T] = factory(ctx)
 
     override def toString: String = s"Deferred(${LineNumbers(factory)})"
   }
@@ -227,7 +220,7 @@ object Actor {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
-  def Same[T]: Behavior[T] = sameBehavior.asInstanceOf[Behavior[T]]
+  def Same[T]: Behavior[T] = SameBehavior.asInstanceOf[Behavior[T]]
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -235,7 +228,7 @@ object Actor {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
-  def Unhandled[T]: Behavior[T] = unhandledBehavior.asInstanceOf[Behavior[T]]
+  def Unhandled[T]: Behavior[T] = UnhandledBehavior.asInstanceOf[Behavior[T]]
 
   /*
    * TODO write a Behavior that waits for all child actors to stop and then
@@ -250,17 +243,17 @@ object Actor {
    * signal that results from stopping this actor will NOT be passed to the
    * current behavior, it will be effectively ignored.
    */
-  def Stopped[T]: Behavior[T] = stoppedBehavior.asInstanceOf[Behavior[T]]
+  def Stopped[T]: Behavior[T] = StoppedBehavior.asInstanceOf[Behavior[T]]
 
   /**
    * A behavior that treats every incoming message as unhandled.
    */
-  def Empty[T]: Behavior[T] = emptyBehavior.asInstanceOf[Behavior[T]]
+  def Empty[T]: Behavior[T] = EmptyBehavior.asInstanceOf[Behavior[T]]
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
    */
-  def Ignore[T]: Behavior[T] = ignoreBehavior.asInstanceOf[Behavior[T]]
+  def Ignore[T]: Behavior[T] = IgnoreBehavior.asInstanceOf[Behavior[T]]
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
@@ -275,7 +268,7 @@ object Actor {
   final case class Stateful[T](
     behavior: (ActorContext[T], T) ⇒ Behavior[T],
     signal:   (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
-    extends Behavior[T] {
+    extends ExtensibleBehavior[T] {
     override def management(ctx: AC[T], msg: Signal): Behavior[T] = signal(ctx, msg)
     override def message(ctx: AC[T], msg: T) = behavior(ctx, msg)
     override def toString = s"Stateful(${LineNumbers(behavior)})"
@@ -292,7 +285,7 @@ object Actor {
    * another one after it has been installed. It is most useful for leaf actors
    * that do not create child actors themselves.
    */
-  final case class Stateless[T](behavior: (ActorContext[T], T) ⇒ Any) extends Behavior[T] {
+  final case class Stateless[T](behavior: (ActorContext[T], T) ⇒ Any) extends ExtensibleBehavior[T] {
     override def management(ctx: AC[T], msg: Signal): Behavior[T] = Unhandled
     override def message(ctx: AC[T], msg: T): Behavior[T] = {
       behavior(ctx, msg)
@@ -307,23 +300,24 @@ object Actor {
    * for logging or tracing what a certain Actor does.
    */
   final case class Tap[T](
-    signal:   (ActorContext[T], Signal) ⇒ _,
-    mesg:     (ActorContext[T], T) ⇒ _,
-    behavior: Behavior[T]) extends Behavior[T] {
+    onMessage: Function2[ActorContext[T], T, _],
+    onSignal:  Function2[ActorContext[T], Signal, _],
+    behavior:  Behavior[T]) extends ExtensibleBehavior[T] {
+
     private def canonical(behv: Behavior[T]): Behavior[T] =
       if (isUnhandled(behv)) Unhandled
-      else if (behv eq sameBehavior) Same
-      else if (isAlive(behv)) Tap(signal, mesg, behv)
+      else if (behv eq SameBehavior) Same
+      else if (isAlive(behv)) Tap(onMessage, onSignal, behv)
       else Stopped
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = {
-      signal(ctx, msg)
-      canonical(behavior.management(ctx, msg))
+    override def management(ctx: AC[T], signal: Signal): Behavior[T] = {
+      onSignal(ctx, signal)
+      canonical(Behavior.interpretSignal(behavior, ctx, signal))
     }
     override def message(ctx: AC[T], msg: T): Behavior[T] = {
-      mesg(ctx, msg)
-      canonical(behavior.message(ctx, msg))
+      onMessage(ctx, msg)
+      canonical(Behavior.interpretMessage(behavior, ctx, msg))
     }
-    override def toString = s"Tap(${LineNumbers(signal)},${LineNumbers(mesg)},$behavior)"
+    override def toString = s"Tap(${LineNumbers(onSignal)},${LineNumbers(onMessage)},$behavior)"
   }
 
   /**
@@ -333,7 +327,7 @@ object Actor {
    * wrapped in a `monitor` call again.
    */
   object Monitor {
-    def apply[T](monitor: ActorRef[T], behavior: Behavior[T]): Tap[T] = Tap(unitFunction, (_, msg) ⇒ monitor ! msg, behavior)
+    def apply[T](monitor: ActorRef[T], behavior: Behavior[T]): Tap[T] = Tap((_, msg) ⇒ monitor ! msg, unitFunction, behavior)
   }
 
   /**

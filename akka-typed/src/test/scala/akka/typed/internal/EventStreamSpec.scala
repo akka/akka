@@ -4,27 +4,25 @@
 package akka.typed
 package internal
 
-import scala.concurrent.duration._
 import akka.Done
 import akka.event.Logging._
-import akka.typed.ScalaDSL._
+import akka.typed.scaladsl.Actor._
 import akka.typed.scaladsl.AskPattern._
 import com.typesafe.config.ConfigFactory
-import java.util.concurrent.Executor
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import scala.concurrent.duration._
 
 object EventStreamSpec {
   @volatile var logged = Vector.empty[LogEvent]
 
   class MyLogger extends Logger {
     def initialBehavior: Behavior[Logger.Command] =
-      ContextAware { ctx ⇒
-        Total {
-          case Logger.Initialize(es, replyTo) ⇒
-            replyTo ! ctx.watch(ctx.spawn(Static { (ev: LogEvent) ⇒ logged :+= ev }, "logger"))
-            Empty
-        }
+      Stateless {
+        case (ctx, Logger.Initialize(es, replyTo)) ⇒
+          replyTo ! ctx.watch(ctx.spawn(Stateless[LogEvent] { (_, ev: LogEvent) ⇒ logged :+= ev }, "logger"))
+          Empty
       }
   }
 
@@ -262,7 +260,7 @@ class EventStreamSpec extends TypedSpec(EventStreamSpec.config) with Eventually 
     }
 
     def `must unsubscribe an actor upon termination`(): Unit = {
-      val ref = nativeSystem ? TypedSpec.Create(Total[Done](d ⇒ Stopped), "tester") futureValue Timeout(1.second)
+      val ref = nativeSystem ? TypedSpec.Create(Stateful[Done] { case _ ⇒ Stopped }, "tester") futureValue Timeout(1.second)
       es.subscribe(ref, classOf[Done]) should ===(true)
       es.subscribe(ref, classOf[Done]) should ===(false)
       ref ! Done

@@ -5,13 +5,10 @@ package akka.typed
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-
 import org.scalatest.concurrent.ScalaFutures
-
 import akka.util.Timeout
 import akka.pattern.AskTimeoutException
-
-import ScalaDSL._
+import akka.typed.scaladsl.Actor._
 import akka.typed.scaladsl.AskPattern._
 
 object AskSpec {
@@ -32,11 +29,11 @@ class AskSpec extends TypedSpec with ScalaFutures {
     implicit def executor: ExecutionContext =
       system.executionContext
 
-    val behavior: Behavior[Msg] = Total[Msg] {
-      case foo @ Foo(_) ⇒
+    val behavior: Behavior[Msg] = Stateful[Msg] {
+      case (_, foo: Foo) ⇒
         foo.replyTo ! "foo"
         Same
-      case Stop(r) ⇒
+      case (_, Stop(r)) ⇒
         r ! (())
         Stopped
     }

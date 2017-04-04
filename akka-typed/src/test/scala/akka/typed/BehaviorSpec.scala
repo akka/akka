@@ -9,6 +9,8 @@ import akka.japi.function.{ Function ⇒ F1e, Function2 ⇒ F2, Procedure2 ⇒ P
 import akka.japi.pf.{ FI, PFBuilder }
 import java.util.function.{ Function ⇒ F1 }
 
+import akka.Done
+
 class BehaviorSpec extends TypedSpec {
 
   sealed trait Command {
@@ -59,11 +61,9 @@ class BehaviorSpec extends TypedSpec {
     def checkAux(command: Command, aux: Aux): Unit = ()
 
     case class Init(behv: Behavior[Command], inbox: Inbox[Event], aux: Aux) {
-      def mkCtx(requirePreStart: Boolean = false): Setup = {
+      def mkCtx(): Setup = {
         val ctx = new EffectfulActorContext("ctx", behv, 1000, system)
         val msgs = inbox.receiveAll()
-        if (requirePreStart) msgs should ===(GotSignal(PreStart) :: Nil)
-        checkAux(PreStart, aux)
         Setup(ctx, inbox, aux)
       }
     }
@@ -82,7 +82,7 @@ class BehaviorSpec extends TypedSpec {
     }
 
     def mkCtx(requirePreStart: Boolean = false): Setup =
-      init().mkCtx(requirePreStart)
+      init().mkCtx()
 
     implicit class Check(val setup: Setup) {
       def check(signal: Signal): Setup = {
@@ -180,7 +180,7 @@ class BehaviorSpec extends TypedSpec {
   trait Unhandled extends Common {
     def `must return Unhandled`(): Unit = {
       val Setup(ctx, inbox, aux) = mkCtx()
-      ctx.currentBehavior.message(ctx, Miss) should be(Behavior.unhandledBehavior)
+      Behavior.interpretMessage(ctx.currentBehavior, ctx, Miss) should be(Behavior.UnhandledBehavior)
       inbox.receiveAll() should ===(Missed :: Nil)
       checkAux(Miss, aux)
     }
@@ -190,7 +190,7 @@ class BehaviorSpec extends TypedSpec {
     def `must stop`(): Unit = {
       val Setup(ctx, inbox, aux) = mkCtx()
       ctx.run(Stop)
-      ctx.currentBehavior should be(Behavior.stoppedBehavior)
+      ctx.currentBehavior should be(Behavior.StoppedBehavior)
       checkAux(Stop, aux)
     }
   }
@@ -254,31 +254,32 @@ class BehaviorSpec extends TypedSpec {
   }
 
   private def mkFull(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] = {
-    import ScalaDSL.{ Full, Msg, Sig, Same, Unhandled, Stopped }
-    Full {
-      case Sig(ctx, signal) ⇒
-        monitor ! GotSignal(signal)
-        Same
-      case Msg(ctx, GetSelf) ⇒
+    SActor.Stateful[Command]({
+      case (ctx, GetSelf) ⇒
         monitor ! Self(ctx.self)
-        Same
-      case Msg(ctx, Miss) ⇒
+        SActor.Same
+      case (ctx, Miss) ⇒
         monitor ! Missed
-        Unhandled
-      case Msg(ctx, Ignore) ⇒
+        SActor.Unhandled
+      case (ctx, Ignore) ⇒
         monitor ! Ignored
-        Same
-      case Msg(ctx, Ping) ⇒
+        SActor.Same
+      case (ctx, Ping) ⇒
         monitor ! Pong
         mkFull(monitor, state)
-      case Msg(ctx, Swap) ⇒
+      case (ctx, Swap) ⇒
         monitor ! Swapped
         mkFull(monitor, state.next)
-      case Msg(ctx, GetState()) ⇒
+      case (ctx, GetState()) ⇒
         monitor ! state
-        Same
-      case Msg(ctx, Stop) ⇒ Stopped
-    }
+        SActor.Same
+      case (ctx, Stop) ⇒ SActor.Stopped
+      case (_, _)      ⇒ SActor.Unhandled
+    }, {
+      case (ctx, signal) ⇒
+        monitor ! GotSignal(signal)
+        SActor.Same
+    })
   }
 
   trait FullBehavior extends Messages with BecomeWithLifecycle with Stoppable {
@@ -287,256 +288,39 @@ class BehaviorSpec extends TypedSpec {
   object `A Full Behavior (native)` extends FullBehavior with NativeSystem
   object `A Full Behavior (adapted)` extends FullBehavior with AdaptedSystem
 
-  trait FullTotalBehavior extends Messages with BecomeWithLifecycle with Stoppable {
+  trait StatefulBehavior extends Messages with BecomeWithLifecycle with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
     private def behv(monitor: ActorRef[Event], state: State): Behavior[Command] = {
-      import ScalaDSL.{ FullTotal, Msg, Sig, Same, Unhandled, Stopped }
-      FullTotal {
-        case Sig(ctx, signal) ⇒
-          monitor ! GotSignal(signal)
-          Same
-        case Msg(ctx, GetSelf) ⇒
+      SActor.Stateful({
+        case (ctx, GetSelf) ⇒
           monitor ! Self(ctx.self)
-          Same
-        case Msg(_, Miss) ⇒
+          SActor.Same
+        case (_, Miss) ⇒
           monitor ! Missed
-          Unhandled
-        case Msg(_, Ignore) ⇒
+          SActor.Unhandled
+        case (_, Ignore) ⇒
           monitor ! Ignored
-          Same
-        case Msg(_, Ping) ⇒
+          SActor.Same
+        case (_, Ping) ⇒
           monitor ! Pong
           behv(monitor, state)
-        case Msg(_, Swap) ⇒
+        case (_, Swap) ⇒
           monitor ! Swapped
           behv(monitor, state.next)
-        case Msg(_, GetState()) ⇒
+        case (_, GetState()) ⇒
           monitor ! state
-          Same
-        case Msg(_, Stop)       ⇒ Stopped
-        case Msg(_, _: AuxPing) ⇒ Unhandled
-      }
-    }
-  }
-  object `A FullTotal Behavior (native)` extends FullTotalBehavior with NativeSystem
-  object `A FullTotal Behavior (adapted)` extends FullTotalBehavior with AdaptedSystem
-
-  trait WidenedBehavior extends Messages with BecomeWithLifecycle with Stoppable {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      (ScalaDSL.Widened(mkFull(monitor), { case x ⇒ x }), null)
-  }
-  object `A Widened Behavior (native)` extends WidenedBehavior with NativeSystem
-  object `A Widened Behavior (adapted)` extends WidenedBehavior with AdaptedSystem
-
-  trait ContextAwareBehavior extends Messages with BecomeWithLifecycle with Stoppable {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      (ScalaDSL.ContextAware(ctx ⇒ mkFull(monitor)), null)
-  }
-  object `A ContextAware Behavior (native)` extends ContextAwareBehavior with NativeSystem
-  object `A ContextAware Behavior (adapted)` extends ContextAwareBehavior with AdaptedSystem
-
-  trait SelfAwareBehavior extends Messages with BecomeWithLifecycle with Stoppable {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      (ScalaDSL.SelfAware(self ⇒ mkFull(monitor)), null)
-  }
-  object `A SelfAware Behavior (native)` extends SelfAwareBehavior with NativeSystem
-  object `A SelfAware Behavior (adapted)` extends SelfAwareBehavior with AdaptedSystem
-
-  trait NonMatchingTapBehavior extends Messages with BecomeWithLifecycle with Stoppable {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      (ScalaDSL.Tap({ case null ⇒ }, mkFull(monitor)), null)
-  }
-  object `A non-matching Tap Behavior (native)` extends NonMatchingTapBehavior with NativeSystem
-  object `A non-matching Tap Behavior (adapted)` extends NonMatchingTapBehavior with AdaptedSystem
-
-  trait MatchingTapBehavior extends Messages with BecomeWithLifecycle with Stoppable {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      (ScalaDSL.Tap({ case _ ⇒ }, mkFull(monitor)), null)
-  }
-  object `A matching Tap Behavior (native)` extends MatchingTapBehavior with NativeSystem
-  object `A matching Tap Behavior (adapted)` extends MatchingTapBehavior with AdaptedSystem
-
-  trait SynchronousSelfBehavior extends Messages with BecomeWithLifecycle with Stoppable {
-    import ScalaDSL._
-
-    type Aux = Inbox[Command]
-
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      (SynchronousSelf(self ⇒ mkFull(monitor)), null)
-
-    private def behavior2(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-      val inbox = Inbox[Command]("syncself")
-      def first(self: ActorRef[Command]) = Tap.monitor(inbox.ref, Partial[Command] {
-        case AuxPing(id) ⇒ { self ! AuxPing(0); second(self) }
+          SActor.Same
+        case (_, Stop)       ⇒ SActor.Stopped
+        case (_, _: AuxPing) ⇒ SActor.Unhandled
+      }, {
+        case (ctx, signal) ⇒
+          monitor ! GotSignal(signal)
+          SActor.Same
       })
-      def second(self: ActorRef[Command]) = Partial[Command] {
-        case AuxPing(0) ⇒ { self ! AuxPing(1); Same }
-        case AuxPing(1) ⇒ { self ! AuxPing(2); third(self) }
-      }
-      def third(self: ActorRef[Command]) = Partial[Command] {
-        case AuxPing(2) ⇒ { self ! AuxPing(3); Unhandled }
-        case AuxPing(3) ⇒ { self ! Ping; Same }
-        case AuxPing(4) ⇒ { self ! Stop; Stopped }
-      }
-      (SynchronousSelf(self ⇒ Or(mkFull(monitor), first(self))), inbox)
-    }
-
-    override def checkAux(cmd: Command, aux: Aux) =
-      (cmd, aux) match {
-        case (AuxPing(42), i: Inbox[_]) ⇒ i.receiveAll() should ===(Seq(42, 0, 1, 2, 3) map AuxPing: Seq[Command])
-        case (AuxPing(4), i: Inbox[_])  ⇒ i.receiveAll() should ===(AuxPing(4) :: Nil)
-        case _                          ⇒ // ignore
-      }
-
-    def `must send messages to itself and stop correctly`(): Unit = {
-      val Setup(ctx, _, _) = init(behavior2).mkCtx().check(AuxPing(42))
-      ctx.run(AuxPing(4))
-      ctx.currentBehavior should ===(Stopped[Command])
     }
   }
-  object `A SynchronousSelf Behavior (native)` extends SynchronousSelfBehavior with NativeSystem
-  object `A SynchronousSelf Behavior (adapted)` extends SynchronousSelfBehavior with AdaptedSystem
-
-  trait And extends Common {
-
-    private def behavior2(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      ScalaDSL.And(mkFull(monitor), mkFull(monitor)) → null
-
-    def `must pass message to both parts`(): Unit = {
-      init(behavior2).mkCtx().check2(Swap).check2(GetState()(StateB))
-    }
-
-    def `must half-terminate`(): Unit = {
-      val Setup(ctx, inbox, _) = mkCtx()
-      ctx.run(Stop)
-      ctx.currentBehavior should ===(ScalaDSL.Empty[Command])
-    }
-  }
-
-  trait BehaviorAndLeft extends Messages with BecomeWithLifecycle with And {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      ScalaDSL.And(mkFull(monitor), ScalaDSL.Empty) → null
-  }
-  object `A Behavior combined with And (left, native)` extends BehaviorAndLeft with NativeSystem
-  object `A Behavior combined with And (left, adapted)` extends BehaviorAndLeft with NativeSystem
-
-  trait BehaviorAndRight extends Messages with BecomeWithLifecycle with And {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      ScalaDSL.And(ScalaDSL.Empty, mkFull(monitor)) → null
-  }
-  object `A Behavior combined with And (right, native)` extends BehaviorAndRight with NativeSystem
-  object `A Behavior combined with And (right, adapted)` extends BehaviorAndRight with NativeSystem
-
-  trait Or extends Common {
-    private def strange(monitor: ActorRef[Event]): Behavior[Command] =
-      ScalaDSL.Full {
-        case ScalaDSL.Msg(_, Ping | AuxPing(_)) ⇒
-          monitor ! Pong
-          ScalaDSL.Unhandled
-      }
-
-    private def behavior2(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      ScalaDSL.Or(mkFull(monitor), strange(monitor)) → null
-
-    private def behavior3(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      ScalaDSL.Or(strange(monitor), mkFull(monitor)) → null
-
-    def `must pass message only to first interested party`(): Unit = {
-      init(behavior2).mkCtx().check(Ping).check(AuxPing(0))
-    }
-
-    def `must pass message through both if first is uninterested`(): Unit = {
-      init(behavior3).mkCtx().check2(Ping).check(AuxPing(0))
-    }
-
-    def `must half-terminate`(): Unit = {
-      val Setup(ctx, inbox, _) = mkCtx()
-      ctx.run(Stop)
-      ctx.currentBehavior should ===(ScalaDSL.Empty[Command])
-    }
-  }
-
-  trait BehaviorOrLeft extends Messages with BecomeWithLifecycle with Or {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      ScalaDSL.Or(mkFull(monitor), ScalaDSL.Empty) → null
-  }
-  object `A Behavior combined with Or (left, native)` extends BehaviorOrLeft with NativeSystem
-  object `A Behavior combined with Or (left, adapted)` extends BehaviorOrLeft with NativeSystem
-
-  trait BehaviorOrRight extends Messages with BecomeWithLifecycle with Or {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      ScalaDSL.Or(ScalaDSL.Empty, mkFull(monitor)) → null
-  }
-  object `A Behavior combined with Or (right, native)` extends BehaviorOrRight with NativeSystem
-  object `A Behavior combined with Or (right, adapted)` extends BehaviorOrRight with NativeSystem
-
-  trait PartialBehavior extends Messages with Become with Stoppable {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
-    def behv(monitor: ActorRef[Event], state: State): Behavior[Command] =
-      ScalaDSL.Partial {
-        case Ping ⇒
-          monitor ! Pong
-          behv(monitor, state)
-        case Miss ⇒
-          monitor ! Missed
-          ScalaDSL.Unhandled
-        case Ignore ⇒
-          monitor ! Ignored
-          ScalaDSL.Same
-        case Swap ⇒
-          monitor ! Swapped
-          behv(monitor, state.next)
-        case GetState() ⇒
-          monitor ! state
-          ScalaDSL.Same
-        case Stop ⇒ ScalaDSL.Stopped
-      }
-  }
-  object `A Partial Behavior (native)` extends PartialBehavior with NativeSystem
-  object `A Partial Behavior (adapted)` extends PartialBehavior with AdaptedSystem
-
-  trait TotalBehavior extends Messages with Become with Stoppable {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
-    def behv(monitor: ActorRef[Event], state: State): Behavior[Command] =
-      ScalaDSL.Total {
-        case Ping ⇒
-          monitor ! Pong
-          behv(monitor, state)
-        case Miss ⇒
-          monitor ! Missed
-          ScalaDSL.Unhandled
-        case Ignore ⇒
-          monitor ! Ignored
-          ScalaDSL.Same
-        case GetSelf ⇒ ScalaDSL.Unhandled
-        case Swap ⇒
-          monitor ! Swapped
-          behv(monitor, state.next)
-        case GetState() ⇒
-          monitor ! state
-          ScalaDSL.Same
-        case Stop       ⇒ ScalaDSL.Stopped
-        case _: AuxPing ⇒ ScalaDSL.Unhandled
-      }
-  }
-  object `A Total Behavior (native)` extends TotalBehavior with NativeSystem
-  object `A Total Behavior (adapted)` extends TotalBehavior with AdaptedSystem
-
-  trait StaticBehavior extends Messages {
-    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
-      (ScalaDSL.Static {
-        case Ping       ⇒ monitor ! Pong
-        case Miss       ⇒ monitor ! Missed
-        case Ignore     ⇒ monitor ! Ignored
-        case GetSelf    ⇒
-        case Swap       ⇒
-        case GetState() ⇒
-        case Stop       ⇒
-        case _: AuxPing ⇒
-      }, null)
-  }
-  object `A Static Behavior (native)` extends StaticBehavior with NativeSystem
-  object `A Static Behavior (adapted)` extends StaticBehavior with AdaptedSystem
+  object `A Stateful Behavior (native)` extends StatefulBehavior with NativeSystem
+  object `A Stateful Behavior (adapted)` extends StatefulBehavior with AdaptedSystem
 
   trait StatefulWithSignalScalaBehavior extends Messages with BecomeWithLifecycle with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
@@ -575,7 +359,7 @@ class BehaviorSpec extends TypedSpec {
   trait StatefulScalaBehavior extends Messages with Become with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
     def behv(monitor: ActorRef[Event], state: State): Behavior[Command] =
-      SActor.Stateful { (ctx, msg) ⇒
+      SActor.Stateful[Command] { (ctx, msg) ⇒
         msg match {
           case GetSelf ⇒
             monitor ! Self(ctx.self)
@@ -633,21 +417,18 @@ class BehaviorSpec extends TypedSpec {
   object `A widened Behavior (scala,adapted)` extends WidenedScalaBehavior with AdaptedSystem
 
   trait DeferredScalaBehavior extends StatefulWithSignalScalaBehavior {
-    override type Aux = Inbox[PreStart]
+    override type Aux = Inbox[Done]
 
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-      val inbox = Inbox[PreStart]("deferredListener")
+      val inbox = Inbox[Done]("deferredListener")
       (SActor.Deferred(ctx ⇒ {
-        inbox.ref ! PreStart
+        inbox.ref ! Done
         super.behavior(monitor)._1
       }), inbox)
     }
 
     override def checkAux(signal: Signal, aux: Aux): Unit =
-      signal match {
-        case PreStart ⇒ aux.receiveAll() should ===(PreStart :: Nil)
-        case _        ⇒ aux.receiveAll() should ===(Nil)
-      }
+      aux.receiveAll() should ===(Done :: Nil)
   }
   object `A deferred Behavior (scala,native)` extends DeferredScalaBehavior with NativeSystem
   object `A deferred Behavior (scala,adapted)` extends DeferredScalaBehavior with AdaptedSystem
@@ -655,10 +436,7 @@ class BehaviorSpec extends TypedSpec {
   trait TapScalaBehavior extends StatefulWithSignalScalaBehavior with Reuse with SignalSiphon {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
       val inbox = Inbox[Either[Signal, Command]]("tapListener")
-      (SActor.Tap(
-        (_, sig) ⇒ inbox.ref ! Left(sig),
-        (_, msg) ⇒ inbox.ref ! Right(msg),
-        super.behavior(monitor)._1), inbox)
+      (SActor.Tap((_, msg) ⇒ inbox.ref ! Right(msg), (_, sig) ⇒ inbox.ref ! Left(sig), super.behavior(monitor)._1), inbox)
     }
   }
   object `A tap Behavior (scala,native)` extends TapScalaBehavior with NativeSystem
@@ -799,21 +577,18 @@ class BehaviorSpec extends TypedSpec {
   object `A widened Behavior (java,adapted)` extends WidenedJavaBehavior with AdaptedSystem
 
   trait DeferredJavaBehavior extends StatefulWithSignalJavaBehavior {
-    override type Aux = Inbox[PreStart]
+    override type Aux = Inbox[Done]
 
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-      val inbox = Inbox[PreStart]("deferredListener")
+      val inbox = Inbox[Done]("deferredListener")
       (JActor.deferred(df(ctx ⇒ {
-        inbox.ref ! PreStart
+        inbox.ref ! Done
         super.behavior(monitor)._1
       })), inbox)
     }
 
     override def checkAux(signal: Signal, aux: Aux): Unit =
-      signal match {
-        case PreStart ⇒ aux.receiveAll() should ===(PreStart :: Nil)
-        case _        ⇒ aux.receiveAll() should ===(Nil)
-      }
+      aux.receiveAll() should ===(Done :: Nil)
   }
   object `A deferred Behavior (java,native)` extends DeferredJavaBehavior with NativeSystem
   object `A deferred Behavior (java,adapted)` extends DeferredJavaBehavior with AdaptedSystem
