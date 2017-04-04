@@ -133,7 +133,7 @@ to implement the same pattern over and over. Very common is the scenario where a
 process a potentially large (or infinite) stream of sequential events and properly coordinate resource usage so that 
 faster processing stages don’t overwhelm slower ones in the chain (or graph). Streams provide a higher-level 
 abstraction on top of actors that simplifies writing such processing networks, handling all the fine details in the 
-background and providing a safe (typed), composable programming model. Streams is also an implementation 
+background and providing a safe, typed, composable programming model. Streams is also an implementation
 of the [Reactive Streams standard](http://www.reactive-streams.org) which enables integration with all 3rd 
 party implementations of that standard.
 
