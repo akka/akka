@@ -36,8 +36,8 @@ private[typed] class ActorContextAdapter[T](ctx: a.ActorContext) extends ActorCo
             false // none of our business
         }
     }
-  override def watch[U](other: ActorRef[U]) = { ctx.watch(toUntyped(other)); other }
-  override def unwatch[U](other: ActorRef[U]) = { ctx.unwatch(toUntyped(other)); other }
+  override def watch(other: ActorRef[_]) = ctx.watch(toUntyped(other))
+  override def unwatch(other: ActorRef[_]) = ctx.unwatch(toUntyped(other))
   var receiveTimeoutMsg: T = null.asInstanceOf[T]
   override def setReceiveTimeout(d: FiniteDuration, msg: T) = {
     receiveTimeoutMsg = msg
