@@ -3,11 +3,10 @@
  */
 package akka.typed
 
-import ScalaDSL._
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.junit.runner.RunWith
-import akka.testkit.AkkaSpec
+import akka.typed.scaladsl.Actor._
 import akka.util.Timeout
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -28,15 +27,15 @@ class PerformanceSpec extends TypedSpec(
       StepWise[Pong] { (ctx, startWith) ⇒
         startWith {
 
-          val pinger = SelfAware[Ping](self ⇒ Static { msg ⇒
+          val pinger = Stateless[Ping] { (ctx, msg) ⇒
             if (msg.x == 0) {
-              msg.report ! Pong(0, self, msg.report)
-            } else msg.pong ! Pong(msg.x - 1, self, msg.report)
-          }) // FIXME .withDispatcher(executor)
+              msg.report ! Pong(0, ctx.self, msg.report)
+            } else msg.pong ! Pong(msg.x - 1, ctx.self, msg.report)
+          } // FIXME .withDispatcher(executor)
 
-          val ponger = SelfAware[Pong](self ⇒ Static { msg ⇒
-            msg.ping ! Ping(msg.x, self, msg.report)
-          }) // FIXME .withDispatcher(executor)
+          val ponger = Stateless[Pong] { (ctx, msg) ⇒
+            msg.ping ! Ping(msg.x, ctx.self, msg.report)
+          } // FIXME .withDispatcher(executor)
 
           val actors =
             for (i ← 1 to pairs)

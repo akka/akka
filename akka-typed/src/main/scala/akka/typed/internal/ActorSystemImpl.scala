@@ -24,21 +24,23 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.typed.scaladsl.AskPattern
 
 object ActorSystemImpl {
-  import ScalaDSL._
 
   sealed trait SystemCommand
   case class CreateSystemActor[T](behavior: Behavior[T], name: String, deployment: DeploymentConfig)(val replyTo: ActorRef[ActorRef[T]]) extends SystemCommand
 
-  val systemGuardianBehavior: Behavior[SystemCommand] =
-    ContextAware { ctx ⇒
+  val systemGuardianBehavior: Behavior[SystemCommand] = {
+    // TODO avoid depending on dsl here?
+    import scaladsl.Actor._
+    Deferred { _ ⇒
       var i = 1
-      Static {
-        case create: CreateSystemActor[t] ⇒
+      Stateless {
+        case (ctx, create: CreateSystemActor[t]) ⇒
           val name = s"$i-${create.name}"
           i += 1
           create.replyTo ! ctx.spawn(create.behavior, name, create.deployment)
       }
     }
+  }
 }
 
 /*

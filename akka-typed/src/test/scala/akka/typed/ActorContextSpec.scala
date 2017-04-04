@@ -5,7 +5,6 @@ import scala.concurrent.Future
 import com.typesafe.config.ConfigFactory
 import akka.actor.DeadLetterSuppression
 import akka.typed.scaladsl.Actor
-import akka.typed.scaladsl.Actor.Stateful
 
 object ActorContextSpec {
 
@@ -141,14 +140,15 @@ object ActorContextSpec {
           }
         case BecomeCareless(replyTo) ⇒
           replyTo ! BecameCareless
-          Actor.Stateful(
-            (ctx, message) ⇒ Actor.Unhandled,
-            (ctx, signal) ⇒ signal match {
-              case Terminated(_) ⇒ Actor.Unhandled
-              case sig ⇒
-                monitor ! GotSignal(sig)
-                Actor.Same
-            })
+          Actor.Stateful[Command]({
+            case (_, _) ⇒ Actor.Unhandled
+          }, {
+            case (_, Terminated(_)) ⇒ Actor.Unhandled
+            case (_, sig) ⇒
+              monitor ! GotSignal(sig)
+              Actor.Same
+
+          })
         case GetAdapter(replyTo, name) ⇒
           replyTo ! Adapter(ctx.spawnAdapter(identity, name))
           Actor.Same
@@ -156,21 +156,17 @@ object ActorContextSpec {
       (ctx, signal) ⇒ { monitor ! GotSignal(signal); Actor.Same })
 
   def oldSubject(monitor: ActorRef[Monitor]): Behavior[Command] = {
-    import ScalaDSL._
-    FullTotal {
-      case Sig(ctx, signal) ⇒
-        monitor ! GotSignal(signal)
-        Same
-      case Msg(ctx, message) ⇒ message match {
+    Actor.Stateful({
+      case (ctx, message) ⇒ message match {
         case ReceiveTimeout ⇒
           monitor ! GotReceiveTimeout
-          Same
+          Actor.Same
         case Ping(replyTo) ⇒
           replyTo ! Pong1
-          Same
+          Actor.Same
         case Miss(replyTo) ⇒
           replyTo ! Missed
-          Unhandled
+          Actor.Unhandled
         case Renew(replyTo) ⇒
           replyTo ! Renewed
           subject(monitor)
@@ -182,63 +178,71 @@ object ActorContextSpec {
             case Some(n) ⇒ ctx.spawn(patterns.Restarter[Command, Throwable](subject(mon), false)(), n)
           }
           replyTo ! Created(child)
-          Same
+          Actor.Same
         case SetTimeout(d, replyTo) ⇒
           d match {
             case f: FiniteDuration ⇒ ctx.setReceiveTimeout(f, ReceiveTimeout)
             case _                 ⇒ ctx.cancelReceiveTimeout()
           }
           replyTo ! TimeoutSet
-          Same
+          Actor.Same
         case Schedule(delay, target, msg, replyTo) ⇒
           replyTo ! Scheduled
           ctx.schedule(delay, target, msg)
-          Same
-        case Stop ⇒ Stopped
+          Actor.Same
+        case Stop ⇒ Actor.Stopped
         case Kill(ref, replyTo) ⇒
           if (ctx.stop(ref)) replyTo ! Killed
           else replyTo ! NotKilled
-          Same
+          Actor.Same
         case Watch(ref, replyTo) ⇒
           ctx.watch[Nothing](ref)
           replyTo ! Watched
-          Same
+          Actor.Same
         case Unwatch(ref, replyTo) ⇒
           ctx.unwatch[Nothing](ref)
           replyTo ! Unwatched
-          Same
+          Actor.Same
         case GetInfo(replyTo) ⇒
           replyTo ! Info(ctx.self, ctx.system)
-          Same
+          Actor.Same
         case GetChild(name, replyTo) ⇒
           replyTo ! Child(ctx.child(name))
-          Same
+          Actor.Same
         case GetChildren(replyTo) ⇒
           replyTo ! Children(ctx.children.toSet)
-          Same
+          Actor.Same
         case BecomeInert(replyTo) ⇒
           replyTo ! BecameInert
-          Full {
-            case Msg(_, Ping(replyTo)) ⇒
+          Actor.Stateful[Command] {
+            case (_, Ping(replyTo)) ⇒
               replyTo ! Pong2
-              Same
-            case Msg(_, Throw(ex)) ⇒
+              Actor.Same
+            case (_, Throw(ex)) ⇒
               throw ex
-            case _ ⇒ Same
+            case _ ⇒ Actor.Same
           }
         case BecomeCareless(replyTo) ⇒
           replyTo ! BecameCareless
-          Full {
-            case Sig(_, Terminated(_)) ⇒ Unhandled
-            case Sig(_, sig) ⇒
-              monitor ! GotSignal(sig)
-              Same
-          }
+          Actor.Stateful[Command](
+            {
+              case _ ⇒ Actor.Unhandled
+            },
+            {
+              case (_, Terminated(_)) ⇒ Actor.Unhandled
+              case (_, sig) ⇒
+                monitor ! GotSignal(sig)
+                Actor.Same
+            })
         case GetAdapter(replyTo, name) ⇒
           replyTo ! Adapter(ctx.spawnAdapter(identity, name))
-          Same
+          Actor.Same
       }
-    }
+    }, {
+      case (_, signal) ⇒
+        monitor ! GotSignal(signal)
+        Actor.Same
+    })
   }
 
 }
@@ -276,12 +280,8 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
       runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
         val props = wrapper.map(_.wrap(behavior(ctx))).getOrElse(behavior(ctx))
-        val steps =
-          startWith.withKeepTraces(true)(ctx.spawn(props, "subject"))
-            .expectMessage(expectTimeout) { (msg, ref) ⇒
-              msg should ===(GotSignal(PreStart))
-              ref
-            }
+        val steps = startWith.withKeepTraces(true)(ctx.spawn(props, "subject"))
+
         proc(ctx, steps)
       })
 
@@ -299,11 +299,8 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         val s =
           startWith.keep { subj ⇒
             subj ! MkChild(name, monitor, self)
-          }.expectMultipleMessages(expectTimeout, 2) { (msgs, subj) ⇒
-            val child = msgs match {
-              case Created(child) :: ChildEvent(GotSignal(PreStart)) :: Nil ⇒ child
-              case ChildEvent(GotSignal(PreStart)) :: Created(child) :: Nil ⇒ child
-            }
+          }.expectMessage(expectTimeout) { (msg, subj) ⇒
+            val Created(child) = msg
             (subj, child)
           }
 
@@ -356,10 +353,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         case (msg, (subj, log)) ⇒
           msg should ===(GotSignal(PreRestart))
           log.assertDone(expectTimeout)
-          subj
-      }.expectMessage(expectTimeout) { (msg, subj) ⇒
-        msg should ===(GotSignal(PreStart))
-        ctx.stop(subj)
+          ctx.stop(subj)
       }.expectMessage(expectTimeout) { (msg, _) ⇒
         msg should ===(GotSignal(PostStop))
       }
@@ -382,11 +376,9 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           val log = muteExpectedException[Exception]("KABOOM2", occurrences = 1)
           child ! Throw(ex)
           (subj, child, log)
-      }.expectMultipleMessages(expectTimeout, 2) {
-        case (msgs, (subj, child, log)) ⇒
-          msgs should ===(
-            ChildEvent(GotSignal(PreRestart)) ::
-              ChildEvent(GotSignal(PreStart)) :: Nil)
+      }.expectMessage(expectTimeout) {
+        case (msg, (subj, child, log)) ⇒
+          msg should ===(ChildEvent(GotSignal(PreRestart)))
           log.assertDone(expectTimeout)
           child ! BecomeInert(self) // necessary to avoid PostStop/Terminated interference
           (subj, child)
@@ -428,12 +420,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         .stimulate(_ ! Ping(self), _ ⇒ Pong2) { subj ⇒
           val log = muteExpectedException[Exception]("KABOOM05")
           subj ! Throw(ex)
-          (subj, log)
-        }.expectMessage(expectTimeout) {
-          case (msg, (subj, log)) ⇒
-            msg should ===(GotSignal(PreStart))
-            log.assertDone(expectTimeout)
-            subj
+          subj
         }
         .stimulate(_ ! Ping(self), _ ⇒ Pong1)
     })
@@ -464,11 +451,9 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
 
     def `08 must not stop non-child actor`(): Unit = sync(setup("ctx08") { (ctx, startWith) ⇒
       val self = ctx.self
-      startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self) { pair ⇒
-        (pair._1, pair._2, ctx.spawn(behavior(ctx), "A"))
-      }.expectMessage(expectTimeout) {
-        case (msg, (subj, child, other)) ⇒
-          msg should ===(GotSignal(PreStart))
+      startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self) {
+        case (subj, child) ⇒
+          val other = ctx.spawn(behavior(ctx), "A")
           subj ! Kill(other, ctx.self)
           child
       }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
@@ -643,6 +628,14 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   object `An ActorContext with deferred Behavior (native)` extends Deferred with NativeSystem
   object `An ActorContext with deferred Behavior (adapted)` extends Deferred with AdaptedSystem
 
+  trait NestedDeferred extends Tests {
+    override def suite = "deferred"
+    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
+      Actor.Deferred(_ ⇒ Actor.Deferred(_ ⇒ subject(ctx.self)))
+  }
+  object `An ActorContext with nested deferred Behavior (native)` extends NestedDeferred with NativeSystem
+  object `An ActorContext with nested deferred Behavior (adapted)` extends NestedDeferred with AdaptedSystem
+
   trait Tap extends Tests {
     override def suite = "tap"
     override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
@@ -651,83 +644,4 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   object `An ActorContext with Tap (old-native)` extends Tap with NativeSystem
   object `An ActorContext with Tap (old-adapted)` extends Tap with AdaptedSystem
 
-  trait NormalOld extends Tests {
-    override def suite = "basic"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      oldSubject(ctx.self)
-  }
-  object `An ActorContext (old-native)` extends NormalOld with NativeSystem
-  object `An ActorContext (old-adapted)` extends NormalOld with AdaptedSystem
-
-  trait WidenedOld extends Tests {
-    import ScalaDSL._
-    override def suite = "widened"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      oldSubject(ctx.self).widen { case x ⇒ x }
-  }
-  object `An ActorContext with widened Behavior (old-native)` extends WidenedOld with NativeSystem
-  object `An ActorContext with widened Behavior (old-adapted)` extends WidenedOld with AdaptedSystem
-
-  trait SynchronousSelfOld extends Tests {
-    override def suite = "synchronous"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] = ScalaDSL.SynchronousSelf(self ⇒ oldSubject(ctx.self))
-  }
-  object `An ActorContext with SynchronousSelf (old-native)` extends SynchronousSelfOld with NativeSystem
-  object `An ActorContext with SynchronousSelf (old-adapted)` extends SynchronousSelfOld with AdaptedSystem
-
-  trait NonMatchingTapOld extends Tests {
-    override def suite = "TapNonMatch"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] = ScalaDSL.Tap({ case null ⇒ }, oldSubject(ctx.self))
-  }
-  object `An ActorContext with non-matching Tap (old-native)` extends NonMatchingTapOld with NativeSystem
-  object `An ActorContext with non-matching Tap (old-adapted)` extends NonMatchingTapOld with AdaptedSystem
-
-  trait MatchingTapOld extends Tests {
-    override def suite = "TapMatch"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] = ScalaDSL.Tap({ case _ ⇒ }, oldSubject(ctx.self))
-  }
-  object `An ActorContext with matching Tap (old-native)` extends MatchingTapOld with NativeSystem
-  object `An ActorContext with matching Tap (old-adapted)` extends MatchingTapOld with AdaptedSystem
-
-  private val stoppingBehavior = ScalaDSL.Full[Command] { case ScalaDSL.Msg(_, Stop) ⇒ ScalaDSL.Stopped }
-
-  trait AndLeftOld extends Tests {
-    override def suite = "andLeft"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      ScalaDSL.And(oldSubject(ctx.self), stoppingBehavior)
-  }
-  object `An ActorContext with And (left, native)` extends AndLeftOld with NativeSystem
-  object `An ActorContext with And (left, adapted)` extends AndLeftOld with AdaptedSystem
-
-  trait AndRightOld extends Tests {
-    override def suite = "andRight"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      ScalaDSL.And(stoppingBehavior, oldSubject(ctx.self))
-  }
-  object `An ActorContext with And (right, native)` extends AndRightOld with NativeSystem
-  object `An ActorContext with And (right, adapted)` extends AndRightOld with AdaptedSystem
-
-  trait OrLeftOld extends Tests {
-    override def suite = "orLeft"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      ScalaDSL.Or(oldSubject(ctx.self), stoppingBehavior)
-    override def stop(ref: ActorRef[Command]) = {
-      ref ! Stop
-      ref ! Stop
-    }
-  }
-  object `An ActorContext with Or (left, native)` extends OrLeftOld with NativeSystem
-  object `An ActorContext with Or (left, adapted)` extends OrLeftOld with AdaptedSystem
-
-  trait OrRightOld extends Tests {
-    override def suite = "orRight"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      ScalaDSL.Or(stoppingBehavior, oldSubject(ctx.self))
-    override def stop(ref: ActorRef[Command]) = {
-      ref ! Stop
-      ref ! Stop
-    }
-  }
-  object `An ActorContext with Or (right, native)` extends OrRightOld with NativeSystem
-  object `An ActorContext with Or (right, adapted)` extends OrRightOld with AdaptedSystem
 }

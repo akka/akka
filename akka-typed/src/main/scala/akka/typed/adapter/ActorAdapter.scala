@@ -25,21 +25,22 @@ private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Ac
           failures -= ref
           Terminated(ActorRefAdapter(ref))(ex)
         } else Terminated(ActorRefAdapter(ref))(null)
-      next(behavior.management(ctx, msg), msg)
+      next(Behavior.interpretSignal(behavior, ctx, msg), msg)
     case a.ReceiveTimeout ⇒
-      next(behavior.message(ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
+      next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
     case msg: T @unchecked ⇒
-      next(behavior.message(ctx, msg), msg)
+      next(Behavior.interpretMessage(behavior, ctx, msg), msg)
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
     if (isUnhandled(b)) unhandled(msg)
-    behavior = canonicalize(b, behavior)
+    behavior = canonicalize(b, behavior, ctx)
     if (!isAlive(behavior)) context.stop(self)
   }
 
   override def unhandled(msg: Any): Unit = msg match {
     case Terminated(ref) ⇒ throw a.DeathPactException(toUntyped(ref))
+    case msg: Signal     ⇒ // that's ok
     case other           ⇒ super.unhandled(other)
   }
 
@@ -51,11 +52,12 @@ private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Ac
   }
 
   override def preStart(): Unit =
-    next(behavior.management(ctx, PreStart), PreStart)
+    behavior = Behavior.preStart(behavior, ctx)
   override def preRestart(reason: Throwable, message: Option[Any]): Unit =
-    next(behavior.management(ctx, PreRestart), PreRestart)
+    next(Behavior.interpretSignal(behavior, ctx, PreRestart), PreRestart)
   override def postRestart(reason: Throwable): Unit =
-    next(behavior.management(ctx, PreStart), PreStart)
-  override def postStop(): Unit =
-    next(behavior.management(ctx, PostStop), PostStop)
+    behavior = Behavior.preStart(behavior, ctx)
+  override def postStop(): Unit = {
+    next(Behavior.interpretSignal(behavior, ctx, PostStop), PostStop)
+  }
 }
