@@ -59,10 +59,9 @@ The problems the Cluster module solves (among others) are
 
 ### Cluster Sharding
 
-Persistence solves the problem of restoring an actor’s state from persistent storage after system restart or crash. 
-It does not solve itself the problem of distributing a set of such actors among members of an Akka cluster. 
+Sharding helps to solve the problem of distributing a set of actors among members of an Akka cluster.
 Sharding is a pattern that mostly used together with Persistence to balance a large set of persistent entities 
-(backed by actors) to members of a cluster and also migrate them to other systems if one of the members crash.
+(backed by actors) to members of a cluster and also migrate them to other nodes when members crash or leave.
  
 The problem space that Sharding targets:
 
@@ -76,7 +75,7 @@ The problem space that Sharding targets:
 A common (in fact, a bit too common) use case in distributed systems is to have a single entity responsible 
 for a given task which is shared among other members of the cluster and migrated if the host system fails. 
 While this undeniably introduces a common bottleneck for the whole cluster that limits scaling,
-there are scenarios where the use of this pattern is unavoidable. Cluster singleton allows a cluster to elect an 
+there are scenarios where the use of this pattern is unavoidable. Cluster singleton allows a cluster to select an
 actor system which will host a particular actor while other systems can always access said service independently from 
 where it is.
 
@@ -90,11 +89,12 @@ The Singleton module can be used to solve these problems:
 
 For coordination among systems it is often necessary to distribute messages to all, or one system of a set of 
 interested systems in a cluster. This pattern is usually called publish-subscribe and this module solves this exact 
-problem. It is possible to subscribe to topics and receive messages published to that topic and it is also possible 
-to broadcast or anycast messages to subscribers of that topic.
+problem. It is possible to broadcast messages to all subscribers of a topic, or send a message to an arbitrary actor that has expressed interest.
+
+Cluster Publish-Subscribe is intended to solve the following problems:
 
 * How do I broadcast messages to an interested set of parties in a cluster?
-* How do I anycast messages to a member from an interested set of parties in a cluster?
+* How do I send a message to a member from an interested set of parties in a cluster?
 * How to subscribe and unsubscribe for events of a certain topic in the cluster?
 
 ### Persistence
@@ -111,6 +111,20 @@ Persistence tackles the following problems:
 * How do I implement a [CQRS system](https://msdn.microsoft.com/en-us/library/jj591573.aspx)?
 * How do I ensure reliable delivery of messages in face of network errors and system crashes?
 * How do I introspect domain events that has lead an entity to its current state?
+* How do I leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in my application to support long-running processes while the project continues to evolve.
+
+### Distributed Data
+
+In situations where eventual consistency is acceptable it is possible to share data between nodes in
+an Akka Cluster and accept both reads and writes even in the face of cluster partitions. This can be
+achieved using Conflict Free Replicated Data Types (CRDTs), where writes on different nodes can
+happen concurrently and are merged in a predictable way afterwards. The Distributed Data module
+provides infrastructure to share data and a number of useful data types.
+
+Distributed Data is intended to solve the following challenges:
+
+* How can I accept writes even in the face of cluster partitions?
+* How can I share data while at the same time ensuring low-latency local read and write access?
 
 ### Streams
 
@@ -119,7 +133,7 @@ to implement the same pattern over and over. Very common is the scenario where a
 process a potentially large (or infinite) stream of sequential events and properly coordinate resource usage so that 
 faster processing stages don’t overwhelm slower ones in the chain (or graph). Streams provide a higher-level 
 abstraction on top of actors that simplifies writing such processing networks, handling all the fine details in the 
-background and providing a safe programming model. Streams is also an implementation 
+background and providing a safe, typed, composable programming model. Streams is also an implementation
 of the [Reactive Streams standard](http://www.reactive-streams.org) which enables integration with all 3rd 
 party implementations of that standard.
 

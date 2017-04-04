@@ -14,4 +14,7 @@ enablePlugins(ScaladocNoVerificationOfDiagrams)
 disablePlugins(MimaPlugin)
 enablePlugins(ParadoxPlugin)
 
+paradoxProperties ++= Map(
+  "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s"
+)
 paradoxTheme := Some(builtinParadoxTheme("generic"))

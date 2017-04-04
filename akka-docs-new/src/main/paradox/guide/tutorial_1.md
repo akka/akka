@@ -59,7 +59,7 @@ actors in the system:
    you, it has nothing to do with the logged in user, nor user handling in general. This name really means _userspace_
    as this is the place where actors that do not access Akka internals live, i.e. all the actors created by users
    of the Akka library. Every actor you will create will have the constant path `/user/` prepended to it.
- - `/sytem` the _system guardian_. 
+ - `/system` the _system guardian_. 
    
 The names of these built-in actors contain _guardian_ because these are _supervising_ every actor living as a child
 of them (i.e. under their path). We will explain supervision in more detail, all you need to know now that every
@@ -195,7 +195,7 @@ details.
 
 ### The first actor
 
-Actors are organized into a strict tree, where the lifecylce of every child is tied to the parent and where parents
+Actors are organized into a strict tree, where the lifecycle of every child is tied to the parent and where parents
 are responsible to decide on the fate of failed children. At first, it might not be evident how to map our problem
 to such a tree, but in practice, this is easier than it looks. All we need to do is to rewrite our architecture diagram
 that contained nested boxes into a tree:

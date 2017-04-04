@@ -104,10 +104,10 @@ immediately after the API has been invoked
 The problem is that the **guarantee of delivery** does not translate to the **domain level guarantee**. We only want to
 report success once the order has been actually fully processed and persisted. **The only entity that can report
 success is the application itself, since only it has any understanding of the domain guarantees required. No generalized
-framework can figure out the specifics of a particular domain and what is consisered a success in that domain**. In
+framework can figure out the specifics of a particular domain and what is considered a success in that domain**. In
 this particular example, we only want to signal success after a successful database write, where the database acknowledged
 that the order is now safely stored. **For these reasons Akka lifts the responsibilities of guarantees to the application
-itelf, i.e. you have to implement them yourself. On the other hand, you are in full control of the guarantees that you want
+itself, i.e. you have to implement them yourself. On the other hand, you are in full control of the guarantees that you want
 to provide**.
 
 ### Message ordering
