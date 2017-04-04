@@ -11,9 +11,6 @@ later installed on your machine.
 as part of the `Lightbend Reactive Platform <http://www.lightbend.com/platform>`_ which is made available
 for Java 6 in case your project can not upgrade to Java 8 just yet. It also includes additional commercial features or libraries.
 
-Getting Started Guides and Template Projects
---------------------------------------------
-
 Download
 --------
 
@@ -259,4 +256,3 @@ If you have questions you can get help on the `Akka Mailing List <https://groups
 You can also ask for `commercial support <https://www.lightbend.com>`_.
 
 Thanks for being a part of the Akka community.
-
