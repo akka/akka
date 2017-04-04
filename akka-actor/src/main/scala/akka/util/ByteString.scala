@@ -48,7 +48,7 @@ object ByteString {
   /**
    * Creates a new ByteString by encoding a String with a charset.
    */
-  def apply(string: String, charsetName: String): ByteString = CompactByteString(string, charsetName)
+  def apply(string: String, charset: String): ByteString = CompactByteString(string, charset)
 
   /**
    * Creates a new ByteString by encoding a String with a charset.
@@ -83,7 +83,7 @@ object ByteString {
   /**
    * Creates a new ByteString which will contain the representation of the given String in the given charset
    */
-  def fromString(string: String, charsetName: String): ByteString = apply(string, charsetName)
+  def fromString(string: String, charset: String): ByteString = apply(string, charset)
 
   /**
    * Creates a new ByteString which will contain the representation of the given String in the given charset
@@ -148,8 +148,8 @@ object ByteString {
 
     override def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = List(asByteBuffer)
 
-    override def decodeString(charsetName: String): String =
-      if (isEmpty) "" else new String(bytes, charsetName)
+    override def decodeString(charset: String): String =
+      if (isEmpty) "" else new String(bytes, charset)
 
     override def decodeString(charset: Charset): String =
       if (isEmpty) "" else new String(bytes, charset)
@@ -310,8 +310,8 @@ object ByteString {
 
     def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = List(asByteBuffer)
 
-    override def decodeString(charsetName: String): String =
-      new String(if (length == bytes.length) bytes else toArray, charsetName)
+    override def decodeString(charset: String): String =
+      new String(if (length == bytes.length) bytes else toArray, charset)
 
     override def decodeString(charset: Charset): String = // avoids Charset.forName lookup in String internals
       new String(if (length == bytes.length) bytes else toArray, charset)
@@ -467,7 +467,7 @@ object ByteString {
 
     def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = bytestrings map { _.asByteBuffer }
 
-    def decodeString(charsetName: String): String = compact.decodeString(charsetName)
+    def decodeString(charset: String): String = compact.decodeString(charset)
 
     def decodeString(charset: Charset): String = compact.decodeString(charset)
 
@@ -761,7 +761,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * Decodes this ByteString using a charset to produce a String.
    * If you have a [[Charset]] instance available, use `decodeString(charset: java.nio.charset.Charset` instead.
    */
-  def decodeString(charsetName: String): String
+  def decodeString(charset: String): String
 
   /**
    * Decodes this ByteString using a charset to produce a String.
@@ -822,8 +822,8 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by encoding a String with a charset.
    */
-  def apply(string: String, charsetName: String): CompactByteString =
-    if (string.isEmpty) empty else ByteString.ByteString1C(string.getBytes(charsetName))
+  def apply(string: String, charset: String): CompactByteString =
+    if (string.isEmpty) empty else ByteString.ByteString1C(string.getBytes(charset))
 
   /**
    * Creates a new CompactByteString by encoding a String with a charset.
