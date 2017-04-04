@@ -274,6 +274,7 @@ class BehaviorSpec extends TypedSpec {
         monitor ! state
         SActor.Same
       case (ctx, Stop) ⇒ SActor.Stopped
+      case (_, _)      ⇒ SActor.Unhandled
     }, {
       case (ctx, signal) ⇒
         monitor ! GotSignal(signal)
@@ -435,10 +436,7 @@ class BehaviorSpec extends TypedSpec {
   trait TapScalaBehavior extends StatefulWithSignalScalaBehavior with Reuse with SignalSiphon {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
       val inbox = Inbox[Either[Signal, Command]]("tapListener")
-      (SActor.Tap(
-        (_, sig) ⇒ inbox.ref ! Left(sig),
-        (_, msg) ⇒ inbox.ref ! Right(msg),
-        super.behavior(monitor)._1), inbox)
+      (SActor.Tap((_, msg) ⇒ inbox.ref ! Right(msg), (_, sig) ⇒ inbox.ref ! Left(sig), super.behavior(monitor)._1), inbox)
     }
   }
   object `A tap Behavior (scala,native)` extends TapScalaBehavior with NativeSystem

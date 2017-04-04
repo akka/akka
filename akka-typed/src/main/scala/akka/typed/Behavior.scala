@@ -208,24 +208,22 @@ object Behavior {
   def interpretSignal[T](behavior: Behavior[T], ctx: ActorContext[T], signal: Signal): Behavior[T] =
     interpret(behavior, ctx, signal)
 
-  private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] = {
-    val result: Behavior[T] = behavior match {
+  private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] =
+    behavior match {
       case SameBehavior | UnhandledBehavior ⇒ throw new IllegalArgumentException(s"cannot execute with $behavior as behavior")
       case _: DeferredBehavior[_]           ⇒ throw new IllegalArgumentException(s"deferred should not be passed to interpreter")
       case IgnoreBehavior                   ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case StoppedBehavior                  ⇒ StoppedBehavior.asInstanceOf[Behavior[T]]
       case EmptyBehavior                    ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case ext: ExtensibleBehavior[T] @unchecked ⇒
-        msg match {
+        val possiblyDeferredResult = msg match {
           case signal: Signal ⇒ ext.management(ctx, signal)
           case msg            ⇒ ext.message(ctx, msg.asInstanceOf[T])
         }
+        possiblyDeferredResult match {
+          case d: DeferredBehavior[T] @unchecked ⇒ undefer(d, ctx)
+          case notDeferred                       ⇒ notDeferred
+        }
     }
 
-    result match {
-      case d: DeferredBehavior[_] ⇒ undefer(d.asInstanceOf[DeferredBehavior[T]], ctx)
-      case _                      ⇒ result
-    }
-
-  }
 }

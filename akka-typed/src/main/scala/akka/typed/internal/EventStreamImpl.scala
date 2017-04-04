@@ -41,27 +41,28 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
 
   private val unsubscriberBehavior = {
     // TODO avoid depending on dsl here?
-    import scaladsl.Actor.{ Deferred, Stateful, Same }
-    Deferred[Command] { _ ⇒
+    import scaladsl.Actor
+    Actor.Deferred[Command] { _ ⇒
       if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $this"))
-      Stateful[Command]({
+      Actor.Stateful[Command]({
         case (ctx, Register(actor)) ⇒
           if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
           ctx.watch[Nothing](actor)
-          Same
+          Actor.Same
 
-        case (ctx, UnregisterIfNoMoreSubscribedChannels(actor)) if hasSubscriptions(actor) ⇒ Same
+        case (ctx, UnregisterIfNoMoreSubscribedChannels(actor)) if hasSubscriptions(actor) ⇒ Actor.Same
         // hasSubscriptions can be slow, but it's better for this actor to take the hit than the EventStream
 
         case (ctx, UnregisterIfNoMoreSubscribedChannels(actor)) ⇒
           if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unwatching $actor, since has no subscriptions"))
           ctx.unwatch[Nothing](actor)
-          Same
+          Actor.Same
       }, {
         case (_, Terminated(actor)) ⇒
           if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unsubscribe $actor from $this, because it was terminated"))
           unsubscribe(actor)
-          Same
+          Actor.Same
+        case (_, _) ⇒ Actor.Unhandled
       })
     }
   }
