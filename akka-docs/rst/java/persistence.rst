@@ -116,9 +116,10 @@ and the actor will unconditionally be stopped. If persistence of an event is rej
 stored, e.g. due to serialization error, ``onPersistRejected`` will be invoked (logging a warning
 by default), and the actor continues with next message.
 
-The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-and open the tutorial named `Akka Persistence Samples in Java with Lambdas <http://www.lightbend.com/activator/template/akka-sample-persistence-java-lambda>`_.
-It contains instructions on how to run the ``PersistentActorExample``.
+The easiest way to run this example yourself is to download the ready to run
+`Akka Persistence Sample with Scala <@exampleCodeService@/akka-samples-persistence-java>`_
+together with the tutorial. It contains instructions on how to run the ``PersistentActorExample``.
+The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-persistence-java>`_.
 
 .. note::
 
@@ -171,10 +172,10 @@ It should typically not be used when events have been deleted.
 
 .. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#recovery-no-snap
 
-Another example, which can be fun for experiments but probably not in a real application, is setting an 
-upper bound to the replay which allows the actor to be replayed to a certain point "in the past" 
-instead to its most up to date state. Note that after that it is a bad idea to persist new 
-events because a later recovery will probably be confused by the new events that follow the 
+Another example, which can be fun for experiments but probably not in a real application, is setting an
+upper bound to the replay which allows the actor to be replayed to a certain point "in the past"
+instead to its most up to date state. Note that after that it is a bad idea to persist new
+events because a later recovery will probably be confused by the new events that follow the
 events that were previously skipped.
 
 .. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#recovery-custom
@@ -202,35 +203,35 @@ is called (logging the error by default), and the actor will be stopped.
 
 .. _internal-stash-java:
 
-Internal stash 
+Internal stash
 --------------
 
-The persistent actor has a private :ref:`stash <stash-java>` for internally caching incoming messages during 
-:ref:`recovery <recovery-java>` or the ``persist\persistAll`` method persisting events. You can still 
-use/inherit from the ``Stash`` interface. The internal stash cooperates with the normal stash by hooking into 
-``unstashAll`` method and making sure messages are unstashed properly to the internal stash to maintain ordering 
+The persistent actor has a private :ref:`stash <stash-java>` for internally caching incoming messages during
+:ref:`recovery <recovery-java>` or the ``persist\persistAll`` method persisting events. You can still
+use/inherit from the ``Stash`` interface. The internal stash cooperates with the normal stash by hooking into
+``unstashAll`` method and making sure messages are unstashed properly to the internal stash to maintain ordering
 guarantees.
 
-You should be careful to not send more messages to a persistent actor than it can keep up with, otherwise the number 
-of stashed messages will grow without bounds. It can be wise to protect against ``OutOfMemoryError`` by defining a 
+You should be careful to not send more messages to a persistent actor than it can keep up with, otherwise the number
+of stashed messages will grow without bounds. It can be wise to protect against ``OutOfMemoryError`` by defining a
 maximum stash capacity in the mailbox configuration::
 
     akka.actor.default-mailbox.stash-capacity=10000
 
 Note that the stash capacity is per actor. If you have many persistent actors, e.g. when using cluster sharding,
 you may need to define a small stash capacity to ensure that the total number of stashed messages in the system
-doesn't consume too much memory. Additionally, the persistent actor defines three strategies to handle failure when the 
-internal stash capacity is exceeded. The default overflow strategy is the ``ThrowOverflowExceptionStrategy``, which 
-discards the current received message and throws a ``StashOverflowException``, causing actor restart if the default 
-supervision strategy is used. You can override the ``internalStashOverflowStrategy`` method to return 
-``DiscardToDeadLetterStrategy`` or ``ReplyToStrategy`` for any "individual" persistent actor, or define the "default" 
-for all persistent actors by providing FQCN, which must be a subclass of ``StashOverflowStrategyConfigurator``, in the 
+doesn't consume too much memory. Additionally, the persistent actor defines three strategies to handle failure when the
+internal stash capacity is exceeded. The default overflow strategy is the ``ThrowOverflowExceptionStrategy``, which
+discards the current received message and throws a ``StashOverflowException``, causing actor restart if the default
+supervision strategy is used. You can override the ``internalStashOverflowStrategy`` method to return
+``DiscardToDeadLetterStrategy`` or ``ReplyToStrategy`` for any "individual" persistent actor, or define the "default"
+for all persistent actors by providing FQCN, which must be a subclass of ``StashOverflowStrategyConfigurator``, in the
 persistence configuration::
 
     akka.persistence.internal-stash-overflow-strategy=
       "akka.persistence.ThrowExceptionConfigurator"
-    
-The ``DiscardToDeadLetterStrategy`` strategy also has a pre-packaged companion configurator 
+
+The ``DiscardToDeadLetterStrategy`` strategy also has a pre-packaged companion configurator
 ``akka.persistence.DiscardConfigurator``.
 
 You can also query the default strategy via the Akka persistence extension singleton::
@@ -238,7 +239,7 @@ You can also query the default strategy via the Akka persistence extension singl
     Persistence.get(getContext().getSystem()).defaultInternalStashOverflowStrategy();
 
 .. note::
-  The bounded mailbox should be avoided in the persistent actor, by which the messages come from storage backends may 
+  The bounded mailbox should be avoided in the persistent actor, by which the messages come from storage backends may
   be discarded. You can use bounded stash instead of it.
 
 
@@ -332,10 +333,10 @@ While it is possible to nest mixed ``persist`` and ``persistAsync`` with keeping
 it is not a recommended practice, as it may lead to overly complex nesting.
 
 .. warning::
-  While it is possible to nest ``persist`` calls within one another, 
+  While it is possible to nest ``persist`` calls within one another,
   it is *not* legal call ``persist`` from any other Thread than the Actors message processing Thread.
-  For example, it is not legal to call ``persist`` from Futures! Doing so will break the guarantees 
-  that the persist methods aim to provide. Always call ``persist`` and ``persistAsync`` from within 
+  For example, it is not legal to call ``persist`` from Futures! Doing so will break the guarantees
+  that the persist methods aim to provide. Always call ``persist`` and ``persistAsync`` from within
   the Actor's receive block (or methods synchronously invoked from there).
 
 .. _failures-java:
@@ -848,7 +849,7 @@ The journal plugin class must have a constructor with one of these signatures:
 The plugin section of the actor system's config will be passed in the config constructor parameter. The config path
 of the plugin is passed in the ``String`` parameter.
 
-The ``plugin-dispatcher`` is the dispatcher used for the plugin actor. If not specified, it defaults to 
+The ``plugin-dispatcher`` is the dispatcher used for the plugin actor. If not specified, it defaults to
 ``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
 Don't run journal tasks/futures on the system default dispatcher, since that might starve other tasks.
@@ -877,7 +878,7 @@ The snapshot store plugin class must have a constructor with one of these signat
 The plugin section of the actor system's config will be passed in the config constructor parameter. The config path
 of the plugin is passed in the ``String`` parameter.
 
-The ``plugin-dispatcher`` is the dispatcher used for the plugin actor. If not specified, it defaults to 
+The ``plugin-dispatcher`` is the dispatcher used for the plugin actor. If not specified, it defaults to
 ``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
 Don't run snapshot store tasks/futures on the system default dispatcher, since that might starve other tasks.

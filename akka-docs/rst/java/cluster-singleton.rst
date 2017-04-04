@@ -44,7 +44,7 @@ the oldest node in the cluster and resolve the singleton's ``ActorRef`` by expli
 singleton's ``actorSelection`` the ``akka.actor.Identify`` message and waiting for it to reply.
 This is performed periodically if the singleton doesn't reply within a certain (configurable) time.
 Given the implementation, there might be periods of time during which the ``ActorRef`` is unavailable,
-e.g., when a node leaves the cluster. In these cases, the proxy will buffer the messages sent to the 
+e.g., when a node leaves the cluster. In these cases, the proxy will buffer the messages sent to the
 singleton and then deliver them when the singleton is finally available. If the buffer is full
 the ``ClusterSingletonProxy`` will drop old messages when new messages are sent via the proxy.
 The size of the buffer is configurable and it can be disabled by using a buffer size of 0.
@@ -63,7 +63,7 @@ This pattern may seem to be very tempting to use at first, but it has several dr
 * the cluster singleton may quickly become a *performance bottleneck*,
 * you can not rely on the cluster singleton to be *non-stop* available — e.g. when the node on which the singleton has
   been running dies, it will take a few seconds for this to be noticed and the singleton be migrated to another node,
-* in the case of a *network partition* appearing in a Cluster that is using Automatic Downing  (see docs for 
+* in the case of a *network partition* appearing in a Cluster that is using Automatic Downing  (see docs for
   :ref:`automatic-vs-manual-downing-java`),
   it may happen that the isolated clusters each decide to spin up their own singleton, meaning that there might be multiple
   singletons running in the system, yet the Clusters have no way of finding out about them (because of the partition).
@@ -102,8 +102,7 @@ configured proxy.
 
 .. includecode:: ../../../akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java#create-singleton-proxy
 
-A more comprehensive sample is available in the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-tutorial named `Distributed workers with Akka and Java! <http://www.lightbend.com/activator/template/akka-distributed-workers-java>`_.
+A more comprehensive sample is available in the tutorial named `Distributed workers with Akka and Java! <https://github.com/typesafehub/activator-akka-distributed-workers-java>`_.
 
 Dependencies
 ------------
@@ -126,18 +125,18 @@ maven::
 Configuration
 -------------
 
-The following configuration properties are read by the ``ClusterSingletonManagerSettings`` 
-when created with a ``ActorSystem`` parameter. It is also possible to amend the ``ClusterSingletonManagerSettings`` 
-or create it from another config section with the same layout as below. ``ClusterSingletonManagerSettings`` is 
-a parameter to the ``ClusterSingletonManager.props`` factory method, i.e. each singleton can be configured 
+The following configuration properties are read by the ``ClusterSingletonManagerSettings``
+when created with a ``ActorSystem`` parameter. It is also possible to amend the ``ClusterSingletonManagerSettings``
+or create it from another config section with the same layout as below. ``ClusterSingletonManagerSettings`` is
+a parameter to the ``ClusterSingletonManager.props`` factory method, i.e. each singleton can be configured
 with different settings if needed.
-  
+
 .. includecode:: ../../../akka-cluster-tools/src/main/resources/reference.conf#singleton-config
 
-The following configuration properties are read by the ``ClusterSingletonProxySettings`` 
-when created with a ``ActorSystem`` parameter. It is also possible to amend the ``ClusterSingletonProxySettings`` 
-or create it from another config section with the same layout as below. ``ClusterSingletonProxySettings`` is 
-a parameter to the ``ClusterSingletonProxy.props`` factory method, i.e. each singleton proxy can be configured 
+The following configuration properties are read by the ``ClusterSingletonProxySettings``
+when created with a ``ActorSystem`` parameter. It is also possible to amend the ``ClusterSingletonProxySettings``
+or create it from another config section with the same layout as below. ``ClusterSingletonProxySettings`` is
+a parameter to the ``ClusterSingletonProxy.props`` factory method, i.e. each singleton proxy can be configured
 with different settings if needed.
 
 .. includecode:: ../../../akka-cluster-tools/src/main/resources/reference.conf#singleton-proxy-config

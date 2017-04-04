@@ -22,13 +22,13 @@ the sender to know the location of the destination actor. This is achieved by se
 the messages via a ``ShardRegion`` actor provided by this extension, which knows how
 to route the message with the entity id to the final destination.
 
-Cluster sharding will not be active on members with status :ref:`WeaklyUp <weakly_up_scala>` 
+Cluster sharding will not be active on members with status :ref:`WeaklyUp <weakly_up_scala>`
 if that feature is enabled.
 
 .. warning::
    **Don't use Cluster Sharding together with Automatic Downing**,
    since it allows the cluster to split up into two separate clusters, which in turn will result
-   in *multiple shards and entities* being started, one in each separate cluster! 
+   in *multiple shards and entities* being started, one in each separate cluster!
    See :ref:`automatic-vs-manual-downing-java`.
 
 An Example
@@ -63,23 +63,23 @@ This example illustrates two different ways to define the entity identifier in t
    sent to the entity actor is wrapped in the envelope.
 
 Note how these two messages types are handled in the ``extractEntityId`` function shown above.
-The message sent to the entity actor is the second part of the tuple return by the ``extractEntityId`` and that makes it 
+The message sent to the entity actor is the second part of the tuple return by the ``extractEntityId`` and that makes it
 possible to unwrap envelopes if needed.
 
 A shard is a group of entities that will be managed together. The grouping is defined by the
-``extractShardId`` function shown above. For a specific entity identifier the shard identifier must always 
-be the same. 
+``extractShardId`` function shown above. For a specific entity identifier the shard identifier must always
+be the same.
 
-Creating a good sharding algorithm is an interesting challenge in itself. Try to produce a uniform distribution, 
-i.e. same amount of entities in each shard. As a rule of thumb, the number of shards should be a factor ten greater 
-than the planned maximum number of cluster nodes. Less shards than number of nodes will result in that some nodes 
+Creating a good sharding algorithm is an interesting challenge in itself. Try to produce a uniform distribution,
+i.e. same amount of entities in each shard. As a rule of thumb, the number of shards should be a factor ten greater
+than the planned maximum number of cluster nodes. Less shards than number of nodes will result in that some nodes
 will not host any shards. Too many shards will result in less efficient management of the shards, e.g. rebalancing
 overhead, and increased latency because the coordinator is involved in the routing of the first message for each
 shard. The sharding algorithm must be the same on all nodes in a running cluster. It can be changed after stopping
 all nodes in the cluster.
 
 A simple sharding algorithm that works fine in most cases is to take the absolute value of the ``hashCode`` of
-the entity identifier modulo number of shards. As a convenience this is provided by the 
+the entity identifier modulo number of shards. As a convenience this is provided by the
 ``ShardRegion.HashCodeMessageExtractor``.
 
 Messages to the entities are always sent via the local ``ShardRegion``. The ``ShardRegion`` actor reference for a
@@ -90,8 +90,8 @@ first message for a specific entity is delivered.
 
 .. includecode:: ../../../akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala#counter-usage
 
-A more comprehensive sample is available in the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-tutorial named `Akka Cluster Sharding with Scala! <http://www.lightbend.com/activator/template/akka-cluster-sharding-scala>`_.
+A more comprehensive sample is available in the
+tutorial named `Akka Cluster Sharding with Scala! <https://github.com/typesafehub/activator-akka-cluster-sharding-scala>`_.
 
 How it works
 ------------
@@ -151,9 +151,9 @@ That means they will start buffering incoming messages for that shard, in the sa
 shard location is unknown. During the rebalance process the coordinator will not answer any
 requests for the location of shards that are being rebalanced, i.e. local buffering will
 continue until the handoff is completed. The ``ShardRegion`` responsible for the rebalanced shard
-will stop all entities in that shard by sending the specified ``handOffStopMessage`` 
+will stop all entities in that shard by sending the specified ``handOffStopMessage``
 (default ``PoisonPill``) to them. When all entities have been terminated the ``ShardRegion``
-owning the entities will acknowledge the handoff as completed to the coordinator. 
+owning the entities will acknowledge the handoff as completed to the coordinator.
 Thereafter the coordinator will reply to requests for the location of
 the shard and thereby allocate a new home for the shard and then buffered messages in the
 ``ShardRegion`` actors are delivered to the new location. This means that the state of the entities
@@ -170,7 +170,7 @@ must be to begin the rebalancing. This strategy can be replaced by an applicatio
 implementation.
 
 The state of shard locations in the ``ShardCoordinator`` is persistent (durable) with
-:ref:`distributed_data_scala` or :ref:`persistence-scala` to survive failures. When a crashed or 
+:ref:`distributed_data_scala` or :ref:`persistence-scala` to survive failures. When a crashed or
 unreachable coordinator node has been removed (via down) from the cluster a new ``ShardCoordinator`` singleton
 actor will take over and the state is recovered. During such a failure period shards
 with known location are still available, while messages for new (unknown) shards
@@ -211,7 +211,7 @@ This mode is enabled with configuration (enabled by default)::
 
   akka.cluster.sharding.state-store-mode = ddata
 
-The state of the ``ShardCoordinator`` will be replicated inside a cluster by the 
+The state of the ``ShardCoordinator`` will be replicated inside a cluster by the
 :ref:`distributed_data_scala` module with ``WriteMajority``/``ReadMajority`` consistency.
 The state of the coordinator is not durable, it's not stored to disk. When all nodes in
 the cluster have been stopped the state is lost and not needed any more.
@@ -222,10 +222,10 @@ disk. The stored entities are started also after a complete cluster restart.
 Cluster Sharding  is using its own Distributed Data ``Replicator`` per node role. In this way you can use a subset of
 all nodes for some entity types and another subset for other entity types. Each such replicator has a name
 that contains the node role and therefore the role configuration must be the same on all nodes in the
-cluster, i.e. you can't change the roles when performing a rolling upgrade. 
- 
-The settings for Distributed Data is configured in the the section 
-``akka.cluster.sharding.distributed-data``. It's not possible to have different 
+cluster, i.e. you can't change the roles when performing a rolling upgrade.
+
+The settings for Distributed Data is configured in the the section
+``akka.cluster.sharding.distributed-data``. It's not possible to have different
 ``distributed-data`` settings for different sharding entity types.
 
 Persistence Mode
@@ -244,7 +244,7 @@ Startup after minimum number of members
 It's good to use Cluster Sharding with the Cluster setting ``akka.cluster.min-nr-of-members`` or
 ``akka.cluster.role.<role-name>.min-nr-of-members``. That will defer the allocation of the shards
 until at least that number of regions have been started and registered to the coordinator. This
-avoids that many shards are allocated to the first region that registers and only later are 
+avoids that many shards are allocated to the first region that registers and only later are
 rebalanced to other nodes.
 
 See :ref:`min-members_scala` for more information about ``min-nr-of-members``.
@@ -277,16 +277,16 @@ Remembering Entities
 --------------------
 
 The list of entities in each ``Shard`` can be made persistent (durable) by setting
-the ``rememberEntities`` flag to true in ``ClusterShardingSettings`` when calling 
-``ClusterSharding.start``. When configured to remember entities, whenever a ``Shard`` 
+the ``rememberEntities`` flag to true in ``ClusterShardingSettings`` when calling
+``ClusterSharding.start``. When configured to remember entities, whenever a ``Shard``
 is rebalanced onto another node or recovers after a crash it will recreate all the
-entities which were previously running in that ``Shard``. To permanently stop entities, 
+entities which were previously running in that ``Shard``. To permanently stop entities,
 a ``Passivate`` message must be sent to the parent of the entity actor, otherwise the
-entity will be automatically restarted after the entity restart backoff specified in 
+entity will be automatically restarted after the entity restart backoff specified in
 the configuration.
 
 When :ref:`Distributed Data mode <cluster_sharding_mode_scala>` is used the identifiers of the entities are
-stored in :ref:`ddata_durable_scala` of Distributed Data. You may want to change the 
+stored in :ref:`ddata_durable_scala` of Distributed Data. You may want to change the
 configuration of the akka.cluster.sharding.distributed-data.durable.lmdb.dir`, since
 the default directory contains the remote port of the actor system. If using a dynamically
 assigned port (0) it will be different each time and the previously stored data will not
@@ -300,7 +300,7 @@ using a ``Passivate``.
 Note that the state of the entities themselves will not be restored unless they have been made persistent,
 e.g. with :ref:`persistence-scala`.
 
-The performance cost of ``rememberEntities`` is rather high when starting/stopping entities and when 
+The performance cost of ``rememberEntities`` is rather high when starting/stopping entities and when
 shards are rebalanced. This cost increases with number of entities per shard and we currently don't
 recommend using it with more than 10000 entities per shard.
 
@@ -327,7 +327,7 @@ You can send the message ``ShardRegion.GracefulShutdown`` message to the ``Shard
 During this period other regions will buffer messages for those shards in the same way as when a rebalance is
 triggered by the coordinator. When the shards have been stopped the coordinator will allocate these shards elsewhere.
 
-This is performed automatically by the :ref:`coordinated-shutdown-scala` and is therefore part of the 
+This is performed automatically by the :ref:`coordinated-shutdown-scala` and is therefore part of the
 graceful leaving process of a cluster member.
 
 .. _RemoveInternalClusterShardingData-scala:
@@ -341,7 +341,7 @@ Note that this is not application data.
 
 There is a utility program ``akka.cluster.sharding.RemoveInternalClusterShardingData``
 that removes this data.
- 
+
 .. warning::
 
   Never use this program while there are running Akka Cluster nodes that are
@@ -355,11 +355,11 @@ and there was a network partition.
 .. warning::
    **Don't use Cluster Sharding together with Automatic Downing**,
    since it allows the cluster to split up into two separate clusters, which in turn will result
-   in *multiple shards and entities* being started, one in each separate cluster! 
+   in *multiple shards and entities* being started, one in each separate cluster!
    See :ref:`automatic-vs-manual-downing-scala`.
 
 Use this program as a standalone Java main program::
- 
+
     java -classpath <jar files, including akka-cluster-sharding>
       akka.cluster.sharding.RemoveInternalClusterShardingData
         -2.3 entityType1 entityType2 entityType3
@@ -405,7 +405,7 @@ if needed.
 .. includecode:: ../../../akka-cluster-sharding/src/main/resources/reference.conf#sharding-ext-config
 
 Custom shard allocation strategy can be defined in an optional parameter to
-``ClusterSharding.start``. See the API documentation of ``ShardAllocationStrategy`` for details of 
+``ClusterSharding.start``. See the API documentation of ``ShardAllocationStrategy`` for details of
 how to implement a custom shard allocation strategy.
 
 
