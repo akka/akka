@@ -113,11 +113,11 @@ object ActorContextSpec {
           else replyTo ! NotKilled
           Actor.Same
         case Watch(ref, replyTo) ⇒
-          ctx.watch[Nothing](ref)
+          ctx.watch(ref)
           replyTo ! Watched
           Actor.Same
         case Unwatch(ref, replyTo) ⇒
-          ctx.unwatch[Nothing](ref)
+          ctx.unwatch(ref)
           replyTo ! Unwatched
           Actor.Same
         case GetInfo(replyTo) ⇒
@@ -196,11 +196,11 @@ object ActorContextSpec {
           else replyTo ! NotKilled
           Actor.Same
         case Watch(ref, replyTo) ⇒
-          ctx.watch[Nothing](ref)
+          ctx.watch(ref)
           replyTo ! Watched
           Actor.Same
         case Unwatch(ref, replyTo) ⇒
-          ctx.unwatch[Nothing](ref)
+          ctx.unwatch(ref)
           replyTo ! Unwatched
           Actor.Same
         case GetInfo(replyTo) ⇒

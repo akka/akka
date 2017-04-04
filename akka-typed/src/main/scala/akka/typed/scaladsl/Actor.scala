@@ -89,13 +89,13 @@ trait ActorContext[T] { this: akka.typed.javadsl.ActorContext[T] ⇒
    * [[ActorSystem]] to which the referenced Actor belongs is declared as
    * failed (e.g. in reaction to being unreachable).
    */
-  def watch[U](other: ActorRef[U]): ActorRef[U]
+  def watch(other: ActorRef[_]): Unit
 
   /**
    * Revoke the registration established by `watch`. A [[Terminated]]
    * notification will not subsequently be received for the referenced Actor.
    */
-  def unwatch[U](other: ActorRef[U]): ActorRef[U]
+  def unwatch(other: ActorRef[_]): Unit
 
   /**
    * Schedule the sending of a notification in case no other

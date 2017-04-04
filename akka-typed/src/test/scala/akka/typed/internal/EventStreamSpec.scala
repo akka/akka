@@ -21,7 +21,9 @@ object EventStreamSpec {
     def initialBehavior: Behavior[Logger.Command] =
       Stateless {
         case (ctx, Logger.Initialize(es, replyTo)) ⇒
-          replyTo ! ctx.watch(ctx.spawn(Stateless[LogEvent] { (_, ev: LogEvent) ⇒ logged :+= ev }, "logger"))
+          val logger = ctx.spawn(Stateless[LogEvent] { (_, ev: LogEvent) ⇒ logged :+= ev }, "logger")
+          ctx.watch(logger)
+          replyTo ! logger
           Empty
       }
   }
