@@ -185,7 +185,7 @@ In this way, actors actually achieve the execution we imagined for objects:
 ![actors interact with each other by sending messages](diagrams/actor_graph.png)
 
 An important consequence of passing messages instead of calling methods is that messages have no return value. 
-By sending a message, an actor delegates work to another actor. As we saw in [The illusion of a call stack], 
+By sending a message, an actor delegates work to another actor. As we saw in @ref:[The illusion of a call stack](actors-intro.md#the-illusion-of-a-call-stack),
 if it expected a return value, the sending actor would either need to block (issue: locks and sacrifice of a thread), 
 or to execute the other actor's work on the same thread (issue: "snakes-in-a-maze"). 
 Instead, the receiving actor delivers the results in a reply message.
@@ -198,7 +198,7 @@ different actors work concurrently with each other so an actor system can proces
 as many processor cores are available on the machine. Since there is always at most one message being processed per actor 
 the invariants of an actor can be kept without synchronization. This happens automatically without using locks:
 
-![messages don't invalidat invarants as they are processed sequentially](diagrams/serialized_timeline_invariants.png)
+![messages don't invalidate invariants as they are processed sequentially](diagrams/serialized_timeline_invariants.png)
 
 In summary, this is what happens when an actor receives a message. It:
 
@@ -223,6 +223,7 @@ messages (like sending more messages and/or changing state). The Execution Envir
 to drive all these actions completely transparently.
 
 This is a very simple model and it solves the issues enumerated previously:	
+
  * Encapsulation is preserved by decoupling execution from signaling (method calls transfer execution, 
    message passing does not).	
  * There is no need for locks. Modifying the internal state of an actor is only possible via messages, which are 

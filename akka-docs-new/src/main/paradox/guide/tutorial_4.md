@@ -19,7 +19,7 @@ that we know about. However, during the lifecycle of the query
 There are many approaches that can be taken to address these issues, but the important point is to settle on what is
 the desired behavior. We will pick the following two guarantees:
 
- * when a query arrives to the group, the group actor takes a _snaphsot_ of the existing device actors and will only
+ * when a query arrives to the group, the group actor takes a _snapshot_ of the existing device actors and will only
    ask those for the temperature. Actors that are started _after_ the arrival of the query are simply ignored.
  * when an actor stops during the query without answering (i.e. before all the actors we asked for the temperature
    responded) we simply report back the fact to the sender of the query message
@@ -115,7 +115,7 @@ thing to note is that the function `waitingForReplies` **does not handle the mes
 function that will handle the messages**. This means that if we call `waitingForReplies` again, with different parameters,
 then it returns a brand new `Receive` that will use those new parameters. We have seen how we
 can install the initial `Receive` by simply returning it from `receive`. In order to install a new one, to record a 
-new reply for example, we need some mechanism. This mechanism is the method `context.becdome(newReceive)` which will
+new reply for example, we need some mechanism. This mechanism is the method `context.become(newReceive)` which will
 _change_ the actor's message handling function to the provided `newReceive` function. You can imagine that before
 starting, your actor automatically calls `context.become(receive)`, i.e. installing the `Receive` function that
 is returned from `receive`. This is another important observation: **it is not `receive` that handles the messages,
@@ -144,7 +144,7 @@ just making the `repliesSoFar` and `stillWaiting` structures mutable fields of t
 simple example, not that much. The value of this style of state keeping becomes more evident when you suddenly have
 _more kinds_ of states. For example imagine that the query have multiple phases that come each other. Since each phase
 might have temporary data that is relevant only to that phase, keeping these as fields would pollute the global state
-of the actor where it is not clear which field is used or ignored in which state. Using parametrized `Receive` "factory"
+of the actor where it is not clear which field is used or ignored in which state. Using parameterized `Receive` "factory"
 methods we can keep data that is only relevant to the state private to the state. It is still a good exercise to 
 rewrite the query using `var`s instead of `context.become()`. In general, it is a good practice to get comfortable
 with the solution we have used here as it helps structuring more complex actor in a cleaner and more maintainable way.
@@ -187,7 +187,7 @@ Our query works as expected now, it is time to include this new functionality in
 
 ## Adding the query capability to the group
 
-Including the query feature in the group actor is fairly simple now. We did all the heavylifting in the query actor
+Including the query feature in the group actor is fairly simple now. We did all the heavy lifting in the query actor
 itself, the group actor only needs to create it with the right initial parameters and nothing else. 
 
 @@snip [Hello.scala](../../../test/scala/tutorial_4/DeviceGroup.scala) { #query-added }

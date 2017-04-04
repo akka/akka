@@ -19,7 +19,7 @@ To deal with these realities, Akka provides:
  * A clustered, high-availability architecture that can scale-out (or in) on demand. 
  
 All of these features are available through a uniform programming model: Akka exploits the actor model 
-to provide a level of abstraction that makes it easier to write correct concurrent and parallel systems. 
+to provide a level of abstraction that makes it easier to write correct concurrent, parallel and distributed systems. 
 The actor model spans the set of Akka libraries, providing you with a consistent way of understanding and using them. 
 Thus, Akka offers a depth of integration that you cannot achieve by picking libraries to solve individual problems and
 trying to piece them together.
@@ -31,7 +31,7 @@ efficiently.
 ## What is the actor model?
 
 The characteristics of today's computing environments are vastly different from the ones in use when the programming 
-models of yesterday were conceived. Actors were invented decades ago by Carl Hewitt (reference).
+models of yesterday were conceived. Actors were invented decades ago by @extref[Carl Hewitt](wikipedia:Carl_Hewitt#Actor_model).
 But relatively recently, their applicability to the challenges of modern computing systems has been recognized and 
 proved to be effective.
 
