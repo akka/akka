@@ -32,11 +32,14 @@ The oldest member is determined by ``akka.cluster.Member#isOlderThan``.
 This can change when removing that member from the cluster. Be aware that there is a short time
 period when there is no active singleton during the hand-over process.
 
-The cluster failure detector will notice when oldest node becomes unreachable due to
-things like JVM crash, hard shut down, or network failure. Then a new oldest node will
-take over and a new singleton actor is created. For these failure scenarios there will
-not be a graceful hand-over, but more than one active singletons is prevented by all
-reasonable means. Some corner cases are eventually resolved by configurable timeouts.
+When the node hosting the singleton is downed or exits gracefully, then the new oldest node will
+take over and a new singleton actor is created. Please note that although the cluster failure detector 
+will notice when oldest node becomes unreachable due to things like JVM crash, hard shut down, or network failure
+for these failure scenarios the node stays in the unreachable state until it is downed. 
+Starting more than one active singletons is prevented by all reasonable means however using a naive downing strategy
+(such as the auto-downing feature) will cause muiltple singletons to be started if a network partition occurs.
+This is the so called split-brain scenario.
+Therefore auto-downing should not be used together with cluster singletons in production.
 
 You can access the singleton actor by using the provided ``akka.cluster.singleton.ClusterSingletonProxy``,
 which will route all messages to the current instance of the singleton. The proxy will keep track of
