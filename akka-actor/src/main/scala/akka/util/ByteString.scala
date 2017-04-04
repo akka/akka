@@ -43,7 +43,7 @@ object ByteString {
   /**
    * Creates a new ByteString by encoding a String as UTF-8.
    */
-  def apply(string: String): ByteString = apply(string, UTF_8)
+  def apply(string: String): ByteString = apply(string, StandardCharsets.UTF_8)
 
   /**
    * Creates a new ByteString by encoding a String with a charset.
@@ -746,7 +746,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   /**
    * Decodes this ByteString as a UTF-8 encoded String.
    */
-  final def utf8String: String = decodeString(ByteString.UTF_8)
+  final def utf8String: String = decodeString(StandardCharsets.UTF_8)
 
   /**
    * Decodes this ByteString using a charset to produce a String.
@@ -808,7 +808,7 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by encoding a String as UTF-8.
    */
-  def apply(string: String): CompactByteString = apply(string, ByteString.UTF_8)
+  def apply(string: String): CompactByteString = apply(string, StandardCharsets.UTF_8)
 
   /**
    * Creates a new CompactByteString by encoding a String with a charset.
