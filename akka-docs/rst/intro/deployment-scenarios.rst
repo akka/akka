@@ -23,7 +23,7 @@ Native Packager
 `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ is a tool for creating
 distributions of any type of application, including Akka applications.
 
-Define sbt version in ``project/build.properties`` file: 
+Define sbt version in ``project/build.properties`` file:
 
 .. code-block:: none
 
@@ -47,7 +47,7 @@ that you will need to take special care with the network configuration when usin
 described here: :ref:`remote-configuration-nat`
 
 For an example of how to set up a project using Akka Cluster and Docker take a look at the
-`"akka-docker-cluster" activator template`__.
+`"akka-docker-cluster" sample`__.
 
-__ https://www.lightbend.com/activator/template/akka-docker-cluster
+__ https://github.com/muuki88/activator-akka-docker
 
