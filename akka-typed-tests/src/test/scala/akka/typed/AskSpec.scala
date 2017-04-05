@@ -65,8 +65,9 @@ class AskSpec extends TypedSpec with ScalaFutures {
     /** See issue #19947 (MatchError with adapted ActorRef) */
     def `must fail the future if the actor doesn't exist`(): Unit = {
       val noSuchActor: ActorRef[Msg] = system match {
-        case adaptedSys: adapter.ActorSystemAdapter[_] ⇒
-          adapter.actorRefAdapter(adaptedSys.untyped.provider.resolveActorRef("/foo/bar"))
+        case adaptedSys: akka.typed.internal.adapter.ActorSystemAdapter[_] ⇒
+          import akka.typed.scaladsl.adapter._
+          adaptedSys.untyped.provider.resolveActorRef("/foo/bar")
         case _ ⇒
           fail("this test must only run in an adapted actor system")
       }

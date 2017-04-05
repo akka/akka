@@ -162,7 +162,7 @@ private[typed] class ActorSystemImpl[-T](
    */
   private object eventStreamStub extends e.EventStream(null, false) {
     override def subscribe(ref: a.ActorRef, ch: Class[_]): Boolean =
-      throw new UnsupportedOperationException("cannot use this eventstream for subscribing")
+      throw new UnsupportedOperationException("Cannot use this eventstream for subscribing")
     override def publish(event: AnyRef): Unit = eventStream.publish(event)
   }
   /**
@@ -190,7 +190,8 @@ private[typed] class ActorSystemImpl[-T](
   private val terminateTriggered = new AtomicBoolean
   private val theOneWhoWalksTheBubblesOfSpaceTime: ActorRefImpl[Nothing] =
     new ActorRef[Nothing](rootPath) with ActorRefImpl[Nothing] {
-      override def tell(msg: Nothing): Unit = throw new UnsupportedOperationException("cannot send to theOneWhoWalksTheBubblesOfSpaceTime")
+      override def tell(msg: Nothing): Unit =
+        throw new UnsupportedOperationException("Cannot send to theOneWhoWalksTheBubblesOfSpaceTime")
       override def sendSystem(signal: SystemMessage): Unit = signal match {
         case Terminate() ⇒
           if (terminateTriggered.compareAndSet(false, true))

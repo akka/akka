@@ -13,7 +13,7 @@ import akka.typed.internal.FunctionRef
 import akka.actor.RootActorPath
 import akka.actor.Address
 import akka.typed.ActorRef
-import akka.typed.adapter
+import akka.typed.internal.{ adapter ⇒ adapt }
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -38,9 +38,9 @@ object AskPattern {
   implicit class Askable[T](val ref: ActorRef[T]) extends AnyVal {
     def ?[U](f: ActorRef[U] ⇒ T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] =
       ref match {
-        case a: adapter.ActorRefAdapter[_]    ⇒ askUntyped(ref, a.untyped, timeout, f)
-        case a: adapter.ActorSystemAdapter[_] ⇒ askUntyped(ref, a.untyped.guardian, timeout, f)
-        case _                                ⇒ ask(ref, timeout, scheduler, f)
+        case a: adapt.ActorRefAdapter[_]    ⇒ askUntyped(ref, a.untyped, timeout, f)
+        case a: adapt.ActorSystemAdapter[_] ⇒ askUntyped(ref, a.untyped.guardian, timeout, f)
+        case _                              ⇒ ask(ref, timeout, scheduler, f)
       }
   }
 
@@ -50,15 +50,15 @@ object AskPattern {
     private[this] val (_ref: ActorRef[U], _future: Future[U], _promiseRef) =
       if (untyped.isTerminated)
         (
-          adapter.ActorRefAdapter[U](untyped.provider.deadLetters),
+          adapt.ActorRefAdapter[U](untyped.provider.deadLetters),
           Future.failed[U](new AskTimeoutException(s"Recipient[$target] had already been terminated.")), null)
       else if (timeout.duration.length <= 0)
         (
-          adapter.ActorRefAdapter[U](untyped.provider.deadLetters),
+          adapt.ActorRefAdapter[U](untyped.provider.deadLetters),
           Future.failed[U](new IllegalArgumentException(s"Timeout length must be positive, question not sent to [$target]")), null)
       else {
         val a = PromiseActorRef(untyped.provider, timeout, target, "unknown")
-        val b = adapter.ActorRefAdapter[U](a)
+        val b = adapt.ActorRefAdapter[U](a)
         (b, a.result.future.asInstanceOf[Future[U]], a)
       }
 
