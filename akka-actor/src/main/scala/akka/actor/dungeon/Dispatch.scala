@@ -18,6 +18,7 @@ import akka.dispatch.MailboxType
 import akka.dispatch.ProducesMessageQueue
 import akka.serialization.SerializerWithStringManifest
 import akka.dispatch.UnboundedMailbox
+import akka.serialization.DisabledJavaSerializer
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -157,13 +158,17 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   private def serializeAndDeserializePayload(obj: AnyRef): AnyRef = {
     val s = SerializationExtension(system)
     val serializer = s.findSerializerFor(obj)
-    val bytes = serializer.toBinary(obj)
-    serializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(obj)
-        s.deserialize(bytes, serializer.identifier, manifest).get
-      case _ ⇒
-        s.deserialize(bytes, obj.getClass).get
+    if (serializer.isInstanceOf[DisabledJavaSerializer] && !s.shouldWarnAboutJavaSerializer(obj.getClass, serializer))
+      obj // skip check for known "local" messages
+    else {
+      val bytes = serializer.toBinary(obj)
+      serializer match {
+        case ser2: SerializerWithStringManifest ⇒
+          val manifest = ser2.manifest(obj)
+          s.deserialize(bytes, serializer.identifier, manifest).get
+        case _ ⇒
+          s.deserialize(bytes, obj.getClass).get
+      }
     }
   }
 
