@@ -17,6 +17,9 @@ import akka.annotation.ApiMayChange
 @DoNotInherit
 @ApiMayChange
 trait ActorContext[T] extends javadsl.ActorContext[T] with scaladsl.ActorContext[T] {
+
+  // FIXME can we simplify this weird hierarchy of contexts, e.g. problem with createAdapter
+
   override def getChild(name: String): Optional[ActorRef[Void]] =
     child(name) match {
       case Some(c) ⇒ Optional.of(c.upcast[Void])

@@ -32,6 +32,11 @@ abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[Act
   def !(msg: T): Unit = tell(msg)
 
   /**
+   * Narrow the type of this `ActorRef, which is always a safe operation.
+   */
+  final def narrow[U <: T]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
+
+  /**
    * Unsafe utility method for widening the type accepted by this ActorRef;
    * provided to avoid having to use `asInstanceOf` on the full reference type,
    * which would unfortunately also work on non-ActorRefs.
@@ -73,7 +78,8 @@ object ActorRef {
    * Create an ActorRef from a Future, buffering up to the given number of
    * messages in while the Future is not fulfilled.
    */
-  def apply[T](f: Future[ActorRef[T]], bufferSize: Int = 1000): ActorRef[T] = new internal.FutureRef(FuturePath, bufferSize, f)
+  def apply[T](f: Future[ActorRef[T]], bufferSize: Int = 1000): ActorRef[T] =
+    new internal.FutureRef(FuturePath, bufferSize, f)
 
   /**
    * Create an ActorRef by providing a function that is invoked for sending

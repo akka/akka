@@ -121,15 +121,14 @@ class IntroSpec extends TypedSpec {
         chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
         Stateful(
-          behavior = (_, _) ⇒ Unhandled,
-          signal = { (ctx, sig) ⇒
+          onMessage = (_, _) ⇒ Unhandled,
+          onSignal = (ctx, sig) ⇒
           sig match {
             case Terminated(ref) ⇒
               Stopped
             case _ ⇒
               Unhandled
           }
-        }
         )
       }
 
