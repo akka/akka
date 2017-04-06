@@ -275,6 +275,7 @@ object AkkaBuild extends Build {
       remote % "compile;test->test",
       persistence % "compile;provided->provided;test->test",
       typed % "compile;test->test",
+      typedTests % "compile;test->test",
       streamTestkit % "compile;test->test"
     )
   )
