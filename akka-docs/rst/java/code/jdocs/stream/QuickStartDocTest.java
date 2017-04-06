@@ -32,19 +32,13 @@ import org.junit.*;
  */
 public class QuickStartDocTest extends AbstractJavaTest {
   
-  static
-  //#create-materializer
-  final ActorSystem system = ActorSystem.create("QuickStart");
-  final Materializer materializer = ActorMaterializer.create(system);
-  //#create-materializer
-
-  @AfterClass
-  public static void teardown() {
-    system.terminate();
-  }
-  
   @Test
   public void demonstrateSource() throws InterruptedException, ExecutionException {
+    //#create-materializer
+    final ActorSystem system = ActorSystem.create("QuickStart");
+    final Materializer materializer = ActorMaterializer.create(system);
+    //#create-materializer
+
     //#create-source
     final Source<Integer, NotUsed> source = Source.range(1, 100);
     //#create-source
@@ -69,16 +63,22 @@ public class QuickStartDocTest extends AbstractJavaTest {
     //#use-transformed-sink
     
     //#add-streams
-    final CompletionStage<Done> done =
-      factorials
-        .zipWith(Source.range(0, 99), (num, idx) -> String.format("%d! = %s", idx, num))
-        .throttle(1, Duration.create(1, TimeUnit.SECONDS), 1, ThrottleMode.shaping())
-        //#add-streams
-        .take(2)
-        //#add-streams
-        .runForeach(s -> System.out.println(s), materializer);
+    factorials
+      .zipWith(Source.range(0, 99), (num, idx) -> String.format("%d! = %s", idx, num))
+      .throttle(1, Duration.create(1, TimeUnit.SECONDS), 1, ThrottleMode.shaping())
+      //#add-streams
+      .take(2)
+      //#add-streams
+      .runForeach(s -> System.out.println(s), materializer);
     //#add-streams
     
+    //#run-source-and-terminate
+    final CompletionStage<Done> done =
+      source.runForeach(i -> System.out.println(i), materializer);
+
+    done.thenRun(() -> system.terminate());
+    //#run-source-and-terminate
+
     done.toCompletableFuture().get();
   }
   
