@@ -15,6 +15,10 @@ If you want to execute the code samples while you read through the quick start g
 
 .. includecode:: ../code/jdocs/stream/QuickStartDocTest.java#other-imports
 
+And a class to hold your code, for example:
+
+.. includecode:: ../code/jdocs/stream/Main.java#main-app
+
 Now we will start with a rather simple source, emitting the integers 1 to 100:
 
 .. includecode:: ../code/jdocs/stream/QuickStartDocTest.java#create-source
@@ -37,6 +41,12 @@ we simply print out the numbers to the console—and pass this little stream
 setup to an Actor that runs it. This activation is signaled by having “run” be
 part of the method name; there are other methods that run Akka Streams, and
 they all follow this pattern.
+
+When running this program you might notice it does not
+terminate, because the :class:`ActorSystem` is never terminated. Luckily
+``runForeach`` returns a :class:`CompletionStage<Done>` which resolves when the stream finishes:
+
+.. includecode:: ../code/jdocs/stream/QuickStartDocTest.java#run-source-and-terminate
 
 You may wonder where the Actor gets created that runs the stream, and you are
 probably also asking yourself what this ``materializer`` means. In order to get
