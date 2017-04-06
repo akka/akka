@@ -88,6 +88,11 @@ object Marshaller {
   /**
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
    * Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
+   *
+   * Please note that all passed in marshallers will actualy be invoked in order to get the Marshalling object
+   * out of them, and later decide which of the marshallings should be returned. This is by-design,
+   * however in ticket as discussed in ticket https://github.com/akka/akka-http/issues/243 it MAY be
+   * changed in later versions of Akka HTTP.
    */
   def oneOf[A, B](ms: Marshaller[A, B]*): Marshaller[A, B] = {
     fromScala(marshalling.Marshaller.oneOf[A, B](ms.map(_.asScala): _*))
@@ -96,6 +101,11 @@ object Marshaller {
   /**
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
    * Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
+   *
+   * Please note that all marshallers will actualy be invoked in order to get the Marshalling object
+   * out of them, and later decide which of the marshallings should be returned. This is by-design,
+   * however in ticket as discussed in ticket https://github.com/akka/akka-http/issues/243 it MAY be
+   * changed in later versions of Akka HTTP.
    */
   def oneOf[A, B](m1: Marshaller[A, B], m2: Marshaller[A, B], m3: Marshaller[A, B]): Marshaller[A, B] = {
     fromScala(marshalling.Marshaller.oneOf(m1.asScala, m2.asScala, m3.asScala))
@@ -104,6 +114,11 @@ object Marshaller {
   /**
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
    * Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
+   *
+   * Please note that all marshallers will actualy be invoked in order to get the Marshalling object
+   * out of them, and later decide which of the marshallings should be returned. This is by-design,
+   * however in ticket as discussed in ticket https://github.com/akka/akka-http/issues/243 it MAY be
+   * changed in later versions of Akka HTTP.
    */
   def oneOf[A, B](m1: Marshaller[A, B], m2: Marshaller[A, B], m3: Marshaller[A, B], m4: Marshaller[A, B]): Marshaller[A, B] = {
     fromScala(marshalling.Marshaller.oneOf(m1.asScala, m2.asScala, m3.asScala, m4.asScala))
@@ -112,6 +127,11 @@ object Marshaller {
   /**
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
    * Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
+   *
+   * Please note that all marshallers will actualy be invoked in order to get the Marshalling object
+   * out of them, and later decide which of the marshallings should be returned. This is by-design,
+   * however in ticket as discussed in ticket https://github.com/akka/akka-http/issues/243 it MAY be
+   * changed in later versions of Akka HTTP.
    */
   def oneOf[A, B](m1: Marshaller[A, B], m2: Marshaller[A, B], m3: Marshaller[A, B], m4: Marshaller[A, B], m5: Marshaller[A, B]): Marshaller[A, B] = {
     fromScala(marshalling.Marshaller.oneOf(m1.asScala, m2.asScala, m3.asScala, m4.asScala, m5.asScala))
