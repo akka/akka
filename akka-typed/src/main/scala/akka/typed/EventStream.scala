@@ -5,10 +5,6 @@ package akka.typed
 
 import akka.{ event ⇒ e }
 import akka.event.Logging.{ LogEvent, LogLevel, StdOutLogger }
-import akka.testkit.{ EventFilter, TestEvent ⇒ TE }
-import akka.typed.Behavior.DeferredBehavior
-
-import scala.annotation.tailrec
 
 /**
  * An EventStream allows local actors to register for certain message types, including
@@ -74,34 +70,16 @@ class DefaultLogger extends Logger with StdOutLogger {
     // TODO avoid depending on dsl here?
     import scaladsl.Actor._
     Deferred[Command] { _ ⇒
-      scaladsl.Actor.Stateful[Command] {
+      Stateful[Command] {
         case (ctx, Initialize(eventStream, replyTo)) ⇒
           val log = ctx.spawn(Deferred[AnyRef] { childCtx ⇒
-            var filters: List[EventFilter] = Nil
-
-            def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
-
-            def addFilter(filter: EventFilter): Unit = filters ::= filter
-
-            def removeFilter(filter: EventFilter) {
-              @tailrec def removeFirst(list: List[EventFilter], zipped: List[EventFilter] = Nil): List[EventFilter] = list match {
-                case head :: tail if head == filter ⇒ tail.reverse_:::(zipped)
-                case head :: tail                   ⇒ removeFirst(tail, head :: zipped)
-                case Nil                            ⇒ filters // filter not found, just return original list
-              }
-              filters = removeFirst(filters)
-            }
 
             Stateless[AnyRef] {
-              case (_, TE.Mute(filters))   ⇒ filters foreach addFilter
-              case (_, TE.UnMute(filters)) ⇒ filters foreach removeFilter
-              case (_, event: LogEvent)    ⇒ if (!filter(event)) print(event)
-              case _                       ⇒ Unhandled
+              case (_, event: LogEvent) ⇒ print(event)
+              case _                    ⇒ Unhandled
             }
           }, "logger")
 
-          eventStream.subscribe(log, classOf[TE.Mute])
-          eventStream.subscribe(log, classOf[TE.UnMute])
           ctx.watch(log) // sign death pact
           replyTo ! log
 
