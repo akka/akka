@@ -15,6 +15,8 @@ disablePlugins(MimaPlugin)
 enablePlugins(ParadoxPlugin)
 
 paradoxProperties ++= Map(
-  "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s"
+  "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
+  "scala.version" -> scalaVersion.value,
+  "akka.version" -> version.value
 )
 paradoxTheme := Some(builtinParadoxTheme("generic"))
