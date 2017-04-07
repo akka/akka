@@ -9,6 +9,7 @@ import akka.typed.scaladsl.AskPattern._
 import scala.concurrent.duration._
 import akka.typed._
 import akka.typed.scaladsl.Actor.Stateless
+import akka.typed.testkit.{ Effect, EffectfulActorContext }
 
 class ReceptionistSpec extends TypedSpec {
 
