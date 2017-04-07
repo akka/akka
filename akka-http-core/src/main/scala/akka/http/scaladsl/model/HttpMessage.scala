@@ -142,7 +142,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], file))
   def withEntity(contentType: jm.ContentType, file: Path): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file))
 
-  def transformEntityDataBytes[T](transformer: Graph[FlowShape[ByteString, ByteString], T]): Self
+  def transformEntityDataBytes[M](transformer: Graph[FlowShape[ByteString, ByteString], M]): Self
 
   import collection.JavaConverters._
   /** Java API */
@@ -274,7 +274,7 @@ final class HttpRequest(
   override def withUri(path: String): HttpRequest = withUri(Uri(path))
   def withUri(uri: Uri): HttpRequest = copy(uri = uri)
 
-  def transformEntityDataBytes[T](transformer: Graph[FlowShape[ByteString, ByteString], T]): HttpRequest = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
+  def transformEntityDataBytes[M](transformer: Graph[FlowShape[ByteString, ByteString], M]): HttpRequest = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
 
   import JavaMapping.Implicits._
   /** Java API */
