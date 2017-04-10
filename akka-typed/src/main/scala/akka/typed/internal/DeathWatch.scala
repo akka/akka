@@ -44,7 +44,7 @@ private[typed] trait DeathWatch[T] {
   private var watching = Set.empty[ARImpl]
   private var watchedBy = Set.empty[ARImpl]
 
-  final def watch(_a: ActorRef[_]): Unit = {
+  final def watch[U](_a: ActorRef[U]): Unit = {
     val a = _a.sorry
     if (a != self && !watching.contains(a)) {
       maintainAddressTerminatedSubscription(a) {
@@ -54,7 +54,7 @@ private[typed] trait DeathWatch[T] {
     }
   }
 
-  final def unwatch(_a: ActorRef[_]): Unit = {
+  final def unwatch[U](_a: ActorRef[U]): Unit = {
     val a = _a.sorry
     if (a != self && watching.contains(a)) {
       a.sendSystem(Unwatch(a, self))
