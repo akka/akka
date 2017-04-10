@@ -283,9 +283,8 @@ trait TestKitBase {
   }
 
   /**
-   * Await until the given assert does not throw an exception or the timeout
-   * expires, whichever comes first. If the timeout expires the last exception
-   * is thrown.
+   * Evaluate the given assert every `interval` until it does not throw an exception.
+   * If the `max` timeout expires the last exception is thrown.
    *
    * If no timeout is given, take it from the innermost enclosing `within`
    * block.
