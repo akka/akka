@@ -52,6 +52,12 @@ import scala.collection.immutable.Map.Map1
  */
 @InternalApi private[akka] object Concat {
 
+  /**
+   * An optimizatzion to remove cheaply recognizable patterns of redundancy, for example PushNotUsed immediately
+   * followed by a Pop. It also rotates the tree to make it more left-leaning, which makes the tree more readable
+   * and require less stack-space when traversing. This is only a single rotation, otherwise this implementation
+   * would be O(N^2).
+   */
   def normalizeConcat(first: Traversal, second: Traversal): Traversal = {
     if (second eq EmptyTraversal) first
     else if (first eq PushNotUsed) {
@@ -992,8 +998,7 @@ import scala.collection.immutable.Map.Map1
 
             // First prepare island enter and exit if tags are present
             toAppend.islandTag match {
-              case OptionVal.None ⇒
-              // Nothing changes
+              case OptionVal.None ⇒ // Nothing changes
               case OptionVal.Some(tag) ⇒
                 // Enter the island just before the appended builder (keeping the toAppend.beforeBuilder steps)
                 newBeforeTraversal = EnterIsland(tag).concat(newBeforeTraversal)
@@ -1008,6 +1013,11 @@ import scala.collection.immutable.Map.Map1
               // Pop the attributes immediately after the appended builder (they should not applied to _this_ builder)
               newTraversalSoFar = PopAttributes.concat(newTraversalSoFar)
             }
+
+            // This is roughly how things will look like in the end:
+            //
+            // newBeforeTraversal                           newTraversalSoFar
+            // [PushAttributes ~ EnterIsland] ~ composite ~ [toAppend.traversalSoFar ~ ExitIsland ~ PopAttributes ~ finalTraversalForThis]
 
             // Finally add the already completed part of toAppend to newTraversalSoFar
             newTraversalSoFar = toAppend.traversalSoFar.concat(newTraversalSoFar)
