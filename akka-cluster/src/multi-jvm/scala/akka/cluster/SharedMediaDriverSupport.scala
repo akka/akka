@@ -19,6 +19,7 @@ import com.typesafe.config.ConfigFactory
 import io.aeron.driver.MediaDriver
 import io.aeron.driver.ThreadingMode
 import org.agrona.IoUtil
+import io.aeron.CommonContext
 
 object SharedMediaDriverSupport {
 
@@ -32,16 +33,6 @@ object SharedMediaDriverSupport {
     if (arterySettings.Enabled) {
       val aeronDir = arterySettings.Advanced.AeronDirectoryName
       require(aeronDir.nonEmpty, "aeron-dir must be defined")
-      val driverContext = new MediaDriver.Context
-      driverContext.aeronDirectoryName(aeronDir)
-      driverContext.clientLivenessTimeoutNs(arterySettings.Advanced.ClientLivenessTimeout.toNanos)
-      driverContext.imageLivenessTimeoutNs(arterySettings.Advanced.ImageLivenessTimeout.toNanos)
-      driverContext.driverTimeoutMs(arterySettings.Advanced.DriverTimeout.toMillis)
-
-      val idleCpuLevel = arterySettings.Advanced.IdleCpuLevel
-      driverContext
-        .threadingMode(ThreadingMode.SHARED)
-        .sharedIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
 
       // Check if the media driver is already started by another multi-node jvm.
       // It checks more than one time with a sleep inbetween. The number of checks
@@ -49,11 +40,15 @@ object SharedMediaDriverSupport {
       @tailrec def isDriverInactive(i: Int): Boolean = {
         if (i < 0) true
         else {
-          val active = driverContext.isDriverActive(5000, new Consumer[String] {
+          val active = try CommonContext.isDriverActive(new File(aeronDir), 5000, new Consumer[String] {
             override def accept(msg: String): Unit = {
               println(msg)
             }
-          })
+          }) catch {
+            case NonFatal(e) ⇒
+              println(e.getMessage)
+              false
+          }
           if (active) false
           else {
             Thread.sleep(500)
@@ -64,6 +59,16 @@ object SharedMediaDriverSupport {
 
       try {
         if (isDriverInactive(MultiNodeSpec.selfIndex)) {
+          val driverContext = new MediaDriver.Context
+          driverContext.aeronDirectoryName(aeronDir)
+          driverContext.clientLivenessTimeoutNs(arterySettings.Advanced.ClientLivenessTimeout.toNanos)
+          driverContext.imageLivenessTimeoutNs(arterySettings.Advanced.ImageLivenessTimeout.toNanos)
+          driverContext.driverTimeoutMs(arterySettings.Advanced.DriverTimeout.toMillis)
+          val idleCpuLevel = arterySettings.Advanced.IdleCpuLevel
+          driverContext
+            .threadingMode(ThreadingMode.SHARED)
+            .sharedIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
+
           val driver = MediaDriver.launchEmbedded(driverContext)
           println(s"Started media driver in directory [${driver.aeronDirectoryName}]")
           if (!mediaDriver.compareAndSet(None, Some(driver))) {
