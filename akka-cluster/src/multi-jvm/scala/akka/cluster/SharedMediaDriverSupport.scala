@@ -43,17 +43,24 @@ object SharedMediaDriverSupport {
         .threadingMode(ThreadingMode.SHARED)
         .sharedIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
 
+      // concludeAeronDirectory needed for Aeron 1.2.4, otherwise NPE from isDriverActive
+      driverContext.concludeAeronDirectory()
+
       // Check if the media driver is already started by another multi-node jvm.
       // It checks more than one time with a sleep inbetween. The number of checks
       // depends on the multi-node index (i).
       @tailrec def isDriverInactive(i: Int): Boolean = {
         if (i < 0) true
         else {
-          val active = driverContext.isDriverActive(5000, new Consumer[String] {
+          val active = try driverContext.isDriverActive(5000, new Consumer[String] {
             override def accept(msg: String): Unit = {
               println(msg)
             }
-          })
+          }) catch {
+            case NonFatal(e) ⇒
+              println(e.getMessage)
+              false
+          }
           if (active) false
           else {
             Thread.sleep(500)
