@@ -299,7 +299,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   val selfExiting = Promise[Done]()
   val coordShutdown = CoordinatedShutdown(context.system)
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "wait-exiting") { () ⇒
-    selfExiting.future
+    if (latestGossip.members.isEmpty)
+      Future.successful(Done) // not joined yet
+    else
+      selfExiting.future
   }
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExitingDone, "exiting-completed") {
     val sys = context.system
