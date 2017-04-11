@@ -1,13 +1,15 @@
 /**
  * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed
+package akka.typed.testkit
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration.Duration
 import java.util.concurrent.ConcurrentLinkedQueue
+
+import akka.typed.{ ActorContext, ActorRef, ActorSystem, Behavior, DeploymentConfig, EmptyDeploymentConfig, Signal }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * All tracked effects must extend implement this type. It is deliberately
@@ -32,8 +34,8 @@ object Effect {
  */
 class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _mailboxCapacity: Int, _system: ActorSystem[Nothing])
   extends StubbedActorContext[T](_name, _mailboxCapacity, _system) {
-  import akka.{ actor ⇒ a }
   import Effect._
+  import akka.{ actor ⇒ a }
 
   private val effectQueue = new ConcurrentLinkedQueue[Effect]
   def getEffect(): Effect = effectQueue.poll() match {
