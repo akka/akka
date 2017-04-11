@@ -458,16 +458,19 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   private lazy val shutdownHook = new Thread {
     override def run(): Unit = {
-      if (hasBeenShutdown.compareAndSet(false, true)) {
+      if (!hasBeenShutdown.get) {
         val coord = CoordinatedShutdown(system)
-        val totalTimeout = coord.totalTimeout()
+        // totalTimeout will be 0 when no tasks registered, so at least 3.seconds
+        val totalTimeout = coord.totalTimeout().max(3.seconds)
         if (!coord.jvmHooksLatch.await(totalTimeout.toMillis, TimeUnit.MILLISECONDS))
           log.warning(
             "CoordinatedShutdown took longer than [{}]. Shutting down [{}] via shutdownHook",
             totalTimeout, localAddress)
         else
           log.debug("Shutting down [{}] via shutdownHook", localAddress)
-        Await.result(internalShutdown(), settings.Advanced.DriverTimeout + 3.seconds)
+        if (hasBeenShutdown.compareAndSet(false, true)) {
+          Await.result(internalShutdown(), settings.Advanced.DriverTimeout + 3.seconds)
+        }
       }
     }
   }

@@ -41,16 +41,21 @@ private[akka] class CoordinatedShutdownLeave extends Actor {
 
   def waitingLeaveCompleted(replyTo: ActorRef): Receive = {
     case s: CurrentClusterState ⇒
-      if (s.members.exists(m ⇒ m.uniqueAddress == cluster.selfUniqueAddress &&
+      if (s.members.isEmpty) {
+        // not joined yet
+        done(replyTo)
+      } else if (s.members.exists(m ⇒ m.uniqueAddress == cluster.selfUniqueAddress &&
         (m.status == Leaving || m.status == Exiting || m.status == Down))) {
-        replyTo ! Done
-        context.stop(self)
+        done(replyTo)
       }
     case evt: MemberEvent ⇒
-      if (evt.member.uniqueAddress == cluster.selfUniqueAddress) {
-        replyTo ! Done
-        context.stop(self)
-      }
+      if (evt.member.uniqueAddress == cluster.selfUniqueAddress)
+        done(replyTo)
+  }
+
+  private def done(replyTo: ActorRef): Unit = {
+    replyTo ! Done
+    context.stop(self)
   }
 
 }
