@@ -1072,6 +1072,9 @@ object MiMa extends AutoPlugin {
         FilterAnyProblemStartingWith("akka.remote.artery")
       ),
       "2.4.17" -> Seq(
+        // #22711 changes to groupedWithin internal classes
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.groupedWeightedWithin"),
+
         // #22277 changes to internal classes
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpServerHandler.this"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpClientHandler.this"),
