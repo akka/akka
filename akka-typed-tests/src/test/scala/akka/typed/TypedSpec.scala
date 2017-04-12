@@ -39,7 +39,7 @@ class TypedSpecSetup extends RefSpec with Matchers with BeforeAndAfterAll with S
 /**
  * Helper class for writing tests against both ActorSystemImpl and ActorSystemAdapter.
  */
-class TypedSpec(val config: Config) extends TypedSpecSetup {
+abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   import TypedSpec._
   import AskPattern._
 
@@ -48,8 +48,18 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
   // extension point
   def setTimeout: Timeout = Timeout(1.minute)
 
-  lazy val nativeSystem = ActorSystem(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
-  lazy val adaptedSystem = ActorSystem.adapter(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
+  private var nativeSystemUsed = false
+  lazy val nativeSystem: ActorSystem[TypedSpec.Command] = {
+    val sys = ActorSystem(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
+    nativeSystemUsed = true
+    sys
+  }
+  private var adaptedSystemUsed = false
+  lazy val adaptedSystem: ActorSystem[TypedSpec.Command] = {
+    val sys = ActorSystem.adapter(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
+    adaptedSystemUsed = false
+    sys
+  }
 
   trait NativeSystem {
     def system = nativeSystem
@@ -63,8 +73,10 @@ class TypedSpec(val config: Config) extends TypedSpecSetup {
   implicit def scheduler = nativeSystem.scheduler
 
   override def afterAll(): Unit = {
-    Await.result(nativeSystem ? (Terminate(_)), timeout.duration): Status
-    Await.result(adaptedSystem ? (Terminate(_)), timeout.duration): Status
+    if (nativeSystemUsed)
+      Await.result(nativeSystem ? (Terminate(_)), timeout.duration): Status
+    if (adaptedSystemUsed)
+      Await.result(adaptedSystem ? (Terminate(_)), timeout.duration): Status
   }
 
   // TODO remove after basing on ScalaTest 3 with async support
@@ -197,8 +209,7 @@ class TypedSpecSpec extends TypedSpec {
           sync(runTest("failure")(StepWise[String]((ctx, startWith) ⇒
             startWith {
               fail("expected")
-            }
-          )))
+            })))
         }
       }
     }
