@@ -25,8 +25,8 @@ import akka.event.LoggingAdapter;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -41,7 +41,7 @@ public class AeronErrorLog
     final DirectBuffer cncMetaDataBuffer;
     final int cncVersion;
     final AtomicBuffer buffer;
-    final SimpleDateFormat dateFormat;
+    final DateTimeFormatter formatter;
 
     public AeronErrorLog(File cncFile)
     {
@@ -50,8 +50,7 @@ public class AeronErrorLog
       cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
       cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
       buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
-      dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-
+      formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSZ");
 
       if (CncFileDescriptor.CNC_VERSION != cncVersion)
       {
@@ -62,7 +61,7 @@ public class AeronErrorLog
 
     public long logErrors(LoggingAdapter log, long sinceTimestamp)
     {
-        // using AtomicLong because access from lambda, not because of currency
+        // using AtomicLong because access from lambda, not because of concurrency
         final AtomicLong lastTimestamp = new AtomicLong(sinceTimestamp);
 
         ErrorLogReader.read(
@@ -71,8 +70,8 @@ public class AeronErrorLog
                   log.error(String.format(
                       "Aeron error: %d observations from %s to %s for:%n %s",
                       observationCount,
-                      dateFormat.format(new Date(firstObservationTimestamp)),
-                      dateFormat.format(new Date(lastObservationTimestamp)),
+                      formatter.format(Instant.ofEpochMilli(firstObservationTimestamp)),
+                      formatter.format(Instant.ofEpochMilli(lastObservationTimestamp)),
                       encodedException));
                   lastTimestamp.set(Math.max(lastTimestamp.get(), lastObservationTimestamp));
                 }, sinceTimestamp);

@@ -3,6 +3,9 @@
  */
 package akka
 
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+
 import sbt._
 import sbt.Keys._
 
@@ -26,8 +29,9 @@ object TimeStampede extends AutoPlugin {
     else version
   }
 
+  val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+
   def timestamp(time: Long): String = {
-    val format = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss")
-    format.format(new java.util.Date(time))
+    formatter.format(Instant.ofEpochMilli(time))
   }
 }
