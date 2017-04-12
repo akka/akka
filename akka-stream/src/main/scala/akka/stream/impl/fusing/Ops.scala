@@ -1470,7 +1470,7 @@ private[stream] object Collect {
 
     override def onUpstreamFinish(): Unit = {
       finished = true
-      if (groupEmitted) completeStage()
+      if (groupEmitted || elements == 0) completeStage()
       else closeGroup()
     }
 
