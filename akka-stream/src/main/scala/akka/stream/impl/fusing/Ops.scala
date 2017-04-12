@@ -1402,20 +1402,22 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class GroupedWithin[T](val n: Int, val d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
-  require(n > 0, "n must be greater than 0")
+@InternalApi private[akka] final class GroupedWeightedWithin[T](val maxWeight: Long, costFn: T ⇒ Long, val d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
+  require(maxWeight > 0, "n must be greater than 0")
   require(d > Duration.Zero)
 
   val in = Inlet[T]("in")
   val out = Outlet[immutable.Seq[T]]("out")
 
-  override def initialAttributes = DefaultAttributes.groupedWithin
+  override def initialAttributes = DefaultAttributes.groupedWeightedWithin
 
   val shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
     private val buf: VectorBuilder[T] = new VectorBuilder
+    private var pending: T = null.asInstanceOf[T]
+    private var pendingWeight = 0L
     // True if:
     // - buf is nonEmpty
     //       AND
@@ -1423,23 +1425,31 @@ private[stream] object Collect {
     private var groupClosed = false
     private var groupEmitted = true
     private var finished = false
-    private var elements = 0
+    private var totalWeight = 0L
 
-    private val GroupedWithinTimer = "GroupedWithinTimer"
+    private val GroupedWeightedWithinTimer = "GroupedWeightedWithinTimer"
 
     override def preStart() = {
-      schedulePeriodically(GroupedWithinTimer, d)
+      schedulePeriodically(GroupedWeightedWithinTimer, d)
       pull(in)
     }
 
     private def nextElement(elem: T): Unit = {
       groupEmitted = false
-      buf += elem
-      elements += 1
-      if (elements == n) {
-        schedulePeriodically(GroupedWithinTimer, d)
+      val cost = costFn(elem)
+      if (totalWeight + cost <= maxWeight) {
+        buf += elem
+        totalWeight += cost
+        if (totalWeight == maxWeight) {
+          schedulePeriodically(GroupedWeightedWithinTimer, d)
+          closeGroup()
+        } else pull(in)
+      } else {
+        pending = elem
+        pendingWeight = cost
+        schedulePeriodically(GroupedWeightedWithinTimer, d)
         closeGroup()
-      } else pull(in)
+      }
     }
 
     private def closeGroup(): Unit = {
@@ -1456,7 +1466,14 @@ private[stream] object Collect {
     }
 
     private def startNewGroup(): Unit = {
-      elements = 0
+      if (pending != null) {
+        totalWeight = pendingWeight
+        pendingWeight = 0
+        buf += pending
+        pending = null.asInstanceOf[T]
+      } else {
+        totalWeight = 0
+      }
       groupClosed = false
       if (isAvailable(in)) nextElement(grab(in))
       else if (!hasBeenPulled(in)) pull(in)
@@ -1474,11 +1491,92 @@ private[stream] object Collect {
       else closeGroup()
     }
 
-    override protected def onTimer(timerKey: Any) = if (elements > 0) closeGroup()
+    override protected def onTimer(timerKey: Any) = if (totalWeight > 0) closeGroup()
 
     setHandlers(in, out, this)
   }
 }
+
+///**
+// * INTERNAL API
+// */
+//@InternalApi private[akka] final class GroupedWithin[T](val n: Int, val d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
+//  require(n > 0, "n must be greater than 0")
+//  require(d > Duration.Zero)
+//
+//  val in = Inlet[T]("in")
+//  val out = Outlet[immutable.Seq[T]]("out")
+//
+//  override def initialAttributes = DefaultAttributes.groupedWithin
+//
+//  val shape = FlowShape(in, out)
+//
+//  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+//
+//    private val buf: VectorBuilder[T] = new VectorBuilder
+//    // True if:
+//    // - buf is nonEmpty
+//    //       AND
+//    // - timer fired OR group is full
+//    private var groupClosed = false
+//    private var groupEmitted = true
+//    private var finished = false
+//    private var elements = 0
+//
+//    private val GroupedWithinTimer = "GroupedWithinTimer"
+//
+//    override def preStart() = {
+//      schedulePeriodically(GroupedWithinTimer, d)
+//      pull(in)
+//    }
+//
+//    private def nextElement(elem: T): Unit = {
+//      groupEmitted = false
+//      buf += elem
+//      elements += 1
+//      if (elements == n) {
+//        schedulePeriodically(GroupedWithinTimer, d)
+//        closeGroup()
+//      } else pull(in)
+//    }
+//
+//    private def closeGroup(): Unit = {
+//      groupClosed = true
+//      if (isAvailable(out)) emitGroup()
+//    }
+//
+//    private def emitGroup(): Unit = {
+//      groupEmitted = true
+//      push(out, buf.result())
+//      buf.clear()
+//      if (!finished) startNewGroup()
+//      else completeStage()
+//    }
+//
+//    private def startNewGroup(): Unit = {
+//      elements = 0
+//      groupClosed = false
+//      if (isAvailable(in)) nextElement(grab(in))
+//      else if (!hasBeenPulled(in)) pull(in)
+//    }
+//
+//    override def onPush(): Unit = {
+//      if (!groupClosed) nextElement(grab(in)) // otherwise keep the element for next round
+//    }
+//
+//    override def onPull(): Unit = if (groupClosed) emitGroup()
+//
+//    override def onUpstreamFinish(): Unit = {
+//      finished = true
+//      if (groupEmitted) completeStage()
+//      else closeGroup()
+//    }
+//
+//    override protected def onTimer(timerKey: Any) = if (elements > 0) closeGroup()
+//
+//    setHandlers(in, out, this)
+//  }
+//}
 
 /**
  * INTERNAL API

@@ -1458,6 +1458,27 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
 
   /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the weight of the elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted or weight limit reached
+   *
+   * '''Backpressures when''' the configured time elapses since the last group has been emitted
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
+   */
+  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, Long], d: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+    new Source(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
+
+  /**
    * Shifts elements emission in time by a specified amount. It allows to store elements
    * in internal buffer while waiting for next element to be emitted. Depending on the defined
    * [[akka.stream.DelayOverflowStrategy]] it might drop elements or backpressure the upstream if

@@ -157,4 +157,22 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
 
   }
 
+  "A GroupedWeightedWithin" must {
+    "handle elements larger than the limit" taggedAs TimingTest in {
+      val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
+      Source(List(1, 2, 3, 101, 4, 5, 6))
+        .groupedWeightedWithin(100, 100.millis)(_.toLong)
+        .to(Sink.fromSubscriber(downstream))
+        .run()
+
+      downstream.request(1)
+      downstream.expectNext((1 to 3).toVector)
+      downstream.request(1)
+      downstream.expectNext(Vector(101))
+      downstream.request(1)
+      downstream.expectNext((4 to 6).toVector)
+      downstream.expectComplete()
+      downstream.expectNoMsg(100.millis)
+    }
+  }
 }
