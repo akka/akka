@@ -266,12 +266,12 @@ object Actor {
    * results in a new behavior that can potentially be different from this one.
    */
   final case class Stateful[T](
-    behavior: (ActorContext[T], T) ⇒ Behavior[T],
-    signal:   (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
+    onMessage: (ActorContext[T], T) ⇒ Behavior[T],
+    onSignal:  (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
     extends ExtensibleBehavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = signal(ctx, msg)
-    override def message(ctx: AC[T], msg: T) = behavior(ctx, msg)
-    override def toString = s"Stateful(${LineNumbers(behavior)})"
+    override def management(ctx: AC[T], msg: Signal): Behavior[T] = onSignal(ctx, msg)
+    override def message(ctx: AC[T], msg: T) = onMessage(ctx, msg)
+    override def toString = s"Stateful(${LineNumbers(onMessage)})"
   }
 
   /**
@@ -285,13 +285,13 @@ object Actor {
    * another one after it has been installed. It is most useful for leaf actors
    * that do not create child actors themselves.
    */
-  final case class Stateless[T](behavior: (ActorContext[T], T) ⇒ Any) extends ExtensibleBehavior[T] {
+  final case class Stateless[T](onMessage: (ActorContext[T], T) ⇒ Any) extends ExtensibleBehavior[T] {
     override def management(ctx: AC[T], msg: Signal): Behavior[T] = Unhandled
     override def message(ctx: AC[T], msg: T): Behavior[T] = {
-      behavior(ctx, msg)
+      onMessage(ctx, msg)
       this
     }
-    override def toString = s"Static(${LineNumbers(behavior)})"
+    override def toString = s"Static(${LineNumbers(onMessage)})"
   }
 
   /**

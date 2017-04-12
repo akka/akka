@@ -2,12 +2,18 @@
  * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com/>
  */
 package akka.typed
+package internal
 package adapter
 
 import akka.{ actor ⇒ a }
+import akka.annotation.InternalApi
 
-private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor {
   import Behavior._
+  import ActorRefAdapter.toUntyped
 
   var behavior: Behavior[T] = _initialBehavior
 
