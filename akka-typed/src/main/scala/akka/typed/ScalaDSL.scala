@@ -53,12 +53,12 @@ object ScalaDSL {
         if (next eq behavior) Same else Widened(next, matcher)
       } else Stopped
 
-    override def management(ctx: ActorContext[U], msg: Signal): Behavior[U] =
-      postProcess(ctx, behavior.management(ctx.asInstanceOf[ActorContext[T]], msg))
+    override def receiveSignal(ctx: ActorContext[U], msg: Signal): Behavior[U] =
+      postProcess(ctx, behavior.receiveSignal(ctx.asInstanceOf[ActorContext[T]], msg))
 
-    override def message(ctx: ActorContext[U], msg: U): Behavior[U] =
+    override def receiveMessage(ctx: ActorContext[U], msg: U): Behavior[U] =
       if (matcher.isDefinedAt(msg))
-        postProcess(ctx, behavior.message(ctx.asInstanceOf[ActorContext[T]], matcher(msg)))
+        postProcess(ctx, behavior.receiveMessage(ctx.asInstanceOf[ActorContext[T]], matcher(msg)))
       else Unhandled
 
     override def toString: String = s"${behavior.toString}.widen(${LineNumbers(matcher)})"
@@ -70,12 +70,12 @@ object ScalaDSL {
    */
   @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Deferred[T](factory: () ⇒ Behavior[T]) extends Behavior[T] {
-    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
+    override def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
       if (msg != PreStart) throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
       Behavior.preStart(factory(), ctx)
     }
 
-    override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
+    override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] =
       throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
 
     override def toString: String = s"Deferred(${LineNumbers(factory)})"
@@ -162,7 +162,7 @@ object ScalaDSL {
    */
   @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Full[T](behavior: PartialFunction[MessageOrSignal[T], Behavior[T]]) extends Behavior[T] {
-    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
+    override def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
       lazy val fallback: (MessageOrSignal[T]) ⇒ Behavior[T] = {
         case Sig(context, PreRestart) ⇒
           context.children foreach { child ⇒
@@ -174,7 +174,7 @@ object ScalaDSL {
       }
       behavior.applyOrElse(Sig(ctx, msg), fallback)
     }
-    override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
+    override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
       behavior.applyOrElse(Msg(ctx, msg), unhandledFunction)
     }
     override def toString = s"Full(${LineNumbers(behavior)})"
@@ -189,8 +189,8 @@ object ScalaDSL {
    */
   @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class FullTotal[T](behavior: MessageOrSignal[T] ⇒ Behavior[T]) extends Behavior[T] {
-    override def management(ctx: ActorContext[T], msg: Signal) = behavior(Sig(ctx, msg))
-    override def message(ctx: ActorContext[T], msg: T) = behavior(Msg(ctx, msg))
+    override def receiveSignal(ctx: ActorContext[T], msg: Signal) = behavior(Sig(ctx, msg))
+    override def receiveMessage(ctx: ActorContext[T], msg: T) = behavior(Msg(ctx, msg))
     override def toString = s"FullTotal(${LineNumbers(behavior)})"
   }
 
@@ -206,10 +206,10 @@ object ScalaDSL {
    */
   @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Total[T](behavior: T ⇒ Behavior[T]) extends Behavior[T] {
-    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = msg match {
+    override def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] = msg match {
       case _ ⇒ Unhandled
     }
-    override def message(ctx: ActorContext[T], msg: T): Behavior[T] = behavior(msg)
+    override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = behavior(msg)
     override def toString = s"Total(${LineNumbers(behavior)})"
   }
 
@@ -225,10 +225,10 @@ object ScalaDSL {
    */
   @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Partial[T](behavior: PartialFunction[T, Behavior[T]]) extends Behavior[T] {
-    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = msg match {
+    override def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] = msg match {
       case _ ⇒ Unhandled
     }
-    override def message(ctx: ActorContext[T], msg: T): Behavior[T] = behavior.applyOrElse(msg, unhandledFunction)
+    override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = behavior.applyOrElse(msg, unhandledFunction)
     override def toString = s"Partial(${LineNumbers(behavior)})"
   }
 
@@ -244,13 +244,13 @@ object ScalaDSL {
       else if (behv eq sameBehavior) Same
       else if (isAlive(behv)) Tap(f, behv)
       else Stopped
-    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
+    override def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
       f.applyOrElse(Sig(ctx, msg), unitFunction)
-      canonical(behavior.management(ctx, msg))
+      canonical(behavior.receiveSignal(ctx, msg))
     }
-    override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
+    override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
       f.applyOrElse(Msg(ctx, msg), unitFunction)
-      canonical(behavior.message(ctx, msg))
+      canonical(behavior.receiveMessage(ctx, msg))
     }
     override def toString = s"Tap(${LineNumbers(f)},$behavior)"
   }
@@ -270,8 +270,8 @@ object ScalaDSL {
    */
   @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Static[T](behavior: T ⇒ Unit) extends Behavior[T] {
-    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = Unhandled
-    override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
+    override def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] = Unhandled
+    override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
       behavior(msg)
       this
     }
@@ -300,26 +300,26 @@ object ScalaDSL {
       // FIXME should we protect against infinite loops?
       @tailrec private def run(ctx: ActorContext[T], next: Behavior[T]): Behavior[T] = {
         setBehavior(ctx, next)
-        if (inbox.hasMessages) run(ctx, behavior.message(ctx, inbox.receiveMsg()))
+        if (inbox.hasMessages) run(ctx, behavior.receiveMessage(ctx, inbox.receiveMsg()))
         else if (isUnhandled(next)) Unhandled
         else if (isAlive(next)) this
         else Stopped
       }
 
-      override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] =
-        run(ctx, behavior.management(ctx, msg))
-      override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
-        run(ctx, behavior.message(ctx, msg))
+      override def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] =
+        run(ctx, behavior.receiveSignal(ctx, msg))
+      override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] =
+        run(ctx, behavior.receiveMessage(ctx, msg))
 
       override def toString: String = s"SynchronousSelf($behavior)"
     }
 
-    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
+    override def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
       if (msg != PreStart) throw new IllegalStateException(s"SynchronousSelf must receive PreStart as first message (got $msg)")
       Behavior.preStart(new B(), ctx)
     }
 
-    override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
+    override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] =
       throw new IllegalStateException(s"SynchronousSelf must receive PreStart as first message (got $msg)")
 
     override def toString: String = s"SynchronousSelf(${LineNumbers(f)})"
@@ -334,9 +334,9 @@ object ScalaDSL {
   @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class And[T](left: Behavior[T], right: Behavior[T]) extends Behavior[T] {
 
-    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
-      val l = left.management(ctx, msg)
-      val r = right.management(ctx, msg)
+    override def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] = {
+      val l = left.receiveSignal(ctx, msg)
+      val r = right.receiveSignal(ctx, msg)
       if (isUnhandled(l) && isUnhandled(r)) Unhandled
       else {
         val nextLeft = canonicalize(l, left)
@@ -351,9 +351,9 @@ object ScalaDSL {
       }
     }
 
-    override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
-      val l = left.message(ctx, msg)
-      val r = right.message(ctx, msg)
+    override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
+      val l = left.receiveMessage(ctx, msg)
+      val r = right.receiveMessage(ctx, msg)
       if (isUnhandled(l) && isUnhandled(r)) Unhandled
       else {
         val nextLeft = canonicalize(l, left)
@@ -380,10 +380,10 @@ object ScalaDSL {
   @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   final case class Or[T](left: Behavior[T], right: Behavior[T]) extends Behavior[T] {
 
-    override def management(ctx: ActorContext[T], msg: Signal): Behavior[T] =
-      left.management(ctx, msg) match {
+    override def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] =
+      left.receiveSignal(ctx, msg) match {
         case b if isUnhandled(b) ⇒
-          val r = right.management(ctx, msg)
+          val r = right.receiveSignal(ctx, msg)
           if (isUnhandled(r)) Unhandled
           else {
             val nr = canonicalize(r, right)
@@ -394,10 +394,10 @@ object ScalaDSL {
           if (isAlive(next)) Or(next, right) else right
       }
 
-    override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
-      left.message(ctx, msg) match {
+    override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] =
+      left.receiveMessage(ctx, msg) match {
         case b if isUnhandled(b) ⇒
-          val r = right.message(ctx, msg)
+          val r = right.receiveMessage(ctx, msg)
           if (isUnhandled(r)) Unhandled
           else {
             val nr = canonicalize(r, right)
@@ -442,10 +442,10 @@ object ScalaDSL {
   @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   def SelfAware[T](behavior: ActorRef[T] ⇒ Behavior[T]): Behavior[T] =
     new Behavior[T] {
-      override def management(ctx: ActorContext[T], sig: Signal): Behavior[T] =
+      override def receiveSignal(ctx: ActorContext[T], sig: Signal): Behavior[T] =
         if (sig == PreStart) Behavior.preStart(behavior(ctx.self), ctx)
         else throw new IllegalStateException(s"SelfAware must receive PreStart as first message (got $sig)")
-      override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
+      override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] =
         throw new IllegalStateException(s"SelfAware must receive PreStart as first message (got $msg)")
     }
 
@@ -466,10 +466,10 @@ object ScalaDSL {
   @deprecated("use akka.typed.scaladsl.Actor", "2.5.0")
   def ContextAware[T](behavior: scaladsl.ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
     new Behavior[T] {
-      override def management(ctx: ActorContext[T], sig: Signal): Behavior[T] =
+      override def receiveSignal(ctx: ActorContext[T], sig: Signal): Behavior[T] =
         if (sig == PreStart) Behavior.preStart(behavior(ctx), ctx)
         else throw new IllegalStateException(s"ContextAware must receive PreStart as first message (got $sig)")
-      override def message(ctx: ActorContext[T], msg: T): Behavior[T] =
+      override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] =
         throw new IllegalStateException(s"ContextAware must receive PreStart as first message (got ${msg.getClass})")
     }
 
