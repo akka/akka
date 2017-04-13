@@ -40,7 +40,7 @@ inThisBuild(Def.settings(
 ))
 
 lazy val root = Project(
-    id = "root",
+    id = "akka-http-root",
     base = file(".")
   )
   .enablePlugins(UnidocRoot, NoPublish, DeployRsync)
