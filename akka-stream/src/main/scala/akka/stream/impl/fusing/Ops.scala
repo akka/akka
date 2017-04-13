@@ -1403,7 +1403,7 @@ private[stream] object Collect {
  * INTERNAL API
  */
 @InternalApi private[akka] final class GroupedWeightedWithin[T](val maxWeight: Long, costFn: T ⇒ Long, val d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
-  require(maxWeight > 0, "n must be greater than 0")
+  require(maxWeight > 0, "maxWeight must be greater than 0")
   require(d > Duration.Zero)
 
   val in = Inlet[T]("in")
