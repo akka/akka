@@ -226,6 +226,8 @@ object MediaType {
 
   sealed abstract class WithOpenCharset extends NonBinary with jm.MediaType.WithOpenCharset {
     def withCharset(charset: HttpCharset): ContentType.WithCharset = ContentType(this, charset)
+    def withParams(params: Map[String, String]): WithOpenCharset with MediaType =
+      customWithOpenCharset(mainType, subType, fileExtensions, params)
 
     /**
      * JAVA API
@@ -236,8 +238,6 @@ object MediaType {
   sealed abstract class NonMultipartWithOpenCharset(val value: String, val mainType: String, val subType: String,
                                                     val fileExtensions: List[String]) extends WithOpenCharset {
     def params: Map[String, String] = Map.empty
-    def withParams(params: Map[String, String]): WithOpenCharset with MediaType =
-      customWithOpenCharset(mainType, subType, fileExtensions, params)
   }
 
   final class Multipart(subType: String, _params: Map[String, String])
@@ -278,8 +278,8 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
     register(mediaType.mainType.toRootLowerCase → mediaType.subType.toRootLowerCase, mediaType)
   }
 
-  import MediaType._  
-  
+  import MediaType._
+
   /////////////////////////// PREDEFINED MEDIA-TYPE DEFINITION ////////////////////////////
   // format: OFF
 

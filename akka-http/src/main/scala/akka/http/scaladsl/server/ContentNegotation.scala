@@ -21,10 +21,10 @@ final class MediaTypeNegotiator(requestHeaders: Seq[HttpHeader]) {
     (for {
       Accept(mediaRanges) ← requestHeaders
       range ← mediaRanges
-    } yield range).sortBy { // `sortBy` is stable, i.e. upholds the original order on identical keys
-      case x if x.isWildcard     ⇒ 2f // most general, needs to come last
-      case MediaRange.One(_, qv) ⇒ -qv // most specific, needs to come first
-      case _                     ⇒ 1f // simple range like `image/*`
+    } yield range).sortBy { // `sortBy` is stable, i.e. upholds the original order on identical weights
+      case x if x.isWildcard   ⇒ (2, -x.params.size, -x.qValue)
+      case one: MediaRange.One ⇒ (0, -one.params.size, -one.qValue) // most specific, needs to come first
+      case range               ⇒ (1, -range.params.size, -range.qValue) // simple range like `image/*`
     }.toList
 
   /**
