@@ -32,15 +32,13 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
     else if (b eq behavior) Same
     else {
       b match {
-        case d: DeferredBehavior[_] ⇒ canonical(Behavior.undefer(d.asInstanceOf[DeferredBehavior[T]], ctx), ctx)
+        case d: DeferredBehavior[_] ⇒ canonical(Behavior.undefer(d, ctx), ctx)
         case b                      ⇒ Restarter[T, Thr](initialBehavior, resume)(b)
       }
     }
 
-  private def preStart(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] = b match {
-    case d: DeferredBehavior[_] ⇒ Behavior.undefer(d.asInstanceOf[DeferredBehavior[T]], ctx)
-    case b                      ⇒ b
-  }
+  private def preStart(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
+    Behavior.undefer(b, ctx)
 
   override def management(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     val startedBehavior = preStart(behavior, ctx)
