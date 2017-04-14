@@ -70,7 +70,7 @@ source of integers and write it to a file instead:
 
 First we use the ``scan`` combinator to run a computation over the whole
 stream: starting with the number 1 (``BigInteger.ONE``) we multiple by each of
-the incoming numbers, one after the other; the scan operationemits the initial
+the incoming numbers, one after the other; the scan operation emits the initial
 value and then every calculation result. This yields the series of factorial
 numbers which we stash away as a :class:`Source` for later reuse—it is
 important to keep in mind that nothing is actually computed yet, this is just a
@@ -132,7 +132,7 @@ certain speed: we use the ``throttle`` combinator to slow down the stream to 1
 element per second (the second ``1`` in the argument list is the maximum size
 of a burst that we want to allow—passing ``1`` means that the first element
 gets through immediately and the second then has to wait for one second and so
-on). 
+on).
 
 If you run this program you will see one line printed per second. One aspect
 that is not immediately visible deserves mention, though: if you try and set
