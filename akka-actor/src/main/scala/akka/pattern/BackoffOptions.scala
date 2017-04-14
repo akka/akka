@@ -166,7 +166,8 @@ trait BackoffOptions {
    * Returns a new BackoffOptions with the supervisorStrategy.
    * @param supervisorStrategy the supervisorStrategy that the back-off supervisor will use.
    *   The default supervisor strategy is used as fallback if the specified supervisorStrategy (its decider)
-   *   does not explicitly handle an exception.
+   *   does not explicitly handle an exception. As the BackoffSupervisor creates a separate actor to handle the
+   *   backoff process, only a [[OneForOneStrategy]] makes sense here.
    */
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy): BackoffOptions
 
