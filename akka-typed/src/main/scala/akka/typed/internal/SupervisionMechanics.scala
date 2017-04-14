@@ -4,9 +4,7 @@
 package akka.typed
 package internal
 
-import scala.annotation.{ switch, tailrec }
 import scala.util.control.NonFatal
-import scala.util.control.Exception.Catcher
 import akka.event.Logging
 import akka.typed.Behavior.DeferredBehavior
 
@@ -89,8 +87,10 @@ private[typed] trait SupervisionMechanics[T] {
     val a = behavior
     /*
      * The following order is crucial for things to work properly. Only change this if you're very confident and lucky.
+     *
+     * Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
      */
-    try if (a ne null) Behavior.canonicalize(Behavior.interpretSignal(a, ctx, PostStop), a, ctx)
+    try if ((a ne null) && !a.isInstanceOf[DeferredBehavior[_]]) Behavior.canonicalize(Behavior.interpretSignal(a, ctx, PostStop), a, ctx)
     catch { case NonFatal(ex) ⇒ publish(Logging.Error(ex, self.path.toString, clazz(a), "failure during PostStop")) }
     finally try tellWatchersWeDied()
     finally try parent.sendSystem(DeathWatchNotification(self, failed))

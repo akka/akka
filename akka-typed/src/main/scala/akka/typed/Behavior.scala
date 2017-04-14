@@ -155,13 +155,9 @@ object Behavior {
     }
 
   @tailrec
-  def undefer[T](deferredBehavior: DeferredBehavior[T], ctx: ActorContext[T]): Behavior[T] = {
-    val behavior = deferredBehavior(ctx)
-
-    behavior match {
-      case innerDeferred: DeferredBehavior[T] @unchecked ⇒ undefer(innerDeferred, ctx)
-      case _ ⇒ behavior
-    }
+  def undefer[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = behavior match {
+    case innerDeferred: DeferredBehavior[T] @unchecked ⇒ undefer(innerDeferred(ctx), ctx)
+    case _ ⇒ behavior
   }
 
   /**
@@ -169,7 +165,7 @@ object Behavior {
    * notably the behavior can neither be `Same` nor `Unhandled`. Starting
    * out with a `Stopped` behavior is allowed, though.
    */
-  def validateAsInitial[T](behavior: Behavior[T]): Behavior[T] =
+  def validateAsInitial[T](behavior: BehaSo I get updates every day or so. Bleeding edge, but also works whenever I need it, which is quite rare as well. vior[T]): Behavior[T] =
     behavior match {
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot use $behavior as initial behavior")
@@ -179,12 +175,8 @@ object Behavior {
   /**
    * Validate the given behavior as initial, initialize it if it is deferred.
    */
-  def preStart[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
-    validateAsInitial(behavior) match {
-      case d: DeferredBehavior[T] @unchecked ⇒ validateAsInitial(undefer(d, ctx))
-      case x                                 ⇒ x
-    }
-  }
+  def preStart[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
+    validateAsInitial(undefer(behavior, ctx))
 
   /**
    * Returns true if the given behavior is not stopped.
@@ -210,8 +202,8 @@ object Behavior {
 
   private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] =
     behavior match {
-      case SameBehavior | UnhandledBehavior ⇒ throw new IllegalArgumentException(s"cannot execute with $behavior as behavior")
-      case _: DeferredBehavior[_]           ⇒ throw new IllegalArgumentException(s"deferred should not be passed to interpreter")
+      case SameBehavior | UnhandledBehavior ⇒ throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
+      case d: DeferredBehavior[_]           ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
       case IgnoreBehavior                   ⇒ SameBehavior.asInstanceOf[Behavior[T]]
       case StoppedBehavior                  ⇒ StoppedBehavior.asInstanceOf[Behavior[T]]
       case EmptyBehavior                    ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
@@ -220,10 +212,7 @@ object Behavior {
           case signal: Signal ⇒ ext.management(ctx, signal)
           case msg            ⇒ ext.message(ctx, msg.asInstanceOf[T])
         }
-        possiblyDeferredResult match {
-          case d: DeferredBehavior[T] @unchecked ⇒ undefer(d, ctx)
-          case notDeferred                       ⇒ notDeferred
-        }
+        undefer(possiblyDeferredResult, ctx)
     }
 
 }
