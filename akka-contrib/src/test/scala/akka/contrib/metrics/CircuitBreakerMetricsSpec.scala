@@ -16,13 +16,18 @@ object CircuitBreakerMetricsSpec {
 
   object TestException extends RuntimeException
 
-  def delayedAction(implicit ec: ExecutionContext) = Future {
+  def delayedSuccess(implicit ec: ExecutionContext) = Future {
     Thread.sleep(200)
     Done
   }
 
+  def delayedFailure(implicit ec: ExecutionContext) = Future {
+    Thread.sleep(200)
+    throw TestException
+  }
+
   implicit class LatchExt(value: CountDownLatch) {
-    def checkReady = if (!value.await(5, TimeUnit.SECONDS)) throw new IllegalStateException("Expected latch to be zero")
+    def checkReady() = if (!value.await(5, TimeUnit.SECONDS)) throw new IllegalStateException("Expected latch to be zero")
   }
 
 }
@@ -39,11 +44,11 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
       val s = TestSubscriber.manualProbe[Event]()
       val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
       CircuitBreakerMetrics.events(breaker, bufferSize = 100).to(Sink.fromSubscriber(s)).run()
-      val sub = s.expectSubscription
+      val sub = s.expectSubscription()
 
-      breaker.withCircuitBreaker(Future.successful(Done))
-      breaker.withCircuitBreaker(Future.successful(Done))
-      breaker.withCircuitBreaker(Future.successful(Done))
+      breaker.withCircuitBreaker(delayedSuccess)
+      breaker.withCircuitBreaker(delayedSuccess)
+      breaker.withCircuitBreaker(delayedSuccess)
 
       sub.request(3)
       s.expectNext() shouldBe a[Event.CallSuccess]
@@ -59,9 +64,9 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
       CircuitBreakerMetrics.events(breaker, bufferSize = 100).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
-      breaker.withCircuitBreaker(Future.failed(TestException))
-      breaker.withCircuitBreaker(Future.failed(TestException))
-      breaker.withCircuitBreaker(Future.failed(TestException))
+      breaker.withCircuitBreaker(delayedFailure)
+      breaker.withCircuitBreaker(delayedFailure)
+      breaker.withCircuitBreaker(delayedFailure)
 
       sub.request(3)
       s.expectNext() shouldBe a[Event.CallFailure]
@@ -77,9 +82,9 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
       CircuitBreakerMetrics.events(breaker, bufferSize = 100).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
-      breaker.withCircuitBreaker(delayedAction)
-      breaker.withCircuitBreaker(delayedAction)
-      breaker.withCircuitBreaker(delayedAction)
+      breaker.withCircuitBreaker(delayedSuccess)
+      breaker.withCircuitBreaker(delayedSuccess)
+      breaker.withCircuitBreaker(delayedSuccess)
 
       sub.request(3)
       s.expectNext() shouldBe a[Event.CallTimeout]
@@ -95,7 +100,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
       CircuitBreakerMetrics.events(breaker, bufferSize = 100).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
-      breaker.withCircuitBreaker(Future.failed(TestException))
+      breaker.withCircuitBreaker(delayedFailure)
 
       sub.request(2)
       s.expectNext() shouldBe a[Event.CallFailure]
@@ -134,8 +139,8 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
       breaker.withCircuitBreaker(Future.successful(Done))
       sub.request(2)
-      s.expectNext() shouldBe a[Event.CallSuccess]
-      s.expectNext() shouldBe a[Event.BreakerClosed]
+      s.expectNext() should (be(a[Event.CallSuccess]) or be(a[Event.BreakerClosed]))
+      s.expectNext() should (be(a[Event.CallSuccess]) or be(a[Event.BreakerClosed]))
 
       breaker.withCircuitBreaker(Future.successful(Done))
       breaker.withCircuitBreaker(Future.successful(Done))
@@ -204,7 +209,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
       breaker.withCircuitBreaker(Future.successful(Done))
       breaker.withCircuitBreaker(Future.successful(Done))
-      latch.checkReady
+      latch.checkReady()
 
       sub.request(1)
       s.expectNext() shouldBe a[Event.CallSuccess]
@@ -229,9 +234,9 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
       breaker.withCircuitBreaker(Future.failed(TestException))
       breaker.withCircuitBreaker(Future.failed(TestException))
-      latchFailure.checkReady
+      latchFailure.checkReady()
       breaker.withCircuitBreaker(Future.successful(Done))
-      latchSuccess.checkReady
+      latchSuccess.checkReady()
 
       sub.request(2)
       s.expectNext() shouldBe a[Event.CallFailure]
@@ -257,9 +262,9 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
       breaker.withCircuitBreaker(Future.failed(TestException))
       breaker.withCircuitBreaker(Future.failed(TestException))
-      latchFailure.checkReady
+      latchFailure.checkReady()
       breaker.withCircuitBreaker(Future.successful(Done))
-      latchSuccess.checkReady
+      latchSuccess.checkReady()
 
       sub.request(2)
       s.expectNext() shouldBe a[Event.CallFailure]
@@ -286,9 +291,9 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
       breaker.withCircuitBreaker(Future.failed(TestException))
       breaker.withCircuitBreaker(Future.failed(TestException))
       breaker.withCircuitBreaker(Future.failed(TestException))
-      latchFailure.checkReady
+      latchFailure.checkReady()
       breaker.withCircuitBreaker(Future.successful(Done))
-      latchSuccess.checkReady
+      latchSuccess.checkReady()
 
       sub.request(1)
       s.expectNext() shouldBe a[Event.CallSuccess]
@@ -317,7 +322,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
       CircuitBreakerMetrics.timeBuckets(breaker, 2 second).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription()
 
-      for (n ← 1 to 10) breaker.withCircuitBreaker(Future.successful(Done))
+      for (n ← 1 to 10) breaker.withCircuitBreaker(delayedSuccess)
 
       sub.request(1)
 
@@ -339,7 +344,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
       CircuitBreakerMetrics.timeBuckets(breaker, 2 second).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription()
 
-      for (n ← 1 to 10) breaker.withCircuitBreaker(Future.failed(TestException))
+      for (n ← 1 to 10) breaker.withCircuitBreaker(delayedFailure)
 
       sub.request(1)
 
@@ -361,7 +366,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
       CircuitBreakerMetrics.timeBuckets(breaker, 2 second).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription()
 
-      for (n ← 1 to 10) breaker.withCircuitBreaker(delayedAction)
+      for (n ← 1 to 10) breaker.withCircuitBreaker(delayedSuccess)
 
       sub.request(1)
 
@@ -386,7 +391,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
       val sub = s.expectSubscription()
 
       breaker.withCircuitBreaker(Future.failed(TestException))
-      latch.checkReady
+      latch.checkReady()
 
       for (n ← 1 to 10) breaker.withCircuitBreaker(Future.successful(Done))
 
@@ -414,11 +419,11 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
       val sub = s.expectSubscription
 
       breaker.withCircuitBreaker(Future.failed(TestException))
-      openLatch.checkReady
+      openLatch.checkReady()
       breaker.withCircuitBreaker(Future.successful(Done))
-      halfOpenLatch.checkReady
+      halfOpenLatch.checkReady()
       breaker.withCircuitBreaker(Future.successful(Done))
-      closeLatch.checkReady
+      closeLatch.checkReady()
       breaker.withCircuitBreaker(Future.successful(Done))
       breaker.withCircuitBreaker(Future.successful(Done))
 
