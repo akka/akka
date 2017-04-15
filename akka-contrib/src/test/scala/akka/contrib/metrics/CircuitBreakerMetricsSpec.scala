@@ -42,7 +42,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
   "CircuitBreakerMetrics`s events" must {
     "return proper events for successful invocations" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 3.seconds, 5.seconds)
       CircuitBreakerMetrics.events(breaker, bufferSize = 100).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription()
 
@@ -60,7 +60,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "return proper events for failed invocations" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 3.seconds, 5.seconds)
       CircuitBreakerMetrics.events(breaker, bufferSize = 100).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
@@ -78,7 +78,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "return proper events for timeout invocations" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 5, 50 millis, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 50.millis, 5.seconds)
       CircuitBreakerMetrics.events(breaker, bufferSize = 100).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
@@ -96,7 +96,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "return proper events for breaker open invocations" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 1, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 1, 3.seconds, 5.seconds)
       CircuitBreakerMetrics.events(breaker, bufferSize = 100).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
@@ -120,7 +120,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "return events for breaker state changes" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 1, 3 seconds, 250 millis)
+      val breaker = new CircuitBreaker(system.scheduler, 1, 3.seconds, 250.millis)
       CircuitBreakerMetrics.events(breaker, bufferSize = 100).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
@@ -154,7 +154,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "buffer when needed" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 3.seconds, 5.seconds)
       CircuitBreakerMetrics.events(breaker, bufferSize = 100).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
@@ -173,7 +173,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "not fail when 0 buffer space and demand is signalled" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 3.seconds, 5.seconds)
       CircuitBreakerMetrics.events(breaker, bufferSize = 0).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
@@ -186,7 +186,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "fail stream on buffer overflow in fail mode" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 3.seconds, 5.seconds)
       CircuitBreakerMetrics.events(breaker, bufferSize = 1, overflowStrategy = OverflowStrategy.fail).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
@@ -201,7 +201,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
     "drop new event in dropNew mode" in {
       val s = TestSubscriber.manualProbe[Event]()
       val latch = new CountDownLatch(2)
-      val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 3.seconds, 5.seconds)
       CircuitBreakerMetrics.events(breaker, bufferSize = 1, overflowStrategy = OverflowStrategy.dropNew).to(Sink.fromSubscriber(s)).run()
       breaker.onCallSuccess(_ ⇒ latch.countDown())
 
@@ -223,7 +223,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "drop event from head in dropHead mode" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 3.seconds, 5.seconds)
       val latchFailure = new CountDownLatch(2)
       val latchSuccess = new CountDownLatch(1)
       CircuitBreakerMetrics.events(breaker, bufferSize = 2, overflowStrategy = OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
@@ -251,7 +251,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "drop event from tail in dropTail mode" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 3.seconds, 5.seconds)
       val latchFailure = new CountDownLatch(2)
       val latchSuccess = new CountDownLatch(1)
       CircuitBreakerMetrics.events(breaker, bufferSize = 2, overflowStrategy = OverflowStrategy.dropTail).to(Sink.fromSubscriber(s)).run()
@@ -279,7 +279,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "clear buffer if in DropBuffer mode" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 3.seconds, 5.seconds)
       val latchFailure = new CountDownLatch(3)
       val latchSuccess = new CountDownLatch(1)
       CircuitBreakerMetrics.events(breaker, bufferSize = 3, overflowStrategy = OverflowStrategy.dropBuffer).to(Sink.fromSubscriber(s)).run()
@@ -303,7 +303,7 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "fail if in BackPressure mode" in {
       val s = TestSubscriber.manualProbe[Event]()
-      val breaker = new CircuitBreaker(system.scheduler, 5, 3 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 5, 3.seconds, 5.seconds)
       CircuitBreakerMetrics.events(breaker, bufferSize = 1, overflowStrategy = OverflowStrategy.backpressure).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
@@ -318,8 +318,8 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
   "CircuitBreakerMetrics`s timeBuckets" must {
     "return bucket for successful invocations" in {
       val s = TestSubscriber.manualProbe[TimeBucketResult]()
-      val breaker = new CircuitBreaker(system.scheduler, 50, 3 seconds, 5 seconds)
-      CircuitBreakerMetrics.timeBuckets(breaker, 2 second).to(Sink.fromSubscriber(s)).run()
+      val breaker = new CircuitBreaker(system.scheduler, 50, 3.seconds, 5.seconds)
+      CircuitBreakerMetrics.timeBuckets(breaker, 2.seconds).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription()
 
       for (n ← 1 to 10) breaker.withCircuitBreaker(delayedSuccess)
@@ -340,8 +340,8 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "return bucket for failed invocations" in {
       val s = TestSubscriber.manualProbe[TimeBucketResult]()
-      val breaker = new CircuitBreaker(system.scheduler, 50, 3 seconds, 5 seconds)
-      CircuitBreakerMetrics.timeBuckets(breaker, 2 second).to(Sink.fromSubscriber(s)).run()
+      val breaker = new CircuitBreaker(system.scheduler, 50, 3.seconds, 5.seconds)
+      CircuitBreakerMetrics.timeBuckets(breaker, 2.seconds).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription()
 
       for (n ← 1 to 10) breaker.withCircuitBreaker(delayedFailure)
@@ -362,8 +362,8 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "return bucket for timeout invocations" in {
       val s = TestSubscriber.manualProbe[TimeBucketResult]()
-      val breaker = new CircuitBreaker(system.scheduler, 50, 50 millis, 5 seconds)
-      CircuitBreakerMetrics.timeBuckets(breaker, 2 second).to(Sink.fromSubscriber(s)).run()
+      val breaker = new CircuitBreaker(system.scheduler, 50, 50.millis, 5.seconds)
+      CircuitBreakerMetrics.timeBuckets(breaker, 2.seconds).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription()
 
       for (n ← 1 to 10) breaker.withCircuitBreaker(delayedSuccess)
@@ -384,9 +384,9 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "return bucket for breaker open invocations" in {
       val s = TestSubscriber.manualProbe[TimeBucketResult]()
-      val breaker = new CircuitBreaker(system.scheduler, 1, 5 seconds, 5 seconds)
+      val breaker = new CircuitBreaker(system.scheduler, 1, 5.seconds, 5.seconds)
       val latch = new CountDownLatch(1)
-      CircuitBreakerMetrics.timeBuckets(breaker, 2 second).to(Sink.fromSubscriber(s)).run()
+      CircuitBreakerMetrics.timeBuckets(breaker, 2.seconds).to(Sink.fromSubscriber(s)).run()
       breaker.onOpen(latch.countDown())
       val sub = s.expectSubscription()
 
@@ -408,11 +408,11 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
 
     "return bucket for breaker state changes" in {
       val s = TestSubscriber.manualProbe[TimeBucketResult]()
-      val breaker = new CircuitBreaker(system.scheduler, 1, 5 seconds, 500 millis)
+      val breaker = new CircuitBreaker(system.scheduler, 1, 5.seconds, 500.millis)
       val openLatch = new CountDownLatch(1)
       val halfOpenLatch = new CountDownLatch(1)
       val closeLatch = new CountDownLatch(1)
-      CircuitBreakerMetrics.timeBuckets(breaker, 2 second).to(Sink.fromSubscriber(s)).run()
+      CircuitBreakerMetrics.timeBuckets(breaker, 2.seconds).to(Sink.fromSubscriber(s)).run()
       breaker.onOpen(openLatch.countDown())
       breaker.onHalfOpen(halfOpenLatch.countDown())
       breaker.onClose(closeLatch.countDown())
@@ -443,11 +443,11 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
     }
 
     "return buckets with proper values" in {
-      val breaker = new CircuitBreaker(system.scheduler, 1, 5 seconds, 500 millis)
-      val (switch, bucketsFuture) = CircuitBreakerMetrics.timeBuckets(breaker, 100 millis)
+      val breaker = new CircuitBreaker(system.scheduler, 1, 5.seconds, 500.millis)
+      val (switch, bucketsFuture) = CircuitBreakerMetrics.timeBuckets(breaker, 100.millis)
         .viaMat(KillSwitches.single)(Keep.right)
         .toMat(Sink.seq)(Keep.both).run()
-      val requests = Source.tick(0 seconds, 10 millis, Done)
+      val requests = Source.tick(0.seconds, 10.millis, Done)
         .take(250)
         .mapAsync(1)(value ⇒ breaker.withCircuitBreaker(Future(value)))
         .runWith(Sink.ignore)
@@ -458,13 +458,13 @@ class CircuitBreakerMetricsSpec extends AkkaSpec {
           switch.shutdown()
       }
 
-      Await.result(bucketsFuture, 5 seconds)
+      Await.result(bucketsFuture, 5.seconds)
         .map(_.callSuccesses.count).sum shouldBe 250
     }
 
     "fail if bufferSize is not greater than 0" in {
-      val breaker = new CircuitBreaker(system.scheduler, 5, 1 seconds, 5 seconds)
-      val ex = intercept[Exception](CircuitBreakerMetrics.timeBuckets(breaker, 2 second, bufferSize = 0))
+      val breaker = new CircuitBreaker(system.scheduler, 5, 1.seconds, 5.seconds)
+      val ex = intercept[Exception](CircuitBreakerMetrics.timeBuckets(breaker, 2.seconds, bufferSize = 0))
       ex.getMessage shouldBe "requirement failed: bufferSize must be greater than 0"
     }
   }
