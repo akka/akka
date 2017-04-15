@@ -1,7 +1,8 @@
-package akka.contrib.metrics
+package akka.contrib.metrics.stage
 
 import akka.Done
 import akka.contrib.metrics.Event.{ BreakerClosed, BreakerHalfOpened, BreakerOpened }
+import akka.contrib.metrics.{ CountBucket, Event, TimeBucket, TimeBucketResult }
 import akka.pattern.CircuitBreaker
 import akka.stream._
 import akka.stream.impl.Buffer
@@ -10,7 +11,9 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, TimerGraphSt
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
-private[metrics] class CircuitBreakerTimeBucketsStage(breaker: CircuitBreaker, interval: FiniteDuration, maxBuffer: Int) extends GraphStage[SourceShape[TimeBucketResult]] {
+private[metrics] class CircuitBreakerTimeBucketsStage(breaker: CircuitBreaker, interval: FiniteDuration, maxBuffer: Int)
+  extends GraphStage[SourceShape[TimeBucketResult]] {
+
   private val out = Outlet[TimeBucketResult]("CircuitBreakerTimeBucketsStage.out")
 
   override def shape: SourceShape[TimeBucketResult] = SourceShape.of(out)
