@@ -19,7 +19,7 @@ object CustomRouterDocSpec {
 #//#config
 akka.actor.deployment {
   /redundancy2 {
-    router = "docs.routing.RedundancyGroup"
+    router = "jdocs.routing.RedundancyGroup"
     routees.paths = ["/user/s1", "/user/s2", "/user/s3"]
     nbr-copies = 5
   }
@@ -31,7 +31,7 @@ akka.actor.deployment {
 #//#jconfig
 akka.actor.deployment {
   /redundancy2 {
-    router = "docs.jrouting.RedundancyGroup"
+    router = "jdocs.routing.RedundancyGroup"
     routees.paths = ["/user/s1", "/user/s2", "/user/s3"]
     nbr-copies = 5
   }

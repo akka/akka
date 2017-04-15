@@ -91,7 +91,7 @@ API stability annotations and comments
 
 Akka gives a very strong binary compatibility promise to end-users. However some parts of Akka are excluded 
 from these rules, for example internal or known evolving APIs may be marked as such and shipped as part of 
-an overall stable module. As general rule any breakage is avoided and handled via deprecation and additional method,
+an overall stable module. As general rule any breakage is avoided and handled via deprecation and method addition,
 however certain APIs which are known to not yet be fully frozen (or are fully internal) are marked as such and subject 
 to change at any time (even if best-effort is taken to keep them compatible).
 
@@ -101,12 +101,12 @@ When browsing the source code and/or looking for methods available to be called,
 have as rich of an access protection system as Scala has, you may sometimes find methods or classes annotated with
 the ``/** INTERNAL API */`` comment or the ``@akka.annotation.InternalApi`` annotation. 
 
-No compatibility guarantees are given about these classes, they may change or even disapear in minor versions, 
-and user code is not supposed to be calling (or even touching) them.
+No compatibility guarantees are given about these classes. They may change or even dissappear in minor versions,
+and user code is not supposed to call them.
 
 Side-note on JVM representation details of the Scala ``private[akka]`` pattern that Akka is using extensively in 
 it's internals: Such methods or classes, which act as "accessible only from the given package" in Scala, are compiled
-down to ``public`` (!) in raw Java bytecode, and the access restriction, that Scala understands is carried along 
+down to ``public`` (!) in raw Java bytecode. The access restriction, that Scala understands is carried along
 as metadata stored in the classfile. Thus, such methods are safely guarded from being accessed from Scala,
 however Java users will not be warned about this fact by the ``javac`` compiler. Please be aware of this and do not call
 into Internal APIs, as they are subject to change without any warning.
@@ -117,7 +117,7 @@ The ``@DoNotInherit`` and ``@ApiMayChange`` markers
 In addition to the special internal API marker two annotations exist in Akka and specifically address the following use cases:
 
 - ``@ApiMayChange`` – which marks APIs which are known to be not fully stable yet. Read more in :ref:`may-change`
-- ``@DoNotInherit`` – which marks APIs that are designed under an closed-world assumption, and thus must not be 
+- ``@DoNotInherit`` – which marks APIs that are designed under a closed-world assumption, and thus must not be
   extended outside Akka itself (or such code will risk facing binary incompatibilities). E.g. an interface may be 
   marked using this annotation, and while the type is public, it is not meant for extension by user-code. This allows 
   adding new methods to these interfaces without risking to break client code. Examples of such API are the ``FlowOps`` 

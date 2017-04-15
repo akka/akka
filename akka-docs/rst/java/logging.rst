@@ -17,10 +17,10 @@ How to Log
 Create a ``LoggingAdapter`` and use the ``error``, ``warning``, ``info``, or ``debug`` methods,
 as illustrated in this example:
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
    :include: imports
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
    :include: my-actor
 
 The first parameter to ``Logging.getLogger`` could also be any
@@ -37,12 +37,12 @@ object is translated to a String according to the following rules:
   * and in all other cases the simpleName of its class
 
 The log message may contain argument placeholders ``{}``, which will be
-substituted if the log level is enabled. Giving more arguments as there are
+substituted if the log level is enabled. Giving more arguments than
 placeholders results in a warning being appended to the log statement (i.e. on
 the same line with the same severity). You may pass a Java array as the only
 substitution argument to have its elements be treated individually:
 
-.. includecode:: code/docs/event/LoggingDocTest.java#array
+.. includecode:: code/jdocs/event/LoggingDocTest.java#array
 
 The Java :class:`Class` of the log source is also included in the generated
 :class:`LogEvent`. In case of a simple string this is replaced with a “marker”
@@ -55,9 +55,9 @@ Logging of Dead Letters
 -----------------------
 
 By default messages sent to dead letters are logged at info level. Existence of dead letters
-does not necessarily indicate a problem, but it might be, and therefore they are logged by default.
+does not necessarily indicate a problem, but they are logged by default for the sake of caution.
 After a few messages this logging is turned off, to avoid flooding the logs.
-You can disable this logging completely or adjust how many dead letters that are
+You can disable this logging completely or adjust how many dead letters are
 logged. During system shutdown it is likely that you see dead letters, since pending
 messages in the actor mailboxes are sent to dead letters. You can also disable logging
 of dead letters during shutdown.
@@ -75,8 +75,7 @@ to the :ref:`event-stream-java`.
 Auxiliary logging options
 -------------------------
 
-Akka has a couple of configuration options for very low level debugging, that makes most sense in
-for developers and not for operations.
+Akka has a few configuration options for very low level debugging. These make more sense in development than in production. 
 
 You almost definitely need to have logging set to DEBUG to use any of the options below:
 
@@ -167,8 +166,7 @@ If you want to monitor subscriptions (subscribe/unsubscribe) on the ActorSystem.
 Auxiliary remote logging options
 --------------------------------
 
-If you want to see all messages that are sent through remoting at DEBUG log level:
-(This is logged as they are sent by the transport layer, not by the Actor)
+If you want to see all messages that are sent through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are sent by the transport layer, not by an actor.
 
 .. code-block:: ruby
 
@@ -180,8 +178,7 @@ If you want to see all messages that are sent through remoting at DEBUG log leve
       }
     }
 
-If you want to see all messages that are received through remoting at DEBUG log level:
-(This is logged as they are received by the transport layer, not by any Actor)
+If you want to see all messages that are received through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are sent by the transport layer, not by an actor.
 
 .. code-block:: ruby
 
@@ -231,12 +228,11 @@ Loggers
 =======
 
 Logging is performed asynchronously through an event bus. Log events are processed by an event handler actor
-and it will receive the log events in the same order as they were emitted.
+that receives the log events in the same order they were emitted.
 
 .. note::
   The event handler actor does not have a bounded inbox and is run on the default dispatcher. This means
-  that logging extreme amounts of data may affect your application badly. It can be somewhat mitigated by
-  making sure to use an async logging backend though. (See :ref:`slf4j-directly-java`)
+  that logging extreme amounts of data may affect your application badly. This can be somewhat mitigated by using an async logging backend though. (See :ref:`slf4j-directly-java`)
 
 You can configure which event handlers are created at system start-up and listen to logging events. That is done using the 
 ``loggers`` element in the :ref:`configuration`.
@@ -259,10 +255,10 @@ logger available in the 'akka-slf4j' module.
 
 Example of creating a listener:
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
    :include: imports,imports-listener
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
    :include: my-event-listener
 
 Logging to stdout during startup and shutdown
@@ -279,7 +275,7 @@ SLF4J
 =====
 
 Akka provides a logger for `SL4FJ <http://www.slf4j.org/>`_. This module is available in the 'akka-slf4j.jar'.
-It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4J backend, we recommend `Logback <http://logback.qos.ch/>`_:
+It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend `Logback <http://logback.qos.ch/>`_:
 
   .. code-block:: xml
 
@@ -400,9 +396,9 @@ MDC values defined by the application
 -------------------------------------
 
 One useful feature available in Slf4j is `MDC <http://logback.qos.ch/manual/mdc.html>`_,
-Akka has a way for let the application specify custom values, you just need to get a
+Akka has a way to let the application specify custom values, you just need to get a
 specialized :class:`LoggingAdapter`, the :class:`DiagnosticLoggingAdapter`. In order to
-get it you will use the factory receiving an AbstractActor as logSource:
+get it you can use the factory, providing an AbstractActor as logSource:
 
 .. code-block:: scala
 
@@ -415,13 +411,13 @@ This way, the values will be put in the SLF4J MDC right before appending the log
 .. note::
 
   The cleanup (removal) should be done in the actor at the end,
-  otherwise, next message will log with same mdc values,
+  otherwise, the next message will log with same MDC values,
   if it is not set to a new map. Use ``log.clearMDC()``.
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
     :include: imports-mdc
 
-.. includecode:: code/docs/event/LoggingDocTest.java
+.. includecode:: code/jdocs/event/LoggingDocTest.java
     :include: mdc-actor
 
 Now, the values will be available in the MDC, so you can use them in the layout pattern::
@@ -460,7 +456,7 @@ A more advanced (including most Akka added information) example pattern would be
 java.util.logging
 =================
 
-Akka includes a logger for `java.util.logging <https://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html#package.description>`_.
+Akka includes a logger for `java.util.logging <https://docs.oracle.com/javase/8/jdocs/api/java/util/logging/package-summary.html#package.description>`_.
 
 You need to enable the ``akka.event.jul.JavaLogger`` in the ``loggers`` element in
 the :ref:`configuration`. Here you can also define the log level of the event bus.

@@ -283,9 +283,8 @@ trait TestKitBase {
   }
 
   /**
-   * Await until the given assert does not throw an exception or the timeout
-   * expires, whichever comes first. If the timeout expires the last exception
-   * is thrown.
+   * Evaluate the given assert every `interval` until it does not throw an exception.
+   * If the `max` timeout expires the last exception is thrown.
    *
    * If no timeout is given, take it from the innermost enclosing `within`
    * block.
@@ -435,6 +434,21 @@ trait TestKitBase {
       assert(o ne null, s"timeout (${_max}) during fishForMessage, hint: $hint")
       assert(f.isDefinedAt(o), s"fishForMessage($hint) found unexpected message $o")
       if (f(o)) o else recv
+    }
+    recv
+  }
+
+  /**
+   * Same as `fishForMessage`, but gets a different partial function and returns properly typed message.
+   */
+  def fishForSpecificMessage[T](max: Duration = Duration.Undefined, hint: String = "")(f: PartialFunction[Any, T]): T = {
+    val _max = remainingOrDilated(max)
+    val end = now + _max
+    @tailrec
+    def recv: T = {
+      val o = receiveOne(end - now)
+      assert(o ne null, s"timeout (${_max}) during fishForSpecificMessage, hint: $hint")
+      if (f.isDefinedAt(o)) f(o) else recv
     }
     recv
   }
@@ -931,6 +945,7 @@ trait DefaultTimeout { this: TestKitBase ⇒
  * This class is used internal to JavaTestKit and should not be extended
  * by client code directly.
  */
+@deprecated(message = "The only usage is in JavaTestKit which is deprecated.", since = "2.5.0")
 private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractPartialFunction[A, B] {
   import akka.japi.JavaPartialFunction._
 

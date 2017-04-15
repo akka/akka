@@ -299,7 +299,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   val selfExiting = Promise[Done]()
   val coordShutdown = CoordinatedShutdown(context.system)
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "wait-exiting") { () ⇒
-    selfExiting.future
+    if (latestGossip.members.isEmpty)
+      Future.successful(Done) // not joined yet
+    else
+      selfExiting.future
   }
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExitingDone, "exiting-completed") {
     val sys = context.system
@@ -1408,7 +1411,7 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq
     case ReceiveTimeout ⇒
       if (attempt >= 2)
         log.warning(
-          "Couldn't join seed nodes after [{}] attmpts, will try again. seed-nodes=[{}]",
+          "Couldn't join seed nodes after [{}] attempts, will try again. seed-nodes=[{}]",
           attempt, seedNodes.filterNot(_ == selfAddress).mkString(", "))
       // no InitJoinAck received, try again
       self ! JoinSeedNode

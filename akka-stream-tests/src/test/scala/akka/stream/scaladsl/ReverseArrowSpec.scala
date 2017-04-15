@@ -161,7 +161,7 @@ class ReverseArrowSpec extends StreamSpec {
         val src = b.add(source)
         src ~> f
         sink2 <~ f
-        (the[IllegalArgumentException] thrownBy (s <~ f <~ src)).getMessage should include("already connected")
+        (the[IllegalArgumentException] thrownBy (s <~ f <~ src)).getMessage should include("[StatefulMapConcat.out] is already connected")
         ClosedShape
       }).run(), 1.second) should ===(Seq(1, 2, 3))
     }

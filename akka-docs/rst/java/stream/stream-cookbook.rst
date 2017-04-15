@@ -32,12 +32,12 @@ Logging elements of a stream
 The simplest solution is to simply use a ``map`` operation and use ``println`` to print the elements received to the console.
 While this recipe is rather simplistic, it is often suitable for a quick debug session.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeLoggingElements.java#println-debug
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java#println-debug
 
 Another approach to logging is to use ``log()`` operation which allows configuring logging for elements flowing through
 the stream as well as completion and erroring.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeLoggingElements.java#log-custom
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java#log-custom
 
 Flattening a stream of sequences
 --------------------------------
@@ -49,7 +49,7 @@ The ``mapConcat`` operation can be used to implement a one-to-many transformatio
 in the form of ``In -> List<Out>``. In this case we want to map a ``List`` of elements to the elements in the
 collection itself, so we can just call ``mapConcat(l -> l)``.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeFlattenList.java#flattening-lists
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeFlattenList.java#flattening-lists
 
 Draining a stream to a strict collection
 ----------------------------------------
@@ -63,11 +63,11 @@ The function ``limit`` or ``take`` should always be used in conjunction in order
 
 For example, this is best avoided:
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeSeq.java#draining-to-list-unsafe
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeSeq.java#draining-to-list-unsafe
 
 Rather, use ``limit`` or ``take`` to ensure that the resulting ``List`` will contain only up to ``MAX_ALLOWED_SIZE`` elements:
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeSeq.java#draining-to-list-safe
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeSeq.java#draining-to-list-safe
 
 Calculating the digest of a ByteString stream
 ---------------------------------------------
@@ -85,9 +85,9 @@ At this point we want to emit the digest value, but we cannot do it with ``push`
 be no downstream demand. Instead we call ``emit`` which will temporarily replace the handlers, emit the provided value when
 demand comes in and then reset the stage state. It will then complete the stage.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeDigest.java#calculating-digest
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeDigest.java#calculating-digest
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeDigest.java#calculating-digest2
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeDigest.java#calculating-digest2
 
 .. _cookbook-parse-lines-java:
 
@@ -100,7 +100,7 @@ needs to be parsed.
 
 The :class:`Framing` helper class contains a convenience method to parse messages from a stream of ``ByteString`` s:
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeParseLines.java#parse-lines
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeParseLines.java#parse-lines
 
 Dealing with compressed data streams
 ------------------------------------
@@ -110,7 +110,7 @@ Dealing with compressed data streams
 The :class:`Compression` helper class contains convenience methods for decompressing data streams compressed with
 Gzip or Deflate.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeDecompress.java#decompress-gzip
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeDecompress.java#decompress-gzip
 
 
 Implementing reduce-by-key
@@ -141,7 +141,7 @@ If the ``groupBy`` operator encounters more keys than this number then the
 stream cannot continue without violating its resource bound, in this case
 ``groupBy`` will terminate with a failure.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java#word-count
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java#word-count
 
 By extracting the parts specific to *wordcount* into
 
@@ -151,9 +151,9 @@ By extracting the parts specific to *wordcount* into
 
 we get a generalized version below:
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java#reduce-by-key-general
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java#reduce-by-key-general
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java#reduce-by-key-general2
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java#reduce-by-key-general2
 
 .. note::
   Please note that the reduce-by-key version we discussed above is sequential
@@ -174,7 +174,7 @@ To achieve the desired result, we attack the problem in two steps:
 * Then we take this new stream of message topic pairs (containing a separate pair for each topic a given message
   belongs to) and feed it into groupBy, using the topic as the group key.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeMultiGroupByTest.java#multi-groupby
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeMultiGroupByTest.java#multi-groupby
 
 Working with Graphs
 ===================
@@ -191,14 +191,14 @@ trigger signal arrives.
 This recipe solves the problem by simply zipping the stream of ``Message`` elements with the stream of ``Trigger``
 signals. Since ``Zip`` produces pairs, we simply map the output stream selecting the first element of the pair.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeManualTrigger.java#manually-triggered-stream
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeManualTrigger.java#manually-triggered-stream
 
 Alternatively, instead of using a ``Zip``, and then using ``map`` to get the first element of the pairs, we can avoid
 creating the pairs in the first place by using ``ZipWith`` which takes a two argument function to produce the output
 element. If this function would return a pair of the two argument it would be exactly the behavior of ``Zip`` so
 ``ZipWith`` is a generalization of zipping.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeManualTrigger.java#manually-triggered-stream-zipwith
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeManualTrigger.java#manually-triggered-stream-zipwith
 
 
 Balancing jobs to a fixed pool of workers
@@ -217,9 +217,9 @@ we wire the outputs of these workers to a ``Merge`` element that will collect th
 
 To make the worker stages run in parallel we mark them as asynchronous with `async()`.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeWorkerPool.java#worker-pool
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeWorkerPool.java#worker-pool
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeWorkerPool.java#worker-pool2
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeWorkerPool.java#worker-pool2
 
 Working with rate
 =================
@@ -240,7 +240,7 @@ the speed of the upstream unaffected by the downstream.
 When the upstream is faster, the reducing process of the ``conflate`` starts. Our reducer function simply takes
 the freshest element. This in a simple dropping operation.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeSimpleDrop.java#simple-drop
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeSimpleDrop.java#simple-drop
 
 There is a version of ``conflate`` named ``conflateWithSeed`` that allows to express more complex aggregations, more
 similar to a ``fold``.
@@ -258,9 +258,9 @@ defining a dropping strategy instead of the default ``Backpressure``. This allow
 between the different consumers (the buffer smooths out small rate variances), but also allows faster consumers to
 progress by dropping from the buffer of the slow consumers if necessary.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeDroppyBroadcast.java#droppy-bcast
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeDroppyBroadcast.java#droppy-bcast
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeDroppyBroadcast.java#droppy-bcast2
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeDroppyBroadcast.java#droppy-bcast2
 
 Collecting missed ticks
 -----------------------
@@ -280,7 +280,7 @@ We will use ``conflateWithSeed`` to solve the problem. Conflate takes two functi
 As a result, we have a flow of ``Int`` where the number represents the missed ticks. A number 0 means that we were
 able to consume the tick fast enough (i.e. zero means: 1 non-missed tick + 0 missed ticks)
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeMissedTicks.java#missed-ticks
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeMissedTicks.java#missed-ticks
 
 Create a stream processor that repeats the last element seen
 ------------------------------------------------------------
@@ -295,7 +295,7 @@ to feed the downstream if no upstream element is ready yet. In the ``onPush()`` 
 ``currentValue`` variable and immediately relieve the upstream by calling ``pull()``. The downstream ``onPull`` handler
 is very similar, we immediately relieve the downstream by emitting ``currentValue``.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeHold.java#hold-version-1
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeHold.java#hold-version-1
 
 While it is relatively simple, the drawback of the first version is that it needs an arbitrary initial element which is not
 always possible to provide. Hence, we create a second version where the downstream might need to wait in one single
@@ -308,7 +308,7 @@ version is that we check if we have received the first value and only emit if we
 first element comes in we must check if there possibly already was demand from downstream so that we in that case can
 push the element directly.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeHold.java#hold-version-2
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeHold.java#hold-version-2
 
 Globally limiting the rate of a set of streams
 ----------------------------------------------
@@ -329,13 +329,13 @@ of the sender is added to a queue. Once the timer for replenishing the pending p
 message, we increment the pending permits counter and send a reply to each of the waiting senders. If there are more
 waiting senders than permits available we will stay in the ``closed`` state.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeGlobalRateLimit.java#global-limiter-actor
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeGlobalRateLimit.java#global-limiter-actor
 
 To create a Flow that uses this global limiter actor we use the ``mapAsync`` function with the combination of the ``ask``
 pattern. We also define a timeout, so if a reply is not received during the configured maximum wait period the returned
 future from ``ask`` will fail, which will fail the corresponding stream as well.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeGlobalRateLimit.java#global-limiter-flow
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeGlobalRateLimit.java#global-limiter-flow
 
 .. note::
   The global actor used for limiting introduces a global bottleneck. You might want to assign a dedicated dispatcher
@@ -361,9 +361,9 @@ which implements the following logic:
 Both ``onPush()`` and ``onPull()`` calls ``emitChunk()`` the only difference is that the push handler also stores
 the incoming chunk by appending to the end of the buffer.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeByteStrings.java#bytestring-chunker
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java#bytestring-chunker
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeByteStrings.java#bytestring-chunker2
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java#bytestring-chunker2
 
 Limit the number of bytes passing through a stream of ByteStrings
 -----------------------------------------------------------------
@@ -375,9 +375,9 @@ This recipe uses a :class:`GraphStage` to implement the desired feature. In the 
 ``onPush()`` we just update a counter and see if it gets larger than ``maximumBytes``. If a violation happens
 we signal failure, otherwise we forward the chunk we have received.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeByteStrings.java#bytes-limiter
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java#bytes-limiter
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeByteStrings.java#bytes-limiter2
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java#bytes-limiter2
 
 Compact ByteStrings in a stream of ByteStrings
 ----------------------------------------------
@@ -389,7 +389,7 @@ chain we want to have clean copies that are no longer referencing the original `
 The recipe is a simple use of map, calling the ``compact()`` method of the :class:`ByteString` elements. This does
 copying of the underlying arrays, so this should be the last element of a long chain if used.
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeByteStrings.java#compacting-bytestrings
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java#compacting-bytestrings
 
 Injecting keep-alive messages into a stream of ByteStrings
 ----------------------------------------------------------
@@ -399,4 +399,4 @@ but only if this does not interfere with normal traffic.
 
 There is a built-in operation that allows to do this directly:
 
-.. includecode:: ../code/docs/stream/javadsl/cookbook/RecipeKeepAlive.java#inject-keepalive
+.. includecode:: ../code/jdocs/stream/javadsl/cookbook/RecipeKeepAlive.java#inject-keepalive

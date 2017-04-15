@@ -78,7 +78,7 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
     val manifest =
       if (remaining == 0) ""
       else {
-        val manifestBytes = Array.ofDim[Byte](remaining)
+        val manifestBytes = new Array[Byte](remaining)
         in.read(manifestBytes)
         new String(manifestBytes, UTF_8)
       }

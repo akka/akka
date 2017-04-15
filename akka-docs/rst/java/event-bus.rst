@@ -9,7 +9,7 @@ Originally conceived as a way to send messages to groups of actors, the
 :class:`EventBus` has been generalized into a set of abstract base classes
 implementing a simple interface:
 
-.. includecode:: code/docs/event/EventBusDocTest.java#event-bus-api
+.. includecode:: code/jdocs/event/EventBusDocTest.java#event-bus-api
 
 .. note::
 
@@ -51,11 +51,11 @@ compare subscribers and how exactly to classify.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-.. includecode:: code/docs/event/EventBusDocTest.java#lookup-bus
+.. includecode:: code/jdocs/event/EventBusDocTest.java#lookup-bus
 
 A test for this implementation may look like this:
 
-.. includecode:: code/docs/event/EventBusDocTest.java#lookup-bus-test
+.. includecode:: code/jdocs/event/EventBusDocTest.java#lookup-bus-test
 
 This classifier is efficient in case no subscribers exist for a particular event.
 
@@ -72,11 +72,11 @@ classifier hierarchy.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-.. includecode:: code/docs/event/EventBusDocTest.java#subchannel-bus
+.. includecode:: code/jdocs/event/EventBusDocTest.java#subchannel-bus
 
 A test for this implementation may look like this:
 
-.. includecode:: code/docs/event/EventBusDocTest.java#subchannel-bus-test
+.. includecode:: code/jdocs/event/EventBusDocTest.java#subchannel-bus-test
 
 This classifier is also efficient in case no subscribers are found for an
 event, but it uses conventional locking to synchronize an internal classifier
@@ -95,11 +95,11 @@ stations by geographical reachability (for old-school radio-wave transmission).
 
 The necessary methods to be implemented are illustrated with the following example:
 
-.. includecode:: code/docs/event/EventBusDocTest.java#scanning-bus
+.. includecode:: code/jdocs/event/EventBusDocTest.java#scanning-bus
 
 A test for this implementation may look like this:
 
-.. includecode:: code/docs/event/EventBusDocTest.java#scanning-bus-test
+.. includecode:: code/jdocs/event/EventBusDocTest.java#scanning-bus-test
 
 This classifier takes always a time which is proportional to the number of
 subscriptions, independent of how many actually match.
@@ -120,11 +120,11 @@ takes care of unsubscribing terminated actors automatically.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-.. includecode:: code/docs/event/EventBusDocTest.java#actor-bus
+.. includecode:: code/jdocs/event/EventBusDocTest.java#actor-bus
 
 A test for this implementation may look like this:
 
-.. includecode:: code/docs/event/EventBusDocTest.java#actor-bus-test
+.. includecode:: code/jdocs/event/EventBusDocTest.java#actor-bus-test
 
 This classifier is still is generic in the event type, and it is efficient for
 all use cases.
@@ -141,18 +141,18 @@ Classification`_ which enables registering to related sets of channels (as is
 used for :class:`RemotingLifecycleEvent`). The following example demonstrates
 how a simple subscription works. Given a simple actor:
 
-.. includecode:: code/docs/event/LoggingDocTest.java#imports-deadletter
-.. includecode:: code/docs/event/LoggingDocTest.java#deadletter-actor
+.. includecode:: code/jdocs/event/LoggingDocTest.java#imports-deadletter
+.. includecode:: code/jdocs/event/LoggingDocTest.java#deadletter-actor
 
 it can be subscribed like this:
 
-.. includecode:: code/docs/event/LoggingDocTest.java#deadletters
+.. includecode:: code/jdocs/event/LoggingDocTest.java#deadletters
 
 It is also worth pointing out that thanks to the way the subchannel classification
 is implemented in the event stream, it is possible to subscribe to a group of events, by
 subscribing to their common superclass as demonstrated in the following example:
 
-.. includecode:: code/docs/event/LoggingDocTest.java#superclass-subscription-eventstream
+.. includecode:: code/jdocs/event/LoggingDocTest.java#superclass-subscription-eventstream
 
 Similarly to `Actor Classification`_, :class:`EventStream` will automatically remove subscribers when they terminate.
 
@@ -200,11 +200,11 @@ and since they are nothing to worry about, they are suppressed from the default 
 However, in case you find yourself in need of debugging these kinds of low level suppressed dead letters,
 it's still possible to subscribe to them explicitly:
 
-.. includecode:: code/docs/event/LoggingDocTest.java#suppressed-deadletters
+.. includecode:: code/jdocs/event/LoggingDocTest.java#suppressed-deadletters
 
 or all dead letters (including the suppressed ones):
 
-.. includecode:: code/docs/event/LoggingDocTest.java#all-deadletters
+.. includecode:: code/jdocs/event/LoggingDocTest.java#all-deadletters
 
 Other Uses
 ----------

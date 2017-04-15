@@ -17,21 +17,23 @@ object Dependencies {
   val sslConfigVersion = "0.2.1"
   val slf4jVersion = "1.7.23"
   val scalaXmlVersion = "1.0.6"
-  val aeronVersion = "1.2.0"
+  val aeronVersion = "1.2.3"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.8", "2.12.1"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
-      if (scalaVersion.value.startsWith("2.12")) "1.13.4" // does not work for 2.11
-      else "1.13.2"
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 12 => "1.13.4" // does not work for 2.11
+        case _                       => "1.13.2"
+      }
     ),
     scalaTestVersion := "3.0.0",
     java8CompatVersion := {
-      scalaVersion.value match {
-        case x if x.startsWith("2.12") => "0.8.0"
-        case _ => "0.7.0"
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 12 => "0.8.0"
+        case _                       => "0.7.0"
       }
     }
   )
@@ -203,7 +205,7 @@ object DependencyHelpers {
    * dependent entries.
    */
   def versionDependentDeps(modules: ScalaVersionDependentModuleID*): Def.Setting[Seq[ModuleID]] =
-    libraryDependencies <++= scalaVersion(version => modules.flatMap(m => m.modules(version)))
+    libraryDependencies ++= modules.flatMap(m => m.modules(scalaVersion.value))
 
   val ScalaVersion = """\d\.\d+\.\d+(?:-(?:M|RC)\d+)?""".r
   val nominalScalaVersion: String => String = {

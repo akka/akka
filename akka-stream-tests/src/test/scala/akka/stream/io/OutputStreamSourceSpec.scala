@@ -10,8 +10,7 @@ import java.util.concurrent.TimeoutException
 import akka.actor.ActorSystem
 import akka.stream.Attributes.inputBuffer
 import akka.stream._
-import akka.stream.impl.ActorMaterializerImpl
-import akka.stream.impl.StreamSupervisor
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.OutputStreamSourceStage
 import akka.stream.scaladsl.{ Keep, Sink, Source, StreamConverters }
@@ -139,7 +138,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       try {
         StreamConverters.asOutputStream().runWith(TestSink.probe[ByteString])(materializer)
-        materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "outputStreamSource").get
         assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
       } finally shutdown(sys)

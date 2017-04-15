@@ -229,7 +229,7 @@ Old::
 
 New::
 
-  object MyExtension extends extends ExtensionId[MyExtension] with ExtensionIdProvider {
+  object MyExtension extends ExtensionId[MyExtension] with ExtensionIdProvider {
 
     override def lookup = MyExtension
 
@@ -239,6 +239,17 @@ New::
     // needed to get the type right when used from Java
     override def get(system: ActorSystem): MyExtension = super.get(system)
   }
+
+Actor Mailbox
+=============
+
+Scala 2.12 is using the standard JDK8 ForkJoinPool, which may cause performance regression for
+some Actor messaging scenarios. Therefore we have embedded the ForkJoinPool from Scala 2.11 in
+Akka. This breaks binary backwards compatibility for custom ``Mailbox`` implementations that were
+compiled with Akka 2.4.
+
+This is only a problem if you are using a library that provides a custom ``Mailbox`` implementation.
+The change is source compatible and such library should be recompiled and released for Akka 2.5.
 
 Streams
 =======
@@ -270,6 +281,16 @@ would now be::
 
 as the ``GraphStage`` itself is a factory of logic instances.
 
+SubFlow.zip and SubSource.zip now emit akka.japi.Pair instead of Scala's Pair
+-----------------------------------------------------------------------------
+
+The the Java API's ``zip`` operator on ``SubFlow`` and ``SubSource`` has been emiting
+Scala's ``Pair`` (``Tuple2``) instead of ``akka.japi.Pair``. This is fixed in Akka 2.5 where it emits the proper
+Java DSl type.
+
+Please note that the ``zip`` operator on ``Source`` and ``Flow`` has had the correct type, 
+this change only affects the ``Sub...`` versions of those classes.
+
 Deprecation of ActorSubscriber and ActorPublisher
 -------------------------------------------------
 
@@ -285,7 +306,35 @@ stages and adds additional protocol and type-safety. You can learn all about it 
 You should also read the blog post series on the official team blog, starting with `Mastering GraphStages, part I`_,
 which explains using and implementing GraphStages in more practical terms than the reference documentation.
 
+Order of Attributes List
+------------------------
+
+Imporant performance improvement could be achieved by reverting the order of the ``attributesList`` in ``Attributes``.
+
+The ``attributeList`` is ordered with the most specific attribute first, least specific last.
+Note that the order was the opposite in Akka 2.4.x (but it was not really documented).
+
+The semantics of the convenience methods, such as ``get`` and ``getFirst`` are the same, but if you use the ``attributesList``
+directly or via ``filtered`` or ``getAttributeList`` you need to take the new order into consideration.
+
 .. _Mastering GraphStages, part I: http://blog.akka.io/streams/2016/07/30/mastering-graph-stage-part-1
+
+Dispatcher attribute
+--------------------
+
+The ``ActorAttributes.dispatcher`` attribute is adding an async boundary in 2.5, since that is the typical desired behavior.
+In 2.4 an explicit `async` marker (``AsyncBoundary`` attribute) had to be added. For example, this means that ``Source`` that
+defined ``blocking-io-dispatcher`` as default followed by a ``map`` will now be separated by an async boundary, which was not
+the case in 2.4.
+
+Removal of the auto-fuse setting
+--------------------------------
+
+In 2.4 fusing stages together into the same actor could be completely disabled with the setting
+``akka.stream.materializer.auto-fusing``. The new materializer introduced in Akka 2.5 does not support disabling fusing,
+so this setting does not have any effect any more and has been deprecated. Running each stage in a stream on a separate
+actor can be done by adding explicit async boundaries around every stage. How to add asynchronous boundaries can be seen
+in :ref:`operator-fusion-java` (Java) and :ref:`operator-fusion-scala` (Scala).
 
 Remote
 ======
@@ -685,3 +734,29 @@ Experimental modules
 
 We have previously marked modules that we did not want to freeze the APIs of a **experimental**, such modules will
 instead be marked as :ref:`may change <may-change>` from now on.
+
+Testkit
+=======
+
+``JavaTestKit`` has been deprecated since it does all kinds of tricks to achieve what Scala testkit does.
+Use ``akka.testkit.javadsl.TestKit`` instead which introduces nicer APIs.
+
+Old::
+
+  new JavaTestKit(system) {{
+    final JavaTestKit probe = new JavaTestKit(system);
+    new Within(duration("1 second")) {
+      public void run() {
+        probe.expectMsgEquals("hello");
+      }
+    };
+  }};
+
+
+
+New::
+
+  new TestKit(system) {{
+    final TestKit probe = new TestKit(system);
+    within(duration("1 second"), () -> probe.expectMsgEquals("hello"));
+  }};

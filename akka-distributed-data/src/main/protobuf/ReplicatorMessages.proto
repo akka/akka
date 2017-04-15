@@ -107,6 +107,7 @@ message DeltaPropagation {
   
   required UniqueAddress fromNode = 1;
   repeated Entry entries = 2;
+  optional bool reply = 3; // no reply if not set 
 }
 
 message UniqueAddress {

@@ -4,7 +4,6 @@
 package akka.testkit;
 
 import akka.actor.Terminated;
-import scala.Option;
 import scala.runtime.AbstractFunction0;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -43,8 +42,10 @@ import java.util.concurrent.TimeUnit;
  * "akka.test.timefactor".</li>
  * </ul>
  *
+ * @deprecated Use {@link akka.testkit.javadsl.TestKit} instead, since 2.5.0
  *
  */
+@Deprecated
 public class JavaTestKit {
   /**
    * Shut down an actor system and wait for termination.
@@ -625,6 +626,7 @@ public class JavaTestKit {
         this.clazz = (Class<? extends LogEvent>) clazz;
       } else
         throw new IllegalArgumentException("supplied class must either be LogEvent or Throwable");
+
     }
 
     public T exec() {

@@ -3,6 +3,7 @@
  */
 package akka.stream.impl
 
+import akka.annotation.InternalApi
 import akka.stream.ThrottleMode.{ Enforcing, Shaping }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
@@ -14,7 +15,7 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
 /**
  * INTERNAL API
  */
-class Throttle[T](
+@InternalApi private[akka] class Throttle[T](
   val cost:            Int,
   val per:             FiniteDuration,
   val maximumBurst:    Int,

@@ -29,7 +29,7 @@ As a first motivating example, we will build a new :class:`Source` that will sim
 cancelled. To start, we need to define the "interface" of our stage, which is called *shape* in Akka Streams terminology
 (this is explained in more detail in the section :ref:`composition-java`).
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#simple-source
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#simple-source
 
 As you see, in itself the :class:`GraphStage` only defines the ports of this stage and a shape that contains the ports.
 It also has a user implemented method called ``createLogic``. If you recall, stages are reusable in multiple
@@ -56,7 +56,7 @@ that they are already usable in many situations, but do not provide the DSL meth
 ``Source.fromGraph`` (see :ref:`composition-java` for more details about graphs and DSLs). Now we can use the
 source as any other built-in one:
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#simple-source-usage
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#simple-source-usage
 
 Similarly, to create a custom :class:`Sink` one can register a subclass :class:`InHandler` with the stage :class:`Inlet`.
 The ``onPush()`` callback is used to signal the handler a new element has been pushed to the stage,
@@ -64,7 +64,7 @@ and can hence be grabbed and used. ``onPush()`` can be overridden to provide cus
 Please note, most Sinks would need to request upstream elements as soon as they are created: this can be
 done by calling ``pull(inlet)`` in the ``preStart()`` callback.
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#simple-sink
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#simple-sink
 
 Port states, AbstractInHandler and AbstractOutHandler
 -----------------------------------------------------
@@ -199,7 +199,7 @@ To illustrate these concepts we create a small :class:`GraphStage` that implemen
 Map calls ``push(out)`` from the ``onPush()`` handler and it also calls ``pull()`` from the ``onPull`` handler resulting in the
 conceptual wiring above, and fully expressed in code below:
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#one-to-one
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#one-to-one
 
 Map is a typical example of a one-to-one transformation of a stream where
 demand is passed along upstream elements passed on downstream.
@@ -221,7 +221,7 @@ we return the “ball” to our upstream so that we get the new element. This is
 example by adding a conditional in the ``onPush`` handler and decide between a ``pull(in)`` or ``push(out)`` call
 (and of course not having a mapping ``f`` function).
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#many-to-one
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#many-to-one
 
 To complete the picture we define a one-to-many transformation as the next step. We chose a straightforward example stage
 that emits every upstream element twice downstream. The conceptual wiring of this stage looks like this:
@@ -238,7 +238,7 @@ This is a stage that has state: an option with the last element it has seen indi
 has duplicated this last element already or not. We must also make sure to emit the extra element
 if the upstream completes.
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#one-to-many
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#one-to-many
 
 In this case a pull from downstream might be consumed by the stage itself rather
 than passed along upstream as the stage might contain an element it wants to
@@ -251,7 +251,7 @@ This example can be simplified by replacing the usage of a mutable state with ca
 ``emitMultiple`` which will replace the handlers, emit each of multiple elements and then
 reinstate the original handlers:
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#simpler-one-to-many
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#simpler-one-to-many
 
 Finally, to demonstrate all of the stages above, we put them together into a processing chain,
 which conceptually would correspond to the following structure:
@@ -267,7 +267,7 @@ which conceptually would correspond to the following structure:
 
 In code this is only a few lines, using the ``via`` use our custom stages in a stream:
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#graph-stage-chain
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#graph-stage-chain
 
 If we attempt to draw the sequence of events, it shows that there is one "event token"
 in circulation in a potential chain of stages, just like our conceptual "railroad tracks" representation predicts.
@@ -313,7 +313,7 @@ the ``Materializer`` you're using is able to provide you with a logger.
 
 The stage then gets access to the ``log`` field which it can safely use from any ``GraphStage`` callbacks:
 
-.. includecode:: ../code/docs/stream/GraphStageLoggingDocTest.java#stage-with-logging
+.. includecode:: ../code/jdocs/stream/GraphStageLoggingDocTest.java#stage-with-logging
 
 .. note::
   **SPI Note:** If you're implementing a Materializer, you can add this ability to your materializer by implementing 
@@ -336,7 +336,7 @@ In this sample the stage toggles between open and closed, where open means no el
 stage starts out as closed but as soon as an element is pushed downstream the gate becomes open for a duration
 of time during which it will consume and drop upstream messages:
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#timed
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#timed
 
 Using asynchronous side-channels
 --------------------------------
@@ -355,7 +355,7 @@ Sharing the AsyncCallback from the constructor risks race conditions, therefore 
 This example shows an asynchronous side channel graph stage that starts dropping elements
 when a future completes:
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#async-side-channel
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#async-side-channel
 
 
 Integration with actors
@@ -391,7 +391,7 @@ stage logic the materialized value must be provided
 
 In this sample the materialized value is a future containing the first element to go through the stream:
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#materialized
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#materialized
 
 Using attributes to affect the behavior of a stage
 --------------------------------------------------
@@ -451,7 +451,7 @@ initialization. The buffer has demand for up to two elements without any downstr
 
 The following code example demonstrates a buffer class corresponding to the message sequence chart above.
 
-.. includecode:: ../code/docs/stream/GraphStageDocTest.java#detached
+.. includecode:: ../code/jdocs/stream/GraphStageDocTest.java#detached
 
 Thread safety of custom processing stages
 =========================================

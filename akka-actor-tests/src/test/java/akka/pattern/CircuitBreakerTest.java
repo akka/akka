@@ -13,9 +13,11 @@ import scala.compat.java8.FutureConverters;
 import scala.concurrent.Await;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,4 +41,19 @@ public class CircuitBreakerTest extends JUnitSuite {
     assertEquals("hello", Await.result(FutureConverters.toScala(res), fiveSeconds));
   }
 
+  @Test
+  public void useCircuitBreakerWithCompletableFutureAndCustomDefineFailure() throws Exception {
+    final FiniteDuration fiveSeconds = FiniteDuration.create(5, TimeUnit.SECONDS);
+    final FiniteDuration fiveHundredMillis = FiniteDuration.create(500, TimeUnit.MILLISECONDS);
+    final CircuitBreaker breaker = new CircuitBreaker(system.dispatcher(), system.scheduler(), 1, fiveSeconds, fiveHundredMillis);
+
+    final BiFunction<Optional<String>, Optional<Throwable>, java.lang.Boolean> fn =
+            (result, err) -> (result.isPresent() && result.get().equals("hello"));
+
+    final CompletableFuture<String> f = new CompletableFuture<>();
+    f.complete("hello");
+    final CompletionStage<String> res = breaker.callWithCircuitBreakerCS(() -> f, fn);
+    assertEquals("hello", Await.result(FutureConverters.toScala(res), fiveSeconds));
+    assertEquals(1, breaker.currentFailureCount());
+  }
 }

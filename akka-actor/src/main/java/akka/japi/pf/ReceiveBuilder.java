@@ -23,13 +23,13 @@ import akka.actor.AbstractActor.Receive;
  * public Actor() {
  *   receive(ReceiveBuilder.
  *     match(Double.class, d -&gt; {
- *       sender().tell(d.isNaN() ? 0 : d, self());
+ *       getSender().tell(d.isNaN() ? 0 : d, self());
  *     }).
  *     match(Integer.class, i -&gt; {
- *       sender().tell(i * 10, self());
+ *       getSender().tell(i * 10, self());
  *     }).
  *     match(String.class, s -&gt; s.startsWith("foo"), s -&gt; {
- *       sender().tell(s.toUpperCase(), self());
+ *       getSender().tell(s.toUpperCase(), self());
  *     }).build()
  *   );
  * }

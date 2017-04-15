@@ -25,20 +25,20 @@ elements from a predefined collection, running a constructed test flow and
 asserting on the results that sink produced. Here is an example of a test for a
 sink:
 
-.. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#strict-collection
+.. includecode:: ../code/jdocs/stream/StreamTestKitDocTest.java#strict-collection
 
 The same strategy can be applied for sources as well. In the next example we
 have a source that produces an infinite stream of elements. Such source can be
 tested by asserting that first arbitrary number of elements hold some
 condition. Here the ``take`` combinator and ``Sink.seq`` are very useful.
 
-.. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#grouped-infinite
+.. includecode:: ../code/jdocs/stream/StreamTestKitDocTest.java#grouped-infinite
 
 When testing a flow we need to attach a source and a sink. As both stream ends
 are under our control, we can choose sources that tests various edge cases of
 the flow and sinks that ease assertions.
 
-.. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#folded-stream
+.. includecode:: ../code/jdocs/stream/StreamTestKitDocTest.java#folded-stream
 
 TestKit
 =======
@@ -51,7 +51,7 @@ One of the more straightforward tests would be to materialize stream to a
 :class:`CompletionStage` and then use ``PatternsCS.pipe`` pattern to pipe the result of that future
 to the probe.
 
-.. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#pipeto-testprobe
+.. includecode:: ../code/jdocs/stream/StreamTestKitDocTest.java#pipeto-testprobe
 
 Instead of materializing to a future, we can use a :class:`Sink.actorRef` that
 sends all incoming elements to the given :class:`ActorRef`. Now we can use
@@ -59,13 +59,13 @@ assertion methods on :class:`TestProbe` and expect elements one by one as they
 arrive. We can also assert stream completion by expecting for
 ``onCompleteMessage`` which was given to :class:`Sink.actorRef`.
 
-.. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#sink-actorref
+.. includecode:: ../code/jdocs/stream/StreamTestKitDocTest.java#sink-actorref
 
 Similarly to :class:`Sink.actorRef` that provides control over received
 elements, we can use :class:`Source.actorRef` and have full control over
 elements to be sent.
 
-.. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#source-actorref
+.. includecode:: ../code/jdocs/stream/StreamTestKitDocTest.java#source-actorref
 
 Streams TestKit
 ===============
@@ -83,18 +83,18 @@ provide sources and sinks that materialize to probes that allow fluent API.
 A sink returned by ``TestSink.probe`` allows manual control over demand and
 assertions over elements coming downstream.
 
-.. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#test-sink-probe
+.. includecode:: ../code/jdocs/stream/StreamTestKitDocTest.java#test-sink-probe
 
 A source returned by ``TestSource.probe`` can be used for asserting demand or
 controlling when stream is completed or ended with an error.
 
-.. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#test-source-probe
+.. includecode:: ../code/jdocs/stream/StreamTestKitDocTest.java#test-source-probe
 
 You can also inject exceptions and test sink behaviour on error conditions.
 
-.. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#injecting-failure
+.. includecode:: ../code/jdocs/stream/StreamTestKitDocTest.java#injecting-failure
 
 Test source and sink can be used together in combination when testing flows.
 
-.. includecode:: ../code/docs/stream/StreamTestKitDocTest.java#test-source-and-sink
+.. includecode:: ../code/jdocs/stream/StreamTestKitDocTest.java#test-source-and-sink
 

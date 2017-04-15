@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import akka.NotUsed
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 import akka.stream._
-import akka.stream.testkit.Utils.assertAllStagesStopped
+import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
 
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -91,6 +91,22 @@ class FlowFlattenMergeSpec extends StreamSpec {
           .runWith(Sink.head)
           .futureValue
       }.cause.get should ===(ex)
+    }
+
+    "bubble up substream materialization exception" in assertAllStagesStopped {
+      val matFail = TE("fail!")
+      object FailingInnerMat extends GraphStage[SourceShape[String]] {
+        val out = Outlet[String]("out")
+        val shape = SourceShape(out)
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+          throw matFail
+        }
+      }
+
+      val result = Source.single(()).flatMapMerge(4, _ ⇒ Source.fromGraph(FailingInnerMat)).runWith(Sink.ignore)
+
+      result.failed.futureValue should ===(matFail)
+
     }
 
     "cancel substreams when failing from main stream" in assertAllStagesStopped {
@@ -178,8 +194,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
           }
           setHandler(out, this)
         }
-      }
-    )
+      })
 
     "propagate attributes to inner streams" in assertAllStagesStopped {
       val f = Source.single(attributesSource.addAttributes(Attributes.name("inner")))
@@ -190,7 +205,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
       val attributes = Await.result(f, 3.seconds).attributeList
       attributes should contain(Attributes.Name("inner"))
       attributes should contain(Attributes.Name("outer"))
-      attributes.indexOf(Attributes.Name("outer")) < attributes.indexOf(Attributes.Name("inner")) should be(true)
+      attributes.indexOf(Attributes.Name("inner")) < attributes.indexOf(Attributes.Name("outer")) should be(true)
     }
 
   }

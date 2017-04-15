@@ -28,7 +28,7 @@ import scala.concurrent.duration.FiniteDuration
  *     startWith(One, Data(42))
  *     when(One) {
  *         case Event(SomeMsg, Data(x)) => ...
- *         case Ev(SomeMsg) => ... // convenience when data not needed
+ *         case Event(SomeOtherMsg, _) => ... // convenience when data not needed
  *     }
  *     when(Two, stateTimeout = 5 seconds) { ... }
  *     initialize()
@@ -640,6 +640,32 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
   import akka.japi.pf.FI._
   import java.util.{ List ⇒ JList }
   import PersistentFSM._
+
+  /**
+   * Returns this AbstractActor's ActorContext
+   * The ActorContext is not thread safe so do not expose it outside of the
+   * AbstractActor.
+   */
+  def getContext(): AbstractActor.ActorContext = context.asInstanceOf[AbstractActor.ActorContext]
+
+  /**
+   * Returns the ActorRef for this actor.
+   *
+   * Same as `self()`.
+   */
+  def getSelf(): ActorRef = self
+
+  /**
+   * The reference sender Actor of the currently processed message. This is
+   * always a legal destination to send to, even if there is no logical recipient
+   * for the reply, in which case it will be sent to the dead letter mailbox.
+   *
+   * Same as `sender()`.
+   *
+   * WARNING: Only valid within the Actor itself, so do not close over it and
+   * publish it to other threads!
+   */
+  def getSender(): ActorRef = sender()
 
   /**
    * Insert a new StateFunction at the end of the processing chain for the

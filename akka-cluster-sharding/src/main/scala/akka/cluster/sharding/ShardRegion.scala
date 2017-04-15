@@ -5,15 +5,13 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 import akka.pattern.AskTimeoutException
-import akka.util.Timeout
-
+import akka.util.{ MessageBufferMap, Timeout }
 import akka.pattern.{ ask, pipe }
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -368,15 +366,13 @@ private[akka] class ShardRegion(
 
   var regions = Map.empty[ActorRef, Set[ShardId]]
   var regionByShard = Map.empty[ShardId, ActorRef]
-  var shardBuffers = Map.empty[ShardId, Vector[(Msg, ActorRef)]]
+  var shardBuffers = new MessageBufferMap[ShardId]
   var loggedFullBufferWarning = false
   var shards = Map.empty[ShardId, ActorRef]
   var shardsByRef = Map.empty[ActorRef, ShardId]
   var startingShards = Set.empty[ShardId]
   var handingOff = Set.empty[ActorRef]
   var gracefulShutdownInProgress = false
-
-  def totalBufferSize = shardBuffers.foldLeft(0) { (sum, entity) ⇒ sum + entity._2.size }
 
   import context.dispatcher
   val retryTask = context.system.scheduler.schedule(retryInterval, retryInterval, self, Retry)
@@ -443,6 +439,7 @@ private[akka] class ShardRegion(
     case query: ShardRegionQuery                 ⇒ receiveQuery(query)
     case msg: RestartShard                       ⇒ deliverMessage(msg, sender())
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
+    case unknownMsg                              ⇒ log.warning("Message does not have an extractor defined in shard [{}] so it was ignored: {}", typeName, unknownMsg)
   }
 
   def receiveClusterState(state: CurrentClusterState): Unit = {
@@ -519,7 +516,7 @@ private[akka] class ShardRegion(
       // because they might be forwarded from other regions and there
       // is a risk or message re-ordering otherwise
       if (shardBuffers.contains(shard)) {
-        shardBuffers -= shard
+        shardBuffers.remove(shard)
         loggedFullBufferWarning = false
       }
 
@@ -640,7 +637,7 @@ private[akka] class ShardRegion(
     if (shardBuffers.nonEmpty && retryCount >= 5)
       log.warning(
         "Trying to register to coordinator at [{}], but no acknowledgement. Total [{}] buffered messages.",
-        coordinatorSelection, totalBufferSize)
+        coordinatorSelection, shardBuffers.totalSize)
   }
 
   def registrationMessage: Any =
@@ -667,7 +664,7 @@ private[akka] class ShardRegion(
   }
 
   def bufferMessage(shardId: ShardId, msg: Any, snd: ActorRef) = {
-    val totBufSize = totalBufferSize
+    val totBufSize = shardBuffers.totalSize
     if (totBufSize >= bufferSize) {
       if (loggedFullBufferWarning)
         log.debug("Buffer is full, dropping message for shard [{}]", shardId)
@@ -677,8 +674,7 @@ private[akka] class ShardRegion(
       }
       context.system.deadLetters ! msg
     } else {
-      val buf = shardBuffers.getOrElse(shardId, Vector.empty)
-      shardBuffers = shardBuffers.updated(shardId, buf :+ ((msg, snd)))
+      shardBuffers.append(shardId, msg, snd)
 
       // log some insight to how buffers are filled up every 10% of the buffer capacity
       val tot = totBufSize + 1
@@ -693,12 +689,11 @@ private[akka] class ShardRegion(
   }
 
   def deliverBufferedMessages(shardId: ShardId, receiver: ActorRef): Unit = {
-    shardBuffers.get(shardId) match {
-      case Some(buf) ⇒
-        log.debug("Deliver [{}] buffered messages for shard [{}]", buf.size, shardId)
-        buf.foreach { case (msg, snd) ⇒ receiver.tell(msg, snd) }
-        shardBuffers -= shardId
-      case None ⇒
+    if (shardBuffers.contains(shardId)) {
+      val buf = shardBuffers.getOrEmpty(shardId)
+      log.debug("Deliver [{}] buffered messages for shard [{}]", buf.size, shardId)
+      buf.foreach { case (msg, snd) ⇒ receiver.tell(msg, snd) }
+      shardBuffers.remove(shardId)
     }
     loggedFullBufferWarning = false
     retryCount = 0
@@ -716,9 +711,9 @@ private[akka] class ShardRegion(
               log.debug("Request shard [{}] home", shardId)
               coordinator.foreach(_ ! GetShardHome(shardId))
             }
-            val buf = shardBuffers.getOrElse(shardId, Vector.empty)
+            val buf = shardBuffers.getOrEmpty(shardId)
             log.debug("Buffer message for shard [{}]. Total [{}] buffered messages.", shardId, buf.size + 1)
-            shardBuffers = shardBuffers.updated(shardId, buf :+ ((msg, snd)))
+            shardBuffers.append(shardId, msg, snd)
         }
 
       case _ ⇒
@@ -727,14 +722,11 @@ private[akka] class ShardRegion(
           case Some(ref) if ref == self ⇒
             getShard(shardId) match {
               case Some(shard) ⇒
-                shardBuffers.get(shardId) match {
-                  case Some(buf) ⇒
-                    // Since now messages to a shard is buffered then those messages must be in right order
-                    bufferMessage(shardId, msg, snd)
-                    deliverBufferedMessages(shardId, shard)
-                  case None ⇒
-                    shard.tell(msg, snd)
-                }
+                if (shardBuffers.contains(shardId)) {
+                  // Since now messages to a shard is buffered then those messages must be in right order
+                  bufferMessage(shardId, msg, snd)
+                  deliverBufferedMessages(shardId, shard)
+                } else shard.tell(msg, snd)
               case None ⇒ bufferMessage(shardId, msg, snd)
             }
           case Some(ref) ⇒

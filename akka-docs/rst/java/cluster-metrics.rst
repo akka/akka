@@ -125,11 +125,11 @@ Let's take a look at this router in action. What can be more demanding than calc
 
 The backend worker that performs the factorial calculation:
 
-.. includecode::  code/docs/cluster/FactorialBackend.java#backend
+.. includecode::  code/jdocs/cluster/FactorialBackend.java#backend
 
 The frontend that receives user jobs and delegates to the backends via the router:
 
-.. includecode:: code/docs/cluster/FactorialFrontend.java#frontend
+.. includecode:: code/jdocs/cluster/FactorialFrontend.java#frontend
 
 
 As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
@@ -160,20 +160,21 @@ other things work in the same way as other routers.
 
 The same type of router could also have been defined in code:
 
-.. includecode:: code/docs/cluster/FactorialFrontend.java#router-lookup-in-code
+.. includecode:: code/jdocs/cluster/FactorialFrontend.java#router-lookup-in-code
 
-.. includecode:: code/docs/cluster/FactorialFrontend.java#router-deploy-in-code
+.. includecode:: code/jdocs/cluster/FactorialFrontend.java#router-deploy-in-code
 
-The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ tutorial named
-`Akka Cluster Samples with Java <http://www.lightbend.com/activator/template/akka-sample-cluster-java>`_.
-contains the full source code and instructions of how to run the **Adaptive Load Balancing** sample.
+The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
+`Akka Cluster Sample with Scala <@exampleCodeService@/akka-samples-cluster-java>`_
+together with the tutorial. It contains instructions on how to run the **Adaptive Load Balancing** sample.
+The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-cluster-java>`_.
 
 Subscribe to Metrics Events
 ---------------------------
 
 It is possible to subscribe to the metrics events directly to implement other functionality.
 
-.. includecode:: code/docs/cluster/MetricsListener.java#metrics-listener
+.. includecode:: code/jdocs/cluster/MetricsListener.java#metrics-listener
 
 Custom Metrics Collector
 ------------------------

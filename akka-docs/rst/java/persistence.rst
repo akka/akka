@@ -87,7 +87,7 @@ Akka persistence supports event sourcing with the ``AbstractPersistentActor`` ab
 class uses the ``persist`` method to persist and handle events. The behavior of an ``AbstractPersistentActor``
 is defined by implementing ``createReceiveRecover`` and ``createReceive``. This is demonstrated in the following example.
 
-.. includecode:: ../../../akka-docs/rst/java/code/docs/persistence/PersistentActorExample.java#persistent-actor-example
+.. includecode:: ../../../akka-docs/rst/java/code/jdocs/persistence/PersistentActorExample.java#persistent-actor-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExamplePersistentActor`` is a list of persisted event data contained in ``ExampleState``.
@@ -116,9 +116,10 @@ and the actor will unconditionally be stopped. If persistence of an event is rej
 stored, e.g. due to serialization error, ``onPersistRejected`` will be invoked (logging a warning
 by default), and the actor continues with next message.
 
-The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-and open the tutorial named `Akka Persistence Samples in Java with Lambdas <http://www.lightbend.com/activator/template/akka-sample-persistence-java-lambda>`_.
-It contains instructions on how to run the ``PersistentActorExample``.
+The easiest way to run this example yourself is to download the ready to run
+`Akka Persistence Sample with Scala <@exampleCodeService@/akka-samples-persistence-java>`_
+together with the tutorial. It contains instructions on how to run the ``PersistentActorExample``.
+The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-persistence-java>`_.
 
 .. note::
 
@@ -135,7 +136,7 @@ Identifiers
 A persistent actor must have an identifier that doesn't change across different actor incarnations.
 The identifier must be defined with the ``persistenceId`` method.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#persistence-id-override
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#persistence-id-override
 
 .. note::
   ``persistenceId`` must be unique to a given entity in the journal (database table/keyspace).
@@ -153,7 +154,7 @@ New messages sent to a persistent actor during recovery do not interfere with re
 only be received by a persistent actor after recovery completes.
 
 .. note::
-  Accessing the ``sender()`` for replayed messages will always result in a ``deadLetters`` reference,
+  Accessing the sender with ``getSender()`` for replayed messages will always result in a ``deadLetters`` reference,
   as the original sender is presumed to be long gone. If you indeed have to notify an actor during
   recovery in the future, store its ``ActorPath`` explicitly in your persisted events.
 
@@ -169,76 +170,76 @@ To skip loading snapshots and replay all events you can use ``SnapshotSelectionC
 This can be useful if snapshot serialization format has changed in an incompatible way.
 It should typically not be used when events have been deleted.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#recovery-no-snap
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#recovery-no-snap
 
-Another example, which can be fun for experiments but probably not in a real application, is setting an 
-upper bound to the replay which allows the actor to be replayed to a certain point "in the past" 
-instead to its most up to date state. Note that after that it is a bad idea to persist new 
-events because a later recovery will probably be confused by the new events that follow the 
+Another example, which can be fun for experiments but probably not in a real application, is setting an
+upper bound to the replay which allows the actor to be replayed to a certain point "in the past"
+instead to its most up to date state. Note that after that it is a bad idea to persist new
+events because a later recovery will probably be confused by the new events that follow the
 events that were previously skipped.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#recovery-custom
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#recovery-custom
 
 Recovery can be disabled by returning ``Recovery.none()`` in the ``recovery`` method of a ``PersistentActor``:
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#recovery-disabled
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#recovery-disabled
 
 Recovery status
 ^^^^^^^^^^^^^^^
 
 A persistent actor can query its own recovery status via the methods
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#recovery-status
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#recovery-status
 
 Sometimes there is a need for performing additional initialization when the
 recovery has completed before processing any other message sent to the persistent actor.
 The persistent actor will receive a special :class:`RecoveryCompleted` message right after recovery
 and before any other received messages.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#recovery-completed
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#recovery-completed
 
 If there is a problem with recovering the state of the actor from the journal, ``onRecoveryFailure``
 is called (logging the error by default), and the actor will be stopped.
 
 .. _internal-stash-java:
 
-Internal stash 
+Internal stash
 --------------
 
-The persistent actor has a private :ref:`stash <stash-java>` for internally caching incoming messages during 
-:ref:`recovery <recovery-java>` or the ``persist\persistAll`` method persisting events. You can still 
-use/inherit from the ``Stash`` interface. The internal stash cooperates with the normal stash by hooking into 
-``unstashAll`` method and making sure messages are unstashed properly to the internal stash to maintain ordering 
+The persistent actor has a private :ref:`stash <stash-java>` for internally caching incoming messages during
+:ref:`recovery <recovery-java>` or the ``persist\persistAll`` method persisting events. You can still
+use/inherit from the ``Stash`` interface. The internal stash cooperates with the normal stash by hooking into
+``unstashAll`` method and making sure messages are unstashed properly to the internal stash to maintain ordering
 guarantees.
 
-You should be careful to not send more messages to a persistent actor than it can keep up with, otherwise the number 
-of stashed messages will grow without bounds. It can be wise to protect against ``OutOfMemoryError`` by defining a 
+You should be careful to not send more messages to a persistent actor than it can keep up with, otherwise the number
+of stashed messages will grow without bounds. It can be wise to protect against ``OutOfMemoryError`` by defining a
 maximum stash capacity in the mailbox configuration::
 
     akka.actor.default-mailbox.stash-capacity=10000
 
 Note that the stash capacity is per actor. If you have many persistent actors, e.g. when using cluster sharding,
 you may need to define a small stash capacity to ensure that the total number of stashed messages in the system
-don't consume too much memory. Additionally, The persistent actor defines three strategies to handle failure when the 
-internal stash capacity is exceeded. The default overflow strategy is the ``ThrowOverflowExceptionStrategy``, which 
-discards the current received message and throws a ``StashOverflowException``, causing actor restart if default 
-supervision strategy is used. you can override the ``internalStashOverflowStrategy`` method to return 
-``DiscardToDeadLetterStrategy`` or ``ReplyToStrategy`` for any "individual" persistent actor, or define the "default" 
-for all persistent actors by providing FQCN, which must be a subclass of ``StashOverflowStrategyConfigurator``, in the 
+doesn't consume too much memory. Additionally, the persistent actor defines three strategies to handle failure when the
+internal stash capacity is exceeded. The default overflow strategy is the ``ThrowOverflowExceptionStrategy``, which
+discards the current received message and throws a ``StashOverflowException``, causing actor restart if the default
+supervision strategy is used. You can override the ``internalStashOverflowStrategy`` method to return
+``DiscardToDeadLetterStrategy`` or ``ReplyToStrategy`` for any "individual" persistent actor, or define the "default"
+for all persistent actors by providing FQCN, which must be a subclass of ``StashOverflowStrategyConfigurator``, in the
 persistence configuration::
 
     akka.persistence.internal-stash-overflow-strategy=
       "akka.persistence.ThrowExceptionConfigurator"
-    
-The ``DiscardToDeadLetterStrategy`` strategy also has a pre-packaged companion configurator 
+
+The ``DiscardToDeadLetterStrategy`` strategy also has a pre-packaged companion configurator
 ``akka.persistence.DiscardConfigurator``.
 
-You can also query default strategy via the Akka persistence extension singleton::
+You can also query the default strategy via the Akka persistence extension singleton::
 
-    Persistence.get(getContext().system()).defaultInternalStashOverflowStrategy();
+    Persistence.get(getContext().getSystem()).defaultInternalStashOverflowStrategy();
 
 .. note::
-  The bounded mailbox should be avoided in the persistent actor, by which the messages come from storage backends may 
+  The bounded mailbox should be avoided in the persistent actor, by which the messages come from storage backends may
   be discarded. You can use bounded stash instead of it.
 
 
@@ -258,7 +259,7 @@ stash incoming Commands while the Journal is still working on persisting and/or 
 In the below example, the event callbacks may be called "at any time", even after the next Command has been processed.
 The ordering between events is still guaranteed ("evt-b-1" will be sent after "evt-a-2", which will be sent after "evt-a-1" etc.).
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#persist-async
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#persist-async
 
 .. note::
   In order to implement the pattern known as "*command sourcing*" simply call ``persistAsync`` on all incoming messages right away
@@ -273,20 +274,24 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 Deferring actions until preceding persist handlers have executed
 ----------------------------------------------------------------
 
-Sometimes when working with ``persistAsync`` you may find that it would be nice to define some actions in terms of
-''happens-after the previous ``persistAsync`` handlers have been invoked''. ``PersistentActor`` provides an utility method
+Sometimes when working with ``persistAsync`` or ``persist`` you may find that it would be nice to define some actions in terms of
+''happens-after the previous ``persistAsync``/``persist`` handlers have been invoked''. ``PersistentActor`` provides an utility method
 called ``deferAsync``, which works similarly to ``persistAsync`` yet does not persist the passed in event. It is recommended to
 use it for *read* operations, and actions which do not have corresponding events in your domain model.
 
 Using this method is very similar to the persist family of methods, yet it does **not** persist the passed in event.
 It will be kept in memory and used when invoking the handler.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#defer
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#defer
 
-Notice that the ``sender()`` is **safe** to access in the handler callback, and will be pointing to the original sender
+Notice that the ``getSender()`` method is **safe** to call in the handler callback, and will be pointing to the original sender
 of the command for which this ``deferAsync`` handler was called.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#defer-caller
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#defer-caller
+
+You can also call ``deferAsync`` with ``persist``.
+
+.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#defer-with-persist
 
 .. warning::
   The callback will not be invoked if the actor is restarted (or stopped) in between the call to
@@ -297,18 +302,18 @@ of the command for which this ``deferAsync`` handler was called.
 Nested persist calls
 --------------------
 It is possible to call ``persist`` and ``persistAsync`` inside their respective callback blocks and they will properly
-retain both the thread safety (including the right value of ``sender()``) as well as stashing guarantees.
+retain both the thread safety (including the right return value of ``getSender()``) as well as stashing guarantees.
 
 In general it is encouraged to create command handlers which do not need to resort to nested event persisting,
 however there are situations where it may be useful. It is important to understand the ordering of callback execution in
 those situations, as well as their implication on the stashing behaviour (that ``persist()`` enforces). In the following
 example two persist calls are issued, and each of them issues another persist inside its callback:
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#nested-persist-persist
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#nested-persist-persist
 
 When sending two commands to this ``PersistentActor``, the persist handlers will be executed in the following order:
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#nested-persist-persist-caller
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#nested-persist-persist-caller
 
 First the "outer layer" of persist calls is issued and their callbacks are applied. After these have successfully completed,
 the inner callbacks will be invoked (once the events they are persisting have been confirmed to be persisted by the journal).
@@ -318,20 +323,20 @@ is extended until all nested ``persist`` callbacks have been handled.
 
 It is also possible to nest ``persistAsync`` calls, using the same pattern:
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#nested-persistAsync-persistAsync
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#nested-persistAsync-persistAsync
 
 In this case no stashing is happening, yet the events are still persisted and callbacks executed in the expected order:
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#nested-persistAsync-persistAsync-caller
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#nested-persistAsync-persistAsync-caller
 
 While it is possible to nest mixed ``persist`` and ``persistAsync`` with keeping their respective semantics
 it is not a recommended practice, as it may lead to overly complex nesting.
 
 .. warning::
-  While it is possible to nest ``persist`` calls within one another, 
+  While it is possible to nest ``persist`` calls within one another,
   it is *not* legal call ``persist`` from any other Thread than the Actors message processing Thread.
-  For example, it is not legal to call ``persist`` from Futures! Doing so will break the guarantees 
-  that the persist methods aim to provide. Always call ``persist`` and ``persistAsync`` from within 
+  For example, it is not legal to call ``persist`` from Futures! Doing so will break the guarantees
+  that the persist methods aim to provide. Always call ``persist`` and ``persistAsync`` from within
   the Actor's receive block (or methods synchronously invoked from there).
 
 .. _failures-java:
@@ -348,7 +353,7 @@ will most likely fail anyway, since the journal is probably unavailable. It is b
 actor and after a back-off timeout start it again. The ``akka.pattern.BackoffSupervisor`` actor
 is provided to support such restarts.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#backoff
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#backoff
 
 If persistence of an event is rejected before it is stored, e.g. due to serialization error,
 ``onPersistRejected`` will be invoked (logging a warning by default), and the actor continues with
@@ -465,9 +470,9 @@ before it processes the other messages which have been put into its stash**, cau
 The example below highlights how messages arrive in the Actor's mailbox and how they interact with its internal stashing
 mechanism when ``persist()`` is used. Notice the early stop behaviour that occurs when ``PoisonPill`` is used:
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#safe-shutdown
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#safe-shutdown-example-bad
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#safe-shutdown-example-good
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#safe-shutdown
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#safe-shutdown-example-bad
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#safe-shutdown-example-good
 
 .. _replay-filter-java:
 
@@ -509,12 +514,12 @@ in context of persistent actors but this is also applicable to persistent views.
 Persistent actor can save snapshots of internal state by calling the  ``saveSnapshot`` method. If saving of a snapshot
 succeeds, the persistent actor receives a ``SaveSnapshotSuccess`` message, otherwise a ``SaveSnapshotFailure`` message
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#save-snapshot
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#save-snapshot
 
 During recovery, the persistent actor is offered a previously saved snapshot via a ``SnapshotOffer`` message from
 which it can initialize internal state.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#snapshot-offer
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#snapshot-offer
 
 The replayed messages that follow the ``SnapshotOffer`` message, if any, are younger than the offered snapshot.
 They finally recover the persistent actor to its current (i.e. latest) state.
@@ -522,7 +527,7 @@ They finally recover the persistent actor to its current (i.e. latest) state.
 In general, a persistent actor is only offered a snapshot if that persistent actor has previously saved one or more snapshots
 and at least one of these snapshots matches the ``SnapshotSelectionCriteria`` that can be specified for recovery.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#snapshot-criteria
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#snapshot-criteria
 
 If not specified, they default to ``SnapshotSelectionCriteria.latest()`` which selects the latest (= youngest) snapshot.
 To disable snapshot-based recovery, applications should use ``SnapshotSelectionCriteria.none()``. A recovery where no
@@ -617,7 +622,7 @@ between ``deliver`` and ``confirmDelivery`` is possible. The ``deliveryId`` must
 of the message, the destination actor will send the same``deliveryId`` wrapped in a confirmation message back to the sender.
 The sender will then use it to call ``confirmDelivery`` method to complete the delivery routine.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#at-least-once-example
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#at-least-once-example
 
 The ``deliveryId`` generated by the persistence module is a strictly monotonically increasing sequence number
 without gaps. The same sequence is used for all destinations of the actor, i.e. when sending to multiple
@@ -693,7 +698,7 @@ Event Adapters help in situations where:
 
 Implementing an EventAdapter is rather stright forward:
 
-.. includecode:: code/docs/persistence/PersistenceEventAdapterDocTest.java#identity-event-adapter
+.. includecode:: code/jdocs/persistence/PersistenceEventAdapterDocTest.java#identity-event-adapter
 
 Then in order for it to be used on events coming to and from the journal you must bind it using the below configuration syntax:
 
@@ -798,7 +803,7 @@ For an example of snapshot store plugin which writes snapshots as individual fil
 Applications can provide their own plugins by implementing a plugin API and activate them by configuration.
 Plugin development requires the following imports:
 
-.. includecode:: code/docs/persistence/LambdaPersistencePluginDocTest.java#plugin-imports
+.. includecode:: code/jdocs/persistence/LambdaPersistencePluginDocTest.java#plugin-imports
 
 Eager initialization of persistence plugin
 ------------------------------------------
@@ -821,7 +826,7 @@ A journal plugin extends ``AsyncWriteJournal``.
 
 If the storage backend API only supports synchronous, blocking writes, the methods should be implemented as:
 
-.. includecode:: code/docs/persistence/LambdaPersistencePluginDocTest.java#sync-journal-plugin-api
+.. includecode:: code/jdocs/persistence/LambdaPersistencePluginDocTest.java#sync-journal-plugin-api
 
 A journal plugin must also implement the methods defined in ``AsyncRecovery`` for replays and sequence number recovery:
 
@@ -844,7 +849,7 @@ The journal plugin class must have a constructor with one of these signatures:
 The plugin section of the actor system's config will be passed in the config constructor parameter. The config path
 of the plugin is passed in the ``String`` parameter.
 
-The ``plugin-dispatcher`` is the dispatcher used for the plugin actor. If not specified, it defaults to 
+The ``plugin-dispatcher`` is the dispatcher used for the plugin actor. If not specified, it defaults to
 ``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
 Don't run journal tasks/futures on the system default dispatcher, since that might starve other tasks.
@@ -873,7 +878,7 @@ The snapshot store plugin class must have a constructor with one of these signat
 The plugin section of the actor system's config will be passed in the config constructor parameter. The config path
 of the plugin is passed in the ``String`` parameter.
 
-The ``plugin-dispatcher`` is the dispatcher used for the plugin actor. If not specified, it defaults to 
+The ``plugin-dispatcher`` is the dispatcher used for the plugin actor. If not specified, it defaults to
 ``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
 Don't run snapshot store tasks/futures on the system default dispatcher, since that might starve other tasks.
@@ -893,7 +898,7 @@ The TCK is usable from Java as well as Scala projects. For Java you need to incl
 
 To include the Journal TCK tests in your test suite simply extend the provided ``JavaJournalSpec``:
 
-.. includecode:: ./code/docs/persistence/LambdaPersistencePluginDocTest.java#journal-tck-java
+.. includecode:: ./code/jdocs/persistence/LambdaPersistencePluginDocTest.java#journal-tck-java
 
 Please note that some of the tests are optional, and by overriding the ``supports...`` methods you give the
 TCK the needed information about which tests to run. You can implement these methods using  the provided
@@ -906,12 +911,12 @@ typical scenarios.
 
 In order to include the ``SnapshotStore`` TCK tests in your test suite simply extend the ``SnapshotStoreSpec``:
 
-.. includecode:: ./code/docs/persistence/LambdaPersistencePluginDocTest.java#snapshot-store-tck-java
+.. includecode:: ./code/jdocs/persistence/LambdaPersistencePluginDocTest.java#snapshot-store-tck-java
 
 In case your plugin requires some setting up (starting a mock database, removing temporary files etc.) you can override the
 ``beforeAll`` and ``afterAll`` methods to hook into the tests lifecycle:
 
-.. includecode:: ./code/docs/persistence/LambdaPersistencePluginDocTest.java#journal-tck-before-after-java
+.. includecode:: ./code/jdocs/persistence/LambdaPersistencePluginDocTest.java#journal-tck-before-after-java
 
 We *highly recommend* including these specifications in your test suite, as they cover a broad range of cases you
 might have otherwise forgotten to test for when writing a plugin from scratch.
@@ -969,7 +974,7 @@ backup node.
 
 A shared LevelDB instance is started by instantiating the ``SharedLeveldbStore`` actor.
 
-.. includecode:: code/docs/persistence/LambdaPersistencePluginDocTest.java#shared-store-creation
+.. includecode:: code/jdocs/persistence/LambdaPersistencePluginDocTest.java#shared-store-creation
 
 By default, the shared instance writes journaled messages to a local directory named ``journal`` in the current
 working directory. The storage location can be changed by configuration:
@@ -984,7 +989,7 @@ plugin.
 This plugin must be initialized by injecting the (remote) ``SharedLeveldbStore`` actor reference. Injection is
 done by calling the ``SharedLeveldbJournal.setStore`` method with the actor reference as argument.
 
-.. includecode:: code/docs/persistence/LambdaPersistencePluginDocTest.java#shared-store-usage
+.. includecode:: code/jdocs/persistence/LambdaPersistencePluginDocTest.java#shared-store-usage
 
 Internal journal commands (sent by persistent actors) are buffered until injection completes. Injection is idempotent
 i.e. only the first injection is used.
@@ -1098,12 +1103,12 @@ configured in the following sections of the ``reference.conf`` configuration res
 
 Note that in this case the actor or view overrides only ``persistenceId`` method:
 
-.. includecode:: ../java/code/docs/persistence/PersistenceMultiDocTest.java#default-plugins
+.. includecode:: ../java/code/jdocs/persistence/PersistenceMultiDocTest.java#default-plugins
 
 When a persistent actor or view overrides ``journalPluginId`` and ``snapshotPluginId`` methods,
 the actor or view will be serviced by these specific persistence plugins instead of the defaults:
 
-.. includecode:: ../java/code/docs/persistence/PersistenceMultiDocTest.java#override-plugins
+.. includecode:: ../java/code/jdocs/persistence/PersistenceMultiDocTest.java#override-plugins
 
 Note that ``journalPluginId`` and ``snapshotPluginId`` must refer to properly configured ``reference.conf``
 plugin entries with a standard ``class`` property as well as settings which are specific for those plugins, i.e.:

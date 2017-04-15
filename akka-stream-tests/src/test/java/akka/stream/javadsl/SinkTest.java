@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import akka.NotUsed;
 import akka.japi.function.Function;
 import akka.stream.*;
+import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -23,7 +24,6 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import akka.japi.function.Function2;
 import akka.testkit.AkkaSpec;
-import akka.testkit.JavaTestKit;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 import static org.junit.Assert.*;
@@ -61,7 +61,7 @@ public class SinkTest extends StreamTest {
   
   @Test
   public void mustBeAbleToUseActorRefSink() throws Exception {
-    final JavaTestKit probe = new JavaTestKit(system);
+    final TestKit probe = new TestKit(system);
     final Sink<Integer, ?> actorRefSink = Sink.actorRef(probe.getRef(), "done");
     Source.from(Arrays.asList(1, 2, 3)).runWith(actorRefSink, materializer);
     probe.expectMsgEquals(1);
@@ -80,8 +80,8 @@ public class SinkTest extends StreamTest {
 
   @Test
   public void mustBeAbleToCombine() throws Exception {
-    final JavaTestKit probe1 = new JavaTestKit(system);
-    final JavaTestKit probe2 = new JavaTestKit(system);
+    final TestKit probe1 = new TestKit(system);
+    final TestKit probe2 = new TestKit(system);
 
     final Sink<Integer, ?> sink1 = Sink.actorRef(probe1.getRef(), "done1");
     final Sink<Integer, ?> sink2 = Sink.actorRef(probe2.getRef(), "done2");

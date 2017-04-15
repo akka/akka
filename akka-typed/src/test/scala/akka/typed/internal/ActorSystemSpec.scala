@@ -108,7 +108,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
 
     def `must start system actors and mangle their names`(): Unit = {
       withSystem("systemActorOf", Empty[String]) { sys ⇒
-        import akka.typed.AskPattern._
+        import akka.typed.scaladsl.AskPattern._
         implicit val timeout = Timeout(1.second)
         implicit val sched = sys.scheduler
 

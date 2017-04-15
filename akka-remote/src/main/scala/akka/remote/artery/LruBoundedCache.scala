@@ -67,7 +67,7 @@ private[akka] abstract class LruBoundedCache[K: ClassTag, V <: AnyRef: ClassTag]
 
   private[this] val keys = Array.ofDim[K](capacity)
   private[this] val values = Array.ofDim[V](capacity)
-  private[this] val hashes = Array.ofDim[Int](capacity)
+  private[this] val hashes = new Array[Int](capacity)
   private[this] val epochs = Array.fill[Int](capacity)(epoch - evictAgeThreshold) // Guarantee existing "values" are stale
 
   final def get(k: K): Option[V] = {

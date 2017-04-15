@@ -4,17 +4,20 @@
 package akka.stream.javadsl
 
 import java.util.Optional
+
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
-import akka.stream.impl.{ StreamLayout, SinkQueueAdapter }
+import akka.stream.impl.{ LinearTraversalBuilder, SinkQueueAdapter, StreamLayout }
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
+
 import scala.compat.java8.FutureConverters._
 
 /** Java API */
@@ -284,7 +287,7 @@ object Sink {
 final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
 
   override def shape: SinkShape[In] = delegate.shape
-  def module: StreamLayout.Module = delegate.module
+  override def traversalBuilder: LinearTraversalBuilder = delegate.traversalBuilder
 
   override def toString: String = delegate.toString
 

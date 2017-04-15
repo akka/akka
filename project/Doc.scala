@@ -24,7 +24,7 @@ object Scaladoc extends AutoPlugin {
 
   override lazy val projectSettings = {
     inTask(doc)(Seq(
-      scalacOptions in Compile <++= (version, baseDirectory in ThisBuild) map scaladocOptions,
+      scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
       autoAPIMappings := CliOptions.scaladocAutoAPI.get
     )) ++
     Seq(validateDiagrams in Compile := true) ++
@@ -120,7 +120,7 @@ object UnidocRoot extends AutoPlugin {
 
   override lazy val projectSettings =
     CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++
-    settings(Seq(), Seq(AkkaBuild.remoteTests, AkkaBuild.benchJmh, AkkaBuild.protobuf, AkkaBuild.akkaScalaNightly))
+    settings(Seq(), Seq(AkkaBuild.remoteTests, AkkaBuild.benchJmh, AkkaBuild.protobuf, AkkaBuild.akkaScalaNightly, AkkaBuild.docs))
 }
 
 /**

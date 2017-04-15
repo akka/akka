@@ -57,7 +57,7 @@ object ActorMaterializer {
     val haveShutDown = new AtomicBoolean(false)
     val system = actorSystemOf(context)
 
-    new ActorMaterializerImpl(
+    new PhasedFusingActorMaterializer(
       system,
       materializerSettings,
       system.dispatchers,
@@ -86,7 +86,7 @@ object ActorMaterializer {
   private[akka] def systemMaterializer(materializerSettings: ActorMaterializerSettings, namePrefix: String,
                                        system: ExtendedActorSystem): ActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
-    new ActorMaterializerImpl(
+    new PhasedFusingActorMaterializer(
       system,
       materializerSettings,
       system.dispatchers,
@@ -433,6 +433,7 @@ final class ActorMaterializerSettings private (
    * this may cause an initial runtime overhead, but most of the time fusing is
    * desirable since it reduces the number of Actors that are created.
    */
+  @deprecated("Turning off fusing is no longer possible with the traversal based materializer", since = "2.5.0")
   def withAutoFusing(enable: Boolean): ActorMaterializerSettings =
     if (enable == this.autoFusing) this
     else copy(autoFusing = enable)

@@ -141,6 +141,37 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
       expectMsgAllClassOf(5 seconds, classOf[Int]) should ===(Seq(42))
     }
 
+    "be able to fish for messages" in {
+      val probe = TestProbe()
+      probe.ref ! "hallo"
+      probe.ref ! "welt"
+      probe.ref ! "fishForMe"
+      probe.ref ! "done"
+
+      probe.fishForMessage() {
+        case "fishForMe" ⇒ true
+        case _           ⇒ false
+      }
+
+      probe.expectMsg(1 second, "done")
+    }
+
+    "be able to fish for specific messages" in {
+      val probe = TestProbe()
+      probe.ref ! "hallo"
+      probe.ref ! "welt"
+      probe.ref ! "fishForMe"
+      probe.ref ! "done"
+
+      val msg: String = probe.fishForSpecificMessage() {
+        case msg @ "fishForMe" ⇒ msg
+      }
+
+      msg should be("fishForMe")
+
+      probe.expectMsg(1 second, "done")
+    }
+
     "be able to ignore primitive types" in {
       ignoreMsg { case 42 ⇒ true }
       testActor ! 42

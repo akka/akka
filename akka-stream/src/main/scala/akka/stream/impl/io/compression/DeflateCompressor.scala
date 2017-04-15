@@ -5,12 +5,13 @@ package akka.stream.impl.io.compression
 
 import java.util.zip.Deflater
 
+import akka.annotation.InternalApi
 import akka.util.{ ByteString, ByteStringBuilder }
 
 import scala.annotation.tailrec
 
 /** INTERNAL API */
-private[akka] class DeflateCompressor extends Compressor {
+@InternalApi private[akka] class DeflateCompressor extends Compressor {
   import DeflateCompressor._
 
   protected lazy val deflater = new Deflater(Deflater.BEST_COMPRESSION, false)
@@ -62,7 +63,7 @@ private[akka] class DeflateCompressor extends Compressor {
 }
 
 /** INTERNAL API */
-private[akka] object DeflateCompressor {
+@InternalApi private[akka] object DeflateCompressor {
   val MinBufferSize = 1024
 
   @tailrec

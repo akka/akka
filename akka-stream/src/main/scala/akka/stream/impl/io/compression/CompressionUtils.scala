@@ -4,6 +4,7 @@
 package akka.stream.impl.io.compression
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.{ Attributes, FlowShape }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl.Flow
@@ -11,7 +12,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.ByteString
 
 /** INTERNAL API */
-private[stream] object CompressionUtils {
+@InternalApi private[stream] object CompressionUtils {
   /**
    * Creates a flow from a compressor constructor.
    */

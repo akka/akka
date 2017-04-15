@@ -65,7 +65,8 @@ object BackoffSupervisor {
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
    * @param strategy the supervision strategy to use for handling exceptions
-   *   in the child
+   *   in the child. As the BackoffSupervisor creates a separate actor to handle the
+   *   backoff process, only a [[OneForOneStrategy]] makes sense here.
    */
   def propsWithSupervisorStrategy(
     childProps:   Props,

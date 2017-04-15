@@ -12721,6 +12721,24 @@ public final class ReplicatorMessages {
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DeltaPropagation.EntryOrBuilder getEntriesOrBuilder(
         int index);
+
+    // optional bool reply = 3;
+    /**
+     * <code>optional bool reply = 3;</code>
+     *
+     * <pre>
+     * no reply if not set 
+     * </pre>
+     */
+    boolean hasReply();
+    /**
+     * <code>optional bool reply = 3;</code>
+     *
+     * <pre>
+     * no reply if not set 
+     * </pre>
+     */
+    boolean getReply();
   }
   /**
    * Protobuf type {@code akka.cluster.ddata.DeltaPropagation}
@@ -12792,6 +12810,11 @@ public final class ReplicatorMessages {
                 mutable_bitField0_ |= 0x00000002;
               }
               entries_.add(input.readMessage(akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DeltaPropagation.Entry.PARSER, extensionRegistry));
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000002;
+              reply_ = input.readBool();
               break;
             }
           }
@@ -13784,9 +13807,34 @@ public final class ReplicatorMessages {
       return entries_.get(index);
     }
 
+    // optional bool reply = 3;
+    public static final int REPLY_FIELD_NUMBER = 3;
+    private boolean reply_;
+    /**
+     * <code>optional bool reply = 3;</code>
+     *
+     * <pre>
+     * no reply if not set 
+     * </pre>
+     */
+    public boolean hasReply() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>optional bool reply = 3;</code>
+     *
+     * <pre>
+     * no reply if not set 
+     * </pre>
+     */
+    public boolean getReply() {
+      return reply_;
+    }
+
     private void initFields() {
       fromNode_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance();
       entries_ = java.util.Collections.emptyList();
+      reply_ = false;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -13820,6 +13868,9 @@ public final class ReplicatorMessages {
       for (int i = 0; i < entries_.size(); i++) {
         output.writeMessage(2, entries_.get(i));
       }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeBool(3, reply_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -13836,6 +13887,10 @@ public final class ReplicatorMessages {
       for (int i = 0; i < entries_.size(); i++) {
         size += akka.protobuf.CodedOutputStream
           .computeMessageSize(2, entries_.get(i));
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeBoolSize(3, reply_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -13967,6 +14022,8 @@ public final class ReplicatorMessages {
         } else {
           entriesBuilder_.clear();
         }
+        reply_ = false;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -14012,6 +14069,10 @@ public final class ReplicatorMessages {
         } else {
           result.entries_ = entriesBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.reply_ = reply_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -14056,6 +14117,9 @@ public final class ReplicatorMessages {
               entriesBuilder_.addAllMessages(other.entries_);
             }
           }
+        }
+        if (other.hasReply()) {
+          setReply(other.getReply());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -14453,6 +14517,55 @@ public final class ReplicatorMessages {
           entries_ = null;
         }
         return entriesBuilder_;
+      }
+
+      // optional bool reply = 3;
+      private boolean reply_ ;
+      /**
+       * <code>optional bool reply = 3;</code>
+       *
+       * <pre>
+       * no reply if not set 
+       * </pre>
+       */
+      public boolean hasReply() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional bool reply = 3;</code>
+       *
+       * <pre>
+       * no reply if not set 
+       * </pre>
+       */
+      public boolean getReply() {
+        return reply_;
+      }
+      /**
+       * <code>optional bool reply = 3;</code>
+       *
+       * <pre>
+       * no reply if not set 
+       * </pre>
+       */
+      public Builder setReply(boolean value) {
+        bitField0_ |= 0x00000004;
+        reply_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bool reply = 3;</code>
+       *
+       * <pre>
+       * no reply if not set 
+       * </pre>
+       */
+      public Builder clearReply() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        reply_ = false;
+        onChanged();
+        return this;
       }
 
       // @@protoc_insertion_point(builder_scope:akka.cluster.ddata.DeltaPropagation)
@@ -19212,27 +19325,28 @@ public final class ReplicatorMessages {
       " \002(\010\0221\n\007entries\030\002 \003(\0132 .akka.cluster.dda",
       "ta.Gossip.Entry\032H\n\005Entry\022\013\n\003key\030\001 \002(\t\0222\n" +
       "\010envelope\030\002 \002(\0132 .akka.cluster.ddata.Dat" +
-      "aEnvelope\"\362\001\n\020DeltaPropagation\0223\n\010fromNo" +
+      "aEnvelope\"\201\002\n\020DeltaPropagation\0223\n\010fromNo" +
       "de\030\001 \002(\0132!.akka.cluster.ddata.UniqueAddr" +
       "ess\022;\n\007entries\030\002 \003(\0132*.akka.cluster.ddat" +
-      "a.DeltaPropagation.Entry\032l\n\005Entry\022\013\n\003key" +
-      "\030\001 \002(\t\0222\n\010envelope\030\002 \002(\0132 .akka.cluster." +
-      "ddata.DataEnvelope\022\021\n\tfromSeqNr\030\003 \002(\003\022\017\n" +
-      "\007toSeqNr\030\004 \001(\003\"X\n\rUniqueAddress\022,\n\007addre" +
-      "ss\030\001 \002(\0132\033.akka.cluster.ddata.Address\022\013\n",
-      "\003uid\030\002 \002(\017\022\014\n\004uid2\030\003 \001(\017\")\n\007Address\022\020\n\010h" +
-      "ostname\030\001 \002(\t\022\014\n\004port\030\002 \002(\r\"\224\001\n\rVersionV" +
-      "ector\0228\n\007entries\030\001 \003(\0132\'.akka.cluster.dd" +
-      "ata.VersionVector.Entry\032I\n\005Entry\022/\n\004node" +
-      "\030\001 \002(\0132!.akka.cluster.ddata.UniqueAddres" +
-      "s\022\017\n\007version\030\002 \002(\003\"V\n\014OtherMessage\022\027\n\017en" +
-      "closedMessage\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(" +
-      "\005\022\027\n\017messageManifest\030\004 \001(\014\"\036\n\nStringGSet" +
-      "\022\020\n\010elements\030\001 \003(\t\"\205\001\n\023DurableDataEnvelo" +
-      "pe\022.\n\004data\030\001 \002(\0132 .akka.cluster.ddata.Ot",
-      "herMessage\022>\n\007pruning\030\002 \003(\0132-.akka.clust" +
-      "er.ddata.DataEnvelope.PruningEntryB#\n\037ak" +
-      "ka.cluster.ddata.protobuf.msgH\001"
+      "a.DeltaPropagation.Entry\022\r\n\005reply\030\003 \001(\010\032" +
+      "l\n\005Entry\022\013\n\003key\030\001 \002(\t\0222\n\010envelope\030\002 \002(\0132" +
+      " .akka.cluster.ddata.DataEnvelope\022\021\n\tfro" +
+      "mSeqNr\030\003 \002(\003\022\017\n\007toSeqNr\030\004 \001(\003\"X\n\rUniqueA" +
+      "ddress\022,\n\007address\030\001 \002(\0132\033.akka.cluster.d",
+      "data.Address\022\013\n\003uid\030\002 \002(\017\022\014\n\004uid2\030\003 \001(\017\"" +
+      ")\n\007Address\022\020\n\010hostname\030\001 \002(\t\022\014\n\004port\030\002 \002" +
+      "(\r\"\224\001\n\rVersionVector\0228\n\007entries\030\001 \003(\0132\'." +
+      "akka.cluster.ddata.VersionVector.Entry\032I" +
+      "\n\005Entry\022/\n\004node\030\001 \002(\0132!.akka.cluster.dda" +
+      "ta.UniqueAddress\022\017\n\007version\030\002 \002(\003\"V\n\014Oth" +
+      "erMessage\022\027\n\017enclosedMessage\030\001 \002(\014\022\024\n\014se" +
+      "rializerId\030\002 \002(\005\022\027\n\017messageManifest\030\004 \001(" +
+      "\014\"\036\n\nStringGSet\022\020\n\010elements\030\001 \003(\t\"\205\001\n\023Du" +
+      "rableDataEnvelope\022.\n\004data\030\001 \002(\0132 .akka.c",
+      "luster.ddata.OtherMessage\022>\n\007pruning\030\002 \003" +
+      "(\0132-.akka.cluster.ddata.DataEnvelope.Pru" +
+      "ningEntryB#\n\037akka.cluster.ddata.protobuf" +
+      ".msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -19346,7 +19460,7 @@ public final class ReplicatorMessages {
           internal_static_akka_cluster_ddata_DeltaPropagation_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_DeltaPropagation_descriptor,
-              new java.lang.String[] { "FromNode", "Entries", });
+              new java.lang.String[] { "FromNode", "Entries", "Reply", });
           internal_static_akka_cluster_ddata_DeltaPropagation_Entry_descriptor =
             internal_static_akka_cluster_ddata_DeltaPropagation_descriptor.getNestedTypes().get(0);
           internal_static_akka_cluster_ddata_DeltaPropagation_Entry_fieldAccessorTable = new

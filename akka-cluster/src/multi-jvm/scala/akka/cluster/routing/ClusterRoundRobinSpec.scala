@@ -49,36 +49,45 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
-      akka.actor.deployment {
-        /router1 {
-          router = round-robin-pool
-          cluster {
-            enabled = on
-            max-nr-of-instances-per-node = 2
-            max-total-nr-of-instances = 10
+      akka.actor {
+        allow-java-serialization = off
+        serialize-creators = off
+        serialize-messages = off
+        serialization-bindings {
+          "akka.cluster.routing.ClusterRoundRobinMultiJvmSpec$Reply" = test-message-serializer
+        }
+
+        deployment {
+          /router1 {
+            router = round-robin-pool
+            cluster {
+              enabled = on
+              max-nr-of-instances-per-node = 2
+              max-total-nr-of-instances = 10
+            }
           }
-        }
-        /router3 {
-          router = round-robin-pool
-          cluster {
-            enabled = on
-            max-nr-of-instances-per-node = 1
-            max-total-nr-of-instances = 10
-            allow-local-routees = off
+          /router3 {
+            router = round-robin-pool
+            cluster {
+              enabled = on
+              max-nr-of-instances-per-node = 1
+              max-total-nr-of-instances = 10
+              allow-local-routees = off
+            }
           }
-        }
-        /router4 {
-          router = round-robin-group
-          routees.paths = ["/user/myserviceA", "/user/myserviceB"]
-          cluster.enabled = on
-          cluster.max-total-nr-of-instances = 10
-        }
-        /router5 {
-          router = round-robin-pool
-          cluster {
-            enabled = on
-            use-role = a
-            max-total-nr-of-instances = 10
+          /router4 {
+            router = round-robin-group
+            routees.paths = ["/user/myserviceA", "/user/myserviceB"]
+            cluster.enabled = on
+            cluster.max-total-nr-of-instances = 10
+          }
+          /router5 {
+            router = round-robin-pool
+            cluster {
+              enabled = on
+              use-role = a
+              max-total-nr-of-instances = 10
+            }
           }
         }
       }

@@ -3,6 +3,8 @@
  */
 package docs.actor
 
+import jdocs.actor.ImmutableMessage
+
 import language.postfixOps
 
 //#imports1
@@ -15,7 +17,6 @@ import akka.event.Logging
 import scala.concurrent.Future
 import akka.actor.{ ActorRef, ActorSystem, PoisonPill, Terminated, ActorLogging }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.Matchers
 import akka.testkit._
 import akka.util._
 import scala.concurrent.duration._

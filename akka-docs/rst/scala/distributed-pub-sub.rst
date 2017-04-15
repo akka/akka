@@ -16,14 +16,14 @@ The ``DistributedPubSubMediator`` actor is supposed to be started on all nodes,
 or all nodes with specified role, in the cluster. The mediator can be
 started with the ``DistributedPubSub`` extension or as an ordinary actor.
 
-The registry is eventually consistent, i.e. changes are not immediately visible at 
+The registry is eventually consistent, i.e. changes are not immediately visible at
 other nodes, but typically they will be fully replicated to all other nodes after
-a few seconds. Changes are only performed in the own part of the registry and those 
+a few seconds. Changes are only performed in the own part of the registry and those
 changes are versioned. Deltas are disseminated in a scalable way to other nodes with
 a gossip protocol.
 
-Cluster members with status :ref:`WeaklyUp <weakly_up_scala>`, 
-will participate in Distributed Publish Subscribe, i.e. subscribers on nodes with 
+Cluster members with status :ref:`WeaklyUp <weakly_up_scala>`,
+will participate in Distributed Publish Subscribe, i.e. subscribers on nodes with
 ``WeaklyUp`` status will receive published messages if the publisher and subscriber are on
 same side of a network partition.
 
@@ -31,26 +31,26 @@ You can send messages via the mediator on any node to registered actors on
 any other node.
 
 There a two different modes of message delivery, explained in the sections
-:ref:`distributed-pub-sub-publish-scala` and :ref:`distributed-pub-sub-send-scala` below. 
+:ref:`distributed-pub-sub-publish-scala` and :ref:`distributed-pub-sub-send-scala` below.
 
-A more comprehensive sample is available in the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-tutorial named `Akka Clustered PubSub with Scala! <http://www.lightbend.com/activator/template/akka-clustering>`_.
+A more comprehensive sample is available in the
+tutorial named `Akka Clustered PubSub with Scala! <https://github.com/typesafehub/activator-akka-clustering>`_.
 
 .. _distributed-pub-sub-publish-scala:
 
 Publish
 -------
 
-This is the true pub/sub mode. A typical usage of this mode is a chat room in an instant 
+This is the true pub/sub mode. A typical usage of this mode is a chat room in an instant
 messaging application.
 
-Actors are registered to a named topic. This enables many subscribers on each node. 
-The message will be delivered to all subscribers of the topic. 
+Actors are registered to a named topic. This enables many subscribers on each node.
+The message will be delivered to all subscribers of the topic.
 
 For efficiency the message is sent over the wire only once per node (that has a matching topic),
 and then delivered to all subscribers of the local topic representation. (See more in )
 
-You register actors to the local mediator with ``DistributedPubSubMediator.Subscribe``. 
+You register actors to the local mediator with ``DistributedPubSubMediator.Subscribe``.
 Successful ``Subscribe`` and ``Unsubscribe`` is acknowledged with
 ``DistributedPubSubMediator.SubscribeAck`` and ``DistributedPubSubMediator.UnsubscribeAck``
 replies. The acknowledgment means that the subscription is registered, but it can still
@@ -109,15 +109,15 @@ Send
 This is a point-to-point mode where each message is delivered to one destination,
 but you still do not have to know where the destination is located.
 A typical usage of this mode is private chat to one other user in an instant messaging
-application. It can also be used for distributing tasks to registered workers, like a 
+application. It can also be used for distributing tasks to registered workers, like a
 cluster aware router where the routees dynamically can register themselves.
 
 The message will be delivered to one recipient with a matching path, if any such
 exists in the registry. If several entries match the path because it has been registered
-on several nodes the message will be sent via the supplied ``RoutingLogic`` (default random) 
+on several nodes the message will be sent via the supplied ``RoutingLogic`` (default random)
 to one destination. The sender() of the message can specify that local affinity is preferred,
 i.e. the message is sent to an actor in the same local actor system as the used mediator actor,
-if any such exists, otherwise route to any other matching entry. 
+if any such exists, otherwise route to any other matching entry.
 
 You register actors to the local mediator with ``DistributedPubSubMediator.Put``.
 The ``ActorRef`` in ``Put`` must belong to the same local actor system as the mediator.
@@ -150,11 +150,11 @@ It can send messages to the path from anywhere in the cluster:
 .. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala#send-message
 
 It is also possible to broadcast messages to the actors that have been registered with
-``Put``. Send ``DistributedPubSubMediator.SendToAll`` message to the local mediator and the wrapped message 
+``Put``. Send ``DistributedPubSubMediator.SendToAll`` message to the local mediator and the wrapped message
 will then be delivered to all recipients with a matching path. Actors with
 the same path, without address information, can be registered on different nodes.
 On each node there can only be one such actor, since the path is unique within one
-local actor system. 
+local actor system.
 
 Typical usage of this mode is to broadcast messages to all replicas
 with the same path, e.g. 3 actors on different nodes that all perform the same actions,

@@ -7,7 +7,7 @@ import java.nio.file.{ Files, Path, StandardOpenOption }
 
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
-import akka.stream.impl.ActorMaterializerImpl
+import akka.stream.impl.PhasedFusingActorMaterializer
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.scaladsl.{ FileIO, Sink, Source }
@@ -109,29 +109,25 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         try {
           Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(FileIO.toPath(f))(materializer)
 
-          materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
           assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
         } finally shutdown(sys)
       }
     }
 
-    // FIXME: overriding dispatcher should be made available with dispatcher alias support in materializer (#17929)
     "allow overriding the dispatcher using Attributes" in assertAllStagesStopped {
-      pending
       targetFile { f ⇒
         val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
         val materializer = ActorMaterializer()(sys)
-        implicit val timeout = Timeout(3.seconds)
 
         try {
           Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head))
-            .to(FileIO.toPath(f))
-            .withAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher"))
+            .to(FileIO.toPath(f).addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))
             .run()(materializer)
 
-          materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
-          val ref = expectMsgType[Children].children.find(_.path.toString contains "File").get
+          materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
           assertDispatcher(ref, "akka.actor.default-dispatcher")
         } finally shutdown(sys)
       }

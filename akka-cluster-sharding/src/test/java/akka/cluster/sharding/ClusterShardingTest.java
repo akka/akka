@@ -174,7 +174,7 @@ public class ClusterShardingTest {
     }
 
     private void passivate() {
-      getContext().parent().tell(
+      getContext().getParent().tell(
           new ShardRegion.Passivate(PoisonPill.getInstance()), getSelf());
     }
 

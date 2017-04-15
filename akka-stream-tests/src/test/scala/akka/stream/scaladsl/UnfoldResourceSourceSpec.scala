@@ -10,7 +10,7 @@ import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.{ ActorMaterializer, _ }
 import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
@@ -112,7 +112,7 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "work with ByteString as well" in assertAllStagesStopped {
       val chunkSize = 50
-      val buffer = Array.ofDim[Char](chunkSize)
+      val buffer = new Array[Char](chunkSize)
       val p = Source.unfoldResource[ByteString, Reader](
         () ⇒ new BufferedReader(new FileReader(manyLinesFile)),
         reader ⇒ {
@@ -150,7 +150,7 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           reader ⇒ Option(reader.readLine()),
           reader ⇒ reader.close()).runWith(TestSink.probe)(materializer)
 
-        materializer.asInstanceOf[ActorMaterializerImpl].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+        materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
         val ref = expectMsgType[Children].children.find(_.path.toString contains "unfoldResourceSource").get
         try assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher") finally p.cancel()
       } finally shutdown(sys)

@@ -14,42 +14,52 @@ object SphinxDoc {
 
   def akkaSettings = SphinxSupport.settings ++ Seq(
     // generate online version of docs
-    sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(AkkaBuild.docs.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
+    sphinxInputs in Sphinx := {
+      val inputs = (sphinxInputs in Sphinx in LocalProject(AkkaBuild.docs.id)).value
+      inputs.copy(tags = inputs.tags :+ "online")
+    },
     // don't regenerate the pdf, just reuse the akka-docs version
-    generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(AkkaBuild.docs.id) map identity,
-    generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(AkkaBuild.docs.id) map identity
+    generatedPdf in Sphinx := (generatedPdf in Sphinx in LocalProject(AkkaBuild.docs.id)).value,
+    generatedEpub in Sphinx := (generatedEpub in Sphinx in LocalProject(AkkaBuild.docs.id)).value
   )
 
   def docsSettings = Seq(
-    sourceDirectory in Sphinx <<= baseDirectory / "rst",
-    watchSources <++= (sourceDirectory in Sphinx, excludeFilter in Global) map { (source, excl) =>
-      source descendantsExcept ("*.rst", excl) get
+    sourceDirectory in Sphinx := baseDirectory.value / "rst",
+    watchSources ++= {
+      val source = (sourceDirectory in Sphinx).value
+      val excl = (excludeFilter in Global).value
+      source.descendantsExcept("*.rst", excl).get
     },
-    sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
+    sphinxPackages in Sphinx += baseDirectory.value / "_sphinx" / "pygments",
     // copy akka-contrib/docs into our rst_preprocess/contrib (and apply substitutions)
-    preprocess in Sphinx <<= (preprocess in Sphinx,
-      baseDirectory in AkkaBuild.contrib,
-      target in preprocess in Sphinx,
-      cacheDirectory,
-      preprocessExts in Sphinx,
-      preprocessVars in Sphinx,
-      streams) map { (orig, src, target, cacheDir, exts, vars, s) =>
+    preprocess in Sphinx := {
+      val s = streams.value
+
       val contribSrc = Map("contribSrc" -> "../../../akka-contrib")
-      simplePreprocess(src / "docs", target / "contrib", cacheDir / "sphinx" / "preprocessed-contrib", exts, vars ++ contribSrc, s.log)
-      orig
+      simplePreprocess(
+        (baseDirectory in AkkaBuild.contrib).value / "docs",
+        (target in preprocess in Sphinx).value / "contrib",
+        s.cacheDirectory / "sphinx" / "preprocessed-contrib",
+        (preprocessExts in Sphinx).value,
+        (preprocessVars in Sphinx).value ++ contribSrc,
+        s.log)
+
+      (preprocess in Sphinx).value
     },
     enableOutput in generatePdf in Sphinx := true,
     enableOutput in generateEpub in Sphinx := true,
-    unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get }
+    unmanagedSourceDirectories in Test := ((sourceDirectory in Sphinx).value ** "code").get
   )
 
   // pre-processing settings for sphinx
   lazy val sphinxPreprocessing = inConfig(Sphinx)(Seq(
-    target in preprocess <<= baseDirectory / "rst_preprocessed",
+    target in preprocess := baseDirectory.value / "rst_preprocessed",
     preprocessExts := Set("rst", "py"),
     // customization of sphinx @<key>@ replacements, add to all sphinx-using projects
     // add additional replacements here
-    preprocessVars <<= (scalaVersion, version) { (s, v) =>
+    preprocessVars := {
+      val s = scalaVersion.value
+      val v = version.value
       val BinVer = """(\d+\.\d+)\.\d+""".r
       Map(
         "version" -> v,
@@ -69,14 +79,22 @@ object SphinxDoc {
         "sigarVersion" -> Dependencies.Compile.sigar.revision,
         "sigarLoaderVersion" -> Dependencies.Compile.Provided.sigarLoader.revision,
         "github" -> GitHub.url(v),
-        "samples" -> "http://github.com/akka/akka-samples"
+        "samples" -> "http://github.com/akka/akka-samples/tree/master",
+        "exampleCodeService" -> "https://example.lightbend.com/v1/download"
       )
     },
-    preprocess <<= (sourceDirectory, target in preprocess, cacheDirectory, preprocessExts, preprocessVars, streams) map {
-      (src, target, cacheDir, exts, vars, s) => simplePreprocess(src, target, cacheDir / "sphinx" / "preprocessed", exts, vars, s.log)
+    preprocess := {
+      val s = streams.value
+      simplePreprocess(
+        sourceDirectory.value,
+        (target in preprocess).value,
+        s.cacheDirectory / "sphinx" / "preprocessed",
+        preprocessExts.value,
+        preprocessVars.value,
+        s.log)
     },
-    sphinxInputs <<= (sphinxInputs, preprocess) map { (inputs, preprocessed) => inputs.copy(src = preprocessed) }
+    sphinxInputs := sphinxInputs.value.copy(src = preprocess.value)
   )) ++ Seq(
-    cleanFiles <+= target in preprocess in Sphinx
+    cleanFiles += (target in preprocess in Sphinx).value
   )
 }

@@ -310,7 +310,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
         val buf = ByteBuffer.allocate(8)
         toBinary(o, buf)
         buf.flip()
-        val bytes = Array.ofDim[Byte](buf.remaining)
+        val bytes = new Array[Byte](buf.remaining)
         buf.get(bytes)
         bytes
     }

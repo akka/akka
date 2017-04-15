@@ -24,7 +24,7 @@ Looking up a Dispatcher
 
 Dispatchers implement the :class:`ExecutionContext` interface and can thus be used to run :class:`Future` invocations etc.
 
-.. includecode:: code/docs/dispatcher/DispatcherDocTest.java#lookup
+.. includecode:: code/jdocs/dispatcher/DispatcherDocTest.java#lookup
 
 Setting the dispatcher for an Actor
 -----------------------------------
@@ -52,7 +52,7 @@ For more options, see the default-dispatcher section of the :ref:`configuration`
 
 Then you create the actor as usual and define the dispatcher in the deployment configuration.
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#defining-dispatcher-in-config
+.. includecode:: ../java/code/jdocs/dispatcher/DispatcherDocTest.java#defining-dispatcher-in-config
 
 .. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#dispatcher-deployment-config
 
@@ -60,7 +60,7 @@ An alternative to the deployment configuration is to define the dispatcher in co
 If you define the ``dispatcher`` in the deployment configuration then this value will be used instead
 of programmatically provided parameter.
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#defining-dispatcher-in-code
+.. includecode:: ../java/code/jdocs/dispatcher/DispatcherDocTest.java#defining-dispatcher-in-code
 
 .. note::
     The dispatcher you specify in ``withDispatcher`` and the ``dispatcher`` property in the deployment 
@@ -68,8 +68,8 @@ of programmatically provided parameter.
     So in this example it's a top-level section, but you could for instance put it as a sub-section,
     where you'd use periods to denote sub-sections, like this: ``"foo.bar.my-dispatcher"``
 
-.. _ForkJoinPool documentation: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ForkJoinPool.html
-.. _ThreadPoolExecutor documentation: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ThreadPoolExecutor.html
+.. _ForkJoinPool documentation: https://docs.oracle.com/javase/8/jdocs/api/java/util/concurrent/ForkJoinPool.html
+.. _ThreadPoolExecutor documentation: https://docs.oracle.com/javase/8/jdocs/api/java/util/concurrent/ThreadPoolExecutor.html
 
 Types of dispatchers
 --------------------
@@ -128,7 +128,7 @@ Configuring a dispatcher with fixed thread pool size, e.g. for actors that perfo
 
 And then using it:
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#defining-fixed-pool-size-dispatcher
+.. includecode:: ../java/code/jdocs/dispatcher/DispatcherDocTest.java#defining-fixed-pool-size-dispatcher
 
 Another example that uses the thread pool based on the number of cores (e.g. for CPU bound tasks)
 
@@ -140,7 +140,7 @@ Configuring a ``PinnedDispatcher``:
 
 And then using it:
 
-.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#defining-pinned-dispatcher
+.. includecode:: ../java/code/jdocs/dispatcher/DispatcherDocTest.java#defining-pinned-dispatcher
 
 Note that ``thread-pool-executor`` configuration as per the above ``my-thread-pool-dispatcher`` example is
 NOT applicable. This is because every actor will have its own thread pool when using ``PinnedDispatcher``,

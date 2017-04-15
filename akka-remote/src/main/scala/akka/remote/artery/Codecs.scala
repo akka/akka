@@ -302,12 +302,12 @@ private[remote] object Decoder {
      * External call from ChangeInboundCompression materialized value
      */
     override def runNextActorRefAdvertisement(): Unit =
-      runNextActorRefAdvertisementCb.invoke()
+      runNextActorRefAdvertisementCb.invoke(())
     /**
      * External call from ChangeInboundCompression materialized value
      */
     override def runNextClassManifestAdvertisement(): Unit =
-      runNextClassManifestAdvertisementCb.invoke()
+      runNextClassManifestAdvertisementCb.invoke(())
   }
 
   private[remote] class AccessInboundCompressionFailed

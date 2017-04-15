@@ -173,10 +173,10 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
           var n = 0
           val loadData = LoadData(iter.asScala.map { entry ⇒
             n += 1
-            val keyArray = Array.ofDim[Byte](entry.key.remaining)
+            val keyArray = new Array[Byte](entry.key.remaining)
             entry.key.get(keyArray)
             val key = new String(keyArray, ByteString.UTF_8)
-            val valArray = Array.ofDim[Byte](entry.`val`.remaining)
+            val valArray = new Array[Byte](entry.`val`.remaining)
             entry.`val`.get(valArray)
             val envelope = serializer.fromBinary(valArray, manifest).asInstanceOf[DurableDataEnvelope]
             key → envelope
