@@ -17,7 +17,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise, blocking }
 import scala.io.StdIn
 import scala.util.{ Failure, Success, Try }
 
@@ -137,8 +137,10 @@ abstract class HttpApp extends Directives {
       promise.trySuccess(Done)
     }
     Future {
-      if (StdIn.readLine("Press RETURN to stop...\n") != null)
-        promise.success(Done)
+      blocking {
+        if (StdIn.readLine("Press RETURN to stop...\n") != null)
+          promise.trySuccess(Done)
+      }
     }
     promise.future
   }
