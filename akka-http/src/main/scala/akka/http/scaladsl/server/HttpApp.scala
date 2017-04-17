@@ -134,7 +134,7 @@ abstract class HttpApp extends Directives {
   protected def waitForShutdownSignal(system: ActorSystem)(implicit ec: ExecutionContext): Future[Done] = {
     val promise = Promise[Done]()
     sys.addShutdownHook {
-      promise.success(Done)
+      promise.trySuccess(Done)
     }
     Future {
       if (StdIn.readLine("Press RETURN to stop...\n") != null)
