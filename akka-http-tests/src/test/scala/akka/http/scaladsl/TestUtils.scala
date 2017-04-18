@@ -4,13 +4,14 @@
 
 package akka.http.scaladsl
 
-import java.io.{ FileOutputStream, File }
+import java.io.File
+import java.nio.file.Files
 import java.net.InetSocketAddress
 import java.nio.channels.ServerSocketChannel
 
 object TestUtils {
   def writeAllText(text: String, file: File): Unit = {
-    val fos = new FileOutputStream(file)
+    val fos = Files.newOutputStream(file.toPath)
     try {
       fos.write(text.getBytes("UTF-8"))
     } finally fos.close()

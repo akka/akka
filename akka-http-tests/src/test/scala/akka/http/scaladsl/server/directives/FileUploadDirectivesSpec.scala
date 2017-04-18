@@ -4,7 +4,8 @@
 
 package akka.http.scaladsl.server.directives
 
-import java.io.{ File, FileInputStream }
+import java.io.File
+import java.nio.file.Files
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{ MissingFormFieldRejection, RoutingSpec }
@@ -147,7 +148,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
   }
 
   private def read(file: File): String = {
-    val in = new FileInputStream(file)
+    val in = Files.newInputStream(file.toPath)
     try {
       val buffer = new Array[Byte](1024)
       in.read(buffer)
