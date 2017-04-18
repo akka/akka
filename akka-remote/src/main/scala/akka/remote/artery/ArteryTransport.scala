@@ -967,10 +967,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   def aeronSink(outboundContext: OutboundContext): Sink[EnvelopeBuffer, Future[Done]] =
-    aeronSink(outboundContext, ordinaryStreamId)
-
-  private def aeronSink(outboundContext: OutboundContext, streamId: Int): Sink[EnvelopeBuffer, Future[Done]] =
-    aeronSink(outboundContext, streamId, envelopeBufferPool)
+    aeronSink(outboundContext, ordinaryStreamId, envelopeBufferPool)
 
   private def aeronSink(outboundContext: OutboundContext, streamId: Int,
                         bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
