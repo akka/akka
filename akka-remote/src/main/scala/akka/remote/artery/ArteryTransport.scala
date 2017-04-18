@@ -969,13 +969,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def aeronSink(outboundContext: OutboundContext): Sink[EnvelopeBuffer, Future[Done]] =
     aeronSink(outboundContext, ordinaryStreamId)
 
-  private def aeronSink(outboundContext: OutboundContext, streamId: Int): Sink[EnvelopeBuffer, Future[Done]] = {
-    val giveUpAfter =
-      if (streamId == controlStreamId) settings.Advanced.GiveUpSystemMessageAfter
-      else settings.Advanced.GiveUpMessageAfter
-    Sink.fromGraph(new AeronSink(outboundChannel(outboundContext.remoteAddress), streamId, aeron, taskRunner,
-      envelopeBufferPool, giveUpAfter, createFlightRecorderEventSink()))
-  }
+  private def aeronSink(outboundContext: OutboundContext, streamId: Int): Sink[EnvelopeBuffer, Future[Done]] =
+    aeronSink(outboundContext, streamId, envelopeBufferPool)
 
   private def aeronSink(outboundContext: OutboundContext, streamId: Int,
                         bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
