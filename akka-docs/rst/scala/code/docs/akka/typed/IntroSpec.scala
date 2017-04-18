@@ -66,6 +66,28 @@ object IntroSpec {
         }
       }
     //#chatroom-behavior
+
+    //#chatroom-actor
+    def mutableChatRoom(): Behavior[Command] =
+      Deferred[Command] { _ =>
+        var sessions: List[ActorRef[SessionEvent]] = List.empty
+        Stateful[Command] { (ctx, msg) ⇒
+          msg match {
+            case GetSession(screenName, client) ⇒
+              val wrapper = ctx.spawnAdapter {
+                p: PostMessage ⇒ PostSessionMessage(screenName, p.message)
+              }
+              client ! SessionGranted(wrapper)
+              sessions = client :: sessions
+              Same
+            case PostSessionMessage(screenName, message) ⇒
+              val mp = MessagePosted(screenName, message)
+              sessions foreach (_ ! mp)
+              Same
+          }
+        }
+      }
+    //#chatroom-actor
   }
   //#chatroom-actor
 
