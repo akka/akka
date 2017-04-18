@@ -174,5 +174,29 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       downstream.expectComplete()
       downstream.expectNoMsg(100.millis)
     }
+
+    "not drop a pending last element on upstream finish" taggedAs TimingTest in {
+      val וupstream = TestPublisher.probe[Long]()
+      val downstream = TestSubscriber.probe[immutable.Seq[Long]]()
+      Source
+        .fromPublisher(וupstream)
+        .groupedWeightedWithin(5, 50.millis)(identity)
+        .to(Sink.fromSubscriber(downstream))
+        .run()
+
+      downstream.ensureSubscription()
+      downstream.expectNoMsg(100.millis)
+      וupstream.sendNext(1)
+      וupstream.sendNext(2)
+      וupstream.sendNext(3)
+      וupstream.sendComplete()
+      downstream.request(1)
+      downstream.expectNext(Vector(1, 2): immutable.Seq[Long])
+      downstream.expectNoMsg(100.millis)
+      downstream.request(1)
+      downstream.expectNext(Vector(3): immutable.Seq[Long])
+      downstream.expectComplete()
+    }
   }
+
 }
