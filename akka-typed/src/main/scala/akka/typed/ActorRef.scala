@@ -26,12 +26,6 @@ abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[Act
   def tell(msg: T): Unit
 
   /**
-   * Send a message to the Actor referenced by this ActorRef using *at-most-once*
-   * messaging semantics.
-   */
-  def !(msg: T): Unit = tell(msg)
-
-  /**
    * Narrow the type of this `ActorRef, which is always a safe operation.
    */
   final def narrow[U <: T]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
@@ -74,6 +68,15 @@ abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[Act
 }
 
 object ActorRef {
+
+  implicit final class ActorRefScalaTell[-T](val ref: ActorRef[T]) extends AnyVal {
+    /**
+     * Send a message to the Actor referenced by this ActorRef using *at-most-once*
+     * messaging semantics.
+     */
+    def !(msg: T): Unit = ref.tell(msg)
+  }
+
   /**
    * Create an ActorRef from a Future, buffering up to the given number of
    * messages in while the Future is not fulfilled.
