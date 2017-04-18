@@ -4,7 +4,7 @@
 package akka.remote.artery
 
 import java.io.File
-import java.io.FileOutputStream
+import java.nio.Files
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -40,7 +40,7 @@ object BenchmarkFileReporter {
       }
       val config = system.settings.config
 
-      val fos = new FileOutputStream(testResultFile)
+      val fos = Files.newOutputStream(testResultFile.toPath)
       reportResults(s"Git commit: $gitCommit")
 
       val settingsToReport =
