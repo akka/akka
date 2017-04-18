@@ -1462,6 +1462,7 @@ private[stream] object Collect {
       push(out, buf.result())
       buf.clear()
       if (!finished) startNewGroup()
+      else if (pending != null) emit(out, Vector(pending), () ⇒ completeStage())
       else completeStage()
     }
 
@@ -1471,6 +1472,7 @@ private[stream] object Collect {
         pendingWeight = 0
         buf += pending
         pending = null.asInstanceOf[T]
+        groupEmitted = false
       } else {
         totalWeight = 0
       }
