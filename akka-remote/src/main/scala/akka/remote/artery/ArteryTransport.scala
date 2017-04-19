@@ -955,18 +955,20 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
                                  bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, (OutboundCompressionAccess, Future[Done])] = {
 
     outboundLane(outboundContext, bufferPool)
-      .toMat(aeronSink(outboundContext, streamId))(Keep.both)
+      .toMat(aeronSink(outboundContext, streamId, bufferPool))(Keep.both)
   }
 
   def aeronSink(outboundContext: OutboundContext): Sink[EnvelopeBuffer, Future[Done]] =
-    aeronSink(outboundContext, ordinaryStreamId)
+    aeronSink(outboundContext, ordinaryStreamId, envelopeBufferPool)
 
-  private def aeronSink(outboundContext: OutboundContext, streamId: Int): Sink[EnvelopeBuffer, Future[Done]] = {
+  private def aeronSink(outboundContext: OutboundContext, streamId: Int,
+                        bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
+
     val giveUpAfter =
       if (streamId == controlStreamId) settings.Advanced.GiveUpSystemMessageAfter
       else settings.Advanced.GiveUpMessageAfter
     Sink.fromGraph(new AeronSink(outboundChannel(outboundContext.remoteAddress), streamId, aeron, taskRunner,
-      envelopeBufferPool, giveUpAfter, createFlightRecorderEventSink()))
+      bufferPool, giveUpAfter, createFlightRecorderEventSink()))
   }
 
   def outboundLane(outboundContext: OutboundContext): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] =
