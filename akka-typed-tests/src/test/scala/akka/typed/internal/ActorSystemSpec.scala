@@ -40,7 +40,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
     }
 
     def `must start the guardian actor and terminate when it terminates`(): Unit = {
-      val t = withSystem("a", Stateful[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; Stopped }, doTerminate = false) { sys ⇒
+      val t = withSystem("a", Immutable[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; Stopped }, doTerminate = false) { sys ⇒
         val inbox = Inbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually { inbox.hasMessages should ===(true) }
@@ -53,14 +53,13 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
 
     def `must terminate the guardian actor`(): Unit = {
       val inbox = Inbox[String]("terminate")
-      val sys = system("terminate", Stateful[Probe]({
+      val sys = system("terminate", Immutable[Probe]({
         case (_, _) ⇒ Unhandled
       }, {
         case (ctx, PostStop) ⇒
           inbox.ref ! "done"
           Same
-      }
-      ))
+      }))
       sys.terminate().futureValue
       inbox.receiveAll() should ===("done" :: Nil)
     }
@@ -116,7 +115,11 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
 
         case class Doner(ref: ActorRef[Done])
 
-        val ref1, ref2 = sys.systemActorOf(Stateless[Doner] { case (_, doner) ⇒ doner.ref ! Done }, "empty").futureValue
+        val ref1, ref2 = sys.systemActorOf(Immutable[Doner] {
+          case (_, doner) ⇒
+            doner.ref ! Done
+            Same
+        }, "empty").futureValue
         (ref1 ? Doner).futureValue should ===(Done)
         (ref2 ? Doner).futureValue should ===(Done)
         val RE = "(\\d+)-empty".r

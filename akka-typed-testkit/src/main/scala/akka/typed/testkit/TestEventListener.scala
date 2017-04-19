@@ -24,7 +24,7 @@ class TestEventListener extends Logger with StdOutLogger {
   val initialBehavior = {
     // TODO avoid depending on dsl here?
     Deferred[Command] { _ ⇒
-      Stateful[Command] {
+      Immutable[Command] {
         case (ctx, Initialize(eventStream, replyTo)) ⇒
           val log = ctx.spawn(Deferred[AnyRef] { childCtx ⇒
             var filters: List[EventFilter] = Nil
@@ -42,11 +42,17 @@ class TestEventListener extends Logger with StdOutLogger {
               filters = removeFirst(filters)
             }
 
-            Stateless[AnyRef] {
-              case (_, TE.Mute(filters))   ⇒ filters foreach addFilter
-              case (_, TE.UnMute(filters)) ⇒ filters foreach removeFilter
-              case (_, event: LogEvent)    ⇒ if (!filter(event)) print(event)
-              case _                       ⇒ Unhandled
+            Immutable[AnyRef] {
+              case (_, TE.Mute(filters)) ⇒
+                filters foreach addFilter
+                Same
+              case (_, TE.UnMute(filters)) ⇒
+                filters foreach removeFilter
+                Same
+              case (_, event: LogEvent) ⇒
+                if (!filter(event)) print(event)
+                Same
+              case _ ⇒ Unhandled
             }
           }, "logger")
 

@@ -40,11 +40,11 @@ public abstract class Actor {
     }
   }
 
-  private static class Stateful<T> extends ExtensibleBehavior<T> {
+  private static class Immutable<T> extends ExtensibleBehavior<T> {
     final Function2<ActorContext<T>, T, Behavior<T>> message;
     final Function2<ActorContext<T>, Signal, Behavior<T>> signal;
 
-    public Stateful(Function2<ActorContext<T>, T, Behavior<T>> message,
+    public Immutable(Function2<ActorContext<T>, T, Behavior<T>> message,
         Function2<ActorContext<T>, Signal, Behavior<T>> signal) {
       this.signal = signal;
       this.message = message;
@@ -58,25 +58,6 @@ public abstract class Actor {
     @Override
     public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
       return message.apply(ctx, msg);
-    }
-  }
-
-  private static class Stateless<T> extends ExtensibleBehavior<T> {
-    final Procedure2<ActorContext<T>, T> message;
-
-    public Stateless(Procedure2<ActorContext<T>, T> message) {
-      this.message = message;
-    }
-
-    @Override
-    public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
-      return Same();
-    }
-
-    @Override
-    public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
-      message.apply(ctx, msg);
-      return Same();
     }
   }
 
@@ -153,17 +134,19 @@ public abstract class Actor {
    * {@link ActorContext} that allows access to the system, spawning and watching
    * other actors, etc.
    *
-   * This constructor is called stateful because processing the next message
+   * This constructor is called immutable because the behavior instance doesn't
+   * have or close over any mutable state. Processing the next message
    * results in a new behavior that can potentially be different from this one.
-   * If no change is desired, use {@link #same}.
+   * State is updated by returning a new behavior that holds the new immutable
+   * state. If no change is desired, use {@link #same}.
    *
    * @param message
    *          the function that describes how this actor reacts to the next
    *          message
    * @return the behavior
    */
-  static public <T> Behavior<T> stateful(Function2<ActorContext<T>, T, Behavior<T>> message) {
-    return new Stateful<T>(message, unhandledFun());
+  static public <T> Behavior<T> immutable(Function2<ActorContext<T>, T, Behavior<T>> message) {
+    return new Immutable<T>(message, unhandledFun());
   }
 
   /**
@@ -173,9 +156,11 @@ public abstract class Actor {
    * {@link ActorContext} that allows access to the system, spawning and watching
    * other actors, etc.
    *
-   * This constructor is called stateful because processing the next message
+   * This constructor is called immutable because the behavior instance doesn't
+   * have or close over any mutable state. Processing the next message
    * results in a new behavior that can potentially be different from this one.
-   * If no change is desired, use {@link #same}.
+   * State is updated by returning a new behavior that holds the new immutable
+   * state. If no change is desired, use {@link #same}.
    *
    * @param message
    *          the function that describes how this actor reacts to the next
@@ -185,29 +170,9 @@ public abstract class Actor {
    *          signal
    * @return the behavior
    */
-  static public <T> Behavior<T> stateful(Function2<ActorContext<T>, T, Behavior<T>> message,
+  static public <T> Behavior<T> immutable(Function2<ActorContext<T>, T, Behavior<T>> message,
       Function2<ActorContext<T>, Signal, Behavior<T>> signal) {
-    return new Stateful<T>(message, signal);
-  }
-
-  /**
-   * Construct an actor behavior that can react to incoming messages but not to
-   * lifecycle signals. After spawning this actor from another actor (or as the
-   * guardian of an {@link akka.typed.ActorSystem}) it will be executed within an
-   * {@link ActorContext} that allows access to the system, spawning and watching
-   * other actors, etc.
-   *
-   * This constructor is called stateless because it cannot be replaced by
-   * another one after it has been installed. It is most useful for leaf actors
-   * that do not create child actors themselves.
-   *
-   * @param message
-   *          the function that describes how this actor reacts to the next
-   *          message
-   * @return the behavior
-   */
-  static public <T> Behavior<T> stateless(Procedure2<ActorContext<T>, T> message) {
-    return new Stateless<T>(message);
+    return new Immutable<T>(message, signal);
   }
 
   /**
@@ -268,7 +233,7 @@ public abstract class Actor {
   /**
    * Behavior decorator that allows you to perform any side-effect before a
    * signal or message is delivered to the wrapped behavior. The wrapped
-   * behavior can evolve (i.e. be stateful) without needing to be wrapped in a
+   * behavior can evolve (i.e. be immutable) without needing to be wrapped in a
    * <code>tap(...)</code> call again.
    *
    * @param signal
@@ -291,7 +256,7 @@ public abstract class Actor {
   /**
    * Behavior decorator that copies all received message to the designated
    * monitor {@link akka.typed.ActorRef} before invoking the wrapped behavior. The
-   * wrapped behavior can evolve (i.e. be stateful) without needing to be
+   * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a <code>monitor(...)</code> call again.
    *
    * @param monitor
@@ -339,7 +304,10 @@ public abstract class Actor {
    * Behavior’s type hierarchy. Signals are not transformed.
    *
    * <code><pre>
-   * Behavior&lt;String> s = stateless((ctx, msg) -> System.out.println(msg))
+   * Behavior&lt;String> s = immutable((ctx, msg) -> {
+   *     System.out.println(msg);
+   *     return same();
+   *   });
    * Behavior&lt;Number> n = widened(s, pf -> pf.
    *         match(BigInteger.class, i -> "BigInteger(" + i + ")").
    *         match(BigDecimal.class, d -> "BigDecimal(" + d + ")")

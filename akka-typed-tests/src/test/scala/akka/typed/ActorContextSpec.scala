@@ -73,7 +73,7 @@ object ActorContextSpec {
   final case class Adapter(a: ActorRef[Command]) extends Event
 
   def subject(monitor: ActorRef[Monitor]): Behavior[Command] =
-    Actor.Stateful(
+    Actor.Immutable(
       (ctx, message) ⇒ message match {
         case ReceiveTimeout ⇒
           monitor ! GotReceiveTimeout
@@ -131,16 +131,17 @@ object ActorContextSpec {
           Actor.Same
         case BecomeInert(replyTo) ⇒
           replyTo ! BecameInert
-          Actor.Stateless {
+          Actor.Immutable {
             case (_, Ping(replyTo)) ⇒
               replyTo ! Pong2
+              Actor.Same
             case (_, Throw(ex)) ⇒
               throw ex
-            case _ ⇒ ()
+            case _ ⇒ Actor.Unhandled
           }
         case BecomeCareless(replyTo) ⇒
           replyTo ! BecameCareless
-          Actor.Stateful[Command]({
+          Actor.Immutable[Command]({
             case (_, _) ⇒ Actor.Unhandled
           }, {
             case (_, Terminated(_)) ⇒ Actor.Unhandled
@@ -156,7 +157,7 @@ object ActorContextSpec {
       (ctx, signal) ⇒ { monitor ! GotSignal(signal); Actor.Same })
 
   def oldSubject(monitor: ActorRef[Monitor]): Behavior[Command] = {
-    Actor.Stateful({
+    Actor.Immutable({
       case (ctx, message) ⇒ message match {
         case ReceiveTimeout ⇒
           monitor ! GotReceiveTimeout
@@ -214,7 +215,7 @@ object ActorContextSpec {
           Actor.Same
         case BecomeInert(replyTo) ⇒
           replyTo ! BecameInert
-          Actor.Stateful[Command] {
+          Actor.Immutable[Command] {
             case (_, Ping(replyTo)) ⇒
               replyTo ! Pong2
               Actor.Same
@@ -224,7 +225,7 @@ object ActorContextSpec {
           }
         case BecomeCareless(replyTo) ⇒
           replyTo ! BecameCareless
-          Actor.Stateful[Command](
+          Actor.Immutable[Command](
             {
               case _ ⇒ Actor.Unhandled
             },

@@ -212,7 +212,7 @@ object Behavior {
     behavior match {
       case SameBehavior | UnhandledBehavior ⇒ throw new IllegalArgumentException(s"cannot execute with $behavior as behavior")
       case _: DeferredBehavior[_]           ⇒ throw new IllegalArgumentException(s"deferred should not be passed to interpreter")
-      case IgnoreBehavior                   ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
+      case IgnoreBehavior                   ⇒ SameBehavior.asInstanceOf[Behavior[T]]
       case StoppedBehavior                  ⇒ StoppedBehavior.asInstanceOf[Behavior[T]]
       case EmptyBehavior                    ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case ext: ExtensibleBehavior[T] @unchecked ⇒
