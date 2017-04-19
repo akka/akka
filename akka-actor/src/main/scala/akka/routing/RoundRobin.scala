@@ -5,8 +5,6 @@ package akka.routing
 
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.immutable
-import akka.actor.ActorContext
-import akka.actor.Props
 import akka.dispatch.Dispatchers
 import com.typesafe.config.Config
 import akka.actor.SupervisorStrategy
@@ -23,11 +21,14 @@ object RoundRobinRoutingLogic {
  */
 @SerialVersionUID(1L)
 final class RoundRobinRoutingLogic extends RoutingLogic {
-  val next = new AtomicLong(0)
+  val next = new AtomicLong
 
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =
-    if (routees.isEmpty) NoRoutee
-    else routees((next.getAndIncrement % routees.size).asInstanceOf[Int])
+    if (routees.nonEmpty) {
+      val size = routees.size
+      val index = (next.getAndIncrement % size).asInstanceOf[Int]
+      routees(if (index < 0) size + index - 1 else index)
+    } else NoRoutee
 
 }
 
