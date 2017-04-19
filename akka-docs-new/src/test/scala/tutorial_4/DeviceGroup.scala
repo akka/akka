@@ -9,16 +9,13 @@ import tutorial_4.DeviceManager.RequestTrackDevice
 
 import scala.concurrent.duration._
 
-//#query-protocol
 object DeviceGroup {
-  //#query-protocol
   def props(groupId: String): Props = Props(new DeviceGroup(groupId))
 
   final case class RequestDeviceList(requestId: Long)
   final case class ReplyDeviceList(requestId: Long, ids: Set[String])
 
   //#query-protocol
-  // ... earlier message types not shown
   final case class RequestAllTemperatures(requestId: Long)
   final case class RespondAllTemperatures(requestId: Long, temperatures: Map[String, TemperatureReading])
 
@@ -27,8 +24,8 @@ object DeviceGroup {
   case object TemperatureNotAvailable extends TemperatureReading
   case object DeviceNotAvailable extends TemperatureReading
   case object DeviceTimedOut extends TemperatureReading
+  //#query-protocol
 }
-//#query-protocol
 
 //#query-added
 class DeviceGroup(groupId: String) extends Actor with ActorLogging {
@@ -58,7 +55,8 @@ class DeviceGroup(groupId: String) extends Actor with ActorLogging {
     case RequestTrackDevice(groupId, deviceId) =>
       log.warning(
         "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-        groupId, this.groupId)
+        groupId, this.groupId
+      )
 
     case RequestDeviceList(requestId) =>
       sender() ! ReplyDeviceList(requestId, deviceIdToActor.keySet)
