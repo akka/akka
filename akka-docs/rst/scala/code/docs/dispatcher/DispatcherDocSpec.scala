@@ -97,7 +97,11 @@ object DispatcherDocSpec {
       type = Dispatcher
       executor = "thread-pool-executor"
       thread-pool-executor {
-        fixed-pool-size = 32
+        fixed-pool-size = on
+        core-pool-size-min = 32
+        core-pool-size-max = 32
+        max-pool-size-min = 32
+        max-pool-size-max = 32
       }
       throughput = 1
     }
