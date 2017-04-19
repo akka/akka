@@ -536,6 +536,26 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
       }
 
+    "report `ConfirmedClosed` after `ConfirmedClose` command in pull-mode" in
+      new EstablishedConnectionTest(pullMode = true) with SmallRcvBuffer {
+        run {
+          // we send a write and a close command directly afterwards
+          connectionHandler.send(connectionActor, ConfirmedClose)
+          interestCallReceiver.expectMsg(OP_READ)
+
+          val buffer = ByteBuffer.allocate(1)
+          serverSelectionKey should be(selectedAs(SelectionKey.OP_READ, 2.seconds))
+          serverSideChannel.read(buffer) should be(-1)
+
+          closeServerSideAndWaitForClientReadable()
+
+          selector.send(connectionActor, ChannelReadable)
+          connectionHandler.expectMsg(ConfirmedClosed)
+
+          assertThisConnectionActorTerminated()
+        }
+      }
+
     "report when peer closed the connection" in new EstablishedConnectionTest() {
       run {
         closeServerSideAndWaitForClientReadable()

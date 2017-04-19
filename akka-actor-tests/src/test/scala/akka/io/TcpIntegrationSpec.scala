@@ -79,7 +79,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
       verifyActorTermination(serverConnection)
     }
 
-    "properly handle connection abort via PosionPill from client side" in new TestSetup {
+    "properly handle connection abort via PoisonPill from client side" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
       clientHandler.send(clientConnection, PoisonPill)
       verifyActorTermination(clientConnection)
@@ -88,7 +88,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
       verifyActorTermination(serverConnection)
     }
 
-    "properly handle connection abort via PosionPill from client side after chit-chat" in new TestSetup {
+    "properly handle connection abort via PoisonPill from client side after chit-chat" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
       chitchat(clientHandler, clientConnection, serverHandler, serverConnection)
 
@@ -99,7 +99,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
       verifyActorTermination(serverConnection)
     }
 
-    "properly handle connection abort via PosionPill from server side" in new TestSetup {
+    "properly handle connection abort via PoisonPill from server side" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
       serverHandler.send(serverConnection, PoisonPill)
       verifyActorTermination(serverConnection)
@@ -108,7 +108,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
       verifyActorTermination(clientConnection)
     }
 
-    "properly handle connection abort via PosionPill from server side after chit-chat" in new TestSetup {
+    "properly handle connection abort via PoisonPill from server side after chit-chat" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
       chitchat(clientHandler, clientConnection, serverHandler, serverConnection)
 
@@ -117,6 +117,17 @@ class TcpIntegrationSpec extends AkkaSpec("""
 
       clientHandler.expectMsgType[ErrorClosed]
       verifyActorTermination(clientConnection)
+    }
+
+    "support ConfirmedClose in pull mode" in new TestSetup {
+      override def pullMode: Boolean = true
+
+      val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
+      clientHandler.send(clientConnection, ConfirmedClose)
+      serverHandler.expectMsg(PeerClosed)
+      clientHandler.expectMsg(ConfirmedClosed)
+      verifyActorTermination(clientConnection)
+      verifyActorTermination(serverConnection)
     }
 
     "properly complete one client/server request/response cycle" in new TestSetup {
