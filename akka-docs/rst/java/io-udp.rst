@@ -86,8 +86,7 @@ the biggest difference is the absence of remote address information in
 UDP Multicast
 ------------------------------------------
 
-If you want to use UDP multicast you will need to use Java 7. Akka provides
-a way to control various options of ``DatagramChannel`` through the
+Akka provides a way to control various options of ``DatagramChannel`` through the
 ``akka.io.Inet.SocketOption`` interface. The example below shows
 how to setup a receiver of multicast messages using IPv6 protocol.
 
