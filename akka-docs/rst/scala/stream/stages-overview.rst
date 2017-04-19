@@ -175,7 +175,8 @@ elements or failing the stream, the strategy is chosen by the user.
 
 **emits** when there is demand and there are messages in the buffer or a message is sent to the actorref
 
-**completes** when the actorref is sent ``akka.actor.Status.Success`` or ``PoisonPill``
+**completes** when the `ActorRef` is sent a ``akka.actor.Status.Success(...)`` (whose content will be ignored) or by
+sending ``akka.actor.PoisonPill``
 
 combine
 ^^^^^^^
