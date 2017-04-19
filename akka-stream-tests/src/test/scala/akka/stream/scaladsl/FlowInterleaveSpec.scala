@@ -44,6 +44,24 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       probe.expectComplete()
     }
 
+    "complete upstream if any of its upstream completes with eagerClose = true" in assertAllStagesStopped {
+      val probe = TestSubscriber.manualProbe[Int]()
+
+      Source(0 to 2).interleave(Source(3 to 5), 2, eagerClose = true).runWith(Sink.fromSubscriber(probe))
+      probe.expectSubscription().request(10)
+      probe.expectNext(0, 1, 3, 4, 2)
+      probe.expectComplete()
+    }
+
+    "eagerClose = true, other stream closed" in assertAllStagesStopped {
+      val probe = TestSubscriber.manualProbe[Int]()
+
+      Source(0 to 2).interleave(Source(3 to 4), 2, eagerClose = true).runWith(Sink.fromSubscriber(probe))
+      probe.expectSubscription().request(10)
+      probe.expectNext(0, 1, 3, 4)
+      probe.expectComplete()
+    }
+
     "work with segmentSize = 1" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
 
