@@ -7,7 +7,6 @@ package tutorial_2
 import akka.actor.{ Actor, ActorLogging, Props }
 
 object Device {
-
   def props(groupId: String, deviceId: String): Props = Props(new Device(groupId, deviceId))
 
   final case class RecordTemperature(requestId: Long, value: Double)
