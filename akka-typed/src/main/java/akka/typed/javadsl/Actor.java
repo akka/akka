@@ -371,18 +371,50 @@ public abstract class Actor {
     return new Deferred<T>(producer);
   }
 
-  // FIXME docs
+  /**
+   * Factory for creating a <code>MutableBehavior</code> that typically holds mutable state as
+   * instance variables in the concrete <code>MutableBehavior</code> implementation class.
+   *
+   * Creation of the behavior instance is deferred, i.e. it is created via the <code>producer</code>
+   * function. The reason for the deferred creation is to avoid sharing the same instance in
+   * multiple actors, and to create a new instance when the actor is restarted.
+   *
+   * @param producer
+   *          behavior factory that takes the child actor’s context as argument
+   * @return the deferred behavior
+   */
   static public <T> Behavior<T> mutable(akka.japi.function.Function<ActorContext<T>, MutableBehavior<T>> producer) {
     return deferred(ctx -> producer.apply(ctx));
   }
 
-  //FIXME docs
+  /**
+   * Mutable behavior can be implemented by extending this class and implement the
+   * abstract method {@link MutableBehavior#onMessage} and optionally override
+   * {@link MutableBehavior#onSignal}.
+   *
+   * Instances of this behavior should be created via {@link Actor#mutable} and if
+   * the {@link ActorContext} is needed it can be passed as a constructor parameter
+   * from the factory function.
+   *
+   * @see Actor#mutable
+   */
   static public abstract class MutableBehavior<T> extends ExtensibleBehavior<T> {
     @Override
     final public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
       return onMessage(msg);
     }
 
+    /**
+     * Implement this method to process an incoming message and return the next behavior.
+     *
+     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
+     * <ul>
+     * <li>returning `stopped` will terminate this Behavior</li>
+     * <li>returning `same` designates to reuse the current Behavior</li>
+     * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
+     * </ul>
+     *
+     */
     public abstract Behavior<T> onMessage(T msg) throws Exception;
 
     @Override
@@ -390,8 +422,22 @@ public abstract class Actor {
       return onSignal(msg);
     }
 
+    /**
+     * Override this method to process an incoming {@link akka.typed.Signal} and return the next behavior.
+     * This means that all lifecycle hooks, ReceiveTimeout, Terminated and Failed messages
+     * can initiate a behavior change.
+     *
+     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
+     * <ul>
+     * <li>returning `stopped` will terminate this Behavior</li>
+     * <li>returning `same` designates to reuse the current Behavior</li>
+     * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
+     * </ul>
+     *
+     * By default, this method returns `unhandled`.
+     */
     public Behavior<T> onSignal(Signal msg) throws Exception {
-      return Actor.same();
+      return Actor.unhandled();
     }
   }
 
