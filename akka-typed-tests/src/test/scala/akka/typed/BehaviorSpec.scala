@@ -399,23 +399,23 @@ class BehaviorSpec extends TypedSpec {
             msg match {
               case GetSelf ⇒
                 monitor ! Self(ctx.self)
-                SActor.Same
+                this
               case Miss ⇒
                 monitor ! Missed
                 SActor.Unhandled
               case Ignore ⇒
                 monitor ! Ignored
-                SActor.Same
+                SActor.Same // this or Same works the same way
               case Ping ⇒
                 monitor ! Pong
                 this
               case Swap ⇒
                 monitor ! Swapped
                 state = state.next
-                SActor.Same
+                this
               case GetState() ⇒
                 monitor ! state
-                SActor.Same
+                this
               case Stop       ⇒ SActor.Stopped
               case _: AuxPing ⇒ SActor.Unhandled
             }

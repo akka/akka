@@ -51,11 +51,11 @@ object MutableIntroSpec {
             }
             client ! SessionGranted(wrapper)
             sessions = client :: sessions
-            Same
+            this
           case PostSessionMessage(screenName, message) ⇒
             val mp = MessagePosted(screenName, message)
             sessions foreach (_ ! mp)
-            Same
+            this
         }
       }
 

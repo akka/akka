@@ -95,7 +95,7 @@ public abstract class Actor {
     private Behavior<T> canonicalize(Behavior<T> behv) {
       if (Behavior.isUnhandled(behv))
         return Unhandled();
-      else if (behv == Same())
+      else if (behv == Same() || behv == this)
         return Same();
       else if (Behavior.isAlive(behv))
         return new Tap<T>(signal, message, behv);
@@ -410,7 +410,7 @@ public abstract class Actor {
      * The returned behavior can in addition to normal behaviors be one of the canned special objects:
      * <ul>
      * <li>returning `stopped` will terminate this Behavior</li>
-     * <li>returning `same` designates to reuse the current Behavior</li>
+     * <li>returning `this` or `same` designates to reuse the current Behavior</li>
      * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
      * </ul>
      *
@@ -430,7 +430,7 @@ public abstract class Actor {
      * The returned behavior can in addition to normal behaviors be one of the canned special objects:
      * <ul>
      * <li>returning `stopped` will terminate this Behavior</li>
-     * <li>returning `same` designates to reuse the current Behavior</li>
+     * <li>returning `this` or `same` designates to reuse the current Behavior</li>
      * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
      * </ul>
      *

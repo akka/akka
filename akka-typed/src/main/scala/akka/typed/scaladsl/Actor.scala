@@ -251,7 +251,7 @@ object Actor {
      * The returned behavior can in addition to normal behaviors be one of the canned special objects:
      * <ul>
      * <li>returning `stopped` will terminate this Behavior</li>
-     * <li>returning `same` designates to reuse the current Behavior</li>
+     * <li>returning `this` or `same` designates to reuse the current Behavior</li>
      * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
      * </ul>
      *
@@ -271,7 +271,7 @@ object Actor {
      * The returned behavior can in addition to normal behaviors be one of the canned special objects:
      *
      *  * returning `Stopped` will terminate this Behavior
-     *  * returning `Same` designates to reuse the current Behavior
+     *  * returning `this` or `Same` designates to reuse the current Behavior
      *  * returning `Unhandled` keeps the same Behavior and signals that the message was not yet handled
      *
      * By default, this method returns `Unhandled`.
@@ -373,7 +373,7 @@ object Actor {
 
     private def canonical(behv: Behavior[T]): Behavior[T] =
       if (isUnhandled(behv)) Unhandled
-      else if (behv eq SameBehavior) Same
+      else if ((behv eq SameBehavior) || (behv eq this)) Same
       else if (isAlive(behv)) Tap(onMessage, onSignal, behv)
       else Stopped
     override def management(ctx: AC[T], signal: Signal): Behavior[T] = {

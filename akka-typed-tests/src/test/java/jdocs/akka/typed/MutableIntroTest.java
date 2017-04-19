@@ -95,7 +95,7 @@ public class MutableIntroTest {
           PostSessionMessage post = (PostSessionMessage) msg;
           MessagePosted mp = new MessagePosted(post.screenName, post.message);
           sessions.forEach(s -> s.tell(mp));
-          return Actor.same();
+          return this;
         } else {
           return Actor.unhandled();
         }
