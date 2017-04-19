@@ -30,10 +30,8 @@ supplies so that the :class:`HelloWorld` Actor can send back the confirmation
 message.
 
 The behavior of the Actor is defined as the :meth:`greeter` value with the help
-of the :class:`Stateless` behavior constructor—there are many different ways of
-formulating behaviors as we shall see in the following. The “stateless” behavior
-is not capable of changing in response to a message, it will stay the same
-until the Actor is stopped by its parent.
+of the :class:`Immutable` behavior constructor—there are several different ways of
+formulating behaviors as we shall see in the following.
 
 The type of the messages handled by this behavior is declared to be of class
 :class:`Greet`, which implies that the supplied function’s ``msg`` argument is
@@ -248,7 +246,7 @@ Actor will perform its job on its own accord, we do not need to send messages
 from the outside, so we declare it to be of type ``NotUsed``. Actors receive not
 only external messages, they also are notified of certain system events,
 so-called Signals. In order to get access to those we choose to implement this
-particular one using the :class:`Stateful` behavior decorator. The
+particular one using the :class:`Immutable` behavior decorator. The
 provided ``signal`` function will be invoked for signals (subclasses of :class:`Signal`)
 or the ``mesg`` function for user messages.
 

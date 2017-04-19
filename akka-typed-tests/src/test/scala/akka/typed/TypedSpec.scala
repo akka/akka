@@ -83,7 +83,7 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   import akka.testkit._
   def await[T](f: Future[T]): T = Await.result(f, timeout.duration * 1.1)
 
-  lazy val blackhole = await(nativeSystem ? Create(Stateful[Any] { case _ ⇒ Same }, "blackhole"))
+  lazy val blackhole = await(nativeSystem ? Create(Immutable[Any] { case _ ⇒ Same }, "blackhole"))
 
   /**
    * Run an Actor-based test. The test procedure is most conveniently
@@ -161,7 +161,7 @@ object TypedSpec {
   case object Timedout extends Status
 
   def guardian(outstanding: Map[ActorRef[_], ActorRef[Status]] = Map.empty): Behavior[Command] =
-    Stateful[Command]({
+    Immutable[Command]({
       case (ctx, r: RunTest[t]) ⇒
         val test = ctx.spawn(r.behavior, r.name)
         ctx.schedule(r.timeout, r.replyTo, Timedout)

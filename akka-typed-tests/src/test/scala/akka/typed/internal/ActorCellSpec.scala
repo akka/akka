@@ -21,7 +21,14 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
 
     def `must be creatable`(): Unit = {
       val parent = new DebugRef[String](sys.path / "creatable", true)
-      val cell = new ActorCell(sys, Deferred[String](_ ⇒ { parent ! "created"; Stateless[String] { case (_, s) ⇒ parent ! s } }), ec, 1000, parent)
+      val cell = new ActorCell(sys, Deferred[String](_ ⇒ {
+        parent ! "created"
+        Immutable[String] {
+          case (_, s) ⇒
+            parent ! s
+            Same
+        }
+      }), ec, 1000, parent)
       debugCell(cell) {
         ec.queueSize should ===(0)
         cell.sendSystem(Create())
@@ -100,7 +107,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
       val parent = new DebugRef[String](sys.path / "terminate", true)
       val self = new DebugRef[String](sys.path / "terminateSelf", true)
       val ex = new AssertionError
-      val behavior = Deferred[String](_ ⇒ { parent ! "created"; Stateful[String] { case (s, _) ⇒ throw ex } })
+      val behavior = Deferred[String](_ ⇒ { parent ! "created"; Immutable[String] { case (s, _) ⇒ throw ex } })
       val cell = new ActorCell(sys, behavior, ec, 1000, parent)
       cell.setSelf(self)
       debugCell(cell) {
@@ -181,7 +188,14 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
      */
     def `must not execute more messages than were batched naturally`(): Unit = {
       val parent = new DebugRef[String](sys.path / "batching", true)
-      val cell = new ActorCell(sys, Deferred[String] { ctx ⇒ Stateless[String] { case (_, s) ⇒ ctx.self ! s; parent ! s } }, ec, 1000, parent)
+      val cell = new ActorCell(sys, Deferred[String] { ctx ⇒
+        Immutable[String] {
+          case (_, s) ⇒
+            ctx.self ! s
+            parent ! s
+            Same
+        }
+      }, ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)
       debugCell(cell) {
@@ -416,7 +430,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
 
     def `must not terminate twice if failing in PostStop`(): Unit = {
       val parent = new DebugRef[String](sys.path / "terminateProperlyPostStop", true)
-      val cell = new ActorCell(sys, Stateful[String](
+      val cell = new ActorCell(sys, Immutable[String](
         { case _ ⇒ Unhandled },
         {
           case (_, PostStop) ⇒ ???

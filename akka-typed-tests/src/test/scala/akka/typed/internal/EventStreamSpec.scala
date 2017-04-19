@@ -19,9 +19,12 @@ object EventStreamSpec {
 
   class MyLogger extends Logger {
     def initialBehavior: Behavior[Logger.Command] =
-      Stateless {
+      Immutable {
         case (ctx, Logger.Initialize(es, replyTo)) ⇒
-          val logger = ctx.spawn(Stateless[LogEvent] { (_, ev: LogEvent) ⇒ logged :+= ev }, "logger")
+          val logger = ctx.spawn(Immutable[LogEvent] { (_, ev: LogEvent) ⇒
+            logged :+= ev
+            Same
+          }, "logger")
           ctx.watch(logger)
           replyTo ! logger
           Empty
@@ -262,7 +265,7 @@ class EventStreamSpec extends TypedSpec(EventStreamSpec.config) with Eventually 
     }
 
     def `must unsubscribe an actor upon termination`(): Unit = {
-      val ref = nativeSystem ? TypedSpec.Create(Stateful[Done] { case _ ⇒ Stopped }, "tester") futureValue Timeout(1.second)
+      val ref = nativeSystem ? TypedSpec.Create(Immutable[Done] { case _ ⇒ Stopped }, "tester") futureValue Timeout(1.second)
       es.subscribe(ref, classOf[Done]) should ===(true)
       es.subscribe(ref, classOf[Done]) should ===(false)
       ref ! Done

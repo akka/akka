@@ -19,9 +19,10 @@ object IntroSpec {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String)
 
-    val greeter = Stateless[Greet] { (_, msg) ⇒
+    val greeter = Immutable[Greet] { (_, msg) ⇒
       println(s"Hello ${msg.whom}!")
       msg.replyTo ! Greeted(msg.whom)
+      Same
     }
   }
   //#hello-world-actor
@@ -52,7 +53,7 @@ object IntroSpec {
       chatRoom(List.empty)
 
     private def chatRoom(sessions: List[ActorRef[SessionEvent]]): Behavior[Command] =
-      Stateful[Command] { (ctx, msg) ⇒
+      Immutable[Command] { (ctx, msg) ⇒
         msg match {
           case GetSession(screenName, client) ⇒
             val wrapper = ctx.spawnAdapter {
@@ -98,7 +99,7 @@ class IntroSpec extends TypedSpec {
     import ChatRoom._
 
     val gabbler =
-      Stateful[SessionEvent] { (_, msg) ⇒
+      Immutable[SessionEvent] { (_, msg) ⇒
         msg match {
           case SessionDenied(reason) ⇒
             println(s"cannot start chat room session: $reason")
@@ -121,7 +122,7 @@ class IntroSpec extends TypedSpec {
         ctx.watch(gabblerRef)
         chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-        Stateful(
+        Immutable(
           onMessage = (_, _) ⇒ Unhandled,
           onSignal = (ctx, sig) ⇒
           sig match {
