@@ -1763,7 +1763,13 @@ trait FlowOps[+Out, +Mat] {
    * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2) // 1, 2, 4, 5, 3, 6, 7
    * }}}
    *
-   * After one of upstreams is complete than all the rest elements will be emitted from the second one
+   * After one of upstreams is complete then all the rest elements will be emitted from the second one, unless
+   * `eagerClose` is `true`. If `eagerClose` is `true`, then rest elements from second upstream won't be emitted.
+   *
+   * `eagerClose` example:
+   * {{{
+   * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2) // 1, 2, 4, 5, 3
+   * }}}
    *
    * If it gets error from one of upstreams - stream completes with failure.
    *
@@ -1776,14 +1782,15 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int): Repr[U] =
-    via(interleaveGraph(that, segmentSize))
+  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int, eagerClose: Boolean = false): Repr[U] =
+    via(interleaveGraph(that, segmentSize, eagerClose))
 
   protected def interleaveGraph[U >: Out, M](
     that:        Graph[SourceShape[U], M],
-    segmentSize: Int): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    segmentSize: Int,
+    eagerClose:  Boolean                  = false): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.create(that) { implicit b ⇒ r ⇒
-      val interleave = b.add(Interleave[U](2, segmentSize))
+      val interleave = b.add(Interleave[U](2, segmentSize, eagerClose))
       r ~> interleave.in(1)
       FlowShape(interleave.in(0), interleave.out)
     }
@@ -2097,7 +2104,8 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
    * then repeat process.
    *
-   * After one of upstreams is complete than all the rest elements will be emitted from the second one
+   * After one of upstreams is complete then all the rest elements will be emitted from the second one, unless
+   * `eagerClose` is `true`. If `eagerClose` is `true`, then rest elements from second upstream won't be emitted.
    *
    * If it gets error from one of upstreams - stream completes with failure.
    *
@@ -2106,8 +2114,8 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
-    viaMat(interleaveGraph(that, request))(matF)
+  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int, eagerClose: Boolean = false)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
+    viaMat(interleaveGraph(that, request, eagerClose))(matF)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
