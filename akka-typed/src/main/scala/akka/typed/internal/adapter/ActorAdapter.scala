@@ -58,11 +58,11 @@ import akka.annotation.InternalApi
   }
 
   override def preStart(): Unit =
-    behavior = Behavior.preStart(behavior, ctx)
+    behavior = validateAsInitial(undefer(behavior, ctx))
   override def preRestart(reason: Throwable, message: Option[Any]): Unit =
     next(Behavior.interpretSignal(behavior, ctx, PreRestart), PreRestart)
   override def postRestart(reason: Throwable): Unit =
-    behavior = Behavior.preStart(behavior, ctx)
+    behavior = validateAsInitial(undefer(behavior, ctx))
   override def postStop(): Unit = {
     next(Behavior.interpretSignal(behavior, ctx, PostStop), PostStop)
   }

@@ -7,7 +7,7 @@ package patterns
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 import akka.event.Logging
-import akka.typed.Behavior.{ DeferredBehavior, SameBehavior, StoppedBehavior, UnhandledBehavior }
+import akka.typed.Behavior._
 import akka.typed.scaladsl.Actor._
 
 /**
@@ -22,7 +22,7 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
   private def restart(ctx: ActorContext[T], startedBehavior: Behavior[T]): Behavior[T] = {
     try Behavior.interpretSignal(startedBehavior, ctx, PreRestart) catch { case NonFatal(_) ⇒ }
     // no need to canonicalize, it's done in the calling methods
-    Behavior.preStart(initialBehavior, ctx)
+    validateAsInitial(undefer(initialBehavior, ctx))
   }
 
   private def canonical(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
@@ -78,13 +78,13 @@ final case class MutableRestarter[T, Thr <: Throwable: ClassTag](initialBehavior
 
   private[this] var current: Behavior[T] = _
   private def startCurrent(ctx: ActorContext[T]) = {
-    // we need to pre-start it the first time we have access to a context
-    if (current eq null) current = Behavior.preStart(initialBehavior, ctx)
+    // we need to undefer it if needed the first time we have access to a context
+    if (current eq null) current = validateAsInitial(undefer(initialBehavior, ctx))
   }
 
   private def restart(ctx: ActorContext[T]): Behavior[T] = {
     try Behavior.interpretSignal(current, ctx, PreRestart) catch { case NonFatal(_) ⇒ }
-    Behavior.preStart(initialBehavior, ctx)
+    validateAsInitial(undefer(initialBehavior, ctx))
   }
 
   override def management(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
