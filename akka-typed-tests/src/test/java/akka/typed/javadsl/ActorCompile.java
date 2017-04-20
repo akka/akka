@@ -7,9 +7,9 @@ import akka.typed.*;
 import static akka.typed.javadsl.Actor.*;
 
 public class ActorCompile {
-  
+
   interface MyMsg {}
-  
+
   class MyMsgA implements MyMsg {
     final ActorRef<String> replyTo;
 
@@ -26,9 +26,8 @@ public class ActorCompile {
     }
   }
 
-  Behavior<MyMsg> actor1 = stateful((ctx, msg) -> stopped(), (ctx, signal) -> same());
-  Behavior<MyMsg> actor2 = stateful((ctx, msg) -> unhandled());
-  Behavior<MyMsg> actor3 = stateless((ctx, msg) -> {});
+  Behavior<MyMsg> actor1 = immutable((ctx, msg) -> stopped(), (ctx, signal) -> same());
+  Behavior<MyMsg> actor2 = immutable((ctx, msg) -> unhandled());
   Behavior<MyMsg> actor4 = empty();
   Behavior<MyMsg> actor5 = ignore();
   Behavior<MyMsg> actor6 = tap((ctx, signal) -> {}, (ctx, msg) -> {}, actor5);
@@ -40,12 +39,13 @@ public class ActorCompile {
   Behavior<MyMsg> actor9 = widened(actor7, pf -> pf.match(MyMsgA.class, x -> x));
 
   {
-    Actor.<MyMsg>stateful((ctx, msg) -> {
+    Actor.<MyMsg>immutable((ctx, msg) -> {
       if (msg instanceof MyMsgA) {
-        return stateless((ctx2, msg2) -> {
+        return immutable((ctx2, msg2) -> {
           if (msg2 instanceof MyMsgB) {
             ((MyMsgA) msg).replyTo.tell(((MyMsgB) msg2).greeting);
           }
+          return same();
         });
       } else return unhandled();
     });

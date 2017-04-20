@@ -72,7 +72,7 @@ object Receptionist {
 
   private type KV[K <: AbstractServiceKey] = ActorRef[K#Type]
 
-  private def behavior(map: TypedMultiMap[AbstractServiceKey, KV]): Behavior[Command] = Stateful[Command]({ (ctx, msg) ⇒
+  private def behavior(map: TypedMultiMap[AbstractServiceKey, KV]): Behavior[Command] = Immutable[Command]({ (ctx, msg) ⇒
     msg match {
       case r: Register[t] ⇒
         ctx.watch(r.address)

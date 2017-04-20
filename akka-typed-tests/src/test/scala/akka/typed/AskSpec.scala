@@ -29,7 +29,7 @@ class AskSpec extends TypedSpec with ScalaFutures {
     implicit def executor: ExecutionContext =
       system.executionContext
 
-    val behavior: Behavior[Msg] = Stateful[Msg] {
+    val behavior: Behavior[Msg] = Immutable[Msg] {
       case (_, foo: Foo) ⇒
         foo.replyTo ! "foo"
         Same

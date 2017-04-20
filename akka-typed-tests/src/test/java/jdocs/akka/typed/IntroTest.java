@@ -36,9 +36,10 @@ public class IntroTest {
       }
     }
 
-    public static final Behavior<Greet> greeter = Actor.stateless((ctx, msg) -> {
+    public static final Behavior<Greet> greeter = Actor.immutable((ctx, msg) -> {
       System.out.println("Hello " + msg.whom + "!");
       msg.replyTo.tell(new Greeted(msg.whom));
+      return Actor.same();
     });
   }
   //#hello-world-actor
@@ -104,7 +105,7 @@ public class IntroTest {
     }
 
     private static Behavior<Command> chatRoom(List<ActorRef<SessionEvent>> sessions) {
-      return Actor.stateful((ctx, msg) -> {
+      return Actor.immutable((ctx, msg) -> {
         if (msg instanceof GetSession) {
           GetSession getSession = (GetSession) msg;
           ActorRef<PostMessage> wrapper = ctx.createAdapter(p ->

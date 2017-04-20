@@ -27,7 +27,7 @@ object AdapterSpec {
   }
 
   def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
-    Stateful(
+    Immutable(
       onMessage = (ctx, msg) ⇒
       msg match {
         case "send" ⇒
@@ -126,7 +126,7 @@ object AdapterSpec {
   }
 
   def typed2: Behavior[Typed2Msg] =
-    Stateful { (ctx, msg) ⇒
+    Immutable { (ctx, msg) ⇒
       msg match {
         case Ping(replyTo) ⇒
           replyTo ! "pong"

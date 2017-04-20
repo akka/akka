@@ -74,7 +74,7 @@ class MutableIntroSpec extends TypedSpec {
     import ChatRoom._
 
     val gabbler =
-      Stateful[SessionEvent] { (_, msg) ⇒
+      Immutable[SessionEvent] { (_, msg) ⇒
         msg match {
           case SessionDenied(reason) ⇒
             println(s"cannot start chat room session: $reason")
@@ -97,7 +97,7 @@ class MutableIntroSpec extends TypedSpec {
         ctx.watch(gabblerRef)
         chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-        Stateful(
+        Immutable(
           onMessage = (_, _) ⇒ Unhandled,
           onSignal = (ctx, sig) ⇒
           sig match {

@@ -33,11 +33,12 @@ object ActorSystemImpl {
     import scaladsl.Actor._
     Deferred { _ ⇒
       var i = 1
-      Stateless {
+      Immutable {
         case (ctx, create: CreateSystemActor[t]) ⇒
           val name = s"$i-${create.name}"
           i += 1
           create.replyTo ! ctx.spawn(create.behavior, name, create.deployment)
+          Same
       }
     }
   }

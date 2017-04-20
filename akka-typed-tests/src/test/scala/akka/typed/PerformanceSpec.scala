@@ -18,7 +18,7 @@ class PerformanceSpec extends TypedSpec(
 
   override def setTimeout = Timeout(20.seconds)
 
-  object `A static behavior` {
+  object `A immutable behavior` {
 
     case class Ping(x: Int, pong: ActorRef[Pong], report: ActorRef[Pong])
     case class Pong(x: Int, ping: ActorRef[Ping], report: ActorRef[Pong])
@@ -27,14 +27,19 @@ class PerformanceSpec extends TypedSpec(
       StepWise[Pong] { (ctx, startWith) ⇒
         startWith {
 
-          val pinger = Stateless[Ping] { (ctx, msg) ⇒
+          val pinger = Immutable[Ping] { (ctx, msg) ⇒
             if (msg.x == 0) {
               msg.report ! Pong(0, ctx.self, msg.report)
-            } else msg.pong ! Pong(msg.x - 1, ctx.self, msg.report)
+              Same
+            } else {
+              msg.pong ! Pong(msg.x - 1, ctx.self, msg.report)
+              Same
+            }
           } // FIXME .withDispatcher(executor)
 
-          val ponger = Stateless[Pong] { (ctx, msg) ⇒
+          val ponger = Immutable[Pong] { (ctx, msg) ⇒
             msg.ping ! Ping(msg.x, ctx.self, msg.report)
+            Same
           } // FIXME .withDispatcher(executor)
 
           val actors =
