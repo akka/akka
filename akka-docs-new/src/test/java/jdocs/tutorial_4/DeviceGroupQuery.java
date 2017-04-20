@@ -22,7 +22,8 @@ import akka.event.LoggingAdapter;
 //#query-full
 //#query-outline
 public class DeviceGroupQuery extends AbstractActor {
-    public static final class CollectionTimeout {}
+    public static final class CollectionTimeout {
+    }
 
     LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
@@ -73,8 +74,8 @@ public class DeviceGroupQuery extends AbstractActor {
                 .match(Device.RespondTemperature.class, r -> {
                     ActorRef deviceActor = getSender();
                     DeviceGroup.TemperatureReading reading = r.value
-                                    .map(v -> (DeviceGroup.TemperatureReading) new DeviceGroup.Temperature(v))
-                                    .orElse(new DeviceGroup.TemperatureNotAvailable());
+                            .map(v -> (DeviceGroup.TemperatureReading) new DeviceGroup.Temperature(v))
+                            .orElse(new DeviceGroup.TemperatureNotAvailable());
                     receivedResponse(deviceActor, reading, stillWaiting, repliesSoFar);
                 })
                 .match(Terminated.class, t -> {

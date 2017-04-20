@@ -1,6 +1,7 @@
 package jdocs.tutorial_2.inprogress2;
 
 //#device-with-read
+
 import java.util.Optional;
 
 import akka.actor.AbstractActor;
@@ -9,57 +10,61 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 class Device extends AbstractActor {
-  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+    LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
-  String groupId;
+    String groupId;
 
-  String deviceId;
+    String deviceId;
 
-  public Device(String groupId, String deviceId) {
-    this.groupId = groupId;
-    this.deviceId = deviceId;
-  }
-
-  public static Props props(String groupId, String deviceId) {
-    return Props.create(Device.class, groupId, deviceId);
-  }
-
-  //#read-protocol-2
-  final static class ReadTemperature {
-    Long requestId;
-    public ReadTemperature(Long requestId) {
-      this.requestId = requestId;
+    public Device(String groupId, String deviceId) {
+        this.groupId = groupId;
+        this.deviceId = deviceId;
     }
-  }
-  final static class RespondTemperature {
-    Long requestId;
-    Optional<Double> value;
-    public RespondTemperature(Long requestId, Optional<Double> value) {
-      this.requestId = requestId;
-      this.value = value;
+
+    public static Props props(String groupId, String deviceId) {
+        return Props.create(Device.class, groupId, deviceId);
     }
-  }
-  //#read-protocol-2
 
-  Optional<Double> lastTemperatureReading = Optional.empty();
+    //#read-protocol-2
+    final static class ReadTemperature {
+        Long requestId;
 
-  @Override
-  public void preStart() {
-    log.info("Device actor {}-{} started", groupId, deviceId);
-  }
-  @Override
-  public void postStop() {
-    log.info("Device actor {}-{} stopped", groupId, deviceId);
-  }
+        public ReadTemperature(Long requestId) {
+            this.requestId = requestId;
+        }
+    }
 
-  @Override
-  public Receive createReceive() {
-    return receiveBuilder()
-      .match(ReadTemperature.class, r -> {
-        sender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
-      })
-      .build();
-  }
+    final static class RespondTemperature {
+        Long requestId;
+        Optional<Double> value;
+
+        public RespondTemperature(Long requestId, Optional<Double> value) {
+            this.requestId = requestId;
+            this.value = value;
+        }
+    }
+    //#read-protocol-2
+
+    Optional<Double> lastTemperatureReading = Optional.empty();
+
+    @Override
+    public void preStart() {
+        log.info("Device actor {}-{} started", groupId, deviceId);
+    }
+
+    @Override
+    public void postStop() {
+        log.info("Device actor {}-{} stopped", groupId, deviceId);
+    }
+
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder()
+                .match(ReadTemperature.class, r -> {
+                    sender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
+                })
+                .build();
+    }
 
 }
 

@@ -175,8 +175,8 @@ public class DeviceGroupQueryTest extends JUnitSuite {
         TestKit device2 = new TestKit(system);
 
         Map<ActorRef, String> actorToDeviceId = new HashMap<>();
-        actorToDeviceId.put(device1.getRef(),"device1");
-        actorToDeviceId.put(device2.getRef(),"device2");
+        actorToDeviceId.put(device1.getRef(), "device1");
+        actorToDeviceId.put(device2.getRef(), "device2");
 
         ActorRef queryActor = system.actorOf(DeviceGroupQuery.props(
                 actorToDeviceId,
@@ -184,10 +184,10 @@ public class DeviceGroupQueryTest extends JUnitSuite {
                 requester.getRef(),
                 new FiniteDuration(3, TimeUnit.SECONDS)));
 
-        Assert.assertEquals((Long)0L,device1.expectMsgClass(Device.ReadTemperature.class).requestId);
-        Assert.assertEquals((Long)0L,device2.expectMsgClass(Device.ReadTemperature.class).requestId);
+        Assert.assertEquals((Long) 0L, device1.expectMsgClass(Device.ReadTemperature.class).requestId);
+        Assert.assertEquals((Long) 0L, device2.expectMsgClass(Device.ReadTemperature.class).requestId);
 
-        queryActor.tell(new Device.RespondTemperature(0L,Optional.of(1.0)),device1.getRef());
+        queryActor.tell(new Device.RespondTemperature(0L, Optional.of(1.0)), device1.getRef());
 
         DeviceGroup.RespondAllTemperatures response = requester.expectMsgClass(
                 FiniteDuration.create(5, TimeUnit.SECONDS),
