@@ -4,7 +4,7 @@
 package akka.remote.artery
 
 import java.io.File
-import java.nio.Files
+import java.nio.file.Files
 import java.text.SimpleDateFormat
 import java.util.Date
 
