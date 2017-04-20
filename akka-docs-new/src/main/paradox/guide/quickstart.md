@@ -1,5 +1,7 @@
 # Your First Akka Application - Hello World
 
+@@supergroup { name=Language groups=scala,java }
+
 After all this introduction, we are ready to build our first actor system. We will do so in three chapters.
 This first chapter will help you to set up your project, tools and have a simple "Hello World" demo running.
 We will keep this section to a bare minimum and then extend the sample application in the next chapter. Finally, we review
@@ -109,16 +111,43 @@ not exit (by default threads created by ActorSystem are not daemon threads; see 
 more details on [daemon or non-daemon threads](https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html)).
 The usual pattern is to have your system set up to stop on external signal (i.e. user pressing ENTER in the console).
 
-Once there is an `ActorSystem` we can populate it with actors. This is done by using the `actorOf` method. The `actorOf` method expects a `Props` instance and the name of the actor to be created. You can think of the `Props` as a configuration value for what actor to create and how it should be created. Creating an actor with the `actorOf` method will return an `ActorRef` instance. Think of the `ActorRef` as a unique address with which it is possible to message the actor instance. The `ActorRef` object contains a few methods with which you can send messages to the actor instance. One of them is called `tell`, or in the Scala case simply `!` (bang), and this method is used in the example here below. Calling the `!` method is an asynchronous operation and it instructs Akka to send a message to the actor instance that is uniquely identified by the actor reference.
+Once there is an `ActorSystem` we can populate it with actors. This is done by using the `actorOf` method.
+The `actorOf` method expects a `Props` instance and the name of the actor to be created.
+You can think of the `Props` as a configuration value for what actor to create and how it should be created.
+Creating an actor with the `actorOf` method will return an `ActorRef` instance.
+Think of the `ActorRef` as a unique address with which it is possible to message the actor instance.
+The `ActorRef` object contains a few methods with which you can send messages to the actor instance.
+One of them is called `tell`, or in the Scala case simply `!` (bang), and this method is used in the example here below.
+Calling the `tell` method is an asynchronous operation and it instructs Akka to send a message to the actor instance that is uniquely identified by the actor reference.
 
-@@snip [HelloWorldApp.scala](../../../test/scala/quickstart/HelloWorldApp.scala) { #create-send }
+Scala
+:   @@snip [HelloWorldApp.scala](../../../test/scala/quickstart/HelloWorldApp.scala) { #create-send group=scala }
 
-Before we can create any actor in the actor system we must define one first. Luckily, creating actors in Akka is quite simple! Just have your actor class extend `akka.actor.Actor` and override the method `receive: Receive` and you are good to go. As for our `HelloWorldActor` class, it extends `Actor` and overrides the `receive` method as per the requirement. Our implementation of the `receive` method expects messages of type `String`. For every `String` message it receives it will print "Hello " and the value of the `String`. Since the message we send in the main class is "World" we expect the string "Hello World" to be printed when running the application.
+Java
+:   @@snip [HelloWorldMain.java](../../../test/java/quickstart/HelloWorldMain.java) { #create-send group=java }
 
-@@snip [HelloWorldApp.scala](../../../test/scala/quickstart/HelloWorldApp.scala) { #actor-impl }
+Before we can create any actor in the actor system we must define one first.
+Luckily, creating actors in Akka is quite simple! Just have your actor class extend @span[`Actor`] { .group-scala }@span[`AbstractActor`] { .group-java }
+and override the method @span[`receive: Receive`] { .group-scala }@span[`public Receive createReceive()`] { .group-java }
+and you are good to go.
+As for our `HelloWorldActor` class, it extends @span[`Actor`] { .group-scala }@span[`AbstractActor`] { .group-java }
+and overrides the @span[`receive`] { .group-scala }@span[`createReceive`] { .group-java } method as per the requirement.
+Our implementation of the @span[`receive`] { .group-scala }@span[`createReceive`] { .group-java } method expects messages
+of type `String`. For every `String` message it receives it will print "Hello" and the value of the `String`.
+Since the message we send in the main class is "World" we expect the string "Hello World" to be printed when running the application.
+
+Scala
+:   @@snip [HelloWorldApp.scala](../../../test/scala/quickstart/HelloWorldApp.scala) { #actor-impl group=scala }
+
+Java
+:   @@snip [HelloWorldActor.java](../../../test/java/quickstart/HelloWorldActor.java) { group=java group=java }
 
 Here is the full example:
 
-@@snip [HelloWorldApp.scala](../../../test/scala/quickstart/HelloWorldApp.scala) { #full-example }
+Scala
+:   @@snip [HelloWorldApp.scala](../../../test/scala/quickstart/HelloWorldApp.scala) { #full-example group=scala }
+
+Java
+:   @@snip [HelloWorldMain.scala](../../../test/java/quickstart/HelloWorldMain.java) { #full-example group=java }
 
 Now that you have seen the basics of an Akka application it is time to dive deeper.
