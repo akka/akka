@@ -11,8 +11,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.Await
 //#imports
-import akka.testkit.AkkaSpec
-import akka.typed.TypedSpec
 
 object IntroSpec {
 
@@ -50,7 +48,10 @@ object IntroSpec {
     //#chatroom-protocol
     //#chatroom-behavior
 
-    def chatRoom(sessions: List[ActorRef[SessionEvent]] = List.empty): Behavior[Command] =
+    val behavior: Behavior[Command] =
+      chatRoom(List.empty)
+
+    private def chatRoom(sessions: List[ActorRef[SessionEvent]]): Behavior[Command] =
       Stateful[Command] { (ctx, msg) ⇒
         msg match {
           case GetSession(screenName, client) ⇒
@@ -114,8 +115,8 @@ class IntroSpec extends TypedSpec {
 
     //#chatroom-main
     val main: Behavior[akka.NotUsed] =
-      Deferred { ctx =>
-        val chatRoom = ctx.spawn(ChatRoom.chatRoom(), "chatroom")
+      Deferred { ctx ⇒
+        val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
         val gabblerRef = ctx.spawn(gabbler, "gabbler")
         ctx.watch(gabblerRef)
         chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
@@ -128,8 +129,7 @@ class IntroSpec extends TypedSpec {
               Stopped
             case _ ⇒
               Unhandled
-          }
-        )
+          })
       }
 
     val system = ActorSystem("ChatRoomDemo", main)

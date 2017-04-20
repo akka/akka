@@ -388,6 +388,44 @@ class BehaviorSpec extends TypedSpec {
   object `A Stateful Behavior (scala,native)` extends StatefulScalaBehavior with NativeSystem
   object `A Stateful Behavior (scala,adapted)` extends StatefulScalaBehavior with AdaptedSystem
 
+  trait MutableScalaBehavior extends Messages with Become with Stoppable {
+    override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
+    def behv(monitor: ActorRef[Event]): Behavior[Command] =
+      SActor.Mutable[Command] { ctx ⇒
+        new SActor.MutableBehavior[Command] {
+          private var state: State = StateA
+
+          override def onMessage(msg: Command): Behavior[Command] = {
+            msg match {
+              case GetSelf ⇒
+                monitor ! Self(ctx.self)
+                this
+              case Miss ⇒
+                monitor ! Missed
+                SActor.Unhandled
+              case Ignore ⇒
+                monitor ! Ignored
+                SActor.Same // this or Same works the same way
+              case Ping ⇒
+                monitor ! Pong
+                this
+              case Swap ⇒
+                monitor ! Swapped
+                state = state.next
+                this
+              case GetState() ⇒
+                monitor ! state
+                this
+              case Stop       ⇒ SActor.Stopped
+              case _: AuxPing ⇒ SActor.Unhandled
+            }
+          }
+        }
+      }
+  }
+  object `A Mutable Behavior (scala,native)` extends MutableScalaBehavior with NativeSystem
+  object `A Mutable Behavior (scala,adapted)` extends MutableScalaBehavior with AdaptedSystem
+
   trait StatelessScalaBehavior extends Messages {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) =
       (SActor.Stateless { (ctx, msg) ⇒

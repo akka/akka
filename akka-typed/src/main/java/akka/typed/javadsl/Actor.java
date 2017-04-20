@@ -95,7 +95,7 @@ public abstract class Actor {
     private Behavior<T> canonicalize(Behavior<T> behv) {
       if (Behavior.isUnhandled(behv))
         return Unhandled();
-      else if (behv == Same())
+      else if (behv == Same() || behv == this)
         return Same();
       else if (Behavior.isAlive(behv))
         return new Tap<T>(signal, message, behv);
@@ -120,7 +120,7 @@ public abstract class Actor {
    * Mode selector for the {@link #restarter} wrapper that decides whether an actor
    * upon a failure shall be restarted (to clean initial state) or resumed (keep
    * on running, with potentially compromised state).
-   * 
+   *
    * Resuming is less safe. If you use <code>OnFailure.RESUME</code> you should at least
    * not hold mutable data fields or collections within the actor as those might
    * be in an inconsistent state (the exception might have interrupted normal
@@ -152,11 +152,11 @@ public abstract class Actor {
    * guardian of an {@link akka.typed.ActorSystem}) it will be executed within an
    * {@link ActorContext} that allows access to the system, spawning and watching
    * other actors, etc.
-   * 
+   *
    * This constructor is called stateful because processing the next message
    * results in a new behavior that can potentially be different from this one.
    * If no change is desired, use {@link #same}.
-   * 
+   *
    * @param message
    *          the function that describes how this actor reacts to the next
    *          message
@@ -165,18 +165,18 @@ public abstract class Actor {
   static public <T> Behavior<T> stateful(Function2<ActorContext<T>, T, Behavior<T>> message) {
     return new Stateful<T>(message, unhandledFun());
   }
-  
+
   /**
-   * Construct an actor behavior that can react to both incoming messages and 
+   * Construct an actor behavior that can react to both incoming messages and
    * lifecycle signals. After spawning this actor from another actor (or as the
    * guardian of an {@link akka.typed.ActorSystem}) it will be executed within an
    * {@link ActorContext} that allows access to the system, spawning and watching
    * other actors, etc.
-   * 
+   *
    * This constructor is called stateful because processing the next message
    * results in a new behavior that can potentially be different from this one.
    * If no change is desired, use {@link #same}.
-   * 
+   *
    * @param message
    *          the function that describes how this actor reacts to the next
    *          message
@@ -196,11 +196,11 @@ public abstract class Actor {
    * guardian of an {@link akka.typed.ActorSystem}) it will be executed within an
    * {@link ActorContext} that allows access to the system, spawning and watching
    * other actors, etc.
-   * 
+   *
    * This constructor is called stateless because it cannot be replaced by
    * another one after it has been installed. It is most useful for leaf actors
    * that do not create child actors themselves.
-   * 
+   *
    * @param message
    *          the function that describes how this actor reacts to the next
    *          message
@@ -215,7 +215,7 @@ public abstract class Actor {
    * to reuse the previous behavior. This is provided in order to avoid the
    * allocation overhead of recreating the current behavior where that is not
    * necessary.
-   * 
+   *
    * @return pseudo-behavior marking “no change”
    */
   static public <T> Behavior<T> same() {
@@ -227,7 +227,7 @@ public abstract class Actor {
    * to reuse the previous behavior, including the hint that the message has not
    * been handled. This hint may be used by composite behaviors that delegate
    * (partial) handling to other behaviors.
-   * 
+   *
    * @return pseudo-behavior marking “unhandled”
    */
   static public <T> Behavior<T> unhandled() {
@@ -240,7 +240,7 @@ public abstract class Actor {
    * these will be stopped as part of the shutdown procedure. The PostStop
    * signal that results from stopping this actor will NOT be passed to the
    * current behavior, it will be effectively ignored.
-   * 
+   *
    * @return the inert behavior
    */
   static public <T> Behavior<T> stopped() {
@@ -249,7 +249,7 @@ public abstract class Actor {
 
   /**
    * A behavior that treats every incoming message as unhandled.
-   * 
+   *
    * @return the empty behavior
    */
   static public <T> Behavior<T> empty() {
@@ -258,7 +258,7 @@ public abstract class Actor {
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
-   * 
+   *
    * @return the inert behavior
    */
   static public <T> Behavior<T> ignore() {
@@ -270,7 +270,7 @@ public abstract class Actor {
    * signal or message is delivered to the wrapped behavior. The wrapped
    * behavior can evolve (i.e. be stateful) without needing to be wrapped in a
    * <code>tap(...)</code> call again.
-   * 
+   *
    * @param signal
    *          procedure to invoke with the {@link ActorContext} and the
    *          {@link akka.typed.Signal} as arguments before delivering the signal to
@@ -293,7 +293,7 @@ public abstract class Actor {
    * monitor {@link akka.typed.ActorRef} before invoking the wrapped behavior. The
    * wrapped behavior can evolve (i.e. be stateful) without needing to be
    * wrapped in a <code>monitor(...)</code> call again.
-   * 
+   *
    * @param monitor
    *          ActorRef to which to copy all received messages
    * @param behavior
@@ -309,7 +309,7 @@ public abstract class Actor {
    * initial state) whenever it throws an exception of the given class or a
    * subclass thereof. Exceptions that are not subtypes of <code>Thr</code> will not be
    * caught and thus lead to the termination of the actor.
-   * 
+   *
    * It is possible to specify that the actor shall not be restarted but
    * resumed. This entails keeping the same state as before the exception was
    * thrown and is thus less safe. If you use <code>OnFailure.RESUME</code> you should at
@@ -317,7 +317,7 @@ public abstract class Actor {
    * might be in an inconsistent state (the exception might have interrupted
    * normal processing); avoiding mutable state is possible by returning a fresh
    * behavior with the new state after every message.
-   * 
+   *
    * @param clazz
    *          the type of exceptions that shall be caught
    * @param mode
@@ -346,7 +346,7 @@ public abstract class Actor {
    *         // drop all other kinds of Number
    *     );
    * </pre></code>
-   * 
+   *
    * @param behavior
    *          the behavior that will receive the selected messages
    * @param selector
@@ -362,13 +362,83 @@ public abstract class Actor {
    * Wrap a behavior factory so that it runs upon PreStart, i.e. behavior
    * creation is deferred to the child actor instead of running within the
    * parent.
-   * 
+   *
    * @param producer
    *          behavior factory that takes the child actor’s context as argument
    * @return the deferred behavior
    */
   static public <T> Behavior<T> deferred(akka.japi.function.Function<ActorContext<T>, Behavior<T>> producer) {
     return new Deferred<T>(producer);
+  }
+
+  /**
+   * Factory for creating a <code>MutableBehavior</code> that typically holds mutable state as
+   * instance variables in the concrete <code>MutableBehavior</code> implementation class.
+   *
+   * Creation of the behavior instance is deferred, i.e. it is created via the <code>producer</code>
+   * function. The reason for the deferred creation is to avoid sharing the same instance in
+   * multiple actors, and to create a new instance when the actor is restarted.
+   *
+   * @param producer
+   *          behavior factory that takes the child actor’s context as argument
+   * @return the deferred behavior
+   */
+  static public <T> Behavior<T> mutable(akka.japi.function.Function<ActorContext<T>, MutableBehavior<T>> producer) {
+    return deferred(ctx -> producer.apply(ctx));
+  }
+
+  /**
+   * Mutable behavior can be implemented by extending this class and implement the
+   * abstract method {@link MutableBehavior#onMessage} and optionally override
+   * {@link MutableBehavior#onSignal}.
+   *
+   * Instances of this behavior should be created via {@link Actor#mutable} and if
+   * the {@link ActorContext} is needed it can be passed as a constructor parameter
+   * from the factory function.
+   *
+   * @see Actor#mutable
+   */
+  static public abstract class MutableBehavior<T> extends ExtensibleBehavior<T> {
+    @Override
+    final public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
+      return onMessage(msg);
+    }
+
+    /**
+     * Implement this method to process an incoming message and return the next behavior.
+     *
+     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
+     * <ul>
+     * <li>returning `stopped` will terminate this Behavior</li>
+     * <li>returning `this` or `same` designates to reuse the current Behavior</li>
+     * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
+     * </ul>
+     *
+     */
+    public abstract Behavior<T> onMessage(T msg) throws Exception;
+
+    @Override
+    final public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
+      return onSignal(msg);
+    }
+
+    /**
+     * Override this method to process an incoming {@link akka.typed.Signal} and return the next behavior.
+     * This means that all lifecycle hooks, ReceiveTimeout, Terminated and Failed messages
+     * can initiate a behavior change.
+     *
+     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
+     * <ul>
+     * <li>returning `stopped` will terminate this Behavior</li>
+     * <li>returning `this` or `same` designates to reuse the current Behavior</li>
+     * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
+     * </ul>
+     *
+     * By default, this method returns `unhandled`.
+     */
+    public Behavior<T> onSignal(Signal msg) throws Exception {
+      return Actor.unhandled();
+    }
   }
 
 }
