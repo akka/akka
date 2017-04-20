@@ -1763,12 +1763,38 @@ trait FlowOps[+Out, +Mat] {
    * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2) // 1, 2, 4, 5, 3, 6, 7
    * }}}
    *
+   * After one of upstreams is complete then all the rest elements will be emitted from the second one
+   *
+   * If it gets error from one of upstreams - stream completes with failure.
+   *
+   * '''Emits when''' element is available from the currently consumed upstream
+   *
+   * '''Backpressures when''' downstream backpressures. Signal to current
+   * upstream, switch to next upstream when received `segmentSize` elements
+   *
+   * '''Completes when''' the [[Flow]] and given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int): Repr[U] =
+    interleave(that, segmentSize, eagerClose = false)
+
+  /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that`
+   * source, then repeat process.
+   *
+   * Example:
+   * {{{
+   * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2) // 1, 2, 4, 5, 3, 6, 7
+   * }}}
+   *
    * After one of upstreams is complete then all the rest elements will be emitted from the second one, unless
    * `eagerClose` is `true`. If `eagerClose` is `true`, then rest elements from second upstream won't be emitted.
    *
    * `eagerClose` example:
    * {{{
-   * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2) // 1, 2, 4, 5, 3
+   * Source(List(1, 2, 3)).interleave(List(4, 5, 6, 7), 2, eagerClose = true) // 1, 2, 4, 5, 3
    * }}}
    *
    * If it gets error from one of upstreams - stream completes with failure.
@@ -1782,7 +1808,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int, eagerClose: Boolean = false): Repr[U] =
+  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int, eagerClose: Boolean): Repr[U] =
     via(interleaveGraph(that, segmentSize, eagerClose))
 
   protected def interleaveGraph[U >: Out, M](
@@ -2104,6 +2130,23 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
    * then repeat process.
    *
+   * After one of upstreams is complete then all the rest elements will be emitted from the second one
+   *
+   * If it gets error from one of upstreams - stream completes with failure.
+   *
+   * @see [[#interleave]].
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
+    interleaveMat(that, request, eagerClose = false)(matF)
+
+  /**
+   * Interleave is a deterministic merge of the given [[Source]] with elements of this [[Flow]].
+   * It first emits `segmentSize` number of elements from this flow to downstream, then - same amount for `that` source,
+   * then repeat process.
+   *
    * After one of upstreams is complete then all the rest elements will be emitted from the second one, unless
    * `eagerClose` is `true`. If `eagerClose` is `true`, then rest elements from second upstream won't be emitted.
    *
@@ -2114,7 +2157,7 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int, eagerClose: Boolean = false)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
+  def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int, eagerClose: Boolean)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[U, Mat3] =
     viaMat(interleaveGraph(that, request, eagerClose))(matF)
 
   /**
