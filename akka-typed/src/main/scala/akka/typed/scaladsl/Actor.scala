@@ -176,7 +176,7 @@ object Actor {
    *
    * Example:
    * {{{
-   * Stateless[String]((ctx, msg) => println(msg)).widen[Number] {
+   * Immutable[String] { (ctx, msg) => println(msg); Same }.widen[Number] {
    *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
    *   case i: BigInteger => s"BigInteger(&dollar;i)"
    *   // drop all other kinds of Number
@@ -329,36 +329,19 @@ object Actor {
    * [[ActorContext]] that allows access to the system, spawning and watching
    * other actors, etc.
    *
-   * This constructor is called stateful because processing the next message
+   * This constructor is called immutable because the behavior instance doesn't
+   * have or close over any mutable state. Processing the next message
    * results in a new behavior that can potentially be different from this one.
+   * State is updated by returning a new behavior that holds the new immutable
+   * state.
    */
-  final case class Stateful[T](
+  final case class Immutable[T](
     onMessage: (ActorContext[T], T) ⇒ Behavior[T],
     onSignal:  (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
     extends ExtensibleBehavior[T] {
     override def management(ctx: AC[T], msg: Signal): Behavior[T] = onSignal(ctx, msg)
     override def message(ctx: AC[T], msg: T) = onMessage(ctx, msg)
-    override def toString = s"Stateful(${LineNumbers(onMessage)})"
-  }
-
-  /**
-   * Construct an actor behavior that can react to incoming messages but not to
-   * lifecycle signals. After spawning this actor from another actor (or as the
-   * guardian of an [[akka.typed.ActorSystem]]) it will be executed within an
-   * [[ActorContext]] that allows access to the system, spawning and watching
-   * other actors, etc.
-   *
-   * This constructor is called stateless because it cannot be replaced by
-   * another one after it has been installed. It is most useful for leaf actors
-   * that do not create child actors themselves.
-   */
-  final case class Stateless[T](onMessage: (ActorContext[T], T) ⇒ Any) extends ExtensibleBehavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = Unhandled
-    override def message(ctx: AC[T], msg: T): Behavior[T] = {
-      onMessage(ctx, msg)
-      this
-    }
-    override def toString = s"Static(${LineNumbers(onMessage)})"
+    override def toString = s"Immutable(${LineNumbers(onMessage)})"
   }
 
   /**
@@ -390,7 +373,7 @@ object Actor {
   /**
    * Behavior decorator that copies all received message to the designated
    * monitor [[akka.typed.ActorRef]] before invoking the wrapped behavior. The
-   * wrapped behavior can evolve (i.e. be stateful) without needing to be
+   * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
   object Monitor {

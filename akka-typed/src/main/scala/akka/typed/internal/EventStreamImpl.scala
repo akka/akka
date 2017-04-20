@@ -44,7 +44,7 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
     import scaladsl.Actor
     Actor.Deferred[Command] { _ ⇒
       if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $this"))
-      Actor.Stateful[Command]({
+      Actor.Immutable[Command]({
         case (ctx, Register(actor)) ⇒
           if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
           ctx.watch(actor)
@@ -148,10 +148,11 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
 
   private val UnhandledMessageForwarder = {
     // TODO avoid depending on dsl here?
-    import scaladsl.Actor.Stateless
-    Stateless[a.UnhandledMessage] {
+    import scaladsl.Actor.{ Same, Immutable }
+    Immutable[a.UnhandledMessage] {
       case (_, a.UnhandledMessage(msg, sender, rcp)) ⇒
         publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
+        Same
     }
   }
 

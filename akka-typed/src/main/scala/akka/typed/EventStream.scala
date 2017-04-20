@@ -70,13 +70,15 @@ class DefaultLogger extends Logger with StdOutLogger {
     // TODO avoid depending on dsl here?
     import scaladsl.Actor._
     Deferred[Command] { _ ⇒
-      Stateful[Command] {
+      Immutable[Command] {
         case (ctx, Initialize(eventStream, replyTo)) ⇒
           val log = ctx.spawn(Deferred[AnyRef] { childCtx ⇒
 
-            Stateless[AnyRef] {
-              case (_, event: LogEvent) ⇒ print(event)
-              case _                    ⇒ Unhandled
+            Immutable[AnyRef] {
+              case (_, event: LogEvent) ⇒
+                print(event)
+                Same
+              case _ ⇒ Unhandled
             }
           }, "logger")
 
