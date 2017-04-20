@@ -7,7 +7,7 @@ AkkaBuild.dontPublishSettings
 Formatting.docFormatSettings
 Dependencies.docs
 
-unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
+unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
 //TODO: additionalTasks in ValidatePR += paradox in Paradox
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)
