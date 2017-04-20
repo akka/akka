@@ -165,18 +165,12 @@ object Behavior {
    * notably the behavior can neither be `Same` nor `Unhandled`. Starting
    * out with a `Stopped` behavior is allowed, though.
    */
-  def validateAsInitial[T](behavior: BehaSo I get updates every day or so. Bleeding edge, but also works whenever I need it, which is quite rare as well. vior[T]): Behavior[T] =
+  def validateAsInitial[T](behavior: Behavior[T]): Behavior[T] =
     behavior match {
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot use $behavior as initial behavior")
       case x ⇒ x
     }
-
-  /**
-   * Validate the given behavior as initial, initialize it if it is deferred.
-   */
-  def preStart[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
-    validateAsInitial(undefer(behavior, ctx))
 
   /**
    * Returns true if the given behavior is not stopped.

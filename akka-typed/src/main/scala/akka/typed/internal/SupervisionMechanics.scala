@@ -6,7 +6,7 @@ package internal
 
 import scala.util.control.NonFatal
 import akka.event.Logging
-import akka.typed.Behavior.DeferredBehavior
+import akka.typed.Behavior.{ DeferredBehavior, undefer, validateAsInitial }
 
 /**
  * INTERNAL API
@@ -68,7 +68,7 @@ private[typed] trait SupervisionMechanics[T] {
     behavior = initialBehavior
     if (system.settings.untyped.DebugLifecycle)
       publish(Logging.Debug(self.path.toString, clazz(behavior), "started"))
-    behavior = Behavior.preStart(behavior, ctx)
+    behavior = validateAsInitial(undefer(behavior, ctx))
     if (!Behavior.isAlive(behavior)) self.sendSystem(Terminate())
     true
   }
