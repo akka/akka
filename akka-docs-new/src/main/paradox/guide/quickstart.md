@@ -127,12 +127,12 @@ Java
 :   @@snip [HelloWorldMain.java](../../../test/java/quickstart/HelloWorldMain.java) { #create-send group=java }
 
 Before we can create any actor in the actor system we must define one first.
-Luckily, creating actors in Akka is quite simple! Just have your actor class extend @span[`Actor`] { .group-scala }@span[`AbstractActor`] { .group-java }
-and override the method @span[`receive: Receive`] { .group-scala }@span[`public Receive createReceive()`] { .group-java }
+Luckily, creating actors in Akka is quite simple! Just have your actor class extend @scala[`Actor`] @java[`AbstractActor`]
+and override the method @scala[`receive: Receive`] @java[`public Receive createReceive()`]
 and you are good to go.
-As for our `HelloWorldActor` class, it extends @span[`Actor`] { .group-scala }@span[`AbstractActor`] { .group-java }
-and overrides the @span[`receive`] { .group-scala }@span[`createReceive`] { .group-java } method as per the requirement.
-Our implementation of the @span[`receive`] { .group-scala }@span[`createReceive`] { .group-java } method expects messages
+As for our `HelloWorldActor` class, it extends @scala[`Actor`] @java[`AbstractActor`]
+and overrides the @scala[`receive`] @java[`createReceive`] method as per the requirement.
+Our implementation of the @scala[`receive`] @java[`createReceive`] method expects messages
 of type `String`. For every `String` message it receives it will print "Hello" and the value of the `String`.
 Since the message we send in the main class is "World" we expect the string "Hello World" to be printed when running the application.
 

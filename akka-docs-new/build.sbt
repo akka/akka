@@ -20,3 +20,4 @@ paradoxProperties ++= Map(
   "akka.version" -> version.value
 )
 paradoxTheme := Some(builtinParadoxTheme("generic"))
+paradoxGroups := Map("Languages" -> Seq("Scala", "Java"))
