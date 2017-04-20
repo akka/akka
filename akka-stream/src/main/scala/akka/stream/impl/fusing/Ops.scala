@@ -1402,9 +1402,9 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class GroupedWeightedWithin[T](val maxWeight: Long, costFn: T ⇒ Long, val d: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
+@InternalApi private[akka] final class GroupedWeightedWithin[T](val maxWeight: Long, costFn: T ⇒ Long, val interval: FiniteDuration) extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
   require(maxWeight > 0, "maxWeight must be greater than 0")
-  require(d > Duration.Zero)
+  require(interval > Duration.Zero)
 
   val in = Inlet[T]("in")
   val out = Outlet[immutable.Seq[T]]("out")
@@ -1417,12 +1417,11 @@ private[stream] object Collect {
 
     private val buf: VectorBuilder[T] = new VectorBuilder
     private var pending: T = null.asInstanceOf[T]
-    private var pendingWeight = 0L
     // True if:
     // - buf is nonEmpty
     //       AND
     // - timer fired OR group is full
-    private var groupClosed = false
+    private var pushEagerly = false
     private var groupEmitted = true
     private var finished = false
     private var totalWeight = 0L
@@ -1430,7 +1429,7 @@ private[stream] object Collect {
     private val GroupedWeightedWithinTimer = "GroupedWeightedWithinTimer"
 
     override def preStart() = {
-      schedulePeriodically(GroupedWeightedWithinTimer, d)
+      schedulePeriodically(GroupedWeightedWithinTimer, interval)
       pull(in)
     }
 
@@ -1440,18 +1439,24 @@ private[stream] object Collect {
       if (totalWeight + cost <= maxWeight) {
         buf += elem
         totalWeight += cost
-        pull(in)
+        if (totalWeight == maxWeight) {
+          pushEagerly = true
+          if (!isAvailable(out)) pull(in)
+          else {
+            schedulePeriodically(GroupedWeightedWithinTimer, interval)
+            emitGroup()
+          }
+        } else pull(in)
       } else {
         pending = elem
-        pendingWeight = cost
-        schedulePeriodically(GroupedWeightedWithinTimer, d)
-        closeGroup()
+        schedulePeriodically(GroupedWeightedWithinTimer, interval)
+        tryCloseGroup()
       }
     }
 
-    private def closeGroup(): Unit = {
-      groupClosed = true
+    private def tryCloseGroup(): Unit = {
       if (isAvailable(out)) emitGroup()
+      else if (pending != null || finished) pushEagerly = true
     }
 
     private def emitGroup(): Unit = {
@@ -1465,33 +1470,34 @@ private[stream] object Collect {
 
     private def startNewGroup(): Unit = {
       if (pending != null) {
-        totalWeight = pendingWeight
-        pendingWeight = 0
+        totalWeight = costFn(pending)
         buf += pending
         pending = null.asInstanceOf[T]
         groupEmitted = false
       } else {
         totalWeight = 0
       }
-      groupClosed = false
+      pushEagerly = false
       if (isAvailable(in)) nextElement(grab(in))
       else if (!hasBeenPulled(in)) pull(in)
     }
 
     override def onPush(): Unit = {
-      if (!groupClosed) nextElement(grab(in)) // otherwise keep the element for next round
+      if (pending == null) nextElement(grab(in)) // otherwise keep the element for next round
     }
 
-    override def onPull(): Unit = if (groupClosed) emitGroup()
+    override def onPull(): Unit = if (pushEagerly) emitGroup()
 
     override def onUpstreamFinish(): Unit = {
       finished = true
       if (groupEmitted) completeStage()
-      else closeGroup()
+      else tryCloseGroup()
     }
 
-    override protected def onTimer(timerKey: Any) = if (totalWeight > 0) closeGroup()
-
+    override protected def onTimer(timerKey: Any) = if (totalWeight > 0) {
+      if (isAvailable(out)) emitGroup()
+      else pushEagerly = true
+    }
     setHandlers(in, out, this)
   }
 }

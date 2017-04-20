@@ -138,7 +138,6 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
     }
 
     "reset time window when exact max elements reached" taggedAs TimingTest in {
-      val inputs = Iterator.from(1)
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
       Source.fromPublisher(upstream).groupedWithin(3, 2.second).to(Sink.fromSubscriber(downstream)).run()
