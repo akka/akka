@@ -15,12 +15,12 @@ As discussed in :ref:`actor-systems` (and following chapters) Actors are about
 sending messages between independent units of computation, but how does that
 look like? In all of the following these imports are assumed:
 
-.. includecode:: code/docs/akka/typed/IntroSpec.scala#imports
+.. includecode:: ../../../akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala#imports
 
 With these in place we can define our first Actor, and of course it will say
 hello!
 
-.. includecode:: code/docs/akka/typed/IntroSpec.scala#hello-world-actor
+.. includecode:: ../../../akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala#hello-world-actor
 
 This small piece of code defines two message types, one for commanding the
 Actor to greet someone and one that the Actor will use to confirm that it has
@@ -54,7 +54,7 @@ wrapped scope—the ``HelloWorld`` object.
 
 Now we want to try out this Actor, so we must start an ActorSystem to host it:
 
-.. includecode:: code/docs/akka/typed/IntroSpec.scala#hello-world
+.. includecode:: ../../../akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala#hello-world
 
 After importing the Actor’s protocol definition we start an Actor system from
 the defined behavior.
@@ -156,7 +156,7 @@ a message that contains their screen name and then they can post messages. The
 chat room Actor will disseminate all posted messages to all currently connected
 client Actors. The protocol definition could look like the following:
 
-.. includecode:: code/docs/akka/typed/IntroSpec.scala#chatroom-protocol
+.. includecode:: ../../../akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala#chatroom-protocol
 
 Initially the client Actors only get access to an ``ActorRef[GetSession]``
 which allows them to make the first step. Once a client’s session has been
@@ -173,7 +173,7 @@ full protocol that can involve multiple Actors and that can evolve over
 multiple steps. The implementation of the chat room protocol would be as simple
 as the following:
 
-.. includecode:: code/docs/akka/typed/IntroSpec.scala#chatroom-behavior
+.. includecode:: ../../../akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala#chatroom-behavior
 
 The core of this behavior is stateful, the chat room itself does not change
 into something else when sessions are established, but we introduce a variable
@@ -215,7 +215,7 @@ Trying it out
 
 In order to see this chat room in action we need to write a client Actor that can use it:
 
-.. includecode:: code/docs/akka/typed/IntroSpec.scala#chatroom-gabbler
+.. includecode:: ../../../akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala#chatroom-gabbler
 
 From this behavior we can create an Actor that will accept a chat room session,
 post a message, wait to see it published, and then terminate. The last step
@@ -240,7 +240,7 @@ want—it complicates its logic) or the gabbler from the chat room (which is
 nonsensical) or we start both of them from a third Actor—our only sensible
 choice:
 
-.. includecode:: code/docs/akka/typed/IntroSpec.scala#chatroom-main
+.. includecode:: ../../../akka-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala#chatroom-main
 
 In good tradition we call the ``main`` Actor what it is, it directly
 corresponds to the ``main`` method in a traditional Java application. This

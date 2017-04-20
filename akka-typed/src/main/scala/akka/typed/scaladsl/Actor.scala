@@ -215,6 +215,73 @@ object Actor {
   }
 
   /**
+   * Factory for creating a [[MutableBehavior]] that typically holds mutable state as
+   * instance variables in the concrete [[MutableBehavior]] implementation class.
+   *
+   * Creation of the behavior instance is deferred, i.e. it is created via the `factory`
+   * function. The reason for the deferred creation is to avoid sharing the same instance in
+   * multiple actors, and to create a new instance when the actor is restarted.
+   *
+   * @param producer
+   *          behavior factory that takes the child actor’s context as argument
+   * @return the deferred behavior
+   */
+  def Mutable[T](factory: ActorContext[T] ⇒ MutableBehavior[T]): Behavior[T] =
+    Deferred(factory)
+
+  /**
+   * Mutable behavior can be implemented by extending this class and implement the
+   * abstract method [[MutableBehavior#onMessage]] and optionally override
+   * [[MutableBehavior#onSignal]].
+   *
+   * Instances of this behavior should be created via [[Actor#Mutable]] and if
+   * the [[ActorContext]] is needed it can be passed as a constructor parameter
+   * from the factory function.
+   *
+   * @see [[Actor#Mutable]]
+   */
+  abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
+    @throws(classOf[Exception])
+    override final def message(ctx: akka.typed.ActorContext[T], msg: T): Behavior[T] =
+      onMessage(msg)
+
+    /**
+     * Implement this method to process an incoming message and return the next behavior.
+     *
+     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
+     * <ul>
+     * <li>returning `stopped` will terminate this Behavior</li>
+     * <li>returning `this` or `same` designates to reuse the current Behavior</li>
+     * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
+     * </ul>
+     *
+     */
+    @throws(classOf[Exception])
+    def onMessage(msg: T): Behavior[T]
+
+    @throws(classOf[Exception])
+    override final def management(ctx: akka.typed.ActorContext[T], msg: Signal): Behavior[T] =
+      onSignal(msg)
+
+    /**
+     * Override this method to process an incoming [[akka.typed.Signal]] and return the next behavior.
+     * This means that all lifecycle hooks, ReceiveTimeout, Terminated and Failed messages
+     * can initiate a behavior change.
+     *
+     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
+     *
+     *  * returning `Stopped` will terminate this Behavior
+     *  * returning `this` or `Same` designates to reuse the current Behavior
+     *  * returning `Unhandled` keeps the same Behavior and signals that the message was not yet handled
+     *
+     * By default, this method returns `Unhandled`.
+     */
+    @throws(classOf[Exception])
+    def onSignal(msg: Signal): Behavior[T] =
+      Unhandled
+  }
+
+  /**
    * Return this behavior from message processing in order to advise the
    * system to reuse the previous behavior. This is provided in order to
    * avoid the allocation overhead of recreating the current behavior where
@@ -306,7 +373,7 @@ object Actor {
 
     private def canonical(behv: Behavior[T]): Behavior[T] =
       if (isUnhandled(behv)) Unhandled
-      else if (behv eq SameBehavior) Same
+      else if ((behv eq SameBehavior) || (behv eq this)) Same
       else if (isAlive(behv)) Tap(onMessage, onSignal, behv)
       else Stopped
     override def management(ctx: AC[T], signal: Signal): Behavior[T] = {
