@@ -1440,10 +1440,7 @@ private[stream] object Collect {
       if (totalWeight + cost <= maxWeight) {
         buf += elem
         totalWeight += cost
-        if (totalWeight == maxWeight) {
-          schedulePeriodically(GroupedWeightedWithinTimer, d)
-          closeGroup()
-        } else pull(in)
+        pull(in)
       } else {
         pending = elem
         pendingWeight = cost
