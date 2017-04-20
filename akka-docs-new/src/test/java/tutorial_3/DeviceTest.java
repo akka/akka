@@ -1,20 +1,18 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package jdocs.tutorial_2;
+package jdocs.tutorial_3;
 
-import java.util.Optional;
-
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.scalatest.junit.JUnitSuite;
 
-import akka.actor.ActorSystem;
-import akka.actor.ActorRef;
-import akka.testkit.javadsl.TestKit;
+import java.util.Optional;
 
 public class DeviceTest extends JUnitSuite {
 
@@ -30,6 +28,30 @@ public class DeviceTest extends JUnitSuite {
     TestKit.shutdownActorSystem(system);
     system = null;
   }
+
+  //#device-registration-tests
+  @Test
+  public void testReplyToRegistrationRequests() {
+    TestKit probe = new TestKit(system);
+    ActorRef deviceActor = system.actorOf(Device.props("group", "device"));
+
+    deviceActor.tell(new DeviceManager.RequestTrackDevice("group", "device"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    Assert.assertEquals(deviceActor, probe.getLastSender());
+  }
+
+  @Test
+  public void testIgnoreWrongRegistrationRequests() {
+    TestKit probe = new TestKit(system);
+    ActorRef deviceActor = system.actorOf(Device.props("group", "device"));
+
+    deviceActor.tell(new DeviceManager.RequestTrackDevice("wrongGroup", "device"), probe.getRef());
+    probe.expectNoMsg();
+
+    deviceActor.tell(new DeviceManager.RequestTrackDevice("group", "wrongDevice"), probe.getRef());
+    probe.expectNoMsg();
+  }
+  //#device-registration-tests
 
   //#device-read-test
   @Test
