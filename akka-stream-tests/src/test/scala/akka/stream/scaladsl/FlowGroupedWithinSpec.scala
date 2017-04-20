@@ -197,6 +197,30 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       downstream.expectNext(Vector(3): immutable.Seq[Long])
       downstream.expectComplete()
     }
-  }
 
+    "append zero weighted elements to a full group before timeout received, if downstream hasn't pulled yet" taggedAs TimingTest in {
+      val וupstream = TestPublisher.probe[String]()
+      val downstream = TestSubscriber.probe[immutable.Seq[String]]()
+      Source
+        .fromPublisher(וupstream)
+        .groupedWeightedWithin(5, 50.millis)(_.length.toLong)
+        .to(Sink.fromSubscriber(downstream))
+        .run()
+
+      downstream.ensureSubscription()
+      וupstream.sendNext("333")
+      וupstream.sendNext("22")
+      וupstream.sendNext("")
+      וupstream.sendNext("")
+      וupstream.sendNext("")
+      downstream.request(1)
+      downstream.expectNext(Vector("333", "22", "", "", ""): immutable.Seq[String])
+      וupstream.sendNext("")
+      וupstream.sendNext("")
+      וupstream.sendComplete()
+      downstream.request(1)
+      downstream.expectNext(Vector("", ""): immutable.Seq[String])
+      downstream.expectComplete()
+    }
+  }
 }
