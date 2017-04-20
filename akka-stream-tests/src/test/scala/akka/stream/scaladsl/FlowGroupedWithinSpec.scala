@@ -137,6 +137,25 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       downstream.expectNoMsg(100.millis)
     }
 
+    "reset time window when exact max elements reached" taggedAs TimingTest in {
+      val inputs = Iterator.from(1)
+      val upstream = TestPublisher.probe[Int]()
+      val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
+      Source.fromPublisher(upstream).groupedWithin(3, 2.second).to(Sink.fromSubscriber(downstream)).run()
+
+      downstream.request(2)
+      downstream.expectNoMsg(1000.millis)
+
+      (1 to 3) foreach upstream.sendNext
+      downstream.within(1000.millis) {
+        downstream.expectNext((1 to 3).toVector)
+      }
+
+      upstream.sendComplete()
+      downstream.expectComplete()
+      downstream.expectNoMsg(100.millis)
+    }
+
     "group evenly" taggedAs TimingTest in {
       def script = Script(TestConfig.RandomTestRange map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) → Seq(immutable.Seq(x, y, z)) }: _*)
       TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.groupedWithin(3, 10.minutes)))
