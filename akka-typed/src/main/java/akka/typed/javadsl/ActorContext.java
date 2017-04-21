@@ -104,13 +104,13 @@ public interface ActorContext<T> {
    * {@link akka.typed.ActorSystem} to which the referenced Actor belongs is declared as failed
    * (e.g. in reaction to being unreachable).
    */
-  public void watch(ActorRef<?> other);
+  public <U> void watch(ActorRef<U> other);
 
   /**
    * Revoke the registration established by {@link #watch}. A {@link akka.typed.Terminated}
    * notification will not subsequently be received for the referenced Actor.
    */
-  public void unwatch(ActorRef<?> other);
+  public <U> void unwatch(ActorRef<U> other);
 
   /**
    * Schedule the sending of a notification in case no other message is received
