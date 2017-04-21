@@ -4,7 +4,7 @@
 package akka.stream.impl.io
 
 import java.nio.channels.FileChannel
-import java.nio.file.{ Path, StandardOpenOption }
+import java.nio.file.{ OpenOption, Path, StandardOpenOption }
 
 import akka.Done
 import akka.actor.{ ActorLogging, Deploy, Props }
@@ -19,7 +19,7 @@ import scala.util.{ Failure, Success }
 
 /** INTERNAL API */
 @InternalApi private[akka] object FileSubscriber {
-  def props(f: Path, completionPromise: Promise[IOResult], bufSize: Int, openOptions: Set[StandardOpenOption]) = {
+  def props(f: Path, completionPromise: Promise[IOResult], bufSize: Int, openOptions: Set[OpenOption]) = {
     require(bufSize > 0, "buffer size must be > 0")
     Props(classOf[FileSubscriber], f, completionPromise, bufSize, openOptions).withDeploy(Deploy.local)
   }
