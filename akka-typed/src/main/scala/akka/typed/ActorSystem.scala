@@ -170,6 +170,18 @@ object ActorSystem {
   }
 
   /**
+   * Java API
+   */
+  def create[T](name: String, guardianBehavior: Behavior[T],
+                guardianDeployment: java.util.Optional[DeploymentConfig],
+                config:             java.util.Optional[Config],
+                classLoader:        java.util.Optional[ClassLoader],
+                executionContext:   java.util.Optional[ExecutionContext]): ActorSystem[T] = {
+    import scala.compat.java8.OptionConverters._
+    apply(name, guardianBehavior, guardianDeployment.asScala.getOrElse(EmptyDeploymentConfig), config.asScala, classLoader.asScala, executionContext.asScala)
+  }
+
+  /**
    * Create an ActorSystem based on the untyped [[akka.actor.ActorSystem]]
    * which runs Akka Typed [[Behavior]] on an emulation layer. In this
    * system typed and untyped actors can coexist.
