@@ -1,7 +1,5 @@
 # Your First Akka Application - Hello World
 
-@@supergroup { name=Language groups=scala,java }
-
 After all this introduction, we are ready to build our first actor system. We will do so in three chapters.
 This first chapter will help you to set up your project, tools and have a simple "Hello World" demo running.
 We will keep this section to a bare minimum and then extend the sample application in the next chapter. Finally, we review
