@@ -113,7 +113,6 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
     }
 
     "reset time window when max elements reached" taggedAs TimingTest in {
-      val inputs = Iterator.from(1)
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
       Source.fromPublisher(upstream).groupedWithin(3, 2.second).to(Sink.fromSubscriber(downstream)).run()
@@ -121,7 +120,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       downstream.request(2)
       downstream.expectNoMsg(1000.millis)
 
-      (1 to 4) foreach { _ ⇒ upstream.sendNext(inputs.next()) }
+      (1 to 4).foreach(upstream.sendNext)
       downstream.within(1000.millis) {
         downstream.expectNext((1 to 3).toVector)
       }
@@ -133,26 +132,24 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       }
 
       upstream.sendComplete()
-      downstream.expectComplete
+      downstream.expectComplete()
       downstream.expectNoMsg(100.millis)
     }
 
     "reset time window when exact max elements reached" taggedAs TimingTest in {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[immutable.Seq[Int]]()
-      Source.fromPublisher(upstream).groupedWithin(3, 2.second).to(Sink.fromSubscriber(downstream)).run()
+      Source.fromPublisher(upstream).groupedWithin(3, 1.second).to(Sink.fromSubscriber(downstream)).run()
 
       downstream.request(2)
-      downstream.expectNoMsg(1000.millis)
 
-      (1 to 3) foreach upstream.sendNext
+      (1 to 3).foreach(upstream.sendNext)
       downstream.within(1000.millis) {
         downstream.expectNext((1 to 3).toVector)
       }
 
       upstream.sendComplete()
       downstream.expectComplete()
-      downstream.expectNoMsg(100.millis)
     }
 
     "group evenly" taggedAs TimingTest in {

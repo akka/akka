@@ -1417,10 +1417,17 @@ private[stream] object Collect {
 
     private val buf: VectorBuilder[T] = new VectorBuilder
     private var pending: T = null.asInstanceOf[T]
+    private var pendingWeight: Long = 0L
     // True if:
     // - buf is nonEmpty
     //       AND
-    // - timer fired OR group is full
+    // - (timer fired
+    //        OR
+    //    totalWeight == maxWeight
+    //        OR
+    //    pending != null
+    //        OR
+    //    upstream completed)
     private var pushEagerly = false
     private var groupEmitted = true
     private var finished = false
@@ -1439,16 +1446,25 @@ private[stream] object Collect {
       if (totalWeight + cost <= maxWeight) {
         buf += elem
         totalWeight += cost
-        if (totalWeight == maxWeight) {
-          pushEagerly = true
-          if (!isAvailable(out)) pull(in)
-          else {
+
+        if (totalWeight < maxWeight) pull(in)
+        else {
+          // `totalWeight == maxWeight` which means that downstream can get the next group.
+          if (!isAvailable(out)) {
+            // We should emit group when downstream becomes available
+            pushEagerly = true
+            // we want to pull anyway, since we allow for zero weight elements
+            // but since `emitGroup()` will pull internally (by calling `startNewGroup()`)
+            // we also have to pull if downstream hasn't yet requested an element.
+            pull(in)
+          } else {
             schedulePeriodically(GroupedWeightedWithinTimer, interval)
             emitGroup()
           }
-        } else pull(in)
+        }
       } else {
         pending = elem
+        pendingWeight = cost
         schedulePeriodically(GroupedWeightedWithinTimer, interval)
         tryCloseGroup()
       }
@@ -1470,7 +1486,8 @@ private[stream] object Collect {
 
     private def startNewGroup(): Unit = {
       if (pending != null) {
-        totalWeight = costFn(pending)
+        totalWeight = pendingWeight
+        pendingWeight = 0L
         buf += pending
         pending = null.asInstanceOf[T]
         groupEmitted = false
