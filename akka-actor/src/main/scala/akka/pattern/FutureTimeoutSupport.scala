@@ -27,7 +27,7 @@ trait FutureTimeoutSupport {
     }
 
   /**
-   * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided value
+   * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
   def afterCompletionStage[T](duration: FiniteDuration, using: Scheduler)(value: ⇒ CompletionStage[T])(implicit ec: ExecutionContext): CompletionStage[T] =
