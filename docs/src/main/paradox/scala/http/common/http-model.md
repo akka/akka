@@ -100,7 +100,7 @@ HttpEntity.Default
 : The general, unchunked HTTP/1.1 message entity.
 It has a known length and presents its data as a `Source[ByteString]` which can be only materialized once.
 It is an error if the provided source doesn't produce exactly as many bytes as specified.
-The distinction of `Strict` and `Default` is an API-only one. One the wire, both kinds of entities look the same.
+The distinction of `Strict` and `Default` is an API-only one. On the wire, both kinds of entities look the same.
 
 HttpEntity.Chunked
 : The model for HTTP/1.1 [chunked content](http://tools.ietf.org/html/rfc7230#section-4.1) (i.e. sent with `Transfer-Encoding: chunked`).
