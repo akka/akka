@@ -15,7 +15,7 @@ import akka.japi.function.Function2;
 import akka.japi.function.Procedure2;
 import akka.japi.pf.PFBuilder;
 import akka.typed.*;
-import akka.typed.patterns.Restarter;
+import akka.typed.internal.Restarter;
 import akka.typed.scaladsl.Actor.Widened;
 import scala.reflect.ClassTag;
 
@@ -95,21 +95,6 @@ public abstract class Actor {
       message.apply(ctx, msg);
       return canonicalize(Behavior.interpretMessage(behavior, ctx, msg));
     }
-  }
-
-  /**
-   * Mode selector for the {@link #restarter} wrapper that decides whether an actor
-   * upon a failure shall be restarted (to clean initial state) or resumed (keep
-   * on running, with potentially compromised state).
-   *
-   * Resuming is less safe. If you use <code>OnFailure.RESUME</code> you should at least
-   * not hold mutable data fields or collections within the actor as those might
-   * be in an inconsistent state (the exception might have interrupted normal
-   * processing); avoiding mutable state is possible by returning a fresh
-   * behavior with the new state after every message.
-   */
-  public enum OnFailure {
-    RESUME, RESTART;
   }
 
   private static Function2<Object, Object, Object> _unhandledFun = (ctx, msg) -> Unhandled();
@@ -275,26 +260,21 @@ public abstract class Actor {
    * subclass thereof. Exceptions that are not subtypes of <code>Thr</code> will not be
    * caught and thus lead to the termination of the actor.
    *
-   * It is possible to specify that the actor shall not be restarted but
-   * resumed. This entails keeping the same state as before the exception was
-   * thrown and is thus less safe. If you use <code>OnFailure.RESUME</code> you should at
-   * least not hold mutable data fields or collections within the actor as those
-   * might be in an inconsistent state (the exception might have interrupted
-   * normal processing); avoiding mutable state is possible by returning a fresh
-   * behavior with the new state after every message.
+   * It is possible to specify different supervisor strategies, such as restart,
+   * resume, backoff.
    *
    * @param clazz
    *          the type of exceptions that shall be caught
-   * @param mode
-   *          whether to restart or resume the actor upon a caught failure
+   * @param strategy
+   *          whether to restart, resume, or backoff the actor upon a caught failure
    * @param initialBehavior
    *          the initial behavior, that is also restored during a restart
    * @return the wrapped behavior
    */
-  static public <T, Thr extends Throwable> Behavior<T> restarter(Class<Thr> clazz, OnFailure mode,
+  static public <T, Thr extends Throwable> Behavior<T> restarter(Class<Thr> clazz, SupervisorStrategy strategy,
       Behavior<T> initialBehavior) {
     final ClassTag<Thr> catcher = akka.japi.Util.classTag(clazz);
-    return new Restarter<T, Thr>(initialBehavior, mode == OnFailure.RESUME, initialBehavior, catcher);
+    return Restarter.apply(Behavior.validateAsInitial(initialBehavior), strategy, catcher);
   }
 
   /**
