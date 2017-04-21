@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka
 
@@ -15,7 +15,7 @@ object Dependencies {
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
   val sslConfigVersion = "0.2.1"
-  val aeronVersion = "1.2.3"
+  val aeronVersion = "1.2.5"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.8", "2.12.1"),
