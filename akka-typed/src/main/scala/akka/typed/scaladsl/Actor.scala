@@ -287,7 +287,7 @@ object Actor {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
-  def Same[T]: Behavior[T] = SameBehavior.asInstanceOf[Behavior[T]]
+  def Same[T]: Behavior[T] = Behavior.same
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -295,13 +295,7 @@ object Actor {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
-  def Unhandled[T]: Behavior[T] = UnhandledBehavior.asInstanceOf[Behavior[T]]
-
-  /*
-   * TODO write a Behavior that waits for all child actors to stop and then
-   * runs some cleanup before stopping. The factory for this behavior should
-   * stop and watch all children to get the process started.
-   */
+  def Unhandled[T]: Behavior[T] = Behavior.unhandled
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -310,17 +304,17 @@ object Actor {
    * signal that results from stopping this actor will NOT be passed to the
    * current behavior, it will be effectively ignored.
    */
-  def Stopped[T]: Behavior[T] = StoppedBehavior.asInstanceOf[Behavior[T]]
+  def Stopped[T]: Behavior[T] = Behavior.stopped
 
   /**
    * A behavior that treats every incoming message as unhandled.
    */
-  def Empty[T]: Behavior[T] = EmptyBehavior.asInstanceOf[Behavior[T]]
+  def Empty[T]: Behavior[T] = Behavior.empty
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
    */
-  def Ignore[T]: Behavior[T] = IgnoreBehavior.asInstanceOf[Behavior[T]]
+  def Ignore[T]: Behavior[T] = Behavior.ignore
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
