@@ -529,7 +529,16 @@ object MiMa extends AutoPlugin {
 
       // small changes in attributes
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSource.withAttributes"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSink.withAttributes")
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.testkit.StreamTestKit#ProbeSink.withAttributes"),
+
+      // #22710 overloaded Flow.interleave()-related methods
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.interleaveGraph"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.interleaveMat"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.interleaveGraph"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.interleaveGraph"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph$default$3")
 
       // NOTE: filters that will be backported to 2.4 should go to the latest 2.4 version below
     )
