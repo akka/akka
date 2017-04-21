@@ -538,7 +538,8 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.interleaveGraph"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph$default$3")
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph$default$3"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleave")
 
       // NOTE: filters that will be backported to 2.4 should go to the latest 2.4 version below
     )
