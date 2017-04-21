@@ -241,6 +241,7 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
       val p = TestProbe()
       deltaReplicator.tell(Get(KeyD, ReadLocal), p.ref)
       p.expectMsgType[GetSuccess[ORSet[String]]].dataValue.elements should ===(Set("a", "A"))
+      enterBarrier("read-1")
 
       // and also when doing several at the same time (deltas may be reordered) and then we
       // retry with full state to sort it out
