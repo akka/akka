@@ -14,13 +14,15 @@ import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
 import akka.util.ReentrantGuard
 import akka.util.Helpers.toRootLowerCase
-import akka.{AkkaException, ConfigurationException}
+import akka.{ AkkaException, ConfigurationException }
 
 import scala.annotation.implicitNotFound
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.language.existentials
-import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.control.{ NoStackTrace, NonFatal }
+import java.time.ZoneId
+import java.time.LocalDateTime
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -864,6 +866,7 @@ object Logging {
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 
   private val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss.SSS")
+  private val timeZone = ZoneId.systemDefault()
 
   trait StdOutLogger {
 
@@ -879,7 +882,7 @@ object Logging {
     // format: ON
 
     def timestamp(event: LogEvent): String = {
-      formatter.format(Instant.ofEpochMilli(event.timestamp))
+      formatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(event.timestamp), timeZone))
     }
 
     def print(event: Any): Unit = event match {
