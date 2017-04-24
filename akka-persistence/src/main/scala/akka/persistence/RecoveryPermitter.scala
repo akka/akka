@@ -3,7 +3,7 @@
  */
 package akka.persistence
 
-import java.util.ArrayDeque
+import java.util.LinkedList
 import akka.annotation.InternalApi
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -33,7 +33,7 @@ import akka.actor.Terminated
   import RecoveryPermitter._
 
   private var usedPermits = 0
-  private val pending = new ArrayDeque[ActorRef]
+  private val pending = new LinkedList[ActorRef]
   private var maxPendingStats = 0
 
   def receive = {
