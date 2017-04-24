@@ -546,7 +546,7 @@ import scala.util.control.NonFatal
     if (enabled) shutdownCounter(logic.stageId) |= KeepGoingFlag
     else shutdownCounter(logic.stageId) &= KeepGoingMask
 
-  private def finalizeStage(logic: GraphStageLogic): Unit = {
+  private[stream] def finalizeStage(logic: GraphStageLogic): Unit = {
     try {
       logic.postStop()
       logic.afterPostStop()

@@ -3,30 +3,27 @@
  */
 package akka.stream.io
 
-import akka.{ Done, NotUsed }
-import akka.actor.{ ActorSystem, Address, Kill }
-import akka.io.Tcp._
-import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
-import akka.stream.scaladsl.{ Flow, _ }
-import akka.stream.testkit.TestUtils.temporaryServerAddress
-
-import scala.util.control.NonFatal
-import akka.stream.testkit.Utils._
-import akka.stream.testkit._
-import akka.stream._
-import akka.util.{ ByteString, Helpers }
-
-import scala.collection.immutable
-import scala.concurrent.{ Await, Future, Promise }
-import scala.concurrent.duration._
 import java.net._
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.actor.{ ActorSystem, Kill }
+import akka.io.Tcp._
+import akka.stream._
+import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
+import akka.stream.scaladsl.{ Flow, _ }
+import akka.stream.testkit.TestUtils.temporaryServerAddress
+import akka.stream.testkit.Utils._
+import akka.stream.testkit._
 import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
+import akka.util.ByteString
+import akka.{ Done, NotUsed }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.util.Try
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future, Promise }
+import scala.util.control.NonFatal
 
 class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
 
