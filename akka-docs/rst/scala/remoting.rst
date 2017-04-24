@@ -632,3 +632,11 @@ special configuration that sets both the logical and the bind pairs for remoting
       }
    }
   }
+
+Keep in mind that local.address will most likely be in one of private network ranges:
+
+* *10.0.0.0 - 10.255.255.255* (network class A)
+* *172.16.0.0 - 172.31.255.255* (network class B)
+* *192.168.0.0 - 192.168.255.255* (network class C)
+
+For further details see [RFC 1597](https://tools.ietf.org/html/rfc1597) and [RFC 1918](https://tools.ietf.org/html/rfc1918).
