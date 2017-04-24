@@ -31,6 +31,7 @@ import org.lmdbjava.DbiFlags
 import org.lmdbjava.Env
 import org.lmdbjava.EnvFlags
 import org.lmdbjava.Txn
+import org.lmdbjava.Dbi
 
 /**
  * An actor implementing the durable store for the Distributed Data `Replicator`
@@ -115,26 +116,46 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
     case _     ⇒ config.getDuration("lmdb.write-behind-interval", MILLISECONDS).millis
   }
 
-  val env: Env[ByteBuffer] = {
-    val mapSize = config.getBytes("lmdb.map-size")
-    val dir = config.getString("lmdb.dir") match {
-      case path if path.endsWith("ddata") ⇒
-        new File(s"$path-${context.system.name}-${self.path.parent.name}-${Cluster(context.system).selfAddress.port.get}")
-      case path ⇒
-        new File(path)
-    }
-    log.info("Using durable data in LMDB directory [{}]", dir.getCanonicalPath)
-    dir.mkdirs()
-    Env.create()
-      .setMapSize(mapSize)
-      .setMaxDbs(1)
-      .open(dir, EnvFlags.MDB_NOLOCK)
+  val dir = config.getString("lmdb.dir") match {
+    case path if path.endsWith("ddata") ⇒
+      new File(s"$path-${context.system.name}-${self.path.parent.name}-${Cluster(context.system).selfAddress.port.get}")
+    case path ⇒
+      new File(path)
   }
+  log.info("Using durable data in LMDB directory [{}]", dir.getCanonicalPath)
 
-  val db = env.openDbi("ddata", DbiFlags.MDB_CREATE)
+  // lazy init via `initDb`
+  private var env: Env[ByteBuffer] = null
+  // lazy init via `initDb`
+  private var db: Dbi[ByteBuffer] = null
+  // lazy init via `initDb`
+  private var keyBuffer: ByteBuffer = null
+  // lazy init via `initDb`
+  private var valueBuffer: ByteBuffer = null
 
-  val keyBuffer = ByteBuffer.allocateDirect(env.getMaxKeySize)
-  var valueBuffer = ByteBuffer.allocateDirect(100 * 1024) // will grow when needed
+  def isDbInitialized: Boolean = (db ne null)
+
+  def initDb(): Unit =
+    if (!isDbInitialized) {
+      val t0 = System.nanoTime()
+      env = {
+        val mapSize = config.getBytes("lmdb.map-size")
+        dir.mkdirs()
+        Env.create()
+          .setMapSize(mapSize)
+          .setMaxDbs(1)
+          .open(dir, EnvFlags.MDB_NOLOCK)
+      }
+
+      db = env.openDbi("ddata", DbiFlags.MDB_CREATE)
+
+      keyBuffer = ByteBuffer.allocateDirect(env.getMaxKeySize)
+      valueBuffer = ByteBuffer.allocateDirect(100 * 1024) // will grow when needed
+
+      if (log.isDebugEnabled)
+        log.debug("Init of LMDB in directory [{}] took [{} ms]", dir.getCanonicalPath,
+          TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
+    }
 
   def ensureValueBufferSize(size: Int): Unit = {
     if (valueBuffer.remaining < size) {
@@ -155,53 +176,63 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   override def postStop(): Unit = {
     super.postStop()
     writeBehind()
-    Try(db.close())
-    Try(env.close())
-    DirectByteBufferPool.tryCleanDirectByteBuffer(keyBuffer)
-    DirectByteBufferPool.tryCleanDirectByteBuffer(valueBuffer)
+    if (isDbInitialized) {
+      Try(db.close())
+      Try(env.close())
+      DirectByteBufferPool.tryCleanDirectByteBuffer(keyBuffer)
+      DirectByteBufferPool.tryCleanDirectByteBuffer(valueBuffer)
+    }
   }
 
   def receive = init
 
   def init: Receive = {
     case LoadAll ⇒
-      val t0 = System.nanoTime()
-      val tx = env.txnRead()
-      try {
-        val iter = db.iterate(tx)
+      if (dir.exists && dir.list().length > 0) {
+        initDb()
+        val t0 = System.nanoTime()
+        val tx = env.txnRead()
         try {
-          var n = 0
-          val loadData = LoadData(iter.asScala.map { entry ⇒
-            n += 1
-            val keyArray = new Array[Byte](entry.key.remaining)
-            entry.key.get(keyArray)
-            val key = new String(keyArray, ByteString.UTF_8)
-            val valArray = new Array[Byte](entry.`val`.remaining)
-            entry.`val`.get(valArray)
-            val envelope = serializer.fromBinary(valArray, manifest).asInstanceOf[DurableDataEnvelope]
-            key → envelope
-          }.toMap)
-          if (loadData.data.nonEmpty)
-            sender() ! loadData
-          sender() ! LoadAllCompleted
-          if (log.isDebugEnabled)
-            log.debug("load all of [{}] entries took [{} ms]", n,
-              TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
-          context.become(active)
+          val iter = db.iterate(tx)
+          try {
+            var n = 0
+            val loadData = LoadData(iter.asScala.map { entry ⇒
+              n += 1
+              val keyArray = new Array[Byte](entry.key.remaining)
+              entry.key.get(keyArray)
+              val key = new String(keyArray, ByteString.UTF_8)
+              val valArray = new Array[Byte](entry.`val`.remaining)
+              entry.`val`.get(valArray)
+              val envelope = serializer.fromBinary(valArray, manifest).asInstanceOf[DurableDataEnvelope]
+              key → envelope
+            }.toMap)
+            if (loadData.data.nonEmpty)
+              sender() ! loadData
+            sender() ! LoadAllCompleted
+            if (log.isDebugEnabled)
+              log.debug("load all of [{}] entries took [{} ms]", n,
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
+            context.become(active)
+          } finally {
+            Try(iter.close())
+          }
+        } catch {
+          case NonFatal(e) ⇒
+            throw new LoadFailed("failed to load durable distributed-data", e)
         } finally {
-          Try(iter.close())
+          Try(tx.close())
         }
-      } catch {
-        case NonFatal(e) ⇒
-          throw new LoadFailed("failed to load durable distributed-data", e)
-      } finally {
-        Try(tx.close())
+      } else {
+        // no files to load
+        sender() ! LoadAllCompleted
+        context.become(active)
       }
   }
 
   def active: Receive = {
     case Store(key, data, reply) ⇒
       try {
+        initDb()
         if (writeBehindInterval.length == 0) {
           dbPut(OptionVal.None, key, data)
         } else {
