@@ -19,6 +19,7 @@ import scala.concurrent.duration._
 import akka.util.Reflect
 
 import scala.util.control.NonFatal
+import akka.annotation.InternalApi
 
 /**
  * Persistence configuration.
@@ -145,6 +146,16 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   private val NoSnapshotStorePluginId = "akka.persistence.no-snapshot-store"
 
   private val config = system.settings.config.getConfig("akka.persistence")
+
+  /**
+   * INTERNAL API: When starting many persistent actors at the same time the journal
+   * its data store is protected from being overloaded by limiting number
+   * of recoveries that can be in progress at the same time.
+   */
+  @InternalApi private[akka] val recoveryPermitter: ActorRef = {
+    val maxPermits = config.getInt("max-concurrent-recoveries")
+    system.systemActorOf(RecoveryPermitter.props(maxPermits), "recoveryPermitter")
+  }
 
   // Lazy, so user is not forced to configure defaults when she is not using them.
   private lazy val defaultJournalPluginId = {

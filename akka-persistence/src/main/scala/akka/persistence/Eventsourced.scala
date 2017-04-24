@@ -63,7 +63,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   private var sequenceNr: Long = 0L
   private var _lastSequenceNr: Long = 0L
 
-  // safely null because we initialize it with a proper `recoveryStarted` state in aroundPreStart before any real action happens
+  // safely null because we initialize it with a proper `waitingRecoveryPermit` state in aroundPreStart before any real action happens
   private var currentState: State = null
 
   // Used instead of iterating `pendingInvocations` in order to check if safe to revert to processing commands
@@ -188,8 +188,13 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
     // Fail fast on missing plugins.
     val j = journal; val s = snapshotStore
-    startRecovery(recovery)
+    requestRecoveryPermit()
     super.aroundPreStart()
+  }
+
+  private def requestRecoveryPermit(): Unit = {
+    extension.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, self)
+    changeState(waitingRecoveryPermit(recovery))
   }
 
   /** INTERNAL API. */
@@ -217,7 +222,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
   /** INTERNAL API. */
   override protected[akka] def aroundPostRestart(reason: Throwable): Unit = {
-    startRecovery(recovery)
+    requestRecoveryPermit()
     super.aroundPostRestart(reason)
   }
 
@@ -466,6 +471,28 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   }
 
   /**
+   * Initial state. Before starting the actual recovery it must get a permit from the
+   * `RecoveryPermitter`. When starting many persistent actors at the same time
+   * the journal and its data store is protected from being overloaded by limiting number
+   * of recoveries that can be in progress at the same time. When receiving
+   * `RecoveryPermitGranted` it switches to `recoveryStarted` state
+   * All incoming messages are stashed.
+   */
+  private def waitingRecoveryPermit(recovery: Recovery) = new State {
+
+    override def toString: String = s"waiting for recovery permit"
+    override def recoveryRunning: Boolean = true
+
+    override def stateReceive(receive: Receive, message: Any) = message match {
+      case RecoveryPermitter.RecoveryPermitGranted ⇒
+        startRecovery(recovery)
+
+      case other ⇒
+        stashInternally(other)
+    }
+  }
+
+  /**
    * Processes a loaded snapshot, if any. A loaded snapshot is offered with a `SnapshotOffer`
    * message to the actor's `receiveRecover`. Then initiates a message replay, either starting
    * from the loaded snapshot or from scratch, and switches to `recoveryStarted` state.
@@ -499,7 +526,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     override def toString: String = s"recovery started (replayMax = [$replayMax])"
     override def recoveryRunning: Boolean = true
 
-    override def stateReceive(receive: Receive, message: Any) = message match {
+    override def stateReceive(receive: Receive, message: Any) = try message match {
       case LoadSnapshotResult(sso, toSnr) ⇒
         timeoutCancellable.cancel()
         sso.foreach {
@@ -523,7 +550,15 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
       case other ⇒
         stashInternally(other)
+    } catch {
+      case NonFatal(e) ⇒
+        returnRecoveryPermit()
+        throw e
     }
+
+    private def returnRecoveryPermit(): Unit =
+      extension.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, self)
+
   }
 
   /**
@@ -551,7 +586,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
       override def recoveryRunning: Boolean = _recoveryRunning
 
-      override def stateReceive(receive: Receive, message: Any) = message match {
+      override def stateReceive(receive: Receive, message: Any) = try message match {
         case ReplayedMessage(p) ⇒
           try {
             eventSeenInInterval = true
@@ -561,6 +596,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
             case NonFatal(t) ⇒
               timeoutCancellable.cancel()
               try onRecoveryFailure(t, Some(p.payload)) finally context.stop(self)
+              returnRecoveryPermit()
           }
         case RecoverySuccess(highestSeqNr) ⇒
           timeoutCancellable.cancel()
@@ -585,9 +621,18 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
         // snapshot tick, ignore
         case other ⇒
           stashInternally(other)
+      } catch {
+        case NonFatal(e) ⇒
+          returnRecoveryPermit()
+          throw e
       }
 
+      private def returnRecoveryPermit(): Unit =
+        extension.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, self)
+
       private def transitToProcessingState(): Unit = {
+        returnRecoveryPermit()
+
         if (eventBatch.nonEmpty) flushBatch()
 
         if (pendingStashingPersistInvocations > 0) changeState(persistingEvents)
