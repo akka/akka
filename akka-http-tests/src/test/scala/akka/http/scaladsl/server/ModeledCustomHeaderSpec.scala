@@ -4,10 +4,10 @@
 
 package akka.http.scaladsl.server
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
 import akka.http.scaladsl.model.headers._
 
-import scala.util.{ Success, Failure, Try }
+import scala.util.{ Failure, Success, Try }
 
 object ModeledCustomHeaderSpec {
 
@@ -72,6 +72,12 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
         val ApiTokenHeader(v6) = RawHeader("different", "token")
       }
       //#matching-examples
+    }
+
+    "be able to be extracted using response.header[...] syntax" in {
+      val h = DifferentHeader("Hello")
+      val request = HttpRequest().addHeader(h)
+      request.header[DifferentHeader] should ===(Some(h))
     }
 
     "be able to match from RawHeader" in {
