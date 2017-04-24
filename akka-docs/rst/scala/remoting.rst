@@ -628,7 +628,7 @@ special configuration that sets both the logical and the bind pairs for remoting
    }
   }
 
-Keep in mind that local.address will almost always be in one of private network ranges:
+Keep in mind that local.address will most likely be in one of private network ranges:
 
 * *10.0.0.0 - 10.255.255.255* (network class A)
 * *172.16.0.0 - 172.31.255.255* (network class B)
