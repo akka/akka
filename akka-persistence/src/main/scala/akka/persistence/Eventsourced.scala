@@ -473,7 +473,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   /**
    * Initial state. Before starting the actual recovery it must get a permit from the
    * `RecoveryPermitter`. When starting many persistent actors at the same time
-   * the journal its data store is protected from being overloaded by limiting number
+   * the journal and its data store is protected from being overloaded by limiting number
    * of recoveries that can be in progress at the same time. When receiving
    * `RecoveryPermitGranted` it switches to `recoveryStarted` state
    * All incoming messages are stashed.

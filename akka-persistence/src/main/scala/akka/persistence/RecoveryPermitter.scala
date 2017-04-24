@@ -32,16 +32,16 @@ import akka.actor.Terminated
 @InternalApi private[akka] class RecoveryPermitter(maxPermits: Int) extends Actor with ActorLogging {
   import RecoveryPermitter._
 
-  private var permits = 0
+  private var usedPermits = 0
   private val pending = new ArrayDeque[ActorRef]
   private var maxPendingStats = 0
 
   def receive = {
     case RequestRecoveryPermit ⇒
       context.watch(sender())
-      if (permits >= maxPermits) {
+      if (usedPermits >= maxPermits) {
         if (pending.isEmpty)
-          log.debug("Exceeded max-concurrent-recoveries [{}]", maxPermits)
+          log.debug("Exceeded max-concurrent-recoveries [{}]. First pending {}", maxPermits, sender())
         pending.offer(sender())
         maxPendingStats = math.max(maxPendingStats, pending.size)
       } else {
@@ -58,9 +58,9 @@ import akka.actor.Terminated
   }
 
   private def returnRecoveryPermit(ref: ActorRef): Unit = {
-    permits -= 1
+    usedPermits -= 1
     context.unwatch(ref)
-    if (permits < 0) throw new IllegalStateException("permits must not be negative")
+    if (usedPermits < 0) throw new IllegalStateException("permits must not be negative")
     if (!pending.isEmpty) {
       val ref = pending.poll()
       recoveryPermitGranted(ref)
@@ -68,13 +68,13 @@ import akka.actor.Terminated
     if (pending.isEmpty && maxPendingStats > 0) {
       log.debug(
         "Drained pending recovery permit requests, max in progress was [{}], still [{}] in progress",
-        permits + maxPendingStats, permits)
+        usedPermits + maxPendingStats, usedPermits)
       maxPendingStats = 0
     }
   }
 
   private def recoveryPermitGranted(ref: ActorRef): Unit = {
-    permits += 1
+    usedPermits += 1
     ref ! RecoveryPermitGranted
   }
 
