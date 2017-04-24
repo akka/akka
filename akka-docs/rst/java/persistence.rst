@@ -291,7 +291,7 @@ of the command for which this ``deferAsync`` handler was called.
 
 You can also call ``deferAsync`` with ``persist``.
 
-.. includecode:: code/docs/persistence/LambdaPersistenceDocTest.java#defer-with-persist
+.. includecode:: code/jdocs/persistence/LambdaPersistenceDocTest.java#defer-with-persist
 
 .. warning::
   The callback will not be invoked if the actor is restarted (or stopped) in between the call to
