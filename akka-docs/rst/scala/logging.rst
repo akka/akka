@@ -5,10 +5,10 @@
 #################
 
 Logging in Akka is not tied to a specific logging backend. By default
-log messages are printed to STDOUT, but you can plug-in a SLF4J logger or 
+log messages are printed to STDOUT, but you can plug-in a SLF4J logger or
 your own logger. Logging is performed asynchronously to ensure that logging
 has minimal performance impact. Logging generally means IO and locks,
-which can slow down the operations of your code if it was performed 
+which can slow down the operations of your code if it was performed
 synchronously.
 
 How to Log
@@ -76,7 +76,7 @@ to the :ref:`event-stream-scala`.
 Auxiliary logging options
 -------------------------
 
-Akka has a few configuration options for very low level debugging. These make more sense in development than in production. 
+Akka has a few configuration options for very low level debugging. These make more sense in development than in production.
 
 You almost definitely need to have logging set to DEBUG to use any of the options below:
 
@@ -269,17 +269,17 @@ Loggers
 =======
 
 Logging is performed asynchronously through an event bus. Log events are processed by an event handler actor
-that receives the log events in the same order they were emitted. 
+that receives the log events in the same order they were emitted.
 
 .. note::
   The event handler actor does not have a bounded inbox and is run on the default dispatcher. This means
   that logging extreme amounts of data may affect your application badly. This can be somewhat mitigated by
-using an async logging backend though. (See :ref:`slf4j-directly-scala`)
+  using an async logging backend though. (See :ref:`slf4j-directly-scala`)
 
-You can configure which event handlers are created at system start-up and listen to logging events. That is done using the 
+You can configure which event handlers are created at system start-up and listen to logging events. That is done using the
 ``loggers`` element in the :ref:`configuration`.
-Here you can also define the log level. More fine grained filtering based on the log source 
-can be implemented in a custom ``LoggingFilter``, which can be defined in the ``logging-filter`` 
+Here you can also define the log level. More fine grained filtering based on the log source
+can be implemented in a custom ``LoggingFilter``, which can be defined in the ``logging-filter``
 configuration property.
 
 .. code-block:: ruby
@@ -306,7 +306,7 @@ Logging to stdout during startup and shutdown
 
 When the actor system is starting up and shutting down the configured ``loggers`` are not used.
 Instead log messages are printed to stdout (System.out). The default log level for this
-stdout logger is ``WARNING`` and it can be silenced completely by setting 
+stdout logger is ``WARNING`` and it can be silenced completely by setting
 ``akka.stdout-loglevel=OFF``.
 
 .. _slf4j-scala:
@@ -480,13 +480,13 @@ some malicious activity and mark them with a ``SECURITY`` tag, and in your appen
 trigger emails and other notifications immediately.
 
 Markers are available through the LoggingAdapters, when obtained via ``Logging.withMarker``.
-The first argument passed into all log calls then should be a ``akka.event.LogMarker``. 
+The first argument passed into all log calls then should be a ``akka.event.LogMarker``.
 
 The slf4j bridge provided by akka in ``akka-slf4j`` will automatically pick up this marker value and make it available to SLF4J.
 For example you could use it like this::
 
   <pattern>%date{ISO8601} [%marker][%level] [%msg]%n</pattern>
-  
+
 A more advanced (including most Akka added information) example pattern would be::
 
   <pattern>%date{ISO8601} level=[%level] marker=[%marker] logger=[%logger] akkaSource=[%X{akkaSource}] sourceActorSystem=[%X{sourceActorSystem}] sourceThread=[%X{sourceThread}] mdc=[ticket-#%X{ticketNumber}: %X{ticketDesc}] - msg=[%msg]%n----%n</pattern>
@@ -500,7 +500,7 @@ Akka includes a logger for `java.util.logging <https://docs.oracle.com/javase/8/
 
 You need to enable the ``akka.event.jul.JavaLogger`` in the ``loggers`` element in
 the :ref:`configuration`. Here you can also define the log level of the event bus.
-More fine grained log levels can be defined in the configuration of the logging backend. 
+More fine grained log levels can be defined in the configuration of the logging backend.
 You should also define ``akka.event.jul.JavaLoggingFilter`` in
 the ``logging-filter`` configuration property. It will filter the log events using the backend
 configuration before they are published to the event bus.
