@@ -9,6 +9,7 @@ import akka.actor.Address
 import akka.annotation.InternalApi
 import akka.cluster.ddata.Key.KeyId
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
+import akka.cluster.ddata.Replicator.Internal.DeltaPropagation.NoDeltaPlaceholder
 
 /**
  * INTERNAL API: Used by the Replicator actor.
@@ -104,7 +105,13 @@ import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
               val deltaGroup = cache.get(cacheKey) match {
                 case None ⇒
                   val group = deltaEntriesAfterJ.valuesIterator.reduceLeft {
-                    (d1, d2) ⇒ d1.merge(d2.asInstanceOf[d1.T])
+                    (d1, d2) ⇒
+                      d2 match {
+                        case NoDeltaPlaceholder ⇒ NoDeltaPlaceholder
+                        case _ ⇒
+                          // this is fine also if d1 is a NoDeltaPlaceholder
+                          d1.merge(d2.asInstanceOf[d1.T])
+                      }
                   }
                   cache = cache.updated(cacheKey, group)
                   group

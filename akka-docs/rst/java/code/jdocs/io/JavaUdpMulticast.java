@@ -73,7 +73,7 @@ public class JavaUdpMulticast {
             final ActorRef mgr = Udp.get(getContext().getSystem()).getManager();
             // listen for datagrams on this address
             InetSocketAddress endpoint = new InetSocketAddress(port);
-            mgr.tell(UdpMessage.bind(self(), endpoint, options), getSelf());
+            mgr.tell(UdpMessage.bind(getSelf(), endpoint, options), getSelf());
             //#bind
         }
 

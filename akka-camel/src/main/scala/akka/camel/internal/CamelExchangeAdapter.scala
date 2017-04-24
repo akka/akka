@@ -78,8 +78,8 @@ private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
    *                in the exchange.
    */
   def toAkkaCamelException(headers: Map[String, Any]): AkkaCamelException = {
-    import scala.collection.JavaConversions._
-    new AkkaCamelException(exchange.getException, headers ++ response.getHeaders)
+    import scala.collection.JavaConverters._
+    new AkkaCamelException(exchange.getException, headers ++ response.getHeaders.asScala)
   }
 
   /**
@@ -94,8 +94,8 @@ private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
    *                in the Camel message.
    */
   def toFailureResult(headers: Map[String, Any]): FailureResult = {
-    import scala.collection.JavaConversions._
-    FailureResult(exchange.getException, headers ++ response.getHeaders)
+    import scala.collection.JavaConverters._
+    FailureResult(exchange.getException, headers ++ response.getHeaders.asScala)
   }
 
   /**

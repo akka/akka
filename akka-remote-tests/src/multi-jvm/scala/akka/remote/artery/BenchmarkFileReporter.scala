@@ -4,9 +4,9 @@
 package akka.remote.artery
 
 import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.nio.file.Files
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 
 import akka.actor.ActorSystem
 
@@ -27,6 +27,8 @@ object BenchmarkFileReporter {
     target
   }
 
+  val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss")
+
   def apply(testName: String, system: ActorSystem): BenchmarkFileReporter =
     new BenchmarkFileReporter {
       val gitCommit = {
@@ -34,13 +36,12 @@ object BenchmarkFileReporter {
         Try("git describe".!!.trim).getOrElse("[unknown]")
       }
       val testResultFile: File = {
-        val format = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss")
-        val fileName = s"${format.format(new Date())}-Artery-$testName-$gitCommit-results.txt"
+        val fileName = s"${formatter.format(Instant.now())}-Artery-$testName-$gitCommit-results.txt"
         new File(targetDirectory, fileName)
       }
       val config = system.settings.config
 
-      val fos = new FileOutputStream(testResultFile)
+      val fos = Files.newOutputStream(testResultFile.toPath)
       reportResults(s"Git commit: $gitCommit")
 
       val settingsToReport =

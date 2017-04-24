@@ -31,8 +31,8 @@ public class TransformationFrontend extends AbstractActor {
           .forward(job, getContext());
       })
       .matchEquals(BACKEND_REGISTRATION, x -> {
-        getContext().watch(sender());
-        backends.add(sender());
+        getContext().watch(getSender());
+        backends.add(getSender());
       })
       .match(Terminated.class, terminated -> {
         backends.remove(terminated.getActor());

@@ -20,10 +20,13 @@ import scala.collection.immutable
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import java.net._
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import scala.util.Try
 
 class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
 
@@ -594,30 +597,54 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
     "shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
       val address = temporaryServerAddress()
       val firstClientConnected = Promise[Unit]()
-      val takeTwoAndDropSecond = Flow[IncomingConnection].map(conn ⇒ {
-        firstClientConnected.trySuccess(())
-        conn
-      }).grouped(2).take(1).map(_.head)
+      val secondClientIgnored = Promise[Unit]()
+      val connectionCounter = new AtomicInteger(0)
 
-      val (serverBound, serverDone) = Tcp().bind(address.getHostName, address.getPort)
-        .viaMat(takeTwoAndDropSecond)(Keep.left)
-        .toMat(Sink.foreach(_.flow.join(Flow[ByteString]).run()))(Keep.both)
+      val accept2ConnectionSink: Sink[IncomingConnection, NotUsed] =
+        Flow[IncomingConnection].take(2)
+          .mapAsync(2) { incoming ⇒
+            val connectionNr = connectionCounter.incrementAndGet()
+            if (connectionNr == 1) {
+              // echo
+              incoming.flow.joinMat(
+                Flow[ByteString].mapMaterializedValue { mat ⇒
+                  firstClientConnected.trySuccess(())
+                  mat
+                }.watchTermination()(Keep.right)
+              )(Keep.right).run()
+            } else {
+              // just ignore it
+              secondClientIgnored.trySuccess(())
+              Future.successful(Done)
+            }
+          }.to(Sink.ignore)
+
+      val serverBound = Tcp().bind(address.getHostName, address.getPort)
+        .toMat(accept2ConnectionSink)(Keep.left)
         .run()
 
       // make sure server has started
       serverBound.futureValue
 
-      val connectAndCountBytes = Source(immutable.Iterable.fill(100)(ByteString(0)))
+      val firstProbe = TestPublisher.probe[ByteString]()
+      val firstResult = Source.fromPublisher(firstProbe)
         .via(Tcp().outgoingConnection(address))
-        .fold(0)(_ + _.size).toMat(Sink.head)(Keep.right)
+        .runWith(Sink.seq)
 
-      val total = connectAndCountBytes.run()
+      // create the first connection and wait until the flow is running server side
+      firstClientConnected.future.futureValue(Timeout(5.seconds))
+      firstProbe.expectRequest()
+      firstProbe.sendNext(ByteString(23))
 
-      awaitAssert(firstClientConnected.future, 2.seconds)
+      // then connect the second one, which will be ignored
+      val rejected = Source(List(ByteString(67))).via(Tcp().outgoingConnection(address)).runWith(Sink.seq)
+      secondClientIgnored.future.futureValue
 
-      val rejected = connectAndCountBytes.run()
-      total.futureValue(Timeout(10.seconds)) should ===(100)
+      // first connection should be fine
+      firstProbe.sendComplete()
+      firstResult.futureValue(Timeout(10.seconds)) should ===(Seq(ByteString(23)))
 
+      // as the second server connection was never connected to it will be failed
       rejected.failed.futureValue(Timeout(5.seconds)) shouldBe a[StreamTcpException]
     }
 

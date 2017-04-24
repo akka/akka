@@ -744,6 +744,27 @@ object Replicator {
 
     final case class Delta(dataEnvelope: DataEnvelope, fromSeqNr: Long, toSeqNr: Long)
     final case class DeltaPropagation(fromNode: UniqueAddress, reply: Boolean, deltas: Map[KeyId, Delta]) extends ReplicatorMessage
+    object DeltaPropagation {
+      /**
+       * When a DeltaReplicatedData returns `None` from `delta` it must still be
+       * treated as a delta that increase the version counter in `DeltaPropagationSelector`.
+       * Otherwise a later delta might be applied before the full state gossip is received
+       * and thereby violating `RequiresCausalDeliveryOfDeltas`.
+       *
+       * This is used as a placeholder for such `None` delta. It's filtered out
+       * in `createDeltaPropagation`, i.e. never sent to the other replicas.
+       */
+      val NoDeltaPlaceholder: ReplicatedDelta =
+        new DeltaReplicatedData with RequiresCausalDeliveryOfDeltas with ReplicatedDelta {
+          type T = ReplicatedData
+          type D = ReplicatedDelta
+          override def merge(other: ReplicatedData): ReplicatedData = this
+          override def mergeDelta(other: ReplicatedDelta): ReplicatedDelta = this
+          override def zero: DeltaReplicatedData = this
+          override def delta: Option[ReplicatedDelta] = None
+          override def resetDelta: ReplicatedData = this
+        }
+    }
     case object DeltaNack extends ReplicatorMessage with DeadLetterSuppression
 
   }
@@ -941,6 +962,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   import Replicator._
   import Replicator.Internal._
+  import Replicator.Internal.DeltaPropagation.NoDeltaPlaceholder
   import PruningState._
   import settings._
 
@@ -991,11 +1013,12 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     override def createDeltaPropagation(deltas: Map[KeyId, (ReplicatedData, Long, Long)]): DeltaPropagation = {
       // Important to include the pruning state in the deltas. For example if the delta is based
       // on an entry that has been pruned but that has not yet been performed on the target node.
-      DeltaPropagation(selfUniqueAddress, reply = false, deltas.map {
-        case (key, (d, fromSeqNr, toSeqNr)) ⇒ getData(key) match {
-          case Some(envelope) ⇒ key → Delta(envelope.copy(data = d), fromSeqNr, toSeqNr)
-          case None           ⇒ key → Delta(DataEnvelope(d), fromSeqNr, toSeqNr)
-        }
+      DeltaPropagation(selfUniqueAddress, reply = false, deltas.collect {
+        case (key, (d, fromSeqNr, toSeqNr)) if d != NoDeltaPlaceholder ⇒
+          getData(key) match {
+            case Some(envelope) ⇒ key → Delta(envelope.copy(data = d), fromSeqNr, toSeqNr)
+            case None           ⇒ key → Delta(DataEnvelope(d), fromSeqNr, toSeqNr)
+          }
       }(collection.breakOut))
     }
   }
@@ -1206,18 +1229,27 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def receiveUpdate(key: KeyR, modify: Option[ReplicatedData] ⇒ ReplicatedData,
                     writeConsistency: WriteConsistency, req: Option[Any]): Unit = {
     val localValue = getData(key.id)
+
+    def deltaOrPlaceholder(d: DeltaReplicatedData): Option[ReplicatedDelta] = {
+      d.delta match {
+        case s @ Some(_) ⇒ s
+        case None        ⇒ Some(NoDeltaPlaceholder)
+      }
+    }
+
     Try {
       localValue match {
         case Some(DataEnvelope(DeletedData, _, _)) ⇒ throw new DataDeleted(key, req)
         case Some(envelope @ DataEnvelope(existing, _, _)) ⇒
           modify(Some(existing)) match {
             case d: DeltaReplicatedData if deltaCrdtEnabled ⇒
-              (envelope.merge(d.resetDelta.asInstanceOf[existing.T]), d.delta)
+              (envelope.merge(d.resetDelta.asInstanceOf[existing.T]), deltaOrPlaceholder(d))
             case d ⇒
               (envelope.merge(d.asInstanceOf[existing.T]), None)
           }
         case None ⇒ modify(None) match {
-          case d: DeltaReplicatedData if deltaCrdtEnabled ⇒ (DataEnvelope(d.resetDelta), d.delta)
+          case d: DeltaReplicatedData if deltaCrdtEnabled ⇒
+            (DataEnvelope(d.resetDelta), deltaOrPlaceholder(d))
           case d ⇒ (DataEnvelope(d), None)
         }
       }
@@ -1244,6 +1276,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
             replyTo ! UpdateSuccess(key, req)
         } else {
           val (writeEnvelope, writeDelta) = delta match {
+            case Some(NoDeltaPlaceholder) ⇒ (newEnvelope, None)
             case Some(d: RequiresCausalDeliveryOfDeltas) ⇒
               val v = deltaPropagationSelector.currentVersion(key.id)
               (newEnvelope, Some(Delta(newEnvelope.copy(data = d), v, v)))
@@ -1458,7 +1491,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     deltaPropagationSelector.collectPropagations().foreach {
       case (node, deltaPropagation) ⇒
         // TODO split it to several DeltaPropagation if too many entries
-        replica(node) ! deltaPropagation
+        if (deltaPropagation.deltas.nonEmpty)
+          replica(node) ! deltaPropagation
     }
 
     if (deltaPropagationSelector.propagationCount % deltaPropagationSelector.gossipIntervalDivisor == 0)
@@ -1508,7 +1542,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         case NonFatal(e) ⇒
           // catching in case we need to support rolling upgrades that are
           // mixing nodes with incompatible delta-CRDT types
-          log.warning("Couldn't process DeltaPropagation from [] due to {}", fromNode, e)
+          log.warning("Couldn't process DeltaPropagation from [{}] due to {}", fromNode, e)
       }
     } else {
       // !deltaCrdtEnabled

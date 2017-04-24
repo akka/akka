@@ -40,14 +40,14 @@ public class EchoManager extends AbstractActor {
     final ActorRef tcpManager = Tcp.get(getContext().getSystem()).manager();
     //#manager
     tcpManager.tell(
-        TcpMessage.bind(self(), new InetSocketAddress("localhost", 0), 100),
+        TcpMessage.bind(getSelf(), new InetSocketAddress("localhost", 0), 100),
        getSelf());
   }
 
   @Override
   public void postRestart(Throwable arg0) throws Exception {
     // do not restart
-    getContext().stop(self());
+    getContext().stop(getSelf());
   }
 
   @Override
@@ -59,7 +59,7 @@ public class EchoManager extends AbstractActor {
       .match(Tcp.CommandFailed.class, failed -> {
         if (failed.cmd() instanceof Bind) {
           log.warning("cannot bind to [{}]", ((Bind) failed.cmd()).localAddress());
-          getContext().stop(self());
+          getContext().stop(getSelf());
         } else {
           log.warning("unknown command failed [{}]", failed.cmd());
         }

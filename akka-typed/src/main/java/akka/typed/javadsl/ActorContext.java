@@ -147,13 +147,13 @@ public interface ActorContext<T> {
    * with an inserted hyphen between these two parts. Therefore the given <code>name</code>
    * argument does not need to be unique within the scope of the parent actor.
    */
-  public <U> ActorRef<U> spawnAdapter(Function<U, T> f, String name);
+  public <U> ActorRef<U> createAdapter(Function<U, T> f, String name);
 
   /**
    * Create an anonymous child actor that will wrap messages such that other
    * Actor’s protocols can be ingested by this Actor. You are strongly advised
    * to cache these ActorRefs or to stop them when no longer needed.
    */
-  public <U> ActorRef<U> spawnAdapter(Function<U, T> f);
+  public <U> ActorRef<U> createAdapter(Function<U, T> f);
 
 }

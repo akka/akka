@@ -21,7 +21,7 @@ addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
 
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
 
-addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "0.2.2")
+addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "1.0.0")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.17")
 
@@ -37,3 +37,5 @@ libraryDependencies += "org.kohsuke" % "github-api" % "1.68"
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.8")
+
+addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.2.9")

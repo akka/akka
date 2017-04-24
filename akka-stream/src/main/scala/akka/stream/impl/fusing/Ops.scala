@@ -1486,6 +1486,8 @@ private[stream] object Collect {
 @InternalApi private[akka] final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy) extends SimpleLinearGraphStage[T] {
   private[this] def timerName = "DelayedTimer"
 
+  final val DelayPrecisionMS = 10
+
   override def initialAttributes: Attributes = DefaultAttributes.delay
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
@@ -1563,8 +1565,14 @@ private[stream] object Collect {
       completeIfReady()
 
     def onPull(): Unit = {
-      if (!isTimerActive(timerName) && !buffer.isEmpty && nextElementWaitTime() < 0)
-        push(out, buffer.dequeue()._2)
+      if (!isTimerActive(timerName) && !buffer.isEmpty) {
+        val waitTime = nextElementWaitTime()
+        if (waitTime < 0) {
+          push(out, buffer.dequeue()._2)
+        } else {
+          scheduleOnce(timerName, Math.max(DelayPrecisionMS, waitTime).millis)
+        }
+      }
 
       if (!isClosed(in) && !hasBeenPulled(in) && pullCondition)
         pull(in)
@@ -1587,7 +1595,7 @@ private[stream] object Collect {
 
       if (!buffer.isEmpty) {
         val waitTime = nextElementWaitTime()
-        if (waitTime > 10)
+        if (waitTime > DelayPrecisionMS)
           scheduleOnce(timerName, waitTime.millis)
       }
       completeIfReady()

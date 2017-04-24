@@ -8,7 +8,8 @@ In case of questions about the contribution process or for discussion of specifi
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `master` – active development branch of Akka 2.4.x
+* `master` – active development branch of Akka 2.5.x
+* `release-2.4` – maintenance branch of Akka 2.4.x
 * `release-2.3` – maintenance branch of Akka 2.3.x
 * `artery-dev` – work on the upcoming remoting implementation, codenamed "artery"
 * similarly `release-2.#` branches contain legacy versions of Akka
@@ -95,8 +96,8 @@ The Akka build includes a special task called `validatePullRequest` which invest
 (uncommitted changes) in your local working directory and figures out which projects are impacted by those changes,
 then running tests only on those projects.
 
-For example changing something in `akka-http-core` would cause tests to be run in all projects which depend on it
-(e.g. `akka-http-tests`, `akka-http-marshallers-*`, `akka-docs` etc.).
+For example changing something in `akka-actor` would cause tests to be run in all projects which depend on it
+(e.g. `akka-actor-tests`, `akka-stream`, `akka-docs` etc.).
 
 To use the task simply type `validatePullRequest`, and the output should include entries like shown below:
 
@@ -104,7 +105,7 @@ To use the task simply type `validatePullRequest`, and the output should include
 > validatePullRequest
 [info] Diffing [HEAD] to determine changed modules in PR...
 [info] Detected uncomitted changes in directories (including in dependency analysis): [akka-protobuf,project]
-[info] Detected changes in directories: [akka-docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
+[info] Detected changes in directories: [akka-actor-tests, project, akka-stream, akka-docs, akka-persistence]
 ```
 
 By default changes are diffed with the `master` branch when working locally, if you want to validate against a different

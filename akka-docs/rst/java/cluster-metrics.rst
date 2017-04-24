@@ -164,9 +164,10 @@ The same type of router could also have been defined in code:
 
 .. includecode:: code/jdocs/cluster/FactorialFrontend.java#router-deploy-in-code
 
-The `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ tutorial named
-`Akka Cluster Samples with Java <http://www.lightbend.com/activator/template/akka-sample-cluster-java>`_.
-contains the full source code and instructions of how to run the **Adaptive Load Balancing** sample.
+The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
+`Akka Cluster Sample with Scala <@exampleCodeService@/akka-samples-cluster-java>`_
+together with the tutorial. It contains instructions on how to run the **Adaptive Load Balancing** sample.
+The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-cluster-java>`_.
 
 Subscribe to Metrics Events
 ---------------------------

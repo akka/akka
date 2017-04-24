@@ -175,7 +175,7 @@ object StreamConverters {
    * and the rest of flow.
    */
   def fromJavaStream[O, S <: java.util.stream.BaseStream[O, S]](stream: function.Creator[java.util.stream.BaseStream[O, S]]): javadsl.Source[O, NotUsed] =
-    new Source(scaladsl.StreamConverters.fromJavaStream(stream.create))
+    new Source(scaladsl.StreamConverters.fromJavaStream(stream.create _))
 
   /**
    * Creates a sink which materializes into a ``CompletionStage`` which will be completed with a result of the Java 8 ``Collector``

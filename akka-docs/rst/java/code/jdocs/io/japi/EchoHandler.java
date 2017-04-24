@@ -87,7 +87,7 @@ public class EchoHandler extends AbstractActor {
       .match(ConnectionClosed.class, msg -> {
         if (msg.isPeerClosed()) {
           if (storage.isEmpty()) {
-            getContext().stop(self());
+            getContext().stop(getSelf());
           } else {
             getContext().become(closing());
           }
@@ -119,7 +119,7 @@ public class EchoHandler extends AbstractActor {
         if (msg.isPeerClosed())
           state.peerClosed = true;
         else
-          getContext().stop(self());
+          getContext().stop(getSelf());
 
       })
       .match(Integer.class, ack -> {
@@ -130,7 +130,7 @@ public class EchoHandler extends AbstractActor {
 
           if (storage.isEmpty()) {
             if (state.peerClosed)
-              getContext().stop(self());
+              getContext().stop(getSelf());
             else
               getContext().become(writing);
 
@@ -165,7 +165,7 @@ public class EchoHandler extends AbstractActor {
       .match(Integer.class, msg -> {  
         acknowledge(msg);
         if (storage.isEmpty())
-          getContext().stop(self());
+          getContext().stop(getSelf());
       })
       .build();
   }
@@ -197,7 +197,7 @@ public class EchoHandler extends AbstractActor {
 
     if (stored > MAX_STORED) {
       log.warning("drop connection to [{}] (buffer overrun)", remote);
-      getContext().stop(self());
+      getContext().stop(getSelf());
 
     } else if (stored > HIGH_WATERMARK) {
       log.debug("suspending reading at {}", currentOffset());

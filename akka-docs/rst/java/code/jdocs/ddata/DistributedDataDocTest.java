@@ -118,7 +118,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
       return receiveBuilder()
         .match(String.class, a -> a.equals("increment"), a -> {
           // incoming command to increase the counter
-          Optional<Object> reqContext = Optional.of(sender());
+          Optional<Object> reqContext = Optional.of(getSender());
           Replicator.Update<PNCounter> upd = new Replicator.Update<PNCounter>(counter1Key,
               PNCounter.create(), writeTwo, reqContext, curr -> curr.increment(node, 1));
           replicator.tell(upd, getSelf());
@@ -217,7 +217,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
         return receiveBuilder()
           .match(String.class, a -> a.equals("get-count"), a -> {
             // incoming request to retrieve current value of the counter
-            Optional<Object> reqContext = Optional.of(sender());
+            Optional<Object> reqContext = Optional.of(getSender());
             replicator.tell(new Replicator.Get<PNCounter>(counter1Key,
                 readTwo), getSelf());
           })

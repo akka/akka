@@ -85,9 +85,10 @@ An actor that uses the cluster extension may look like this:
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
-The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-and open the tutorial named `Akka Cluster Samples with Java <http://www.lightbend.com/activator/template/akka-sample-cluster-java>`_.
-It contains instructions of how to run the ``SimpleClusterApp``.
+The easiest way to run this example yourself is to download the ready to run
+`Akka Cluster Sample with Scala <@exampleCodeService@/akka-samples-cluster-java>`_
+together with the tutorial. It contains instructions on how to run the ``SimpleClusterApp``.
+The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-cluster-java>`_.
 
 Joining to Seed Nodes
 ^^^^^^^^^^^^^^^^^^^^^

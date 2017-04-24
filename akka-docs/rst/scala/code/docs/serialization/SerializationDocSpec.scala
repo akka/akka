@@ -20,6 +20,11 @@ package docs.serialization {
   //#my-own-serializer
   class MyOwnSerializer extends Serializer {
 
+    // If you need logging here, introduce a constructor that takes an ExtendedActorSystem.
+    // class MyOwnSerializer(actorSystem: ExtendedActorSystem) extends Serializer
+    // Get a logger using:
+    // private val logger = Logging(actorSystem, this)
+
     // This is whether "fromBinary" requires a "clazz" or not
     def includeManifest: Boolean = true
 

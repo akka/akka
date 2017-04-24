@@ -4,12 +4,12 @@
 package akka.stream.javadsl
 
 import java.io.File
-import java.nio.file.{ Path, StandardOpenOption }
+import java.nio.file.{ OpenOption, Path }
 import java.util
-import akka.stream.{ scaladsl, javadsl }
-import akka.stream.IOResult
-import akka.util.ByteString
 import java.util.concurrent.CompletionStage
+
+import akka.stream.{ IOResult, javadsl, scaladsl }
+import akka.util.ByteString
 
 import scala.collection.JavaConverters._
 
@@ -61,7 +61,7 @@ object FileIO {
    * @param options File open options
    */
   @deprecated("Use `toPath` instead.", "2.4.5")
-  def toFile(f: File, options: util.Set[StandardOpenOption]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+  def toFile[Opt <: OpenOption](f: File, options: util.Set[Opt]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
     toPath(f.toPath)
 
   /**
@@ -76,7 +76,7 @@ object FileIO {
    * @param f The file path to write to
    * @param options File open options
    */
-  def toPath(f: Path, options: util.Set[StandardOpenOption]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
+  def toPath[Opt <: OpenOption](f: Path, options: util.Set[Opt]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
     new Sink(scaladsl.FileIO.toPath(f, options.asScala.toSet).toCompletionStage())
 
   /**

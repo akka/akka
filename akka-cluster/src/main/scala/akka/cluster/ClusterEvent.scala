@@ -49,7 +49,7 @@ object ClusterEvent {
   /**
    * Marker interface for cluster domain events.
    */
-  sealed trait ClusterDomainEvent
+  sealed trait ClusterDomainEvent extends DeadLetterSuppression
 
   /**
    * Current snapshot state of the cluster. Sent to new subscriber.
@@ -198,7 +198,7 @@ object ClusterEvent {
    * This event is published when the cluster node is shutting down,
    * before the final [[MemberRemoved]] events are published.
    */
-  final case object ClusterShuttingDown extends ClusterDomainEvent with DeadLetterSuppression
+  final case object ClusterShuttingDown extends ClusterDomainEvent
 
   /**
    * Java API: get the singleton instance of `ClusterShuttingDown` event

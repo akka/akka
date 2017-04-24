@@ -134,7 +134,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     ensureInitialMailboxState(config, q)
 
     EventFilter.warning(
-      pattern = ".*received dead letter from Actor.*MailboxSpec/deadLetters.*",
+      pattern = "received dead letter without sender",
       occurrences = (enqueueN - dequeueN)) intercept {
 
       def createProducer(fromNum: Int, toNum: Int): Future[Vector[Envelope]] = spawn {

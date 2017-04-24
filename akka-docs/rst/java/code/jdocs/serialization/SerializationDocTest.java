@@ -21,6 +21,11 @@ public class SerializationDocTest {
   //#my-own-serializer
   public class MyOwnSerializer extends JSerializer {
 
+    // If you need logging here, introduce a constructor that takes an ExtendedActorSystem.
+    // public MyOwnSerializer(ExtendedActorSystem actorSystem) 
+    // Get a logger using:
+    // private final LoggingAdapter logger = Logging.getLogger(actorSystem, this); 
+
     // This is whether "fromBinary" requires a "clazz" or not
     @Override public boolean includeManifest() {
       return false;

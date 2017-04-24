@@ -37,7 +37,7 @@ class AskSpec extends TypedSpec with ScalaFutures {
         foo.replyTo ! "foo"
         Same
       case Stop(r) ⇒
-        r ! ()
+        r ! (())
         Stopped
     }
 

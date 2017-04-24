@@ -5,12 +5,12 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.{ CompletableFuture, TimeUnit }
 
+import akka.Done
 import akka.stream._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, GraphStageWithMaterializedValue }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue }
 import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.testkit.TestLatch
-import akka.{ Done, NotUsed }
 
 import scala.concurrent.{ Await, Future, Promise }
 
@@ -24,6 +24,35 @@ class FutureFlattenSourceSpec extends StreamSpec {
     val underlying: Source[Int, String] =
       Source(List(1, 2, 3)).mapMaterializedValue(_ ⇒ "foo")
 
+    "emit the elements of the already successful future source" in assertAllStagesStopped {
+      val (sourceMatVal, sinkMatVal) =
+        Source.fromFutureSource(Future.successful(underlying))
+          .toMat(Sink.seq)(Keep.both)
+          .run()
+
+      // should complete as soon as inner source has been materialized
+      sourceMatVal.futureValue should ===("foo")
+      sinkMatVal.futureValue should ===(List(1, 2, 3))
+    }
+
+    "emit no elements before the future of source successful" in assertAllStagesStopped {
+      val c = TestSubscriber.manualProbe[Int]()
+      val sourcePromise = Promise[Source[Int, String]]()
+      val p = Source.fromFutureSource(sourcePromise.future)
+        .runWith(Sink.asPublisher(true))
+        .subscribe(c)
+      val sub = c.expectSubscription()
+      import scala.concurrent.duration._
+      c.expectNoMsg(100.millis)
+      sub.request(3)
+      c.expectNoMsg(100.millis)
+      sourcePromise.success(underlying)
+      c.expectNext(1)
+      c.expectNext(2)
+      c.expectNext(3)
+      c.expectComplete()
+    }
+
     "emit the elements of the future source" in assertAllStagesStopped {
 
       val sourcePromise = Promise[Source[Int, String]]()
@@ -31,7 +60,6 @@ class FutureFlattenSourceSpec extends StreamSpec {
         Source.fromFutureSource(sourcePromise.future)
           .toMat(Sink.seq)(Keep.both)
           .run()
-
       sourcePromise.success(underlying)
       // should complete as soon as inner source has been materialized
       sourceMatVal.futureValue should ===("foo")
@@ -139,30 +167,47 @@ class FutureFlattenSourceSpec extends StreamSpec {
       subscriber.expectComplete()
     }
 
+    "carry through cancellation to later materialized source" in assertAllStagesStopped {
+      val subscriber = TestSubscriber.probe[Int]()
+      val publisher = TestPublisher.probe[Int]()
+
+      val sourcePromise = Promise[Source[Int, String]]()
+
+      val matVal = Source.fromFutureSource(sourcePromise.future)
+        .to(Sink.fromSubscriber(subscriber))
+        .run()
+
+      subscriber.ensureSubscription()
+
+      sourcePromise.success(Source.fromPublisher(publisher).mapMaterializedValue(_ ⇒ "woho"))
+
+      // materialized value completes but still no demand
+      matVal.futureValue should ===("woho")
+
+      // cancelling the outer source should carry through to the internal one
+      subscriber.ensureSubscription()
+      subscriber.cancel()
+      publisher.expectCancellation()
+    }
+
     class FailingMatGraphStage extends GraphStageWithMaterializedValue[SourceShape[Int], String] {
       val out = Outlet[Int]("whatever")
       override val shape: SourceShape[Int] = SourceShape(out)
       override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, String) = {
-        throw TE("argh, materialization failed")
+        throw TE("INNER_FAILED")
       }
 
     }
 
-    // Behaviour when inner source throws during materialization is undefined (leaks ActorGraphInterpreters)
-    // until ticket #22358 has been fixed, this test fails because of it
-    "fail when the future source materialization fails" in pendingUntilFixed(assertAllStagesStopped {
-      val failure = TE("MatEx")
-
-      val (sourceMatVal, sinkMatVal) =
-        Source.fromFutureSource(
-          Future.successful(Source.fromGraph(new FailingMatGraphStage))
-        ).toMat(Sink.seq)(Keep.both)
+    "fail when the future source materialization fails" in assertAllStagesStopped {
+      val inner = Future.successful(Source.fromGraph(new FailingMatGraphStage))
+      val (innerSourceMat: Future[String], outerSinkMat: Future[Seq[Int]]) =
+        Source.fromFutureSource(inner)
+          .toMat(Sink.seq)(Keep.both)
           .run()
 
-      sinkMatVal.failed.futureValue should ===(failure)
-      println(sourceMatVal.futureValue)
-      sourceMatVal.failed.futureValue should ===(failure)
-
-    })
+      outerSinkMat.failed.futureValue should ===(TE("INNER_FAILED"))
+      innerSourceMat.failed.futureValue should ===(TE("INNER_FAILED"))
+    }
   }
 }

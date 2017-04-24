@@ -92,17 +92,16 @@ class LightArrayRevolverScheduler(
     delay:        FiniteDuration,
     runnable:     Runnable)(implicit executor: ExecutionContext): Cancellable = {
     checkMaxDelay(roundUp(delay).toNanos)
-    val preparedEC = executor.prepare()
     try new AtomicReference[Cancellable](InitialRepeatMarker) with Cancellable { self ⇒
       compareAndSet(InitialRepeatMarker, schedule(
-        preparedEC,
+        executor,
         new AtomicLong(clock() + initialDelay.toNanos) with Runnable {
           override def run(): Unit = {
             try {
               runnable.run()
               val driftNanos = clock() - getAndAdd(delay.toNanos)
               if (self.get != null)
-                swap(schedule(preparedEC, this, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1))))
+                swap(schedule(executor, this, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1))))
             } catch {
               case _: SchedulerException ⇒ // ignore failure to enqueue or terminated target actor
             }
@@ -132,7 +131,7 @@ class LightArrayRevolverScheduler(
   }
 
   override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
-    try schedule(executor.prepare(), runnable, roundUp(delay))
+    try schedule(executor, runnable, roundUp(delay))
     catch {
       case SchedulerException(msg) ⇒ throw new IllegalStateException(msg)
     }
