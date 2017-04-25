@@ -4,6 +4,8 @@
 package akka
 
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 import sbt._
@@ -32,6 +34,6 @@ object TimeStampede extends AutoPlugin {
   val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
   def timestamp(time: Long): String = {
-    formatter.format(Instant.ofEpochMilli(time))
+    formatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault()))
   }
 }

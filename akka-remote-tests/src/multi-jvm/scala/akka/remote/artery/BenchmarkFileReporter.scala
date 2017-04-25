@@ -6,6 +6,8 @@ package akka.remote.artery
 import java.io.File
 import java.nio.file.Files
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 import akka.actor.ActorSystem
@@ -36,7 +38,8 @@ object BenchmarkFileReporter {
         Try("git describe".!!.trim).getOrElse("[unknown]")
       }
       val testResultFile: File = {
-        val fileName = s"${formatter.format(Instant.now())}-Artery-$testName-$gitCommit-results.txt"
+        val timestamp = formatter.format(LocalDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()));
+        val fileName = s"$timestamp-Artery-$testName-$gitCommit-results.txt"
         new File(targetDirectory, fileName)
       }
       val config = system.settings.config
