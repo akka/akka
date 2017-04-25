@@ -10,11 +10,11 @@ import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import akka.actor.actorRef2Scala
+import java.util.{ BitSet ⇒ ProgrammaticJavaDummy }
+import java.util.{ Date ⇒ SerializableDummy }
 
 class ConfigurationDummy
 class ProgrammaticDummy
-case class ProgrammaticJavaDummy()
-case class SerializableDummy() // since case classes are serializable
 
 object AllowJavaSerializationOffSpec {
 
@@ -28,6 +28,8 @@ object AllowJavaSerializationOffSpec {
     akka {
       actor {
         serialize-messages = off
+        # this is by default on, but tests are running with off, use defaults here
+        warn-about-java-serializer-usage = on
 
         serialization-bindings {
           "akka.serialization.ConfigurationDummy" = test
@@ -42,6 +44,8 @@ object AllowJavaSerializationOffSpec {
     akka {
       actor {
         allow-java-serialization = off
+        # this is by default on, but tests are running with off, use defaults here
+        warn-about-java-serializer-usage = on
       }
     }
     """.stripMargin))
@@ -67,8 +71,10 @@ class AllowJavaSerializationOffSpec extends AkkaSpec(
     akka {
       loglevel = debug
       actor {
-        enable-additional-serialization-bindings = off # this should be overriden by the setting below, which should force it to be on 
+        enable-additional-serialization-bindings = off # this should be overriden by the setting below, which should force it to be on
         allow-java-serialization = off
+        # this is by default on, but tests are running with off, use defaults here
+        warn-about-java-serializer-usage = on
       }
     }
     """)), None)
@@ -111,7 +117,7 @@ class AllowJavaSerializationOffSpec extends AkkaSpec(
 
     "disable java serialization also for incoming messages if serializer id usually would have found the serializer" in {
       val ser1 = SerializationExtension(system)
-      val msg = SerializableDummy()
+      val msg = new SerializableDummy
       val bytes = ser1.serialize(msg).get
       val serId = ser1.findSerializerFor(msg).identifier
       ser1.findSerializerFor(msg).includeManifest should ===(false)
