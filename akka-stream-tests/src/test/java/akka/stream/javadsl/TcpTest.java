@@ -59,7 +59,7 @@ public class TcpTest extends StreamTest {
   public void mustWorkInHappyCase() throws Exception {
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
     final Source<IncomingConnection, CompletionStage<ServerBinding>> binding = Tcp.get(system)
-        .bind(serverAddress.getHostName(), serverAddress.getPort()); // TODO getHostString in Java7
+        .bind(serverAddress.getHostString(), serverAddress.getPort());
 
     final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(materializer);
     final ServerBinding b = future.toCompletableFuture().get(5, TimeUnit.SECONDS);
@@ -85,7 +85,7 @@ public class TcpTest extends StreamTest {
   public void mustReportServerBindFailure() throws Exception {
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
     final Source<IncomingConnection, CompletionStage<ServerBinding>> binding = Tcp.get(system)
-        .bind(serverAddress.getHostName(), serverAddress.getPort()); // TODO getHostString in Java7
+        .bind(serverAddress.getHostString(), serverAddress.getPort());
 
     final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(materializer);
     final ServerBinding b = future.toCompletableFuture().get(5, TimeUnit.SECONDS);
