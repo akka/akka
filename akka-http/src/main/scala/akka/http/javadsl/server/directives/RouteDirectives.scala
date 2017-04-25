@@ -121,8 +121,9 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Completes the request using the given status code, headers, and response entity.
    */
   @deprecated("This directive is for binary compatibility only", "10.0.6")
-  def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: RequestEntity): RouteAdapter =
-    complete(status, headers, entity.asInstanceOf[ResponseEntity])
+  def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: RequestEntity): RouteAdapter = {
+    complete(status, headers, entity: ResponseEntity)
+  }
 
   /**
    * Completes the request using the given status code, marshalling the given value as response entity.
@@ -142,7 +143,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Completes the request using the given status code and response entity.
    */
   @deprecated("This directive is for binary compatibility only", "10.0.6")
-  def complete(status: StatusCode, entity: RequestEntity): RouteAdapter = complete(status, entity.asInstanceOf[ResponseEntity])
+  def complete(status: StatusCode, entity: RequestEntity): RouteAdapter = complete(status, entity: ResponseEntity)
 
   /**
    * Completes the request using the given status code and the given body as UTF-8.
@@ -170,7 +171,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @deprecated("This directive is for binary compatibility only", "10.0.6")
   def complete(headers: java.lang.Iterable[HttpHeader], entity: RequestEntity): RouteAdapter =
-    complete(headers, entity.asInstanceOf[ResponseEntity])
+    complete(headers, entity: ResponseEntity)
 
   /**
    * Completes the request as HTTP 200 OK, marshalling the given value as response entity.
@@ -191,7 +192,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Completes the request as HTTP 200 OK with the given value as response entity.
    */
   @deprecated("This directive is for binary compatibility only", "10.0.6")
-  def complete(entity: RequestEntity): RouteAdapter = complete(entity.asInstanceOf[ResponseEntity])
+  def complete(entity: RequestEntity): RouteAdapter = complete(entity: ResponseEntity)
 
   // --- manual "magnet" for Scala Future ---
 
