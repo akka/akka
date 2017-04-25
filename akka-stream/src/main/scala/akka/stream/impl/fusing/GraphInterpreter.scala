@@ -648,11 +648,11 @@ import scala.util.control.NonFatal
         builder.append(s"  $inName -> $outName ")
         connection.portState match {
           case InReady ⇒
-            builder.append("[label=shouldPull; color=blue];")
+            builder.append("[label=shouldPull, color=blue];")
           case OutReady ⇒
-            builder.append(s"[label=shouldPush; color=red];")
+            builder.append(s"[label=shouldPush, color=red];")
           case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) ⇒
-            builder.append("[style=dotted; label=closed dir=both];")
+            builder.append("[style=dotted, label=closed, dir=both];")
           case _ ⇒
         }
         builder.append("\n")
