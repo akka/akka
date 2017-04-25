@@ -120,7 +120,6 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request using the given status code, headers, and response entity.
    */
-  @deprecated("This directive is for binary compatibility only", "10.0.6")
   def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: RequestEntity): RouteAdapter = {
     complete(status, headers, entity: ResponseEntity)
   }
@@ -142,7 +141,6 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request using the given status code and response entity.
    */
-  @deprecated("This directive is for binary compatibility only", "10.0.6")
   def complete(status: StatusCode, entity: RequestEntity): RouteAdapter = complete(status, entity: ResponseEntity)
 
   /**
@@ -169,7 +167,6 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request as HTTP 200 OK, adding the given headers and response entity.
    */
-  @deprecated("This directive is for binary compatibility only", "10.0.6")
   def complete(headers: java.lang.Iterable[HttpHeader], entity: RequestEntity): RouteAdapter =
     complete(headers, entity: ResponseEntity)
 
@@ -191,7 +188,6 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request as HTTP 200 OK with the given value as response entity.
    */
-  @deprecated("This directive is for binary compatibility only", "10.0.6")
   def complete(entity: RequestEntity): RouteAdapter = complete(entity: ResponseEntity)
 
   // --- manual "magnet" for Scala Future ---
