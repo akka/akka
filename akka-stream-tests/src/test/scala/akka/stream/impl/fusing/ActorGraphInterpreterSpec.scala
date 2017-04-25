@@ -392,17 +392,28 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       upstream.expectCancellation()
     }
 
-    "trigger failure in all stages when abruptly terminated (and no upstream boundaries)" in assertAllStagesStopped {
+    "trigger postStop in all stages when abruptly terminated (and no upstream boundaries)" in assertAllStagesStopped {
       val mat = ActorMaterializer()
-      val sawFailure = TestLatch(1)
       val gotStop = TestLatch(1)
-      object LatchSnitchingStage extends SimpleLinearGraphStage[String] {
+
+      object PostStopSnitchSource extends GraphStage[SourceShape[String]] {
+        val out = Outlet[String]("out")
+        val shape = SourceShape.of(out)
+        def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
+          setHandler(out, new OutHandler {
+            def onPull(): Unit = {
+              push(out, "whatever")
+            }
+          })
+          override def postStop(): Unit = {
+
+          }
+        }
+      }
+      object PostStopSnitchFlow extends SimpleLinearGraphStage[String] {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           setHandler(in, new InHandler {
             override def onPush(): Unit = push(out, grab(in))
-            override def onUpstreamFailure(ex: Throwable): Unit = {
-              sawFailure.countDown()
-            }
           })
           setHandler(out, new OutHandler {
             override def onPull(): Unit = pull(in)
@@ -417,14 +428,13 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       val downstream = TestSubscriber.probe[String]()
 
       Source.repeat("whatever")
-        .via(LatchSnitchingStage)
+        .via(PostStopSnitchFlow)
         .to(Sink.fromSubscriber(downstream))
         .run()(mat)
 
       downstream.requestNext()
 
       mat.shutdown()
-      Await.ready(sawFailure, remainingOrDefault)
       Await.ready(gotStop, remainingOrDefault)
 
       val propagatedError = downstream.expectError()

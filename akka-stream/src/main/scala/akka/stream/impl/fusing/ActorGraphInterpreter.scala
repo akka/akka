@@ -605,14 +605,6 @@ import scala.util.control.NonFatal
     // call has no effect and therefore does the right thing: nothing.
     try {
       inputs.foreach(_.onInternalError(reason))
-      // fail all sources
-      logics.foreach { logic ⇒
-        // source
-        if (logic.inCount == 0 && logic.outCount > 0) {
-          logic.failStage(reason)
-          interpreter.finalizeStage(logic)
-        }
-      }
       interpreter.execute(abortLimit)
       interpreter.finish()
     } catch {

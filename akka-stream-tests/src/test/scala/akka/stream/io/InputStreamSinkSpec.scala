@@ -15,7 +15,7 @@ import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Keep, Source, StreamConverters }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.{ GraphStageMessages, StreamSpec, TestSinkStage }
+import akka.stream.testkit._
 import akka.testkit.TestProbe
 import akka.util.ByteString
 
@@ -227,18 +227,30 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       List.fill(5)(inputStream.read()) should ===(List(0, 100, 200, 255, -1))
       inputStream.close()
     }
-  }
 
-  "fail to materialize with zero sized input buffer" in {
-    an[IllegalArgumentException] shouldBe thrownBy {
-      Source.single(byteString)
-        .runWith(StreamConverters.asInputStream(timeout).withAttributes(inputBuffer(0, 0)))
-      /*
-       With Source.single we test the code path in which the sink
-       itself throws an exception when being materialized. If
-       Source.empty is used, the same exception is thrown by
-       Materializer.
-       */
+    "fail to materialize with zero sized input buffer" in {
+      an[IllegalArgumentException] shouldBe thrownBy {
+        Source.single(byteString)
+          .runWith(StreamConverters.asInputStream(timeout).withAttributes(inputBuffer(0, 0)))
+        /*
+         With Source.single we test the code path in which the sink
+         itself throws an exception when being materialized. If
+         Source.empty is used, the same exception is thrown by
+         Materializer.
+         */
+      }
+    }
+
+    "throw from inputstream read if terminated abruptly" in assertAllStagesStopped {
+      val mat = ActorMaterializer()
+      val probe = TestPublisher.probe[ByteString]()
+      val inputStream = Source.fromPublisher(probe).runWith(StreamConverters.asInputStream())(mat)
+      mat.shutdown()
+
+      intercept[IOException] {
+        inputStream.read()
+      }
     }
   }
+
 }
