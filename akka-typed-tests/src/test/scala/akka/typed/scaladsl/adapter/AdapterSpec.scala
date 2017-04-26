@@ -56,8 +56,8 @@ object AdapterSpec {
             ctx.stop(child)
             Same
         }
-    } onSignal { (ctx, sig) ⇒
-      sig match {
+    } onSignal {
+      case (ctx, sig) ⇒ sig match {
         case Terminated(ref) ⇒
           probe ! "terminated"
           Same

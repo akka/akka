@@ -351,11 +351,9 @@ class BehaviorSpec extends TypedSpec {
             case _: AuxPing ⇒ SActor.Unhandled
           }
       } onSignal {
-        (ctx, sig) ⇒
-          {
-            monitor ! GotSignal(sig)
-            SActor.Same
-          }
+        case (ctx, sig) ⇒
+          monitor ! GotSignal(sig)
+          SActor.Same
       }
   }
   object `A ImmutableWithSignal Behavior (scala,native)` extends ImmutableWithSignalScalaBehavior with NativeSystem
