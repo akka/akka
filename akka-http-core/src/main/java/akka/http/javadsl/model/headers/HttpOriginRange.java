@@ -23,5 +23,5 @@ public abstract class HttpOriginRange {
    * Will be removed in Akka HTTP 11.x, use {@link HttpEncodingRanges#ALL} instead.
    */
   @Deprecated
-  public static final HttpOriginRange ALL = HttpOriginRanges.ALL;
+  public static final HttpOriginRange ALL = akka.http.scaladsl.model.headers.HttpOriginRange.$times$.MODULE$;
 }

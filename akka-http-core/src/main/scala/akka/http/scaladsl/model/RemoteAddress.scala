@@ -32,6 +32,9 @@ object RemoteAddress {
     def render[R <: Rendering](r: R): r.type = r ~~ "unknown"
 
     def isUnknown = true
+
+    JavaInitialization.initializeStaticFieldWith(
+      this, classOf[jm.RemoteAddress].getField("UNKNOWN"))
   }
 
   final case class IP(ip: InetAddress, port: Option[Int] = None) extends RemoteAddress {
@@ -62,8 +65,4 @@ object RemoteAddress {
       case _         ⇒ r ~~ address
     }
   }
-
-  JavaInitialization.initializeStaticFieldWith(
-    Unknown, classOf[jm.RemoteAddress].getField("UNKNOWN"))
-
 }

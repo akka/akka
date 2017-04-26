@@ -37,5 +37,5 @@ public abstract class RemoteAddress {
      *             Will be removed in Akka HTTP 11.x, use {@link RemoteAddresses#UNKNOWN} instead.
      */
     @Deprecated
-    public static final RemoteAddress UNKNOWN = RemoteAddresses.UNKNOWN;
+    public static final RemoteAddress UNKNOWN = akka.http.scaladsl.model.RemoteAddress.Unknown$.MODULE$;
 }

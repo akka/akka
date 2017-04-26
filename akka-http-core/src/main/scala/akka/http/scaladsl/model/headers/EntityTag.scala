@@ -34,14 +34,14 @@ object EntityTagRange {
 
   case object `*` extends EntityTagRange {
     def render[R <: Rendering](r: R): r.type = r ~~ '*'
+
+    JavaInitialization.initializeStaticFieldWith(
+      this, classOf[jm.headers.EntityTagRange].getField("ALL"))
   }
 
   final case class Default(tags: immutable.Seq[EntityTag]) extends EntityTagRange {
     require(tags.nonEmpty, "tags must not be empty")
     def render[R <: Rendering](r: R): r.type = r ~~ tags
   }
-
-  JavaInitialization.initializeStaticFieldWith(
-    `*`, classOf[jm.headers.EntityTagRange].getField("ALL"))
 
 }

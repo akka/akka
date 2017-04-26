@@ -20,5 +20,5 @@ public abstract class EntityTagRange {
      *             Will be removed in Akka HTTP 11.x, use {@link EntityTagRanges#ALL} instead.
      */
     @Deprecated
-    public static final EntityTagRange ALL = EntityTagRanges.ALL;
+    public static final EntityTagRange ALL = akka.http.scaladsl.model.headers.EntityTagRange.$times$.MODULE$;
 }

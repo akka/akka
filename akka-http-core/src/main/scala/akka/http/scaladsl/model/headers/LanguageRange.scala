@@ -39,7 +39,10 @@ object LanguageRange {
     def withQValue(qValue: Float) =
       if (qValue == 1.0f) `*` else if (qValue != this.qValue) `*`(qValue.toFloat) else this
   }
-  object `*` extends `*`(1.0f)
+  object `*` extends `*`(1.0f) {
+    JavaInitialization.initializeStaticFieldWith(
+      `*`, classOf[jm.headers.LanguageRange].getField("ALL"))
+  }
 
   final case class One(language: Language, qValue: Float) extends LanguageRange {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
@@ -54,10 +57,6 @@ object LanguageRange {
 
   implicit def apply(language: Language): LanguageRange = apply(language, 1.0f)
   def apply(language: Language, qValue: Float): LanguageRange = One(language, qValue)
-
-  JavaInitialization.initializeStaticFieldWith(
-    `*`, classOf[jm.headers.LanguageRange].getField("ALL"))
-
 }
 
 final case class Language(primaryTag: String, subTags: immutable.Seq[String])
