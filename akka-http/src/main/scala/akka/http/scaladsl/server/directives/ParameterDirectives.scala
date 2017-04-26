@@ -9,7 +9,7 @@ import akka.http.javadsl.server.directives.CorrespondsTo
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
+import scala.util.{ Failure, Success, Try }
 import akka.http.scaladsl.common._
 import akka.http.impl.util._
 
@@ -125,7 +125,10 @@ object ParameterDirectives extends ParameterDirectives {
       extractRequestContext flatMap { ctx ⇒
         import ctx.executionContext
         import ctx.materializer
-        handleParamResult(paramName, fsou(ctx.request.uri.query().get(paramName)))
+        Try(ctx.request.uri.query()) match {
+          case Success(query) ⇒ handleParamResult(paramName, fsou(query.get(paramName)))
+          case Failure(t)     ⇒ reject(MalformedRequestContentRejection(s"The request's query string is invalid: ${ctx.request.uri.rawQueryString.getOrElse("")}", t))
+        }
       }
     implicit def forString(implicit fsu: FSU[String]): ParamDefAux[String, Directive1[String]] =
       extractParameter[String, String] { string ⇒ filter(string, fsu) }
