@@ -487,7 +487,7 @@ If a stage manages a resource with a lifecycle, for example objects that needs t
 used anymore, returned to a pool etc. it is important to make sure this will happen in all circumstances when the stage
 shuts down.
 
-Cleaning up resources should be done in ``GraphStageLogic.postStop` and not in the ``InHandler`` and ``InHandler``
+Cleaning up resources should be done in ``GraphStageLogic.postStop` and not in the ``InHandler`` and ``OutHandler``
 callbacks. The reason for this is that when the ``Materializer`` is shutdown or the ``ActorSystem`` is terminated while
 a stream is still running this leads to an "abrupt termination" and none of the callbacks are invoked.
 
