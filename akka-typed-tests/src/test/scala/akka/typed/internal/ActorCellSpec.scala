@@ -430,12 +430,12 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
 
     def `must not terminate twice if failing in PostStop`(): Unit = {
       val parent = new DebugRef[String](sys.path / "terminateProperlyPostStop", true)
-      val cell = new ActorCell(sys, Immutable[String](
-        { case _ ⇒ Unhandled },
-        {
-          case (_, PostStop) ⇒ ???
-          case _             ⇒ Unhandled
-        }), ec, 1000, parent)
+      val cell = new ActorCell(sys, Immutable[String] {
+        case _ ⇒ Unhandled
+      } onSignal {
+        case (_, PostStop) ⇒ ???
+        case _             ⇒ Unhandled
+      }, ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)
       debugCell(cell) {

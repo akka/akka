@@ -27,41 +27,43 @@ object AdapterSpec {
   }
 
   def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
-    Immutable(
-      onMessage = (ctx, msg) ⇒
-      msg match {
-        case "send" ⇒
-          val replyTo = ctx.self.toUntyped
-          ref.tell("ping", replyTo)
+    Immutable[String] {
+      (ctx, msg) ⇒
+        msg match {
+          case "send" ⇒
+            val replyTo = ctx.self.toUntyped
+            ref.tell("ping", replyTo)
+            Same
+          case "pong" ⇒
+            probe ! "ok"
+            Same
+          case "actorOf" ⇒
+            val child = ctx.actorOf(untyped1)
+            child.tell("ping", ctx.self.toUntyped)
+            Same
+          case "watch" ⇒
+            ctx.watch(ref)
+            Same
+          case "supervise-stop" ⇒
+            val child = ctx.actorOf(untyped1)
+            ctx.watch(child)
+            child ! ThrowIt3
+            child.tell("ping", ctx.self.toUntyped)
+            Same
+          case "stop-child" ⇒
+            val child = ctx.actorOf(untyped1)
+            ctx.watch(child)
+            ctx.stop(child)
+            Same
+        }
+    } onSignal { (ctx, sig) ⇒
+      sig match {
+        case Terminated(ref) ⇒
+          probe ! "terminated"
           Same
-        case "pong" ⇒
-          probe ! "ok"
-          Same
-        case "actorOf" ⇒
-          val child = ctx.actorOf(untyped1)
-          child.tell("ping", ctx.self.toUntyped)
-          Same
-        case "watch" ⇒
-          ctx.watch(ref)
-          Same
-        case "supervise-stop" ⇒
-          val child = ctx.actorOf(untyped1)
-          ctx.watch(child)
-          child ! ThrowIt3
-          child.tell("ping", ctx.self.toUntyped)
-          Same
-        case "stop-child" ⇒
-          val child = ctx.actorOf(untyped1)
-          ctx.watch(child)
-          ctx.stop(child)
-          Same
-      },
-      onSignal = (ctx, sig) ⇒ sig match {
-      case Terminated(ref) ⇒
-        probe ! "terminated"
-        Same
-      case _ ⇒ Unhandled
-    })
+        case _ ⇒ Unhandled
+      }
+    }
 
   sealed trait Typed2Msg
   final case class Ping(replyTo: ActorRef[String]) extends Typed2Msg

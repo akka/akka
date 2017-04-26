@@ -97,15 +97,16 @@ class MutableIntroSpec extends TypedSpec {
         ctx.watch(gabblerRef)
         chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-        Immutable(
-          onMessage = (_, _) ⇒ Unhandled,
-          onSignal = (ctx, sig) ⇒
+        Immutable[akka.NotUsed] {
+          (_, _) ⇒ Unhandled
+        } onSignal { (ctx, sig) ⇒
           sig match {
             case Terminated(ref) ⇒
               Stopped
             case _ ⇒
               Unhandled
-          })
+          }
+        }
       }
 
     val system = ActorSystem("ChatRoomDemo", main)

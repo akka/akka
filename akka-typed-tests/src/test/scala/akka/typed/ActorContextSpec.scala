@@ -73,91 +73,94 @@ object ActorContextSpec {
   final case class Adapter(a: ActorRef[Command]) extends Event
 
   def subject(monitor: ActorRef[Monitor]): Behavior[Command] =
-    Actor.Immutable(
-      (ctx, message) ⇒ message match {
-        case ReceiveTimeout ⇒
-          monitor ! GotReceiveTimeout
-          Actor.Same
-        case Ping(replyTo) ⇒
-          replyTo ! Pong1
-          Actor.Same
-        case Miss(replyTo) ⇒
-          replyTo ! Missed
-          Actor.Unhandled
-        case Renew(replyTo) ⇒
-          replyTo ! Renewed
-          subject(monitor)
-        case Throw(ex) ⇒
-          throw ex
-        case MkChild(name, mon, replyTo) ⇒
-          val child = name match {
-            case None    ⇒ ctx.spawnAnonymous(Actor.Restarter[Throwable]().wrap(subject(mon)))
-            case Some(n) ⇒ ctx.spawn(Actor.Restarter[Throwable]().wrap(subject(mon)), n)
-          }
-          replyTo ! Created(child)
-          Actor.Same
-        case SetTimeout(d, replyTo) ⇒
-          d match {
-            case f: FiniteDuration ⇒ ctx.setReceiveTimeout(f, ReceiveTimeout)
-            case _                 ⇒ ctx.cancelReceiveTimeout()
-          }
-          replyTo ! TimeoutSet
-          Actor.Same
-        case Schedule(delay, target, msg, replyTo) ⇒
-          replyTo ! Scheduled
-          ctx.schedule(delay, target, msg)
-          Actor.Same
-        case Stop ⇒ Actor.Stopped
-        case Kill(ref, replyTo) ⇒
-          if (ctx.stop(ref)) replyTo ! Killed
-          else replyTo ! NotKilled
-          Actor.Same
-        case Watch(ref, replyTo) ⇒
-          ctx.watch(ref)
-          replyTo ! Watched
-          Actor.Same
-        case Unwatch(ref, replyTo) ⇒
-          ctx.unwatch(ref)
-          replyTo ! Unwatched
-          Actor.Same
-        case GetInfo(replyTo) ⇒
-          replyTo ! Info(ctx.self, ctx.system)
-          Actor.Same
-        case GetChild(name, replyTo) ⇒
-          replyTo ! Child(ctx.child(name))
-          Actor.Same
-        case GetChildren(replyTo) ⇒
-          replyTo ! Children(ctx.children.toSet)
-          Actor.Same
-        case BecomeInert(replyTo) ⇒
-          replyTo ! BecameInert
-          Actor.Immutable {
-            case (_, Ping(replyTo)) ⇒
-              replyTo ! Pong2
-              Actor.Same
-            case (_, Throw(ex)) ⇒
-              throw ex
-            case _ ⇒ Actor.Unhandled
-          }
-        case BecomeCareless(replyTo) ⇒
-          replyTo ! BecameCareless
-          Actor.Immutable[Command]({
-            case (_, _) ⇒ Actor.Unhandled
-          }, {
-            case (_, Terminated(_)) ⇒ Actor.Unhandled
-            case (_, sig) ⇒
-              monitor ! GotSignal(sig)
-              Actor.Same
+    Actor.Immutable[Command] {
+      (ctx, message) ⇒
+        message match {
+          case ReceiveTimeout ⇒
+            monitor ! GotReceiveTimeout
+            Actor.Same
+          case Ping(replyTo) ⇒
+            replyTo ! Pong1
+            Actor.Same
+          case Miss(replyTo) ⇒
+            replyTo ! Missed
+            Actor.Unhandled
+          case Renew(replyTo) ⇒
+            replyTo ! Renewed
+            subject(monitor)
+          case Throw(ex) ⇒
+            throw ex
+          case MkChild(name, mon, replyTo) ⇒
+            val child = name match {
+              case None    ⇒ ctx.spawnAnonymous(Actor.Restarter[Throwable]().wrap(subject(mon)))
+              case Some(n) ⇒ ctx.spawn(Actor.Restarter[Throwable]().wrap(subject(mon)), n)
+            }
+            replyTo ! Created(child)
+            Actor.Same
+          case SetTimeout(d, replyTo) ⇒
+            d match {
+              case f: FiniteDuration ⇒ ctx.setReceiveTimeout(f, ReceiveTimeout)
+              case _                 ⇒ ctx.cancelReceiveTimeout()
+            }
+            replyTo ! TimeoutSet
+            Actor.Same
+          case Schedule(delay, target, msg, replyTo) ⇒
+            replyTo ! Scheduled
+            ctx.schedule(delay, target, msg)
+            Actor.Same
+          case Stop ⇒ Actor.Stopped
+          case Kill(ref, replyTo) ⇒
+            if (ctx.stop(ref)) replyTo ! Killed
+            else replyTo ! NotKilled
+            Actor.Same
+          case Watch(ref, replyTo) ⇒
+            ctx.watch(ref)
+            replyTo ! Watched
+            Actor.Same
+          case Unwatch(ref, replyTo) ⇒
+            ctx.unwatch(ref)
+            replyTo ! Unwatched
+            Actor.Same
+          case GetInfo(replyTo) ⇒
+            replyTo ! Info(ctx.self, ctx.system)
+            Actor.Same
+          case GetChild(name, replyTo) ⇒
+            replyTo ! Child(ctx.child(name))
+            Actor.Same
+          case GetChildren(replyTo) ⇒
+            replyTo ! Children(ctx.children.toSet)
+            Actor.Same
+          case BecomeInert(replyTo) ⇒
+            replyTo ! BecameInert
+            Actor.Immutable {
+              case (_, Ping(replyTo)) ⇒
+                replyTo ! Pong2
+                Actor.Same
+              case (_, Throw(ex)) ⇒
+                throw ex
+              case _ ⇒ Actor.Unhandled
+            }
+          case BecomeCareless(replyTo) ⇒
+            replyTo ! BecameCareless
+            Actor.Immutable[Command] {
+              case (_, _) ⇒ Actor.Unhandled
+            } onSignal {
+              case (_, Terminated(_)) ⇒ Actor.Unhandled
+              case (_, sig) ⇒
+                monitor ! GotSignal(sig)
+                Actor.Same
 
-          })
-        case GetAdapter(replyTo, name) ⇒
-          replyTo ! Adapter(ctx.spawnAdapter(identity, name))
-          Actor.Same
-      },
-      (ctx, signal) ⇒ { monitor ! GotSignal(signal); Actor.Same })
+            }
+          case GetAdapter(replyTo, name) ⇒
+            replyTo ! Adapter(ctx.spawnAdapter(identity, name))
+            Actor.Same
+        }
+    } onSignal {
+      (ctx, signal) ⇒ monitor ! GotSignal(signal); Actor.Same
+    }
 
   def oldSubject(monitor: ActorRef[Monitor]): Behavior[Command] = {
-    Actor.Immutable({
+    Actor.Immutable[Command] {
       case (ctx, message) ⇒ message match {
         case ReceiveTimeout ⇒
           monitor ! GotReceiveTimeout
@@ -225,25 +228,23 @@ object ActorContextSpec {
           }
         case BecomeCareless(replyTo) ⇒
           replyTo ! BecameCareless
-          Actor.Immutable[Command](
-            {
-              case _ ⇒ Actor.Unhandled
-            },
-            {
-              case (_, Terminated(_)) ⇒ Actor.Unhandled
-              case (_, sig) ⇒
-                monitor ! GotSignal(sig)
-                Actor.Same
-            })
+          Actor.Immutable[Command] {
+            case _ ⇒ Actor.Unhandled
+          } onSignal {
+            case (_, Terminated(_)) ⇒ Actor.Unhandled
+            case (_, sig) ⇒
+              monitor ! GotSignal(sig)
+              Actor.Same
+          }
         case GetAdapter(replyTo, name) ⇒
           replyTo ! Adapter(ctx.spawnAdapter(identity, name))
           Actor.Same
       }
-    }, {
+    } onSignal {
       case (_, signal) ⇒
         monitor ! GotSignal(signal)
         Actor.Same
-    })
+    }
   }
 
 }
