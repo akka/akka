@@ -57,7 +57,7 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   private var adaptedSystemUsed = false
   lazy val adaptedSystem: ActorSystem[TypedSpec.Command] = {
     val sys = ActorSystem.adapter(AkkaSpec.getCallerName(classOf[TypedSpec]), guardian(), config = Some(config withFallback AkkaSpec.testConf))
-    adaptedSystemUsed = false
+    adaptedSystemUsed = true
     sys
   }
 
@@ -202,13 +202,15 @@ class TypedSpecSpec extends TypedSpec {
   object `A TypedSpec` {
 
     trait CommonTests {
+      class MyException(message: String) extends Exception(message)
+
       implicit def system: ActorSystem[TypedSpec.Command]
 
       def `must report failures`(): Unit = {
-        a[TestFailedException] must be thrownBy {
+        a[MyException] must be thrownBy {
           sync(runTest("failure")(StepWise[String]((ctx, startWith) ⇒
             startWith {
-              fail("expected")
+              throw new MyException("expected")
             })))
         }
       }
