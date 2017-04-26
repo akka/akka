@@ -17,6 +17,7 @@ import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.model.RequestEntity
+import akka.http.javadsl.model.ResponseEntity
 import akka.http.javadsl.model.StatusCode
 import akka.http.javadsl.model.Uri
 import akka.http.javadsl.server.{ RoutingJavaMapping, Rejection, Route }
@@ -112,8 +113,15 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request using the given status code, headers, and response entity.
    */
-  def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: RequestEntity) = RouteAdapter {
+  def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: ResponseEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(status = status.asScala, entity = entity.asScala, headers = Util.immutableSeq(headers).map(_.asScala))) // TODO avoid the map()
+  }
+
+  /**
+   * Completes the request using the given status code, headers, and response entity.
+   */
+  def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: RequestEntity): RouteAdapter = {
+    complete(status, headers, entity: ResponseEntity)
   }
 
   /**
@@ -126,9 +134,14 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request using the given status code and response entity.
    */
-  def complete(status: StatusCode, entity: RequestEntity) = RouteAdapter {
+  def complete(status: StatusCode, entity: ResponseEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(status = status.asScala, entity = entity.asScala))
   }
+
+  /**
+   * Completes the request using the given status code and response entity.
+   */
+  def complete(status: StatusCode, entity: RequestEntity): RouteAdapter = complete(status, entity: ResponseEntity)
 
   /**
    * Completes the request using the given status code and the given body as UTF-8.
@@ -147,9 +160,15 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request as HTTP 200 OK, adding the given headers and response entity.
    */
-  def complete(headers: java.lang.Iterable[HttpHeader], entity: RequestEntity) = RouteAdapter {
+  def complete(headers: java.lang.Iterable[HttpHeader], entity: ResponseEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(headers = headers.asScala.toVector.map(_.asScala), entity = entity.asScala)) // TODO can we avoid the map() ?
   }
+
+  /**
+   * Completes the request as HTTP 200 OK, adding the given headers and response entity.
+   */
+  def complete(headers: java.lang.Iterable[HttpHeader], entity: RequestEntity): RouteAdapter =
+    complete(headers, entity: ResponseEntity)
 
   /**
    * Completes the request as HTTP 200 OK, marshalling the given value as response entity.
@@ -162,9 +181,14 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Completes the request as HTTP 200 OK with the given value as response entity.
    */
-  def complete(entity: RequestEntity) = RouteAdapter {
+  def complete(entity: ResponseEntity) = RouteAdapter {
     D.complete(scaladsl.model.HttpResponse(entity = entity.asScala))
   }
+
+  /**
+   * Completes the request as HTTP 200 OK with the given value as response entity.
+   */
+  def complete(entity: RequestEntity): RouteAdapter = complete(entity: ResponseEntity)
 
   // --- manual "magnet" for Scala Future ---
 
