@@ -224,7 +224,7 @@ final case class AbruptTerminationException(actor: ActorRef)
 
 /**
  * Signal that the stage was abruptly terminated, usually seen as a call to `postStop` of the `GraphStageLogic` without
- * any of the handler callbacks seeing completion, cancellation or failure from up or downstream. This can happen when
+ * any of the handler callbacks seeing completion or failure from upstream or cancellation from downstream. This can happen when
  * the actor running the graph is killed, which happens when the materializer or actor system is terminated.
  */
 final class AbruptStageTerminationException(logic: GraphStageLogic)
