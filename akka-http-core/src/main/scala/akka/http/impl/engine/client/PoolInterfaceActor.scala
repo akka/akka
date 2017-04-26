@@ -5,7 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.actor._
-import akka.event.Logging
+import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.http.impl.engine.client.PoolFlow._
 import akka.http.impl.util.RichHttpRequest
 import akka.http.scaladsl.model._
@@ -30,6 +30,23 @@ private object PoolInterfaceActor {
   val name = SeqActorName("PoolInterfaceActor")
 
   def props(gateway: PoolGateway)(implicit fm: Materializer) = Props(new PoolInterfaceActor(gateway)).withDeploy(Deploy.local)
+
+  /**
+   * LogSource for PoolGateway instances
+   *
+   * Using this LogSource allows us to set the log class to `PoolInterfaceActor` and the log source string
+   * to a descriptive name that describes a particular pool instance.
+   */
+  private val GatewayLogSource: LogSource[PoolGateway] =
+    new LogSource[PoolGateway] {
+      def genString(gateway: PoolGateway): String = {
+        val scheme = if (gateway.hcps.setup.connectionContext.isSecure) "https" else "http"
+        s"Pool(${gateway.gatewayId.name}->$scheme://${gateway.hcps.host}:${gateway.hcps.port})"
+      }
+      override def genString(gateway: PoolGateway, system: ActorSystem): String = s"${system.name}/${genString(gateway)}"
+
+      override def getClazz(t: PoolGateway): Class[_] = classOf[PoolGateway]
+    }
 }
 
 /**
@@ -48,10 +65,7 @@ private object PoolInterfaceActor {
  */
 private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer)
   extends ActorSubscriber with ActorPublisher[RequestContext] with LogHelper {
-  override val log = {
-    val scheme = if (gateway.hcps.setup.connectionContext.isSecure) "https" else "http"
-    Logging.getLogger(context.system, s"${context.system.name}/Pool(${gateway.gatewayId.name}->$scheme://${gateway.hcps.host}:${gateway.hcps.port})")
-  }
+  override val log: LoggingAdapter = Logging(context.system, gateway)(PoolInterfaceActor.GatewayLogSource)
 
   import PoolInterfaceActor._
 
