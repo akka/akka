@@ -31,13 +31,13 @@ public class MonitoringTest extends JUnitSuite {
     // final FiniteDuration fiveSeconds = FiniteDuration.create(5, TimeUnit.SECONDS);
     final Timeout timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
 
-    final Behavior<Stop> exitingActor = stateful((ctx, msg) -> {
+    final Behavior<Stop> exitingActor = immutable((ctx, msg) -> {
         System.out.println("Stopping!");
         return stopped();
     });
 
     private Behavior<RunTest<Done>> waitingForTermination(ActorRef<Done> replyWhenTerminated) {
-        return stateful(
+        return immutable(
             (ctx, msg) -> unhandled(),
             (ctx, sig) -> {
                 if (sig instanceof Terminated) {
@@ -51,7 +51,7 @@ public class MonitoringTest extends JUnitSuite {
 
     @Test
     public void shouldWatchTerminatingActor() throws Exception {
-        Behavior<RunTest<Done>> root = stateful((ctx, msg) -> {
+        Behavior<RunTest<Done>> root = immutable((ctx, msg) -> {
             ActorRef<Stop> watched = ctx.spawn(exitingActor, "exitingActor");
             ctx.watch(watched);
             watched.tell(new Stop());
