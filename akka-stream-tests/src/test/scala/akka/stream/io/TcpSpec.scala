@@ -366,14 +366,14 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
 
       val binding =
-        Tcp().bind(serverAddress.getHostName, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
+        Tcp().bind(serverAddress.getHostString, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
           conn.flow.join(writeButIgnoreRead).run()
         })(Keep.left)
           .run()
           .futureValue
 
       val (promise, result) = Source.maybe[ByteString]
-        .via(Tcp().outgoingConnection(serverAddress.getHostName, serverAddress.getPort))
+        .via(Tcp().outgoingConnection(serverAddress.getHostString, serverAddress.getPort))
         .toMat(Sink.fold(ByteString.empty)(_ ++ _))(Keep.both)
         .run()
 
@@ -387,7 +387,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       val serverAddress = temporaryServerAddress()
 
       val binding =
-        Tcp().bind(serverAddress.getHostName, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
+        Tcp().bind(serverAddress.getHostString, serverAddress.getPort, halfClose = false).toMat(Sink.foreach { conn ⇒
           conn.flow.join(Flow[ByteString]).run()
         })(Keep.left)
           .run()
@@ -408,7 +408,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       val mat2 = ActorMaterializer.create(system2)
 
       val serverAddress = temporaryServerAddress()
-      val binding = Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostName, serverAddress.getPort)(mat2)
+      val binding = Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostString, serverAddress.getPort)(mat2)
 
       val probe = TestProbe()
       val testMsg = ByteString(0)
@@ -442,7 +442,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       val serverAddress = temporaryServerAddress()
       val (bindingFuture, echoServerFinish) =
         Tcp()
-          .bind(serverAddress.getHostName, serverAddress.getPort) // TODO getHostString in Java7
+          .bind(serverAddress.getHostString, serverAddress.getPort)
           .toMat(echoHandler)(Keep.both)
           .run()
 
@@ -557,7 +557,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
 
         import serverSystem.dispatcher
         val futureBinding: Future[ServerBinding] =
-          Tcp(serverSystem).bind(address.getHostName, address.getPort)
+          Tcp(serverSystem).bind(address.getHostString, address.getPort)
             // accept one connection, then cancel
             .take(1)
             // keep the accepted request hanging
@@ -619,7 +619,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
             }
           }.to(Sink.ignore)
 
-      val serverBound = Tcp().bind(address.getHostName, address.getPort)
+      val serverBound = Tcp().bind(address.getHostString, address.getPort)
         .toMat(accept2ConnectionSink)(Keep.left)
         .run()
 
@@ -655,7 +655,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       try {
         val address = temporaryServerAddress()
 
-        val bindingFuture = Tcp().bindAndHandle(Flow[ByteString], address.getHostName, address.getPort)(mat2)
+        val bindingFuture = Tcp().bindAndHandle(Flow[ByteString], address.getHostString, address.getPort)(mat2)
 
         // Ensure server is running
         bindingFuture.futureValue
