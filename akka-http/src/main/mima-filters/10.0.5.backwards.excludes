@@ -1,3 +1,10 @@
+# Mima filters needed to check newer versions against 10.0.5
+
 # Provide Decoding Response example for Java #760
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.coding.Encoder.encodeMessage")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.coding.Decoder.decodeMessage")
+
+# Java content type resolvers could not be created in this version, so this class was never used.
+# In later versions, java content type resolvers can be created directly, without going through
+# RoutingJavaMapping.
+ProblemFilters.exclude[MissingClassProblem]("akka.http.javadsl.server.RoutingJavaMapping$convertContentTypeResolver$")

@@ -52,7 +52,6 @@ private[http] object RoutingJavaMapping {
   implicit object convertEntityStreamingSupport extends Inherited[EntityStreamingSupport, scommon.EntityStreamingSupport]
 
   implicit object convertDirectoryRenderer extends Inherited[jdirectives.DirectoryRenderer, sdirectives.FileAndResourceDirectives.DirectoryRenderer]
-  implicit object convertContentTypeResolver extends Inherited[jdirectives.ContentTypeResolver, sdirectives.ContentTypeResolver]
   implicit object convertDirectoryListing extends Inherited[jdirectives.DirectoryListing, sdirectives.DirectoryListing]
 
   //  implicit object javaToScalaMediaType extends Inherited[javadsl.model.MediaType, scaladsl.model.MediaType]
