@@ -142,8 +142,9 @@ object Behavior {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] val unhandledSignal: (ActorContext[Nothing], Signal) ⇒ Behavior[Nothing] =
-    (_, _) ⇒ UnhandledBehavior
+  @InternalApi private[akka] val unhandledSignal: PartialFunction[(ActorContext[Nothing], Signal), Behavior[Nothing]] = {
+    case (_, _) ⇒ UnhandledBehavior
+  }
 
   /**
    * INTERNAL API.

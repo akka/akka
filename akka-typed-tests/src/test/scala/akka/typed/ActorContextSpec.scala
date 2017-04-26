@@ -156,7 +156,7 @@ object ActorContextSpec {
             Actor.Same
         }
     } onSignal {
-      (ctx, signal) ⇒ monitor ! GotSignal(signal); Actor.Same
+      case (ctx, signal) ⇒ monitor ! GotSignal(signal); Actor.Same
     }
 
   def oldSubject(monitor: ActorRef[Monitor]): Behavior[Command] = {

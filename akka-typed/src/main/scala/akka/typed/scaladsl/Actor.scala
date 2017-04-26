@@ -331,13 +331,13 @@ object Actor {
    */
   final class Immutable[T] private (
     onMessage: (ActorContext[T], T) ⇒ Behavior[T],
-    onSignal:  (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
+    onSignal:  PartialFunction[(ActorContext[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(ActorContext[T], Signal), Behavior[T]]])
     extends ExtensibleBehavior[T] {
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = onSignal(ctx, msg)
     override def receiveMessage(ctx: AC[T], msg: T) = onMessage(ctx, msg)
     override def toString = s"Immutable(${LineNumbers(onMessage)})"
 
-    def onSignal(onSignal: (ActorContext[T], Signal) ⇒ Behavior[T]): Immutable[T] =
+    def onSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Immutable[T] =
       new Immutable(onMessage, onSignal)
   }
 
