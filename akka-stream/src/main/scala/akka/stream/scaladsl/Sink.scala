@@ -315,9 +315,7 @@ object Sink {
             }
 
             override def postStop(): Unit = {
-              if (!completionSignalled) {
-                callback(Failure(new AbruptStageTerminationException(this)))
-              }
+              if (!completionSignalled) callback(Failure(new AbruptStageTerminationException(this)))
             }
 
             setHandlers(in, out, this)

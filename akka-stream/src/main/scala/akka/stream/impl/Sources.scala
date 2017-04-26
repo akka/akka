@@ -263,9 +263,7 @@ import scala.util.control.NonFatal
       }
 
     override def postStop(): Unit = {
-      if (open) {
-        close(blockingStream)
-      }
+      if (open) close(blockingStream)
     }
 
   }
@@ -358,9 +356,7 @@ import scala.util.control.NonFatal
     private def closeStage(): Unit = closeAndThen(completeStage)
 
     override def postStop(): Unit = {
-      if (open) {
-        closeStage()
-      }
+      if (open) closeStage()
     }
 
   }

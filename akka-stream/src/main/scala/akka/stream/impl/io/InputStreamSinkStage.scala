@@ -90,9 +90,7 @@ private[stream] object InputStreamSinkStage {
       }
 
       override def postStop(): Unit = {
-        if (!completionSignalled) {
-          dataQueue.add(Failed(new AbruptStageTerminationException(this)))
-        }
+        if (!completionSignalled) dataQueue.add(Failed(new AbruptStageTerminationException(this)))
       }
 
       setHandler(in, this)

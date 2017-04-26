@@ -469,3 +469,15 @@ stage as state of an actor, and the callbacks as the ``receive`` block of the ac
    is unsafe to access the state of an actor from the outside. This means that Future callbacks should **not close over**
    internal state of custom stages because such access can be concurrent with the provided callbacks, leading to undefined
    behavior.
+
+
+Resources and the stage lifecycle
+=================================
+
+If a stage manages a resource with a lifecycle, for example objects that needs to be shutdown when it is not
+used anymore, returned to a pool etc. it is important to make sure this will happen in all circumstances when the stage
+shuts down.
+
+Cleaning up resources should be done in ``GraphStageLogic.postStop` and not in the ``InHandler`` and ``InHandler``
+callbacks. The reason for this is that when the ``Materializer`` is shutdown or the ``ActorSystem`` is terminated while
+a stream is still running this leads to an "abrupt termination" and none of the callbacks are invoked.

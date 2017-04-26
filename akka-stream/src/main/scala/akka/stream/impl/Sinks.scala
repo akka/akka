@@ -256,9 +256,7 @@ import akka.util.OptionVal
       }
 
       override def postStop(): Unit = {
-        if (!p.isCompleted) {
-          p.failure(new AbruptStageTerminationException(this))
-        }
+        if (!p.isCompleted) p.failure(new AbruptStageTerminationException(this))
       }
 
       setHandler(in, this)
@@ -304,9 +302,7 @@ import akka.util.OptionVal
       }
 
       override def postStop(): Unit = {
-        if (!p.isCompleted) {
-          p.failure(new AbruptStageTerminationException(this))
-        }
+        if (!p.isCompleted) p.failure(new AbruptStageTerminationException(this))
       }
 
       setHandler(in, this)

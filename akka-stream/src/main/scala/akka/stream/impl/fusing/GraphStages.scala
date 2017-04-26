@@ -139,9 +139,7 @@ import scala.concurrent.{ Future, Promise }
         }
 
         override def postStop(): Unit = {
-          if (!finishPromise.isCompleted) {
-            finishPromise.failure(new AbruptStageTerminationException(this))
-          }
+          if (!finishPromise.isCompleted) finishPromise.failure(new AbruptStageTerminationException(this))
         }
 
         setHandlers(in, out, this)
