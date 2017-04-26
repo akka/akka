@@ -392,24 +392,10 @@ class ActorGraphInterpreterSpec extends StreamSpec {
       upstream.expectCancellation()
     }
 
-    "trigger postStop in all stages when abruptly terminated (and no upstream boundaries)" in assertAllStagesStopped {
+    "trigger postStop in all stages when abruptly terminated (and no upstream boundaries)" in {
       val mat = ActorMaterializer()
       val gotStop = TestLatch(1)
 
-      object PostStopSnitchSource extends GraphStage[SourceShape[String]] {
-        val out = Outlet[String]("out")
-        val shape = SourceShape.of(out)
-        def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) {
-          setHandler(out, new OutHandler {
-            def onPull(): Unit = {
-              push(out, "whatever")
-            }
-          })
-          override def postStop(): Unit = {
-
-          }
-        }
-      }
       object PostStopSnitchFlow extends SimpleLinearGraphStage[String] {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           setHandler(in, new InHandler {

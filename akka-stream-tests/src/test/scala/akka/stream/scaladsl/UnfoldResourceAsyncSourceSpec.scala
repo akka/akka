@@ -249,7 +249,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       c.expectError()
     }
 
-    "close resource when stream is abruptly terminated" in assertAllStagesStopped {
+    "close resource when stream is abruptly terminated" in {
       val closeLatch = TestLatch(1)
       val mat = ActorMaterializer()
       val p = Source.unfoldResourceAsync[String, BufferedReader](

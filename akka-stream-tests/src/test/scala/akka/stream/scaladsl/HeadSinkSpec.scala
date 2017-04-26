@@ -80,7 +80,7 @@ class HeadSinkSpec extends StreamSpec with ScriptedTest {
       Await.result(Source.empty[Int].runWith(Sink.headOption), 1.second) should be(None)
     }
 
-    "fail on abrupt termination" in assertAllStagesStopped {
+    "fail on abrupt termination" in {
       val mat = ActorMaterializer()
       val source = TestPublisher.probe()
       val f = Source.fromPublisher(source)

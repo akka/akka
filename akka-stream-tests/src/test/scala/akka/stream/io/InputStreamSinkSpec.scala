@@ -241,7 +241,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       }
     }
 
-    "throw from inputstream read if terminated abruptly" in assertAllStagesStopped {
+    "throw from inputstream read if terminated abruptly" in {
       val mat = ActorMaterializer()
       val probe = TestPublisher.probe[ByteString]()
       val inputStream = Source.fromPublisher(probe).runWith(StreamConverters.asInputStream())(mat)
