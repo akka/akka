@@ -142,8 +142,8 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
   "mapped-repeated" in {
     //#mapped-repeated
     val route =
-      parameters('color, 'distance.as[Int].*) { (color, cities) =>
-        cities.toList match {
+      parameters('color, 'distance.as[Int].*) { (color, distances) =>
+        distances.toList match {
           case Nil             => complete(s"The color is '$color' and there are no distances.")
           case distance :: Nil => complete(s"The color is '$color' and the distance is $distance.")
           case multiple        => complete(s"The color is '$color' and the distances are ${multiple.mkString(", ")}.")
