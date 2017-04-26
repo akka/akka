@@ -40,7 +40,7 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
   private def preStart(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] =
     Behavior.undefer(b, ctx)
 
-  override def management(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
+  override def receiveSignal(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     val startedBehavior = preStart(behavior, ctx)
     val b =
       try {
@@ -53,7 +53,7 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
     canonical(b, ctx)
   }
 
-  override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
+  override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
     val startedBehavior = preStart(behavior, ctx)
     val b =
       try {
@@ -87,7 +87,7 @@ final case class MutableRestarter[T, Thr <: Throwable: ClassTag](initialBehavior
     validateAsInitial(undefer(initialBehavior, ctx))
   }
 
-  override def management(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
+  override def receiveSignal(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     startCurrent(ctx)
     current =
       try {
@@ -100,7 +100,7 @@ final case class MutableRestarter[T, Thr <: Throwable: ClassTag](initialBehavior
     if (Behavior.isAlive(current)) this else Stopped
   }
 
-  override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
+  override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
     startCurrent(ctx)
     current =
       try Behavior.interpretMessage(current, ctx, msg)

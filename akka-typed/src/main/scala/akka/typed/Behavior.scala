@@ -57,7 +57,7 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
    * the special objects with real Behaviors.
    */
   @throws(classOf[Exception])
-  def management(ctx: ActorContext[T], msg: Signal): Behavior[T]
+  def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T]
 
   /**
    * Process an incoming message and return the next behavior.
@@ -73,7 +73,7 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
    * the special objects with real Behaviors.
    */
   @throws(classOf[Exception])
-  def message(ctx: ActorContext[T], msg: T): Behavior[T]
+  def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T]
 
 }
 
@@ -203,8 +203,8 @@ object Behavior {
       case EmptyBehavior                    ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case ext: ExtensibleBehavior[T] @unchecked ⇒
         val possiblyDeferredResult = msg match {
-          case signal: Signal ⇒ ext.management(ctx, signal)
-          case msg            ⇒ ext.message(ctx, msg.asInstanceOf[T])
+          case signal: Signal ⇒ ext.receiveSignal(ctx, signal)
+          case msg            ⇒ ext.receiveMessage(ctx, msg.asInstanceOf[T])
         }
         undefer(possiblyDeferredResult, ctx)
     }
