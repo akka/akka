@@ -30,8 +30,12 @@ supplies so that the :class:`HelloWorld` Actor can send back the confirmation
 message.
 
 The behavior of the Actor is defined as the :meth:`greeter` value with the help
-of the :class:`Immutable` behavior constructor—there are several different ways of
-formulating behaviors as we shall see in the following.
+of the :class:`Immutable` behavior constructor. This constructor is called
+immutable because the behavior instance doesn't have or close over any mutable
+state. Processing the next message may result in a new behavior that can
+potentially be different from this one. State is updated by returning a new
+behavior that holds the new immutable state. In this case we don't need to
+update any state, so we return :class:`Same`.
 
 The type of the messages handled by this behavior is declared to be of class
 :class:`Greet`, which implies that the supplied function’s ``msg`` argument is
@@ -176,7 +180,7 @@ as the following:
 The core of this behavior is stateful, the chat room itself does not change
 into something else when sessions are established, but we introduce a variable
 that tracks the opened sessions. Note that by using a method parameter a ``var``
-is not needed. When a new :class:`GetSession` command comes in we add that client to the 
+is not needed. When a new :class:`GetSession` command comes in we add that client to the
 list that is in the returned behavior. Then we also need to create the session’s
 :class:`ActorRef` that will be used to post messages. In this case we want to
 create a very simple Actor that just repackages the :class:`PostMessage`
@@ -218,18 +222,12 @@ In order to see this chat room in action we need to write a client Actor that ca
 From this behavior we can create an Actor that will accept a chat room session,
 post a message, wait to see it published, and then terminate. The last step
 requires the ability to change behavior, we need to transition from the normal
-running behavior into the terminated state. This is why this Actor uses a
-different behavior constructor named :class:`Total`. This constructor takes as
-argument a function from the handled message type, in this case
-:class:`SessionEvent`, to the next behavior. That next behavior must again be
-of the same type as we discussed in the theory section above. Here we either
-stay in the very same behavior or we terminate, and both of these cases are so
-common that there are special values ``Same`` and ``Stopped`` that can be used.
-The behavior is named “total” (as opposed to “partial”) because the declared
-function must handle all values of its input type. Since :class:`SessionEvent`
-is a sealed trait the Scala compiler will warn us if we forget to handle one of
-the subtypes; in this case it reminded us that alternatively to
-:class:`SessionGranted` we may also receive a :class:`SessionDenied` event.
+running behavior into the terminated state. This is why here we do not return
+:class:`Same`, as above, but another special value :class:`Stopped`.
+Since :class:`SessionEvent` is a sealed trait the Scala compiler will warn us
+if we forget to handle one of the subtypes; in this case it reminded us that
+alternatively to :class:`SessionGranted` we may also receive a
+:class:`SessionDenied` event.
 
 Now to try things out we must start both a chat room and a gabbler and of
 course we do this inside an Actor system. Since there can be only one guardian
