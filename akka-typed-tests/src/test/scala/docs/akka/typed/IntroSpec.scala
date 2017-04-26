@@ -101,9 +101,12 @@ class IntroSpec extends TypedSpec {
     val gabbler =
       Immutable[SessionEvent] { (_, msg) ⇒
         msg match {
+          //#chatroom-gabbler
+          // We document that the compiler warns about the missing handler for `SessionDenied`
           case SessionDenied(reason) ⇒
             println(s"cannot start chat room session: $reason")
             Stopped
+          //#chatroom-gabbler
           case SessionGranted(handle) ⇒
             handle ! PostMessage("Hello World!")
             Same
