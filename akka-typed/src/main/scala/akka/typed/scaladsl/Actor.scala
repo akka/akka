@@ -329,13 +329,21 @@ object Actor {
    * State is updated by returning a new behavior that holds the new immutable
    * state.
    */
-  final case class Immutable[T](
+  final class Immutable[T] private (
     onMessage: (ActorContext[T], T) ⇒ Behavior[T],
     onSignal:  (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
     extends ExtensibleBehavior[T] {
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = onSignal(ctx, msg)
     override def receiveMessage(ctx: AC[T], msg: T) = onMessage(ctx, msg)
     override def toString = s"Immutable(${LineNumbers(onMessage)})"
+
+    def onSignal(onSignal: (ActorContext[T], Signal) ⇒ Behavior[T]): Immutable[T] =
+      new Immutable(onMessage, onSignal)
+  }
+
+  object Immutable {
+    def apply[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]) =
+      new Immutable(onMessage)
   }
 
   /**

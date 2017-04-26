@@ -135,19 +135,19 @@ object StepWise {
       case ThunkV(f) :: tail ⇒ run(ctx, tail, f(value))
       case Message(t, f, trace) :: tail ⇒
         ctx.setReceiveTimeout(t, ReceiveTimeout)
-        Immutable({
+        Immutable[Any] {
           case (_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for a message")
           case (_, msg) ⇒
             ctx.cancelReceiveTimeout()
             run(ctx, tail, f(msg, value))
-        }, {
+        } onSignal {
           case (_, other) ⇒ throwIllegalState(trace, s"unexpected $other while waiting for a message")
-        })
+        }
       case MultiMessage(t, c, f, trace) :: tail ⇒
         val deadline = Deadline.now + t
         def behavior(count: Int, acc: List[Any]): Behavior[Any] = {
           ctx.setReceiveTimeout(deadline.timeLeft, ReceiveTimeout)
-          Immutable({
+          Immutable[Any] {
             case (_, ReceiveTimeout) ⇒
               throwTimeout(trace, s"timeout of $t expired while waiting for $c messages (got only $count)")
             case (_, msg) ⇒
@@ -156,16 +156,16 @@ object StepWise {
                 ctx.cancelReceiveTimeout()
                 run(ctx, tail, f((msg :: acc).reverse, value))
               } else behavior(nextCount, msg :: acc)
-          }, {
+          } onSignal {
             case (_, other) ⇒ throwIllegalState(trace, s"unexpected $other while waiting for $c messages (got $count valid ones)")
-          })
+          }
         }
         behavior(0, Nil)
       case Multi(t, c, f, trace) :: tail ⇒
         val deadline = Deadline.now + t
         def behavior(count: Int, acc: List[Either[Signal, Any]]): Behavior[Any] = {
           ctx.setReceiveTimeout(deadline.timeLeft, ReceiveTimeout)
-          Immutable[Any]({
+          Immutable[Any] {
             case (_, ReceiveTimeout) ⇒
               throwTimeout(trace, s"timeout of $t expired while waiting for $c messages (got only $count)")
             case (_, msg) ⇒
@@ -174,27 +174,27 @@ object StepWise {
                 ctx.cancelReceiveTimeout()
                 run(ctx, tail, f((Right(msg) :: acc).reverse, value))
               } else behavior(nextCount, Right(msg) :: acc)
-          }, {
+          } onSignal {
             case (_, other) ⇒
               val nextCount = count + 1
               if (nextCount == c) {
                 ctx.cancelReceiveTimeout()
                 run(ctx, tail, f((Left(other) :: acc).reverse, value))
               } else behavior(nextCount, Left(other) :: acc)
-          })
+          }
         }
         behavior(0, Nil)
       case Termination(t, f, trace) :: tail ⇒
         ctx.setReceiveTimeout(t, ReceiveTimeout)
-        Immutable[Any]({
+        Immutable[Any] {
           case (_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for termination")
           case other               ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
-        }, {
+        } onSignal {
           case (_, t: Terminated) ⇒
             ctx.cancelReceiveTimeout()
             run(ctx, tail, f(t, value))
           case other ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
-        })
+        }
       case Nil ⇒ Stopped
     }
 }

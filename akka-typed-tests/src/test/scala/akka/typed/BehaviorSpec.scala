@@ -255,7 +255,7 @@ class BehaviorSpec extends TypedSpec {
   }
 
   private def mkFull(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] = {
-    SActor.Immutable[Command]({
+    SActor.Immutable[Command] {
       case (ctx, GetSelf) ⇒
         monitor ! Self(ctx.self)
         SActor.Same
@@ -276,11 +276,11 @@ class BehaviorSpec extends TypedSpec {
         SActor.Same
       case (ctx, Stop) ⇒ SActor.Stopped
       case (_, _)      ⇒ SActor.Unhandled
-    }, {
+    } onSignal {
       case (ctx, signal) ⇒
         monitor ! GotSignal(signal)
         SActor.Same
-    })
+    }
   }
 
   trait FullBehavior extends Messages with BecomeWithLifecycle with Stoppable {
@@ -292,7 +292,7 @@ class BehaviorSpec extends TypedSpec {
   trait ImmutableBehavior extends Messages with BecomeWithLifecycle with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
     private def behv(monitor: ActorRef[Event], state: State): Behavior[Command] = {
-      SActor.Immutable({
+      SActor.Immutable[Command] {
         case (ctx, GetSelf) ⇒
           monitor ! Self(ctx.self)
           SActor.Same
@@ -313,11 +313,11 @@ class BehaviorSpec extends TypedSpec {
           SActor.Same
         case (_, Stop)       ⇒ SActor.Stopped
         case (_, _: AuxPing) ⇒ SActor.Unhandled
-      }, {
+      } onSignal {
         case (ctx, signal) ⇒
           monitor ! GotSignal(signal)
           SActor.Same
-      })
+      }
     }
   }
   object `A Immutable Behavior (native)` extends ImmutableBehavior with NativeSystem
@@ -326,33 +326,37 @@ class BehaviorSpec extends TypedSpec {
   trait ImmutableWithSignalScalaBehavior extends Messages with BecomeWithLifecycle with Stoppable {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
     def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
-      SActor.Immutable(
-        (ctx, msg) ⇒ msg match {
-          case GetSelf ⇒
-            monitor ! Self(ctx.self)
+      SActor.Immutable[Command] {
+        (ctx, msg) ⇒
+          msg match {
+            case GetSelf ⇒
+              monitor ! Self(ctx.self)
+              SActor.Same
+            case Miss ⇒
+              monitor ! Missed
+              SActor.Unhandled
+            case Ignore ⇒
+              monitor ! Ignored
+              SActor.Same
+            case Ping ⇒
+              monitor ! Pong
+              behv(monitor, state)
+            case Swap ⇒
+              monitor ! Swapped
+              behv(monitor, state.next)
+            case GetState() ⇒
+              monitor ! state
+              SActor.Same
+            case Stop       ⇒ SActor.Stopped
+            case _: AuxPing ⇒ SActor.Unhandled
+          }
+      } onSignal {
+        (ctx, sig) ⇒
+          {
+            monitor ! GotSignal(sig)
             SActor.Same
-          case Miss ⇒
-            monitor ! Missed
-            SActor.Unhandled
-          case Ignore ⇒
-            monitor ! Ignored
-            SActor.Same
-          case Ping ⇒
-            monitor ! Pong
-            behv(monitor, state)
-          case Swap ⇒
-            monitor ! Swapped
-            behv(monitor, state.next)
-          case GetState() ⇒
-            monitor ! state
-            SActor.Same
-          case Stop       ⇒ SActor.Stopped
-          case _: AuxPing ⇒ SActor.Unhandled
-        },
-        (ctx, sig) ⇒ {
-          monitor ! GotSignal(sig)
-          SActor.Same
-        })
+          }
+      }
   }
   object `A ImmutableWithSignal Behavior (scala,native)` extends ImmutableWithSignalScalaBehavior with NativeSystem
   object `A ImmutableWithSignal Behavior (scala,adapted)` extends ImmutableWithSignalScalaBehavior with AdaptedSystem

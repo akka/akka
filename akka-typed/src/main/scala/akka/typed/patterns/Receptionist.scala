@@ -72,7 +72,7 @@ object Receptionist {
 
   private type KV[K <: AbstractServiceKey] = ActorRef[K#Type]
 
-  private def behavior(map: TypedMultiMap[AbstractServiceKey, KV]): Behavior[Command] = Immutable[Command]({ (ctx, msg) ⇒
+  private def behavior(map: TypedMultiMap[AbstractServiceKey, KV]): Behavior[Command] = Immutable[Command] { (ctx, msg) ⇒
     msg match {
       case r: Register[t] ⇒
         ctx.watch(r.address)
@@ -83,11 +83,11 @@ object Receptionist {
         f.replyTo ! Listing(f.key, set)
         Same
     }
-  }, {
+  } onSignal {
     case (ctx, Terminated(ref)) ⇒
       behavior(map valueRemoved ref)
     case x ⇒ Unhandled
-  })
+  }
 }
 
 abstract class Receptionist
