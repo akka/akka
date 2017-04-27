@@ -15,7 +15,6 @@ import akka.annotation.InternalApi
  */
 @InternalApi private[typed] class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContext[T] {
 
-  import ActorRefAdapter.sendSystemMessage
   import ActorRefAdapter.toUntyped
 
   override def self = ActorRefAdapter(untyped.self)
@@ -57,9 +56,9 @@ import akka.annotation.InternalApi
     import untyped.dispatcher
     untyped.system.scheduler.scheduleOnce(delay, toUntyped(target), msg)
   }
-  override def spawnAdapter[U](f: U ⇒ T, name: String = ""): ActorRef[U] = {
+  override private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
     val cell = untyped.asInstanceOf[akka.actor.ActorCell]
-    val ref = cell.addFunctionRef((_, msg) ⇒ untyped.self ! f(msg.asInstanceOf[U]), name)
+    val ref = cell.addFunctionRef((_, msg) ⇒ untyped.self ! f(msg.asInstanceOf[U]), _name)
     ActorRefAdapter[U](ref)
   }
 

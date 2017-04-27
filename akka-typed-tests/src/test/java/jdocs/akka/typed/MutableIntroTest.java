@@ -86,7 +86,7 @@ public class MutableIntroTest {
       public Behavior<Command> onMessage(Command msg) {
         if (msg instanceof GetSession) {
           GetSession getSession = (GetSession) msg;
-          ActorRef<PostMessage> wrapper = ctx.createAdapter(p ->
+          ActorRef<PostMessage> wrapper = ctx.spawnAdapter(p ->
             new PostSessionMessage(getSession.screenName, p.message));
           getSession.replyTo.tell(new SessionGranted(wrapper));
           sessions.add(getSession.replyTo);

@@ -108,7 +108,7 @@ public class IntroTest {
       return Actor.immutable((ctx, msg) -> {
         if (msg instanceof GetSession) {
           GetSession getSession = (GetSession) msg;
-          ActorRef<PostMessage> wrapper = ctx.createAdapter(p ->
+          ActorRef<PostMessage> wrapper = ctx.spawnAdapter(p ->
             new PostSessionMessage(getSession.screenName, p.message));
           getSession.replyTo.tell(new SessionGranted(wrapper));
           // TODO mutable collection :(

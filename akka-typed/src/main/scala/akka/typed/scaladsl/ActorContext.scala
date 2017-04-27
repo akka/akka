@@ -143,6 +143,6 @@ trait ActorContext[T] { this: akka.typed.javadsl.ActorContext[T] ⇒
    * protocols can be ingested by this Actor. You are strongly advised to cache
    * these ActorRefs or to stop them when no longer needed.
    */
-  def spawnAdapter[U](f: U ⇒ T): ActorRef[U] = spawnAdapter(f, "")
+  def spawnAdapter[U](f: U ⇒ T): ActorRef[U]
 
 }
