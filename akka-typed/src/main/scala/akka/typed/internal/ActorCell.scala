@@ -6,14 +6,14 @@ package internal
 
 import akka.actor.InvalidActorNameException
 import akka.util.Helpers
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import akka.dispatch.ExecutionContexts
 import scala.concurrent.ExecutionContextExecutor
 import akka.actor.Cancellable
 import akka.util.Unsafe.{ instance ⇒ unsafe }
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.Queue
-import scala.annotation.{ tailrec, switch }
+import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.util.control.Exception.Catcher
 import akka.event.Logging.Error
@@ -146,7 +146,7 @@ private[typed] class ActorCell[T](
   override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Cancellable =
     system.scheduler.scheduleOnce(delay)(target ! msg)(ExecutionContexts.sameThreadExecutionContext)
 
-  override def spawnAdapter[U](f: U ⇒ T, _name: String = ""): ActorRef[U] = {
+  override private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
     val baseName = Helpers.base64(nextName, new java.lang.StringBuilder("$!"))
     nextName += 1
     val name = if (_name != "") s"$baseName-${_name}" else baseName

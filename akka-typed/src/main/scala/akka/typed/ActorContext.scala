@@ -9,6 +9,7 @@ import java.util.ArrayList
 
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
+import akka.annotation.InternalApi
 
 /**
  * This trait is not meant to be extended by user code. If you do so, you may
@@ -18,7 +19,7 @@ import akka.annotation.ApiMayChange
 @ApiMayChange
 trait ActorContext[T] extends javadsl.ActorContext[T] with scaladsl.ActorContext[T] {
 
-  // FIXME can we simplify this weird hierarchy of contexts, e.g. problem with createAdapter
+  // FIXME can we simplify this weird hierarchy of contexts, e.g. problem with spawnAdapter
 
   override def getChild(name: String): Optional[ActorRef[Void]] =
     child(name) match {
@@ -52,9 +53,21 @@ trait ActorContext[T] extends javadsl.ActorContext[T] with scaladsl.ActorContext
   override def spawnAnonymous[U](behavior: akka.typed.Behavior[U]): akka.typed.ActorRef[U] =
     spawnAnonymous(behavior, EmptyProps)
 
-  override def createAdapter[U](f: java.util.function.Function[U, T]): akka.typed.ActorRef[U] =
-    spawnAdapter(f.apply _)
+  override def spawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U] =
+    internalSpawnAdapter(f, name)
 
-  override def createAdapter[U](f: java.util.function.Function[U, T], name: String): akka.typed.ActorRef[U] =
-    spawnAdapter(f.apply _, name)
+  override def spawnAdapter[U](f: U ⇒ T): ActorRef[U] =
+    internalSpawnAdapter(f, "")
+
+  override def spawnAdapter[U](f: java.util.function.Function[U, T]): akka.typed.ActorRef[U] =
+    internalSpawnAdapter(f.apply _, "")
+
+  override def spawnAdapter[U](f: java.util.function.Function[U, T], name: String): akka.typed.ActorRef[U] =
+    internalSpawnAdapter(f.apply _, name)
+
+  /**
+   * INTERNAL API: Needed to make Scala 2.12 compiler happy.
+   * Otherwise "ambiguous reference to overloaded definition" because Function is lambda.
+   */
+  @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U]
 }

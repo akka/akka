@@ -148,13 +148,13 @@ trait ActorContext[T] {
    * the given `name` argument does not need to be unique within the scope
    * of the parent actor.
    */
-  def createAdapter[U](f: JFunction[U, T], name: String): ActorRef[U]
+  def spawnAdapter[U](f: JFunction[U, T], name: String): ActorRef[U]
 
   /**
    * Create an anonymous child actor that will wrap messages such that other Actor’s
    * protocols can be ingested by this Actor. You are strongly advised to cache
    * these ActorRefs or to stop them when no longer needed.
    */
-  def createAdapter[U](f: JFunction[U, T]): ActorRef[U]
+  def spawnAdapter[U](f: JFunction[U, T]): ActorRef[U]
 
 }

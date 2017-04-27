@@ -7,6 +7,7 @@ import akka.util.Helpers
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
+import akka.annotation.InternalApi
 
 /**
  * An [[ActorContext]] for synchronous execution of a [[Behavior]] that
@@ -65,7 +66,10 @@ class StubbedActorContext[T](
 
   override def executionContext: ExecutionContextExecutor = system.executionContext
 
-  override def spawnAdapter[U](f: U ⇒ T, name: String = ""): ActorRef[U] = {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
     val i = Inbox[U](n)
     _children += i.ref.path.name → i
