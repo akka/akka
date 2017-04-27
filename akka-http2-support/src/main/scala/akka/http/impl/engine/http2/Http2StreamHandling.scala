@@ -84,7 +84,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with GenericOut
         outlet.push(d.payload)
         maybeFinishStream(d.endStream)
       case r: RstStreamFrame ⇒
-        outlet.fail(new PeerClosedStreamException(r.streamId, r.errorCode.toString))
+        outlet.fail(new PeerClosedStreamException(r.streamId, r.errorCode))
         multiplexer.cancelSubStream(r.streamId)
         Closed
 

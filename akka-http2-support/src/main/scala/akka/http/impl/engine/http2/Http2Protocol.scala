@@ -15,7 +15,7 @@ import akka.util.ByteString
  * https://tools.ietf.org/html/rfc7540
  */
 @InternalApi
-private[http2] object Http2Protocol {
+private[http] object Http2Protocol {
   // constants defined in the spec
 
   /**
