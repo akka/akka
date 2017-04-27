@@ -237,5 +237,22 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       downstream.expectNext(Vector("", ""): immutable.Seq[String])
       downstream.expectComplete()
     }
+
+    "should not emit an empty group if first element is heavier than maxWeight" taggedAs TimingTest in {
+      val וupstream = TestPublisher.probe[Long]()
+      val downstream = TestSubscriber.probe[immutable.Seq[Long]]()
+      Source
+        .fromPublisher(וupstream)
+        .groupedWeightedWithin(10, 50.millis)(identity)
+        .to(Sink.fromSubscriber(downstream))
+        .run()
+
+      downstream.ensureSubscription()
+      downstream.request(1)
+      וupstream.sendNext(11)
+      downstream.expectNext(Vector(11): immutable.Seq[Long])
+      וupstream.sendComplete()
+      downstream.expectComplete()
+    }
   }
 }
