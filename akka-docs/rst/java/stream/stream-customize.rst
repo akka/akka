@@ -474,12 +474,11 @@ stage as state of an actor, and the callbacks as the ``receive`` block of the ac
 Resources and the stage lifecycle
 =================================
 
-If a stage manages a resource with a lifecycle, for example objects that needs to be shutdown when it is not
-used anymore, returned to a pool etc. it is important to make sure this will happen in all circumstances when the stage
-shuts down.
+If a stage manages a resource with a lifecycle, for example objects that need to be shutdown when they are not
+used anymore it is important to make sure this will happen in all circumstances when the stage shuts down.
 
-Cleaning up resources should be done in ``GraphStageLogic.postStop` and not in the ``InHandler`` and ``OutHandler``
+Cleaning up resources should be done in ``GraphStageLogic.postStop`` and not in the ``InHandler`` and ``OutHandler``
 callbacks. The reason for this is that when the stage itself completes or is failed there is no signal from the upstreams
-or the downstreams. Even for stages that does not complete or fail in this manner can have this happen when the
+or the downstreams. Even for stages that do not complete or fail in this manner, this can happen when the
 ``Materializer`` is shutdown or the ``ActorSystem`` is terminated while a stream is still running, what is called an
 "abrupt termination".
