@@ -192,7 +192,7 @@ public abstract class Actor {
    * to reuse the previous behavior, including the hint that the message has not
    * been handled. This hint may be used by composite behaviors that delegate
    * (partial) handling to other behaviors.
-   *
+   * 
    * @return pseudo-behavior marking “unhandled”
    */
   static public <T> Behavior<T> unhandled() {
@@ -405,7 +405,7 @@ public abstract class Actor {
      * By default, this method returns `unhandled`.
      */
     public Behavior<T> onSignal(Signal msg) throws Exception {
-      return Actor.unhandled();
+      return unhandled();
     }
   }
 

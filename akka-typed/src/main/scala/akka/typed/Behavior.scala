@@ -80,6 +80,39 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
 object Behavior {
 
   /**
+   * Return this behavior from message processing in order to advise the
+   * system to reuse the previous behavior. This is provided in order to
+   * avoid the allocation overhead of recreating the current behavior where
+   * that is not necessary.
+   */
+  def same[T]: Behavior[T] = SameBehavior.asInstanceOf[Behavior[T]]
+  /**
+   * Return this behavior from message processing in order to advise the
+   * system to reuse the previous behavior, including the hint that the
+   * message has not been handled. This hint may be used by composite
+   * behaviors that delegate (partial) handling to other behaviors.
+   */
+  def unhandled[T]: Behavior[T] = UnhandledBehavior.asInstanceOf[Behavior[T]]
+  /**
+   * Return this behavior from message processing to signal that this actor
+   * shall terminate voluntarily. If this actor has created child actors then
+   * these will be stopped as part of the shutdown procedure. The PostStop
+   * signal that results from stopping this actor will NOT be passed to the
+   * current behavior, it will be effectively ignored.
+   */
+  def stopped[T]: Behavior[T] = StoppedBehavior.asInstanceOf[Behavior[T]]
+
+  /**
+   * A behavior that treats every incoming message as unhandled.
+   */
+  def empty[T]: Behavior[T] = EmptyBehavior.asInstanceOf[Behavior[T]]
+
+  /**
+   * A behavior that ignores every incoming message and returns “same”.
+   */
+  def ignore[T]: Behavior[T] = IgnoreBehavior.asInstanceOf[Behavior[T]]
+
+  /**
    * INTERNAL API.
    */
   @InternalApi
