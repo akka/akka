@@ -320,7 +320,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
         sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
         entityDataOut.expectCancellation()
       }
-      "cancel entity data source when peer sends RST_STREAM before entity is subscribed" inPendingUntilFixed new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      "cancel entity data source when peer sends RST_STREAM before entity is subscribed" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(1, theRequest)
         expectRequest() shouldBe theRequest
