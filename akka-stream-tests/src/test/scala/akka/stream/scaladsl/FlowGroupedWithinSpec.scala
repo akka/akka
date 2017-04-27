@@ -238,7 +238,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       downstream.expectComplete()
     }
 
-    "should not emit an empty group if first element is heavier than maxWeight" taggedAs TimingTest in {
+    "not emit an empty group if first element is heavier than maxWeight" taggedAs TimingTest in {
       val וupstream = TestPublisher.probe[Long]()
       val downstream = TestSubscriber.probe[immutable.Seq[Long]]()
       Source

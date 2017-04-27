@@ -1463,8 +1463,14 @@ private[stream] object Collect {
           }
         }
       } else {
-        pending = elem
-        pendingWeight = cost
+        if (totalWeight == 0L) {
+          buf += elem
+          totalWeight += cost
+          pushEagerly = true
+        } else {
+          pending = elem
+          pendingWeight = cost
+        }
         schedulePeriodically(GroupedWeightedWithinTimer, interval)
         tryCloseGroup()
       }
