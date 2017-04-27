@@ -1399,6 +1399,9 @@ private[stream] object Collect {
 
 }
 
+@InternalApi private[akka] object GroupedWeightedWithin {
+  val groupedWeightedWithinTimer = "GroupedWeightedWithinTimer"
+}
 /**
  * INTERNAL API
  */
@@ -1423,7 +1426,7 @@ private[stream] object Collect {
     //       AND
     // - (timer fired
     //        OR
-    //    totalWeight == maxWeight
+    //    totalWeight >= maxWeight
     //        OR
     //    pending != null
     //        OR
@@ -1433,46 +1436,47 @@ private[stream] object Collect {
     private var finished = false
     private var totalWeight = 0L
 
-    private val GroupedWeightedWithinTimer = "GroupedWeightedWithinTimer"
-
     override def preStart() = {
-      schedulePeriodically(GroupedWeightedWithinTimer, interval)
+      schedulePeriodically(GroupedWeightedWithin.groupedWeightedWithinTimer, interval)
       pull(in)
     }
 
     private def nextElement(elem: T): Unit = {
       groupEmitted = false
       val cost = costFn(elem)
-      if (totalWeight + cost <= maxWeight) {
-        buf += elem
-        totalWeight += cost
-
-        if (totalWeight < maxWeight) pull(in)
-        else {
-          // `totalWeight == maxWeight` which means that downstream can get the next group.
-          if (!isAvailable(out)) {
-            // We should emit group when downstream becomes available
-            pushEagerly = true
-            // we want to pull anyway, since we allow for zero weight elements
-            // but since `emitGroup()` will pull internally (by calling `startNewGroup()`)
-            // we also have to pull if downstream hasn't yet requested an element.
-            pull(in)
-          } else {
-            schedulePeriodically(GroupedWeightedWithinTimer, interval)
-            emitGroup()
-          }
-        }
-      } else {
-        if (totalWeight == 0L) {
+      if (cost < 0) failStage(new IllegalArgumentException(s"Negative weight [$cost] for element [$elem] is not allowed"))
+      else {
+        if (totalWeight + cost <= maxWeight) {
           buf += elem
           totalWeight += cost
-          pushEagerly = true
+
+          if (totalWeight < maxWeight) pull(in)
+          else {
+            // `totalWeight >= maxWeight` which means that downstream can get the next group.
+            if (!isAvailable(out)) {
+              // We should emit group when downstream becomes available
+              pushEagerly = true
+              // we want to pull anyway, since we allow for zero weight elements
+              // but since `emitGroup()` will pull internally (by calling `startNewGroup()`)
+              // we also have to pull if downstream hasn't yet requested an element.
+              pull(in)
+            } else {
+              schedulePeriodically(GroupedWeightedWithin.groupedWeightedWithinTimer, interval)
+              emitGroup()
+            }
+          }
         } else {
-          pending = elem
-          pendingWeight = cost
+          if (totalWeight == 0L) {
+            buf += elem
+            totalWeight += cost
+            pushEagerly = true
+          } else {
+            pending = elem
+            pendingWeight = cost
+          }
+          schedulePeriodically(GroupedWeightedWithin.groupedWeightedWithinTimer, interval)
+          tryCloseGroup()
         }
-        schedulePeriodically(GroupedWeightedWithinTimer, interval)
-        tryCloseGroup()
       }
     }
 

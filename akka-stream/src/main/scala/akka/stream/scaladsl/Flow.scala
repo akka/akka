@@ -981,9 +981,9 @@ trait FlowOps[+Out, +Mat] {
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    *
-   * '''Emits when''' the configured time elapses since the last group has been emitted
+   * '''Emits when''' the configured time elapses since the last group has been emitted or `n` elements is buffered
    *
-   * '''Backpressures when''' the configured time elapses since the last group has been emitted
+   * '''Backpressures when''' downstream backpressures, and there are `n+1` buffered elements
    *
    * '''Completes when''' upstream completes (emits last group)
    *
@@ -1004,7 +1004,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Emits when''' the configured time elapses since the last group has been emitted or weight limit reached
    *
-   * '''Backpressures when''' the configured time elapses since the last group has been emitted
+   * '''Backpressures when''' downstream backpressures, and buffered group (+ pending element) weighs more than `maxWeight`
    *
    * '''Completes when''' upstream completes (emits last group)
    *

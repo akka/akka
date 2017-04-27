@@ -97,7 +97,6 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       c.expectNoMsg(600.millis)
       pSub.sendComplete()
       c.expectComplete
-      c.expectNoMsg(100.millis)
     }
 
     "not emit empty group when finished while not being pushed" taggedAs TimingTest in {
@@ -187,24 +186,23 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       downstream.request(1)
       downstream.expectNext((4 to 6).toVector)
       downstream.expectComplete()
-      downstream.expectNoMsg(100.millis)
     }
 
     "not drop a pending last element on upstream finish" taggedAs TimingTest in {
-      val וupstream = TestPublisher.probe[Long]()
+      val upstream = TestPublisher.probe[Long]()
       val downstream = TestSubscriber.probe[immutable.Seq[Long]]()
       Source
-        .fromPublisher(וupstream)
+        .fromPublisher(upstream)
         .groupedWeightedWithin(5, 50.millis)(identity)
         .to(Sink.fromSubscriber(downstream))
         .run()
 
       downstream.ensureSubscription()
       downstream.expectNoMsg(100.millis)
-      וupstream.sendNext(1)
-      וupstream.sendNext(2)
-      וupstream.sendNext(3)
-      וupstream.sendComplete()
+      upstream.sendNext(1)
+      upstream.sendNext(2)
+      upstream.sendNext(3)
+      upstream.sendComplete()
       downstream.request(1)
       downstream.expectNext(Vector(1, 2): immutable.Seq[Long])
       downstream.expectNoMsg(100.millis)
@@ -214,25 +212,25 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
     }
 
     "append zero weighted elements to a full group before timeout received, if downstream hasn't pulled yet" taggedAs TimingTest in {
-      val וupstream = TestPublisher.probe[String]()
+      val upstream = TestPublisher.probe[String]()
       val downstream = TestSubscriber.probe[immutable.Seq[String]]()
       Source
-        .fromPublisher(וupstream)
+        .fromPublisher(upstream)
         .groupedWeightedWithin(5, 50.millis)(_.length.toLong)
         .to(Sink.fromSubscriber(downstream))
         .run()
 
       downstream.ensureSubscription()
-      וupstream.sendNext("333")
-      וupstream.sendNext("22")
-      וupstream.sendNext("")
-      וupstream.sendNext("")
-      וupstream.sendNext("")
+      upstream.sendNext("333")
+      upstream.sendNext("22")
+      upstream.sendNext("")
+      upstream.sendNext("")
+      upstream.sendNext("")
       downstream.request(1)
       downstream.expectNext(Vector("333", "22", "", "", ""): immutable.Seq[String])
-      וupstream.sendNext("")
-      וupstream.sendNext("")
-      וupstream.sendComplete()
+      upstream.sendNext("")
+      upstream.sendNext("")
+      upstream.sendComplete()
       downstream.request(1)
       downstream.expectNext(Vector("", ""): immutable.Seq[String])
       downstream.expectComplete()
