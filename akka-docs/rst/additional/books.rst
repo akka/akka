@@ -14,3 +14,4 @@ Videos
 ======
 
 * `Learning Akka Videos <https://www.packtpub.com/application-development/learning-akka-video>`_, by Salma Khater, PACKT Publishing, ISBN: 9781784391836, January 2016
+* `Building Microservice with AKKA HTTP (Video) <https://www.packtpub.com/application-development/building-microservice-akka-http-video>`_, by Tomasz Lelek, PACKT Publishing, ISBN: 9781788298582, March 2017
