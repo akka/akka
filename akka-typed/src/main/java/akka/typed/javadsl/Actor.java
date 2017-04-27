@@ -51,12 +51,12 @@ public abstract class Actor {
     }
 
     @Override
-    public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
+    public Behavior<T> receiveSignal(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
       return signal.apply(ctx, msg);
     }
 
     @Override
-    public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
+    public Behavior<T> receiveMessage(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
       return message.apply(ctx, msg);
     }
   }
@@ -85,13 +85,13 @@ public abstract class Actor {
     }
 
     @Override
-    public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal signal) throws Exception {
+    public Behavior<T> receiveSignal(akka.typed.ActorContext<T> ctx, Signal signal) throws Exception {
       this.signal.apply(ctx, signal);
       return canonicalize(Behavior.interpretSignal(behavior, ctx, signal));
     }
 
     @Override
-    public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
+    public Behavior<T> receiveMessage(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
       message.apply(ctx, msg);
       return canonicalize(Behavior.interpretMessage(behavior, ctx, msg));
     }
@@ -368,7 +368,7 @@ public abstract class Actor {
    */
   static public abstract class MutableBehavior<T> extends ExtensibleBehavior<T> {
     @Override
-    final public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
+    final public Behavior<T> receiveMessage(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
       return onMessage(msg);
     }
 
@@ -386,7 +386,7 @@ public abstract class Actor {
     public abstract Behavior<T> onMessage(T msg) throws Exception;
 
     @Override
-    final public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
+    final public Behavior<T> receiveSignal(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
       return onSignal(msg);
     }
 

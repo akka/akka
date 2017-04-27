@@ -191,10 +191,10 @@ object Actor {
         if (next eq behavior) Same else Widened(next, matcher)
       } else Stopped
 
-    override def management(ctx: AC[U], signal: Signal): Behavior[U] =
+    override def receiveSignal(ctx: AC[U], signal: Signal): Behavior[U] =
       postProcess(Behavior.interpretSignal(behavior, ctx.as[T], signal), ctx.as[T])
 
-    override def message(ctx: AC[U], msg: U): Behavior[U] =
+    override def receiveMessage(ctx: AC[U], msg: U): Behavior[U] =
       matcher.applyOrElse(msg, nullFun) match {
         case null        ⇒ Unhandled
         case transformed ⇒ postProcess(Behavior.interpretMessage(behavior, ctx.as[T], transformed), ctx.as[T])
@@ -242,7 +242,7 @@ object Actor {
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
     @throws(classOf[Exception])
-    override final def message(ctx: akka.typed.ActorContext[T], msg: T): Behavior[T] =
+    override final def receiveMessage(ctx: akka.typed.ActorContext[T], msg: T): Behavior[T] =
       onMessage(msg)
 
     /**
@@ -260,7 +260,7 @@ object Actor {
     def onMessage(msg: T): Behavior[T]
 
     @throws(classOf[Exception])
-    override final def management(ctx: akka.typed.ActorContext[T], msg: Signal): Behavior[T] =
+    override final def receiveSignal(ctx: akka.typed.ActorContext[T], msg: Signal): Behavior[T] =
       onSignal(msg)
 
     /**
@@ -339,8 +339,8 @@ object Actor {
     onMessage: (ActorContext[T], T) ⇒ Behavior[T],
     onSignal:  (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
     extends ExtensibleBehavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = onSignal(ctx, msg)
-    override def message(ctx: AC[T], msg: T) = onMessage(ctx, msg)
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = onSignal(ctx, msg)
+    override def receiveMessage(ctx: AC[T], msg: T) = onMessage(ctx, msg)
     override def toString = s"Immutable(${LineNumbers(onMessage)})"
   }
 
@@ -359,11 +359,11 @@ object Actor {
       else if ((behv eq SameBehavior) || (behv eq this)) Same
       else if (isAlive(behv)) Tap(onMessage, onSignal, behv)
       else Stopped
-    override def management(ctx: AC[T], signal: Signal): Behavior[T] = {
+    override def receiveSignal(ctx: AC[T], signal: Signal): Behavior[T] = {
       onSignal(ctx, signal)
       canonical(Behavior.interpretSignal(behavior, ctx, signal))
     }
-    override def message(ctx: AC[T], msg: T): Behavior[T] = {
+    override def receiveMessage(ctx: AC[T], msg: T): Behavior[T] = {
       onMessage(ctx, msg)
       canonical(Behavior.interpretMessage(behavior, ctx, msg))
     }
