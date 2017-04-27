@@ -7,7 +7,7 @@ import java.util.Random
 import java.util.function.Supplier
 
 import akka.http.impl.util._
-import akka.http.impl.settings.ServerSettingsImpl
+import akka.http.impl.settings.{ PreviewServerSettings, ServerSettingsImpl }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.{ settings ⇒ js }
 import akka.http.scaladsl.model.headers.Host
@@ -26,6 +26,7 @@ import scala.language.implicitConversions
  */
 abstract class ServerSettings private[akka] () extends akka.http.javadsl.settings.ServerSettings { self: ServerSettingsImpl ⇒
   def serverHeader: Option[Server]
+  def previewSettings: PreviewServerSettings
   def timeouts: ServerSettings.Timeouts
   def maxConnections: Int
   def pipeliningLimit: Int
@@ -44,6 +45,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   /* Java APIs */
 
   override def getBacklog = backlog
+  override def getPreviewSettings = previewSettings
   override def getDefaultHostHeader = defaultHostHeader.asJava
   override def getPipeliningLimit = pipeliningLimit
   override def getParserSettings: js.ParserSettings = parserSettings

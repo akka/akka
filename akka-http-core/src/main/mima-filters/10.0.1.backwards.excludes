@@ -1,3 +1,5 @@
+# Mima filters needed to check newer versions against 10.0.1
+
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.parsingRendering")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.parsing")

@@ -1,3 +1,5 @@
+# Mima filters needed to check newer versions against 10.0.4
+
 # Internal classes, #912
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.client.PoolSlot#SlotProcessor.this")
 ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.client.PoolInterfaceActor")

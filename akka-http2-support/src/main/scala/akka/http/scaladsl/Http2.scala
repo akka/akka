@@ -28,7 +28,8 @@ import scala.util.Success
 import scala.util.control.NonFatal
 
 /** Entry point for Http/2 server */
-class Http2Ext(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension {
+class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
+  extends akka.actor.Extension {
   // FIXME: won't having the same package as top-level break osgi?
 
   private[this] final val DefaultPortForProtocol = -1 // any negative value
@@ -124,6 +125,7 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
 }
 
 object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
+  override def get(system: ActorSystem): Http2Ext = super.get(system)
   def apply()(implicit system: ActorSystem): Http2Ext = super.apply(system)
   def lookup(): ExtensionId[_ <: Extension] = Http2
   def createExtension(system: ExtendedActorSystem): Http2Ext =

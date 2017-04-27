@@ -1,3 +1,5 @@
+# Mima filters needed to check newer versions against 10.0.3
+
 # Added new method to interface to be extended only internally.
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings#Timeouts.withLingerTimeout")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings#Timeouts.lingerTimeout")

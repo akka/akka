@@ -1,4 +1,4 @@
-# Mima filters needed to check newer versions against 10.0.2
+# Mima filters needed to check newer versions against 10.0.3
 
 # Method is currently only called from akka-http-spray-json-marshaller on a known marshaller under our control.
 # It could be a problem if code compiled with 10.0.1 calls `andThen` on a general `Unmarshaller`. If someone

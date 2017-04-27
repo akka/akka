@@ -241,8 +241,19 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 1,
-    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] =
-    bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handler), interface, port, connectionContext, settings, log)
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    val useHttp2 = settings.previewSettings.useHttp2
+    if (useHttp2) {
+      if (connectionContext.isSecure) {
+        log.debug("Binding server using HTTP/2...")
+        Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
+      } else {
+        log.debug("The preview.use-http2 flag was set, but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP...")
+        bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handler), interface, port, connectionContext, settings, log)
+      }
+    } else
+      bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handler), interface, port, connectionContext, settings, log)
+  }
 
   type ServerLayer = Http.ServerLayer
 

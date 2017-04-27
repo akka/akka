@@ -1,3 +1,5 @@
+# Mima filters needed to check newer versions against 10.0.5
+
 # Provide Decoding Response example for Java #760
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.transformEntityDataBytes")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpResponse.encoding")
@@ -5,3 +7,21 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.H
 
 # Internal API changes
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.rendering.RenderSupport.renderByteStrings")
+
+# HTTP/2 mode flag
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.useHttp2")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.useHttp2")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.copy$default$9")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.copy$default$13")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.copy$default$2")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.copy$default$5")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.copy$default$12")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.copy$default$15")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.copy$default$11")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.copy$default$3")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.this")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.copy$default$14")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.apply")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getPreviewSettings")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.previewSettings")
