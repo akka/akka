@@ -69,7 +69,7 @@ abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[Act
 
 object ActorRef {
 
-  implicit final class ActorRefScalaTell[-T](val ref: ActorRef[T]) extends AnyVal {
+  implicit final class ActorRefOps[-T](val ref: ActorRef[T]) extends AnyVal {
     /**
      * Send a message to the Actor referenced by this ActorRef using *at-most-once*
      * messaging semantics.
