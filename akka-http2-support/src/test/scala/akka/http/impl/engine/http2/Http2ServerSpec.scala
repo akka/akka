@@ -226,7 +226,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
         val error = entityDataIn.expectError()
         error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
       }
-      "send RST_STREAM if entity stream is canceled" inPendingUntilFixed new WaitingForRequestData {
+      "send RST_STREAM if entity stream is canceled" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
         sendDATA(TheStreamId, endStream = false, data1)
         entityDataIn.expectBytes(data1)
