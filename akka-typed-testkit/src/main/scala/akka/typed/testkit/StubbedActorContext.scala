@@ -8,6 +8,7 @@ import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import akka.annotation.InternalApi
+import akka.typed.internal.ActorContextImpl
 
 /**
  * An [[ActorContext]] for synchronous execution of a [[Behavior]] that
@@ -19,7 +20,7 @@ import akka.annotation.InternalApi
 class StubbedActorContext[T](
   val name:                     String,
   override val mailboxCapacity: Int,
-  override val system:          ActorSystem[Nothing]) extends ActorContext[T] {
+  override val system:          ActorSystem[Nothing]) extends ActorContextImpl[T] {
 
   val selfInbox = Inbox[T](name)
   override val self = selfInbox.ref

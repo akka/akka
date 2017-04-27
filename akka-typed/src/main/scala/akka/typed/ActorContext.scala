@@ -3,13 +3,8 @@
  */
 package akka.typed
 
-import scala.concurrent.ExecutionContextExecutor
-import java.util.Optional
-import java.util.ArrayList
-
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
-import akka.annotation.InternalApi
 
 /**
  * This trait is not meant to be extended by user code. If you do so, you may
@@ -17,57 +12,17 @@ import akka.annotation.InternalApi
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorContext[T] extends javadsl.ActorContext[T] with scaladsl.ActorContext[T] {
-
-  // FIXME can we simplify this weird hierarchy of contexts, e.g. problem with spawnAdapter
-
-  override def getChild(name: String): Optional[ActorRef[Void]] =
-    child(name) match {
-      case Some(c) ⇒ Optional.of(c.upcast[Void])
-      case None    ⇒ Optional.empty()
-    }
-
-  override def getChildren: java.util.List[akka.typed.ActorRef[Void]] = {
-    val c = children
-    val a = new ArrayList[ActorRef[Void]](c.size)
-    val i = c.iterator
-    while (i.hasNext) a.add(i.next().upcast[Void])
-    a
-  }
-
-  override def getExecutionContext: ExecutionContextExecutor =
-    executionContext
-
-  override def getMailboxCapacity: Int =
-    mailboxCapacity
-
-  override def getSelf: akka.typed.ActorRef[T] =
-    self
-
-  override def getSystem: akka.typed.ActorSystem[Void] =
-    system.asInstanceOf[ActorSystem[Void]]
-
-  override def spawn[U](behavior: akka.typed.Behavior[U], name: String): akka.typed.ActorRef[U] =
-    spawn(behavior, name, EmptyProps)
-
-  override def spawnAnonymous[U](behavior: akka.typed.Behavior[U]): akka.typed.ActorRef[U] =
-    spawnAnonymous(behavior, EmptyProps)
-
-  override def spawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U] =
-    internalSpawnAdapter(f, name)
-
-  override def spawnAdapter[U](f: U ⇒ T): ActorRef[U] =
-    internalSpawnAdapter(f, "")
-
-  override def spawnAdapter[U](f: java.util.function.Function[U, T]): akka.typed.ActorRef[U] =
-    internalSpawnAdapter(f.apply _, "")
-
-  override def spawnAdapter[U](f: java.util.function.Function[U, T], name: String): akka.typed.ActorRef[U] =
-    internalSpawnAdapter(f.apply _, name)
+trait ActorContext[T] {
+  // this should be a pure interface, i.e. only abstract methods
 
   /**
-   * INTERNAL API: Needed to make Scala 2.12 compiler happy.
-   * Otherwise "ambiguous reference to overloaded definition" because Function is lambda.
+   * Get the `javadsl` of this `ActorContext`.
    */
-  @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U]
+  def asJava: javadsl.ActorContext[T]
+
+  /**
+   * Get the `scaladsl` of this `ActorContext`.
+   */
+  def asScala: scaladsl.ActorContext[T]
 }
+

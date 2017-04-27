@@ -71,7 +71,7 @@ private[typed] class ActorCell[T](
   override val executionContext: ExecutionContextExecutor,
   override val mailboxCapacity:  Int,
   val parent:                    ActorRefImpl[Nothing])
-  extends ActorContext[T] with Runnable with SupervisionMechanics[T] with DeathWatch[T] {
+  extends ActorContextImpl[T] with Runnable with SupervisionMechanics[T] with DeathWatch[T] {
   import ActorCell._
 
   /*
