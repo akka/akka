@@ -17,6 +17,7 @@ private[http2] trait GenericOutlet[T] {
   def setHandler(handler: OutHandler): Unit
   def push(elem: T): Unit
   def complete(): Unit
+  def fail(cause: Throwable): Unit
   def canBePushed: Boolean
 }
 
@@ -45,6 +46,11 @@ private[http2] class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHand
     require(!completed, "Can only complete once.")
     completed = true
     if (buffer.isEmpty) outlet.complete()
+  }
+
+  def fail(cause: Throwable): Unit = {
+    buffer.clear()
+    outlet.fail(cause)
   }
 
   def tryFlush(): Unit = {
@@ -97,6 +103,7 @@ private[http2] trait GenericOutletSupport { logic: GraphStageLogic ⇒
       def setHandler(handler: OutHandler): Unit = subSourceOutlet.setHandler(handler)
       def push(elem: T): Unit = subSourceOutlet.push(elem)
       def complete(): Unit = subSourceOutlet.complete()
+      def fail(cause: Throwable): Unit = subSourceOutlet.fail(cause)
       def canBePushed: Boolean = subSourceOutlet.isAvailable
     }
   implicit def fromOutlet[T](outlet: Outlet[T]): GenericOutlet[T] =
@@ -104,6 +111,7 @@ private[http2] trait GenericOutletSupport { logic: GraphStageLogic ⇒
       def setHandler(handler: OutHandler): Unit = logic.setHandler(outlet, handler)
       def push(elem: T): Unit = logic.emit(outlet, elem)
       def complete(): Unit = logic.complete(outlet)
+      def fail(cause: Throwable): Unit = logic.fail(outlet, cause)
       def canBePushed: Boolean = logic.isAvailable(outlet)
     }
 }
