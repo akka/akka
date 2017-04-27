@@ -110,7 +110,7 @@ object StepWise {
 
   def apply[T](f: (scaladsl.ActorContext[T], StartWith[T]) ⇒ Steps[T, _]): Behavior[T] =
     Deferred[Any] { ctx ⇒
-      run(ctx, f(ctx.asInstanceOf[ActorContext[T]], new StartWith(keepTraces = false)).ops.reverse, ())
+      run(ctx, f(ctx.asInstanceOf[scaladsl.ActorContext[T]], new StartWith(keepTraces = false)).ops.reverse, ())
     }.narrow
 
   private def throwTimeout(trace: Trace, message: String): Nothing =

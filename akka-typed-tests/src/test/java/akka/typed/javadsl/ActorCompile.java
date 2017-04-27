@@ -66,9 +66,8 @@ public class ActorCompile {
 
     @Override
     public Behavior<MyMsg> receiveMessage(ActorContext<MyMsg> ctx, MyMsg msg) throws Exception {
-      // FIXME this doesn't work with Scala 2.12 "reference to spawnAdapter is ambiguous"
       @SuppressWarnings("unused")
-      ActorRef<String> adapter = ctx.spawnAdapter(s -> new MyMsgB(s.toUpperCase()));
+      ActorRef<String> adapter = ctx.asJava().spawnAdapter(s -> new MyMsgB(s.toUpperCase()));
       return this;
     }
 

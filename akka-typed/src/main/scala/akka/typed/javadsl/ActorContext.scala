@@ -38,6 +38,11 @@ trait ActorContext[T] {
   // this must be a pure interface, i.e. only abstract methods
 
   /**
+   * Get the `scaladsl` of this `ActorContext`.
+   */
+  def asScala: akka.typed.scaladsl.ActorContext[T]
+
+  /**
    * The identity of this Actor, bound to the lifecycle of this Actor instance.
    * An Actor with the same name that lives before or after this instance will
    * have a different [[ActorRef]].

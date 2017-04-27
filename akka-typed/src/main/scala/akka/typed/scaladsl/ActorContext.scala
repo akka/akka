@@ -37,6 +37,11 @@ import akka.typed.EmptyProps
 trait ActorContext[T] { this: akka.typed.javadsl.ActorContext[T] ⇒
 
   /**
+   * Get the `javadsl` of this `ActorContext`.
+   */
+  def asJava: akka.typed.javadsl.ActorContext[T]
+
+  /**
    * The identity of this Actor, bound to the lifecycle of this Actor instance.
    * An Actor with the same name that lives before or after this instance will
    * have a different [[ActorRef]].
