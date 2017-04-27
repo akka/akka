@@ -279,7 +279,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       if (system eq nativeSystem) suite + "Native"
       else suite + "Adapted"
 
-    def setup(name: String, wrapper: Option[Actor.Restarter.Apply[_]] = None)(
+    def setup(name: String, wrapper: Option[Actor.Restarter[_]] = None)(
       proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
       runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
         val props = wrapper.map(_.wrap(behavior(ctx))).getOrElse(behavior(ctx))

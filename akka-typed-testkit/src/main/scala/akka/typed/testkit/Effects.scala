@@ -92,7 +92,7 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
     effectQueue.offer(Spawned(name))
     super.spawn(behavior, name)
   }
-  override def stop(child: ActorRef[_]): Boolean = {
+  override def stop[U](child: ActorRef[U]): Boolean = {
     effectQueue.offer(Stopped(child.path.name))
     super.stop(child)
   }

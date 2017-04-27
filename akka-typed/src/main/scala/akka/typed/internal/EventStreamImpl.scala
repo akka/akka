@@ -44,25 +44,26 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
     import scaladsl.Actor
     Actor.Deferred[Command] { _ ⇒
       if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $this"))
-      Actor.Immutable[Command] {
-        case (ctx, Register(actor)) ⇒
-          if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
-          ctx.watch(actor)
-          Actor.Same
+      Actor.Immutable[Command] { (ctx, msg) ⇒
+        msg match {
+          case Register(actor) ⇒
+            if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
+            ctx.watch(actor)
+            Actor.Same
 
-        case (ctx, UnregisterIfNoMoreSubscribedChannels(actor)) if hasSubscriptions(actor) ⇒ Actor.Same
-        // hasSubscriptions can be slow, but it's better for this actor to take the hit than the EventStream
+          case UnregisterIfNoMoreSubscribedChannels(actor) if hasSubscriptions(actor) ⇒ Actor.Same
+          // hasSubscriptions can be slow, but it's better for this actor to take the hit than the EventStream
 
-        case (ctx, UnregisterIfNoMoreSubscribedChannels(actor)) ⇒
-          if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unwatching $actor, since has no subscriptions"))
-          ctx.unwatch(actor)
-          Actor.Same
+          case UnregisterIfNoMoreSubscribedChannels(actor) ⇒
+            if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unwatching $actor, since has no subscriptions"))
+            ctx.unwatch(actor)
+            Actor.Same
+        }
       } onSignal {
         case (_, Terminated(actor)) ⇒
           if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unsubscribe $actor from $this, because it was terminated"))
           unsubscribe(actor)
           Actor.Same
-        case (_, _) ⇒ Actor.Unhandled
       }
     }
   }

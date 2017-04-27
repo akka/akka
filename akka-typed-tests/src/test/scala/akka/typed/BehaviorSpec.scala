@@ -601,8 +601,8 @@ class BehaviorSpec extends TypedSpec {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
       val inbox = Inbox[Either[Signal, Command]]("tapListener")
       (JActor.tap(
-        ps((_, sig) ⇒ inbox.ref ! Left(sig)),
         pc((_, msg) ⇒ inbox.ref ! Right(msg)),
+        ps((_, sig) ⇒ inbox.ref ! Left(sig)),
         super.behavior(monitor)._1), inbox)
     }
   }
