@@ -11,8 +11,10 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 
-sealed trait FrameEvent
-sealed trait StreamFrameEvent extends FrameEvent {
+sealed trait FrameEvent { self: Product ⇒
+  def frameTypeName: String = productPrefix
+}
+sealed trait StreamFrameEvent extends FrameEvent { self: Product ⇒
   def streamId: Int
 }
 
@@ -79,4 +81,4 @@ final case class ParsedHeadersFrame(
   endStream:     Boolean,
   keyValuePairs: Seq[(String, String)],
   priorityInfo:  Option[PriorityFrame]
-) extends FrameEvent
+) extends StreamFrameEvent
