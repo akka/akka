@@ -8,7 +8,7 @@ import java.util
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.{ Attributes, Inlet, SinkShape }
+import akka.stream.{ AbruptStageTerminationException, Attributes, Inlet, SinkShape }
 import akka.stream.Attributes.InputBuffer
 import akka.stream.stage._
 
