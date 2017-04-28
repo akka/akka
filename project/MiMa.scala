@@ -32,7 +32,7 @@ object MiMa extends AutoPlugin {
         .max
 
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka25Versions = Seq.empty[String] // FIXME enable once 2.5.0 is out (0 to latestMinorVersionOf("2.5.")).map(patch => s"2.5.$patch")
+      val akka25Versions = (0 to latestMinorVersionOf("2.5.")).map(patch => s"2.5.$patch")
       val akka24StreamVersions = (2 to 12) map ("2.4." + _)
       val akka24WithScala212 =
         (13 to latestMinorVersionOf("2.4."))
@@ -55,10 +55,10 @@ object MiMa extends AutoPlugin {
           else {
             if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions
             else Seq.empty
-          } ++ akka24StreamVersions ++ akka24WithScala212
+          } ++ akka24StreamVersions ++ akka24WithScala212 ++ akka25Versions
           
         case "2.12" => 
-          akka24WithScala212
+          akka24WithScala212 ++ akka25Versions
       }
     }
     
@@ -1163,10 +1163,27 @@ object MiMa extends AutoPlugin {
       //  * this list ends with the latest released version number
       //  * is kept in sync between release-2.4 and master branch
     )
+    
+    val Release25Filters = Seq(
+      "2.5.0" -> Seq(
+          
+          // #22759 LMDB files
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.env"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.db"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.keyBuffer"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.valueBuffer_="),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.valueBuffer"),
+          
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.traversalBuilder"),
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.named"),
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.addAttributes"),
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.async")
+      )
+    )
 
     val Latest24Filters = Release24Filters.last
     val AllFilters =
-      Release24Filters.dropRight(1) :+ (Latest24Filters._1 -> (Latest24Filters._2 ++ bcIssuesBetween24and25))
+      Release25Filters ++ Release24Filters.dropRight(1) :+ (Latest24Filters._1 -> (Latest24Filters._2 ++ bcIssuesBetween24and25))
 
     Map(AllFilters: _*)
   }
