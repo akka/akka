@@ -143,12 +143,13 @@ object Marshaller
    * Helper for creating a synchronous [[Marshaller]] to content with a negotiable charset from the given function.
    */
   def withOpenCharset[A, B](mediaType: MediaType.WithOpenCharset)(marshal: (A, HttpCharset) ⇒ B): Marshaller[A, B] = {
-    val f1 = (value: A) ⇒ Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset))
-    val f2 = (_: ExecutionContext) ⇒ (a: A) ⇒ FastFuture.successful(f1(a) :: Nil)
     new Marshaller[A, B] {
       def apply(value: A)(implicit ec: ExecutionContext) =
-        try f2(ec)(value)
-        catch { case NonFatal(e) ⇒ FastFuture.failed(e) }
+        try FastFuture.successful {
+          Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset)) :: Nil
+        } catch {
+          case NonFatal(e) ⇒ FastFuture.failed(e)
+        }
 
       override def compose[C](f: C ⇒ A): Marshaller[C, B] =
         Marshaller.withOpenCharset(mediaType)((c: C, hc: HttpCharset) ⇒ marshal(f(c), hc))
