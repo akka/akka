@@ -12,7 +12,6 @@ import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.cluster.sharding.Shard.ShardCommand
-import akka.persistence._
 import akka.actor.Actor
 
 import akka.util.MessageBufferMap
@@ -24,6 +23,16 @@ import akka.cluster.ddata.ORSetKey
 import akka.cluster.ddata.Replicator._
 import akka.actor.Stash
 import akka.cluster.ddata.DistributedData
+import akka.persistence.PersistentActor
+import akka.persistence.SnapshotOffer
+import akka.persistence.SaveSnapshotSuccess
+import akka.persistence.DeleteSnapshotFailure
+import akka.persistence.DeleteMessagesSuccess
+import akka.persistence.SaveSnapshotFailure
+import akka.persistence.DeleteMessagesFailure
+import akka.persistence.DeleteSnapshotSuccess
+import akka.persistence.SnapshotSelectionCriteria
+import akka.persistence.RecoveryCompleted
 
 /**
  * INTERNAL API
