@@ -168,6 +168,17 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
         .map(new IncomingConnection(_))
         .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
 
+  /** Specify keepOpenOnPeerClosed as well*/
+  @Deprecated
+  def outgoingConnection(
+      remoteAddress: InetSocketAddress,
+      localAddress: Optional[InetSocketAddress],
+      options: JIterable[SocketOption],
+      halfClose: Boolean,
+      connectTimeout: Duration,
+      idleTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+      outgoingConnection(remoteAddress, localAddress, options, halfClose, connectTimeout, idleTimeout, keepOpenOnPeerClosed = false)
+
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
    *
@@ -194,7 +205,8 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       options: JIterable[SocketOption],
       halfClose: Boolean,
       connectTimeout: Duration,
-      idleTimeout: Duration): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
+      idleTimeout: Duration,
+      keepOpenOnPeerClosed: Boolean): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(
       delegate
         .outgoingConnection(
@@ -203,7 +215,8 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
           immutableSeq(options),
           halfClose,
           connectTimeout,
-          idleTimeout)
+          idleTimeout,
+          keepOpenOnPeerClosed)
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(ec).toJava))
 
   /**

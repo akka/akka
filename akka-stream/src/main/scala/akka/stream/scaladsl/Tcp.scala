@@ -173,6 +173,24 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       .run()
   }
 
+  @deprecated("Specify the keepOpenOnPeerClosed parameter", "2.6.0")
+  def outgoingConnection(
+    remoteAddress:  InetSocketAddress,
+    localAddress:   Option[InetSocketAddress],
+    options:        immutable.Traversable[SocketOption],
+    halfClose:      Boolean,
+    connectTimeout: Duration,
+    idleTimeout:    Duration): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    outgoingConnection(
+      remoteAddress,
+      localAddress,
+      options,
+      halfClose,
+      connectTimeout,
+      idleTimeout,
+      keepOpenOnPeerClosed = false
+    )
+
   /**
    * Creates an [[Tcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
    *
@@ -200,7 +218,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       options: immutable.Traversable[SocketOption] = Nil,
       halfClose: Boolean = true,
       connectTimeout: Duration = Duration.Inf,
-      idleTimeout: Duration = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+      idleTimeout: Duration = Duration.Inf,
+      keepOpenOnPeerClosed: Boolean = true): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
     val tcpFlow = Flow
       .fromGraph(
@@ -210,6 +229,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
           localAddress,
           options.toList,
           halfClose,
+          keepOpenOnPeerClosed,
           connectTimeout,
           settings.ioSettings))
       .via(detacher[ByteString]) // must read ahead for proper completions
@@ -273,7 +293,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       connectTimeout: Duration = Duration.Inf,
       idleTimeout: Duration = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
-    val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
+    val connection = outgoingConnection(remoteAddress, localAddress, options, halfClose = true, connectTimeout, idleTimeout, keepOpenOnPeerClosed = false)
     val tls = TLS(sslContext, negotiateNewSession, TLSRole.client)
     connection.join(tlsWrapping.atop(tls).reversed)
   }
@@ -292,7 +312,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       verifySession: SSLSession => Try[Unit],
       closing: TLSClosing = IgnoreComplete): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
-    val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
+    val connection = outgoingConnection(remoteAddress, localAddress, options, halfClose = true, connectTimeout, idleTimeout, keepOpenOnPeerClosed = false)
     val tls = TLS(createSSLEngine, verifySession, closing)
     connection.join(tlsWrapping.atop(tls).reversed)
   }

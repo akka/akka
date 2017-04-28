@@ -196,6 +196,7 @@ private[stream] object ConnectionSourceStage {
       connectCmd: Connect,
       localAddressPromise: Promise[InetSocketAddress],
       halfClose: Boolean,
+      keepOpenOnPeerClosed: Boolean,
       ioSettings: IOSettings)
       extends TcpRole
 
@@ -233,16 +234,16 @@ private[stream] object ConnectionSourceStage {
     override def preStart(): Unit = {
       setKeepGoing(true)
       role match {
-        case Inbound(conn, _, _, registerCallback) =>
+        case Inbound(conn, halfClose, _, registerCallback) =>
           setHandler(bytesOut, readHandler)
           connection = conn
           getStageActor(connected).watch(connection)
-          connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
+          connection ! Register(self, keepOpenOnPeerClosed = halfClose, useResumeWriting = false)
           registerCallback()
           pull(bytesIn)
-        case ob @ Outbound(manager, cmd, _, _, _) =>
-          getStageActor(connecting(ob)).watch(manager)
-          manager ! cmd
+        case ob: Outbound =>
+          getStageActor(connecting(ob)).watch(ob.manager)
+          ob.manager ! ob.connectCmd
       }
     }
 
@@ -254,13 +255,13 @@ private[stream] object ConnectionSourceStage {
         case f @ CommandFailed(cmd) =>
           fail(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}").initCause(f.cause.orNull))
         case c: Connected =>
-          role.asInstanceOf[Outbound].localAddressPromise.success(c.localAddress)
+          ob.localAddressPromise.success(c.localAddress)
           connection = sender
           setHandler(bytesOut, readHandler)
           stageActor.unwatch(ob.manager)
           stageActor.become(connected)
           stageActor.watch(connection)
-          connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
+          connection ! Register(self, keepOpenOnPeerClosed = ob.keepOpenOnPeerClosed, useResumeWriting = false)
           if (isAvailable(bytesOut)) connection ! ResumeReading
           pull(bytesIn)
       }
@@ -376,14 +377,14 @@ private[stream] object ConnectionSourceStage {
     }
     private def reportExceptionToPromise(ex: Throwable): Unit =
       role match {
-        case Outbound(_, _, localAddressPromise, _, _) =>
+        case o: Outbound =>
           // Fail if has not been completed with an address earlier
-          localAddressPromise.tryFailure(ex)
+          o.localAddressPromise.tryFailure(ex)
         case _ => // do nothing...
       }
 
     override def postStop(): Unit = reportExceptionToPromise(new StreamTcpException("Connection failed."))
-
+ 
     writeBuffer = ByteString.empty
   }
 }
@@ -426,6 +427,7 @@ private[stream] object ConnectionSourceStage {
     localAddress: Option[InetSocketAddress] = None,
     options: immutable.Iterable[SocketOption] = Nil,
     halfClose: Boolean = true,
+    keepOpenOnPeerClosed: Boolean = false,
     connectTimeout: Duration = Duration.Inf,
     ioSettings: IOSettings)
     extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
@@ -452,6 +454,7 @@ private[stream] object ConnectionSourceStage {
         Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
         localAddressPromise,
         halfClose,
+        keepOpenOnPeerClosed,
         ioSettings),
       remoteAddress)
 

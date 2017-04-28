@@ -343,7 +343,7 @@ class TcpSpec extends StreamSpec("""
     }
 
     "shut down both streams when connection is aborted remotely" in assertAllStagesStopped {
-      // Client gets a PeerClosed event and does not know that the write side is also closed
+      // Client gets an ErrorClosed event and should also close the write side
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -359,6 +359,26 @@ class TcpSpec extends StreamSpec("""
 
       serverConnection.abort()
       tcpReadProbe.subscriberProbe.expectSubscriptionAndError()
+      tcpWriteProbe.tcpWriteSubscription.expectCancellation()
+
+      serverConnection.expectTerminated()
+    }
+
+    "shut down both streams when connection is closed remotely and keepOpenOnPeerClosed is disabled" in assertAllStagesStopped {
+      // Client gets a PeerClosed event and should also close the write side
+      val testData = ByteString(1, 2, 3, 4, 5)
+      val server = new Server()
+
+      val tcpWriteProbe = new TcpWriteProbe()
+      val tcpReadProbe = new TcpReadProbe()
+
+      Source.fromPublisher(tcpWriteProbe.publisherProbe)
+        .via(Tcp().outgoingConnection(server.address, keepOpenOnPeerClosed = false))
+        .to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe)).run()
+      val serverConnection = server.waitAccept()
+
+      serverConnection.close()
+      tcpReadProbe.subscriberProbe.expectSubscriptionAndComplete()
       tcpWriteProbe.tcpWriteSubscription.expectCancellation()
 
       serverConnection.expectTerminated()
