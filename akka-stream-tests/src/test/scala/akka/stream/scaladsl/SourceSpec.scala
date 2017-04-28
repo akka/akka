@@ -109,6 +109,16 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       Await.result(counterFuture, 3.seconds) shouldEqual 0
     }
 
+    "allow external triggering of empty completion when there was no demand" in Utils.assertAllStagesStopped {
+      val probe = TestSubscriber.probe[Int]()
+      val promise = Source.maybe[Int].to(Sink.fromSubscriber(probe)).run()
+
+      // external cancellation
+      probe.ensureSubscription()
+      promise.trySuccess(None) shouldEqual true
+      probe.expectComplete()
+    }
+
     "allow external triggering of non-empty completion" in Utils.assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
       val counterSink = Sink.head[Int]

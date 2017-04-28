@@ -46,51 +46,6 @@ import scala.concurrent.{ ExecutionContext, Promise }
 
 /**
  * INTERNAL API
- */
-@InternalApi private[akka] final case class MaybePublisher[T](
-  promise: Promise[Option[T]],
-  name:    String)(implicit ec: ExecutionContext) extends Publisher[T] {
-  import ReactiveStreamsCompliance._
-
-  private[this] class MaybeSubscription(subscriber: Subscriber[_ >: T]) extends Subscription {
-    private[this] var done: Boolean = false
-    override def cancel(): Unit = {
-      done = true
-      promise.trySuccess(None)
-    }
-
-    override def request(elements: Long): Unit = {
-      if (elements < 1) rejectDueToNonPositiveDemand(subscriber)
-      if (!done) {
-        done = true
-        promise.future foreach {
-          // We consciously do not catch SpecViolation here, it will be reported to the ExecutionContext
-          case Some(v) ⇒
-            tryOnNext(subscriber, v)
-            tryOnComplete(subscriber)
-          case None ⇒
-            tryOnComplete(subscriber)
-        }
-      }
-    }
-  }
-
-  override def subscribe(subscriber: Subscriber[_ >: T]): Unit =
-    try {
-      requireNonNullSubscriber(subscriber)
-      tryOnSubscribe(subscriber, new MaybeSubscription(subscriber))
-      promise.future.failed.foreach {
-        error ⇒ tryOnError(subscriber, error)
-      }
-    } catch {
-      case sv: SpecViolation ⇒ ec.reportFailure(sv)
-    }
-
-  override def toString: String = name
-}
-
-/**
- * INTERNAL API
  * This is only a legal subscription when it is immediately followed by
  * a termination signal (onComplete, onError).
  */
