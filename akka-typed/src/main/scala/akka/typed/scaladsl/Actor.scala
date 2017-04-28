@@ -274,11 +274,10 @@ object Actor {
      *  * returning `this` or `Same` designates to reuse the current Behavior
      *  * returning `Unhandled` keeps the same Behavior and signals that the message was not yet handled
      *
-     * By default, this method returns `Unhandled`.
+     * By default, partial function is empty and does not handle any signals.
      */
     @throws(classOf[Exception])
-    def onSignal(msg: Signal): Behavior[T] =
-      Unhandled
+    def onSignal: PartialFunction[Signal, Behavior[T]] = PartialFunction.empty
   }
 
   /**
@@ -329,13 +328,21 @@ object Actor {
    * State is updated by returning a new behavior that holds the new immutable
    * state.
    */
-  final case class Immutable[T](
+  final class Immutable[T] private (
     onMessage: (ActorContext[T], T) ⇒ Behavior[T],
-    onSignal:  (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
+    onSignal:  PartialFunction[(ActorContext[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(ActorContext[T], Signal), Behavior[T]]])
     extends ExtensibleBehavior[T] {
-    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = onSignal(ctx, msg)
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = onSignal.applyOrElse((ctx, msg), Behavior.unhandledSignal.asInstanceOf[PartialFunction[(ActorContext[T], Signal), Behavior[T]]])
     override def receiveMessage(ctx: AC[T], msg: T) = onMessage(ctx, msg)
     override def toString = s"Immutable(${LineNumbers(onMessage)})"
+
+    def onSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Immutable[T] =
+      new Immutable(onMessage, onSignal)
+  }
+
+  object Immutable {
+    def apply[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]) =
+      new Immutable(onMessage)
   }
 
   /**
