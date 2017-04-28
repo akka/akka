@@ -49,7 +49,7 @@ private[typed] trait DeathWatch[T] {
     if (a != self && !watching.contains(a)) {
       maintainAddressTerminatedSubscription(a) {
         a.sendSystem(Watch(a, self))
-        watching += ((a, None))
+        watching = watching.updated(a, None)
       }
     }
   }
@@ -59,7 +59,7 @@ private[typed] trait DeathWatch[T] {
     if (a != self && !watching.contains(a)) {
       maintainAddressTerminatedSubscription(a) {
         a.sendSystem(Watch(a, self))
-        watching += ((a, Some(msg)))
+        watching = watching.updated(a, Some(msg))
       }
     }
   }
@@ -80,19 +80,21 @@ private[typed] trait DeathWatch[T] {
    */
   protected def watchedActorTerminated(actor: ARImpl, failure: Throwable): Boolean = {
     removeChild(actor)
-    watching.get(actor).foreach { optionalMessage ⇒
-      maintainAddressTerminatedSubscription(actor) {
-        watching -= actor
-      }
-      if (maySend) {
-        optionalMessage match {
-          case None ⇒
-            val t = Terminated(actor)(failure)
-            next(Behavior.interpretSignal(behavior, ctx, t), t)
-          case Some(msg) ⇒
-            next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+    watching.get(actor) match {
+      case None ⇒ // Should not happen, but can be safely ignored.
+      case Some(optionalMessage) ⇒
+        maintainAddressTerminatedSubscription(actor) {
+          watching -= actor
         }
-      }
+        if (maySend) {
+          optionalMessage match {
+            case None ⇒
+              val t = Terminated(actor)(failure)
+              next(Behavior.interpretSignal(behavior, ctx, t), t)
+            case Some(msg) ⇒
+              next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+          }
+        }
     }
     if (isTerminating && terminatingMap.isEmpty) {
       finishTerminate()

@@ -22,7 +22,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
       if (a != self && !watchingContains(a)) {
         maintainAddressTerminatedSubscription(a) {
           a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-          watching += ((a, None))
+          watching = watching.updated(a, None)
         }
       }
       a
@@ -33,7 +33,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
       if (a != self && !watchingContains(a)) {
         maintainAddressTerminatedSubscription(a) {
           a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-          watching += ((a, Some(msg)))
+          watching = watching.updated(a, Some(msg))
         }
       }
       a
@@ -62,14 +62,16 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    * it will be propagated to user's receive.
    */
   protected def watchedActorTerminated(actor: ActorRef, existenceConfirmed: Boolean, addressTerminated: Boolean): Unit = {
-    if (watchingContains(actor)) {
-      maintainAddressTerminatedSubscription(actor) {
-        watching = removeFromMap(actor, watching)
-      }
-      if (!isTerminating) {
-        self.tell(Terminated(actor)(existenceConfirmed, addressTerminated), actor)
-        terminatedQueuedFor(actor)
-      }
+    watchingGet(actor) match {
+      case None ⇒ // Should not happen, but can be safely ignored.
+      case Some(optionalMessage) ⇒
+        maintainAddressTerminatedSubscription(actor) {
+          watching = removeFromMap(actor, watching)
+        }
+        if (!isTerminating) {
+          self.tell(optionalMessage.getOrElse(Terminated(actor)(existenceConfirmed, addressTerminated)), actor)
+          terminatedQueuedFor(actor)
+        }
     }
     if (childrenRefs.getByRef(actor).isDefined) handleChildTerminated(actor)
   }
@@ -82,6 +84,13 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   private def watchingContains(subject: ActorRef): Boolean =
     watching.contains(subject) || (subject.path.uid != ActorCell.undefinedUid &&
       watching.contains(new UndefinedUidActorRef(subject)))
+
+  // TODO this should be removed and be replaced with `watching.get(subject)`
+  //   when all actor references have uid, i.e. actorFor is removed
+  private def watchingGet(subject: ActorRef): Option[Option[Any]] =
+    watching.get(subject).orElse(
+      if (subject.path.uid == ActorCell.undefinedUid) None
+      else watching.get(new UndefinedUidActorRef(subject)))
 
   // TODO this should be removed and be replaced with `set - subject`
   //   when all actor references have uid, i.e. actorFor is removed
