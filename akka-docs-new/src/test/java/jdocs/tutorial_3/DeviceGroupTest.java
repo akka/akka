@@ -50,9 +50,9 @@ public class DeviceGroupTest extends JUnitSuite {
 
     // Check that the device actors are workingl
     deviceActor1.tell(new Device.RecordTemperature(0L, 1.0), probe.getRef());
-    Assert.assertEquals((Long) 0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
+    Assert.assertEquals(0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
     deviceActor2.tell(new Device.RecordTemperature(1L, 2.0), probe.getRef());
-    Assert.assertEquals((Long) 1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
+    Assert.assertEquals(1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
   }
 
   @Test
@@ -96,7 +96,7 @@ public class DeviceGroupTest extends JUnitSuite {
 
     groupActor.tell(new DeviceGroup.RequestDeviceList(0L), probe.getRef());
     DeviceGroup.ReplyDeviceList reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-    Assert.assertEquals((Long) 0L, reply.requestId);
+    Assert.assertEquals(0L, reply.requestId);
     Assert.assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
   }
 
@@ -114,7 +114,7 @@ public class DeviceGroupTest extends JUnitSuite {
 
     groupActor.tell(new DeviceGroup.RequestDeviceList(0L), probe.getRef());
     DeviceGroup.ReplyDeviceList reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-    Assert.assertEquals((Long) 0L, reply.requestId);
+    Assert.assertEquals(0L, reply.requestId);
     Assert.assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
 
     probe.watch(toShutDown);
@@ -123,7 +123,7 @@ public class DeviceGroupTest extends JUnitSuite {
 
     groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
     reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-    Assert.assertEquals((Long) 1L, reply.requestId);
+    Assert.assertEquals(1L, reply.requestId);
     Assert.assertEquals(Stream.of("device2").collect(Collectors.toSet()), reply.ids);
   }
   //#device-group-list-terminate-test

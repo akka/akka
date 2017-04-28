@@ -32,36 +32,36 @@ public class Device extends AbstractActor {
   }
 
   public static final class RecordTemperature {
-    final Long requestId;
-    final Double value;
+    final long requestId;
+    final double value;
 
-    public RecordTemperature(Long requestId, Double value) {
+    public RecordTemperature(long requestId, double value) {
       this.requestId = requestId;
       this.value = value;
     }
   }
 
   public static final class TemperatureRecorded {
-    final Long requestId;
+    final long requestId;
 
-    public TemperatureRecorded(Long requestId) {
+    public TemperatureRecorded(long requestId) {
       this.requestId = requestId;
     }
   }
 
   public static final class ReadTemperature {
-    final Long requestId;
+    final long requestId;
 
-    public ReadTemperature(Long requestId) {
+    public ReadTemperature(long requestId) {
       this.requestId = requestId;
     }
   }
 
   public static final class RespondTemperature {
-    final Long requestId;
+    final long requestId;
     final Optional<Double> value;
 
-    public RespondTemperature(Long requestId, Optional<Double> value) {
+    public RespondTemperature(long requestId, Optional<Double> value) {
       this.requestId = requestId;
       this.value = value;
     }

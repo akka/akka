@@ -4,9 +4,9 @@ class DeviceInProgress3 {
 
   //#write-protocol-1
   public static final class RecordTemperature {
-    final Double value;
+    final double value;
 
-    public RecordTemperature(Double value) {
+    public RecordTemperature(double value) {
       this.value = value;
     }
   }

@@ -20,12 +20,12 @@ public class DeviceGroupQuery extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   final Map<ActorRef, String> actorToDeviceId;
-  final Long requestId;
+  final long requestId;
   final ActorRef requester;
 
   Cancellable queryTimeoutTimer;
 
-  public DeviceGroupQuery(Map<ActorRef, String> actorToDeviceId, Long requestId, ActorRef requester, FiniteDuration timeout) {
+  public DeviceGroupQuery(Map<ActorRef, String> actorToDeviceId, long requestId, ActorRef requester, FiniteDuration timeout) {
     this.actorToDeviceId = actorToDeviceId;
     this.requestId = requestId;
     this.requester = requester;
@@ -35,7 +35,7 @@ public class DeviceGroupQuery extends AbstractActor {
     );
   }
 
-  public static Props props(Map<ActorRef, String> actorToDeviceId, Long requestId, ActorRef requester, FiniteDuration timeout) {
+  public static Props props(Map<ActorRef, String> actorToDeviceId, long requestId, ActorRef requester, FiniteDuration timeout) {
     return Props.create(DeviceGroupQuery.class, actorToDeviceId, requestId, requester, timeout);
   }
 

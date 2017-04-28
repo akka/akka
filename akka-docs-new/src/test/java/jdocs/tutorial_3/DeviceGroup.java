@@ -34,18 +34,18 @@ public class DeviceGroup extends AbstractActor {
   //#device-group-register
 
   public static final class RequestDeviceList {
-    final Long requestId;
+    final long requestId;
 
-    public RequestDeviceList(Long requestId) {
+    public RequestDeviceList(long requestId) {
       this.requestId = requestId;
     }
   }
 
   public static final class ReplyDeviceList {
-    final Long requestId;
+    final long requestId;
     final Set<String> ids;
 
-    public ReplyDeviceList(Long requestId, Set<String> ids) {
+    public ReplyDeviceList(long requestId, Set<String> ids) {
       this.requestId = requestId;
       this.ids = ids;
     }

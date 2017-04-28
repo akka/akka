@@ -31,18 +31,18 @@ public class DeviceGroup extends AbstractActor {
   }
 
   public static final class RequestDeviceList {
-    final Long requestId;
+    final long requestId;
 
-    public RequestDeviceList(Long requestId) {
+    public RequestDeviceList(long requestId) {
       this.requestId = requestId;
     }
   }
 
   public static final class ReplyDeviceList {
-    final Long requestId;
+    final long requestId;
     final Set<String> ids;
 
-    public ReplyDeviceList(Long requestId, Set<String> ids) {
+    public ReplyDeviceList(long requestId, Set<String> ids) {
       this.requestId = requestId;
       this.ids = ids;
     }
@@ -50,18 +50,18 @@ public class DeviceGroup extends AbstractActor {
 
   //#query-protocol
   public static final class RequestAllTemperatures {
-    final Long requestId;
+    final long requestId;
 
-    public RequestAllTemperatures(Long requestId) {
+    public RequestAllTemperatures(long requestId) {
       this.requestId = requestId;
     }
   }
 
   public static final class RespondAllTemperatures {
-    final Long requestId;
+    final long requestId;
     final Map<String, TemperatureReading> temperatures;
 
-    public RespondAllTemperatures(Long requestId, Map<String, TemperatureReading> temperatures) {
+    public RespondAllTemperatures(long requestId, Map<String, TemperatureReading> temperatures) {
       this.requestId = requestId;
       this.temperatures = temperatures;
     }
@@ -71,9 +71,9 @@ public class DeviceGroup extends AbstractActor {
   }
 
   public static final class Temperature implements TemperatureReading {
-    public final Double value;
+    public final double value;
 
-    public Temperature(Double value) {
+    public Temperature(double value) {
       this.value = value;
     }
   }
@@ -91,7 +91,7 @@ public class DeviceGroup extends AbstractActor {
 
   Map<String, ActorRef> deviceIdToActor = new HashMap<>();
   Map<ActorRef, String> actorToDeviceId = new HashMap<>();
-  Long nextCollectionId = 0L;
+  long nextCollectionId = 0L;
 
   @Override
   public void preStart() {

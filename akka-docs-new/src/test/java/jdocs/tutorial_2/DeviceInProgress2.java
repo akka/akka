@@ -27,18 +27,18 @@ class Device extends AbstractActor {
 
   //#read-protocol-2
   public static final class ReadTemperature {
-    Long requestId;
+    long requestId;
 
-    public ReadTemperature(Long requestId) {
+    public ReadTemperature(long requestId) {
       this.requestId = requestId;
     }
   }
 
   public static final class RespondTemperature {
-    Long requestId;
+    long requestId;
     Optional<Double> value;
 
-    public RespondTemperature(Long requestId, Optional<Double> value) {
+    public RespondTemperature(long requestId, Optional<Double> value) {
       this.requestId = requestId;
       this.value = value;
     }
