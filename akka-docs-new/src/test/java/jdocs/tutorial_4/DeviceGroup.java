@@ -89,9 +89,9 @@ public class DeviceGroup extends AbstractActor {
   //#query-protocol
 
 
-  Map<String, ActorRef> deviceIdToActor = new HashMap<>();
-  Map<ActorRef, String> actorToDeviceId = new HashMap<>();
-  long nextCollectionId = 0L;
+  final Map<String, ActorRef> deviceIdToActor = new HashMap<>();
+  final Map<ActorRef, String> actorToDeviceId = new HashMap<>();
+  final long nextCollectionId = 0L;
 
   @Override
   public void preStart() {

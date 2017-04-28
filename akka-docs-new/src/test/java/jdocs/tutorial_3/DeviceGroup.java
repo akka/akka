@@ -55,9 +55,9 @@ public class DeviceGroup extends AbstractActor {
 //#device-group-register
 //#device-group-remove
 
-  Map<String, ActorRef> deviceIdToActor = new HashMap<>();
+  final Map<String, ActorRef> deviceIdToActor = new HashMap<>();
   //#device-group-register
-  Map<ActorRef, String> actorToDeviceId = new HashMap<>();
+  final Map<ActorRef, String> actorToDeviceId = new HashMap<>();
   //#device-group-register
 
   @Override

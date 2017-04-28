@@ -85,10 +85,9 @@ public class DeviceGroup extends AbstractActor {
   public static final class DeviceTimedOut implements TemperatureReading {
   }
 
-
-  Map<String, ActorRef> deviceIdToActor = new HashMap<>();
-  Map<ActorRef, String> actorToDeviceId = new HashMap<>();
-  long nextCollectionId = 0L;
+  final Map<String, ActorRef> deviceIdToActor = new HashMap<>();
+  final Map<ActorRef, String> actorToDeviceId = new HashMap<>();
+  final long nextCollectionId = 0L;
 
   @Override
   public void preStart() {
