@@ -101,11 +101,18 @@ object LmdbDurableStore {
     Props(new LmdbDurableStore(config))
 
   private case object WriteBehind extends DeadLetterSuppression
+
+  private final case class Lmdb(
+    env:         Env[ByteBuffer],
+    db:          Dbi[ByteBuffer],
+    keyBuffer:   ByteBuffer,
+    valueBuffer: ByteBuffer)
 }
 
 final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   import DurableStore._
   import LmdbDurableStore.WriteBehind
+  import LmdbDurableStore.Lmdb
 
   val serialization = SerializationExtension(context.system)
   val serializer = serialization.serializerFor(classOf[DurableDataEnvelope]).asInstanceOf[SerializerWithStringManifest]
@@ -122,23 +129,16 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
     case path ⇒
       new File(path)
   }
-  log.info("Using durable data in LMDB directory [{}]", dir.getCanonicalPath)
 
-  // lazy init via `initDb`
-  private var env: Env[ByteBuffer] = null
-  // lazy init via `initDb`
-  private var db: Dbi[ByteBuffer] = null
-  // lazy init via `initDb`
-  private var keyBuffer: ByteBuffer = null
-  // lazy init via `initDb`
-  private var valueBuffer: ByteBuffer = null
+  // lazy init
+  private var _lmdb: OptionVal[Lmdb] = OptionVal.None
 
-  def isDbInitialized: Boolean = (db ne null)
-
-  def initDb(): Unit =
-    if (!isDbInitialized) {
+  private def lmdb(): Lmdb = _lmdb match {
+    case OptionVal.Some(l) ⇒ l
+    case OptionVal.None ⇒
       val t0 = System.nanoTime()
-      env = {
+      log.info("Using durable data in LMDB directory [{}]", dir.getCanonicalPath)
+      val env = {
         val mapSize = config.getBytes("lmdb.map-size")
         dir.mkdirs()
         Env.create()
@@ -147,20 +147,26 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
           .open(dir, EnvFlags.MDB_NOLOCK)
       }
 
-      db = env.openDbi("ddata", DbiFlags.MDB_CREATE)
+      val db = env.openDbi("ddata", DbiFlags.MDB_CREATE)
 
-      keyBuffer = ByteBuffer.allocateDirect(env.getMaxKeySize)
-      valueBuffer = ByteBuffer.allocateDirect(100 * 1024) // will grow when needed
+      val keyBuffer = ByteBuffer.allocateDirect(env.getMaxKeySize)
+      val valueBuffer = ByteBuffer.allocateDirect(100 * 1024) // will grow when needed
 
       if (log.isDebugEnabled)
         log.debug("Init of LMDB in directory [{}] took [{} ms]", dir.getCanonicalPath,
           TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
-    }
+      val l = Lmdb(env, db, keyBuffer, valueBuffer)
+      _lmdb = OptionVal.Some(l)
+      l
+  }
+
+  def isDbInitialized: Boolean = _lmdb.isDefined
 
   def ensureValueBufferSize(size: Int): Unit = {
+    val valueBuffer = lmdb().valueBuffer
     if (valueBuffer.remaining < size) {
       DirectByteBufferPool.tryCleanDirectByteBuffer(valueBuffer)
-      valueBuffer = ByteBuffer.allocateDirect(size * 2)
+      _lmdb = OptionVal.Some(lmdb.copy(valueBuffer = ByteBuffer.allocateDirect(size * 2)))
     }
   }
 
@@ -177,10 +183,11 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
     super.postStop()
     writeBehind()
     if (isDbInitialized) {
-      Try(db.close())
-      Try(env.close())
-      DirectByteBufferPool.tryCleanDirectByteBuffer(keyBuffer)
-      DirectByteBufferPool.tryCleanDirectByteBuffer(valueBuffer)
+      val l = lmdb()
+      Try(l.db.close())
+      Try(l.env.close())
+      DirectByteBufferPool.tryCleanDirectByteBuffer(l.keyBuffer)
+      DirectByteBufferPool.tryCleanDirectByteBuffer(l.valueBuffer)
     }
   }
 
@@ -189,11 +196,11 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   def init: Receive = {
     case LoadAll ⇒
       if (dir.exists && dir.list().length > 0) {
-        initDb()
+        val l = lmdb()
         val t0 = System.nanoTime()
-        val tx = env.txnRead()
+        val tx = l.env.txnRead()
         try {
-          val iter = db.iterate(tx)
+          val iter = l.db.iterate(tx)
           try {
             var n = 0
             val loadData = LoadData(iter.asScala.map { entry ⇒
@@ -232,7 +239,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   def active: Receive = {
     case Store(key, data, reply) ⇒
       try {
-        initDb()
+        lmdb() // init
         if (writeBehindInterval.length == 0) {
           dbPut(OptionVal.None, key, data)
         } else {
@@ -261,24 +268,26 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
 
   def dbPut(tx: OptionVal[Txn[ByteBuffer]], key: KeyId, data: DurableDataEnvelope): Unit = {
     try {
-      keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
       val value = serializer.toBinary(data)
       ensureValueBufferSize(value.length)
-      valueBuffer.put(value).flip()
+      val l = lmdb()
+      l.keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
+      l.valueBuffer.put(value).flip()
       tx match {
-        case OptionVal.None    ⇒ db.put(keyBuffer, valueBuffer)
-        case OptionVal.Some(t) ⇒ db.put(t, keyBuffer, valueBuffer)
+        case OptionVal.None    ⇒ l.db.put(l.keyBuffer, l.valueBuffer)
+        case OptionVal.Some(t) ⇒ l.db.put(t, l.keyBuffer, l.valueBuffer)
       }
     } finally {
-      keyBuffer.clear()
-      valueBuffer.clear()
+      val l = lmdb()
+      l.keyBuffer.clear()
+      l.valueBuffer.clear()
     }
   }
 
   def writeBehind(): Unit = {
     if (!pending.isEmpty()) {
       val t0 = System.nanoTime()
-      val tx = env.txnWrite()
+      val tx = lmdb().env.txnWrite()
       try {
         val iter = pending.entrySet.iterator
         while (iter.hasNext) {
