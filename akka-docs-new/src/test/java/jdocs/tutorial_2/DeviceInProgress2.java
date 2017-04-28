@@ -61,7 +61,7 @@ class Device extends AbstractActor {
   public Receive createReceive() {
     return receiveBuilder()
             .match(ReadTemperature.class, r -> {
-              sender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
+              getSender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
             })
             .build();
   }

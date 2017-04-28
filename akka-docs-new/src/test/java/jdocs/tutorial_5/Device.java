@@ -81,7 +81,7 @@ public class Device extends AbstractActor {
     return receiveBuilder()
             .match(RequestTrackDevice.class, r -> {
               if (this.groupId.equals(r.groupId) && this.deviceId.equals(r.deviceId)) {
-                sender().tell(new DeviceRegistered(), getSelf());
+                getSender().tell(new DeviceRegistered(), getSelf());
               } else {
                 log.warning(
                         "Ignoring TrackDevice request for {}-{}.This actor is responsible for {}-{}.",
@@ -92,10 +92,10 @@ public class Device extends AbstractActor {
             .match(RecordTemperature.class, r -> {
               log.info("Recorded temperature reading {} with {}", r.value, r.requestId);
               lastTemperatureReading = Optional.of(r.value);
-              sender().tell(new TemperatureRecorded(r.requestId), getSelf());
+              getSender().tell(new TemperatureRecorded(r.requestId), getSelf());
             })
             .match(ReadTemperature.class, r -> {
-              sender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
+              getSender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
             })
             .build();
   }

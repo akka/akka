@@ -83,10 +83,10 @@ public class Device extends AbstractActor {
             .match(RecordTemperature.class, r -> {
               log.info("Recorded temperature reading {} with {}", r.value, r.requestId);
               lastTemperatureReading = Optional.of(r.value);
-              sender().tell(new TemperatureRecorded(r.requestId), getSelf());
+              getSender().tell(new TemperatureRecorded(r.requestId), getSelf());
             })
             .match(ReadTemperature.class, r -> {
-              sender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
+              getSender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
             })
             .build();
   }

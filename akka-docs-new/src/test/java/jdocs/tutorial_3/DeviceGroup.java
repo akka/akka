@@ -96,7 +96,7 @@ public class DeviceGroup extends AbstractActor {
               }
             })
             .match(RequestDeviceList.class, r -> {
-              sender().tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()), getSelf());
+              getSender().tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()), getSelf());
             })
             .match(Terminated.class, t -> {
               ActorRef deviceActor = t.getActor();
