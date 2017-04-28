@@ -1,48 +1,32 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed
-package scaladsl
+package akka.typed.javadsl
 
-import scala.reflect.ClassTag
-
-import akka.annotation.ApiMayChange
-import akka.annotation.DoNotInherit
+import java.util.function.{ Function ⇒ JFunction }
+import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
+import akka.japi.function.Procedure2
+import akka.typed.Behavior
+import akka.typed.ExtensibleBehavior
+import akka.typed.Signal
 import akka.typed.internal.BehaviorImpl
+import akka.typed.ActorRef
+import akka.typed.SupervisorStrategy
+import scala.reflect.ClassTag
+import akka.typed.internal.Restarter
+import akka.japi.pf.PFBuilder
 
-@ApiMayChange
 object Actor {
-  import Behavior._
 
   private val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
   private def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
-
-  final implicit class BehaviorDecorators[T](val behavior: Behavior[T]) extends AnyVal {
-    /**
-     * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
-     * PartialFunction decides which message to pull in (those that it is defined
-     * at) and may transform the incoming message to place them into the wrapped
-     * Behavior’s type hierarchy. Signals are not transformed.
-     *
-     * Example:
-     * {{{
-     * Immutable[String] { (ctx, msg) => println(msg); Same }.widen[Number] {
-     *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
-     *   case i: BigInteger => s"BigInteger(&dollar;i)"
-     *   // drop all other kinds of Number
-     * }
-     * }}}
-     */
-    def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
-      BehaviorImpl.Widened(behavior, matcher)
-  }
 
   /**
    * Wrap a behavior factory so that it runs upon PreStart, i.e. behavior creation
    * is deferred to the child actor instead of running within the parent.
    */
-  def Deferred[T](factory: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
-    Behavior.DeferredBehavior(factory)
+  def deferred[T](factory: akka.japi.function.Function[ActorContext[T], Behavior[T]]): Behavior[T] =
+    Behavior.DeferredBehavior(ctx ⇒ factory.apply(ctx))
 
   /**
    * Factory for creating a [[MutableBehavior]] that typically holds mutable state as
@@ -56,19 +40,19 @@ object Actor {
    *          behavior factory that takes the child actor’s context as argument
    * @return the deferred behavior
    */
-  def Mutable[T](factory: ActorContext[T] ⇒ MutableBehavior[T]): Behavior[T] =
-    Deferred(factory)
+  def mutable[T](factory: akka.japi.function.Function[ActorContext[T], MutableBehavior[T]]): Behavior[T] =
+    deferred(factory)
 
   /**
    * Mutable behavior can be implemented by extending this class and implement the
    * abstract method [[MutableBehavior#onMessage]] and optionally override
    * [[MutableBehavior#onSignal]].
    *
-   * Instances of this behavior should be created via [[Actor#Mutable]] and if
+   * Instances of this behavior should be created via [[Actor#mutable]] and if
    * the [[ActorContext]] is needed it can be passed as a constructor parameter
    * from the factory function.
    *
-   * @see [[Actor#Mutable]]
+   * @see [[Actor#mutable]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
     @throws(classOf[Exception])
@@ -100,14 +84,15 @@ object Actor {
      *
      * The returned behavior can in addition to normal behaviors be one of the canned special objects:
      *
-     *  * returning `Stopped` will terminate this Behavior
+     *  * returning `stopped` will terminate this Behavior
      *  * returning `this` or `Same` designates to reuse the current Behavior
-     *  * returning `Unhandled` keeps the same Behavior and signals that the message was not yet handled
+     *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
      *
-     * By default, partial function is empty and does not handle any signals.
+     * By default, this method returns `unhandled`.
      */
     @throws(classOf[Exception])
-    def onSignal: PartialFunction[Signal, Behavior[T]] = PartialFunction.empty
+    def onSignal(msg: Signal): Behavior[T] =
+      unhandled
   }
 
   /**
@@ -116,7 +101,7 @@ object Actor {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
-  def Same[T]: Behavior[T] = Behavior.same
+  def same[T]: Behavior[T] = Behavior.same
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -124,7 +109,7 @@ object Actor {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
-  def Unhandled[T]: Behavior[T] = Behavior.unhandled
+  def unhandled[T]: Behavior[T] = Behavior.unhandled
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -133,17 +118,33 @@ object Actor {
    * signal that results from stopping this actor will NOT be passed to the
    * current behavior, it will be effectively ignored.
    */
-  def Stopped[T]: Behavior[T] = Behavior.stopped
+  def stopped[T]: Behavior[T] = Behavior.stopped
 
   /**
    * A behavior that treats every incoming message as unhandled.
    */
-  def Empty[T]: Behavior[T] = Behavior.empty
+  def empty[T]: Behavior[T] = Behavior.empty
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
    */
-  def Ignore[T]: Behavior[T] = Behavior.ignore
+  def ignore[T]: Behavior[T] = Behavior.ignore
+
+  /**
+   * Construct an actor behavior that can react to incoming messages but not to
+   * lifecycle signals. After spawning this actor from another actor (or as the
+   * guardian of an [[akka.typed.ActorSystem]]) it will be executed within an
+   * [[ActorContext]] that allows access to the system, spawning and watching
+   * other actors, etc.
+   *
+   * This constructor is called immutable because the behavior instance doesn't
+   * have or close over any mutable state. Processing the next message
+   * results in a new behavior that can potentially be different from this one.
+   * State is updated by returning a new behavior that holds the new immutable
+   * state.
+   */
+  def immutable[T](onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]]): Behavior[T] =
+    new BehaviorImpl.ImmutableBehavior((ctx, msg) ⇒ onMessage.apply(ctx, msg))
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
@@ -158,14 +159,12 @@ object Actor {
    * State is updated by returning a new behavior that holds the new immutable
    * state.
    */
-  def Immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Immutable[T] =
-    new Immutable(onMessage)
-
-  final class Immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
-    extends BehaviorImpl.ImmutableBehavior[T](onMessage) {
-
-    def onSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
-      new BehaviorImpl.ImmutableBehavior(onMessage, onSignal)
+  def immutable[T](
+    onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
+    onSignal:  JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
+    new BehaviorImpl.ImmutableBehavior(
+      (ctx, msg) ⇒ onMessage.apply(ctx, msg),
+      { case (ctx, sig) ⇒ onSignal.apply(ctx, sig) })
   }
 
   /**
@@ -173,11 +172,15 @@ object Actor {
    * some action upon each received message or signal. It is most commonly used
    * for logging or tracing what a certain Actor does.
    */
-  def Tap[T](
-    onMessage: Function2[ActorContext[T], T, _],
-    onSignal:  Function2[ActorContext[T], Signal, _],
-    behavior:  Behavior[T]): Behavior[T] =
-    BehaviorImpl.Tap(onMessage, onSignal, behavior)
+  def tap[T](
+    onMessage: Procedure2[ActorContext[T], T],
+    onSignal:  Procedure2[ActorContext[T], Signal],
+    behavior:  Behavior[T]): Behavior[T] = {
+    BehaviorImpl.Tap(
+      (ctx, msg) ⇒ onMessage.apply(ctx, msg),
+      (ctx, sig) ⇒ onSignal.apply(ctx, sig),
+      behavior)
+  }
 
   /**
    * Behavior decorator that copies all received message to the designated
@@ -185,8 +188,12 @@ object Actor {
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  def Monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
-    Tap((_, msg) ⇒ monitor ! msg, unitFunction, behavior)
+  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] = {
+    BehaviorImpl.Tap(
+      (ctx, msg) ⇒ monitor ! msg,
+      unitFunction,
+      behavior)
+  }
 
   /**
    * Wrap the given behavior such that it is restarted (i.e. reset to its
@@ -196,21 +203,41 @@ object Actor {
    *
    * It is possible to specify different supervisor strategies, such as restart,
    * resume, backoff.
+   */
+  def restarter[T, Thr <: Throwable](
+    clazz:           Class[Thr],
+    strategy:        SupervisorStrategy,
+    initialBehavior: Behavior[T]): Behavior[T] = {
+    Restarter(Behavior.validateAsInitial(initialBehavior), strategy)(ClassTag(clazz))
+  }
+
+  /**
+   * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
+   * PartialFunction decides which message to pull in (those that it is defined
+   * at) and may transform the incoming message to place them into the wrapped
+   * Behavior’s type hierarchy. Signals are not transformed.
    *
    * Example:
    * {{{
-   * val dbConnector: Behavior[DbCommand] = ...
-   * val dbRestarts = Restarter[DbException]().wrap(dbConnector)
+   * Behavior&lt;String> s = immutable((ctx, msg) -> {
+   *     System.out.println(msg);
+   *     return same();
+   *   });
+   * Behavior&lt;Number> n = widened(s, pf -> pf.
+   *         match(BigInteger.class, i -> "BigInteger(" + i + ")").
+   *         match(BigDecimal.class, d -> "BigDecimal(" + d + ")")
+   *         // drop all other kinds of Number
+   *     );
    * }}}
+   *
+   * @param behavior
+   *          the behavior that will receive the selected messages
+   * @param selector
+   *          a partial function builder for describing the selection and
+   *          transformation
+   * @return a behavior of the widened type
    */
-  def Restarter[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy = SupervisorStrategy.restart): Restarter[Thr] =
-    new Restarter(implicitly, strategy)
-
-  final class Restarter[Thr <: Throwable: ClassTag](c: ClassTag[Thr], strategy: SupervisorStrategy) {
-    def wrap[T](b: Behavior[T]): Behavior[T] = akka.typed.internal.Restarter(Behavior.validateAsInitial(b), strategy)(c)
-  }
-
-  // TODO
-  // final case class Selective[T](timeout: FiniteDuration, selector: PartialFunction[T, Behavior[T]], onTimeout: () ⇒ Behavior[T])
+  def widened[T, U](behavior: Behavior[T], selector: JFunction[PFBuilder[U, T], PFBuilder[U, T]]): Behavior[U] =
+    BehaviorImpl.Widened(behavior, selector.apply(new PFBuilder).build())
 
 }
