@@ -8,7 +8,7 @@ import java.nio.file.{ OpenOption, Path }
 import java.util
 import java.util.concurrent.CompletionStage
 
-import akka.stream.{ IOResult, javadsl, scaladsl }
+import akka.stream.{ ActorAttributes, IOResult, javadsl, scaladsl }
 import akka.util.ByteString
 
 import scala.collection.JavaConverters._
@@ -20,7 +20,8 @@ object FileIO {
 
   /**
    * Creates a Sink that writes incoming [[ByteString]] elements to the given file.
-   * Overwrites existing files, if you want to append to an existing file use [[#file(Path, util.Set[OpenOption])]].
+   * Overwrites existing files by truncating their contents, if you want to append to an existing file use
+   * [[#toFile(File, util.Set[OpenOption])]] with [[java.nio.file.StandardOpenOption.APPEND]].
    *
    * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -35,7 +36,8 @@ object FileIO {
 
   /**
    * Creates a Sink that writes incoming [[ByteString]] elements to the given file path.
-   * Overwrites existing files, if you want to append to an existing file use [[#file(Path, util.Set[OpenOption])]].
+   * Overwrites existing files by truncating their contents, if you want to append to an existing file
+   * [[#toPath(Path, util.Set[OpenOption])]] with [[java.nio.file.StandardOpenOption.APPEND]].
    *
    * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -58,7 +60,7 @@ object FileIO {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * @param f The file to write to
-   * @param options File open options
+   * @param options File open options, see [[java.nio.file.StandardOpenOption]]
    */
   @deprecated("Use `toPath` instead.", "2.4.5")
   def toFile[Opt <: OpenOption](f: File, options: util.Set[Opt]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
@@ -74,7 +76,7 @@ object FileIO {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * @param f The file path to write to
-   * @param options File open options
+   * @param options File open options, see [[java.nio.file.StandardOpenOption]]
    */
   def toPath[Opt <: OpenOption](f: Path, options: util.Set[Opt]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
     new Sink(scaladsl.FileIO.toPath(f, options.asScala.toSet).toCompletionStage())
@@ -89,7 +91,7 @@ object FileIO {
    * set it for a given Source by using [[ActorAttributes]].
    *
    * @param f The file path to write to
-   * @param options File open options
+   * @param options File open options, see [[java.nio.file.StandardOpenOption]]
    * @param startPosition startPosition the start position to read from, defaults to 0
    */
   def toPath[Opt <: OpenOption](f: Path, options: util.Set[Opt], startPosition: Long): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
