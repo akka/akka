@@ -14,10 +14,11 @@ import akka.actor.PoisonPill;
 import akka.testkit.javadsl.TestKit;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 import static jdocs.tutorial_5.DeviceGroupQueryTest.assertEqualTemperatures;
 
@@ -48,13 +49,13 @@ public class DeviceGroupTest extends JUnitSuite {
     groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device2"), probe.getRef());
     probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
     ActorRef deviceActor2 = probe.getLastSender();
-    Assert.assertNotEquals(deviceActor1, deviceActor2);
+    assertNotEquals(deviceActor1, deviceActor2);
 
     // Check that the device actors are working
     deviceActor1.tell(new Device.RecordTemperature(0L, 1.0), probe.getRef());
-    Assert.assertEquals(0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
+    assertEquals(0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
     deviceActor2.tell(new Device.RecordTemperature(1L, 2.0), probe.getRef());
-    Assert.assertEquals(1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
+    assertEquals(1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
   }
 
   @Test
@@ -78,7 +79,7 @@ public class DeviceGroupTest extends JUnitSuite {
     groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
     probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
     ActorRef deviceActor2 = probe.getLastSender();
-    Assert.assertEquals(deviceActor1, deviceActor2);
+    assertEquals(deviceActor1, deviceActor2);
   }
 
   @Test
@@ -94,8 +95,8 @@ public class DeviceGroupTest extends JUnitSuite {
 
     groupActor.tell(new DeviceGroup.RequestDeviceList(0L), probe.getRef());
     DeviceGroup.ReplyDeviceList reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-    Assert.assertEquals(0L, reply.requestId);
-    Assert.assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
+    assertEquals(0L, reply.requestId);
+    assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
   }
 
   @Test
@@ -112,8 +113,8 @@ public class DeviceGroupTest extends JUnitSuite {
 
     groupActor.tell(new DeviceGroup.RequestDeviceList(0L), probe.getRef());
     DeviceGroup.ReplyDeviceList reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-    Assert.assertEquals(0L, reply.requestId);
-    Assert.assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
+    assertEquals(0L, reply.requestId);
+    assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
 
     probe.watch(toShutDown);
     toShutDown.tell(PoisonPill.getInstance(), ActorRef.noSender());
@@ -121,8 +122,8 @@ public class DeviceGroupTest extends JUnitSuite {
 
     groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
     reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-    Assert.assertEquals(1L, reply.requestId);
-    Assert.assertEquals(Stream.of("device2").collect(Collectors.toSet()), reply.ids);
+    assertEquals(1L, reply.requestId);
+    assertEquals(Stream.of("device2").collect(Collectors.toSet()), reply.ids);
   }
 
   @Test
@@ -144,14 +145,14 @@ public class DeviceGroupTest extends JUnitSuite {
 
     // Check that the device actors are working
     deviceActor1.tell(new Device.RecordTemperature(0L, 1.0), probe.getRef());
-    Assert.assertEquals(0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
+    assertEquals(0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
     deviceActor2.tell(new Device.RecordTemperature(1L, 2.0), probe.getRef());
-    Assert.assertEquals(1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
+    assertEquals(1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
     // No temperature for device 3
 
     groupActor.tell(new DeviceGroup.RequestAllTemperatures(0L), probe.getRef());
     DeviceGroup.RespondAllTemperatures response = probe.expectMsgClass(DeviceGroup.RespondAllTemperatures.class);
-    Assert.assertEquals(0L, response.requestId);
+    assertEquals(0L, response.requestId);
 
     Map<String, DeviceGroup.TemperatureReading> expectedTemperatures = new HashMap<>();
     expectedTemperatures.put("device1", new DeviceGroup.Temperature(1.0));
