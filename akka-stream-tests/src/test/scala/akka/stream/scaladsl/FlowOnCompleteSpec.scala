@@ -78,6 +78,18 @@ class FlowOnCompleteSpec extends StreamSpec with ScriptedTest {
       onCompleteProbe.expectMsg(Success(Done))
     }
 
+    "yield error on abrupt termination" in {
+      val mat = ActorMaterializer()
+      val onCompleteProbe = TestProbe()
+      val p = TestPublisher.manualProbe[Int]()
+      Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()(mat)
+      val proc = p.expectSubscription()
+      proc.expectRequest()
+      mat.shutdown()
+
+      onCompleteProbe.expectMsgType[Failure[_]]
+    }
+
   }
 
 }

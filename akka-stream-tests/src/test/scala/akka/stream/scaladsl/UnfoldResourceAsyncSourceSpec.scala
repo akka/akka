@@ -15,6 +15,7 @@ import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestLatch
 import akka.util.ByteString
 
 import scala.concurrent.{ Await, Future, Promise }
@@ -246,6 +247,25 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       sub.request(61)
       c.expectNextN(60)
       c.expectError()
+    }
+
+    "close resource when stream is abruptly terminated" in {
+      val closeLatch = TestLatch(1)
+      val mat = ActorMaterializer()
+      val p = Source.unfoldResourceAsync[String, BufferedReader](
+        open,
+        read,
+        reader ⇒ Future.successful {
+          closeLatch.countDown()
+          Done
+        })
+        .runWith(Sink.asPublisher(false))(mat)
+      val c = TestSubscriber.manualProbe[String]()
+      p.subscribe(c)
+
+      mat.shutdown()
+
+      Await.ready(closeLatch, remainingOrDefault)
     }
   }
   override def afterTermination(): Unit = {

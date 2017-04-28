@@ -198,9 +198,13 @@ object GraphStageLogic {
  *  * The lifecycle hooks [[preStart()]] and [[postStop()]]
  *  * Methods for performing stream processing actions, like pulling or pushing elements
  *
- *  The stage logic is always once all its input and output ports have been closed, i.e. it is not possible to
- *  keep the stage alive for further processing once it does not have any open ports. This can be changed by
- *  overriding `keepGoingAfterAllPortsClosed` to return true.
+ * The stage logic is completed once all its input and output ports have been closed. This can be changed by
+ * setting `setKeepGoing` to true.
+ *
+ * The `postStop` lifecycle hook on the logic itself is called once all ports are closed. This is the only tear down
+ * callback that is guaranteed to happen, if the actor system or the materializer is terminated the handlers may never
+ * see any callbacks to `onUpstreamFailure`, `onUpstreamFinish` or `onDownstreamFinish`. Therefore stage resource
+ * cleanup should always be done in `postStop`.
  */
 abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: Int) {
   import GraphInterpreter._
@@ -489,7 +493,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
-   * then stops the stage, then [[postStop()]] is called.
+   * then marks the stage as stopped.
    */
   final def completeStage(): Unit = {
     var i = 0
@@ -507,7 +511,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Automatically invokes [[cancel()]] or [[fail()]] on all the input or output ports that have been called,
-   * then stops the stage, then [[postStop()]] is called.
+   * then marks the stage as stopped.
    */
   final def failStage(ex: Throwable): Unit = {
     var i = 0

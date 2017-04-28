@@ -290,21 +290,30 @@ object Sink {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
           new GraphStageLogic(shape) with InHandler with OutHandler {
 
+            var completionSignalled = false
+
             override def onPush(): Unit = pull(in)
 
             override def onPull(): Unit = pull(in)
 
             override def onUpstreamFailure(cause: Throwable): Unit = {
               callback(Failure(cause))
+              completionSignalled = true
               failStage(cause)
             }
 
             override def onUpstreamFinish(): Unit = {
               callback(Success(Done))
+              completionSignalled = true
               completeStage()
             }
 
+            override def postStop(): Unit = {
+              if (!completionSignalled) callback(Failure(new AbruptStageTerminationException(this)))
+            }
+
             setHandlers(in, out, this)
+
           }
       }
     }
