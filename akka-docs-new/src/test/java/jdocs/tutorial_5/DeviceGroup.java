@@ -17,9 +17,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class DeviceGroup extends AbstractActor {
-  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
-  String groupId;
+  final String groupId;
 
   public DeviceGroup(String groupId) {
     this.groupId = groupId;

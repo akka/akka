@@ -25,11 +25,11 @@ public class DeviceGroupQuery extends AbstractActor {
   public static final class CollectionTimeout {
   }
 
-  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
-  Map<ActorRef, String> actorToDeviceId;
-  Long requestId;
-  ActorRef requester;
+  final Map<ActorRef, String> actorToDeviceId;
+  final Long requestId;
+  final ActorRef requester;
 
   Cancellable queryTimeoutTimer;
 

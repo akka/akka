@@ -14,7 +14,7 @@ import jdocs.tutorial_4.DeviceManager.RequestTrackDevice;
 import java.util.Optional;
 
 public class Device extends AbstractActor {
-  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   final String groupId;
 

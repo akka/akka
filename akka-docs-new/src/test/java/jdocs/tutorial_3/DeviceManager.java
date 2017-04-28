@@ -16,7 +16,7 @@ import akka.event.LoggingAdapter;
 
 //#device-manager-full
 public class DeviceManager extends AbstractActor {
-  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   public static Props props() {
     return Props.create(DeviceManager.class);

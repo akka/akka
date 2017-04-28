@@ -11,8 +11,8 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-class IotSupervisor extends AbstractActor {
-  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+public class IotSupervisor extends AbstractActor {
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   public static Props props() {
     return Props.create(IotSupervisor.class);

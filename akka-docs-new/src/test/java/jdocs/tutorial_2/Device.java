@@ -14,7 +14,7 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 public class Device extends AbstractActor {
-  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   final String groupId;
 

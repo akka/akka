@@ -10,11 +10,11 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 class Device extends AbstractActor {
-  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
-  String groupId;
+  final String groupId;
 
-  String deviceId;
+  final String deviceId;
 
   public Device(String groupId, String deviceId) {
     this.groupId = groupId;

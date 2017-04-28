@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DeviceManager extends AbstractActor {
-  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+  private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   public static Props props() {
     return Props.create(DeviceManager.class);
