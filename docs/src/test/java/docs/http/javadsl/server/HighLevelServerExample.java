@@ -28,7 +28,6 @@ public class HighLevelServerExample extends AllDirectives {
     // boot up server using the route as defined below
     ActorSystem system = ActorSystem.create();
 
-    // HttpApp.bindRoute expects a route being provided by HttpApp.createRoute
     final HighLevelServerExample app = new HighLevelServerExample();
 
     final Http http = Http.get(system);

@@ -26,7 +26,6 @@ public class HighLevelServerBindFailureExample {
     final ActorSystem system = ActorSystem.create();
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-    // HttpApp.bindRoute expects a route being provided by HttpApp.createRoute
     final HighLevelServerExample app = new HighLevelServerExample();
     final Route route = app.createRoute();
 

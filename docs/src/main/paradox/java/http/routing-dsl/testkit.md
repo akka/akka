@@ -20,8 +20,8 @@ To see the testkit in action consider the following simple calculator app servic
 
 @@snip [MyAppService.java](../../../../../test/java/docs/http/javadsl/server/testkit/MyAppService.java) { #simple-app }
 
-The app extends from `HttpApp` which brings all of the directives into scope. Method `createRoute`
-needs to be implemented to return the complete route of the app.
+`MyAppService` extends from `AllDirectives` which brings all of the directives into scope. We define a method called `createRoute`
+that provides the routes to serve to `bindAndHandle`.
 
 Here's how you would test that service:
 

@@ -55,7 +55,7 @@ Once you have obtained the server certificate, using it is as simple as preparin
 and either setting it as the default one to be used by all servers started by the given `Http` extension
 or passing it in explicitly when binding the server.
 
-The below example shows how setting up HTTPS works when using the `akka.http.javadsl.server.HttpApp` convenience class.
+The below example shows how setting up HTTPS works.
 Firstly you will create and configure an instance of `akka.http.javadsl.HttpsConnectionContext` :
 
 @@snip [SimpleServerApp.java](../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
