@@ -1471,7 +1471,8 @@ private[stream] object Collect {
     override def onUpstreamFinish(): Unit = {
       finished = true
       if (groupEmitted) completeStage()
-      else closeGroup()
+      else if (elements > 0) closeGroup()
+      else completeStage()
     }
 
     override protected def onTimer(timerKey: Any) = if (elements > 0) closeGroup()
