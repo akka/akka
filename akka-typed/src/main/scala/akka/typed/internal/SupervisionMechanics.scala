@@ -90,7 +90,7 @@ private[typed] trait SupervisionMechanics[T] {
      *
      * Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
      */
-    try if ((a ne null) && !a.isInstanceOf[DeferredBehavior[_]]) Behavior.canonicalize(Behavior.interpretSignal(a, ctx, PostStop), a, ctx)
+    try if ((a ne null) && !a.isInstanceOf[DeferredBehavior[_]]) Behavior.interpretSignal(a, ctx, PostStop)
     catch { case NonFatal(ex) ⇒ publish(Logging.Error(ex, self.path.toString, clazz(a), "failure during PostStop")) }
     finally try tellWatchersWeDied()
     finally try parent.sendSystem(DeathWatchNotification(self, failed))

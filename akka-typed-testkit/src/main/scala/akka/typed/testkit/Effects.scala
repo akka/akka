@@ -9,7 +9,10 @@ import akka.typed.{ ActorContext, ActorRef, ActorSystem, Behavior, DeploymentCon
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.util.control.Exception.Catcher
+import scala.util.control.NonFatal
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import akka.typed.PostStop
 
 /**
  * All tracked effects must extend implement this type. It is deliberately
@@ -56,12 +59,23 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
   def currentBehavior: Behavior[T] = current
   def isAlive: Boolean = Behavior.isAlive(current)
 
+  private def handleException: Catcher[Unit] = {
+    case NonFatal(e) ⇒
+      try Behavior.canonicalize(Behavior.interpretSignal(current, this, PostStop), current, this) // TODO why canonicalize here?
+      catch { case NonFatal(ex) ⇒ /* ignore, real is logging */ }
+      throw e
+  }
+
   def run(msg: T): Unit = {
-    current = Behavior.canonicalize(Behavior.interpretMessage(current, this, msg), current, this)
+    try {
+      current = Behavior.canonicalize(Behavior.interpretMessage(current, this, msg), current, this)
+    } catch handleException
   }
 
   def signal(signal: Signal): Unit = {
-    current = Behavior.canonicalize(Behavior.interpretSignal(current, this, signal), current, this)
+    try {
+      current = Behavior.canonicalize(Behavior.interpretSignal(current, this, signal), current, this)
+    } catch handleException
   }
 
   override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] = {
