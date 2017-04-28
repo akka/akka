@@ -19,7 +19,7 @@ public class IotMain {
 
       supervisor.tell(new DeviceManager.RequestTrackDevice("mygroup", "device1"), ActorRef.noSender());
 
-      // Exit the system after ENTER is pressed
+      System.out.println("Press ENTER to exit the system");
       System.in.read();
     } finally {
       system.terminate();

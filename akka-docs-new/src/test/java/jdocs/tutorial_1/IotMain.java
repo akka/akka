@@ -18,7 +18,8 @@ public class IotMain {
     try {
       // Create top level supervisor
       ActorRef supervisor = system.actorOf(IotSupervisor.props(), "iot-supervisor");
-      // Exit the system after ENTER is pressed
+
+      System.out.println("Press ENTER to exit the system");
       System.in.read();
     } finally {
       system.terminate();

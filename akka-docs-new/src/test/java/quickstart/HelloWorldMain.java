@@ -16,7 +16,8 @@ public class HelloWorldMain {
       ActorRef helloWorldActor = system.actorOf(Props.create(HelloWorldActor.class), "HelloWorldActor");
       // Send message to actor
       helloWorldActor.tell("World", ActorRef.noSender());
-      // Exit the system after ENTER is pressed
+
+      System.out.println("Press ENTER to exit the system");
       System.in.read();
     } finally {
       system.terminate();
