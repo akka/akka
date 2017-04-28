@@ -8,6 +8,9 @@ import akka.typed.ActorContext;
 
 import static akka.typed.javadsl.Actor.*;
 
+import java.util.concurrent.TimeUnit;
+import scala.concurrent.duration.Duration;
+
 public class ActorCompile {
 
   interface MyMsg {}
@@ -53,6 +56,13 @@ public class ActorCompile {
           return same();
         });
       } else return unhandled();
+    });
+  }
+
+  {
+    Behavior<MyMsg> b = Actor.withTimers(timers -> {
+      timers.startPeriodicTimer("key", new MyMsgB("tick"), Duration.create(1, TimeUnit.SECONDS));
+      return Actor.ignore();
     });
   }
 

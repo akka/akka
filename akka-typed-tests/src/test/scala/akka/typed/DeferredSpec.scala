@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import akka.typed.scaladsl.Actor
+import akka.typed.scaladsl.Actor.BehaviorDecorators
 import akka.typed.scaladsl.AskPattern._
 import akka.typed.testkit.EffectfulActorContext
 import akka.typed.testkit.TestKitSettings
@@ -62,15 +63,9 @@ class DeferredSpec extends TypedSpec {
 
   }
 
-  trait RealTests {
+  trait RealTests extends StartSupport {
     implicit def system: ActorSystem[TypedSpec.Command]
     implicit val testSettings = TestKitSettings(system)
-
-    val nameCounter = Iterator.from(0)
-    def nextName(): String = s"a-${nameCounter.next()}"
-
-    def start(behv: Behavior[Command]): ActorRef[Command] =
-      Await.result(system ? TypedSpec.Create(behv, nextName()), 3.seconds.dilated)
 
     def `must create underlying`(): Unit = {
       val probe = TestProbe[Event]("evt")
@@ -94,6 +89,51 @@ class DeferredSpec extends TypedSpec {
       probe.expectMsg(Started)
       ref ! Ping
       probe.expectNoMsg(100.millis)
+    }
+
+    def `must create underlying when nested`(): Unit = {
+      val probe = TestProbe[Event]("evt")
+      val behv = Actor.deferred[Command] { _ ⇒
+        Actor.deferred[Command] { _ ⇒
+          probe.ref ! Started
+          target(probe.ref)
+        }
+      }
+      start(behv)
+      probe.expectMsg(Started)
+    }
+
+    def `must undefer underlying when wrapped by widen`(): Unit = {
+      val probe = TestProbe[Event]("evt")
+      val behv = Actor.deferred[Command] { _ ⇒
+        probe.ref ! Started
+        target(probe.ref)
+      }.widen[Command] {
+        case m ⇒ m
+      }
+      probe.expectNoMsg(100.millis) // not yet
+      val ref = start(behv)
+      // it's supposed to be created immediately (not waiting for first message)
+      probe.expectMsg(Started)
+      ref ! Ping
+      probe.expectMsg(Pong)
+    }
+
+    def `must undefer underlying when wrapped by monitor`(): Unit = {
+      // monitor is implemented with tap, so this is testing both
+      val probe = TestProbe[Event]("evt")
+      val monitorProbe = TestProbe[Command]("monitor")
+      val behv = Actor.monitor(monitorProbe.ref, Actor.deferred[Command] { _ ⇒
+        probe.ref ! Started
+        target(probe.ref)
+      })
+      probe.expectNoMsg(100.millis) // not yet
+      val ref = start(behv)
+      // it's supposed to be created immediately (not waiting for first message)
+      probe.expectMsg(Started)
+      ref ! Ping
+      monitorProbe.expectMsg(Ping)
+      probe.expectMsg(Pong)
     }
 
   }

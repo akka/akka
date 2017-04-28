@@ -16,6 +16,7 @@ import akka.typed.SupervisorStrategy
 import scala.reflect.ClassTag
 import akka.typed.internal.Restarter
 import akka.japi.pf.PFBuilder
+import akka.typed.internal.TimerSchedulerImpl
 
 object Actor {
 
@@ -177,7 +178,7 @@ object Actor {
     onMessage: Procedure2[ActorContext[T], T],
     onSignal:  Procedure2[ActorContext[T], Signal],
     behavior:  Behavior[T]): Behavior[T] = {
-    BehaviorImpl.Tap(
+    BehaviorImpl.tap(
       (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
       (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig),
       behavior)
@@ -190,7 +191,7 @@ object Actor {
    * wrapped in a `monitor` call again.
    */
   def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] = {
-    BehaviorImpl.Tap(
+    BehaviorImpl.tap(
       (ctx, msg) ⇒ monitor ! msg,
       unitFunction,
       behavior)
@@ -239,6 +240,15 @@ object Actor {
    * @return a behavior of the widened type
    */
   def widened[T, U](behavior: Behavior[T], selector: JFunction[PFBuilder[U, T], PFBuilder[U, T]]): Behavior[U] =
-    BehaviorImpl.Widened(behavior, selector.apply(new PFBuilder).build())
+    BehaviorImpl.widened(behavior, selector.apply(new PFBuilder).build())
+
+  /**
+   * Support for scheduled `self` messages in an actor.
+   * It takes care of the lifecycle of the timers such as cancelling them when the actor
+   * is restarted or stopped.
+   * @see [[TimerScheduler]]
+   */
+  def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[T], Behavior[T]]): Behavior[T] =
+    TimerSchedulerImpl.withTimers(timers ⇒ factory.apply(timers))
 
 }

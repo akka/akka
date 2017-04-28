@@ -9,6 +9,7 @@ import scala.reflect.ClassTag
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.typed.internal.BehaviorImpl
+import akka.typed.internal.TimerSchedulerImpl
 
 @ApiMayChange
 object Actor {
@@ -34,7 +35,7 @@ object Actor {
      * }}}
      */
     def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
-      BehaviorImpl.Widened(behavior, matcher)
+      BehaviorImpl.widened(behavior, matcher)
   }
 
   /**
@@ -175,9 +176,9 @@ object Actor {
    */
   def tap[T](
     onMessage: Function2[ActorContext[T], T, _],
-    onSignal:  Function2[ActorContext[T], Signal, _],
+    onSignal:  Function2[ActorContext[T], Signal, _], // FIXME use partial function here also?
     behavior:  Behavior[T]): Behavior[T] =
-    BehaviorImpl.Tap(onMessage, onSignal, behavior)
+    BehaviorImpl.tap(onMessage, onSignal, behavior)
 
   /**
    * Behavior decorator that copies all received message to the designated
@@ -209,6 +210,15 @@ object Actor {
   final class Restarter[Thr <: Throwable: ClassTag](c: ClassTag[Thr], strategy: SupervisorStrategy) {
     def wrap[T](b: Behavior[T]): Behavior[T] = akka.typed.internal.Restarter(Behavior.validateAsInitial(b), strategy)(c)
   }
+
+  /**
+   * Support for scheduled `self` messages in an actor.
+   * It takes care of the lifecycle of the timers such as cancelling them when the actor
+   * is restarted or stopped.
+   * @see [[TimerScheduler]]
+   */
+  def withTimers[T](factory: TimerScheduler[T] ⇒ Behavior[T]): Behavior[T] =
+    TimerSchedulerImpl.withTimers(factory)
 
   // TODO
   // final case class Selective[T](timeout: FiniteDuration, selector: PartialFunction[T, Behavior[T]], onTimeout: () ⇒ Behavior[T])
