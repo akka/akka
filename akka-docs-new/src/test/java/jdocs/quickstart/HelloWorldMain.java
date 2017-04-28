@@ -1,5 +1,5 @@
 //#full-example
-package java.quickstart;
+package jdocs.quickstart;
 
 import java.io.IOException;
 

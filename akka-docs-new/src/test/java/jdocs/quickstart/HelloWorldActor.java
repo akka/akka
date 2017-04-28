@@ -1,4 +1,4 @@
-package java.quickstart;
+package jdocs.quickstart;
 
 import akka.actor.AbstractActor;
 import akka.actor.AbstractActor.Receive;
