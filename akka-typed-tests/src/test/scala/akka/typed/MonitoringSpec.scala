@@ -53,7 +53,8 @@ class MonitoringSpec extends TypedSpec {
       val watcher = Await.result(system ? TypedSpec.Create(Immutable[Message] {
         case (ctx, StartWatchingWith(watchee, msg)) ⇒
           ctx.watchWith(watchee, msg); Same
-        case (ctx, `CustomTerminationMessage`) ⇒ receivedTerminationSignal.success(()); Stopped
+        case (ctx, `CustomTerminationMessage`) ⇒
+          receivedTerminationSignal.success(()); Stopped
       }, "w"), 3.seconds /*.dilated*/ )
 
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
