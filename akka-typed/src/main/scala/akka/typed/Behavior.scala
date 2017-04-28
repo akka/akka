@@ -3,6 +3,7 @@
  */
 package akka.typed
 
+import akka.util.LineNumbers
 import akka.annotation.{ DoNotInherit, InternalApi }
 
 import scala.annotation.tailrec
@@ -145,12 +146,16 @@ object Behavior {
 
   /**
    * INTERNAL API.
+   * Not placed in internal.BehaviorImpl because Behavior is sealed.
    */
   @InternalApi
-  private[akka] abstract class DeferredBehavior[T] extends Behavior[T] {
+  private[akka] final case class DeferredBehavior[T](factory: ActorContext[T] ⇒ Behavior[T]) extends Behavior[T] {
+
     /** "undefer" the deferred behavior */
     @throws(classOf[Exception])
-    def apply(ctx: ActorContext[T]): Behavior[T]
+    def apply(ctx: ActorContext[T]): Behavior[T] = factory(ctx)
+
+    override def toString: String = s"Deferred(${LineNumbers(factory)})"
   }
 
   /**

@@ -26,7 +26,7 @@ trait ActorContext[T] extends javadsl.ActorContext[T] with scaladsl.ActorContext
       case None    ⇒ Optional.empty()
     }
 
-  override def getChildren(): java.util.List[akka.typed.ActorRef[Void]] = {
+  override def getChildren: java.util.List[akka.typed.ActorRef[Void]] = {
     val c = children
     val a = new ArrayList[ActorRef[Void]](c.size)
     val i = c.iterator
@@ -34,16 +34,16 @@ trait ActorContext[T] extends javadsl.ActorContext[T] with scaladsl.ActorContext
     a
   }
 
-  override def getExecutionContext(): ExecutionContextExecutor =
+  override def getExecutionContext: ExecutionContextExecutor =
     executionContext
 
-  override def getMailboxCapacity(): Int =
+  override def getMailboxCapacity: Int =
     mailboxCapacity
 
-  override def getSelf(): akka.typed.ActorRef[T] =
+  override def getSelf: akka.typed.ActorRef[T] =
     self
 
-  override def getSystem(): akka.typed.ActorSystem[Void] =
+  override def getSystem: akka.typed.ActorSystem[Void] =
     system.asInstanceOf[ActorSystem[Void]]
 
   override def spawn[U](behavior: akka.typed.Behavior[U], name: String): akka.typed.ActorRef[U] =
