@@ -21,7 +21,7 @@ public class DeviceManager extends AbstractActor {
     return Props.create(DeviceManager.class);
   }
 
-  final static class RequestTrackDevice {
+  public static final class RequestTrackDevice {
     public final String groupId;
     public final String deviceId;
 
@@ -31,7 +31,7 @@ public class DeviceManager extends AbstractActor {
     }
   }
 
-  final static class DeviceRegistered {
+  public static final class DeviceRegistered {
   }
 
   Map<String, ActorRef> groupIdToActor = new HashMap<>();

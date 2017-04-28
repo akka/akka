@@ -23,7 +23,7 @@ public class DeviceManager extends AbstractActor {
   }
 
   //#device-manager-msgs
-  final static class RequestTrackDevice {
+  public static final class RequestTrackDevice {
     public final String groupId;
     public final String deviceId;
 
@@ -33,7 +33,7 @@ public class DeviceManager extends AbstractActor {
     }
   }
 
-  final static class DeviceRegistered {
+  public static final class DeviceRegistered {
   }
 
   //#device-manager-msgs

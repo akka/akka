@@ -31,7 +31,7 @@ public class Device extends AbstractActor {
     return Props.create(Device.class, groupId, deviceId);
   }
 
-  final static class RecordTemperature {
+  public static final class RecordTemperature {
     final Long requestId;
     final Double value;
 
@@ -41,7 +41,7 @@ public class Device extends AbstractActor {
     }
   }
 
-  final static class TemperatureRecorded {
+  public static final class TemperatureRecorded {
     final Long requestId;
 
     public TemperatureRecorded(Long requestId) {
@@ -49,7 +49,7 @@ public class Device extends AbstractActor {
     }
   }
 
-  final static class ReadTemperature {
+  public static final class ReadTemperature {
     final Long requestId;
 
     public ReadTemperature(Long requestId) {
@@ -57,7 +57,7 @@ public class Device extends AbstractActor {
     }
   }
 
-  final static class RespondTemperature {
+  public static final class RespondTemperature {
     final Long requestId;
     final Optional<Double> value;
 
