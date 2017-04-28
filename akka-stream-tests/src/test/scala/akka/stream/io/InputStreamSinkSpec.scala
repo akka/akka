@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.io
 
 import java.io.{ IOException, InputStream }
 import java.util.concurrent.TimeoutException
+
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.Attributes.inputBuffer
@@ -14,11 +15,13 @@ import akka.stream.impl.{ ActorMaterializerImpl, StreamSupervisor }
 import akka.stream.scaladsl.{ Keep, Source, StreamConverters }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.{ StreamSpec, GraphStageMessages, TestSinkStage }
+import akka.stream.testkit._
 import akka.testkit.TestProbe
 import akka.util.ByteString
+
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
 
@@ -224,18 +227,29 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       List.fill(5)(inputStream.read()) should ===(List(0, 100, 200, 255, -1))
       inputStream.close()
     }
-  }
 
-  "fail to materialize with zero sized input buffer" in {
-    an[IllegalArgumentException] shouldBe thrownBy {
-      Source.single(byteString)
-        .runWith(StreamConverters.asInputStream(timeout).withAttributes(inputBuffer(0, 0)))
-      /*
-       With Source.single we test the code path in which the sink
-       itself throws an exception when being materialized. If
-       Source.empty is used, the same exception is thrown by
-       Materializer.
-       */
+    "fail to materialize with zero sized input buffer" in {
+      an[IllegalArgumentException] shouldBe thrownBy {
+        Source.single(byteString)
+          .runWith(StreamConverters.asInputStream(timeout).withAttributes(inputBuffer(0, 0)))
+        /*
+         With Source.single we test the code path in which the sink
+         itself throws an exception when being materialized. If
+         Source.empty is used, the same exception is thrown by
+         Materializer.
+         */
+      }
+    }
+
+    "throw from inputstream read if terminated abruptly" in {
+      val mat = ActorMaterializer()
+      val probe = TestPublisher.probe[ByteString]()
+      val inputStream = Source.fromPublisher(probe).runWith(StreamConverters.asInputStream())(mat)
+      mat.shutdown()
+
+      intercept[IOException] {
+        inputStream.read()
+      }
     }
   }
 }

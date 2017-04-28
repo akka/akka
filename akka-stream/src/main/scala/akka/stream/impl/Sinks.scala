@@ -244,6 +244,10 @@ final class HeadOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape
         failStage(ex)
       }
 
+      override def postStop(): Unit = {
+        if (!p.isCompleted) p.failure(new AbruptStageTerminationException(this))
+      }
+
       setHandler(in, this)
     }, p.future)
   }
@@ -281,6 +285,10 @@ final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Fu
       override def onUpstreamFailure(ex: Throwable): Unit = {
         p.tryFailure(ex)
         failStage(ex)
+      }
+
+      override def postStop(): Unit = {
+        if (!p.isCompleted) p.failure(new AbruptStageTerminationException(this))
       }
 
       setHandler(in, this)

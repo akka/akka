@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.stream.impl.io
 
@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
 import akka.NotUsed
 import akka.actor.{ ActorRef, Terminated }
+import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
@@ -29,7 +30,7 @@ import scala.util.Try
 /**
  * INTERNAL API
  */
-private[stream] class ConnectionSourceStage(
+@InternalApi private[stream] class ConnectionSourceStage(
   val tcpManager:          ActorRef,
   val endpoint:            InetSocketAddress,
   val backlog:             Int,
@@ -53,7 +54,8 @@ private[stream] class ConnectionSourceStage(
 
       val connectionFlowsAwaitingInitialization = new AtomicLong()
       var listener: ActorRef = _
-      var unbindPromise = Promise[Unit]()
+      val unbindPromise = Promise[Unit]()
+      var unbindStarted = false
 
       override def preStart(): Unit = {
         getStageActor(receive)
@@ -84,11 +86,15 @@ private[stream] class ConnectionSourceStage(
             push(out, connectionFor(c, sender))
           case Unbind ⇒
             if (!isClosed(out) && (listener ne null)) tryUnbind()
-          case Unbound ⇒ // If we're unbound then just shut down
-            if (connectionFlowsAwaitingInitialization.get() == 0) completeStage()
-            else scheduleOnce(BindShutdownTimer, bindShutdownTimeout)
+          case Unbound ⇒
+            unbindCompleted()
           case Terminated(ref) if ref == listener ⇒
-            failStage(new IllegalStateException("IO Listener actor terminated unexpectedly"))
+            if (unbindStarted) {
+              unbindCompleted()
+            } else {
+              failStage(new IllegalStateException("IO Listener actor terminated unexpectedly for remote endpoint [" +
+                endpoint.getHostString + ":" + endpoint.getPort + "]"))
+            }
         }
       }
 
@@ -125,11 +131,17 @@ private[stream] class ConnectionSourceStage(
       }
 
       private def tryUnbind(): Unit = {
-        if (listener ne null) {
-          stageActor.unwatch(listener)
+        if ((listener ne null) && !unbindStarted) {
+          unbindStarted = true
           setKeepGoing(true)
           listener ! Unbind
         }
+      }
+
+      private def unbindCompleted(): Unit = {
+        stageActor.unwatch(listener)
+        if (connectionFlowsAwaitingInitialization.get() == 0) completeStage()
+        else scheduleOnce(BindShutdownTimer, bindShutdownTimeout)
       }
 
       override def onTimer(timerKey: Any): Unit = timerKey match {
@@ -156,7 +168,7 @@ private[stream] object ConnectionSourceStage {
 /**
  * INTERNAL API
  */
-private[stream] object TcpConnectionStage {
+@InternalApi private[stream] object TcpConnectionStage {
   case object WriteAck extends Tcp.Event
 
   trait TcpRole {
@@ -298,7 +310,7 @@ private[stream] object TcpConnectionStage {
 /**
  * INTERNAL API
  */
-class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
+@InternalApi private[akka] class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean)
   extends GraphStage[FlowShape[ByteString, ByteString]] {
   import TcpConnectionStage._
 
@@ -322,7 +334,7 @@ class IncomingConnectionStage(connection: ActorRef, remoteAddress: InetSocketAdd
 /**
  * INTERNAL API
  */
-private[stream] class OutgoingConnectionStage(
+@InternalApi private[stream] class OutgoingConnectionStage(
   manager:        ActorRef,
   remoteAddress:  InetSocketAddress,
   localAddress:   Option[InetSocketAddress]           = None,
@@ -360,7 +372,7 @@ private[stream] class OutgoingConnectionStage(
 }
 
 /** INTERNAL API */
-private[akka] object TcpIdleTimeout {
+@InternalApi private[akka] object TcpIdleTimeout {
   def apply(idleTimeout: FiniteDuration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val connectionToString = remoteAddress match {
       case Some(addr) ⇒ s" on connection to [$addr]"

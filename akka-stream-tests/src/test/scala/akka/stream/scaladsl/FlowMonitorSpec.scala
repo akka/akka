@@ -4,8 +4,8 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.{ TestSource, TestSink }
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowMonitorState }
 import akka.stream.FlowMonitorState._
 
 import scala.concurrent.duration._
@@ -67,6 +67,16 @@ class FlowMonitorSpec extends StreamSpec {
       source.sendNext(msg)
       sink.requestNext(msg)
       awaitAssert(monitor.state == Received(msg), 3.seconds)
+    }
+
+    "return Failed when stream is abruptly terminated" in {
+      val mat = ActorMaterializer()
+      val (source, monitor) =
+        TestSource.probe[Any].monitor()(Keep.both).to(Sink.ignore).run()(mat)
+      mat.shutdown()
+
+      awaitAssert(
+        monitor.state shouldBe a[FlowMonitorState.Failed], remainingOrDefault)
     }
 
   }

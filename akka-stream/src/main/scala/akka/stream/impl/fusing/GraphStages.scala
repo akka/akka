@@ -139,6 +139,10 @@ object GraphStages {
           completeStage()
         }
 
+        override def postStop(): Unit = {
+          if (!finishPromise.isCompleted) finishPromise.failure(new AbruptStageTerminationException(this))
+        }
+
         setHandlers(in, out, this)
       }, finishPromise.future)
     }
@@ -187,6 +191,13 @@ object GraphStages {
         override def onDownstreamFinish(): Unit = {
           super.onDownstreamFinish()
           monitor.set(Finished)
+        }
+
+        override def postStop(): Unit = {
+          monitor.state match {
+            case Finished | _: Failed ⇒
+            case _                    ⇒ monitor.set(Failed(new AbruptStageTerminationException(this)))
+          }
         }
 
         setHandler(in, this)
