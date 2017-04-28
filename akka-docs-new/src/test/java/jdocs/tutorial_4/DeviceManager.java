@@ -34,8 +34,8 @@ public class DeviceManager extends AbstractActor {
   public static final class DeviceRegistered {
   }
 
-  Map<String, ActorRef> groupIdToActor = new HashMap<>();
-  Map<ActorRef, String> actorToGroupId = new HashMap<>();
+  final Map<String, ActorRef> groupIdToActor = new HashMap<>();
+  final Map<ActorRef, String> actorToGroupId = new HashMap<>();
 
   @Override
   public void preStart() {
@@ -47,29 +47,33 @@ public class DeviceManager extends AbstractActor {
     log.info("DeviceManager stopped");
   }
 
+  private void onTrackDevice(RequestTrackDevice trackMsg) {
+    String groupId = trackMsg.groupId;
+    ActorRef ref = groupIdToActor.get(groupId);
+    if (ref != null) {
+      ref.forward(trackMsg, getContext());
+    } else {
+      log.info("Creating device group actor for {}", groupId);
+      ActorRef groupActor = getContext().actorOf(DeviceGroup.props(groupId), "group-" + groupId);
+      getContext().watch(groupActor);
+      groupActor.forward(trackMsg, getContext());
+      groupIdToActor.put(groupId, groupActor);
+      actorToGroupId.put(groupActor, groupId);
+    }
+  }
+
+  private void onTerminated(Terminated t) {
+    ActorRef groupActor = t.getActor();
+    String groupId = actorToGroupId.get(groupActor);
+    log.info("Device group actor for {} has been terminated", groupId);
+    actorToGroupId.remove(groupActor);
+    groupIdToActor.remove(groupId);
+  }
+
   public Receive createReceive() {
     return receiveBuilder()
-            .match(RequestTrackDevice.class, trackMsg -> {
-              String groupId = trackMsg.groupId;
-              ActorRef ref = groupIdToActor.get(groupId);
-              if (ref != null) {
-                ref.forward(trackMsg, getContext());
-              } else {
-                log.info("Creating device group actor for {}", groupId);
-                ActorRef groupActor = getContext().actorOf(DeviceGroup.props(groupId), "group-" + groupId);
-                getContext().watch(groupActor);
-                groupActor.forward(trackMsg, getContext());
-                groupIdToActor.put(groupId, groupActor);
-                actorToGroupId.put(groupActor, groupId);
-              }
-            })
-            .match(Terminated.class, t -> {
-              ActorRef groupActor = t.getActor();
-              String groupId = actorToGroupId.get(groupActor);
-              log.info("Device group actor for {} has been terminated", groupId);
-              actorToGroupId.remove(groupActor);
-              groupIdToActor.remove(groupId);
-            })
+            .match(RequestTrackDevice.class, this::onTrackDevice)
+            .match(Terminated.class, this::onTerminated)
             .build();
   }
 

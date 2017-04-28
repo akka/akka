@@ -70,41 +70,47 @@ public class DeviceGroup extends AbstractActor {
     log.info("DeviceGroup {} stopped", groupId);
   }
 
+  private void onTrackDevice(DeviceManager.RequestTrackDevice trackMsg) {
+    if (this.groupId.equals(trackMsg.groupId)) {
+      ActorRef deviceActor = deviceIdToActor.get(trackMsg.deviceId);
+      if (deviceActor != null) {
+        deviceActor.forward(trackMsg, getContext());
+      } else {
+        log.info("Creating device actor for {}", trackMsg.deviceId);
+        deviceActor = getContext().actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
+        //#device-group-register
+        getContext().watch(deviceActor);
+        actorToDeviceId.put(deviceActor, trackMsg.deviceId);
+        //#device-group-register
+        deviceIdToActor.put(trackMsg.deviceId, deviceActor);
+        deviceActor.forward(trackMsg, getContext());
+      }
+    } else {
+      log.warning(
+              "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
+              groupId, this.groupId
+      );
+    }
+  }
+
+  private void onDeviceList(RequestDeviceList r) {
+    getSender().tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()), getSelf());
+  }
+
+  private void onTerminated(Terminated t) {
+    ActorRef deviceActor = t.getActor();
+    String deviceId = actorToDeviceId.get(deviceActor);
+    log.info("Device actor for {} has been terminated", deviceId);
+    actorToDeviceId.remove(deviceActor);
+    deviceIdToActor.remove(deviceId);
+  }
+
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-            .match(DeviceManager.RequestTrackDevice.class, trackMsg -> {
-              if (this.groupId.equals(trackMsg.groupId)) {
-                ActorRef deviceActor = deviceIdToActor.get(trackMsg.deviceId);
-                if (deviceActor != null) {
-                  deviceActor.forward(trackMsg, getContext());
-                } else {
-                  log.info("Creating device actor for {}", trackMsg.deviceId);
-                  deviceActor = getContext().actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
-                  //#device-group-register
-                  getContext().watch(deviceActor);
-                  actorToDeviceId.put(deviceActor, trackMsg.deviceId);
-                  //#device-group-register
-                  deviceIdToActor.put(trackMsg.deviceId, deviceActor);
-                  deviceActor.forward(trackMsg, getContext());
-                }
-              } else {
-                log.warning(
-                        "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-                        groupId, this.groupId
-                );
-              }
-            })
-            .match(RequestDeviceList.class, r -> {
-              getSender().tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()), getSelf());
-            })
-            .match(Terminated.class, t -> {
-              ActorRef deviceActor = t.getActor();
-              String deviceId = actorToDeviceId.get(deviceActor);
-              log.info("Device actor for {} has been terminated", deviceId);
-              actorToDeviceId.remove(deviceActor);
-              deviceIdToActor.remove(deviceId);
-            })
+            .match(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
+            .match(RequestDeviceList.class, this::onDeviceList)
+            .match(Terminated.class, this::onTerminated)
             .build();
   }
 }

@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class DeviceGroup extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
-  String groupId;
+  final String groupId;
 
   public DeviceGroup(String groupId) {
     this.groupId = groupId;
@@ -103,46 +103,56 @@ public class DeviceGroup extends AbstractActor {
     log.info("DeviceGroup {} stopped", groupId);
   }
 
+  //#query-added
+  private void onTrackDevice(DeviceManager.RequestTrackDevice trackMsg) {
+    if (this.groupId.equals(trackMsg.groupId)) {
+      ActorRef ref = deviceIdToActor.get(trackMsg.deviceId);
+      if (ref != null) {
+        ref.forward(trackMsg, getContext());
+      } else {
+        log.info("Creating device actor for {}", trackMsg.deviceId);
+        ActorRef deviceActor = getContext().actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
+        getContext().watch(deviceActor);
+        deviceActor.forward(trackMsg, getContext());
+        actorToDeviceId.put(deviceActor, trackMsg.deviceId);
+        deviceIdToActor.put(trackMsg.deviceId, deviceActor);
+      }
+    } else {
+      log.warning(
+              "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
+              groupId, this.groupId
+      );
+    }
+  }
+
+  private void onDeviceList(RequestDeviceList r) {
+    getSender().tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()), getSelf());
+  }
+
+  private void onTerminated(Terminated t) {
+    ActorRef deviceActor = t.getActor();
+    String deviceId = actorToDeviceId.get(deviceActor);
+    log.info("Device actor for {} has been terminated", deviceId);
+    actorToDeviceId.remove(deviceActor);
+    deviceIdToActor.remove(deviceId);
+  }
+  //#query-added
+
+  private void onAllTemperatures(RequestAllTemperatures r) {
+    getContext().actorOf(DeviceGroupQuery.props(
+            actorToDeviceId, r.requestId, getSender(), new FiniteDuration(3, TimeUnit.SECONDS)));
+  }
+
   @Override
   public Receive createReceive() {
     //#query-added
     return receiveBuilder()
-            .match(DeviceManager.RequestTrackDevice.class, trackMsg -> {
-              if (this.groupId.equals(trackMsg.groupId)) {
-                ActorRef ref = deviceIdToActor.get(trackMsg.deviceId);
-                if (ref != null) {
-                  ref.forward(trackMsg, getContext());
-                } else {
-                  log.info("Creating device actor for {}", trackMsg.deviceId);
-                  ActorRef deviceActor = getContext().actorOf(Device.props(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
-                  getContext().watch(deviceActor);
-                  deviceActor.forward(trackMsg, getContext());
-                  actorToDeviceId.put(deviceActor, trackMsg.deviceId);
-                  deviceIdToActor.put(trackMsg.deviceId, deviceActor);
-                }
-              } else {
-                log.warning(
-                        "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
-                        groupId, this.groupId
-                );
-              }
-            })
-            .match(RequestDeviceList.class, r -> {
-              getSender().tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()), getSelf());
-            })
-            .match(Terminated.class, t -> {
-              ActorRef deviceActor = t.getActor();
-              String deviceId = actorToDeviceId.get(deviceActor);
-              log.info("Device actor for {} has been terminated", deviceId);
-              actorToDeviceId.remove(deviceActor);
-              deviceIdToActor.remove(deviceId);
-            })
+            .match(DeviceManager.RequestTrackDevice.class, this::onTrackDevice)
+            .match(RequestDeviceList.class, this::onDeviceList)
+            .match(Terminated.class, this::onTerminated)
             //#query-added
             // ... other cases omitted
-            .match(RequestAllTemperatures.class, r -> {
-              getContext().actorOf(DeviceGroupQuery.props(
-                      actorToDeviceId, r.requestId, getSender(), new FiniteDuration(3, TimeUnit.SECONDS)));
-            })
+            .match(RequestAllTemperatures.class, this::onAllTemperatures)
             .build();
   }
 }
