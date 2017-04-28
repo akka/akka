@@ -211,7 +211,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
       assertNotNull(actualReading);
       assertEquals(expectedReading.getClass(), actualReading.getClass());
       if (expectedReading instanceof DeviceGroup.Temperature) {
-        assertEquals(((DeviceGroup.Temperature) expectedReading).value, ((DeviceGroup.Temperature) actualReading).value);
+        assertEquals(((DeviceGroup.Temperature) expectedReading).value, ((DeviceGroup.Temperature) actualReading).value, 0.01);
       }
     }
     assertEquals(expected.size(), actual.size());
