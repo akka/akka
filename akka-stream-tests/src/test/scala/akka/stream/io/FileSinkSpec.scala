@@ -65,7 +65,26 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       }, create = false)
     }
 
-    "by default write into existing file" in assertAllStagesStopped {
+    "write into existing file without wiping existing data" in assertAllStagesStopped {
+      targetFile { f ⇒
+        def write(lines: List[String]) =
+          Source(lines)
+            .map(ByteString(_))
+            .runWith(FileIO.toPath(f, Set(StandardOpenOption.WRITE, StandardOpenOption.CREATE)))
+
+        val completion1 = write(TestLines)
+        Await.result(completion1, 3.seconds)
+
+        val lastWrite = List("x" * 100)
+        val completion2 = write(lastWrite)
+        val result = Await.result(completion2, 3.seconds)
+
+        result.count should ===(lastWrite.flatten.length)
+        checkFileContents(f, lastWrite.mkString("") + TestLines.mkString("").drop(100))
+      }
+    }
+
+    "by default replace the existing file" in assertAllStagesStopped {
       targetFile { f ⇒
         def write(lines: List[String]) =
           Source(lines)
@@ -80,7 +99,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         val result = Await.result(completion2, 3.seconds)
 
         result.count should ===(lastWrite.flatten.length)
-        checkFileContents(f, lastWrite.mkString("") + TestLines.mkString("").drop(100))
+        checkFileContents(f, lastWrite.mkString(""))
       }
     }
 

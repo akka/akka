@@ -9,7 +9,7 @@ import java.nio.file.StandardOpenOption._
 
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io._
-import akka.stream.IOResult
+import akka.stream.{ ActorAttributes, IOResult }
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -76,7 +76,8 @@ object FileIO {
     new Source(new FileSource(f, chunkSize, startPosition, DefaultAttributes.fileSource, sourceShape("FileSource")))
 
   /**
-   * Creates a Sink which writes incoming [[ByteString]] elements to the given file. Overwrites existing files by default.
+   * Creates a Sink which writes incoming [[ByteString]] elements to the given file. Overwrites existing files
+   * by truncating their contents as default.
    *
    * Materializes a [[Future]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -85,14 +86,15 @@ object FileIO {
    * unless configured otherwise by using [[akka.stream.ActorAttributes]].
    *
    * @param f the file to write to
-   * @param options File open options, defaults to Set(WRITE, CREATE)
+   * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, TRUNCATE_EXISTING, CREATE)
    */
   @deprecated("Use `toPath` instead", "2.4.5")
-  def toFile(f: File, options: Set[OpenOption] = Set(WRITE, CREATE)): Sink[ByteString, Future[IOResult]] =
+  def toFile(f: File, options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
     toPath(f.toPath, options)
 
   /**
-   * Creates a Sink which writes incoming [[ByteString]] elements to the given file path. Overwrites existing files by default.
+   * Creates a Sink which writes incoming [[ByteString]] elements to the given file path. Overwrites existing files
+   * by truncating their contents as default.
    *
    * Materializes a [[Future]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -101,13 +103,14 @@ object FileIO {
    * unless configured otherwise by using [[akka.stream.ActorAttributes]].
    *
    * @param f the file path to write to
-   * @param options File open options, defaults to Set(WRITE, CREATE)
+   * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, TRUNCATE_EXISTING, CREATE)
    */
-  def toPath(f: Path, options: Set[OpenOption] = Set(WRITE, CREATE)): Sink[ByteString, Future[IOResult]] =
+  def toPath(f: Path, options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
     toPath(f, options, startPosition = 0)
 
   /**
-   * Creates a Sink which writes incoming [[ByteString]] elements to the given file path. Overwrites existing files by default.
+   * Creates a Sink which writes incoming [[ByteString]] elements to the given file path. Overwrites existing files
+   * by truncating their contents as default.
    *
    * Materializes a [[Future]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
@@ -116,7 +119,7 @@ object FileIO {
    * unless configured otherwise by using [[ActorAttributes]].
    *
    * @param f the file path to write to
-   * @param options File open options, defaults to Set(WRITE, CREATE)
+   * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, CREATE)
    * @param startPosition the start position to write to
    */
   def toPath(f: Path, options: Set[OpenOption], startPosition: Long): Sink[ByteString, Future[IOResult]] =
