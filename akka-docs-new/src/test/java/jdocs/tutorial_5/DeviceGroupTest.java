@@ -23,141 +23,141 @@ import static jdocs.tutorial_5.DeviceGroupQueryTest.assertEqualTemperatures;
 
 public class DeviceGroupTest extends JUnitSuite {
 
-    static ActorSystem system;
+  static ActorSystem system;
 
-    @BeforeClass
-    public static void setup() {
-        system = ActorSystem.create();
-    }
+  @BeforeClass
+  public static void setup() {
+    system = ActorSystem.create();
+  }
 
-    @AfterClass
-    public static void teardown() {
-        TestKit.shutdownActorSystem(system);
-        system = null;
-    }
+  @AfterClass
+  public static void teardown() {
+    TestKit.shutdownActorSystem(system);
+    system = null;
+  }
 
-    @Test
-    public void testRegisterDeviceActor() {
-        TestKit probe = new TestKit(system);
-        ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
+  @Test
+  public void testRegisterDeviceActor() {
+    TestKit probe = new TestKit(system);
+    ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-        ActorRef deviceActor1 = probe.getLastSender();
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    ActorRef deviceActor1 = probe.getLastSender();
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device2"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-        ActorRef deviceActor2 = probe.getLastSender();
-        Assert.assertNotEquals(deviceActor1, deviceActor2);
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device2"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    ActorRef deviceActor2 = probe.getLastSender();
+    Assert.assertNotEquals(deviceActor1, deviceActor2);
 
-        // Check that the device actors are working
-        deviceActor1.tell(new Device.RecordTemperature(0L, 1.0), probe.getRef());
-        Assert.assertEquals((Long) 0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
-        deviceActor2.tell(new Device.RecordTemperature(1L, 2.0), probe.getRef());
-        Assert.assertEquals((Long) 1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
-    }
+    // Check that the device actors are working
+    deviceActor1.tell(new Device.RecordTemperature(0L, 1.0), probe.getRef());
+    Assert.assertEquals((Long) 0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
+    deviceActor2.tell(new Device.RecordTemperature(1L, 2.0), probe.getRef());
+    Assert.assertEquals((Long) 1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
+  }
 
-    @Test
-    public void testIgnoreRequestsForWrongGroupId() {
-        TestKit probe = new TestKit(system);
-        ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
+  @Test
+  public void testIgnoreRequestsForWrongGroupId() {
+    TestKit probe = new TestKit(system);
+    ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("wrongGroup", "device1"), probe.getRef());
-        probe.expectNoMsg();
-    }
+    groupActor.tell(new DeviceManager.RequestTrackDevice("wrongGroup", "device1"), probe.getRef());
+    probe.expectNoMsg();
+  }
 
-    @Test
-    public void testReturnSameActorForSameDeviceId() {
-        TestKit probe = new TestKit(system);
-        ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
+  @Test
+  public void testReturnSameActorForSameDeviceId() {
+    TestKit probe = new TestKit(system);
+    ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-        ActorRef deviceActor1 = probe.getLastSender();
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    ActorRef deviceActor1 = probe.getLastSender();
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-        ActorRef deviceActor2 = probe.getLastSender();
-        Assert.assertEquals(deviceActor1, deviceActor2);
-    }
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    ActorRef deviceActor2 = probe.getLastSender();
+    Assert.assertEquals(deviceActor1, deviceActor2);
+  }
 
-    @Test
-    public void testListActiveDevices() {
-        TestKit probe = new TestKit(system);
-        ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
+  @Test
+  public void testListActiveDevices() {
+    TestKit probe = new TestKit(system);
+    ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device2"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device2"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
 
-        groupActor.tell(new DeviceGroup.RequestDeviceList(0L), probe.getRef());
-        DeviceGroup.ReplyDeviceList reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-        Assert.assertEquals((Long) 0L, reply.requestId);
-        Assert.assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
-    }
+    groupActor.tell(new DeviceGroup.RequestDeviceList(0L), probe.getRef());
+    DeviceGroup.ReplyDeviceList reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
+    Assert.assertEquals((Long) 0L, reply.requestId);
+    Assert.assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
+  }
 
-    @Test
-    public void testListActiveDevicesAfterOneShutsDown() {
-        TestKit probe = new TestKit(system);
-        ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
+  @Test
+  public void testListActiveDevicesAfterOneShutsDown() {
+    TestKit probe = new TestKit(system);
+    ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-        ActorRef toShutDown = probe.getLastSender();
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    ActorRef toShutDown = probe.getLastSender();
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device2"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device2"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
 
-        groupActor.tell(new DeviceGroup.RequestDeviceList(0L), probe.getRef());
-        DeviceGroup.ReplyDeviceList reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-        Assert.assertEquals((Long) 0L, reply.requestId);
-        Assert.assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
+    groupActor.tell(new DeviceGroup.RequestDeviceList(0L), probe.getRef());
+    DeviceGroup.ReplyDeviceList reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
+    Assert.assertEquals((Long) 0L, reply.requestId);
+    Assert.assertEquals(Stream.of("device1", "device2").collect(Collectors.toSet()), reply.ids);
 
-        probe.watch(toShutDown);
-        toShutDown.tell(PoisonPill.getInstance(), ActorRef.noSender());
-        probe.expectTerminated(toShutDown);
+    probe.watch(toShutDown);
+    toShutDown.tell(PoisonPill.getInstance(), ActorRef.noSender());
+    probe.expectTerminated(toShutDown);
 
-        groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
-        reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-        Assert.assertEquals((Long) 1L, reply.requestId);
-        Assert.assertEquals(Stream.of("device2").collect(Collectors.toSet()), reply.ids);
-    }
+    groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
+    reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
+    Assert.assertEquals((Long) 1L, reply.requestId);
+    Assert.assertEquals(Stream.of("device2").collect(Collectors.toSet()), reply.ids);
+  }
 
-    @Test
-    public void testCollectTemperaturesFromAllActiveDevices() {
-        TestKit probe = new TestKit(system);
-        ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
+  @Test
+  public void testCollectTemperaturesFromAllActiveDevices() {
+    TestKit probe = new TestKit(system);
+    ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-        ActorRef deviceActor1 = probe.getLastSender();
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device1"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    ActorRef deviceActor1 = probe.getLastSender();
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device2"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-        ActorRef deviceActor2 = probe.getLastSender();
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device2"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    ActorRef deviceActor2 = probe.getLastSender();
 
-        groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device3"), probe.getRef());
-        probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
-        ActorRef deviceActor3 = probe.getLastSender();
+    groupActor.tell(new DeviceManager.RequestTrackDevice("group", "device3"), probe.getRef());
+    probe.expectMsgClass(DeviceManager.DeviceRegistered.class);
+    ActorRef deviceActor3 = probe.getLastSender();
 
-        // Check that the device actors are working
-        deviceActor1.tell(new Device.RecordTemperature(0L, 1.0), probe.getRef());
-        Assert.assertEquals((Long) 0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
-        deviceActor2.tell(new Device.RecordTemperature(1L, 2.0), probe.getRef());
-        Assert.assertEquals((Long) 1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
-        // No temperature for device 3
+    // Check that the device actors are working
+    deviceActor1.tell(new Device.RecordTemperature(0L, 1.0), probe.getRef());
+    Assert.assertEquals((Long) 0L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
+    deviceActor2.tell(new Device.RecordTemperature(1L, 2.0), probe.getRef());
+    Assert.assertEquals((Long) 1L, probe.expectMsgClass(Device.TemperatureRecorded.class).requestId);
+    // No temperature for device 3
 
-        groupActor.tell(new DeviceGroup.RequestAllTemperatures(0L), probe.getRef());
-        DeviceGroup.RespondAllTemperatures response = probe.expectMsgClass(DeviceGroup.RespondAllTemperatures.class);
-        Assert.assertEquals((Long) 0L, response.requestId);
+    groupActor.tell(new DeviceGroup.RequestAllTemperatures(0L), probe.getRef());
+    DeviceGroup.RespondAllTemperatures response = probe.expectMsgClass(DeviceGroup.RespondAllTemperatures.class);
+    Assert.assertEquals((Long) 0L, response.requestId);
 
-        Map<String, DeviceGroup.TemperatureReading> expectedTemperatures = new HashMap<>();
-        expectedTemperatures.put("device1", new DeviceGroup.Temperature(1.0));
-        expectedTemperatures.put("device2", new DeviceGroup.Temperature(2.0));
-        expectedTemperatures.put("device3", new DeviceGroup.TemperatureNotAvailable());
+    Map<String, DeviceGroup.TemperatureReading> expectedTemperatures = new HashMap<>();
+    expectedTemperatures.put("device1", new DeviceGroup.Temperature(1.0));
+    expectedTemperatures.put("device2", new DeviceGroup.Temperature(2.0));
+    expectedTemperatures.put("device3", new DeviceGroup.TemperatureNotAvailable());
 
-        assertEqualTemperatures(expectedTemperatures, response.temperatures);
-    }
+    assertEqualTemperatures(expectedTemperatures, response.temperatures);
+  }
 }

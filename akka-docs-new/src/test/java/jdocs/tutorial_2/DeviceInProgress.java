@@ -9,18 +9,18 @@ import jdocs.tutorial_2.Device.TemperatureRecorded;
 
 class DeviceInProgress1 {
 
-    //#read-protocol-1
-    final static class ReadTemperature {
-    }
+  //#read-protocol-1
+  final static class ReadTemperature {
+  }
 
-    final static class RespondTemperature {
-        final Optional<Double> value;
+  final static class RespondTemperature {
+    final Optional<Double> value;
 
-        public RespondTemperature(Optional<Double> value) {
-            this.value = value;
-        }
+    public RespondTemperature(Optional<Double> value) {
+      this.value = value;
     }
-    //#read-protocol-1
+  }
+  //#read-protocol-1
 
 }
 

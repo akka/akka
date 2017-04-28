@@ -14,81 +14,81 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 public class Device extends AbstractActor {
-    LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+  LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
-    final String groupId;
+  final String groupId;
 
-    final String deviceId;
+  final String deviceId;
 
-    public Device(String groupId, String deviceId) {
-        this.groupId = groupId;
-        this.deviceId = deviceId;
+  public Device(String groupId, String deviceId) {
+    this.groupId = groupId;
+    this.deviceId = deviceId;
+  }
+
+  public static Props props(String groupId, String deviceId) {
+    return Props.create(Device.class, groupId, deviceId);
+  }
+
+  final static class RecordTemperature {
+    final Long requestId;
+    final Double value;
+
+    public RecordTemperature(Long requestId, Double value) {
+      this.requestId = requestId;
+      this.value = value;
     }
+  }
 
-    public static Props props(String groupId, String deviceId) {
-        return Props.create(Device.class, groupId, deviceId);
+  final static class TemperatureRecorded {
+    final Long requestId;
+
+    public TemperatureRecorded(Long requestId) {
+      this.requestId = requestId;
     }
+  }
 
-    final static class RecordTemperature {
-        final Long requestId;
-        final Double value;
+  final static class ReadTemperature {
+    final Long requestId;
 
-        public RecordTemperature(Long requestId, Double value) {
-            this.requestId = requestId;
-            this.value = value;
-        }
+    public ReadTemperature(Long requestId) {
+      this.requestId = requestId;
     }
+  }
 
-    final static class TemperatureRecorded {
-        final Long requestId;
+  final static class RespondTemperature {
+    final Long requestId;
+    final Optional<Double> value;
 
-        public TemperatureRecorded(Long requestId) {
-            this.requestId = requestId;
-        }
+    public RespondTemperature(Long requestId, Optional<Double> value) {
+      this.requestId = requestId;
+      this.value = value;
     }
+  }
 
-    final static class ReadTemperature {
-        final Long requestId;
+  Optional<Double> lastTemperatureReading = Optional.empty();
 
-        public ReadTemperature(Long requestId) {
-            this.requestId = requestId;
-        }
-    }
+  @Override
+  public void preStart() {
+    log.info("Device actor {}-{} started", groupId, deviceId);
+  }
 
-    final static class RespondTemperature {
-        final Long requestId;
-        final Optional<Double> value;
+  @Override
+  public void postStop() {
+    log.info("Device actor {}-{} stopped", groupId, deviceId);
+  }
 
-        public RespondTemperature(Long requestId, Optional<Double> value) {
-            this.requestId = requestId;
-            this.value = value;
-        }
-    }
-
-    Optional<Double> lastTemperatureReading = Optional.empty();
-
-    @Override
-    public void preStart() {
-        log.info("Device actor {}-{} started", groupId, deviceId);
-    }
-
-    @Override
-    public void postStop() {
-        log.info("Device actor {}-{} stopped", groupId, deviceId);
-    }
-
-    @Override
-    public Receive createReceive() {
-        return receiveBuilder()
-                .match(RecordTemperature.class, r -> {
-                    log.info("Recorded temperature reading {} with {}", r.value, r.requestId);
-                    lastTemperatureReading = Optional.of(r.value);
-                    sender().tell(new TemperatureRecorded(r.requestId), getSelf());
-                })
-                .match(ReadTemperature.class, r -> {
-                    sender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
-                })
-                .build();
-    }
+  @Override
+  public Receive createReceive() {
+    return receiveBuilder()
+            .match(RecordTemperature.class, r -> {
+              log.info("Recorded temperature reading {} with {}", r.value, r.requestId);
+              lastTemperatureReading = Optional.of(r.value);
+              sender().tell(new TemperatureRecorded(r.requestId), getSelf());
+            })
+            .match(ReadTemperature.class, r -> {
+              sender().tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
+            })
+            .build();
+  }
 }
 //#full-device
