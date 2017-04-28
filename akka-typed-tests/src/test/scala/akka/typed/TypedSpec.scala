@@ -161,7 +161,7 @@ object TypedSpec {
   case object Timedout extends Status
 
   def guardian(outstanding: Map[ActorRef[_], ActorRef[Status]] = Map.empty): Behavior[Command] =
-    Immutable[Command]({
+    Immutable[Command] {
       case (ctx, r: RunTest[t]) ⇒
         val test = ctx.spawn(r.behavior, r.name)
         ctx.schedule(r.timeout, r.replyTo, Timedout)
@@ -173,7 +173,7 @@ object TypedSpec {
       case (ctx, c: Create[t]) ⇒
         c.replyTo ! ctx.spawn(c.behavior, c.name)
         Same
-    }, {
+    } onSignal {
       case (ctx, t @ Terminated(test)) ⇒
         outstanding get test match {
           case Some(reply) ⇒
@@ -183,8 +183,7 @@ object TypedSpec {
           case None ⇒ Same
         }
       case _ ⇒ Same
-
-    })
+    }
 
   def getCallerName(clazz: Class[_]): String = {
     val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)

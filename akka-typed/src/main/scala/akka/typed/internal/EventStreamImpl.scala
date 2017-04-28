@@ -44,7 +44,7 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
     import scaladsl.Actor
     Actor.Deferred[Command] { _ ⇒
       if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $this"))
-      Actor.Immutable[Command]({
+      Actor.Immutable[Command] {
         case (ctx, Register(actor)) ⇒
           if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
           ctx.watch(actor)
@@ -57,13 +57,13 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
           if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unwatching $actor, since has no subscriptions"))
           ctx.unwatch(actor)
           Actor.Same
-      }, {
+      } onSignal {
         case (_, Terminated(actor)) ⇒
           if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unsubscribe $actor from $this, because it was terminated"))
           unsubscribe(actor)
           Actor.Same
         case (_, _) ⇒ Actor.Unhandled
-      })
+      }
     }
   }
 

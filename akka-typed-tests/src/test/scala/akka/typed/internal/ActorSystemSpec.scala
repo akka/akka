@@ -53,13 +53,13 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
 
     def `must terminate the guardian actor`(): Unit = {
       val inbox = Inbox[String]("terminate")
-      val sys = system("terminate", Immutable[Probe]({
+      val sys = system("terminate", Immutable[Probe] {
         case (_, _) ⇒ Unhandled
-      }, {
+      } onSignal {
         case (ctx, PostStop) ⇒
           inbox.ref ! "done"
           Same
-      }))
+      })
       sys.terminate().futureValue
       inbox.receiveAll() should ===("done" :: Nil)
     }
