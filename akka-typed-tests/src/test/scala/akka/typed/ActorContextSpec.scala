@@ -178,8 +178,8 @@ object ActorContextSpec {
           throw ex
         case MkChild(name, mon, replyTo) ⇒
           val child = name match {
-            case None    ⇒ ctx.spawnAnonymous(patterns.Restarter[Command, Throwable](subject(mon), false)())
-            case Some(n) ⇒ ctx.spawn(patterns.Restarter[Command, Throwable](subject(mon), false)(), n)
+            case None    ⇒ ctx.spawnAnonymous(Actor.Restarter[Throwable]().wrap(subject(mon)))
+            case Some(n) ⇒ ctx.spawn(Actor.Restarter[Throwable]().wrap(subject(mon)), n)
           }
           replyTo ! Created(child)
           Actor.Same
@@ -428,16 +428,18 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         .stimulate(_ ! Ping(self), _ ⇒ Pong1)
     })
 
-    def `06 must not reset behavior upon Resume`(): Unit = sync(setup("ctx06", Some(Actor.Restarter[Exception](resume = true))) { (ctx, startWith) ⇒
-      val self = ctx.self
-      val ex = new Exception("KABOOM06")
-      startWith
-        .stimulate(_ ! BecomeInert(self), _ ⇒ BecameInert)
-        .stimulate(_ ! Ping(self), _ ⇒ Pong2).keep { subj ⇒
-          muteExpectedException[Exception]("KABOOM06", occurrences = 1)
-          subj ! Throw(ex)
-        }.stimulate(_ ! Ping(self), _ ⇒ Pong2)
-    })
+    def `06 must not reset behavior upon Resume`(): Unit = sync(setup(
+      "ctx06",
+      Some(Actor.Restarter[Exception](SupervisorStrategy.resume))) { (ctx, startWith) ⇒
+        val self = ctx.self
+        val ex = new Exception("KABOOM06")
+        startWith
+          .stimulate(_ ! BecomeInert(self), _ ⇒ BecameInert)
+          .stimulate(_ ! Ping(self), _ ⇒ Pong2).keep { subj ⇒
+            muteExpectedException[Exception]("KABOOM06", occurrences = 1)
+            subj ! Throw(ex)
+          }.stimulate(_ ! Ping(self), _ ⇒ Pong2)
+      })
 
     def `07 must stop upon Stop`(): Unit = sync(setup("ctx07") { (ctx, startWith) ⇒
       val self = ctx.self

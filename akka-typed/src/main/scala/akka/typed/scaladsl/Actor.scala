@@ -387,27 +387,22 @@ object Actor {
    * subclass thereof. Exceptions that are not subtypes of `Thr` will not be
    * caught and thus lead to the termination of the actor.
    *
-   * It is possible to specify that the actor shall not be restarted but
-   * resumed. This entails keeping the same state as before the exception was
-   * thrown and is thus less safe. If you use `OnFailure.RESUME` you should at
-   * least not hold mutable data fields or collections within the actor as those
-   * might be in an inconsistent state (the exception might have interrupted
-   * normal processing); avoiding mutable state is possible by returning a fresh
-   * behavior with the new state after every message.
+   * It is possible to specify different supervisor strategies, such as restart,
+   * resume, backoff.
    *
    * Example:
    * {{{
    * val dbConnector: Behavior[DbCommand] = ...
-   * val dbRestarts = Restarter[DbException].wrap(dbConnector)
+   * val dbRestarts = Restarter[DbException]().wrap(dbConnector)
    * }}}
    */
   object Restarter {
-    class Apply[Thr <: Throwable](c: ClassTag[Thr], resume: Boolean) {
-      def wrap[T](b: Behavior[T]): Behavior[T] = patterns.Restarter(Behavior.validateAsInitial(b), resume)()(c)
-      def mutableWrap[T](b: Behavior[T]): Behavior[T] = patterns.MutableRestarter(Behavior.validateAsInitial(b), resume)(c)
+    class Apply[Thr <: Throwable](c: ClassTag[Thr], strategy: SupervisorStrategy) {
+      def wrap[T](b: Behavior[T]): Behavior[T] = akka.typed.internal.Restarter(Behavior.validateAsInitial(b), strategy)(c)
     }
 
-    def apply[Thr <: Throwable: ClassTag](resume: Boolean = false): Apply[Thr] = new Apply(implicitly, resume)
+    def apply[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy = SupervisorStrategy.restart): Apply[Thr] =
+      new Apply(implicitly, strategy)
   }
 
   // TODO
