@@ -104,16 +104,16 @@ trait ActorContext[T] {
   /**
    * Register for [[Terminated]] notification once the Actor identified by the
    * given [[ActorRef]] terminates. This notification is also generated when the
-   * [[ActorSystem]] to which the referenced Actor belongs is declared as
-   * failed (e.g. in reaction to being unreachable).
+   * [[ActorSystem]] to which the referenced Actor belongs has been removed
+   * from the cluster.
    */
   def watch[U](other: ActorRef[U]): Unit
 
   /**
    * Register for termination notification with a custom message once the Actor identified by the
    * given [[ActorRef]] terminates. This notification is also generated when the
-   * [[ActorSystem]] to which the referenced Actor belongs is declared as
-   * failed (e.g. in reaction to being unreachable).
+   * [[ActorSystem]] to which the referenced Actor belongs has been removed
+   * from the cluster
    */
   def watchWith[U](other: ActorRef[U], msg: T): Unit
 
