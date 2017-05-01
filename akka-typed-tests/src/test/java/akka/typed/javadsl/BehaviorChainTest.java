@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import static akka.typed.javadsl.Actor.same;
 import static akka.typed.javadsl.Actor.stopped;
 
-public class BehaviorBuilderTest extends JUnitSuite {
+public class BehaviorChainTest extends JUnitSuite {
     interface Message {
     }
 
