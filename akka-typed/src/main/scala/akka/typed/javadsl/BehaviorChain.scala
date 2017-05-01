@@ -19,7 +19,7 @@ import akka.annotation.InternalApi
  *
  * @tparam T the common superclass of all supported messages.
  */
-case class BehaviorChain[T](
+class BehaviorChain[T] private (
   private val messageHandlers: List[Case[T, T]],
   private val signalHandlers:  List[Case[T, Signal]]
 ) extends ExtensibleBehavior[T] {
@@ -48,7 +48,7 @@ case class BehaviorChain[T](
    * @return a new behavior with the specified handling appended
    */
   def message[M <: T](`type`: Class[M], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorChain[T] =
-    copy[T](messageHandlers = messageHandlers :+ Case[T, T](`type`, None, (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])))
+    new BehaviorChain[T](messageHandlers :+ Case[T, T](`type`, None, (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])), signalHandlers)
 
   /**
    * Add a new predicated case to the message handling.
@@ -60,7 +60,7 @@ case class BehaviorChain[T](
    * @return a new behavior with the specified handling appended
    */
   def message[M <: T](`type`: Class[M], test: Predicate[M], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorChain[T] =
-    copy[T](messageHandlers = messageHandlers :+ Case[T, T](`type`, Some((t: T) ⇒ test.test(t.asInstanceOf[M])), (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])))
+    new BehaviorChain[T](messageHandlers :+ Case[T, T](`type`, Some((t: T) ⇒ test.test(t.asInstanceOf[M])), (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])), signalHandlers)
 
   /**
    * Add a new case to the message handling without compile time type check.
@@ -73,7 +73,7 @@ case class BehaviorChain[T](
    * @return a new behavior with the specified handling appended
    */
   def messageUnchecked[M <: T](`type`: Class[_ <: T], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorChain[T] =
-    copy[T](messageHandlers = messageHandlers :+ Case[T, T](`type`, None, (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])))
+    new BehaviorChain[T](messageHandlers :+ Case[T, T](`type`, None, (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])), signalHandlers)
 
   /**
    * Add a new case to the message handling matching equal messages.
@@ -83,7 +83,7 @@ case class BehaviorChain[T](
    * @return a new behavior with the specified handling appended
    */
   def messageEquals(msg: T, handler: Function[ActorContext[T], Behavior[T]]): BehaviorChain[T] =
-    copy[T](messageHandlers = messageHandlers :+ Case[T, T](msg.getClass, Some(_.equals(msg)), (ctx: ActorContext[T], _: T) ⇒ handler.apply(ctx)))
+    new BehaviorChain[T](messageHandlers :+ Case[T, T](msg.getClass, Some(_.equals(msg)), (ctx: ActorContext[T], _: T) ⇒ handler.apply(ctx)), signalHandlers)
 
   /**
    * Add a new case to the signal handling.
@@ -94,7 +94,7 @@ case class BehaviorChain[T](
    * @return a new behavior with the specified handling appended
    */
   def signal[M <: Signal](`type`: Class[M], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorChain[T] =
-    copy[T](signalHandlers = signalHandlers :+ Case[T, Signal](`type`, None, (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])))
+    new BehaviorChain[T](messageHandlers, signalHandlers :+ Case[T, Signal](`type`, None, (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])))
 
   /**
    * Add a new predicated case to the signal handling.
@@ -106,7 +106,7 @@ case class BehaviorChain[T](
    * @return a new behavior with the specified handling appended
    */
   def signal[M <: Signal](`type`: Class[M], test: Predicate[M], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorChain[T] =
-    copy[T](signalHandlers = signalHandlers :+ Case[T, Signal](`type`, Some((t: Signal) ⇒ test.test(t.asInstanceOf[M])), (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])))
+    new BehaviorChain[T](messageHandlers, signalHandlers :+ Case[T, Signal](`type`, Some((t: Signal) ⇒ test.test(t.asInstanceOf[M])), (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])))
 
   /**
    * Add a new case to the signal handling without compile time type check.
@@ -119,7 +119,7 @@ case class BehaviorChain[T](
    * @return a new behavior with the specified handling appended
    */
   def signalUnchecked[M <: Signal](`type`: Class[_ <: Signal], handler: Function2[ActorContext[T], M, Behavior[T]]): BehaviorChain[T] =
-    copy[T](signalHandlers = signalHandlers :+ Case[T, Signal](`type`, None, (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])))
+    new BehaviorChain[T](messageHandlers, signalHandlers :+ Case[T, Signal](`type`, None, (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])))
 
   /**
    * Add a new case to the signal handling matching equal signals.
@@ -129,12 +129,12 @@ case class BehaviorChain[T](
    * @return a new behavior with the specified handling appended
    */
   def signalEquals(signal: Signal, handler: Function[ActorContext[T], Behavior[T]]): BehaviorChain[T] =
-    copy[T](signalHandlers = signalHandlers :+ Case[T, Signal](signal.getClass, Some(_.equals(signal)), (ctx: ActorContext[T], _: Signal) ⇒ handler.apply(ctx)))
+    new BehaviorChain[T](messageHandlers, signalHandlers :+ Case[T, Signal](signal.getClass, Some(_.equals(signal)), (ctx: ActorContext[T], _: Signal) ⇒ handler.apply(ctx)))
 
 }
 
 object BehaviorChain {
-  def create[T]: BehaviorChain[T] = BehaviorChain[T](Nil, Nil)
+  def create[T]: BehaviorChain[T] = new BehaviorChain[T](Nil, Nil)
 
   import scala.language.existentials
 
