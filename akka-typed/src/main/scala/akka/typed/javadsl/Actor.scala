@@ -179,7 +179,7 @@ object Actor {
    *
    * @return the behavior builder
    */
-  def immutable[T]: BehaviorBuilder[T] = BehaviorBuilder.create[T]
+  def immutable[T]: BehaviorChain[T] = BehaviorChain.create[T]
 
   /**
    * This type of Behavior wraps another Behavior while allowing you to perform
