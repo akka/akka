@@ -3,6 +3,8 @@
  */
 package akka.remote.serialization
 
+import java.io.NotSerializableException
+
 import akka.actor.{ ActorRef, Address, ExtendedActorSystem }
 import akka.protobuf.MessageLite
 import akka.remote.RemoteWatcher.ArteryHeartbeatRsp
@@ -91,7 +93,7 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case ClassManifestCompressionAdvertisementAckManifest ⇒ deserializeCompressionTableAdvertisementAck(bytes, ClassManifestCompressionAdvertisementAck)
     case ArteryHeartbeatManifest ⇒ RemoteWatcher.ArteryHeartbeat
     case ArteryHeartbeatRspManifest ⇒ deserializeArteryHeartbeatRsp(bytes, ArteryHeartbeatRsp)
-    case _ ⇒ throw new IllegalArgumentException(s"Manifest '$manifest' not defined for ArteryControlMessageSerializer (serializer id $identifier)")
+    case _ ⇒ throw new NotSerializableException(s"Manifest '$manifest' not defined for ArteryControlMessageSerializer (serializer id $identifier)")
   }
 
   import scala.collection.JavaConverters._

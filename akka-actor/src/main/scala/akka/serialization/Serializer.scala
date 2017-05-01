@@ -4,7 +4,7 @@ package akka.serialization
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, NotSerializableException, ObjectOutputStream }
 import java.nio.ByteBuffer
 import java.util.concurrent.Callable
 
@@ -135,6 +135,7 @@ abstract class SerializerWithStringManifest extends Serializer {
    * and message is dropped. Other exceptions will tear down the TCP connection
    * because it can be an indication of corrupt bytes from the underlying transport.
    */
+  @throws(classOf[NotSerializableException])
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef
 
   final def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = {

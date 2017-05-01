@@ -6,6 +6,8 @@ package jdocs.persistence;
 
 import docs.persistence.ExampleJsonMarshaller;
 import docs.persistence.proto.FlightAppModels;
+
+import java.io.NotSerializableException;
 import java.nio.charset.Charset;
 import spray.json.JsObject;
 
@@ -72,7 +74,7 @@ public class PersistenceSchemaEvolutionDocTest {
       return o.getClass().getName();
     }
 
-    @Override public Object fromBinary(byte[] bytes, String manifest) {
+    @Override public Object fromBinary(byte[] bytes, String manifest) throws NotSerializableException{
       if (seatReservedManifest.equals(manifest)) {
         // use generated protobuf serializer
         try {
@@ -81,7 +83,7 @@ public class PersistenceSchemaEvolutionDocTest {
           throw new IllegalArgumentException(e.getMessage());
         } 
       } else {
-          throw new IllegalArgumentException("Unable to handle manifest: " + manifest);
+          throw new NotSerializableException("Unable to handle manifest: " + manifest);
       }
     }
 
@@ -208,13 +210,13 @@ public class PersistenceSchemaEvolutionDocTest {
       }
 
       // deserialize the object, using the manifest to indicate which logic to apply
-      @Override public Object fromBinary(byte[] bytes, String manifest) {
+      @Override public Object fromBinary(byte[] bytes, String manifest) throws NotSerializableException {
         if (personManifest.equals(manifest)) {
           String nameAndSurname = new String(bytes, utf8);
           String[] parts = nameAndSurname.split("[|]");
           return new Person(parts[0], parts[1]);
         } else {
-          throw new IllegalArgumentException(
+          throw new NotSerializableException(
             "Unable to deserialize from bytes, manifest was: " + manifest + 
             "! Bytes length: " + bytes.length);
         }
@@ -412,12 +414,12 @@ public class PersistenceSchemaEvolutionDocTest {
       }
     }
   
-    @Override public Object fromBinary(byte[] bytes, String manifest) {
+    @Override public Object fromBinary(byte[] bytes, String manifest) throws NotSerializableException {
       if (oldPayloadClassName.equals(manifest))
         return new SamplePayload(new String(bytes, utf8));
       else if (myPayloadClassName.equals(manifest))
         return new SamplePayload(new String(bytes, utf8));
-      else throw new IllegalArgumentException("unexpected manifest [" + manifest + "]");
+      else throw new NotSerializableException("unexpected manifest [" + manifest + "]");
     }
   }
   //#string-serializer-handle-rename
