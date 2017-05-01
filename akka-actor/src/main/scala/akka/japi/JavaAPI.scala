@@ -16,6 +16,8 @@ import scala.util.control.NoStackTrace
 
 /**
  * A Function interface. Used to create first-class-functions is Java.
+ *
+ * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Function]].
  */
 trait Function[T, R] {
   @throws(classOf[Exception])
@@ -24,6 +26,8 @@ trait Function[T, R] {
 
 /**
  * A Function interface. Used to create 2-arg first-class-functions is Java.
+ *
+ * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Function2]].
  */
 trait Function2[T1, T2, R] {
   @throws(classOf[Exception])
@@ -32,6 +36,8 @@ trait Function2[T1, T2, R] {
 
 /**
  * A Procedure is like a Function, but it doesn't produce a return value.
+ *
+ * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Procedure]].
  */
 trait Procedure[T] {
   @throws(classOf[Exception])
@@ -40,6 +46,8 @@ trait Procedure[T] {
 
 /**
  * An executable piece of code that takes no parameters and doesn't return any value.
+ *
+ * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Effect]].
  */
 trait Effect {
   @throws(classOf[Exception])
@@ -48,6 +56,8 @@ trait Effect {
 
 /**
  * Java API: Defines a criteria and determines whether the parameter meets this criteria.
+ *
+ * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Predicate]].
  */
 trait Predicate[T] {
   def test(param: T): Boolean
@@ -69,6 +79,8 @@ object Pair {
 
 /**
  * A constructor/factory, takes no parameters but creates a new value of type T every call.
+ *
+ * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Creator]].
  */
 @SerialVersionUID(1L)
 trait Creator[T] extends Serializable {
