@@ -7,7 +7,7 @@ package akka.http.impl.settings
 import java.util.Random
 
 import akka.http.impl.engine.ws.Randoms
-import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ParserSettings, PreviewServerSettings, ServerSettings }
 import com.typesafe.config.Config
 
 import scala.language.implicitConversions
@@ -26,7 +26,7 @@ import akka.http.scaladsl.settings.ServerSettings.LogUnencryptedNetworkBytes
 @InternalApi
 private[akka] final case class ServerSettingsImpl(
   serverHeader:               Option[Server],
-  previewSettings:            PreviewServerSettings,
+  previewServerSettings:      PreviewServerSettings,
   timeouts:                   ServerSettings.Timeouts,
   maxConnections:             Int,
   pipeliningLimit:            Int,
@@ -68,8 +68,7 @@ private[http] object ServerSettingsImpl extends SettingsCompanion[ServerSettings
 
   def fromSubConfig(root: Config, c: Config) = new ServerSettingsImpl(
     c.getString("server-header").toOption.map(Server(_)),
-    new PreviewServerSettings(
-      useHttp2 = c.getBoolean("preview.use-http2")),
+    PreviewServerSettingsImpl.fromSubConfig(root, c.getConfig("preview")),
     Timeouts(
       c getPotentiallyInfiniteDuration "idle-timeout",
       c getPotentiallyInfiniteDuration "request-timeout",

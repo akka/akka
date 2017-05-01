@@ -9,16 +9,19 @@ import akka.actor.ActorSystem
 import akka.http.impl.engine.parsing.BodyPartParser
 import akka.http.impl.settings.ParserSettingsImpl
 import java.{ util ⇒ ju }
+
+import akka.annotation.DoNotInherit
 import akka.http.impl.util.JavaMapping.Implicits._
+
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
-
-import akka.http.javadsl.model.{ MediaType, HttpMethod, StatusCode, Uri }
+import akka.http.javadsl.model.{ HttpMethod, MediaType, StatusCode, Uri }
 import com.typesafe.config.Config
 
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class ParserSettings private[akka] () extends BodyPartParser.Settings { self: ParserSettingsImpl ⇒
   def getMaxUriLength: Int
   def getMaxMethodLength: Int

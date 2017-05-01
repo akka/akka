@@ -15,7 +15,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 
 class Http2BindingViaConfigSpec extends AkkaSpec("""
-    akka.http.server.preview.use-http2 = on
+    akka.http.server.preview.enable-http2 = on
     
     akka.loglevel = DEBUG
     akka.log-dead-letters = off
@@ -29,7 +29,7 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
   val helloWorldHandler: HttpRequest ⇒ Future[HttpResponse] =
     _ ⇒ Future(HttpResponse(entity = "Hello!"))
 
-  "akka.http.server.use-http2" should {
+  "akka.http.server.enable-http2" should {
     "bind using plain JTT{ when provided ConnectionContext is HTTP (not HTTPS)" in {
       // since we're in akka-http core here, the http2 support is not available on classpath,
       // so the setting + binding should fail

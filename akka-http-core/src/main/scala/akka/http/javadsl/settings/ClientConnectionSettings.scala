@@ -6,6 +6,7 @@ package akka.http.javadsl.settings
 import java.util.{ Optional, Random }
 
 import akka.actor.ActorSystem
+import akka.annotation.DoNotInherit
 import akka.http.impl.settings.ClientConnectionSettingsImpl
 import akka.http.javadsl.model.headers.UserAgent
 import akka.io.Inet.SocketOption
@@ -20,6 +21,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class ClientConnectionSettings private[akka] () { self: ClientConnectionSettingsImpl ⇒
   def getUserAgentHeader: Optional[UserAgent]
   def getConnectingTimeout: FiniteDuration

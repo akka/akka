@@ -4,12 +4,14 @@
 package akka.http.javadsl.settings
 
 import akka.actor.ActorSystem
+import akka.annotation.DoNotInherit
 import akka.http.impl.settings.RoutingSettingsImpl
 import com.typesafe.config.Config
 
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class RoutingSettings private[akka] () { self: RoutingSettingsImpl ⇒
   def getVerboseErrorMessages: Boolean
   def getFileGetConditional: Boolean

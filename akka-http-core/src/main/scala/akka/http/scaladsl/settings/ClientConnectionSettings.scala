@@ -7,6 +7,7 @@ import java.lang.Iterable
 import java.util.{ Optional, Random }
 import java.util.function.Supplier
 
+import akka.annotation.DoNotInherit
 import akka.http.impl.util._
 import akka.http.impl.settings.ClientConnectionSettingsImpl
 import akka.http.javadsl.model.headers.UserAgent
@@ -17,12 +18,13 @@ import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters
-import scala.concurrent.duration.{ FiniteDuration, Duration }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.collection.JavaConverters._
 
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class ClientConnectionSettings private[akka] () extends akka.http.javadsl.settings.ClientConnectionSettings { self: ClientConnectionSettingsImpl ⇒
   def userAgentHeader: Option[`User-Agent`]
   def connectingTimeout: FiniteDuration

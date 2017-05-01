@@ -23,5 +23,5 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.S
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.this")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.copy$default$14")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.apply")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getPreviewSettings")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.previewSettings")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getPreviewServerSettings")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.previewServerSettings")

@@ -7,6 +7,7 @@ import java.util
 import java.util.Optional
 import java.util.function.Function
 
+import akka.annotation.DoNotInherit
 import akka.http.impl.settings.ParserSettingsImpl
 import akka.http.impl.util._
 import akka.http.javadsl.model
@@ -20,6 +21,7 @@ import scala.compat.java8.OptionConverters
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class ParserSettings private[akka] () extends akka.http.javadsl.settings.ParserSettings { self: ParserSettingsImpl ⇒
   def maxUriLength: Int
   def maxMethodLength: Int

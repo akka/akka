@@ -10,7 +10,7 @@ import com.typesafe.config.Config
 
 /** INTERNAL API */
 @InternalApi
-final case class RoutingSettingsImpl(
+private[http] final case class RoutingSettingsImpl(
   verboseErrorMessages:     Boolean,
   fileGetConditional:       Boolean,
   renderVanityFooter:       Boolean,

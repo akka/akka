@@ -64,7 +64,7 @@ private[akka] object Http2Shadow {
   }
 
   final case class Http2SupportNotPresentException(cause: Throwable)
-    extends RuntimeException("Unable to invoke HTTP2 binding logic (as enabled setting `akka.http.server.use-http2`). " +
+    extends RuntimeException("Unable to invoke HTTP2 binding logic (as enabled setting `akka.http.server.enable-http2`). " +
       """Please make sure that `"com.typesafe.akka" %% "akka-http2-support" % AkkaHttpVersion` is on the classpath.""", cause)
 
 }

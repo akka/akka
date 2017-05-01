@@ -4,9 +4,12 @@
 package akka.http.scaladsl.settings
 
 import akka.actor.{ ActorRefFactory, ActorSystem }
+import akka.annotation.InternalApi
 import com.typesafe.config.Config
 import akka.http.impl.util._
 
+/** INTERNAL API */
+@InternalApi
 private[akka] trait SettingsCompanion[T] {
 
   /**
