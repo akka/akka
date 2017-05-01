@@ -8,6 +8,8 @@ import akka.typed.Terminated;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
+import java.util.ArrayList;
+
 import static akka.typed.javadsl.Actor.same;
 import static akka.typed.javadsl.Actor.stopped;
 
@@ -16,20 +18,42 @@ public class BehaviorBuilderTest extends JUnitSuite {
     }
 
     static class One implements Message {
-        public void foo() {}
+        public String foo() {
+          return "Bar";
+        }
     }
+    static class MyList<T> extends ArrayList<T> implements Message {
+
+    };
 
     @Test
     public void shouldCompile() {
         Behavior<Message> b = BehaviorBuilder.<Message>create()
+                .message(One.class, o -> o.foo().startsWith("a"), (ctx, o) -> same())
                 .message(One.class, (ctx, o) -> {
                     o.foo();
                     return same();
                 })
+                .messageUnchecked(MyList.class, (ActorContext<Message> ctx, MyList<String> l) -> {
+                  String first = l.get(0);
+                  return Actor.<Message>same();
+                })
                 .signal(Terminated.class, (ctx, t) -> {
                     System.out.println("Terminating along with " + t.ref());
                     return stopped();
-                })
-                .build();
+                });
+    }
+
+    @Test
+    public void shouldBeUsableToCreateFromActor() {
+      Behavior<Message> b = Actor.<Message>immutable()
+              .message(One.class, (ctx, o) -> {
+                o.foo();
+                return same();
+              })
+              .signal(Terminated.class, (ctx, t) -> {
+                System.out.println("Terminating along with " + t.ref());
+                return stopped();
+              });
     }
 }
