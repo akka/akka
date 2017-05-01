@@ -1166,7 +1166,7 @@ object MiMa extends AutoPlugin {
     
     val Release25Filters = Seq(
       "2.5.0" -> Seq(
-          
+
           // #22759 LMDB files
           ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.env"),
           ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.db"),
