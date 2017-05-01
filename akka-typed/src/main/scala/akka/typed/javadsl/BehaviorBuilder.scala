@@ -5,47 +5,137 @@
 package akka.typed.javadsl
 
 import scala.annotation.tailrec
-
-import akka.japi.pf.FI.Apply2
-
+import akka.japi.pf.FI
 import akka.typed
 import akka.typed.{ Behavior, ExtensibleBehavior, Signal }
+import BehaviorBuilder._
+import akka.annotation.InternalApi
 
+/**
+ * Used for creating a [[akka.typed.Behavior]].
+ *
+ * There are methods for matching both messages and signals on type and (optionally) predicate.
+ *
+ * @tparam T the common superclass of all supported messages.
+ */
 case class BehaviorBuilder[T](
-  messageHandlers: List[(Class[_ <: T], (ActorContext[T], T) ⇒ Behavior[T])],
-  signalHandlers:  List[(Class[_ <: Signal], (ActorContext[T], Signal) ⇒ Behavior[T])]
-) {
+  private val messageHandlers: List[Case[T, T]],
+  private val signalHandlers:  List[Case[T, Signal]]
+) extends ExtensibleBehavior[T] {
 
-  def build(): Behavior[T] = {
-    new ExtensibleBehavior[T] {
-      override def receiveMessage(ctx: typed.ActorContext[T], msg: T): Behavior[T] = receive[T](ctx, msg, messageHandlers)
+  override def receiveMessage(ctx: typed.ActorContext[T], msg: T): Behavior[T] = receive[T](ctx, msg, messageHandlers)
 
-      override def receiveSignal(ctx: typed.ActorContext[T], msg: Signal): Behavior[T] = receive[Signal](ctx, msg, signalHandlers)
+  override def receiveSignal(ctx: typed.ActorContext[T], msg: Signal): Behavior[T] = receive[Signal](ctx, msg, signalHandlers)
 
-      @tailrec
-      private def receive[M](ctx: ActorContext[T], msg: M, handlers: List[(Class[_ <: M], (ActorContext[T], M) ⇒ Behavior[T])]): Behavior[T] =
-        handlers match {
-          case Nil ⇒
-            // emulate scala match error
-            throw new MatchError(msg)
-          case (cls, impl) :: tail ⇒
-            if (cls.isAssignableFrom(msg.getClass)) impl(ctx, msg)
-            else receive[M](ctx, msg, tail)
-        }
+  @tailrec
+  private def receive[M](ctx: ActorContext[T], msg: M, handlers: List[Case[T, M]]): Behavior[T] =
+    handlers match {
+      case Case(cls, predicate, handler) :: tail ⇒
+        if (cls.isAssignableFrom(msg.getClass) && (predicate.isEmpty || predicate.get.apply(msg))) handler(ctx, msg)
+        else receive[M](ctx, msg, tail)
+      case _ ⇒
+        // emulate scala match error
+        throw new MatchError(msg)
     }
-  }
 
-  def message[M <: T](`type`: Class[M], handler: Apply2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
-    copy[T](messageHandlers = messageHandlers :+ ((`type`, (i1: ActorContext[T], i2: T) ⇒ handler.apply(i1, i2.asInstanceOf[M]))))
+  /**
+   * Add a new case to the message handling.
+   *
+   * @param `type` type of messages to match
+   * @param handler action to apply if the type matches
+   * @tparam M
+   * @return a new behavior with the specified handling appended
+   */
+  def message[M <: T](`type`: Class[M], handler: FI.Apply2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
+    copy[T](messageHandlers = messageHandlers :+ Case[T, T](`type`, None, (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])))
 
-  def messageUnchecked(`type`: Class[_ <: T], handler: Apply2[ActorContext[T], T, Behavior[T]]): BehaviorBuilder[T] =
-    copy[T](messageHandlers = messageHandlers :+ ((`type`, (i1: ActorContext[T], i2: T) ⇒ handler.apply(i1, i2))))
+  /**
+   * Add a new predicated case to the message handling.
+   *
+   * @param `type` type of messages to match
+   * @param predicate a predicate that will be evaluated on the argument if the type matches
+   * @param handler action to apply if the type matches and the predicate returns true
+   * @tparam M
+   * @return a new behavior with the specified handling appended
+   */
+  def message[M <: T](`type`: Class[M], predicate: FI.TypedPredicate[M], handler: FI.Apply2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
+    copy[T](messageHandlers = messageHandlers :+ Case[T, T](`type`, Some((t: T) ⇒ predicate.defined(t.asInstanceOf[M])), (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])))
 
-  def signal[U <: Signal](`type`: Class[U], handler: Apply2[ActorContext[T], U, Behavior[T]]): BehaviorBuilder[T] =
-    copy[T](signalHandlers = signalHandlers :+ ((`type`, (i1: ActorContext[T], i2: Any) ⇒ handler.apply(i1, i2.asInstanceOf[U]))))
+  /**
+   * Add a new case to the message handling without compile time type check.
+   * Should normally not be used, but when matching on class with generic type
+   * argument it can be useful, e.g. <code>List.class</code> and <code>(List&lt;String&gt; list) -> {...}</code>
+   *
+   * @param `type` type of messages to match
+   * @param handler action to apply when the type matches
+   * @return a new behavior with the specified handling appended
+   */
+  def messageUnchecked[M <: T](`type`: Class[_ <: T], handler: FI.Apply2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
+    copy[T](messageHandlers = messageHandlers :+ Case[T, T](`type`, None, (i1: ActorContext[T], msg: T) ⇒ handler.apply(i1, msg.asInstanceOf[M])))
+
+  /**
+   * Add a new case to the message handling matching equal messages.
+   *
+   * @param msg the message to compare to
+   * @param handler action to apply when the message matches
+   * @return a new behavior with the specified handling appended
+   */
+  def messageEquals(msg: T, handler: FI.Apply[ActorContext[T], Behavior[T]]): BehaviorBuilder[T] =
+    copy[T](messageHandlers = messageHandlers :+ Case[T, T](msg.getClass, Some(_.equals(msg)), (ctx: ActorContext[T], _: T) ⇒ handler.apply(ctx)))
+
+  /**
+   * Add a new case to the signal handling
+   *
+   * @param `type` type of signal to match
+   * @param handler action to apply if the type matches
+   * @tparam M
+   * @return a new behavior with the specified handling appended
+   */
+  def signal[M <: Signal](`type`: Class[M], handler: FI.Apply2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
+    copy[T](signalHandlers = signalHandlers :+ Case[T, Signal](`type`, None, (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])))
+
+  /**
+   * Add a new predicated case to the signal handling.
+   *
+   * @param `type` type of signals to match
+   * @param predicate a predicate that will be evaluated on the argument if the type matches
+   * @param handler action to apply if the type matches and the predicate returns true
+   * @tparam M
+   * @return a new behavior with the specified handling appended
+   */
+  def signal[M <: Signal](`type`: Class[M], predicate: FI.TypedPredicate[M], handler: FI.Apply2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
+    copy[T](signalHandlers = signalHandlers :+ Case[T, Signal](`type`, Some((t: Signal) ⇒ predicate.defined(t.asInstanceOf[M])), (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])))
+
+  /**
+   * Add a new case to the signal handling without compile time type check.
+   * Should normally not be used, but when matching on class with generic type
+   * argument it can be useful, e.g. <code>GenMsg.class</code> and <code>(ActorContext<Message> ctx, GenMsg&lt;String&gt; list) -> {...}</code>
+   *
+   * @param `type` type of signal to match
+   * @param handler action to apply when the type matches
+   * @return a new behavior with the specified handling appended
+   */
+  def signalUnchecked[M <: Signal](`type`: Class[_ <: Signal], handler: FI.Apply2[ActorContext[T], M, Behavior[T]]): BehaviorBuilder[T] =
+    copy[T](signalHandlers = signalHandlers :+ Case[T, Signal](`type`, None, (ctx: ActorContext[T], signal: Signal) ⇒ handler.apply(ctx, signal.asInstanceOf[M])))
+
+  /**
+   * Add a new case to the signal handling matching equal signals.
+   *
+   * @param msg the signal to compare to
+   * @param handler action to apply when the message matches
+   * @return a new behavior with the specified handling appended
+   */
+  def signalEquals(msg: Signal, handler: FI.Apply[ActorContext[T], Behavior[T]]): BehaviorBuilder[T] =
+    copy[T](signalHandlers = signalHandlers :+ Case[T, Signal](msg.getClass, Some(_.equals(msg)), (ctx: ActorContext[T], _: Signal) ⇒ handler.apply(ctx)))
 
 }
 
 object BehaviorBuilder {
   def create[T](): BehaviorBuilder[T] = BehaviorBuilder[T](Nil, Nil)
+
+  import scala.language.existentials
+
+  @InternalApi
+  case class Case[BT, MT](`type`: Class[_ <: MT], predicate: Option[MT ⇒ Boolean], handler: (ActorContext[BT], MT) ⇒ Behavior[BT])
+
 }

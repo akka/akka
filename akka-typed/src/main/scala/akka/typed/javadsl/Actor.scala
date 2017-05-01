@@ -168,6 +168,20 @@ object Actor {
   }
 
   /**
+   * Constructs an actor behavior builder that can build a behaviour that can react to both
+   * incoming messages and lifecycle signals.
+   *
+   * This constructor is called immutable because the behavior instance doesn't
+   * have or close over any mutable state. Processing the next message
+   * results in a new behavior that can potentially be different from this one.
+   * State is updated by returning a new behavior that holds the new immutable
+   * state. If no change is desired, use {@link #same}.
+   *
+   * @return the behavior builder
+   */
+  def immutable[T]: BehaviorBuilder[T] = BehaviorBuilder.create[T]
+
+  /**
    * This type of Behavior wraps another Behavior while allowing you to perform
    * some action upon each received message or signal. It is most commonly used
    * for logging or tracing what a certain Actor does.
