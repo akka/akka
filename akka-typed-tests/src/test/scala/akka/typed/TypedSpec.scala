@@ -29,6 +29,7 @@ import org.junit.runner.RunWith
 import scala.util.control.NonFatal
 import org.scalatest.exceptions.TestFailedException
 import akka.typed.scaladsl.AskPattern
+import scala.util.control.NoStackTrace
 
 /**
  * Helper class for writing tests for typed Actors with ScalaTest.
@@ -102,12 +103,19 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
     try await(f) match {
       case Success ⇒ ()
       case Failed(ex) ⇒
-        println(system.printTree)
-        throw unwrap(ex)
+        unwrap(ex) match {
+          case ex2: TypedSpec.SimulatedException ⇒
+            throw ex2
+          case _ ⇒
+            println(system.printTree)
+            throw unwrap(ex)
+        }
       case Timedout ⇒
         println(system.printTree)
         fail("test timed out")
     } catch {
+      case ex: TypedSpec.SimulatedException ⇒
+        throw ex
       case NonFatal(ex) ⇒
         println(system.printTree)
         throw ex
@@ -160,6 +168,8 @@ object TypedSpec {
   case class Failed(thr: Throwable) extends Status
   case object Timedout extends Status
 
+  class SimulatedException(message: String) extends RuntimeException(message) with NoStackTrace
+
   def guardian(outstanding: Map[ActorRef[_], ActorRef[Status]] = Map.empty): Behavior[Command] =
     Immutable[Command] {
       case (ctx, r: RunTest[t]) ⇒
@@ -201,15 +211,13 @@ class TypedSpecSpec extends TypedSpec {
   object `A TypedSpec` {
 
     trait CommonTests {
-      class MyException(message: String) extends Exception(message)
-
       implicit def system: ActorSystem[TypedSpec.Command]
 
       def `must report failures`(): Unit = {
-        a[MyException] must be thrownBy {
+        a[TypedSpec.SimulatedException] must be thrownBy {
           sync(runTest("failure")(StepWise[String]((ctx, startWith) ⇒
             startWith {
-              throw new MyException("expected")
+              throw new TypedSpec.SimulatedException("expected")
             })))
         }
       }
