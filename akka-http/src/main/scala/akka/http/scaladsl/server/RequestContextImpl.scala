@@ -122,4 +122,7 @@ private[http] class RequestContextImpl(
     routingSettings:  RoutingSettings          = settings,
     parserSettings:   ParserSettings           = parserSettings) =
     new RequestContextImpl(request, unmatchedPath, executionContext, materializer, log, routingSettings, parserSettings)
+
+  override def toString: String =
+    s"""RequestContext($request, $unmatchedPath, [more settings])"""
 }
