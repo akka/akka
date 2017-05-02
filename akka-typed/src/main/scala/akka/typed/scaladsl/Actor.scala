@@ -92,7 +92,7 @@ object Actor {
 
     @throws(classOf[Exception])
     override final def receiveSignal(ctx: akka.typed.ActorContext[T], msg: Signal): Behavior[T] =
-      onSignal(msg)
+      onSignal.applyOrElse(msg, { case _ ⇒ Behavior.unhandled }: PartialFunction[Signal, Behavior[T]])
 
     /**
      * Override this method to process an incoming [[akka.typed.Signal]] and return the next behavior.
