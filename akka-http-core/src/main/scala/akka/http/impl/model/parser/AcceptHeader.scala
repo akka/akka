@@ -32,8 +32,11 @@ private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonAc
     }
   }
 
+  // this specific ordering PREVENTS that next rule is allowed to parse `*/xyz` as a valid media range
   def `media-range-def` = rule {
-    "*/*" ~ push("*") ~ push("*") | `type` ~ '/' ~ ('*' ~ !tchar ~ push("*") | subtype) | '*' ~ push("*") ~ push("*")
+    "*/*" ~ push("*") ~ push("*") |
+      '*' ~ push("*") ~ push("*") |
+      `type` ~ '/' ~ ('*' ~ !tchar ~ push("*") | subtype)
   }
 }
 
