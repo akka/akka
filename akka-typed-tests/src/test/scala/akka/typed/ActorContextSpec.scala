@@ -73,18 +73,18 @@ object ActorContextSpec {
   final case class Adapter(a: ActorRef[Command]) extends Event
 
   def subject(monitor: ActorRef[Monitor]): Behavior[Command] =
-    Actor.Immutable[Command] {
+    Actor.immutable[Command] {
       (ctx, message) ⇒
         message match {
           case ReceiveTimeout ⇒
             monitor ! GotReceiveTimeout
-            Actor.Same
+            Actor.same
           case Ping(replyTo) ⇒
             replyTo ! Pong1
-            Actor.Same
+            Actor.same
           case Miss(replyTo) ⇒
             replyTo ! Missed
-            Actor.Unhandled
+            Actor.unhandled
           case Renew(replyTo) ⇒
             replyTo ! Renewed
             subject(monitor)
@@ -92,85 +92,85 @@ object ActorContextSpec {
             throw ex
           case MkChild(name, mon, replyTo) ⇒
             val child = name match {
-              case None    ⇒ ctx.spawnAnonymous(Actor.Restarter[Throwable]().wrap(subject(mon)))
-              case Some(n) ⇒ ctx.spawn(Actor.Restarter[Throwable]().wrap(subject(mon)), n)
+              case None    ⇒ ctx.spawnAnonymous(Actor.restarter[Throwable]().wrap(subject(mon)))
+              case Some(n) ⇒ ctx.spawn(Actor.restarter[Throwable]().wrap(subject(mon)), n)
             }
             replyTo ! Created(child)
-            Actor.Same
+            Actor.same
           case SetTimeout(d, replyTo) ⇒
             d match {
               case f: FiniteDuration ⇒ ctx.setReceiveTimeout(f, ReceiveTimeout)
               case _                 ⇒ ctx.cancelReceiveTimeout()
             }
             replyTo ! TimeoutSet
-            Actor.Same
+            Actor.same
           case Schedule(delay, target, msg, replyTo) ⇒
             replyTo ! Scheduled
             ctx.schedule(delay, target, msg)
-            Actor.Same
-          case Stop ⇒ Actor.Stopped
+            Actor.same
+          case Stop ⇒ Actor.stopped
           case Kill(ref, replyTo) ⇒
             if (ctx.stop(ref)) replyTo ! Killed
             else replyTo ! NotKilled
-            Actor.Same
+            Actor.same
           case Watch(ref, replyTo) ⇒
             ctx.watch(ref)
             replyTo ! Watched
-            Actor.Same
+            Actor.same
           case Unwatch(ref, replyTo) ⇒
             ctx.unwatch(ref)
             replyTo ! Unwatched
-            Actor.Same
+            Actor.same
           case GetInfo(replyTo) ⇒
             replyTo ! Info(ctx.self, ctx.system)
-            Actor.Same
+            Actor.same
           case GetChild(name, replyTo) ⇒
             replyTo ! Child(ctx.child(name))
-            Actor.Same
+            Actor.same
           case GetChildren(replyTo) ⇒
             replyTo ! Children(ctx.children.toSet)
-            Actor.Same
+            Actor.same
           case BecomeInert(replyTo) ⇒
             replyTo ! BecameInert
-            Actor.Immutable {
+            Actor.immutable {
               case (_, Ping(replyTo)) ⇒
                 replyTo ! Pong2
-                Actor.Same
+                Actor.same
               case (_, Throw(ex)) ⇒
                 throw ex
-              case _ ⇒ Actor.Unhandled
+              case _ ⇒ Actor.unhandled
             }
           case BecomeCareless(replyTo) ⇒
             replyTo ! BecameCareless
-            Actor.Immutable[Command] {
-              case (_, _) ⇒ Actor.Unhandled
+            Actor.immutable[Command] {
+              case (_, _) ⇒ Actor.unhandled
             } onSignal {
-              case (_, Terminated(_)) ⇒ Actor.Unhandled
+              case (_, Terminated(_)) ⇒ Actor.unhandled
               case (_, sig) ⇒
                 monitor ! GotSignal(sig)
-                Actor.Same
+                Actor.same
 
             }
           case GetAdapter(replyTo, name) ⇒
             replyTo ! Adapter(ctx.spawnAdapter(identity, name))
-            Actor.Same
+            Actor.same
         }
     } onSignal {
-      case (ctx, signal) ⇒ monitor ! GotSignal(signal); Actor.Same
+      case (ctx, signal) ⇒ monitor ! GotSignal(signal); Actor.same
     }
 
   def oldSubject(monitor: ActorRef[Monitor]): Behavior[Command] = {
-    Actor.Immutable[Command] {
+    Actor.immutable[Command] {
       case (ctx, message) ⇒ message match {
         case ReceiveTimeout ⇒
           monitor ! GotReceiveTimeout
-          Actor.Same
+          Actor.same
         case Ping(replyTo) ⇒
           replyTo ! Pong1
-          Actor.Same
+          Actor.same
         case Miss(replyTo) ⇒
           replyTo ! Missed
-          Actor.Unhandled
+          Actor.unhandled
         case Renew(replyTo) ⇒
           replyTo ! Renewed
           subject(monitor)
@@ -178,72 +178,72 @@ object ActorContextSpec {
           throw ex
         case MkChild(name, mon, replyTo) ⇒
           val child = name match {
-            case None    ⇒ ctx.spawnAnonymous(Actor.Restarter[Throwable]().wrap(subject(mon)))
-            case Some(n) ⇒ ctx.spawn(Actor.Restarter[Throwable]().wrap(subject(mon)), n)
+            case None    ⇒ ctx.spawnAnonymous(Actor.restarter[Throwable]().wrap(subject(mon)))
+            case Some(n) ⇒ ctx.spawn(Actor.restarter[Throwable]().wrap(subject(mon)), n)
           }
           replyTo ! Created(child)
-          Actor.Same
+          Actor.same
         case SetTimeout(d, replyTo) ⇒
           d match {
             case f: FiniteDuration ⇒ ctx.setReceiveTimeout(f, ReceiveTimeout)
             case _                 ⇒ ctx.cancelReceiveTimeout()
           }
           replyTo ! TimeoutSet
-          Actor.Same
+          Actor.same
         case Schedule(delay, target, msg, replyTo) ⇒
           replyTo ! Scheduled
           ctx.schedule(delay, target, msg)
-          Actor.Same
-        case Stop ⇒ Actor.Stopped
+          Actor.same
+        case Stop ⇒ Actor.stopped
         case Kill(ref, replyTo) ⇒
           if (ctx.stop(ref)) replyTo ! Killed
           else replyTo ! NotKilled
-          Actor.Same
+          Actor.same
         case Watch(ref, replyTo) ⇒
           ctx.watch(ref)
           replyTo ! Watched
-          Actor.Same
+          Actor.same
         case Unwatch(ref, replyTo) ⇒
           ctx.unwatch(ref)
           replyTo ! Unwatched
-          Actor.Same
+          Actor.same
         case GetInfo(replyTo) ⇒
           replyTo ! Info(ctx.self, ctx.system)
-          Actor.Same
+          Actor.same
         case GetChild(name, replyTo) ⇒
           replyTo ! Child(ctx.child(name))
-          Actor.Same
+          Actor.same
         case GetChildren(replyTo) ⇒
           replyTo ! Children(ctx.children.toSet)
-          Actor.Same
+          Actor.same
         case BecomeInert(replyTo) ⇒
           replyTo ! BecameInert
-          Actor.Immutable[Command] {
+          Actor.immutable[Command] {
             case (_, Ping(replyTo)) ⇒
               replyTo ! Pong2
-              Actor.Same
+              Actor.same
             case (_, Throw(ex)) ⇒
               throw ex
-            case _ ⇒ Actor.Same
+            case _ ⇒ Actor.same
           }
         case BecomeCareless(replyTo) ⇒
           replyTo ! BecameCareless
-          Actor.Immutable[Command] {
-            case _ ⇒ Actor.Unhandled
+          Actor.immutable[Command] {
+            case _ ⇒ Actor.unhandled
           } onSignal {
-            case (_, Terminated(_)) ⇒ Actor.Unhandled
+            case (_, Terminated(_)) ⇒ Actor.unhandled
             case (_, sig) ⇒
               monitor ! GotSignal(sig)
-              Actor.Same
+              Actor.same
           }
         case GetAdapter(replyTo, name) ⇒
           replyTo ! Adapter(ctx.spawnAdapter(identity, name))
-          Actor.Same
+          Actor.same
       }
     } onSignal {
       case (_, signal) ⇒
         monitor ! GotSignal(signal)
-        Actor.Same
+        Actor.same
     }
   }
 
@@ -345,7 +345,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       }
     })
 
-    def `01 must correctly wire the lifecycle hooks`(): Unit = sync(setup("ctx01", Some(Actor.Restarter[Throwable]())) { (ctx, startWith) ⇒
+    def `01 must correctly wire the lifecycle hooks`(): Unit = sync(setup("ctx01", Some(Actor.restarter[Throwable]())) { (ctx, startWith) ⇒
       val self = ctx.self
       val ex = new Exception("KABOOM1")
       startWith { subj ⇒
@@ -415,7 +415,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       }
     })
 
-    def `05 must reset behavior upon Restart`(): Unit = sync(setup("ctx05", Some(Actor.Restarter[Exception]())) { (ctx, startWith) ⇒
+    def `05 must reset behavior upon Restart`(): Unit = sync(setup("ctx05", Some(Actor.restarter[Exception]())) { (ctx, startWith) ⇒
       val self = ctx.self
       val ex = new Exception("KABOOM05")
       startWith
@@ -430,7 +430,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
 
     def `06 must not reset behavior upon Resume`(): Unit = sync(setup(
       "ctx06",
-      Some(Actor.Restarter[Exception](SupervisorStrategy.resume))) { (ctx, startWith) ⇒
+      Some(Actor.restarter[Exception](SupervisorStrategy.resume))) { (ctx, startWith) ⇒
         val self = ctx.self
         val ex = new Exception("KABOOM06")
         startWith
@@ -628,7 +628,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   trait Deferred extends Tests {
     override def suite = "deferred"
     override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      Actor.Deferred(_ ⇒ subject(ctx.self))
+      Actor.deferred(_ ⇒ subject(ctx.self))
   }
   object `An ActorContext with deferred Behavior (native)` extends Deferred with NativeSystem
   object `An ActorContext with deferred Behavior (adapted)` extends Deferred with AdaptedSystem
@@ -636,7 +636,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   trait NestedDeferred extends Tests {
     override def suite = "deferred"
     override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      Actor.Deferred(_ ⇒ Actor.Deferred(_ ⇒ subject(ctx.self)))
+      Actor.deferred(_ ⇒ Actor.deferred(_ ⇒ subject(ctx.self)))
   }
   object `An ActorContext with nested deferred Behavior (native)` extends NestedDeferred with NativeSystem
   object `An ActorContext with nested deferred Behavior (adapted)` extends NestedDeferred with AdaptedSystem
@@ -644,7 +644,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   trait Tap extends Tests {
     override def suite = "tap"
     override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      Actor.Tap((_, _) ⇒ (), (_, _) ⇒ (), subject(ctx.self))
+      Actor.tap((_, _) ⇒ (), (_, _) ⇒ (), subject(ctx.self))
   }
   object `An ActorContext with Tap (old-native)` extends Tap with NativeSystem
   object `An ActorContext with Tap (old-adapted)` extends Tap with AdaptedSystem

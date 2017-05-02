@@ -4,9 +4,10 @@ import akka.event.Logging.{ LogEvent, StdOutLogger }
 import akka.testkit.{ EventFilter, TestEvent ⇒ TE }
 import akka.typed.Logger
 import akka.typed.Logger.{ Command, Initialize }
-import akka.typed.scaladsl.Actor._
 
 import scala.annotation.tailrec
+import akka.typed.scaladsl.Actor
+import akka.typed.Behavior
 
 /**
  * EventListener for running tests, which allows selectively filtering out
@@ -21,12 +22,11 @@ import scala.annotation.tailrec
  */
 class TestEventListener extends Logger with StdOutLogger {
 
-  val initialBehavior = {
-    // TODO avoid depending on dsl here?
-    Deferred[Command] { _ ⇒
-      Immutable[Command] {
+  override val initialBehavior: Behavior[Command] = {
+    Actor.deferred[Command] { _ ⇒
+      Actor.immutable[Command] {
         case (ctx, Initialize(eventStream, replyTo)) ⇒
-          val log = ctx.spawn(Deferred[AnyRef] { childCtx ⇒
+          val log = ctx.spawn(Actor.deferred[AnyRef] { childCtx ⇒
             var filters: List[EventFilter] = Nil
 
             def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
@@ -42,17 +42,17 @@ class TestEventListener extends Logger with StdOutLogger {
               filters = removeFirst(filters)
             }
 
-            Immutable[AnyRef] {
+            Actor.immutable[AnyRef] {
               case (_, TE.Mute(filters)) ⇒
                 filters foreach addFilter
-                Same
+                Actor.same
               case (_, TE.UnMute(filters)) ⇒
                 filters foreach removeFilter
-                Same
+                Actor.same
               case (_, event: LogEvent) ⇒
                 if (!filter(event)) print(event)
-                Same
-              case _ ⇒ Unhandled
+                Actor.same
+              case _ ⇒ Actor.unhandled
             }
           }, "logger")
 
@@ -61,7 +61,7 @@ class TestEventListener extends Logger with StdOutLogger {
           ctx.watch(log) // sign death pact
           replyTo ! log
 
-          Empty
+          Actor.empty
       }
     }
   }
