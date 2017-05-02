@@ -185,7 +185,7 @@ private[typed] class ActorSystemImpl[-T](
 
   private val terminationPromise: Promise[Terminated] = Promise()
 
-  private val rootPath: a.ActorPath = a.RootActorPath(a.Address("typed", name))
+  private val rootPath: a.ActorPath = a.RootActorPath(a.Address("akka", name))
 
   private val topLevelActors = new ConcurrentSkipListSet[ActorRefImpl[Nothing]]
   private val terminateTriggered = new AtomicBoolean
