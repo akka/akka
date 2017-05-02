@@ -11,8 +11,8 @@ import akka.annotation.DoNotInherit
 import akka.typed.ActorRef
 import akka.typed.ActorSystem
 import akka.typed.Behavior
-import akka.typed.DeploymentConfig
-import akka.typed.EmptyDeploymentConfig
+import akka.typed.Props
+import akka.typed.EmptyProps
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -68,12 +68,12 @@ trait ActorContext[T] { this: akka.typed.javadsl.ActorContext[T] ⇒
    * Create a child Actor from the given [[akka.typed.Behavior]] under a randomly chosen name.
    * It is good practice to name Actors wherever practical.
    */
-  def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U]
+  def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U]
 
   /**
    * Create a child Actor from the given [[akka.typed.Behavior]] and with the given name.
    */
-  def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U]
+  def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U]
 
   /**
    * Force the child Actor under the given name to terminate after it finishes

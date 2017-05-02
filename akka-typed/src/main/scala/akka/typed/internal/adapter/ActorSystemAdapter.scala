@@ -69,8 +69,8 @@ import akka.annotation.InternalApi
   override lazy val whenTerminated: scala.concurrent.Future[akka.typed.Terminated] =
     untyped.whenTerminated.map(t ⇒ Terminated(ActorRefAdapter(t.actor))(null))(sameThreadExecutionContext)
 
-  def systemActorOf[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig)(implicit timeout: Timeout): Future[ActorRef[U]] = {
-    val ref = untyped.systemActorOf(PropsAdapter(() ⇒ behavior, deployment), name)
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(implicit timeout: Timeout): Future[ActorRef[U]] = {
+    val ref = untyped.systemActorOf(PropsAdapter(() ⇒ behavior, props), name)
     Future.successful(ActorRefAdapter(ref))
   }
 
@@ -96,7 +96,7 @@ private[typed] object ActorSystemAdapter {
   class ReceptionistExtension(system: a.ExtendedActorSystem) extends a.Extension {
     val receptionist: ActorRef[patterns.Receptionist.Command] =
       ActorRefAdapter(system.systemActorOf(
-        PropsAdapter(() ⇒ patterns.Receptionist.behavior, EmptyDeploymentConfig),
+        PropsAdapter(() ⇒ patterns.Receptionist.behavior, EmptyProps),
         "receptionist"))
   }
 }
