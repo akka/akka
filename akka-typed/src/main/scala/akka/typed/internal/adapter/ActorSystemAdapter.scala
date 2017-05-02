@@ -21,7 +21,7 @@ import scala.annotation.unchecked.uncheckedVariance
  * most circumstances.
  */
 @InternalApi private[typed] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
-  extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] {
+  extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with ExtensionsImpl {
 
   import ActorSystemAdapter._
   import ActorRefAdapter.sendSystemMessage

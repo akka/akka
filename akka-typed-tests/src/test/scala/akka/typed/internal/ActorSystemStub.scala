@@ -62,4 +62,12 @@ private[typed] class ActorSystemStub(val name: String)
     Future.failed(new UnsupportedOperationException("ActorSystemStub cannot create system actors"))
   }
 
+  def registerExtension[T <: Extension](ext: ExtensionId[T]): T =
+    throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
+
+  def extension[T <: Extension](ext: ExtensionId[T]): T =
+    throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
+
+  def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean =
+    throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
 }
