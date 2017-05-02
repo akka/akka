@@ -23,10 +23,10 @@ import akka.annotation.InternalApi
   override def mailboxCapacity = 1 << 29 // FIXME
   override def children = untyped.children.map(ActorRefAdapter(_))
   override def child(name: String) = untyped.child(name).map(ActorRefAdapter(_))
-  override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig) =
-    ActorContextAdapter.spawnAnonymous(untyped, behavior, deployment)
-  override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig) =
-    ActorContextAdapter.spawn(untyped, behavior, name, deployment)
+  override def spawnAnonymous[U](behavior: Behavior[U], props: Props = EmptyProps) =
+    ActorContextAdapter.spawnAnonymous(untyped, behavior, props)
+  override def spawn[U](behavior: Behavior[U], name: String, props: Props = EmptyProps) =
+    ActorContextAdapter.spawn(untyped, behavior, name, props)
   override def stop[U](child: ActorRef[U]) =
     toUntyped(child) match {
       case f: akka.actor.FunctionRef ⇒
@@ -93,13 +93,13 @@ import akka.annotation.InternalApi
           s"($ctx of class ${ctx.getClass.getName})")
     }
 
-  def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], deployment: DeploymentConfig): ActorRef[T] = {
+  def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], props: Props): ActorRef[T] = {
     Behavior.validateAsInitial(behavior)
-    ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, deployment)))
+    ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props)))
   }
 
-  def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String, deployment: DeploymentConfig): ActorRef[T] = {
+  def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String, props: Props): ActorRef[T] = {
     Behavior.validateAsInitial(behavior)
-    ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, deployment), name))
+    ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props), name))
   }
 }

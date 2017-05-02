@@ -3,13 +3,16 @@
  */
 package akka.typed
 
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
-import java.util.concurrent.{ Executor, Executors }
-import scala.reflect.ClassTag
+import java.util.concurrent.Executor
+
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
+import scala.reflect.ClassTag
 
 /**
- * Data structure for describing an actor’s deployment details like which
+ * Data structure for describing an actor’s props details like which
  * executor to run it on. For each type of setting (e.g. [[DispatcherSelector]]
  * or [[MailboxCapacity]]) the FIRST occurrence is used when creating the
  * actor; this means that adding configuration using the "with" methods
@@ -18,60 +21,69 @@ import scala.annotation.tailrec
  * Deliberately not sealed in order to emphasize future extensibility by the
  * framework—this is not intended to be extended by user code.
  *
- * The DeploymentConfig includes a `next` reference so that it can form an
+ * The Props includes a `next` reference so that it can form an
  * internally linked list. Traversal of this list stops when encountering the
- * [[EmptyDeploymentConfig$]] object.
+ * [[EmptyProps]] object.
  */
-abstract class DeploymentConfig extends Product with Serializable {
+@DoNotInherit
+@ApiMayChange
+abstract class Props private[akka] () extends Product with Serializable {
   /**
-   * Reference to the tail of this DeploymentConfig list.
+   * Reference to the tail of this Props list.
+   *
+   * INTERNAL API
    */
-  def next: DeploymentConfig
+  @InternalApi
+  private[akka] def next: Props
 
   /**
-   * Create a copy of this DeploymentConfig node with its `next` reference
+   * Create a copy of this Props node with its `next` reference
    * replaced by the given object. <b>This does NOT append the given list
    * of configuration nodes to the current list!</b>
+   *
+   * INTERNAL API
    */
-  def withNext(next: DeploymentConfig): DeploymentConfig
+  @InternalApi
+  private[akka] def withNext(next: Props): Props
 
   /**
-   * Prepend a selection of the [[ActorSystem]] default executor to this DeploymentConfig.
+   * Prepend a selection of the [[ActorSystem]] default executor to this Props.
    */
-  def withDispatcherDefault: DeploymentConfig = DispatcherDefault(this)
+  def withDispatcherDefault: Props = DispatcherDefault(this)
 
   /**
-   * Prepend a selection of the executor found at the given Config path to this DeploymentConfig.
+   * Prepend a selection of the executor found at the given Config path to this Props.
    * The path is relative to the configuration root of the [[ActorSystem]] that looks up the
    * executor.
    */
-  def withDispatcherFromConfig(path: String): DeploymentConfig = DispatcherFromConfig(path, this)
+  def withDispatcherFromConfig(path: String): Props = DispatcherFromConfig(path, this)
 
   /**
-   * Prepend a selection of the given executor to this DeploymentConfig.
+   * Prepend a selection of the given executor to this Props.
    */
-  def withDispatcherFromExecutor(executor: Executor): DeploymentConfig = DispatcherFromExecutor(executor, this)
+  def withDispatcherFromExecutor(executor: Executor): Props = DispatcherFromExecutor(executor, this)
 
   /**
-   * Prepend a selection of the given execution context to this DeploymentConfig.
+   * Prepend a selection of the given execution context to this Props.
    */
-  def withDispatcherFromExecutionContext(ec: ExecutionContext): DeploymentConfig = DispatcherFromExecutionContext(ec, this)
+  def withDispatcherFromExecutionContext(ec: ExecutionContext): Props = DispatcherFromExecutionContext(ec, this)
 
   /**
-   * Prepend the given mailbox capacity configuration to this DeploymentConfig.
+   * Prepend the given mailbox capacity configuration to this Props.
    */
-  def withMailboxCapacity(capacity: Int): DeploymentConfig = MailboxCapacity(capacity, this)
+  def withMailboxCapacity(capacity: Int): Props = MailboxCapacity(capacity, this)
 
   /**
    * Find the first occurrence of a configuration node of the given type, falling
    * back to the provided default if none is found.
    */
-  def firstOrElse[T <: DeploymentConfig: ClassTag](default: T): T = {
-    @tailrec def rec(d: DeploymentConfig): T = {
+  @InternalApi
+  private[akka] def firstOrElse[T <: Props: ClassTag](default: T): T = {
+    @tailrec def rec(d: Props): T = {
       d match {
-        case EmptyDeploymentConfig ⇒ default
-        case t: T                  ⇒ t
-        case _                     ⇒ rec(d.next)
+        case EmptyProps ⇒ default
+        case t: T       ⇒ t
+        case _          ⇒ rec(d.next)
       }
     }
     rec(this)
@@ -79,36 +91,38 @@ abstract class DeploymentConfig extends Product with Serializable {
 
   /**
    * Retrieve all configuration nodes of a given type in the order that they
-   * are present in this DeploymentConfig. The `next` reference for all returned
-   * nodes will be the [[EmptyDeploymentConfig$]].
+   * are present in this Props. The `next` reference for all returned
+   * nodes will be the [[EmptyProps]].
    */
-  def allOf[T <: DeploymentConfig: ClassTag]: List[DeploymentConfig] = {
-    @tailrec def select(d: DeploymentConfig, acc: List[DeploymentConfig]): List[DeploymentConfig] =
+  @InternalApi
+  private[akka] def allOf[T <: Props: ClassTag]: List[Props] = {
+    @tailrec def select(d: Props, acc: List[Props]): List[Props] =
       d match {
-        case EmptyDeploymentConfig ⇒ acc.reverse
-        case t: T                  ⇒ select(d.next, (d withNext EmptyDeploymentConfig) :: acc)
-        case _                     ⇒ select(d.next, acc)
+        case EmptyProps ⇒ acc.reverse
+        case t: T       ⇒ select(d.next, (d withNext EmptyProps) :: acc)
+        case _          ⇒ select(d.next, acc)
       }
     select(this, Nil)
   }
 
   /**
    * Remove all configuration nodes of a given type and return the resulting
-   * DeploymentConfig.
+   * Props.
    */
-  def filterNot[T <: DeploymentConfig: ClassTag]: DeploymentConfig = {
-    @tailrec def select(d: DeploymentConfig, acc: List[DeploymentConfig]): List[DeploymentConfig] =
+  @InternalApi
+  private[akka] def filterNot[T <: Props: ClassTag]: Props = {
+    @tailrec def select(d: Props, acc: List[Props]): List[Props] =
       d match {
-        case EmptyDeploymentConfig ⇒ acc
-        case t: T                  ⇒ select(d.next, acc)
-        case _                     ⇒ select(d.next, d :: acc)
+        case EmptyProps ⇒ acc
+        case t: T       ⇒ select(d.next, acc)
+        case _          ⇒ select(d.next, d :: acc)
       }
-    @tailrec def link(l: List[DeploymentConfig], acc: DeploymentConfig): DeploymentConfig =
+    @tailrec def link(l: List[Props], acc: Props): Props =
       l match {
         case d :: ds ⇒ link(ds, d withNext acc)
         case Nil     ⇒ acc
       }
-    link(select(this, Nil), EmptyDeploymentConfig)
+    link(select(this, Nil), EmptyProps)
   }
 }
 
@@ -120,17 +134,20 @@ abstract class DeploymentConfig extends Product with Serializable {
  * The default mailbox capacity that is used when this option is not given is
  * taken from the `akka.typed.mailbox-capacity` configuration setting.
  */
-final case class MailboxCapacity(capacity: Int, next: DeploymentConfig = EmptyDeploymentConfig) extends DeploymentConfig {
-  override def withNext(next: DeploymentConfig): DeploymentConfig = copy(next = next)
+final case class MailboxCapacity(capacity: Int, next: Props = EmptyProps) extends Props {
+  @InternalApi
+  private[akka] override def withNext(next: Props): Props = copy(next = next)
 }
 
 /**
  * The empty configuration node, used as a terminator for the internally linked
- * list of each DeploymentConfig.
+ * list of each Props.
  */
-case object EmptyDeploymentConfig extends DeploymentConfig {
-  override def next = throw new NoSuchElementException("EmptyDeploymentConfig has no next")
-  override def withNext(next: DeploymentConfig): DeploymentConfig = next
+case object EmptyProps extends Props {
+  @InternalApi
+  private[akka] override def next = throw new NoSuchElementException("EmptyProps has no next")
+  @InternalApi
+  private[akka] override def withNext(next: Props): Props = next
 }
 
 /**
@@ -140,17 +157,20 @@ case object EmptyDeploymentConfig extends DeploymentConfig {
  * The default configuration if none of these options are present is to run
  * the actor on the same executor as its parent.
  */
-sealed trait DispatcherSelector extends DeploymentConfig
+sealed trait DispatcherSelector extends Props
 
 /**
  * Use the [[ActorSystem]] default executor to run the actor.
  */
-sealed case class DispatcherDefault(next: DeploymentConfig) extends DispatcherSelector {
-  override def withNext(next: DeploymentConfig): DeploymentConfig = copy(next = next)
+@DoNotInherit
+@InternalApi
+sealed case class DispatcherDefault(next: Props) extends DispatcherSelector {
+  @InternalApi
+  private[akka] override def withNext(next: Props): Props = copy(next = next)
 }
 object DispatcherDefault {
   // this is hidden in order to avoid having people match on this object
-  private val empty = DispatcherDefault(EmptyDeploymentConfig)
+  private val empty = DispatcherDefault(EmptyProps)
   /**
    * Retrieve an instance for this configuration node with empty `next` reference.
    */
@@ -162,8 +182,9 @@ object DispatcherDefault {
  * ExecutorServices created in this fashion will be shut down when the
  * ActorSystem terminates.
  */
-final case class DispatcherFromConfig(path: String, next: DeploymentConfig = EmptyDeploymentConfig) extends DispatcherSelector {
-  override def withNext(next: DeploymentConfig): DeploymentConfig = copy(next = next)
+final case class DispatcherFromConfig(path: String, next: Props = EmptyProps) extends DispatcherSelector {
+  @InternalApi
+  private[akka] override def withNext(next: Props): Props = copy(next = next)
 }
 
 /**
@@ -171,8 +192,9 @@ final case class DispatcherFromConfig(path: String, next: DeploymentConfig = Emp
  * No attempt will be made to shut down this thread pool, even if it is an
  * instance of ExecutorService.
  */
-final case class DispatcherFromExecutor(executor: Executor, next: DeploymentConfig = EmptyDeploymentConfig) extends DispatcherSelector {
-  override def withNext(next: DeploymentConfig): DeploymentConfig = copy(next = next)
+final case class DispatcherFromExecutor(executor: Executor, next: Props = EmptyProps) extends DispatcherSelector {
+  @InternalApi
+  private[akka] override def withNext(next: Props): Props = copy(next = next)
 }
 
 /**
@@ -180,6 +202,7 @@ final case class DispatcherFromExecutor(executor: Executor, next: DeploymentConf
  * No attempt will be made to shut down this thread pool, even if it is an
  * instance of ExecutorService.
  */
-final case class DispatcherFromExecutionContext(ec: ExecutionContext, next: DeploymentConfig = EmptyDeploymentConfig) extends DispatcherSelector {
-  override def withNext(next: DeploymentConfig): DeploymentConfig = copy(next = next)
+final case class DispatcherFromExecutionContext(ec: ExecutionContext, next: Props = EmptyProps) extends DispatcherSelector {
+  @InternalApi
+  private[akka] override def withNext(next: Props): Props = copy(next = next)
 }

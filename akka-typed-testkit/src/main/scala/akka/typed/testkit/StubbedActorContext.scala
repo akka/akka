@@ -28,12 +28,12 @@ class StubbedActorContext[T](
 
   override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ref)
   override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ref)
-  override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] = {
+  override def spawnAnonymous[U](behavior: Behavior[U], props: Props = EmptyProps): ActorRef[U] = {
     val i = Inbox[U](childName.next())
     _children += i.ref.path.name → i
     i.ref
   }
-  override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] =
+  override def spawn[U](behavior: Behavior[U], name: String, props: Props = EmptyProps): ActorRef[U] =
     _children get name match {
       case Some(_) ⇒ throw untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒

@@ -35,10 +35,10 @@ package object adapter {
    * Extension methods added to [[akka.actor.ActorSystem]].
    */
   implicit class UntypedActorSystemOps(val sys: akka.actor.ActorSystem) extends AnyVal {
-    def spawnAnonymous[T](behavior: Behavior[T], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[T] =
-      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), deployment)))
-    def spawn[T](behavior: Behavior[T], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[T] =
-      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), deployment), name))
+    def spawnAnonymous[T](behavior: Behavior[T], props: Props = EmptyProps): ActorRef[T] =
+      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props)))
+    def spawn[T](behavior: Behavior[T], name: String, props: Props = EmptyProps): ActorRef[T] =
+      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props), name))
 
     def toTyped: ActorSystem[Nothing] = ActorSystemAdapter(sys)
   }
@@ -54,10 +54,10 @@ package object adapter {
    * Extension methods added to [[akka.actor.ActorContext]].
    */
   implicit class UntypedActorContextOps(val ctx: akka.actor.ActorContext) extends AnyVal {
-    def spawnAnonymous[T](behavior: Behavior[T], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[T] =
-      ActorContextAdapter.spawnAnonymous(ctx, behavior, deployment)
-    def spawn[T](behavior: Behavior[T], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[T] =
-      ActorContextAdapter.spawn(ctx, behavior, name, deployment)
+    def spawnAnonymous[T](behavior: Behavior[T], props: Props = EmptyProps): ActorRef[T] =
+      ActorContextAdapter.spawnAnonymous(ctx, behavior, props)
+    def spawn[T](behavior: Behavior[T], name: String, props: Props = EmptyProps): ActorRef[T] =
+      ActorContextAdapter.spawn(ctx, behavior, name, props)
 
     def watch[U](other: ActorRef[U]): Unit = ctx.watch(ActorRefAdapter.toUntyped(other))
     def unwatch[U](other: ActorRef[U]): Unit = ctx.unwatch(ActorRefAdapter.toUntyped(other))

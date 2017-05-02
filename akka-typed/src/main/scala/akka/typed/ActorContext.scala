@@ -47,10 +47,10 @@ trait ActorContext[T] extends javadsl.ActorContext[T] with scaladsl.ActorContext
     system.asInstanceOf[ActorSystem[Void]]
 
   override def spawn[U](behavior: akka.typed.Behavior[U], name: String): akka.typed.ActorRef[U] =
-    spawn(behavior, name, EmptyDeploymentConfig)
+    spawn(behavior, name, EmptyProps)
 
   override def spawnAnonymous[U](behavior: akka.typed.Behavior[U]): akka.typed.ActorRef[U] =
-    spawnAnonymous(behavior, EmptyDeploymentConfig)
+    spawnAnonymous(behavior, EmptyProps)
 
   override def createAdapter[U](f: java.util.function.Function[U, T]): akka.typed.ActorRef[U] =
     spawnAdapter(f.apply _)

@@ -4,8 +4,8 @@
 package akka.typed.javadsl
 
 import akka.typed.Behavior
-import akka.typed.DeploymentConfig
-import akka.typed.EmptyDeploymentConfig
+import akka.typed.Props
+import akka.typed.EmptyProps
 import akka.typed.ActorRef
 import akka.typed.internal.adapter.ActorRefAdapter
 import akka.typed.scaladsl.adapter._
@@ -30,28 +30,28 @@ import akka.japi.Creator
 object Adapter {
 
   def spawnAnonymous[T](sys: akka.actor.ActorSystem, behavior: Behavior[T]): ActorRef[T] =
-    spawnAnonymous(sys, behavior, EmptyDeploymentConfig)
+    spawnAnonymous(sys, behavior, EmptyProps)
 
-  def spawnAnonymous[T](sys: akka.actor.ActorSystem, behavior: Behavior[T], deployment: DeploymentConfig): ActorRef[T] =
-    sys.spawnAnonymous(behavior, deployment)
+  def spawnAnonymous[T](sys: akka.actor.ActorSystem, behavior: Behavior[T], props: Props): ActorRef[T] =
+    sys.spawnAnonymous(behavior, props)
 
   def spawn[T](sys: akka.actor.ActorSystem, behavior: Behavior[T], name: String): ActorRef[T] =
-    spawn(sys, behavior, name, EmptyDeploymentConfig)
+    spawn(sys, behavior, name, EmptyProps)
 
-  def spawn[T](sys: akka.actor.ActorSystem, behavior: Behavior[T], name: String, deployment: DeploymentConfig): ActorRef[T] =
-    sys.spawn(behavior, name, deployment)
+  def spawn[T](sys: akka.actor.ActorSystem, behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
+    sys.spawn(behavior, name, props)
 
   def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T]): ActorRef[T] =
-    spawnAnonymous(ctx, behavior, EmptyDeploymentConfig)
+    spawnAnonymous(ctx, behavior, EmptyProps)
 
-  def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], deployment: DeploymentConfig): ActorRef[T] =
-    ctx.spawnAnonymous(behavior, deployment)
+  def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], props: Props): ActorRef[T] =
+    ctx.spawnAnonymous(behavior, props)
 
   def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String): ActorRef[T] =
-    spawn(ctx, behavior, name, EmptyDeploymentConfig)
+    spawn(ctx, behavior, name, EmptyProps)
 
-  def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String, deployment: DeploymentConfig): ActorRef[T] =
-    ctx.spawn(behavior, name, deployment)
+  def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
+    ctx.spawn(behavior, name, props)
 
   def toTyped(sys: akka.actor.ActorSystem): ActorSystem[Void] =
     sys.toTyped.asInstanceOf[ActorSystem[Void]]
@@ -98,7 +98,7 @@ object Adapter {
    * takes an untyped [[akka.actor.Props]] parameter. Cluster Sharding is an
    * example of that.
    */
-  def props[T](behavior: Creator[Behavior[T]], deploy: DeploymentConfig): akka.actor.Props =
+  def props[T](behavior: Creator[Behavior[T]], deploy: Props): akka.actor.Props =
     akka.typed.internal.adapter.PropsAdapter(() ⇒ behavior.create(), deploy)
 
   /**
@@ -111,5 +111,5 @@ object Adapter {
    * example of that.
    */
   def props[T](behavior: Creator[Behavior[T]]): akka.actor.Props =
-    props(behavior, EmptyDeploymentConfig)
+    props(behavior, EmptyProps)
 }

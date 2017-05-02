@@ -10,7 +10,7 @@ import akka.typed.ActorRef
 import akka.typed.ActorSystem
 import java.util.Optional
 import akka.typed.Behavior
-import akka.typed.DeploymentConfig
+import akka.typed.Props
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContextExecutor
 
@@ -75,7 +75,7 @@ trait ActorContext[T] {
    * Create a child Actor from the given [[akka.typed.Behavior]] under a randomly chosen name.
    * It is good practice to name Actors wherever practical.
    */
-  def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig): ActorRef[U]
+  def spawnAnonymous[U](behavior: Behavior[U], props: Props): ActorRef[U]
 
   /**
    * Create a child Actor from the given [[akka.typed.Behavior]] and with the given name.
@@ -85,7 +85,7 @@ trait ActorContext[T] {
   /**
    * Create a child Actor from the given [[akka.typed.Behavior]] and with the given name.
    */
-  def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig): ActorRef[U]
+  def spawn[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U]
 
   /**
    * Force the child Actor under the given name to terminate after it finishes

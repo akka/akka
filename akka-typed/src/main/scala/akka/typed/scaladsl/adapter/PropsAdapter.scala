@@ -4,8 +4,8 @@
 package akka.typed.scaladsl.adapter
 
 import akka.typed.Behavior
-import akka.typed.EmptyDeploymentConfig
-import akka.typed.DeploymentConfig
+import akka.typed.EmptyProps
+import akka.typed.Props
 import akka.typed.internal.adapter.ActorAdapter
 
 /**
@@ -18,6 +18,6 @@ import akka.typed.internal.adapter.ActorAdapter
  * example of that.
  */
 object PropsAdapter {
-  def apply[T](behavior: ⇒ Behavior[T], deploy: DeploymentConfig = EmptyDeploymentConfig): akka.actor.Props =
+  def apply[T](behavior: ⇒ Behavior[T], deploy: Props = EmptyProps): akka.actor.Props =
     akka.typed.internal.adapter.PropsAdapter(() ⇒ behavior, deploy)
 }

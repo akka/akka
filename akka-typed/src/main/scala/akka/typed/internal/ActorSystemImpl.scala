@@ -26,7 +26,7 @@ import akka.typed.scaladsl.AskPattern
 object ActorSystemImpl {
 
   sealed trait SystemCommand
-  case class CreateSystemActor[T](behavior: Behavior[T], name: String, deployment: DeploymentConfig)(val replyTo: ActorRef[ActorRef[T]]) extends SystemCommand
+  case class CreateSystemActor[T](behavior: Behavior[T], name: String, props: Props)(val replyTo: ActorRef[ActorRef[T]]) extends SystemCommand
 
   val systemGuardianBehavior: Behavior[SystemCommand] = {
     // TODO avoid depending on dsl here?
@@ -37,7 +37,7 @@ object ActorSystemImpl {
         case (ctx, create: CreateSystemActor[t]) ⇒
           val name = s"$i-${create.name}"
           i += 1
-          create.replyTo ! ctx.spawn(create.behavior, name, create.deployment)
+          create.replyTo ! ctx.spawn(create.behavior, name, create.props)
           Same
       }
     }
@@ -71,12 +71,12 @@ Distributed Data:
  */
 
 private[typed] class ActorSystemImpl[-T](
-  override val name:       String,
-  _config:                 Config,
-  _cl:                     ClassLoader,
-  _ec:                     Option[ExecutionContext],
-  _userGuardianBehavior:   Behavior[T],
-  _userGuardianDeployment: DeploymentConfig)
+  override val name:     String,
+  _config:               Config,
+  _cl:                   ClassLoader,
+  _ec:                   Option[ExecutionContext],
+  _userGuardianBehavior: Behavior[T],
+  _userGuardianProps:    Props)
   extends ActorRef[T](a.RootActorPath(a.Address("akka", name)) / "user") with ActorSystem[T] with ActorRefImpl[T] {
 
   import ActorSystemImpl._
@@ -212,9 +212,9 @@ private[typed] class ActorSystemImpl[-T](
       override def isLocal: Boolean = true
     }
 
-  private def createTopLevel[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig): ActorRefImpl[U] = {
-    val dispatcher = deployment.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
-    val capacity = deployment.firstOrElse(MailboxCapacity(settings.DefaultMailboxCapacity))
+  private def createTopLevel[U](behavior: Behavior[U], name: String, props: Props): ActorRefImpl[U] = {
+    val dispatcher = props.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
+    val capacity = props.firstOrElse(MailboxCapacity(settings.DefaultMailboxCapacity))
     val cell = new ActorCell(this, behavior, dispatchers.lookup(dispatcher), capacity.capacity, theOneWhoWalksTheBubblesOfSpaceTime)
     val ref = new LocalActorRef(rootPath / name, cell)
     cell.setSelf(ref)
@@ -223,12 +223,12 @@ private[typed] class ActorSystemImpl[-T](
     ref
   }
 
-  private val systemGuardian: ActorRefImpl[SystemCommand] = createTopLevel(systemGuardianBehavior, "system", EmptyDeploymentConfig)
+  private val systemGuardian: ActorRefImpl[SystemCommand] = createTopLevel(systemGuardianBehavior, "system", EmptyProps)
 
   override val receptionist: ActorRef[patterns.Receptionist.Command] =
     ActorRef(systemActorOf(patterns.Receptionist.behavior, "receptionist")(settings.untyped.CreationTimeout))
 
-  private val userGuardian: ActorRefImpl[T] = createTopLevel(_userGuardianBehavior, "user", _userGuardianDeployment)
+  private val userGuardian: ActorRefImpl[T] = createTopLevel(_userGuardianBehavior, "user", _userGuardianProps)
 
   // now we can start up the loggers
   eventStream.startUnsubscriber(this)
@@ -257,10 +257,10 @@ private[typed] class ActorSystemImpl[-T](
   override def sendSystem(msg: SystemMessage): Unit = userGuardian.sendSystem(msg)
   override def isLocal: Boolean = true
 
-  def systemActorOf[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig)(implicit timeout: Timeout): Future[ActorRef[U]] = {
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(implicit timeout: Timeout): Future[ActorRef[U]] = {
     import AskPattern._
     implicit val sched = scheduler
-    systemGuardian ? CreateSystemActor(behavior, name, deployment)
+    systemGuardian ? CreateSystemActor(behavior, name, props)
   }
 
   def printTree: String = {
