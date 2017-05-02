@@ -5,6 +5,7 @@ package akka.typed
 package internal
 
 import akka.Done
+import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.Actor._
 import akka.util.Timeout
 import org.junit.runner.RunWith
@@ -40,7 +41,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
     }
 
     def `must start the guardian actor and terminate when it terminates`(): Unit = {
-      val t = withSystem("a", Immutable[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; Stopped }, doTerminate = false) { sys ⇒
+      val t = withSystem("a", immutable[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; stopped }, doTerminate = false) { sys ⇒
         val inbox = Inbox[String]("a")
         sys ! Probe("hello", inbox.ref)
         eventually { inbox.hasMessages should ===(true) }
@@ -53,12 +54,12 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
 
     def `must terminate the guardian actor`(): Unit = {
       val inbox = Inbox[String]("terminate")
-      val sys = system("terminate", Immutable[Probe] {
-        case (_, _) ⇒ Unhandled
+      val sys = system("terminate", immutable[Probe] {
+        case (_, _) ⇒ unhandled
       } onSignal {
         case (ctx, PostStop) ⇒
           inbox.ref ! "done"
-          Same
+          same
       })
       sys.terminate().futureValue
       inbox.receiveAll() should ===("done" :: Nil)
@@ -67,19 +68,19 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
     def `must log to the event stream`(): Unit = pending
 
     def `must have a name`(): Unit =
-      withSystem("name", Empty[String]) { sys ⇒
+      withSystem("name", Actor.empty[String]) { sys ⇒
         sys.name should ===(suite + "-name")
       }
 
     def `must report its uptime`(): Unit =
-      withSystem("uptime", Empty[String]) { sys ⇒
+      withSystem("uptime", Actor.empty[String]) { sys ⇒
         sys.uptime should be < 1L
         Thread.sleep(1000)
         sys.uptime should be >= 1L
       }
 
     def `must have a working thread factory`(): Unit =
-      withSystem("thread", Empty[String]) { sys ⇒
+      withSystem("thread", Actor.empty[String]) { sys ⇒
         val p = Promise[Int]
         sys.threadFactory.newThread(new Runnable {
           def run(): Unit = p.success(42)
@@ -88,7 +89,7 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
       }
 
     def `must be able to run Futures`(): Unit =
-      withSystem("futures", Empty[String]) { sys ⇒
+      withSystem("futures", Actor.empty[String]) { sys ⇒
         val f = Future(42)(sys.executionContext)
         f.futureValue should ===(42)
       }
@@ -101,24 +102,24 @@ class ActorSystemSpec extends Spec with Matchers with BeforeAndAfterAll with Sca
 
     // this is essential to complete ActorCellSpec, see there
     def `must correctly treat Watch dead letters`(): Unit =
-      withSystem("deadletters", Empty[String]) { sys ⇒
+      withSystem("deadletters", Actor.empty[String]) { sys ⇒
         val client = new DebugRef[Int](sys.path / "debug", true)
         sys.deadLetters.sorry.sendSystem(Watch(sys, client))
         client.receiveAll() should ===(Left(DeathWatchNotification(sys, null)) :: Nil)
       }
 
     def `must start system actors and mangle their names`(): Unit = {
-      withSystem("systemActorOf", Empty[String]) { sys ⇒
+      withSystem("systemActorOf", Actor.empty[String]) { sys ⇒
         import akka.typed.scaladsl.AskPattern._
         implicit val timeout = Timeout(1.second)
         implicit val sched = sys.scheduler
 
         case class Doner(ref: ActorRef[Done])
 
-        val ref1, ref2 = sys.systemActorOf(Immutable[Doner] {
+        val ref1, ref2 = sys.systemActorOf(immutable[Doner] {
           case (_, doner) ⇒
             doner.ref ! Done
-            Same
+            same
         }, "empty").futureValue
         (ref1 ? Doner).futureValue should ===(Done)
         (ref2 ? Doner).futureValue should ===(Done)

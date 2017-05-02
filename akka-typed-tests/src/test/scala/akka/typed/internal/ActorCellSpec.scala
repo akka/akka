@@ -4,12 +4,13 @@
 package akka.typed
 package internal
 
+import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.Actor._
 import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.exceptions.TestFailedException
-import org.scalatest._
 import org.junit.runner.RunWith
+import org.scalatest._
 
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with ScalaFutures with ConversionCheckedTripleEquals {
@@ -21,12 +22,12 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
 
     def `must be creatable`(): Unit = {
       val parent = new DebugRef[String](sys.path / "creatable", true)
-      val cell = new ActorCell(sys, Deferred[String](_ ⇒ {
+      val cell = new ActorCell(sys, deferred[String](_ ⇒ {
         parent ! "created"
-        Immutable[String] {
+        immutable[String] {
           case (_, s) ⇒
             parent ! s
-            Same
+            same
         }
       }), ec, 1000, parent)
       debugCell(cell) {
@@ -46,7 +47,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
       val parent = new DebugRef[String](sys.path / "creatable???", true)
       val self = new DebugRef[String](sys.path / "creatableSelf", true)
       val ??? = new NotImplementedError
-      val cell = new ActorCell(sys, Deferred[String](_ ⇒ { parent ! "created"; throw ??? }), ec, 1000, parent)
+      val cell = new ActorCell(sys, deferred[String](_ ⇒ { parent ! "created"; throw ??? }), ec, 1000, parent)
       cell.setSelf(self)
       debugCell(cell) {
         ec.queueSize should ===(0)
@@ -66,7 +67,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
     def `must be able to terminate after construction`(): Unit = {
       val parent = new DebugRef[String](sys.path / "terminate", true)
       val self = new DebugRef[String](sys.path / "terminateSelf", true)
-      val cell = new ActorCell(sys, Deferred[String](_ ⇒ { parent ! "created"; Stopped }), ec, 1000, parent)
+      val cell = new ActorCell(sys, deferred[String](_ ⇒ { parent ! "created"; stopped }), ec, 1000, parent)
       cell.setSelf(self)
       debugCell(cell) {
         ec.queueSize should ===(0)
@@ -86,7 +87,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
     def `must be able to terminate after being started`(): Unit = {
       val parent = new DebugRef[String](sys.path / "terminate", true)
       val self = new DebugRef[String](sys.path / "terminateSelf", true)
-      val cell = new ActorCell(sys, Deferred[String](_ ⇒ { parent ! "created"; Stopped }), ec, 1000, parent)
+      val cell = new ActorCell(sys, deferred[String](_ ⇒ { parent ! "created"; stopped }), ec, 1000, parent)
       cell.setSelf(self)
       debugCell(cell) {
         ec.queueSize should ===(0)
@@ -107,7 +108,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
       val parent = new DebugRef[String](sys.path / "terminate", true)
       val self = new DebugRef[String](sys.path / "terminateSelf", true)
       val ex = new AssertionError
-      val behavior = Deferred[String](_ ⇒ { parent ! "created"; Immutable[String] { case (s, _) ⇒ throw ex } })
+      val behavior = deferred[String](_ ⇒ { parent ! "created"; immutable[String] { case (s, _) ⇒ throw ex } })
       val cell = new ActorCell(sys, behavior, ec, 1000, parent)
       cell.setSelf(self)
       debugCell(cell) {
@@ -131,7 +132,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
     def `must signal failure when starting behavior is "same"`(): Unit = {
       val parent = new DebugRef[String](sys.path / "startSame", true)
       val self = new DebugRef[String](sys.path / "startSameSelf", true)
-      val cell = new ActorCell(sys, Deferred[String](_ ⇒ { parent ! "created"; Same[String] }), ec, 1000, parent)
+      val cell = new ActorCell(sys, deferred[String](_ ⇒ { parent ! "created"; same[String] }), ec, 1000, parent)
       cell.setSelf(self)
       debugCell(cell) {
         ec.queueSize should ===(0)
@@ -157,7 +158,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
     def `must signal failure when starting behavior is "unhandled"`(): Unit = {
       val parent = new DebugRef[String](sys.path / "startSame", true)
       val self = new DebugRef[String](sys.path / "startSameSelf", true)
-      val cell = new ActorCell(sys, Deferred[String](_ ⇒ { parent ! "created"; Unhandled[String] }), ec, 1000, parent)
+      val cell = new ActorCell(sys, deferred[String](_ ⇒ { parent ! "created"; unhandled[String] }), ec, 1000, parent)
       cell.setSelf(self)
       debugCell(cell) {
         ec.queueSize should ===(0)
@@ -188,12 +189,12 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
      */
     def `must not execute more messages than were batched naturally`(): Unit = {
       val parent = new DebugRef[String](sys.path / "batching", true)
-      val cell = new ActorCell(sys, Deferred[String] { ctx ⇒
-        Immutable[String] {
+      val cell = new ActorCell(sys, deferred[String] { ctx ⇒
+        immutable[String] {
           case (_, s) ⇒
             ctx.self ! s
             parent ! s
-            Same
+            same
         }
       }, ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
@@ -228,7 +229,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
     def `must signal DeathWatch when terminating normally`(): Unit = {
       val parent = new DebugRef[String](sys.path / "watchNormal", true)
       val client = new DebugRef[String](parent.path / "client", true)
-      val cell = new ActorCell(sys, Empty[String], ec, 1000, parent)
+      val cell = new ActorCell(sys, Actor.empty[String], ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)
       debugCell(cell) {
@@ -252,7 +253,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
       val parent = new DebugRef[String](sys.path / "watchAbnormal", true)
       val client = new DebugRef[String](parent.path / "client", true)
       val other = new DebugRef[String](parent.path / "other", true)
-      val cell = new ActorCell(sys, Deferred[String] { ctx ⇒ ctx.watch(parent); Empty }, ec, 1000, parent)
+      val cell = new ActorCell(sys, deferred[String] { ctx ⇒ ctx.watch(parent); Actor.empty }, ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)
       debugCell(cell) {
@@ -284,7 +285,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
     def `must signal DeathWatch when watching after termination`(): Unit = {
       val parent = new DebugRef[String](sys.path / "watchLate", true)
       val client = new DebugRef[String](parent.path / "client", true)
-      val cell = new ActorCell(sys, Stopped[String], ec, 1000, parent)
+      val cell = new ActorCell(sys, stopped[String], ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)
       debugCell(cell) {
@@ -303,7 +304,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
     def `must signal DeathWatch when watching after termination but before deactivation`(): Unit = {
       val parent = new DebugRef[String](sys.path / "watchSomewhatLate", true)
       val client = new DebugRef[String](parent.path / "client", true)
-      val cell = new ActorCell(sys, Empty[String], ec, 1000, parent)
+      val cell = new ActorCell(sys, Actor.empty[String], ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)
       debugCell(cell) {
@@ -323,7 +324,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
     def `must not signal DeathWatch after Unwatch has been processed`(): Unit = {
       val parent = new DebugRef[String](sys.path / "watchUnwatch", true)
       val client = new DebugRef[String](parent.path / "client", true)
-      val cell = new ActorCell(sys, Empty[String], ec, 1000, parent)
+      val cell = new ActorCell(sys, Actor.empty[String], ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)
       debugCell(cell) {
@@ -340,7 +341,7 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
 
     def `must send messages to deadLetters after being terminated`(): Unit = {
       val parent = new DebugRef[String](sys.path / "sendDeadLetters", true)
-      val cell = new ActorCell(sys, Stopped[String], ec, 1000, parent)
+      val cell = new ActorCell(sys, stopped[String], ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)
       debugCell(cell) {
@@ -361,9 +362,9 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
      */
     def `must not terminate before children have terminated`(): Unit = {
       val parent = new DebugRef[ActorRef[Nothing]](sys.path / "waitForChild", true)
-      val cell = new ActorCell(sys, Deferred[String] { ctx ⇒
-        ctx.spawn(Deferred[String] { ctx ⇒ parent ! ctx.self; Empty }, "child")
-        Empty
+      val cell = new ActorCell(sys, deferred[String] { ctx ⇒
+        ctx.spawn(deferred[String] { ctx ⇒ parent ! ctx.self; Actor.empty }, "child")
+        Actor.empty
       }, ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)
@@ -394,9 +395,9 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
 
     def `must properly terminate if failing while handling Terminated for child actor`(): Unit = {
       val parent = new DebugRef[ActorRef[Nothing]](sys.path / "terminateWhenDeathPact", true)
-      val cell = new ActorCell(sys, Deferred[String] { ctx ⇒
-        ctx.watch(ctx.spawn(Deferred[String] { ctx ⇒ parent ! ctx.self; Empty }, "child"))
-        Empty
+      val cell = new ActorCell(sys, deferred[String] { ctx ⇒
+        ctx.watch(ctx.spawn(deferred[String] { ctx ⇒ parent ! ctx.self; Actor.empty }, "child"))
+        Actor.empty
       }, ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)
@@ -430,11 +431,11 @@ class ActorCellSpec extends Spec with Matchers with BeforeAndAfterAll with Scala
 
     def `must not terminate twice if failing in PostStop`(): Unit = {
       val parent = new DebugRef[String](sys.path / "terminateProperlyPostStop", true)
-      val cell = new ActorCell(sys, Immutable[String] {
-        case _ ⇒ Unhandled
+      val cell = new ActorCell(sys, immutable[String] {
+        case _ ⇒ unhandled
       } onSignal {
         case (_, PostStop) ⇒ ???
-        case _             ⇒ Unhandled
+        case _             ⇒ unhandled
       }, ec, 1000, parent)
       val ref = new LocalActorRef(parent.path / "child", cell)
       cell.setSelf(ref)

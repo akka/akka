@@ -6,17 +6,13 @@ import java.util.concurrent.TimeUnit;
 
 import akka.Done;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import akka.util.Timeout;
-import org.junit.ClassRule;
 import org.junit.Test;
 
 import akka.typed.*;
 import static akka.typed.javadsl.Actor.*;
 import static akka.typed.javadsl.AskPattern.*;
-
-import akka.testkit.AkkaSpec;
 
 public class MonitoringTest extends JUnitSuite {
 

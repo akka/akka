@@ -42,28 +42,28 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
   private val unsubscriberBehavior = {
     // TODO avoid depending on dsl here?
     import scaladsl.Actor
-    Actor.Deferred[Command] { _ ⇒
+    Actor.deferred[Command] { _ ⇒
       if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $this"))
-      Actor.Immutable[Command] { (ctx, msg) ⇒
+      Actor.immutable[Command] { (ctx, msg) ⇒
         msg match {
           case Register(actor) ⇒
             if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
             ctx.watch(actor)
-            Actor.Same
+            Actor.same
 
-          case UnregisterIfNoMoreSubscribedChannels(actor) if hasSubscriptions(actor) ⇒ Actor.Same
+          case UnregisterIfNoMoreSubscribedChannels(actor) if hasSubscriptions(actor) ⇒ Actor.same
           // hasSubscriptions can be slow, but it's better for this actor to take the hit than the EventStream
 
           case UnregisterIfNoMoreSubscribedChannels(actor) ⇒
             if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unwatching $actor, since has no subscriptions"))
             ctx.unwatch(actor)
-            Actor.Same
+            Actor.same
         }
       } onSignal {
         case (_, Terminated(actor)) ⇒
           if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unsubscribe $actor from $this, because it was terminated"))
           unsubscribe(actor)
-          Actor.Same
+          Actor.same
       }
     }
   }
@@ -149,11 +149,11 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
 
   private val UnhandledMessageForwarder = {
     // TODO avoid depending on dsl here?
-    import scaladsl.Actor.{ Same, Immutable }
-    Immutable[a.UnhandledMessage] {
+    import scaladsl.Actor.{ same, immutable }
+    immutable[a.UnhandledMessage] {
       case (_, a.UnhandledMessage(msg, sender, rcp)) ⇒
         publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
-        Same
+        same
     }
   }
 

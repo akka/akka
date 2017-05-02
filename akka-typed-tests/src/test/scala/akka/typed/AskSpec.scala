@@ -29,13 +29,13 @@ class AskSpec extends TypedSpec with ScalaFutures {
     implicit def executor: ExecutionContext =
       system.executionContext
 
-    val behavior: Behavior[Msg] = Immutable[Msg] {
+    val behavior: Behavior[Msg] = immutable[Msg] {
       case (_, foo: Foo) ⇒
         foo.replyTo ! "foo"
-        Same
+        same
       case (_, Stop(r)) ⇒
         r ! (())
-        Stopped
+        stopped
     }
 
     def `must fail the future if the actor is already terminated`(): Unit = {
