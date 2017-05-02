@@ -5,14 +5,13 @@ package akka.typed.testkit
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
-import akka.typed.{ ActorContext, ActorRef, ActorSystem, Behavior, DeploymentConfig, EmptyDeploymentConfig, Signal }
+import akka.typed.{ ActorContext, ActorRef, ActorSystem, Behavior, EmptyProps, PostStop, Props, Signal }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-import akka.typed.PostStop
 
 /**
  * All tracked effects must extend implement this type. It is deliberately
@@ -78,7 +77,7 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
     } catch handleException
   }
 
-  override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] = {
+  override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     val ref = super.spawnAnonymous(behavior)
     effectQueue.offer(Spawned(ref.path.name))
     ref
@@ -88,7 +87,7 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
     effectQueue.offer(Spawned(ref.path.name))
     ref
   }
-  override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig): ActorRef[U] = {
+  override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
     effectQueue.offer(Spawned(name))
     super.spawn(behavior, name)
   }

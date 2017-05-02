@@ -101,11 +101,11 @@ private[typed] class ActorCell[T](
 
   protected def ctx: ActorContext[T] = this
 
-  override def spawn[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig): ActorRef[U] = {
+  override def spawn[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
     if (childrenMap contains name) throw InvalidActorNameException(s"actor name [$name] is not unique")
     if (terminatingMap contains name) throw InvalidActorNameException(s"actor name [$name] is not yet free")
-    val dispatcher = deployment.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
-    val capacity = deployment.firstOrElse(MailboxCapacity(system.settings.DefaultMailboxCapacity))
+    val dispatcher = props.firstOrElse[DispatcherSelector](DispatcherFromExecutionContext(executionContext))
+    val capacity = props.firstOrElse(MailboxCapacity(system.settings.DefaultMailboxCapacity))
     val cell = new ActorCell[U](system, Behavior.validateAsInitial(behavior), system.dispatchers.lookup(dispatcher), capacity.capacity, self)
     // TODO uid is still needed
     val ref = new LocalActorRef[U](self.path / name, cell)
@@ -116,10 +116,10 @@ private[typed] class ActorCell[T](
   }
 
   private var nextName = 0L
-  override def spawnAnonymous[U](behavior: Behavior[U], deployment: DeploymentConfig): ActorRef[U] = {
+  override def spawnAnonymous[U](behavior: Behavior[U], props: Props): ActorRef[U] = {
     val name = Helpers.base64(nextName)
     nextName += 1
-    spawn(behavior, name, deployment)
+    spawn(behavior, name, props)
   }
 
   override def stop[U](child: ActorRef[U]): Boolean = {
