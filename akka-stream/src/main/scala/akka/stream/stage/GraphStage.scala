@@ -781,12 +781,27 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       setHandler(out, previous)
       andThen()
       if (followUps != null) {
-        getHandler(out) match {
-          case e: Emitting[_] ⇒ e.as[T].addFollowUps(this)
-          case _ ⇒
-            val next = dequeue()
-            if (next.isInstanceOf[EmittingCompletion[_]]) complete(out)
-            else setHandler(out, next)
+        /**
+         * If (while executing andThen() callback) handler was changed to new emitting,
+         * we should add it to the end of emission queue
+         */
+        val currentHandler = getHandler(out)
+        if (currentHandler.isInstanceOf[Emitting[_]])
+          addFollowUp(currentHandler.asInstanceOf[Emitting[T]])
+
+        val next = dequeue()
+        if (next.isInstanceOf[EmittingCompletion[_]]) {
+          /**
+           * If next element is emitting completion and there are some elements after it,
+           * we to need pass them before completion
+           */
+          if (next.followUps != null) {
+            setHandler(out, dequeueHeadAndAddToTail(next))
+          } else {
+            complete(out)
+          }
+        } else {
+          setHandler(out, next)
         }
       }
     }
@@ -799,6 +814,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         followUpsTail.followUps = e
         followUpsTail = e
       }
+
+    private def dequeueHeadAndAddToTail(head: Emitting[T]): Emitting[T] = {
+      val next = head.dequeue()
+      next.addFollowUp(head)
+      head.followUps = null
+      head.followUpsTail = null
+      next
+    }
 
     private def addFollowUps(e: Emitting[T]): Unit =
       if (followUps == null) {

@@ -136,7 +136,10 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       Source.empty.via(emit1234.named("testStage")).runWith(TestSink.probe)
         .request(5)
-        .expectNext(1, 2, 3, 4)
+        .expectNext(1)
+        //emitting with callback gives nondeterminism whether 2 or 3 will be pushed first
+        .expectNextUnordered(2, 3)
+        .expectNext(4)
         .expectComplete()
 
     }
@@ -146,7 +149,14 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       Source.empty.via(g).runWith(TestSink.probe)
         .request(9)
-        .expectNextN(1 to 8)
+        .expectNext(1)
+        //emitting with callback gives nondeterminism whether 2 or 3 will be pushed first
+        .expectNextUnordered(2, 3)
+        .expectNext(4)
+        .expectNext(5)
+        //emitting with callback gives nondeterminism whether 6 or 7 will be pushed first
+        .expectNextUnordered(6, 7)
+        .expectNext(8)
         .expectComplete()
     }
 
@@ -155,7 +165,14 @@ class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit {
 
       Source.empty.via(g).runWith(TestSink.probe)
         .request(9)
-        .expectNextN(1 to 8)
+        .expectNext(1)
+        //emitting with callback gives nondeterminism whether 2 or 3 will be pushed first
+        .expectNextUnordered(2, 3)
+        .expectNext(4)
+        .expectNext(5)
+        //emitting with callback gives nondeterminism whether 6 or 7 will be pushed first
+        .expectNextUnordered(6, 7)
+        .expectNext(8)
         .expectComplete()
     }
 

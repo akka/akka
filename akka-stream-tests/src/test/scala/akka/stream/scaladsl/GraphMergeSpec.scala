@@ -49,13 +49,16 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
       val subscription = probe.expectSubscription()
 
-      var collected = Set.empty[Int]
+      var collected = Seq.empty[Int]
       for (_ ← 1 to 10) {
         subscription.request(1)
-        collected += probe.expectNext()
+        collected :+= probe.expectNext()
       }
+      //test ordering of elements coming from each of nonempty flows
+      collected.filter(_ <= 4) should ===(1 to 4)
+      collected.filter(_ >= 5) should ===(5 to 10)
 
-      collected should be(Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+      collected.toSet should be(Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
       probe.expectComplete()
     }
 
