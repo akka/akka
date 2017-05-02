@@ -1187,7 +1187,8 @@ object MiMa extends AutoPlugin {
           ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.named"),
           ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.addAttributes"),
           ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.async")
-      )
+      ),
+      "2.5.1" -> Seq()
     )
 
     val Latest24Filters = Release24Filters.last
