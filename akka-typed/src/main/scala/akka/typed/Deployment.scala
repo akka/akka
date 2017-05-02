@@ -11,6 +11,15 @@ import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
+object Props {
+
+  /**
+   * Empty props instance, should seldom be needed in user code but can be useful as a default props where
+   * custom configuration of an actor is possible.
+   */
+  val empty: Props = EmptyProps
+}
+
 /**
  * Data structure for describing an actor’s props details like which
  * executor to run it on. For each type of setting (e.g. [[DispatcherSelector]]
@@ -21,15 +30,16 @@ import scala.reflect.ClassTag
  * Deliberately not sealed in order to emphasize future extensibility by the
  * framework—this is not intended to be extended by user code.
  *
- * The Props includes a `next` reference so that it can form an
- * internally linked list. Traversal of this list stops when encountering the
- * [[EmptyProps]] object.
  */
 @DoNotInherit
 @ApiMayChange
 abstract class Props private[akka] () extends Product with Serializable {
   /**
    * Reference to the tail of this Props list.
+   *
+   * The `next` reference is here so that it can form an
+   * internally linked list. Traversal of this list stops when encountering the
+   * [[EmptyProps]] object.
    *
    * INTERNAL API
    */
@@ -76,6 +86,8 @@ abstract class Props private[akka] () extends Product with Serializable {
   /**
    * Find the first occurrence of a configuration node of the given type, falling
    * back to the provided default if none is found.
+   *
+   * INTERNAL API
    */
   @InternalApi
   private[akka] def firstOrElse[T <: Props: ClassTag](default: T): T = {
@@ -93,6 +105,8 @@ abstract class Props private[akka] () extends Product with Serializable {
    * Retrieve all configuration nodes of a given type in the order that they
    * are present in this Props. The `next` reference for all returned
    * nodes will be the [[EmptyProps]].
+   *
+   * INTERNAL API
    */
   @InternalApi
   private[akka] def allOf[T <: Props: ClassTag]: List[Props] = {
@@ -134,8 +148,8 @@ abstract class Props private[akka] () extends Product with Serializable {
  * The default mailbox capacity that is used when this option is not given is
  * taken from the `akka.typed.mailbox-capacity` configuration setting.
  */
-final case class MailboxCapacity(capacity: Int, next: Props = EmptyProps) extends Props {
-  @InternalApi
+@InternalApi
+private[akka] final case class MailboxCapacity(capacity: Int, next: Props = Props.empty) extends Props {
   private[akka] override def withNext(next: Props): Props = copy(next = next)
 }
 
@@ -143,11 +157,10 @@ final case class MailboxCapacity(capacity: Int, next: Props = EmptyProps) extend
  * The empty configuration node, used as a terminator for the internally linked
  * list of each Props.
  */
-case object EmptyProps extends Props {
-  @InternalApi
-  private[akka] override def next = throw new NoSuchElementException("EmptyProps has no next")
-  @InternalApi
-  private[akka] override def withNext(next: Props): Props = next
+@InternalApi
+private[akka] case object EmptyProps extends Props {
+  override def next = throw new NoSuchElementException("EmptyProps has no next")
+  override def withNext(next: Props): Props = next
 }
 
 /**
@@ -156,17 +169,23 @@ case object EmptyProps extends Props {
  *
  * The default configuration if none of these options are present is to run
  * the actor on the same executor as its parent.
- */
-sealed trait DispatcherSelector extends Props
-
-/**
- * Use the [[ActorSystem]] default executor to run the actor.
+ *
+ * INTERNAL API
  */
 @DoNotInherit
 @InternalApi
-sealed case class DispatcherDefault(next: Props) extends DispatcherSelector {
+private[akka] sealed trait DispatcherSelector extends Props
+
+/**
+ * Use the [[ActorSystem]] default executor to run the actor.
+ *
+ * INTERNAL API
+ */
+@DoNotInherit
+@InternalApi
+private[akka] sealed case class DispatcherDefault(next: Props) extends DispatcherSelector {
   @InternalApi
-  private[akka] override def withNext(next: Props): Props = copy(next = next)
+  override def withNext(next: Props): Props = copy(next = next)
 }
 object DispatcherDefault {
   // this is hidden in order to avoid having people match on this object
@@ -181,28 +200,34 @@ object DispatcherDefault {
  * Look up an executor definition in the [[ActorSystem]] configuration.
  * ExecutorServices created in this fashion will be shut down when the
  * ActorSystem terminates.
+ *
+ * INTERNAL API
  */
-final case class DispatcherFromConfig(path: String, next: Props = EmptyProps) extends DispatcherSelector {
-  @InternalApi
-  private[akka] override def withNext(next: Props): Props = copy(next = next)
+@InternalApi
+private[akka] final case class DispatcherFromConfig(path: String, next: Props = Props.empty) extends DispatcherSelector {
+  override def withNext(next: Props): Props = copy(next = next)
 }
 
 /**
  * Directly use the given Executor whenever the actor needs to be run.
  * No attempt will be made to shut down this thread pool, even if it is an
  * instance of ExecutorService.
+ *
+ * INTERNAL API
  */
-final case class DispatcherFromExecutor(executor: Executor, next: Props = EmptyProps) extends DispatcherSelector {
-  @InternalApi
-  private[akka] override def withNext(next: Props): Props = copy(next = next)
+@InternalApi
+private[akka] final case class DispatcherFromExecutor(executor: Executor, next: Props = Props.empty) extends DispatcherSelector {
+  override def withNext(next: Props): Props = copy(next = next)
 }
 
 /**
  * Directly use the given ExecutionContext whenever the actor needs to be run.
  * No attempt will be made to shut down this thread pool, even if it is an
  * instance of ExecutorService.
+ *
+ * INTERNAL API
  */
-final case class DispatcherFromExecutionContext(ec: ExecutionContext, next: Props = EmptyProps) extends DispatcherSelector {
-  @InternalApi
-  private[akka] override def withNext(next: Props): Props = copy(next = next)
+@InternalApi
+private[akka] final case class DispatcherFromExecutionContext(ec: ExecutionContext, next: Props = Props.empty) extends DispatcherSelector {
+  override def withNext(next: Props): Props = copy(next = next)
 }

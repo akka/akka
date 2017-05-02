@@ -14,7 +14,7 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi private[akka] object PropsAdapter {
-  def apply[T](behavior: () ⇒ Behavior[T], deploy: Props = EmptyProps): akka.actor.Props = {
+  def apply[T](behavior: () ⇒ Behavior[T], deploy: Props = Props.empty): akka.actor.Props = {
     // FIXME use Props, e.g. dispatcher
     akka.actor.Props(new ActorAdapter(behavior()))
   }

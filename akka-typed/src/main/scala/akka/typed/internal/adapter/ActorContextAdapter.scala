@@ -23,9 +23,9 @@ import akka.annotation.InternalApi
   override def mailboxCapacity = 1 << 29 // FIXME
   override def children = untyped.children.map(ActorRefAdapter(_))
   override def child(name: String) = untyped.child(name).map(ActorRefAdapter(_))
-  override def spawnAnonymous[U](behavior: Behavior[U], props: Props = EmptyProps) =
+  override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty) =
     ActorContextAdapter.spawnAnonymous(untyped, behavior, props)
-  override def spawn[U](behavior: Behavior[U], name: String, props: Props = EmptyProps) =
+  override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty) =
     ActorContextAdapter.spawn(untyped, behavior, name, props)
   override def stop[U](child: ActorRef[U]) =
     toUntyped(child) match {

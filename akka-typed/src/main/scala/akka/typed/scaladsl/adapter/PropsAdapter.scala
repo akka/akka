@@ -18,6 +18,6 @@ import akka.typed.internal.adapter.ActorAdapter
  * example of that.
  */
 object PropsAdapter {
-  def apply[T](behavior: ⇒ Behavior[T], deploy: Props = EmptyProps): akka.actor.Props =
+  def apply[T](behavior: ⇒ Behavior[T], deploy: Props = Props.empty): akka.actor.Props =
     akka.typed.internal.adapter.PropsAdapter(() ⇒ behavior, deploy)
 }

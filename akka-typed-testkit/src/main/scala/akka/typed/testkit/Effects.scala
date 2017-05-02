@@ -77,7 +77,7 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
     } catch handleException
   }
 
-  override def spawnAnonymous[U](behavior: Behavior[U], props: Props = EmptyProps): ActorRef[U] = {
+  override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     val ref = super.spawnAnonymous(behavior)
     effectQueue.offer(Spawned(ref.path.name))
     ref
@@ -87,7 +87,7 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
     effectQueue.offer(Spawned(ref.path.name))
     ref
   }
-  override def spawn[U](behavior: Behavior[U], name: String, props: Props = EmptyProps): ActorRef[U] = {
+  override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
     effectQueue.offer(Spawned(name))
     super.spawn(behavior, name)
   }

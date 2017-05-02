@@ -142,7 +142,7 @@ trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
    * to which messages can immediately be sent by using the [[ActorRef$.apply[T](s*]]
    * method.
    */
-  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = EmptyProps)(implicit timeout: Timeout): Future[ActorRef[U]]
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = Props.empty)(implicit timeout: Timeout): Future[ActorRef[U]]
 
   /**
    * Return a reference to this system’s [[akka.typed.patterns.Receptionist$]].
@@ -159,7 +159,7 @@ object ActorSystem {
    * [[akka.actor.Actor]] instances.
    */
   def apply[T](name: String, guardianBehavior: Behavior[T],
-               guardianProps:    Props                    = EmptyProps,
+               guardianProps:    Props                    = Props.empty,
                config:           Option[Config]           = None,
                classLoader:      Option[ClassLoader]      = None,
                executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
@@ -187,7 +187,7 @@ object ActorSystem {
    * system typed and untyped actors can coexist.
    */
   def adapter[T](name: String, guardianBehavior: Behavior[T],
-                 guardianProps:       Props                    = EmptyProps,
+                 guardianProps:       Props                    = Props.empty,
                  config:              Option[Config]           = None,
                  classLoader:         Option[ClassLoader]      = None,
                  executionContext:    Option[ExecutionContext] = None,
