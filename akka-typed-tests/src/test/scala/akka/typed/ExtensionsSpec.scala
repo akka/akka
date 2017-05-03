@@ -3,7 +3,9 @@
  */
 package akka.typed
 
-import com.typesafe.config.ConfigFactory
+import java.util.concurrent.atomic.AtomicInteger
+
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Future
@@ -33,13 +35,20 @@ class MultiExtensionId(n: Int) extends ExtensionId[MultiExtension] {
   def createExtension(system: ActorSystem[_]): MultiExtension = new MultiExtension(n)
 }
 
+object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
+  val createCount = new AtomicInteger(0)
+  override def createExtension(system: ActorSystem[_]): DummyExtension1 = {
+    createCount.addAndGet(1)
+    new DummyExtension1
+  }
+}
+
 class ExtensionsSpec extends TypedSpecSetup with ScalaFutures {
 
   object `The extensions subsystem` {
 
-    def `01 should return the same instance for the same id`(): Unit = {
-      val system = ActorSystem[Any]("ExtensionsSpec01", Behavior.EmptyBehavior)
-      try {
+    def `01 should return the same instance for the same id`(): Unit =
+      withEmptyActorSystem("ExtensionsSpec01") { system ⇒
         val instance1 = system.registerExtension(DummyExtension1)
         val instance2 = system.registerExtension(DummyExtension1)
 
@@ -50,17 +59,12 @@ class ExtensionsSpec extends TypedSpecSetup with ScalaFutures {
 
         val instance4 = DummyExtension1.get(system)
         instance4 should be theSameInstanceAs instance3
-
-      } finally {
-        system.terminate().futureValue
       }
-    }
 
-    def `02 should return the same instance for the same id concurrently`(): Unit = {
-      // not exactly water tight but better than nothing
-      val system = ActorSystem[Any]("ExtensionsSpec02", Behavior.EmptyBehavior)
-      import system.executionContext
-      try {
+    def `02 should return the same instance for the same id concurrently`(): Unit =
+      withEmptyActorSystem("ExtensionsSpec02") { system ⇒
+        // not exactly water tight but better than nothing
+        import system.executionContext
         val futures = (0 to 1000).map(n ⇒
           Future {
             system.registerExtension(SlowExtension)
@@ -73,29 +77,20 @@ class ExtensionsSpec extends TypedSpecSetup with ScalaFutures {
           a should be theSameInstanceAs b
           b
         }
-      } finally {
-        system.terminate().futureValue
       }
-    }
 
-    def `03 should load extensions from the configuration`(): Unit = {
-      val system = ActorSystem[Any]("ExtensionsSpec03", Behavior.EmptyBehavior, config = Some(ConfigFactory.parseString(
+    def `03 should load extensions from the configuration`(): Unit =
+      withEmptyActorSystem("ExtensionsSpec03", Some(ConfigFactory.parseString(
         """
           akka.typed.extensions = ["akka.typed.DummyExtension1$", "akka.typed.SlowExtension$"]
-        """)))
-
-      try {
-
+        """))
+      ) { system ⇒
         system.hasExtension(DummyExtension1) should ===(true)
         system.extension(DummyExtension1) shouldBe a[DummyExtension1]
 
         system.hasExtension(SlowExtension) should ===(true)
         system.extension(SlowExtension) shouldBe a[SlowExtension]
-
-      } finally {
-        system.terminate().futureValue
       }
-    }
 
     def `04 handle extensions that fail to initialize`(): Unit = {
       def create(): Unit = {
@@ -113,21 +108,44 @@ class ExtensionsSpec extends TypedSpecSetup with ScalaFutures {
       }
     }
 
-    def `05 support multiple instances of the same type of extension (with different ids)`(): Unit = {
-      val system = ActorSystem[Any]("ExtensionsSpec05", Behavior.EmptyBehavior)
-      try {
+    def `05 support multiple instances of the same type of extension (with different ids)`(): Unit =
+      withEmptyActorSystem("ExtensionsSpec06") { system ⇒
         val id1 = new MultiExtensionId(1)
         val id2 = new MultiExtensionId(2)
 
         system.registerExtension(id1).n should ===(1)
         system.registerExtension(id2).n should ===(2)
         system.registerExtension(id1).n should ===(1)
-
-      } finally {
-        system.terminate().futureValue
       }
 
-    }
-  }
+    def `06 allow for auto-loading of library-extensions`(): Unit =
+      withEmptyActorSystem("ExtensionsSpec06") { system ⇒
+        val listedExtensions = system.settings.config.getStringList("akka.typed.library-extensions")
+        listedExtensions.size should be > 0
+        // could be initalized by other tests, so at least once
+        InstanceCountingExtension.createCount.get() should be > 0
+      }
 
+    def `07 fail the system if a library-extension cannot be loaded`(): Unit =
+      intercept[RuntimeException] {
+        withEmptyActorSystem(
+          "ExtensionsSpec07",
+          Some(ConfigFactory.parseString("""akka.library-extensions += "akka.typed.FailingToLoadExtension$"""))
+        ) { _ ⇒ () }
+      }
+
+    def `08 fail the system if a library-extension cannot be loaded`(): Unit =
+      intercept[RuntimeException] {
+        withEmptyActorSystem(
+          "ExtensionsSpec08",
+          Some(ConfigFactory.parseString("""akka.library-extensions += "akka.typed.MissingExtension"""))
+        ) { _ ⇒ () }
+      }
+
+    def withEmptyActorSystem[T](name: String, config: Option[Config] = None)(f: ActorSystem[_] ⇒ T): T = {
+      val system = ActorSystem[Any](name, Behavior.EmptyBehavior, config = config)
+      try f(system) finally system.terminate().futureValue
+    }
+
+  }
 }

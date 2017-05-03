@@ -51,8 +51,7 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
     // TODO coordinated shutdown for akka typed
     // CoordinatedShutdown(self)
 
-    // TODO not sure if we want to keep this one?
-    // loadExtensions("akka.typed.library-extensions", throwOnLoadFail = true)
+    loadExtensions("akka.typed.library-extensions", throwOnLoadFail = true)
     loadExtensions("akka.typed.extensions", throwOnLoadFail = false)
   }
 
