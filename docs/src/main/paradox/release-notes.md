@@ -1,5 +1,76 @@
 # Release Notes
 
+## 10.0.6
+
+See the [announcement](http://akka.io/news/2017/05/03/akka-http-10.0.6-released.html) and
+closed tickets on the [10.0.6 milestone](https://github.com/akka/akka-http/milestone/23?closed=1).
+
+10.0.6 is a security and maintenance release in the stable 10.0.x series of Akka HTTP.
+
+@@@ warning
+
+This release contains a fix for a serious security vulnerability that allows a remote attacker to shut down any Akka
+HTTP application using the routing DSL. See the
+@ref[details](security/2017-05-03-illegal-media-range-in-accept-header-causes-stackoverflowerror.md) for more information.
+Please update as soon as possible.
+
+@@@
+
+### List of Changes
+
+#### Improvements
+
+##### akka-http-core
+ * Make response parser more relaxed on accepting status line without reason message ([#981](https://github.com/akka/akka-http/issues/981))
+ * Use media type parameters in content negotiation ([#963](https://github.com/akka/akka-http/issues/963))
+ * Small performance improvements ([#999](https://github.com/akka/akka-http/issues/999), [#1032](https://github.com/akka/akka-http/issues/1032))
+ * Added `HttpMessage.transformEntityDataBytes` ([#771](https://github.com/akka/akka-http/issues/771))
+ * Allow binding server with HTTP/2 support via configuration flag with `Http().bindAndHandleAsync` ([#463](https://github.com/akka/akka-http/issues/463))
+
+##### akka-http
+
+ * Make marshaller composition more lazy to prevent redundant marshalling when using `Marshaller.oneOf` ([#1019](https://github.com/akka/akka-http/issues/1019))
+ * Allow Java-implemented ContentTypeResolver ([#360](https://github.com/akka/akka-http/issues/360))
+ * Java DSL routing `complete` now has override that takes`ResponseEntity` as a parameter instead of `RequestEntity` ([#982](https://github.com/akka/akka-http/issues/982))
+ * Improved usage and documentation of Encoder / Decoder on the Scala and Java side ([#771](https://github.com/akka/akka-http/issues/771))
+
+##### akka-http2-support
+
+ * Refactoring: move handling of per-stream frames to dedicated state handlers ([#1064](https://github.com/akka/akka-http/issues/1064))
+
+##### Documentation
+
+ * Provide Decoding Response example for Java ([#760](https://github.com/akka/akka-http/issues/760))
+ * Add Java example to extract header value with default value ([#639](https://github.com/akka/akka-http/issues/639))
+ * Add HTTP custom method example ([#954](https://github.com/akka/akka-http/issues/954))
+ * Smaller fixes and additions
+
+##### Build + Infrastructure
+
+ * Add OSGi to project in order to release each project with OSGi bundle headers ([#574](https://github.com/akka/akka-http/issues/574))
+ * Rename root project to 'akka-http-root' ([#1030](https://github.com/akka/akka-http/issues/1030))
+
+#### Bug Fixes
+
+##### akka-http-core
+
+ * Ignore unsupported `*/xyz` media types ([#1072](https://github.com/akka/akka-http/issues/1072))
+ * Exclude port when rendering X-Forwarded-For and X-Real-Ip headers ([#440](https://github.com/akka/akka-http/issues/440))
+ * Fix NPE when accessing static Java constant fields ([#936](https://github.com/akka/akka-http/issues/936))
+ * Make sure pool log messages have "PoolGateway" set as logClass for easier filtering ([#1013](https://github.com/akka/akka-http/issues/1013))
+
+##### akka-http
+
+ * Move special non-2xx handling from RequestContextImpl to fromStatusCodeAndHeadersAndValue marshaller ([#1072](https://github.com/akka/akka-http/issues/1072))
+ * Handle failure while parsing the URI in parameter extraction ([#1043](https://github.com/akka/akka-http/issues/1043))
+ * Make `extractStrictEntity` provide strict entity for inner routes ([#961](https://github.com/akka/akka-http/issues/961))
+ * Enable javadsl to unmarshal with default `ExecutionContext` ([#967](https://github.com/akka/akka-http/issues/967))
+ * Smaller fixes for `HttpApp`
+
+##### akka-http2-support
+
+ * Fix memory leak in ALPN switcher ([#886](https://github.com/akka/akka-http/issues/886))
+
 ## 10.0.5
 
 See the [announcement](http://akka.io/news/2017/03/17/akka-http-10.0.5-released.html) and
@@ -9,7 +80,7 @@ This is the fifth maintenance release of the Akka HTTP 10.0 series. It is primar
 
 ### List of Changes
 
-#### Improvements:
+#### Improvements
 
 ##### akka-http-core
  * New docs and API for registering custom headers with JavaDSL ([#761](https://github.com/akka/akka-http/issues/761))
@@ -20,7 +91,7 @@ This is the fifth maintenance release of the Akka HTTP 10.0 series. It is primar
 ##### akka-http
  * Unmarshal.to now uses the materializer ExecutionContext if no other provided implicitly ([#947](https://github.com/akka/akka-http/pull/947))
 
-#### Bug fixes:
+#### Bug Fixes
 
 ##### akka-http-core
  * Prevent longer-than-needed lingering streams by fixing DelayCancellationStage ([#945](https://github.com/akka/akka-http/issues/945))
@@ -60,7 +131,7 @@ See [#851](https://github.com/akka/akka-http/issues/851) for more information.
  * New documentation page about how to deal with the client-side `max-open-requests` exception ([39f36dd](https://github.com/akka/akka-http/commit/39f36dd))
  * Lots of small cleanups and improvements
 
-#### Bug fixes
+#### Bug Fixes
 
 ##### akka-http-core
  * Fix a regression introduced in 10.0.3 that might lead to memory leaking after a server connection has been closed. ([#851](https://github.com/akka/akka-http/issues/851))
@@ -116,7 +187,7 @@ previous behavior so we are listing them here to bring attention to potential is
 
  * Lots of larger and smaller improvements to Http2 support
 
-#### Bugfixes
+#### Bug Fixes
 
 ##### akka-http-core:
 
