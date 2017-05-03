@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ */
 package akka.typed.javadsl;
 
 import java.util.concurrent.CompletionStage;

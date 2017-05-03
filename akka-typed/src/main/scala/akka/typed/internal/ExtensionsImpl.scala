@@ -5,7 +5,7 @@ import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch }
 import akka.typed.{ ActorSystem, Extension, ExtensionId, Extensions }
 
 import scala.annotation.tailrec
-import scala.util.{ Failure, Success }
+import scala.util.{ Failure, Success, Try }
 import scala.collection.JavaConverters._
 
 trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
@@ -20,10 +20,13 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
      */
     def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
+
       settings.config.getStringList(key).asScala.foreach { extensionIdFQCN ⇒
-        dynamicAccess.getObjectFor[AnyRef](extensionIdFQCN) recoverWith {
-          case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](extensionIdFQCN, Nil)
-        } match {
+        // it is either a Scala object or it is a Java class with a static singleton accessor
+        val idTry = dynamicAccess.getObjectFor[AnyRef](extensionIdFQCN)
+          .recoverWith { case _ ⇒ idFromJavaSingletonAccessor(extensionIdFQCN) }
+
+        idTry match {
           case Success(id: ExtensionId[_]) ⇒ registerExtension(id)
           case Success(_) ⇒
             if (!throwOnLoadFail) log.error("[{}] is not an 'ExtensionId', skipping...", extensionIdFQCN)
@@ -34,6 +37,15 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
         }
       }
     }
+
+    def idFromJavaSingletonAccessor(extensionIdFQCN: String): Try[ExtensionId[Extension]] =
+      dynamicAccess.getClassFor[ExtensionId[Extension]](extensionIdFQCN).flatMap[ExtensionId[Extension]] { clazz: Class[_] ⇒
+        Try {
+
+          val singletonAccessor = clazz.getDeclaredMethod("getInstance")
+          singletonAccessor.invoke(null).asInstanceOf[ExtensionId[Extension]]
+        }
+      }
 
     // eager initialization of CoordinatedShutdown
     // TODO coordinated shutdown for akka typed

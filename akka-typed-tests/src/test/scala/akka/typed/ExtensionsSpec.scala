@@ -44,6 +44,13 @@ class ExtensionsSpec extends TypedSpecSetup with ScalaFutures {
         val instance2 = system.registerExtension(DummyExtension1)
 
         instance1 should be theSameInstanceAs instance2
+
+        val instance3 = DummyExtension1(system)
+        instance3 should be theSameInstanceAs instance2
+
+        val instance4 = DummyExtension1.get(system)
+        instance4 should be theSameInstanceAs instance3
+
       } finally {
         system.terminate().futureValue
       }
