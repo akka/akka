@@ -27,8 +27,8 @@ public class BehaviorBuilderTest extends JUnitSuite {
 
     @Test
     public void shouldCompile() {
-      Behavior<Message> b = Actor.immutable(Message.class)
-              .message(One.class, (ctx, o) -> {
+      Behavior<Message> behavior = Actor.immutable(b ->
+              b.message(One.class, (ctx, o) -> {
                 o.foo();
                 return same();
               })
@@ -40,7 +40,6 @@ public class BehaviorBuilderTest extends JUnitSuite {
               .signal(Terminated.class, (ctx, t) -> {
                 System.out.println("Terminating along with " + t.ref());
                 return stopped();
-              })
-              .build();
+              }));
     }
 }
