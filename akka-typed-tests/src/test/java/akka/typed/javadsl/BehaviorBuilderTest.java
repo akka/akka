@@ -5,6 +5,7 @@ package akka.typed.javadsl;
 
 import akka.typed.Behavior;
 import akka.typed.Terminated;
+import akka.typed.ActorRef;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -42,5 +43,57 @@ public class BehaviorBuilderTest extends JUnitSuite {
                 return stopped();
               })
               .build();
+    }
+
+    interface CounterMessage {};
+    static final class Increase implements CounterMessage {};
+    static final class Get implements CounterMessage {
+      final ActorRef<Got> sender;
+      public Get(ActorRef<Got> sender) {
+        this.sender = sender;
+      }
+    };
+    static final class Got {
+      final int n;
+      public Got(int n) {
+        this.n = n;
+      }
+    }
+
+    public Behavior<CounterMessage> immutableCounter(int currentValue) {
+      return Actor.immutable(CounterMessage.class)
+          .message(Increase.class, (ctx, o) -> {
+            return immutableCounter(currentValue + 1);
+          })
+          .message(Get.class, (ctx, o) -> {
+            o.sender.tell(new Got(currentValue));
+            return same();
+          })
+          .build();
+    }
+
+    @Test
+    public void testImmutableCounter() {
+      Behavior<CounterMessage> immutable = immutableCounter(0);
+    }
+
+    static final class MutableStateHolder {
+      int currentValue = 0;
+    }
+
+    @Test
+    public void testMutableCounter() {
+      Behavior<CounterMessage> mutable = Actor.mutable2(b -> {
+        MutableStateHolder state = new MutableStateHolder();
+
+        return b.message(Increase.class, (ctx, o) -> {
+          state.currentValue++;
+          return same();
+        })
+        .message(Get.class, (ctx, o) -> {
+          o.sender.tell(new Got(state.currentValue));
+          return same();
+        });
+      });
     }
 }
