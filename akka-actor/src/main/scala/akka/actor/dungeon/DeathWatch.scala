@@ -139,7 +139,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
       maintainAddressTerminatedSubscription() {
         try {
           watching foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-            case watchee: InternalActorRef ⇒ watchee.sendSystemMessage(Unwatch(watchee, self))
+            case (watchee: InternalActorRef, _) ⇒ watchee.sendSystemMessage(Unwatch(watchee, self))
           }
         } finally {
           watching = Map.empty
