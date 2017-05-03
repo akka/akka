@@ -180,10 +180,11 @@ object Actor {
    * State is updated by returning a new behavior that holds the new immutable
    * state. If no change is desired, use {@link #same}.
    *
-   * @param type the supertype of all messages accepted by this behavior
+   * @param builder function that adds the desired handlers to the builder
    * @return the behavior builder
    */
-  def immutable[T](`type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
+  def immutable[T](builder: akka.japi.function.Function[BehaviorBuilder[T], BehaviorBuilder[T]]): Behavior[T] =
+    builder(BehaviorBuilder.create[T]).build
 
   /**
    * This type of Behavior wraps another Behavior while allowing you to perform
