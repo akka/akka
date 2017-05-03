@@ -100,11 +100,6 @@ object AlpnSwitch {
                       out.push(initialElement.get)
                       out.setHandler(propagatePull)
                     }
-
-                    override def onDownstreamFinish(): Unit = {
-                      out.complete()
-                      super.onDownstreamFinish()
-                    }
                   }
                 case None ⇒ propagatePull
               }
