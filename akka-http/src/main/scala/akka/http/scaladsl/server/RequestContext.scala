@@ -4,19 +4,23 @@
 
 package akka.http.scaladsl.server
 
-import scala.concurrent.{ Future, ExecutionContextExecutor }
+import akka.annotation.DoNotInherit
+
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.stream.Materializer
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
-
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
+import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 
 /**
+ * This class is not meant to be extended by user code.
+ *
  * Immutable object encapsulating the context of an [[akka.http.scaladsl.model.HttpRequest]]
  * as it flows through a akka-http Route structure.
  */
+@DoNotInherit
 trait RequestContext {
 
   /** The request this context represents. Modelled as a `val` so as to enable an `import ctx.request._`. */
