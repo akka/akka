@@ -4,8 +4,6 @@
 
 package akka.http.scaladsl.server
 
-import akka.annotation.DoNotInherit
-
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.stream.Materializer
 import akka.event.LoggingAdapter
@@ -20,7 +18,6 @@ import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
  * Immutable object encapsulating the context of an [[akka.http.scaladsl.model.HttpRequest]]
  * as it flows through a akka-http Route structure.
  */
-@DoNotInherit
 trait RequestContext {
 
   /** The request this context represents. Modelled as a `val` so as to enable an `import ctx.request._`. */

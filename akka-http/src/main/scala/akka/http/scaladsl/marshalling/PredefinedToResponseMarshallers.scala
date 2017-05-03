@@ -4,7 +4,6 @@
 
 package akka.http.scaladsl.marshalling
 
-import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.model
@@ -168,7 +167,6 @@ trait LowPriorityToResponseMarshallerImplicits {
 
 object PredefinedToResponseMarshallers extends PredefinedToResponseMarshallers {
   /** INTERNAL API */
-  @InternalApi
   private def statusCodeResponse(statusCode: StatusCode, headers: immutable.Seq[HttpHeader] = Nil): HttpResponse = {
     val entity =
       if (statusCode.allowsEntity) HttpEntity(statusCode.defaultMessage)
