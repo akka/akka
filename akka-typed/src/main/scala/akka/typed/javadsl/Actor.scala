@@ -43,6 +43,9 @@ object Actor {
   def mutable[T](factory: akka.japi.function.Function[ActorContext[T], MutableBehavior[T]]): Behavior[T] =
     deferred(factory)
 
+  def mutable2[T](factory: akka.japi.function.Function[BehaviorBuilder[T], BehaviorBuilder[T]]): Behavior[T] =
+    Behavior.DeferredBehavior(ctx ⇒ factory(BehaviorBuilder.create).build());
+
   /**
    * Mutable behavior can be implemented by extending this class and implement the
    * abstract method [[MutableBehavior#onMessage]] and optionally override
