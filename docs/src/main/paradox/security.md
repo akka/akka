@@ -17,6 +17,10 @@ to ensure that a fix can be provided without delay.
 
 ## Fixed Security Vulnerabilities
 
+### Fixed in Akka HTTP 10.0.6 & 2.4.11.2
+
+* @ref:[Illegal Media Range in Accept Header Causes StackOverflowError Leading to Denial of Service](2017-05-03-illegal-media-range-in-accept-header-causes-stackoverflowerror.md)
+
 ### Fixed in Akka HTTP 10.0.2 & 2.4.11.1
 
 * @ref:[Denial-of-Service by stream leak on unconsumed closed connections](security/2017-01-23-denial-of-service-via-leak-on-unconsumed-closed-connections.md)
