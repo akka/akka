@@ -202,6 +202,12 @@ is in fact the most readable one.
 Still, the purpose of the exercise presented here is to show you how flexible directives can be and how you can
 use their power to define your web service behavior at the level of abstraction that is right for **your** application.
 
+### Composing Directives with `concat` Combinator
+
+Alternatively we can combine directives using `concat` combinator where we pass each directive as an argument to the combinator function instead of chaining them with `~` . Let's take a look at the usage of this combinator:
+
+@@snip [DirectiveExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-8 }
+
 ## Type Safety of Directives
 
 When you combine directives with the `|` and `&` operators the routing DSL makes sure that all extractions work as
