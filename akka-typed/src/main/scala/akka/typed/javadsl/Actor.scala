@@ -179,9 +179,10 @@ object Actor {
    * State is updated by returning a new behavior that holds the new immutable
    * state. If no change is desired, use {@link #same}.
    *
+   * @param type the supertype of all messages accepted by this behavior
    * @return the behavior builder
    */
-  def immutable[T]: BehaviorBuilder[T] = BehaviorBuilder.create[T]
+  def immutable[T](`type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
 
   /**
    * This type of Behavior wraps another Behavior while allowing you to perform

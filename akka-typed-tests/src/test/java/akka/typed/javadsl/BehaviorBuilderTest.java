@@ -27,7 +27,7 @@ public class BehaviorBuilderTest extends JUnitSuite {
 
     @Test
     public void shouldCompile() {
-      Behavior<Message> b = Actor.<Message>immutable()
+      Behavior<Message> b = Actor.immutable(Message.class)
               .message(One.class, (ctx, o) -> {
                 o.foo();
                 return same();
