@@ -54,14 +54,17 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
   private var currentStateTimeout: Option[FiniteDuration] = None
 
   /**
-   * "akka.persistence.fsm.enable-snapshot-after"
-   */
-  private val enableSnapshotAfter = context.system.settings.config.getBoolean("akka.persistence.fsm.enable-snapshot-after")
-
-  /**
    * "akka.persistence.fsm.snapshot-after"
    */
-  private val snapshotAfter = context.system.settings.config.getInt("akka.persistence.fsm.snapshot-after")
+  private val snapshotAfter: Option[Int] = {
+    val config = context.system.settings.config
+    val key = "akka.persistence.fsm.snapshot-after"
+
+    config.getString(key).toLowerCase match {
+      case "off" ⇒ None
+      case _     ⇒ Some(config.getInt(key))
+    }
+  }
 
   /**
    * Override this handler to define the action on Domain Event
@@ -122,6 +125,10 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
       var nextData: D = stateData
       var handlersExecutedCounter = 0
       var doSnapshot: Boolean = false
+      val moduloCondition: Long ⇒ Boolean = snapshotAfter match {
+        case Some(snapShotAfterValue) ⇒ lastSequenceNr: Long ⇒ lastSequenceNr % snapShotAfterValue == 0
+        case None ⇒ lastSequenceNr: Long ⇒ false //if snapshotAfter is not specified, no snapshot within applyState()
+      }
 
       def applyStateOnLastHandler() = {
         handlersExecutedCounter += 1
@@ -129,7 +136,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
           super.applyState(nextState using nextData)
           currentStateTimeout = nextState.timeout
           nextState.afterTransitionDo(stateData)
-          if (enableSnapshotAfter && doSnapshot) {
+          if (doSnapshot) {
             log.info("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
             saveStateSnapshot()
           }
@@ -139,10 +146,10 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
       persistAll[Any](eventsToPersist) {
         case domainEventTag(event) ⇒
           nextData = applyEvent(event, nextData)
-          doSnapshot = doSnapshot || lastSequenceNr % snapshotAfter == 0
+          doSnapshot = doSnapshot || moduloCondition(lastSequenceNr)
           applyStateOnLastHandler()
         case StateChangeEvent(stateIdentifier, timeout) ⇒
-          doSnapshot = doSnapshot || lastSequenceNr % snapshotAfter == 0
+          doSnapshot = doSnapshot || moduloCondition(lastSequenceNr)
           applyStateOnLastHandler()
       }
     }
