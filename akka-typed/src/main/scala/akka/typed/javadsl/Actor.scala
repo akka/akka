@@ -170,7 +170,7 @@ object Actor {
   }
 
   /**
-   * Constructs an actor behavior builder that can build a behaviour that can react to both
+   * Constructs an actor behavior builder that can build a behavior that can react to both
    * incoming messages and lifecycle signals.
    *
    * This constructor is called immutable because the behavior instance doesn't
@@ -181,7 +181,7 @@ object Actor {
    *
    * @return the behavior builder
    */
-  def immutable[T]: BehaviorChain[T] = BehaviorChain.create[T]
+  def immutable[T]: BehaviorBuilder[T] = BehaviorBuilder.create[T]
 
   /**
    * This type of Behavior wraps another Behavior while allowing you to perform
