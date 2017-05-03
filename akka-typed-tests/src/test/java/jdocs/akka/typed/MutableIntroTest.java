@@ -8,6 +8,7 @@ import akka.typed.ActorRef;
 import akka.typed.Behavior;
 import akka.typed.javadsl.Actor;
 import akka.typed.javadsl.ActorContext;
+import akka.typed.javadsl.MutableBuiltBehavior;
 //#imports
 import java.util.ArrayList;
 import java.util.List;
@@ -83,31 +84,25 @@ public class MutableIntroTest {
       }
 
       @Override
-      public Behavior<Command> onMessage(Command msg) {
-        if (msg instanceof GetSession) {
-          GetSession getSession = (GetSession) msg;
-          ActorRef<PostMessage> wrapper = ctx.createAdapter(p ->
-            new PostSessionMessage(getSession.screenName, p.message));
-          getSession.replyTo.tell(new SessionGranted(wrapper));
-          sessions.add(getSession.replyTo);
-          return Actor.same();
-        } else if (msg instanceof PostSessionMessage) {
-          PostSessionMessage post = (PostSessionMessage) msg;
-          MessagePosted mp = new MessagePosted(post.screenName, post.message);
-          sessions.forEach(s -> s.tell(mp));
-          return this;
-        } else {
-          return Actor.unhandled();
-        }
+      public MutableBuiltBehavior<Command> createBehavior() {
+        return behaviorBuilder()
+          .message(GetSession.class, getSession -> {
+            ActorRef<PostMessage> wrapper = ctx.createAdapter(p ->
+              new PostSessionMessage(getSession.screenName, p.message));
+            getSession.replyTo.tell(new SessionGranted(wrapper));
+            sessions.add(getSession.replyTo);
+            return Actor.same();
+          })
+          .message(PostSessionMessage.class, post -> {
+            MessagePosted mp = new MessagePosted(post.screenName, post.message);
+            sessions.forEach(s -> s.tell(mp));
+            return this;
+          })
+          .build();
       }
-
     }
 
     //#chatroom-behavior
-
-
-
-
   }
   //#chatroom-actor
 

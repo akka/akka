@@ -83,17 +83,22 @@ public class BehaviorBuilderTest extends JUnitSuite {
 
     @Test
     public void testMutableCounter() {
-      Behavior<CounterMessage> mutable = Actor.mutable2(b -> {
+      Behavior<CounterMessage> mutable = Actor.mutable(ctx -> new Actor.MutableBehavior<CounterMessage>() {
         MutableStateHolder state = new MutableStateHolder();
 
-        return b.onMessage(Increase.class, (ctx, o) -> {
-          state.currentValue++;
-          return same();
-        })
-        .onMessage(Get.class, (ctx, o) -> {
-          o.sender.tell(new Got(state.currentValue));
-          return same();
-        });
+        @Override
+        public MutableBuiltBehavior<CounterMessage> createBehavior() {
+          return behaviorBuilder()
+            .message(Increase.class, o -> {
+              state.currentValue++;
+              return same();
+            })
+            .message(Get.class, o -> {
+              o.sender.tell(new Got(state.currentValue));
+              return same();
+            })
+            .build();
+        }
       });
     }
 }
