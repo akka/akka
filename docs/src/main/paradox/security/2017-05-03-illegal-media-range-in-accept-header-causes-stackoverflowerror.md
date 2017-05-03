@@ -13,7 +13,7 @@ Please subscribe to the [akka-security](https://groups.google.com/forum/#!forum/
 
 ## Severity 
 
-The CVSS score of this vulnerability is 7.8 (High), based on vector [AV:N/AC:L/Au:N/C:N/I:N/A:C](https://nvd.nist.gov/vuln-metrics/cvss/v2-calculator?vector=(AV:N/AC:L/Au:N/C:N/I:N/A:C)).
+The CVSS score of this vulnerability is 7.8 (High), based on vector [(AV:N/AC:L/Au:N/C:N/I:N/A:C)](https://nvd.nist.gov/vuln-metrics/cvss/v2-calculator?vector=%28AV:N/AC:L/Au:N/C:N/I:N/A:C%29).
 
 ## Impact
 
@@ -27,11 +27,11 @@ Applications written using only the low-level API from akka-http-core but not th
 
 - akka-http prior to `10.0.6` and  `2.4.11.2`
 
-Notable **not affected**: 
+Notably **not affected**:
 
 - Play Framework (regardless of used server backend)
 - Lagom Framework
-- Users of the low-level akka-http-core APIs
+- Low-level akka-http-core APIs
 
 ## Fixed versions
 

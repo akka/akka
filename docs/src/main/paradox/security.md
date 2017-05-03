@@ -19,7 +19,7 @@ to ensure that a fix can be provided without delay.
 
 ### Fixed in Akka HTTP 10.0.6 & 2.4.11.2
 
-* @ref:[Illegal Media Range in Accept Header Causes StackOverflowError Leading to Denial of Service](2017-05-03-illegal-media-range-in-accept-header-causes-stackoverflowerror.md)
+* @ref:[Illegal Media Range in Accept Header Causes StackOverflowError Leading to Denial of Service](security/2017-05-03-illegal-media-range-in-accept-header-causes-stackoverflowerror.md)
 
 ### Fixed in Akka HTTP 10.0.2 & 2.4.11.1
 
