@@ -53,14 +53,34 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
   implicit def fromStatusCodeAndValue[S, T](implicit sConv: S ⇒ StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, T)] =
     fromStatusCodeAndHeadersAndValue[T] compose { case (status, value) ⇒ (sConv(status), Nil, value) }
 
-  implicit def fromStatusCodeConvertibleAndHeadersAndT[S, T](implicit
-    sConv: S ⇒ StatusCode,
-                                                             mt: ToEntityMarshaller[T]): TRM[(S, immutable.Seq[HttpHeader], T)] =
+  implicit def fromStatusCodeConvertibleAndHeadersAndT[S, T](implicit sConv: S ⇒ StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, immutable.Seq[HttpHeader], T)] =
     fromStatusCodeAndHeadersAndValue[T] compose { case (status, headers, value) ⇒ (sConv(status), headers, value) }
 
   implicit def fromStatusCodeAndHeadersAndValue[T](implicit mt: ToEntityMarshaller[T]): TRM[(StatusCode, immutable.Seq[HttpHeader], T)] =
     Marshaller(implicit ec ⇒ {
-      case (status, headers, value) ⇒ mt(value).fast map (_ map (_ map (statusCodeAndEntityResponse(status, headers, _))))
+      case (status, headers, value) ⇒
+        mt(value).fast map { marshallings ⇒
+          val mappedMarshallings = marshallings map (_ map (statusCodeAndEntityResponse(status, headers, _)))
+          if (status.isSuccess)
+            // for 2xx status codes delegate content-type negotiation to the value marshaller
+            mappedMarshallings
+          else
+            // For non-2xx status, add an opaque fallback marshalling using the first returned marshalling
+            // that will be used if the result wouldn't otherwise be accepted.
+            //
+            // The reasoning is that users often use routes like  `complete(400 -> "Illegal request in this context")`
+            // to eagerly complete a route with an error (instead of using rejection handling). If the client uses
+            // narrow Accept headers like `Accept: application/json` the user supplied error message would not be
+            // rendered because it will only accept `text/plain` but not `application/json` responses and fail the
+            // whole request with a "406 Not Acceptable" response.
+            //
+            // Adding the opaque fallback rendering will give an escape hatch for those situations.
+            // See akka/akka#19397, akka/akka#19842, and #1072.
+            mappedMarshallings match {
+              case Nil                   ⇒ Nil
+              case firstMarshalling :: _ ⇒ mappedMarshallings :+ firstMarshalling.toOpaque(HttpCharsets.`UTF-8`)
+            }
+        }
     })
 
   implicit def fromEntityStreamingSupportAndByteStringMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] = {

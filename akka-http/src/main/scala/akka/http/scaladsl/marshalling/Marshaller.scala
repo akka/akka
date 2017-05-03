@@ -176,6 +176,13 @@ object Marshaller
  */
 sealed trait Marshalling[+A] {
   def map[B](f: A ⇒ B): Marshalling[B]
+
+  /**
+   * Converts this marshalling to an opaque marshalling, i.e. a marshalling result that
+   * does not take part in content type negotiation. The given charset is used if this
+   * instance is a `WithOpenCharset` marshalling.
+   */
+  def toOpaque(charset: HttpCharset): Marshalling[A]
 }
 
 object Marshalling {
@@ -187,6 +194,7 @@ object Marshalling {
     contentType: ContentType,
     marshal:     () ⇒ A) extends Marshalling[A] {
     def map[B](f: A ⇒ B): WithFixedContentType[B] = copy(marshal = () ⇒ f(marshal()))
+    def toOpaque(charset: HttpCharset): Marshalling[A] = Opaque(marshal)
   }
 
   /**
@@ -196,6 +204,7 @@ object Marshalling {
     mediaType: MediaType.WithOpenCharset,
     marshal:   HttpCharset ⇒ A) extends Marshalling[A] {
     def map[B](f: A ⇒ B): WithOpenCharset[B] = copy(marshal = cs ⇒ f(marshal(cs)))
+    def toOpaque(charset: HttpCharset): Marshalling[A] = Opaque(() ⇒ marshal(charset))
   }
 
   /**
@@ -204,6 +213,7 @@ object Marshalling {
    */
   final case class Opaque[A](marshal: () ⇒ A) extends Marshalling[A] {
     def map[B](f: A ⇒ B): Opaque[B] = copy(marshal = () ⇒ f(marshal()))
+    def toOpaque(charset: HttpCharset): Marshalling[A] = this
   }
 }
 //#marshalling

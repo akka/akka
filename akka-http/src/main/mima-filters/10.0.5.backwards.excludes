@@ -8,3 +8,6 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.coding.
 # In later versions, java content type resolvers can be created directly, without going through
 # RoutingJavaMapping.
 ProblemFilters.exclude[MissingClassProblem]("akka.http.javadsl.server.RoutingJavaMapping$convertContentTypeResolver$")
+
+# Public sealed trait that has only internal usages inside the same module.
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.Marshalling.toOpaque")
