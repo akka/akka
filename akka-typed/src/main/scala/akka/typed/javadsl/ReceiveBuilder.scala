@@ -163,8 +163,7 @@ class Receive[T] private[javadsl] (
         if (cls.isAssignableFrom(msg.getClass) && (predicate.isEmpty || predicate.get.apply(msg))) handler(msg)
         else receive[M](msg, tail)
       case _ ⇒
-        // emulate scala match error
-        throw new MatchError(msg)
+        Actor.unhandled
     }
 
 }
