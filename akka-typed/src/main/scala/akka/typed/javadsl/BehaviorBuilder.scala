@@ -5,11 +5,15 @@
 package akka.typed.javadsl
 
 import scala.annotation.tailrec
+
 import akka.japi.function.{ Function, Function2, Predicate }
+import akka.annotation.InternalApi
 import akka.typed
 import akka.typed.{ Behavior, ExtensibleBehavior, Signal }
+
+import akka.typed.Behavior.unhandled
+
 import BehaviorBuilder._
-import akka.annotation.InternalApi
 
 /**
  * Used for creating a [[Behavior]] by 'chaining' message and signal handlers.
@@ -258,8 +262,7 @@ private class BuiltBehavior[T](
         if (cls.isAssignableFrom(msg.getClass) && (predicate.isEmpty || predicate.get.apply(msg))) handler(ctx, msg)
         else receive[M](ctx, msg, tail)
       case _ ⇒
-        // emulate scala match error
-        throw new MatchError(msg)
+        unhandled[T]
     }
 
 }
