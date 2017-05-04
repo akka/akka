@@ -29,16 +29,16 @@ public class BehaviorBuilderTest extends JUnitSuite {
     @Test
     public void shouldCompile() {
       Behavior<Message> b = Actor.immutable(Message.class)
-              .message(One.class, (ctx, o) -> {
+              .onMessage(One.class, (ctx, o) -> {
                 o.foo();
                 return same();
               })
-              .message(One.class, o -> o.foo().startsWith("a"), (ctx, o) -> same())
-              .messageUnchecked(MyList.class, (ActorContext<Message> ctx, MyList<String> l) -> {
+              .onMessage(One.class, o -> o.foo().startsWith("a"), (ctx, o) -> same())
+              .onMessageUnchecked(MyList.class, (ActorContext<Message> ctx, MyList<String> l) -> {
                 String first = l.get(0);
                 return Actor.<Message>same();
               })
-              .signal(Terminated.class, (ctx, t) -> {
+              .onSignal(Terminated.class, (ctx, t) -> {
                 System.out.println("Terminating along with " + t.ref());
                 return stopped();
               })
@@ -62,10 +62,10 @@ public class BehaviorBuilderTest extends JUnitSuite {
 
     public Behavior<CounterMessage> immutableCounter(int currentValue) {
       return Actor.immutable(CounterMessage.class)
-          .message(Increase.class, (ctx, o) -> {
+          .onMessage(Increase.class, (ctx, o) -> {
             return immutableCounter(currentValue + 1);
           })
-          .message(Get.class, (ctx, o) -> {
+          .onMessage(Get.class, (ctx, o) -> {
             o.sender.tell(new Got(currentValue));
             return same();
           })
@@ -86,11 +86,11 @@ public class BehaviorBuilderTest extends JUnitSuite {
       Behavior<CounterMessage> mutable = Actor.mutable2(b -> {
         MutableStateHolder state = new MutableStateHolder();
 
-        return b.message(Increase.class, (ctx, o) -> {
+        return b.onMessage(Increase.class, (ctx, o) -> {
           state.currentValue++;
           return same();
         })
-        .message(Get.class, (ctx, o) -> {
+        .onMessage(Get.class, (ctx, o) -> {
           o.sender.tell(new Got(state.currentValue));
           return same();
         });
