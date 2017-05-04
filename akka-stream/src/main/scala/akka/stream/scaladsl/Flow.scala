@@ -1039,7 +1039,35 @@ trait FlowOps[+Out, +Mat] {
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def delay(of: FiniteDuration, strategy: DelayOverflowStrategy = DelayOverflowStrategy.dropTail): Repr[Out] =
-    via(new Delay[Out](of, strategy))
+    via(new Delay[Out](_ ⇒ of, strategy))
+
+  /**
+   * Shifts elements emission in time by a amount specified by a function from element to FiniteDuration.
+   * It allows to store elements in internal buffer while waiting for next element to be emitted.
+   * Depending on the defined [[akka.stream.DelayOverflowStrategy]] it might drop elements or backpressure
+   * the upstream if there is no space available in the buffer.
+   *
+   * Delay precision is 10ms to avoid unnecessary timer scheduling cycles
+   *
+   * Internal buffer has default capacity 16. You can set buffer size by calling `addAttributes(inputBuffer)`
+   *
+   * '''Emits when''' there is a pending element in the buffer and configured time for this element elapsed
+   *  * EmitEarly - strategy do not wait to emit element if buffer is full
+   *
+   * '''Backpressures when''' depending on OverflowStrategy
+   *  * Backpressure - backpressures when buffer is full
+   *  * DropHead, DropTail, DropBuffer - never backpressures
+   *  * Fail - fails the stream if buffer gets full
+   *
+   * '''Completes when''' upstream completes and buffered elements have been drained
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param f function from message to time to shift
+   * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
+   */
+  def delay(f: Out ⇒ FiniteDuration, strategy: DelayOverflowStrategy): Repr[Out] =
+    via(new Delay[Out](f, strategy))
 
   /**
    * Discard the given number of elements at the beginning of the stream.

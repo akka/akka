@@ -763,7 +763,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def delay(of: FiniteDuration, strategy: DelayOverflowStrategy): Flow[In, Out, Mat] =
-    new Flow(delegate.delay(of, strategy))
+    new Flow(delegate.delay(_ ⇒ of, strategy))
 
   /**
    * Discard the given number of elements at the beginning of the stream.
