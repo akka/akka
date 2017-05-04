@@ -4,18 +4,23 @@
 package akka.typed.javadsl
 
 import java.util.function.{ Function ⇒ JFunction }
+
+import scala.reflect.ClassTag
+
+import akka.util.OptionVal
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.function.Procedure2
-import akka.typed.scaladsl.{ ActorContext ⇒ SAC }
+import akka.japi.pf.PFBuilder
+
 import akka.typed.Behavior
 import akka.typed.ExtensibleBehavior
 import akka.typed.Signal
-import akka.typed.internal.BehaviorImpl
 import akka.typed.ActorRef
 import akka.typed.SupervisorStrategy
-import scala.reflect.ClassTag
+import akka.typed.scaladsl.{ ActorContext ⇒ SAC }
+
+import akka.typed.internal.BehaviorImpl
 import akka.typed.internal.Restarter
-import akka.japi.pf.PFBuilder
 import akka.typed.internal.TimerSchedulerImpl
 
 object Actor {
@@ -45,9 +50,6 @@ object Actor {
   def mutable[T](factory: akka.japi.function.Function[ActorContext[T], MutableBehavior[T]]): Behavior[T] =
     deferred(factory)
 
-  def mutable2[T](factory: akka.japi.function.Function[BehaviorBuilder[T], BehaviorBuilder[T]]): Behavior[T] =
-    Behavior.DeferredBehavior(ctx ⇒ factory(BehaviorBuilder.create).build());
-
   /**
    * Mutable behavior can be implemented by extending this class and implement the
    * abstract method [[MutableBehavior#onMessage]] and optionally override
@@ -60,44 +62,26 @@ object Actor {
    * @see [[Actor#mutable]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
+    private var _receive: OptionVal[Receive[T]] = OptionVal.None
+    private def receive: Receive[T] = _receive match {
+      case OptionVal.None ⇒
+        val receive = createReceive
+        _receive = OptionVal.Some(receive)
+        receive
+      case OptionVal.Some(r) ⇒ r
+    }
+
     @throws(classOf[Exception])
     override final def receiveMessage(ctx: akka.typed.ActorContext[T], msg: T): Behavior[T] =
-      onMessage(msg)
-
-    /**
-     * Implement this method to process an incoming message and return the next behavior.
-     *
-     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
-     * <ul>
-     * <li>returning `stopped` will terminate this Behavior</li>
-     * <li>returning `this` or `same` designates to reuse the current Behavior</li>
-     * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
-     * </ul>
-     *
-     */
-    @throws(classOf[Exception])
-    def onMessage(msg: T): Behavior[T]
+      receive.receiveMessage(msg)
 
     @throws(classOf[Exception])
     override final def receiveSignal(ctx: akka.typed.ActorContext[T], msg: Signal): Behavior[T] =
-      onSignal(msg)
+      receive.receiveSignal(msg)
 
-    /**
-     * Override this method to process an incoming [[akka.typed.Signal]] and return the next behavior.
-     * This means that all lifecycle hooks, ReceiveTimeout, Terminated and Failed messages
-     * can initiate a behavior change.
-     *
-     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
-     *
-     *  * returning `stopped` will terminate this Behavior
-     *  * returning `this` or `same` designates to reuse the current Behavior
-     *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
-     *
-     * By default, this method returns `unhandled`.
-     */
-    @throws(classOf[Exception])
-    def onSignal(msg: Signal): Behavior[T] =
-      unhandled
+    def createReceive: Receive[T]
+
+    def receiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
   }
 
   /**
@@ -269,4 +253,8 @@ object Actor {
   def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[T], Behavior[T]]): Behavior[T] =
     TimerSchedulerImpl.withTimers(timers ⇒ factory.apply(timers))
 
+  trait Receive[T] {
+    def receiveMessage(msg: T): Behavior[T]
+    def receiveSignal(msg: Signal): Behavior[T]
+  }
 }

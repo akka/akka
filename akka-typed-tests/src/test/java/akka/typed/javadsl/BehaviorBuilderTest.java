@@ -3,17 +3,21 @@
  */
 package akka.typed.javadsl;
 
+import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
+
 import akka.typed.Behavior;
 import akka.typed.Terminated;
 import akka.typed.ActorRef;
-import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
 
 import java.util.ArrayList;
 
 import static akka.typed.javadsl.Actor.same;
 import static akka.typed.javadsl.Actor.stopped;
 
+/**
+ * Test creating [[Behavior]]s using [[BehaviorBuilder]]
+ */
 public class BehaviorBuilderTest extends JUnitSuite {
     interface Message {
     }
@@ -29,20 +33,20 @@ public class BehaviorBuilderTest extends JUnitSuite {
     @Test
     public void shouldCompile() {
       Behavior<Message> b = Actor.immutable(Message.class)
-              .onMessage(One.class, (ctx, o) -> {
-                o.foo();
-                return same();
-              })
-              .onMessage(One.class, o -> o.foo().startsWith("a"), (ctx, o) -> same())
-              .onMessageUnchecked(MyList.class, (ActorContext<Message> ctx, MyList<String> l) -> {
-                String first = l.get(0);
-                return Actor.<Message>same();
-              })
-              .onSignal(Terminated.class, (ctx, t) -> {
-                System.out.println("Terminating along with " + t.ref());
-                return stopped();
-              })
-              .build();
+        .onMessage(One.class, (ctx, o) -> {
+          o.foo();
+          return same();
+        })
+        .onMessage(One.class, o -> o.foo().startsWith("a"), (ctx, o) -> same())
+        .onMessageUnchecked(MyList.class, (ActorContext<Message> ctx, MyList<String> l) -> {
+          String first = l.get(0);
+          return Actor.<Message>same();
+        })
+        .onSignal(Terminated.class, (ctx, t) -> {
+          System.out.println("Terminating along with " + t.ref());
+          return stopped();
+        })
+        .build();
     }
 
     interface CounterMessage {};
@@ -77,23 +81,4 @@ public class BehaviorBuilderTest extends JUnitSuite {
       Behavior<CounterMessage> immutable = immutableCounter(0);
     }
 
-    static final class MutableStateHolder {
-      int currentValue = 0;
-    }
-
-    @Test
-    public void testMutableCounter() {
-      Behavior<CounterMessage> mutable = Actor.mutable2(b -> {
-        MutableStateHolder state = new MutableStateHolder();
-
-        return b.onMessage(Increase.class, (ctx, o) -> {
-          state.currentValue++;
-          return same();
-        })
-        .onMessage(Get.class, (ctx, o) -> {
-          o.sender.tell(new Got(state.currentValue));
-          return same();
-        });
-      });
-    }
 }
