@@ -55,7 +55,7 @@ object Actor {
    * @see [[Actor#mutable]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
-    private val receive: Receive[T] = createReceive
+    private lazy val receive: Receive[T] = createReceive
 
     @throws(classOf[Exception])
     override final def receiveMessage(ctx: akka.typed.ActorContext[T], msg: T): Behavior[T] =

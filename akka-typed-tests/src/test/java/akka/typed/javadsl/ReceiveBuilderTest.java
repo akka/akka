@@ -8,6 +8,8 @@ import org.scalatest.junit.JUnitSuite;
 
 import akka.typed.Behavior;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Test creating [[MutableActor]]s using [[ReceiveBuilder]]
  */
@@ -36,5 +38,26 @@ public class ReceiveBuilderTest extends JUnitSuite {
           .build();
       }
     });
+  }
+
+  private static class MyMutableBehavior extends Actor.MutableBehavior<BehaviorBuilderTest.CounterMessage> {
+    private int value;
+
+    public MyMutableBehavior(int initialValue) {
+      super();
+      this.value = initialValue;
+    }
+
+    @Override
+    public Actor.Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
+      assertEquals(42, value);
+      return receiveBuilder().build();
+    }
+  }
+
+  @Test
+  public void testInitializationOrder() throws Exception {
+    MyMutableBehavior mutable = new MyMutableBehavior(42);
+    assertEquals(Actor.unhandled(), mutable.receiveMessage(null, new BehaviorBuilderTest.Increase()));
   }
 }
