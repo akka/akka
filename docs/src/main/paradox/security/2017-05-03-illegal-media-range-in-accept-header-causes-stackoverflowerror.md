@@ -32,6 +32,7 @@ Notably **not affected**:
 - Play Framework (regardless of used server backend)
 - Lagom Framework
 - Low-level akka-http-core APIs
+- Spray
 
 ## Fixed versions
 
