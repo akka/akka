@@ -41,11 +41,15 @@ private[typed] trait DeathWatch[T] {
 
   type ARImpl = ActorRefImpl[Nothing]
 
+  /**
+    * This map holds a [[None]] for actors for which we send a [[Terminated]] notification on termination,
+    * ``Some(message)`` for actors for which we send a custom termination message.
+    */
   private var watching = Map.empty[ARImpl, Option[T]]
   private var watchedBy = Set.empty[ARImpl]
 
-  final def watch[U](_a: ActorRef[U]): Unit = {
-    val a = _a.sorry
+  final def watch[U](subject: ActorRef[U]): Unit = {
+    val a = subject.sorry
     if (a != self && !watching.contains(a)) {
       maintainAddressTerminatedSubscription(a) {
         a.sendSystem(Watch(a, self))
@@ -54,8 +58,8 @@ private[typed] trait DeathWatch[T] {
     }
   }
 
-  final def watchWith[U](_a: ActorRef[U], msg: T): Unit = {
-    val a = _a.sorry
+  final def watchWith[U](subject: ActorRef[U], msg: T): Unit = {
+    val a = subject.sorry
     if (a != self && !watching.contains(a)) {
       maintainAddressTerminatedSubscription(a) {
         a.sendSystem(Watch(a, self))
@@ -81,7 +85,7 @@ private[typed] trait DeathWatch[T] {
   protected def watchedActorTerminated(actor: ARImpl, failure: Throwable): Boolean = {
     removeChild(actor)
     watching.get(actor) match {
-      case None ⇒ // Should not happen, but can be safely ignored.
+      case None ⇒ // We're apparently no longer watching this actor.
       case Some(optionalMessage) ⇒
         maintainAddressTerminatedSubscription(actor) {
           watching -= actor

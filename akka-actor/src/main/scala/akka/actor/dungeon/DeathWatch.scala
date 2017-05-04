@@ -11,6 +11,10 @@ import akka.event.AddressTerminatedTopic
 
 private[akka] trait DeathWatch { this: ActorCell ⇒
 
+  /**
+    * This map holds a [[None]] for actors for which we send a [[Terminated]] notification on termination,
+    * ``Some(message)`` for actors for which we send a custom termination message.
+    */
   private var watching: Map[ActorRef, Option[Any]] = Map.empty
   private var watchedBy: Set[ActorRef] = ActorCell.emptyActorRefSet
   private var terminatedQueued: Set[ActorRef] = ActorCell.emptyActorRefSet
@@ -63,7 +67,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    */
   protected def watchedActorTerminated(actor: ActorRef, existenceConfirmed: Boolean, addressTerminated: Boolean): Unit = {
     watchingGet(actor) match {
-      case None ⇒ // Should not happen, but can be safely ignored.
+      case None ⇒ // We're apparently no longer watching this actor.
       case Some(optionalMessage) ⇒
         maintainAddressTerminatedSubscription(actor) {
           watching = removeFromMap(actor, watching)
@@ -87,6 +91,9 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   // TODO this should be removed and be replaced with `watching.get(subject)`
   //   when all actor references have uid, i.e. actorFor is removed
+  // Returns None when the subject is not being watched.
+  // If the subject is being matched, the inner option is the optional custom termination
+  // message that should be sent instead of the default Terminated.
   private def watchingGet(subject: ActorRef): Option[Option[Any]] =
     watching.get(subject).orElse(
       if (subject.path.uid == ActorCell.undefinedUid) None
