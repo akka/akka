@@ -50,7 +50,7 @@ class RestarterSpec extends TypedSpec {
         case Throw(e) ⇒
           throw e
       }
-    }.onSignal {
+    } onSignal {
       case (ctx, sig) ⇒
         monitor ! GotSignal(sig)
         same

@@ -128,13 +128,8 @@ class IntroSpec extends TypedSpec {
         Actor.immutable[akka.NotUsed] {
           (_, _) ⇒ Actor.unhandled
         } onSignal {
-          case (ctx, sig) ⇒
-            sig match {
-              case Terminated(ref) ⇒
-                Actor.stopped
-              case _ ⇒
-                Actor.unhandled
-            }
+          case (ctx, Terminated(ref)) ⇒
+            Actor.stopped
         }
       }
 
