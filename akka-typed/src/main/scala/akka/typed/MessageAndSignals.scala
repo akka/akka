@@ -25,7 +25,7 @@ final case class DeadLetter(msg: Any)
  * guaranteed to arrive in contrast to the at-most-once semantics of normal
  * Actor messages).
  */
-sealed trait Signal
+trait Signal
 
 /**
  * Lifecycle signal that is fired upon restart of the Actor before replacing
