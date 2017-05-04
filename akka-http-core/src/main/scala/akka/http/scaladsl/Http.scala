@@ -124,7 +124,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     .map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(mat.executionContext)
 
   private def prepareAttributes(settings: ServerSettings, remoteAddress: InetSocketAddress) =
-    if (settings.remoteAddressHeader) HttpAttributes.remoteAddress(Some(remoteAddress))
+    if (settings.remoteAddressHeader) HttpAttributes.remoteAddress(remoteAddress)
     else HttpAttributes.empty
 
   /**

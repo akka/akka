@@ -18,9 +18,9 @@ import akka.stream.Attributes
 private[akka] object HttpAttributes {
   import Attributes._
 
-  private[akka] final case class RemoteAddress(address: Option[InetSocketAddress]) extends Attribute
+  private[akka] final case class RemoteAddress(address: InetSocketAddress) extends Attribute
 
-  private[akka] def remoteAddress(address: Option[InetSocketAddress]) =
+  private[akka] def remoteAddress(address: InetSocketAddress) =
     Attributes(RemoteAddress(address))
 
   private[akka] val empty =

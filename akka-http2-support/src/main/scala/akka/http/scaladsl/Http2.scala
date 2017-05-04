@@ -49,11 +49,6 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
 
     val effectivePort = if (port >= 0) port else 443
 
-    val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
-      BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
-        case SessionBytes(_, bytes) ⇒ bytes
-      })
-
     def http2Layer(): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
       Http2Blueprint.serverStack(settings, log) atop
         unwrapTls atop
@@ -100,7 +95,7 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
       case incoming: Tcp.IncomingConnection ⇒
         try {
           val layer =
-            if (settings.remoteAddressHeader) fullLayer().addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
+            if (settings.remoteAddressHeader) fullLayer().addAttributes(HttpAttributes.remoteAddress(incoming.remoteAddress))
             else fullLayer()
 
           layer.joinMat(incoming.flow)(Keep.left)
@@ -121,6 +116,11 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
       _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
     }.to(Sink.ignore).run()
   }
+
+  private val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
+    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
+      case SessionBytes(_, bytes) ⇒ bytes
+    })
 
 }
 

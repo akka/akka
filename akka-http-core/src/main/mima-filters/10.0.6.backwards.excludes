@@ -14,3 +14,12 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.par
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.parsing.ParserOutput#StrictEntityCreator.this")
 ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.parsing.ParserOutput$StrictEntityCreator$")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.parsing.ParserOutput#StrictEntityCreator.apply")
+
+# Remote-Address for HTTP/2
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.server.HttpAttributes.remoteAddress")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.server.HttpAttributes#RemoteAddress.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.server.HttpAttributes#RemoteAddress.copy")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.server.HttpAttributes#RemoteAddress.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.server.HttpAttributes#RemoteAddress.address")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.server.HttpAttributes#RemoteAddress.copy$default$1")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.server.HttpAttributes#RemoteAddress.address")

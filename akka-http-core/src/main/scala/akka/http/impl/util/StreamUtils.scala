@@ -6,6 +6,8 @@ package akka.http.impl.util
 
 import akka.NotUsed
 import akka.actor.Cancellable
+import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -214,6 +216,15 @@ private[http] object StreamUtils {
       i ⇒ f(i) :: Nil
     }
 
+  /**
+   * Lifts the streams attributes into an element and passes them to the function for each passed through element.
+   * Similar idea than [[FlowOps.statefulMapConcat]] but for a simple map.
+   *
+   * The result of `Attributes => (T => U)` is cached, and only the `T => U` function will be invoked afterwards for each element.
+   */
+  def statefulAttrsMap[T, U](functionConstructor: Attributes ⇒ T ⇒ U): Flow[T, U, NotUsed] =
+    Flow[T].via(ExposeAttributes[T, U](functionConstructor))
+
   trait ScheduleSupport { self: GraphStageLogic ⇒
     /**
      * Schedule a block to be run once after the given duration in the context of this graph stage.
@@ -279,4 +290,21 @@ private[http] class EnhancedByteStringSource[Mat](val byteStringStream: Source[B
     byteStringStream.runFold(ByteString.empty)(_ ++ _)
   def utf8String(implicit materializer: Materializer, ec: ExecutionContext): Future[String] =
     join.map(_.utf8String)
+}
+
+/** INTERNAL API */
+@InternalApi private[http] case class ExposeAttributes[T, U](functionConstructor: Attributes ⇒ T ⇒ U)
+  extends GraphStage[FlowShape[T, U]] {
+
+  val in = Inlet[T]("ExposeAttributes.in")
+  val out = Outlet[U]("ExposeAttributes.out")
+  override val shape = FlowShape(in, out)
+
+  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+    val f = functionConstructor(inheritedAttributes)
+    override def onPush(): Unit = push(out, f(grab(in)))
+    override def onPull(): Unit = pull(in)
+
+    setHandlers(in, out, this)
+  }
 }

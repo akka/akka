@@ -3,9 +3,11 @@
  */
 package akka.http.impl.engine.http2
 
+import java.net.InetSocketAddress
 import javax.net.ssl.SSLException
 
 import akka.NotUsed
+import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.TLSProtocol.{ SessionBytes, SessionTruncated, SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ BidiFlow, Flow, GraphDSL, Keep, Sink, Source }
@@ -77,6 +79,7 @@ object AlpnSwitch {
             connect(serverRequestIn, requestOut)
 
             serverImplementation
+              .addAttributes(inheritedAttributes) // propagate attributes to "real" server (such as HttpAttributes)
               .join(networkSide)
               .join(userSide)
               .run()(interpreter.subFusingMaterializer)

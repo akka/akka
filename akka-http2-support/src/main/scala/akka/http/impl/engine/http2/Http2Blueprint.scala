@@ -9,8 +9,9 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.util.StreamUtils
-import akka.http.scaladsl.model.{ ErrorInfo, HttpRequest, HttpResponse }
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
@@ -21,11 +22,14 @@ import scala.concurrent.{ ExecutionContext, Future }
 /**
  * Represents one direction of an Http2 substream.
  */
-private[http2] final case class Http2SubStream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any]) {
+private[http2] final case class Http2SubStream(
+  initialHeaders: ParsedHeadersFrame,
+  data:           Source[ByteString, Any]) {
   def streamId: Int = initialHeaders.streamId
 }
 
 object Http2Blueprint {
+  
   // format: OFF
   def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
@@ -34,7 +38,6 @@ object Http2Blueprint {
       hpackCoding() atop
       // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
       framing()
-
   // format: ON
 
   def framing(): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
@@ -82,9 +85,9 @@ object Http2Blueprint {
     }
     BidiFlow.fromFlows(
       Flow[HttpResponse].map(ResponseRendering.renderResponse(settings, log)),
-      Flow[Http2SubStream].via(StreamUtils.statefulMap { () ⇒
+      Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs ⇒
         val headerParser = masterHttpHeaderParser.createShallowCopy()
-        RequestParsing.parseRequest(headerParser)
+        RequestParsing.parseRequest(headerParser, settings, attrs)
       }))
   }
 

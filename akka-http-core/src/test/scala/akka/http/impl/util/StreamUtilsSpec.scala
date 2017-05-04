@@ -3,15 +3,16 @@
  */
 package akka.http.impl.util
 
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, Attributes }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.testkit._
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
 
-class StreamUtilsSpec extends AkkaSpec {
+class StreamUtilsSpec extends AkkaSpec with ScalaFutures {
   implicit val materializer = ActorMaterializer()
 
   "captureTermination" should {
@@ -41,6 +42,22 @@ class StreamUtilsSpec extends AkkaSpec {
 
         Await.result(whenCompleted, 3.seconds.dilated) shouldBe (())
       }
+    }
+  }
+
+  "exposeAttributes" should {
+    "expose attrs" in {
+      val element = "hello"
+      val nameAttr = Attributes.name("Amazing")
+
+      val res =
+        Source.single(element)
+          .via(StreamUtils.statefulAttrsMap(attrs ⇒ el ⇒ attrs → el))
+          .addAttributes(nameAttr)
+          .runWith(Sink.head)
+
+      val (attrs, `element`) = res.futureValue
+      attrs.attributeList should contain(nameAttr.attributeList.head)
     }
   }
 

@@ -893,7 +893,7 @@ class HttpServerSpec extends AkkaSpec(
       // with remote ip before flow is materialized, rather than from the blueprint apply method
       override def modifyServer(server: ServerLayer): ServerLayer = {
         BidiFlow.fromGraph(StreamUtils.fuseAggressive(server).withAttributes(
-          HttpAttributes.remoteAddress(Some(new InetSocketAddress(theAddress, 8080)))
+          HttpAttributes.remoteAddress(new InetSocketAddress(theAddress, 8080))
         ))
       }
 

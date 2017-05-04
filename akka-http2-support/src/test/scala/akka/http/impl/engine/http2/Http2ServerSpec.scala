@@ -1,19 +1,22 @@
 package akka.http.impl.engine.http2
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
+import java.net.{ InetAddress, InetSocketAddress }
 import java.nio.ByteOrder
 
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.http.impl.engine.http2.framing.FrameRenderer
+import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.StringRendering
+import akka.http.impl.util.{ StreamUtils, StringRendering }
+import akka.http.scaladsl.Http.ServerLayer
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
+import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader, `Remote-Address` }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.impl.io.ByteStringParser.ByteReader
-import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
 import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.stream.{ ActorMaterializer, Materializer }
@@ -29,7 +32,11 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
+class Http2ServerSpec extends AkkaSpec("""
+    akka.loglevel = debug
+    
+    akka.http.server.remote-address-header = on
+  """)
   with WithInPendingUntilFixed with Eventually {
   implicit val mat = ActorMaterializer()
 
@@ -678,6 +685,28 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
       }
     }
 
+    "expose synthetic headers" should {
+      "expose Remote-Address" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+
+        lazy val theAddress = "127.0.0.1"
+        lazy val thePort = 1337
+        override def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]) =
+          BidiFlow.fromGraph(StreamUtils.fuseAggressive(server).withAttributes(
+            HttpAttributes.remoteAddress(new InetSocketAddress(theAddress, thePort))
+          ))
+
+        val target = Uri("http://www.example.com/")
+        sendRequest(1, HttpRequest(uri = target))
+        requestIn.ensureSubscription()
+
+        val request = expectRequestRaw()
+        val remoteAddressHeader = request.header[headers.`Remote-Address`].get
+        remoteAddressHeader.address.getAddress.get().toString shouldBe ("/" + theAddress)
+        remoteAddressHeader.address.getPort shouldBe thePort
+      }
+
+    }
+
     "must not swallow errors / warnings" in pending
   }
 
@@ -689,8 +718,14 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
 
     def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed]
 
+    // hook to modify server, for example add attributes
+    def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]) = server
+
+    final def theServer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
+      modifyServer(Http2Blueprint.serverStack(ServerSettings(system).withServerHeader(None), system.log))
+
     handlerFlow
-      .join(Http2Blueprint.serverStack(ServerSettings(system).withServerHeader(None), system.log))
+      .join(theServer)
       .runWith(Source.fromPublisher(fromNet), toNet.sink)
 
     def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)
@@ -953,10 +988,11 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
     }
     def decodeHeadersToResponse(bytes: ByteString): HttpResponse =
       decodeHeaders(bytes).foldLeft(HttpResponse())((old, header) ⇒ header match {
-        case (":status", value)        ⇒ old.copy(status = value.toInt)
-        case ("content-length", value) ⇒ old.copy(entity = HttpEntity.Default(old.entity.contentType, value.toLong, Source.empty))
-        case ("content-type", value)   ⇒ old.copy(entity = old.entity.withContentType(ContentType.parse(value).right.get))
-        case (name, value)             ⇒ old.addHeader(RawHeader(name, value)) // FIXME: decode to modeled headers
+        case (":status", value)                             ⇒ old.copy(status = value.toInt)
+        case ("content-length", value) if value.toLong == 0 ⇒ old.copy(entity = HttpEntity.Empty)
+        case ("content-length", value)                      ⇒ old.copy(entity = HttpEntity.Default(old.entity.contentType, value.toLong, Source.empty))
+        case ("content-type", value)                        ⇒ old.copy(entity = old.entity.withContentType(ContentType.parse(value).right.get))
+        case (name, value)                                  ⇒ old.addHeader(RawHeader(name, value)) // FIXME: decode to modeled headers
       })
   }
 
