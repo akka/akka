@@ -42,9 +42,9 @@ private[typed] trait DeathWatch[T] {
   type ARImpl = ActorRefImpl[Nothing]
 
   /**
-    * This map holds a [[None]] for actors for which we send a [[Terminated]] notification on termination,
-    * ``Some(message)`` for actors for which we send a custom termination message.
-    */
+   * This map holds a [[None]] for actors for which we send a [[Terminated]] notification on termination,
+   * ``Some(message)`` for actors for which we send a custom termination message.
+   */
   private var watching = Map.empty[ARImpl, Option[T]]
   private var watchedBy = Set.empty[ARImpl]
 

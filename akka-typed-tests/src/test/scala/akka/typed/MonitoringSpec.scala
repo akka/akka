@@ -19,16 +19,16 @@ class MonitoringSpec extends TypedSpec {
       case object Stop
       case class StartWatching(watchee: ActorRef[_])
 
-      val terminator = Await.result(system ? TypedSpec.Create(Immutable[Stop.type] {
-        case (ctx, `Stop`) ⇒ Stopped
+      val terminator = Await.result(system ? TypedSpec.Create(immutable[Stop.type] {
+        case (ctx, `Stop`) ⇒ stopped
       }, "t"), 3.seconds /*.dilated*/ )
 
       val receivedTerminationSignal: Promise[Unit] = Promise()
 
-      val watcher = Await.result(system ? TypedSpec.Create(Immutable[StartWatching] {
-        case (ctx, StartWatching(watchee)) ⇒ ctx.watch(watchee); Same
+      val watcher = Await.result(system ? TypedSpec.Create(immutable[StartWatching] {
+        case (ctx, StartWatching(watchee)) ⇒ ctx.watch(watchee); same
       }.onSignal {
-        case (ctx, Terminated(_)) ⇒ receivedTerminationSignal.success(()); Stopped
+        case (ctx, Terminated(_)) ⇒ receivedTerminationSignal.success(()); stopped
       }, "w"), 3.seconds /*.dilated*/ )
 
       watcher ! StartWatching(terminator)
@@ -44,17 +44,19 @@ class MonitoringSpec extends TypedSpec {
       case object CustomTerminationMessage extends Message
       case class StartWatchingWith(watchee: ActorRef[_], msg: CustomTerminationMessage.type) extends Message
 
-      val terminator = Await.result(system ? TypedSpec.Create(Immutable[Stop.type] {
-        case (ctx, `Stop`) ⇒ Stopped
+      val terminator = Await.result(system ? TypedSpec.Create(immutable[Stop.type] {
+        case (ctx, `Stop`) ⇒ stopped
       }, "t"), 3.seconds /*.dilated*/ )
 
       val receivedTerminationSignal: Promise[Unit] = Promise()
 
-      val watcher = Await.result(system ? TypedSpec.Create(Immutable[Message] {
+      val watcher = Await.result(system ? TypedSpec.Create(immutable[Message] {
         case (ctx, StartWatchingWith(watchee, msg)) ⇒
-          ctx.watchWith(watchee, msg); Same
+          ctx.watchWith(watchee, msg)
+          same
         case (ctx, `CustomTerminationMessage`) ⇒
-          receivedTerminationSignal.success(()); Stopped
+          receivedTerminationSignal.success(())
+          stopped
       }, "w"), 3.seconds /*.dilated*/ )
 
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)

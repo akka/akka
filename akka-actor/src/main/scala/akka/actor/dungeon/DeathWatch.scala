@@ -12,9 +12,9 @@ import akka.event.AddressTerminatedTopic
 private[akka] trait DeathWatch { this: ActorCell ⇒
 
   /**
-    * This map holds a [[None]] for actors for which we send a [[Terminated]] notification on termination,
-    * ``Some(message)`` for actors for which we send a custom termination message.
-    */
+   * This map holds a [[None]] for actors for which we send a [[Terminated]] notification on termination,
+   * ``Some(message)`` for actors for which we send a custom termination message.
+   */
   private var watching: Map[ActorRef, Option[Any]] = Map.empty
   private var watchedBy: Set[ActorRef] = ActorCell.emptyActorRefSet
   private var terminatedQueued: Set[ActorRef] = ActorCell.emptyActorRefSet
