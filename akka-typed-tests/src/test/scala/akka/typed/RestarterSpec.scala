@@ -223,16 +223,10 @@ class RestarterSpec extends TypedSpec {
     }
   }
 
-  trait RealTests {
+  trait RealTests extends StartSupport {
     import akka.typed.scaladsl.adapter._
     implicit def system: ActorSystem[TypedSpec.Command]
     implicit val testSettings = TestKitSettings(system)
-
-    val nameCounter = Iterator.from(0)
-    def nextName(): String = s"a-${nameCounter.next()}"
-
-    def start(behv: Behavior[Command]): ActorRef[Command] =
-      Await.result(system ? TypedSpec.Create(behv, nextName()), 3.seconds.dilated)
 
     def `must receive message`(): Unit = {
       val probe = TestProbe[Event]("evt")

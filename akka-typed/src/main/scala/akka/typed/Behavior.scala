@@ -7,6 +7,7 @@ import scala.annotation.tailrec
 import akka.util.LineNumbers
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.typed.scaladsl.{ ActorContext ⇒ SAC }
+import akka.util.OptionVal
 
 /**
  * The behavior of an actor defines how it reacts to the messages that it
@@ -216,6 +217,14 @@ object Behavior {
    * Returns true if the given behavior is the special `unhandled` marker.
    */
   def isUnhandled[T](behavior: Behavior[T]): Boolean = behavior eq UnhandledBehavior
+
+  /**
+   * Returns true if the given behavior is the special `Unhandled` marker.
+   */
+  def isDeferred[T](behavior: Behavior[T]): Boolean = behavior match {
+    case _: DeferredBehavior[T] ⇒ true
+    case _                      ⇒ false
+  }
 
   /**
    * Execute the behavior with the given message

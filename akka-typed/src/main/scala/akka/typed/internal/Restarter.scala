@@ -34,7 +34,7 @@ import akka.typed.scaladsl.Actor
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] =
     Actor.deferred[T] { ctx ⇒
       val c = ctx.asInstanceOf[akka.typed.ActorContext[T]]
-      val startedBehavior = initialUndefer(ctx.asInstanceOf[akka.typed.ActorContext[T]], initialBehavior)
+      val startedBehavior = initialUndefer(c, initialBehavior)
       strategy match {
         case Restart(-1, _, loggingEnabled) ⇒
           new Restarter(initialBehavior, startedBehavior, loggingEnabled)
@@ -220,9 +220,6 @@ import akka.typed.scaladsl.Actor
   strategy: Backoff, restartCount: Int, blackhole: Boolean) extends Supervisor[Any, Thr] {
 
   // TODO using Any here because the scheduled messages can't be of type T.
-  //       Something to consider is that timer messages should typically not be part of the
-  //       ordinary public message protocol and therefore those should perhaps be signals.
-  //       https://github.com/akka/akka/issues/16742
 
   import BackoffRestarter._
 
