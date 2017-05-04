@@ -13,9 +13,8 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API. Wrapping an [[akka.actor.ActorContext]] as an [[ActorContext]].
  */
-@InternalApi private[typed] class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContext[T] {
+@InternalApi private[typed] class ActorContextAdapter[T](val untyped: a.ActorContext) extends ActorContextImpl[T] {
 
-  import ActorRefAdapter.sendSystemMessage
   import ActorRefAdapter.toUntyped
 
   override def self = ActorRefAdapter(untyped.self)
@@ -57,9 +56,9 @@ import akka.annotation.InternalApi
     import untyped.dispatcher
     untyped.system.scheduler.scheduleOnce(delay, toUntyped(target), msg)
   }
-  override def spawnAdapter[U](f: U ⇒ T, name: String = ""): ActorRef[U] = {
+  override private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
     val cell = untyped.asInstanceOf[akka.actor.ActorCell]
-    val ref = cell.addFunctionRef((_, msg) ⇒ untyped.self ! f(msg.asInstanceOf[U]), name)
+    val ref = cell.addFunctionRef((_, msg) ⇒ untyped.self ! f(msg.asInstanceOf[U]), _name)
     ActorRefAdapter[U](ref)
   }
 
@@ -69,7 +68,8 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi private[typed] object ActorContextAdapter {
-  def toUntyped[U](ctx: ActorContext[_]): a.ActorContext =
+
+  private def toUntypedImp[U](ctx: ActorContext[_]): a.ActorContext =
     ctx match {
       case adapter: ActorContextAdapter[_] ⇒ adapter.untyped
       case _ ⇒
@@ -77,9 +77,11 @@ import akka.annotation.InternalApi
           s"($ctx of class ${ctx.getClass.getName})")
     }
 
+  def toUntyped2[U](ctx: ActorContext[_]): a.ActorContext = toUntypedImp(ctx)
+
   def toUntyped[U](ctx: scaladsl.ActorContext[_]): a.ActorContext =
     ctx match {
-      case c: ActorContext[_] ⇒ toUntyped(c)
+      case c: ActorContext[_] ⇒ toUntypedImp(c)
       case _ ⇒
         throw new UnsupportedOperationException("unknown ActorContext type " +
           s"($ctx of class ${ctx.getClass.getName})")
@@ -87,7 +89,7 @@ import akka.annotation.InternalApi
 
   def toUntyped[U](ctx: javadsl.ActorContext[_]): a.ActorContext =
     ctx match {
-      case c: ActorContext[_] ⇒ toUntyped(c)
+      case c: ActorContext[_] ⇒ toUntypedImp(c)
       case _ ⇒
         throw new UnsupportedOperationException("unknown ActorContext type " +
           s"($ctx of class ${ctx.getClass.getName})")

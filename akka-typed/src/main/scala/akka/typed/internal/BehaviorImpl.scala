@@ -7,6 +7,7 @@ package internal
 import akka.util.LineNumbers
 import akka.annotation.InternalApi
 import akka.typed.{ ActorContext ⇒ AC }
+import akka.typed.scaladsl.{ ActorContext ⇒ SAC }
 import akka.typed.scaladsl.Actor
 
 /**
@@ -43,19 +44,19 @@ import akka.typed.scaladsl.Actor
   }
 
   class ImmutableBehavior[T](
-    val onMessage: (ActorContext[T], T) ⇒ Behavior[T],
-    onSignal:      PartialFunction[(ActorContext[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(ActorContext[T], Signal), Behavior[T]]])
+    val onMessage: (SAC[T], T) ⇒ Behavior[T],
+    onSignal:      PartialFunction[(SAC[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
     extends ExtensibleBehavior[T] {
 
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
-      onSignal.applyOrElse((ctx, msg), Behavior.unhandledSignal.asInstanceOf[PartialFunction[(ActorContext[T], Signal), Behavior[T]]])
-    override def receiveMessage(ctx: AC[T], msg: T) = onMessage(ctx, msg)
+      onSignal.applyOrElse((ctx.asScala, msg), Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+    override def receiveMessage(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
     override def toString = s"Immutable(${LineNumbers(onMessage)})"
   }
 
   final case class Tap[T](
-    onMessage: Function2[ActorContext[T], T, _],
-    onSignal:  Function2[ActorContext[T], Signal, _],
+    onMessage: Function2[SAC[T], T, _],
+    onSignal:  Function2[SAC[T], Signal, _],
     behavior:  Behavior[T]) extends ExtensibleBehavior[T] {
 
     private def canonical(behv: Behavior[T]): Behavior[T] =
@@ -64,11 +65,11 @@ import akka.typed.scaladsl.Actor
       else if (isAlive(behv)) Tap(onMessage, onSignal, behv)
       else stopped
     override def receiveSignal(ctx: AC[T], signal: Signal): Behavior[T] = {
-      onSignal(ctx, signal)
+      onSignal(ctx.asScala, signal)
       canonical(Behavior.interpretSignal(behavior, ctx, signal))
     }
     override def receiveMessage(ctx: AC[T], msg: T): Behavior[T] = {
-      onMessage(ctx, msg)
+      onMessage(ctx.asScala, msg)
       canonical(Behavior.interpretMessage(behavior, ctx, msg))
     }
     override def toString = s"Tap(${LineNumbers(onSignal)},${LineNumbers(onMessage)},$behavior)"
