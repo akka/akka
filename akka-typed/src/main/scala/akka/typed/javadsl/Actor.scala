@@ -4,17 +4,22 @@
 package akka.typed.javadsl
 
 import java.util.function.{ Function ⇒ JFunction }
+
+import scala.reflect.ClassTag
+
+import akka.util.OptionVal
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.function.Procedure2
+import akka.japi.pf.PFBuilder
+
 import akka.typed.Behavior
 import akka.typed.ExtensibleBehavior
 import akka.typed.Signal
-import akka.typed.internal.BehaviorImpl
 import akka.typed.ActorRef
 import akka.typed.SupervisorStrategy
-import scala.reflect.ClassTag
+
+import akka.typed.internal.BehaviorImpl
 import akka.typed.internal.Restarter
-import akka.japi.pf.PFBuilder
 
 object Actor {
 
@@ -55,7 +60,14 @@ object Actor {
    * @see [[Actor#mutable]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
-    private lazy val receive: Receive[T] = createReceive
+    private var _receive: OptionVal[Receive[T]] = OptionVal.None
+    private def receive: Receive[T] = _receive match {
+      case OptionVal.None ⇒
+        val receive = createReceive
+        _receive = OptionVal.Some(receive)
+        receive
+      case OptionVal.Some(r) ⇒ r
+    }
 
     @throws(classOf[Exception])
     override final def receiveMessage(ctx: akka.typed.ActorContext[T], msg: T): Behavior[T] =
