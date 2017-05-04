@@ -7,7 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import akka.typed.scaladsl.Actor._
+import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.AskPattern._
 import akka.typed.testkit.EffectfulActorContext
 import akka.typed.testkit.TestKitSettings
@@ -24,10 +24,10 @@ class DeferredSpec extends TypedSpec {
   case object Started extends Event
 
   def target(monitor: ActorRef[Event]): Behavior[Command] =
-    Immutable((ctx, cmd) ⇒ cmd match {
+    Actor.immutable((ctx, cmd) ⇒ cmd match {
       case Ping ⇒
         monitor ! Pong
-        Same
+        Actor.same
     })
 
   trait StubbedTests {
@@ -38,7 +38,7 @@ class DeferredSpec extends TypedSpec {
 
     def `must create underlying deferred behavior immediately`(): Unit = {
       val inbox = Inbox[Event]("evt")
-      val behv = Deferred[Command] { _ ⇒
+      val behv = Actor.deferred[Command] { _ ⇒
         inbox.ref ! Started
         target(inbox.ref)
       }
@@ -50,7 +50,7 @@ class DeferredSpec extends TypedSpec {
     def `must stop when exception from factory`(): Unit = {
       val inbox = Inbox[Event]("evt")
       val exc = new RuntimeException("simulated exc from factory") with NoStackTrace
-      val behv = Deferred[Command] { _ ⇒
+      val behv = Actor.deferred[Command] { _ ⇒
         inbox.ref ! Started
         throw exc
       }
@@ -74,7 +74,7 @@ class DeferredSpec extends TypedSpec {
 
     def `must create underlying`(): Unit = {
       val probe = TestProbe[Event]("evt")
-      val behv = Deferred[Command] { _ ⇒
+      val behv = Actor.deferred[Command] { _ ⇒
         probe.ref ! Started
         target(probe.ref)
       }
@@ -86,7 +86,7 @@ class DeferredSpec extends TypedSpec {
 
     def `must stop when exception from factory`(): Unit = {
       val probe = TestProbe[Event]("evt")
-      val behv = Deferred[Command] { _ ⇒
+      val behv = Actor.deferred[Command] { _ ⇒
         probe.ref ! Started
         throw new RuntimeException("simulated exc from factory") with NoStackTrace
       }

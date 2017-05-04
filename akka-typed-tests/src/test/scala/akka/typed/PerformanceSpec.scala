@@ -27,19 +27,19 @@ class PerformanceSpec extends TypedSpec(
       StepWise[Pong] { (ctx, startWith) ⇒
         startWith {
 
-          val pinger = Immutable[Ping] { (ctx, msg) ⇒
+          val pinger = immutable[Ping] { (ctx, msg) ⇒
             if (msg.x == 0) {
               msg.report ! Pong(0, ctx.self, msg.report)
-              Same
+              same
             } else {
               msg.pong ! Pong(msg.x - 1, ctx.self, msg.report)
-              Same
+              same
             }
           } // FIXME .withDispatcher(executor)
 
-          val ponger = Immutable[Pong] { (ctx, msg) ⇒
+          val ponger = immutable[Pong] { (ctx, msg) ⇒
             msg.ping ! Ping(msg.x, ctx.self, msg.report)
-            Same
+            same
           } // FIXME .withDispatcher(executor)
 
           val actors =

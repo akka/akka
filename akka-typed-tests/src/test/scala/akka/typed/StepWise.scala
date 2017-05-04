@@ -109,7 +109,7 @@ object StepWise {
   }
 
   def apply[T](f: (scaladsl.ActorContext[T], StartWith[T]) ⇒ Steps[T, _]): Behavior[T] =
-    Deferred[Any] { ctx ⇒
+    deferred[Any] { ctx ⇒
       run(ctx, f(ctx.asInstanceOf[scaladsl.ActorContext[T]], new StartWith(keepTraces = false)).ops.reverse, ())
     }.narrow
 
@@ -135,7 +135,7 @@ object StepWise {
       case ThunkV(f) :: tail ⇒ run(ctx, tail, f(value))
       case Message(t, f, trace) :: tail ⇒
         ctx.setReceiveTimeout(t, ReceiveTimeout)
-        Immutable[Any] {
+        immutable[Any] {
           case (_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for a message")
           case (_, msg) ⇒
             ctx.cancelReceiveTimeout()
@@ -147,7 +147,7 @@ object StepWise {
         val deadline = Deadline.now + t
         def behavior(count: Int, acc: List[Any]): Behavior[Any] = {
           ctx.setReceiveTimeout(deadline.timeLeft, ReceiveTimeout)
-          Immutable[Any] {
+          immutable[Any] {
             case (_, ReceiveTimeout) ⇒
               throwTimeout(trace, s"timeout of $t expired while waiting for $c messages (got only $count)")
             case (_, msg) ⇒
@@ -165,7 +165,7 @@ object StepWise {
         val deadline = Deadline.now + t
         def behavior(count: Int, acc: List[Either[Signal, Any]]): Behavior[Any] = {
           ctx.setReceiveTimeout(deadline.timeLeft, ReceiveTimeout)
-          Immutable[Any] {
+          immutable[Any] {
             case (_, ReceiveTimeout) ⇒
               throwTimeout(trace, s"timeout of $t expired while waiting for $c messages (got only $count)")
             case (_, msg) ⇒
@@ -186,7 +186,7 @@ object StepWise {
         behavior(0, Nil)
       case Termination(t, f, trace) :: tail ⇒
         ctx.setReceiveTimeout(t, ReceiveTimeout)
-        Immutable[Any] {
+        immutable[Any] {
           case (_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for termination")
           case other               ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
         } onSignal {
@@ -195,7 +195,7 @@ object StepWise {
             run(ctx, tail, f(t, value))
           case other ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
         }
-      case Nil ⇒ Stopped
+      case Nil ⇒ stopped
     }
 }
 

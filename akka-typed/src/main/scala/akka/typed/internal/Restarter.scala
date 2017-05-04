@@ -32,7 +32,7 @@ import akka.typed.scaladsl.Actor
  */
 @InternalApi private[akka] object Restarter {
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] =
-    Actor.Deferred[T] { ctx ⇒
+    Actor.deferred[T] { ctx ⇒
       val c = ctx.asInstanceOf[akka.typed.ActorContext[T]]
       val startedBehavior = initialUndefer(ctx.asInstanceOf[akka.typed.ActorContext[T]], initialBehavior)
       strategy match {

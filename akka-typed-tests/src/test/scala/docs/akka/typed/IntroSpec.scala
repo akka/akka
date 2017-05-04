@@ -5,7 +5,7 @@ package docs.akka.typed
 
 //#imports
 import akka.typed._
-import akka.typed.scaladsl.Actor._
+import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.AskPattern._
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -19,10 +19,10 @@ object IntroSpec {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String)
 
-    val greeter = Immutable[Greet] { (_, msg) ⇒
+    val greeter = Actor.immutable[Greet] { (_, msg) ⇒
       println(s"Hello ${msg.whom}!")
       msg.replyTo ! Greeted(msg.whom)
-      Same
+      Actor.same
     }
   }
   //#hello-world-actor
@@ -53,7 +53,7 @@ object IntroSpec {
       chatRoom(List.empty)
 
     private def chatRoom(sessions: List[ActorRef[SessionEvent]]): Behavior[Command] =
-      Immutable[Command] { (ctx, msg) ⇒
+      Actor.immutable[Command] { (ctx, msg) ⇒
         msg match {
           case GetSession(screenName, client) ⇒
             val wrapper = ctx.spawnAdapter {
@@ -64,7 +64,7 @@ object IntroSpec {
           case PostSessionMessage(screenName, message) ⇒
             val mp = MessagePosted(screenName, message)
             sessions foreach (_ ! mp)
-            Same
+            Actor.same
         }
       }
     //#chatroom-behavior
@@ -99,41 +99,41 @@ class IntroSpec extends TypedSpec {
     import ChatRoom._
 
     val gabbler =
-      Immutable[SessionEvent] { (_, msg) ⇒
+      Actor.immutable[SessionEvent] { (_, msg) ⇒
         msg match {
           //#chatroom-gabbler
           // We document that the compiler warns about the missing handler for `SessionDenied`
           case SessionDenied(reason) ⇒
             println(s"cannot start chat room session: $reason")
-            Stopped
+            Actor.stopped
           //#chatroom-gabbler
           case SessionGranted(handle) ⇒
             handle ! PostMessage("Hello World!")
-            Same
+            Actor.same
           case MessagePosted(screenName, message) ⇒
             println(s"message has been posted by '$screenName': $message")
-            Stopped
+            Actor.stopped
         }
       }
     //#chatroom-gabbler
 
     //#chatroom-main
     val main: Behavior[akka.NotUsed] =
-      Deferred { ctx ⇒
+      Actor.deferred { ctx ⇒
         val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
         val gabblerRef = ctx.spawn(gabbler, "gabbler")
         ctx.watch(gabblerRef)
         chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-        Immutable[akka.NotUsed] {
-          (_, _) ⇒ Unhandled
+        Actor.immutable[akka.NotUsed] {
+          (_, _) ⇒ Actor.unhandled
         } onSignal {
           case (ctx, sig) ⇒
             sig match {
               case Terminated(ref) ⇒
-                Stopped
+                Actor.stopped
               case _ ⇒
-                Unhandled
+                Actor.unhandled
             }
         }
       }

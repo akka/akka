@@ -84,7 +84,7 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   import akka.testkit._
   def await[T](f: Future[T]): T = Await.result(f, timeout.duration * 1.1)
 
-  lazy val blackhole = await(nativeSystem ? Create(Immutable[Any] { case _ ⇒ Same }, "blackhole"))
+  lazy val blackhole = await(nativeSystem ? Create(immutable[Any] { case _ ⇒ same }, "blackhole"))
 
   /**
    * Run an Actor-based test. The test procedure is most conveniently
@@ -171,7 +171,7 @@ object TypedSpec {
   class SimulatedException(message: String) extends RuntimeException(message) with NoStackTrace
 
   def guardian(outstanding: Map[ActorRef[_], ActorRef[Status]] = Map.empty): Behavior[Command] =
-    Immutable[Command] {
+    immutable[Command] {
       case (ctx, r: RunTest[t]) ⇒
         val test = ctx.spawn(r.behavior, r.name)
         ctx.schedule(r.timeout, r.replyTo, Timedout)
@@ -179,10 +179,10 @@ object TypedSpec {
         guardian(outstanding + ((test, r.replyTo)))
       case (_, Terminate(reply)) ⇒
         reply ! Success
-        Stopped
+        stopped
       case (ctx, c: Create[t]) ⇒
         c.replyTo ! ctx.spawn(c.behavior, c.name)
-        Same
+        same
     } onSignal {
       case (ctx, t @ Terminated(test)) ⇒
         outstanding get test match {
@@ -190,9 +190,9 @@ object TypedSpec {
             if (t.failure eq null) reply ! Success
             else reply ! Failed(t.failure)
             guardian(outstanding - test)
-          case None ⇒ Same
+          case None ⇒ same
         }
-      case _ ⇒ Same
+      case _ ⇒ same
     }
 
   def getCallerName(clazz: Class[_]): String = {

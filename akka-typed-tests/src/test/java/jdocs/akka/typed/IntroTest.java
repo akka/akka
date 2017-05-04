@@ -6,10 +6,7 @@ package jdocs.akka.typed;
 //#imports
 import akka.typed.ActorRef;
 import akka.typed.Behavior;
-import akka.typed.ExtensibleBehavior;
-import akka.typed.Signal;
 import akka.typed.javadsl.Actor;
-import akka.typed.javadsl.ActorContext;
 //#imports
 import java.util.ArrayList;
 import java.util.List;

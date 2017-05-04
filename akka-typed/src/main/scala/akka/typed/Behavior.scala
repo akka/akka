@@ -50,9 +50,9 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
    * The returned behavior can in addition to normal behaviors be one of the
    * canned special objects:
    *
-   *  * returning `Stopped` will terminate this Behavior
-   *  * returning `Same` designates to reuse the current Behavior
-   *  * returning `Unhandled` keeps the same Behavior and signals that the message was not yet handled
+   *  * returning `stopped` will terminate this Behavior
+   *  * returning `same` designates to reuse the current Behavior
+   *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
    *
    * Code calling this method should use [[Behavior$]] `canonicalize` to replace
    * the special objects with real Behaviors.
@@ -66,9 +66,9 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
    * The returned behavior can in addition to normal behaviors be one of the
    * canned special objects:
    *
-   *  * returning `Stopped` will terminate this Behavior
-   *  * returning `Same` designates to reuse the current Behavior
-   *  * returning `Unhandled` keeps the same Behavior and signals that the message was not yet handled
+   *  * returning `stopped` will terminate this Behavior
+   *  * returning `same` designates to reuse the current Behavior
+   *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
    *
    * Code calling this method should use [[Behavior$]] `canonicalize` to replace
    * the special objects with real Behaviors.
@@ -174,7 +174,7 @@ object Behavior {
 
   /**
    * Given a possibly special behavior (same or unhandled) and a
-   * “current” behavior (which defines the meaning of encountering a `Same`
+   * “current” behavior (which defines the meaning of encountering a `same`
    * behavior) this method computes the next behavior, suitable for passing a
    * message or signal.
    */
@@ -197,7 +197,7 @@ object Behavior {
 
   /**
    * Validate the given behavior as a suitable initial actor behavior; most
-   * notably the behavior can neither be `Same` nor `Unhandled`. Starting
+   * notably the behavior can neither be `same` nor `unhandled`. Starting
    * out with a `Stopped` behavior is allowed, though.
    */
   def validateAsInitial[T](behavior: Behavior[T]): Behavior[T] =
@@ -213,7 +213,7 @@ object Behavior {
   def isAlive[T](behavior: Behavior[T]): Boolean = behavior ne StoppedBehavior
 
   /**
-   * Returns true if the given behavior is the special `Unhandled` marker.
+   * Returns true if the given behavior is the special `unhandled` marker.
    */
   def isUnhandled[T](behavior: Behavior[T]): Boolean = behavior eq UnhandledBehavior
 
