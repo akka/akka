@@ -103,17 +103,17 @@ trait ActorContext[T] {
 
   /**
    * Register for [[Terminated]] notification once the Actor identified by the
-   * given [[ActorRef]] terminates. This notification is also generated when the
-   * [[ActorSystem]] to which the referenced Actor belongs has been removed
-   * from the cluster.
+   * given [[ActorRef]] terminates. This message is also sent when the watched actor
+   * is on a node that has been removed from the cluster when using akka-cluster
+   * or has been marked unreachable when using akka-remote directly.
    */
   def watch[U](other: ActorRef[U]): Unit
 
   /**
    * Register for termination notification with a custom message once the Actor identified by the
-   * given [[ActorRef]] terminates. This notification is also generated when the
-   * [[ActorSystem]] to which the referenced Actor belongs has been removed
-   * from the cluster
+   * given [[ActorRef]] terminates. This message is also sent when the watched actor
+   * is on a node that has been removed from the cluster when using akka-cluster
+   * or has been marked unreachable when using akka-remote directly.
    */
   def watchWith[U](other: ActorRef[U], msg: T): Unit
 
