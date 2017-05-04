@@ -6,7 +6,7 @@ package akka.typed.testkit.scaladsl
 import scala.concurrent.duration._
 import java.util.concurrent.BlockingDeque
 import akka.typed.Behavior
-import akka.typed.scaladsl.Actor._
+import akka.typed.scaladsl.Actor
 import akka.typed.ActorSystem
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.atomic.AtomicInteger
@@ -28,9 +28,9 @@ object TestProbe {
   def apply[M](name: String)(implicit system: ActorSystem[_], settings: TestKitSettings): TestProbe[M] =
     new TestProbe(name)
 
-  private def testActor[M](queue: BlockingDeque[M]): Behavior[M] = Immutable { (ctx, msg) ⇒
+  private def testActor[M](queue: BlockingDeque[M]): Behavior[M] = Actor.immutable { (ctx, msg) ⇒
     queue.offerLast(msg)
-    Same
+    Actor.same
   }
 }
 

@@ -29,16 +29,15 @@ object ActorSystemImpl {
   case class CreateSystemActor[T](behavior: Behavior[T], name: String, props: Props)(val replyTo: ActorRef[ActorRef[T]]) extends SystemCommand
 
   val systemGuardianBehavior: Behavior[SystemCommand] = {
-    // TODO avoid depending on dsl here?
-    import scaladsl.Actor._
-    Deferred { _ ⇒
+    import scaladsl.Actor
+    Actor.deferred { _ ⇒
       var i = 1
-      Immutable {
+      Actor.immutable {
         case (ctx, create: CreateSystemActor[t]) ⇒
           val name = s"$i-${create.name}"
           i += 1
           create.replyTo ! ctx.spawn(create.behavior, name, create.props)
-          Same
+          Actor.same
       }
     }
   }

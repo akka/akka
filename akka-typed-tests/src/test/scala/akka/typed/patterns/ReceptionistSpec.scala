@@ -8,6 +8,7 @@ import akka.typed.scaladsl.AskPattern._
 
 import scala.concurrent.duration._
 import akka.typed._
+import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.Actor._
 import akka.typed.testkit.{ Effect, EffectfulActorContext }
 
@@ -15,11 +16,11 @@ class ReceptionistSpec extends TypedSpec {
 
   trait ServiceA
   case object ServiceKeyA extends ServiceKey[ServiceA]
-  val behaviorA = Empty[ServiceA]
+  val behaviorA = Actor.empty[ServiceA]
 
   trait ServiceB
   case object ServiceKeyB extends ServiceKey[ServiceB]
-  val behaviorB = Empty[ServiceB]
+  val behaviorB = Actor.empty[ServiceB]
 
   trait CommonTests {
     implicit def system: ActorSystem[TypedSpec.Command]

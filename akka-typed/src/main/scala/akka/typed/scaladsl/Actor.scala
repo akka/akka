@@ -26,7 +26,7 @@ object Actor {
      *
      * Example:
      * {{{
-     * Immutable[String] { (ctx, msg) => println(msg); Same }.widen[Number] {
+     * immutable[String] { (ctx, msg) => println(msg); same }.widen[Number] {
      *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
      *   case i: BigInteger => s"BigInteger(&dollar;i)"
      *   // drop all other kinds of Number
@@ -41,7 +41,7 @@ object Actor {
    * Wrap a behavior factory so that it runs upon PreStart, i.e. behavior creation
    * is deferred to the child actor instead of running within the parent.
    */
-  def Deferred[T](factory: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
+  def deferred[T](factory: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
     Behavior.DeferredBehavior(factory)
 
   /**
@@ -56,8 +56,8 @@ object Actor {
    *          behavior factory that takes the child actor’s context as argument
    * @return the deferred behavior
    */
-  def Mutable[T](factory: ActorContext[T] ⇒ MutableBehavior[T]): Behavior[T] =
-    Deferred(factory)
+  def mutable[T](factory: ActorContext[T] ⇒ MutableBehavior[T]): Behavior[T] =
+    deferred(factory)
 
   /**
    * Mutable behavior can be implemented by extending this class and implement the
@@ -100,9 +100,9 @@ object Actor {
      *
      * The returned behavior can in addition to normal behaviors be one of the canned special objects:
      *
-     *  * returning `Stopped` will terminate this Behavior
-     *  * returning `this` or `Same` designates to reuse the current Behavior
-     *  * returning `Unhandled` keeps the same Behavior and signals that the message was not yet handled
+     *  * returning `stopped` will terminate this Behavior
+     *  * returning `this` or `same` designates to reuse the current Behavior
+     *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
      *
      * By default, partial function is empty and does not handle any signals.
      */
@@ -116,7 +116,7 @@ object Actor {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
-  def Same[T]: Behavior[T] = Behavior.same
+  def same[T]: Behavior[T] = Behavior.same
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -124,7 +124,7 @@ object Actor {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
-  def Unhandled[T]: Behavior[T] = Behavior.unhandled
+  def unhandled[T]: Behavior[T] = Behavior.unhandled
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -133,17 +133,17 @@ object Actor {
    * signal that results from stopping this actor will NOT be passed to the
    * current behavior, it will be effectively ignored.
    */
-  def Stopped[T]: Behavior[T] = Behavior.stopped
+  def stopped[T]: Behavior[T] = Behavior.stopped
 
   /**
    * A behavior that treats every incoming message as unhandled.
    */
-  def Empty[T]: Behavior[T] = Behavior.empty
+  def empty[T]: Behavior[T] = Behavior.empty
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
    */
-  def Ignore[T]: Behavior[T] = Behavior.ignore
+  def ignore[T]: Behavior[T] = Behavior.ignore
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
@@ -158,7 +158,7 @@ object Actor {
    * State is updated by returning a new behavior that holds the new immutable
    * state.
    */
-  def Immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Immutable[T] =
+  def immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Immutable[T] =
     new Immutable(onMessage)
 
   final class Immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
@@ -173,7 +173,7 @@ object Actor {
    * some action upon each received message or signal. It is most commonly used
    * for logging or tracing what a certain Actor does.
    */
-  def Tap[T](
+  def tap[T](
     onMessage: Function2[ActorContext[T], T, _],
     onSignal:  Function2[ActorContext[T], Signal, _],
     behavior:  Behavior[T]): Behavior[T] =
@@ -185,8 +185,8 @@ object Actor {
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  def Monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
-    Tap((_, msg) ⇒ monitor ! msg, unitFunction, behavior)
+  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
+    tap((_, msg) ⇒ monitor ! msg, unitFunction, behavior)
 
   /**
    * Wrap the given behavior such that it is restarted (i.e. reset to its
@@ -203,7 +203,7 @@ object Actor {
    * val dbRestarts = Restarter[DbException]().wrap(dbConnector)
    * }}}
    */
-  def Restarter[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy = SupervisorStrategy.restart): Restarter[Thr] =
+  def restarter[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy = SupervisorStrategy.restart): Restarter[Thr] =
     new Restarter(implicitly, strategy)
 
   final class Restarter[Thr <: Throwable: ClassTag](c: ClassTag[Thr], strategy: SupervisorStrategy) {

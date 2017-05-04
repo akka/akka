@@ -86,7 +86,7 @@ object Actor {
      * The returned behavior can in addition to normal behaviors be one of the canned special objects:
      *
      *  * returning `stopped` will terminate this Behavior
-     *  * returning `this` or `Same` designates to reuse the current Behavior
+     *  * returning `this` or `same` designates to reuse the current Behavior
      *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
      *
      * By default, this method returns `unhandled`.

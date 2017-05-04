@@ -69,23 +69,23 @@ class DefaultLogger extends Logger with StdOutLogger {
   val initialBehavior = {
     // TODO avoid depending on dsl here?
     import scaladsl.Actor._
-    Deferred[Command] { _ ⇒
-      Immutable[Command] {
+    deferred[Command] { _ ⇒
+      immutable[Command] {
         case (ctx, Initialize(eventStream, replyTo)) ⇒
-          val log = ctx.spawn(Deferred[AnyRef] { childCtx ⇒
+          val log = ctx.spawn(deferred[AnyRef] { childCtx ⇒
 
-            Immutable[AnyRef] {
+            immutable[AnyRef] {
               case (_, event: LogEvent) ⇒
                 print(event)
-                Same
-              case _ ⇒ Unhandled
+                same
+              case _ ⇒ unhandled
             }
           }, "logger")
 
           ctx.watch(log) // sign death pact
           replyTo ! log
 
-          Empty
+          empty
       }
     }
   }

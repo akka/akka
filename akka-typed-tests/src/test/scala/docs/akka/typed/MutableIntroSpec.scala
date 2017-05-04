@@ -5,7 +5,7 @@ package docs.akka.typed
 
 //#imports
 import akka.typed._
-import akka.typed.scaladsl.Actor._
+import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.ActorContext
 import akka.typed.scaladsl.AskPattern._
 import scala.concurrent.Future
@@ -38,9 +38,9 @@ object MutableIntroSpec {
     //#chatroom-behavior
 
     def behavior(): Behavior[Command] =
-      Mutable[Command](ctx ⇒ new ChatRoomBehavior(ctx))
+      Actor.mutable[Command](ctx ⇒ new ChatRoomBehavior(ctx))
 
-    class ChatRoomBehavior(ctx: ActorContext[Command]) extends MutableBehavior[Command] {
+    class ChatRoomBehavior(ctx: ActorContext[Command]) extends Actor.MutableBehavior[Command] {
       private var sessions: List[ActorRef[SessionEvent]] = List.empty
 
       override def onMessage(msg: Command): Behavior[Command] = {
@@ -74,38 +74,38 @@ class MutableIntroSpec extends TypedSpec {
     import ChatRoom._
 
     val gabbler =
-      Immutable[SessionEvent] { (_, msg) ⇒
+      Actor.immutable[SessionEvent] { (_, msg) ⇒
         msg match {
           case SessionDenied(reason) ⇒
             println(s"cannot start chat room session: $reason")
-            Stopped
+            Actor.stopped
           case SessionGranted(handle) ⇒
             handle ! PostMessage("Hello World!")
-            Same
+            Actor.same
           case MessagePosted(screenName, message) ⇒
             println(s"message has been posted by '$screenName': $message")
-            Stopped
+            Actor.stopped
         }
       }
     //#chatroom-gabbler
 
     //#chatroom-main
     val main: Behavior[akka.NotUsed] =
-      Deferred { ctx ⇒
+      Actor.deferred { ctx ⇒
         val chatRoom = ctx.spawn(ChatRoom.behavior(), "chatroom")
         val gabblerRef = ctx.spawn(gabbler, "gabbler")
         ctx.watch(gabblerRef)
         chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-        Immutable[akka.NotUsed] {
-          (_, _) ⇒ Unhandled
+        Actor.immutable[akka.NotUsed] {
+          (_, _) ⇒ Actor.unhandled
         } onSignal {
           case (ctx, sig) ⇒
             sig match {
               case Terminated(ref) ⇒
-                Stopped
+                Actor.stopped
               case _ ⇒
-                Unhandled
+                Actor.unhandled
             }
         }
       }
