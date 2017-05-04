@@ -68,6 +68,7 @@ object Actor {
     def createReceive: Receive[T]
 
     def receiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
+
   }
 
   /**
@@ -230,4 +231,8 @@ object Actor {
   def widened[T, U](behavior: Behavior[T], selector: JFunction[PFBuilder[U, T], PFBuilder[U, T]]): Behavior[U] =
     BehaviorImpl.Widened(behavior, selector.apply(new PFBuilder).build())
 
+  trait Receive[T] {
+    def receiveMessage(msg: T): Behavior[T]
+    def receiveSignal(msg: Signal): Behavior[T]
+  }
 }

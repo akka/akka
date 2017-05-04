@@ -7,8 +7,8 @@ package jdocs.akka.typed;
 import akka.typed.ActorRef;
 import akka.typed.Behavior;
 import akka.typed.javadsl.Actor;
+import akka.typed.javadsl.Actor.Receive;
 import akka.typed.javadsl.ActorContext;
-import akka.typed.javadsl.Receive;
 //#imports
 import java.util.ArrayList;
 import java.util.List;

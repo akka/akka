@@ -6,8 +6,8 @@ package akka.typed.javadsl
 
 import scala.annotation.tailrec
 import akka.japi.function.{ Creator, Function, Predicate }
-import akka.typed
-import akka.typed.{ Behavior, ExtensibleBehavior, Signal }
+import akka.typed.javadsl.Actor.Receive
+import akka.typed.{ Behavior, Signal }
 import ReceiveBuilder._
 import akka.annotation.InternalApi
 
@@ -24,7 +24,7 @@ class ReceiveBuilder[T] private (
   private val signalHandlers:  List[Case[T, Signal]]
 ) {
 
-  def build(): Receive[T] = new Receive(messageHandlers.reverse, signalHandlers.reverse)
+  def build(): Receive[T] = new BuiltReceive(messageHandlers.reverse, signalHandlers.reverse)
 
   /**
    * Add a new case to the message handling.
@@ -147,14 +147,14 @@ object ReceiveBuilder {
 /**
  * Receive type for [[Actor.MutableBehavior]]
  */
-class Receive[T] private[javadsl] (
+private class BuiltReceive[T](
   private val messageHandlers: List[Case[T, T]],
   private val signalHandlers:  List[Case[T, Signal]]
-) {
+) extends Receive[T] {
 
-  def receiveMessage(msg: T): Behavior[T] = receive[T](msg, messageHandlers)
+  override def receiveMessage(msg: T): Behavior[T] = receive[T](msg, messageHandlers)
 
-  def receiveSignal(msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
+  override def receiveSignal(msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
 
   @tailrec
   private def receive[M](msg: M, handlers: List[Case[T, M]]): Behavior[T] =

@@ -3,11 +3,15 @@
  */
 package akka.typed.javadsl;
 
+import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
+
 import akka.typed.Behavior;
 import akka.typed.Terminated;
 import akka.typed.ActorRef;
-import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+
+import akka.typed.javadsl.Actor.MutableBehavior;
+import akka.typed.javadsl.Actor.Receive;
 
 import java.util.ArrayList;
 
@@ -83,7 +87,7 @@ public class BehaviorBuilderTest extends JUnitSuite {
 
     @Test
     public void testMutableCounter() {
-      Behavior<CounterMessage> mutable = Actor.mutable(ctx -> new Actor.MutableBehavior<CounterMessage>() {
+      Behavior<CounterMessage> mutable = Actor.mutable(ctx -> new MutableBehavior<CounterMessage>() {
         MutableStateHolder state = new MutableStateHolder();
 
         @Override
@@ -91,11 +95,11 @@ public class BehaviorBuilderTest extends JUnitSuite {
           return receiveBuilder()
             .onMessage(Increase.class, o -> {
               state.currentValue++;
-              return same();
+              return this;
             })
             .onMessage(Get.class, o -> {
               o.sender.tell(new Got(state.currentValue));
-              return same();
+              return this;
             })
             .build();
         }
