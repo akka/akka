@@ -2,12 +2,13 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.http.scaladsl
+package akka.http.impl.engine
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem, ExtensionId }
+import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.{ ConnectionContext, HttpsConnectionContext }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.{ ActorMaterializerHelper, Materializer }
