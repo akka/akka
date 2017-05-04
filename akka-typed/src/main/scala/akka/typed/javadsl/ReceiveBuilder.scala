@@ -19,7 +19,7 @@ import akka.annotation.InternalApi
  *
  * @tparam T the common superclass of all supported messages.
  */
-class ReceiveBuilder[T] private(
+class ReceiveBuilder[T] private (
   private val messageHandlers: List[Case[T, T]],
   private val signalHandlers:  List[Case[T, Signal]]
 ) {
@@ -34,7 +34,7 @@ class ReceiveBuilder[T] private(
    * @tparam M type of message to match
    * @return a new behavior with the specified handling appended
    */
-  def message[M <: T](`type`: Class[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
+  def onMessage[M <: T](`type`: Class[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withMessage(`type`, None, msg ⇒ handler.apply(msg.asInstanceOf[M]))
 
   /**
@@ -46,7 +46,7 @@ class ReceiveBuilder[T] private(
    * @tparam M type of message to match
    * @return a new behavior with the specified handling appended
    */
-  def message[M <: T](`type`: Class[M], test: Predicate[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
+  def onMessage[M <: T](`type`: Class[M], test: Predicate[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withMessage(
       `type`,
       Some((t: T) ⇒ test.test(t.asInstanceOf[M])),
@@ -63,7 +63,7 @@ class ReceiveBuilder[T] private(
    * @param handler action to apply when the type matches
    * @return a new behavior with the specified handling appended
    */
-  def messageUnchecked[M <: T](`type`: Class[_ <: T], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
+  def onMessageUnchecked[M <: T](`type`: Class[_ <: T], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withMessage(`type`, None, msg ⇒ handler.apply(msg.asInstanceOf[M]))
 
   /**
@@ -73,7 +73,7 @@ class ReceiveBuilder[T] private(
    * @param handler action to apply when the message matches
    * @return a new behavior with the specified handling appended
    */
-  def messageEquals(msg: T, handler: Creator[Behavior[T]]): ReceiveBuilder[T] =
+  def onMessageEquals(msg: T, handler: Creator[Behavior[T]]): ReceiveBuilder[T] =
     withMessage(msg.getClass, Some(_.equals(msg)), _ ⇒ handler.create())
 
   /**
@@ -84,7 +84,7 @@ class ReceiveBuilder[T] private(
    * @tparam M type of signal to match
    * @return a new behavior with the specified handling appended
    */
-  def signal[M <: Signal](`type`: Class[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
+  def onSignal[M <: Signal](`type`: Class[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withSignal(`type`, None, signal ⇒ handler.apply(signal.asInstanceOf[M]))
 
   /**
@@ -96,7 +96,7 @@ class ReceiveBuilder[T] private(
    * @tparam M type of signal to match
    * @return a new behavior with the specified handling appended
    */
-  def signal[M <: Signal](`type`: Class[M], test: Predicate[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
+  def onSignal[M <: Signal](`type`: Class[M], test: Predicate[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withSignal(
       `type`,
       Some((t: Signal) ⇒ test.test(t.asInstanceOf[M])),
@@ -113,7 +113,7 @@ class ReceiveBuilder[T] private(
    * @param handler action to apply when the type matches
    * @return a new behavior with the specified handling appended
    */
-  def signalUnchecked[M <: Signal](`type`: Class[_ <: Signal], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
+  def onSignalUnchecked[M <: Signal](`type`: Class[_ <: Signal], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withSignal(`type`, None, signal ⇒ handler.apply(signal.asInstanceOf[M]))
 
   /**
@@ -123,7 +123,7 @@ class ReceiveBuilder[T] private(
    * @param handler action to apply when the message matches
    * @return a new behavior with the specified handling appended
    */
-  def signalEquals(signal: Signal, handler: Creator[Behavior[T]]): ReceiveBuilder[T] =
+  def onSignalEquals(signal: Signal, handler: Creator[Behavior[T]]): ReceiveBuilder[T] =
     withSignal(signal.getClass, Some(_.equals(signal)), _ ⇒ handler.create())
 
   private def withMessage(`type`: Class[_ <: T], test: Option[T ⇒ Boolean], handler: T ⇒ Behavior[T]): ReceiveBuilder[T] =
@@ -145,9 +145,9 @@ object ReceiveBuilder {
 }
 
 /**
-  * Receive type for [[Actor.MutableBehavior]]
-  */
-class Receive[T] private[javadsl](
+ * Receive type for [[Actor.MutableBehavior]]
+ */
+class Receive[T] private[javadsl] (
   private val messageHandlers: List[Case[T, T]],
   private val signalHandlers:  List[Case[T, Signal]]
 ) {

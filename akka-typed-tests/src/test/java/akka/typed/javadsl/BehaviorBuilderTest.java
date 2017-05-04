@@ -89,11 +89,11 @@ public class BehaviorBuilderTest extends JUnitSuite {
         @Override
         public Receive<CounterMessage> createReceive() {
           return receiveBuilder()
-            .message(Increase.class, o -> {
+            .onMessage(Increase.class, o -> {
               state.currentValue++;
               return same();
             })
-            .message(Get.class, o -> {
+            .onMessage(Get.class, o -> {
               o.sender.tell(new Got(state.currentValue));
               return same();
             })

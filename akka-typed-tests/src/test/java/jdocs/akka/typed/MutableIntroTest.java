@@ -86,14 +86,14 @@ public class MutableIntroTest {
       @Override
       public Receive<Command> createReceive() {
         return receiveBuilder()
-          .message(GetSession.class, getSession -> {
+          .onMessage(GetSession.class, getSession -> {
             ActorRef<PostMessage> wrapper = ctx.createAdapter(p ->
               new PostSessionMessage(getSession.screenName, p.message));
             getSession.replyTo.tell(new SessionGranted(wrapper));
             sessions.add(getSession.replyTo);
             return Actor.same();
           })
-          .message(PostSessionMessage.class, post -> {
+          .onMessage(PostSessionMessage.class, post -> {
             MessagePosted mp = new MessagePosted(post.screenName, post.message);
             sessions.forEach(s -> s.tell(mp));
             return this;
