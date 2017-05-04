@@ -13,26 +13,26 @@ import akka.typed.Behavior;
  */
 public class ReceiveBuilderTest extends JUnitSuite {
 
-  static final class MutableStateHolder {
-    int currentValue = 0;
-  }
-
   @Test
   public void testMutableCounter() {
     Behavior<BehaviorBuilderTest.CounterMessage> mutable = Actor.mutable(ctx -> new Actor.MutableBehavior<BehaviorBuilderTest.CounterMessage>() {
-      MutableStateHolder state = new MutableStateHolder();
+      int currentValue = 0;
+
+      private Behavior<BehaviorBuilderTest.CounterMessage> receiveIncrease(BehaviorBuilderTest.Increase msg) {
+        currentValue++;
+        return this;
+      }
+
+      private Behavior<BehaviorBuilderTest.CounterMessage> receiveGet(BehaviorBuilderTest.Get get) {
+        get.sender.tell(new BehaviorBuilderTest.Got(currentValue));
+        return this;
+      }
 
       @Override
       public Actor.Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
         return receiveBuilder()
-          .onMessage(BehaviorBuilderTest.Increase.class, o -> {
-            state.currentValue++;
-            return this;
-          })
-          .onMessage(BehaviorBuilderTest.Get.class, o -> {
-            o.sender.tell(new BehaviorBuilderTest.Got(state.currentValue));
-            return this;
-          })
+          .onMessage(BehaviorBuilderTest.Increase.class, this::receiveIncrease)
+          .onMessage(BehaviorBuilderTest.Get.class, this::receiveGet)
           .build();
       }
     });
