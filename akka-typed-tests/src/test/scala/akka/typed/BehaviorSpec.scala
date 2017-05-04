@@ -18,7 +18,7 @@ class BehaviorSpec extends TypedSpec {
     def expectedResponse(ctx: ActorContext[Command]): Seq[Event] = Nil
   }
   case object GetSelf extends Command {
-    override def expectedResponse(ctx: ActorContext[Command]): Seq[Event] = Self(ctx.self) :: Nil
+    override def expectedResponse(ctx: ActorContext[Command]): Seq[Event] = Self(ctx.asScala.self) :: Nil
   }
   // Behavior under test must return Unhandled
   case object Miss extends Command {

@@ -6,6 +6,7 @@ package akka.typed.javadsl
 import java.util.function.{ Function ⇒ JFunction }
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.function.Procedure2
+import akka.typed.scaladsl.{ ActorContext ⇒ SAC }
 import akka.typed.Behavior
 import akka.typed.ExtensibleBehavior
 import akka.typed.Signal
@@ -18,15 +19,15 @@ import akka.japi.pf.PFBuilder
 
 object Actor {
 
-  private val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
-  private def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
+  private val _unitFunction = (_: SAC[Any], _: Any) ⇒ ()
+  private def unitFunction[T] = _unitFunction.asInstanceOf[((SAC[T], Signal) ⇒ Unit)]
 
   /**
    * Wrap a behavior factory so that it runs upon PreStart, i.e. behavior creation
    * is deferred to the child actor instead of running within the parent.
    */
   def deferred[T](factory: akka.japi.function.Function[ActorContext[T], Behavior[T]]): Behavior[T] =
-    Behavior.DeferredBehavior(ctx ⇒ factory.apply(ctx))
+    Behavior.DeferredBehavior(ctx ⇒ factory.apply(ctx.asJava))
 
   /**
    * Factory for creating a [[MutableBehavior]] that typically holds mutable state as
@@ -144,7 +145,7 @@ object Actor {
    * state.
    */
   def immutable[T](onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]]): Behavior[T] =
-    new BehaviorImpl.ImmutableBehavior((ctx, msg) ⇒ onMessage.apply(ctx, msg))
+    new BehaviorImpl.ImmutableBehavior((ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg))
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
@@ -163,8 +164,8 @@ object Actor {
     onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
     onSignal:  JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
     new BehaviorImpl.ImmutableBehavior(
-      (ctx, msg) ⇒ onMessage.apply(ctx, msg),
-      { case (ctx, sig) ⇒ onSignal.apply(ctx, sig) })
+      (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
+      { case (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig) })
   }
 
   /**
@@ -177,8 +178,8 @@ object Actor {
     onSignal:  Procedure2[ActorContext[T], Signal],
     behavior:  Behavior[T]): Behavior[T] = {
     BehaviorImpl.Tap(
-      (ctx, msg) ⇒ onMessage.apply(ctx, msg),
-      (ctx, sig) ⇒ onSignal.apply(ctx, sig),
+      (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
+      (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig),
       behavior)
   }
 
