@@ -3,8 +3,6 @@
  */
 package akka.event
 
-import java.time.Instant
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -13,7 +11,7 @@ import akka.actor._
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
 import akka.util.ReentrantGuard
-import akka.util.Helpers.toRootLowerCase
+import akka.util.Helpers
 import akka.{ AkkaException, ConfigurationException }
 
 import scala.annotation.implicitNotFound
@@ -21,8 +19,6 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.language.existentials
 import scala.util.control.{ NoStackTrace, NonFatal }
-import java.time.ZoneId
-import java.time.LocalDateTime
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -459,7 +455,7 @@ object Logging {
    * valid inputs are upper or lowercase (not mixed) versions of:
    * "error", "warning", "info" and "debug"
    */
-  def levelFor(s: String): Option[LogLevel] = toRootLowerCase(s) match {
+  def levelFor(s: String): Option[LogLevel] = Helpers.toRootLowerCase(s) match {
     case "off"     ⇒ Some(OffLevel)
     case "error"   ⇒ Some(ErrorLevel)
     case "warning" ⇒ Some(WarningLevel)
@@ -865,9 +861,6 @@ object Logging {
    */
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 
-  private val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss.SSS")
-  private val timeZone = ZoneId.systemDefault()
-
   trait StdOutLogger {
 
     import StdOutLogger._
@@ -881,9 +874,7 @@ object Logging {
     private val debugFormat             = DebugFormat
     // format: ON
 
-    def timestamp(event: LogEvent): String = {
-      formatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(event.timestamp), timeZone))
-    }
+    def timestamp(event: LogEvent): String = Helpers.timestamp(event.timestamp)
 
     def print(event: Any): Unit = event match {
       case e: Error   ⇒ error(e)
