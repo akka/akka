@@ -55,19 +55,19 @@ object Actor {
    * @see [[Actor#mutable]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
-    private val behavior: MutableBuiltBehavior[T] = createBehavior
+    private val receive: Receive[T] = createReceive
 
     @throws(classOf[Exception])
     override final def receiveMessage(ctx: akka.typed.ActorContext[T], msg: T): Behavior[T] =
-      behavior.receiveMessage(ctx, msg)
+      receive.receiveMessage(msg)
 
     @throws(classOf[Exception])
     override final def receiveSignal(ctx: akka.typed.ActorContext[T], msg: Signal): Behavior[T] =
-      behavior.receiveSignal(ctx, msg)
+      receive.receiveSignal(msg)
 
-    def createBehavior: MutableBuiltBehavior[T]
+    def createReceive: Receive[T]
 
-    def behaviorBuilder: MutableBehaviorBuilder[T] = MutableBehaviorBuilder.create
+    def receiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
   }
 
   /**

@@ -8,7 +8,7 @@ import akka.typed.ActorRef;
 import akka.typed.Behavior;
 import akka.typed.javadsl.Actor;
 import akka.typed.javadsl.ActorContext;
-import akka.typed.javadsl.MutableBuiltBehavior;
+import akka.typed.javadsl.Receive;
 //#imports
 import java.util.ArrayList;
 import java.util.List;
@@ -84,8 +84,8 @@ public class MutableIntroTest {
       }
 
       @Override
-      public MutableBuiltBehavior<Command> createBehavior() {
-        return behaviorBuilder()
+      public Receive<Command> createReceive() {
+        return receiveBuilder()
           .message(GetSession.class, getSession -> {
             ActorRef<PostMessage> wrapper = ctx.createAdapter(p ->
               new PostSessionMessage(getSession.screenName, p.message));

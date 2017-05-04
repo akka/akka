@@ -87,8 +87,8 @@ public class BehaviorBuilderTest extends JUnitSuite {
         MutableStateHolder state = new MutableStateHolder();
 
         @Override
-        public MutableBuiltBehavior<CounterMessage> createBehavior() {
-          return behaviorBuilder()
+        public Receive<CounterMessage> createReceive() {
+          return receiveBuilder()
             .message(Increase.class, o -> {
               state.currentValue++;
               return same();

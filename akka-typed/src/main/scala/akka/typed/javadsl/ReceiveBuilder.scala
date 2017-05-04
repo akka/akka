@@ -8,23 +8,23 @@ import scala.annotation.tailrec
 import akka.japi.function.{ Creator, Function, Predicate }
 import akka.typed
 import akka.typed.{ Behavior, ExtensibleBehavior, Signal }
-import MutableBehaviorBuilder._
+import ReceiveBuilder._
 import akka.annotation.InternalApi
 
 /**
- * Used for creating a [[Behavior]] by 'chaining' message and signal handlers.
+ * Used when implementing [[Actor.MutableBehavior]].
  *
  * When handling a message or signal, this [[Behavior]] will consider all handlers in the order they were added,
  * looking for the first handler for which both the type and the (optional) predicate match.
  *
  * @tparam T the common superclass of all supported messages.
  */
-class MutableBehaviorBuilder[T] private (
+class ReceiveBuilder[T] private(
   private val messageHandlers: List[Case[T, T]],
   private val signalHandlers:  List[Case[T, Signal]]
 ) {
 
-  def build(): MutableBuiltBehavior[T] = new MutableBuiltBehavior(messageHandlers.reverse, signalHandlers.reverse)
+  def build(): Receive[T] = new Receive(messageHandlers.reverse, signalHandlers.reverse)
 
   /**
    * Add a new case to the message handling.
@@ -34,7 +34,7 @@ class MutableBehaviorBuilder[T] private (
    * @tparam M type of message to match
    * @return a new behavior with the specified handling appended
    */
-  def message[M <: T](`type`: Class[M], handler: Function[M, Behavior[T]]): MutableBehaviorBuilder[T] =
+  def message[M <: T](`type`: Class[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withMessage(`type`, None, msg ⇒ handler.apply(msg.asInstanceOf[M]))
 
   /**
@@ -46,7 +46,7 @@ class MutableBehaviorBuilder[T] private (
    * @tparam M type of message to match
    * @return a new behavior with the specified handling appended
    */
-  def message[M <: T](`type`: Class[M], test: Predicate[M], handler: Function[M, Behavior[T]]): MutableBehaviorBuilder[T] =
+  def message[M <: T](`type`: Class[M], test: Predicate[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withMessage(
       `type`,
       Some((t: T) ⇒ test.test(t.asInstanceOf[M])),
@@ -63,7 +63,7 @@ class MutableBehaviorBuilder[T] private (
    * @param handler action to apply when the type matches
    * @return a new behavior with the specified handling appended
    */
-  def messageUnchecked[M <: T](`type`: Class[_ <: T], handler: Function[M, Behavior[T]]): MutableBehaviorBuilder[T] =
+  def messageUnchecked[M <: T](`type`: Class[_ <: T], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withMessage(`type`, None, msg ⇒ handler.apply(msg.asInstanceOf[M]))
 
   /**
@@ -73,7 +73,7 @@ class MutableBehaviorBuilder[T] private (
    * @param handler action to apply when the message matches
    * @return a new behavior with the specified handling appended
    */
-  def messageEquals(msg: T, handler: Creator[Behavior[T]]): MutableBehaviorBuilder[T] =
+  def messageEquals(msg: T, handler: Creator[Behavior[T]]): ReceiveBuilder[T] =
     withMessage(msg.getClass, Some(_.equals(msg)), _ ⇒ handler.create())
 
   /**
@@ -84,7 +84,7 @@ class MutableBehaviorBuilder[T] private (
    * @tparam M type of signal to match
    * @return a new behavior with the specified handling appended
    */
-  def signal[M <: Signal](`type`: Class[M], handler: Function[M, Behavior[T]]): MutableBehaviorBuilder[T] =
+  def signal[M <: Signal](`type`: Class[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withSignal(`type`, None, signal ⇒ handler.apply(signal.asInstanceOf[M]))
 
   /**
@@ -96,7 +96,7 @@ class MutableBehaviorBuilder[T] private (
    * @tparam M type of signal to match
    * @return a new behavior with the specified handling appended
    */
-  def signal[M <: Signal](`type`: Class[M], test: Predicate[M], handler: Function[M, Behavior[T]]): MutableBehaviorBuilder[T] =
+  def signal[M <: Signal](`type`: Class[M], test: Predicate[M], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withSignal(
       `type`,
       Some((t: Signal) ⇒ test.test(t.asInstanceOf[M])),
@@ -113,7 +113,7 @@ class MutableBehaviorBuilder[T] private (
    * @param handler action to apply when the type matches
    * @return a new behavior with the specified handling appended
    */
-  def signalUnchecked[M <: Signal](`type`: Class[_ <: Signal], handler: Function[M, Behavior[T]]): MutableBehaviorBuilder[T] =
+  def signalUnchecked[M <: Signal](`type`: Class[_ <: Signal], handler: Function[M, Behavior[T]]): ReceiveBuilder[T] =
     withSignal(`type`, None, signal ⇒ handler.apply(signal.asInstanceOf[M]))
 
   /**
@@ -123,18 +123,18 @@ class MutableBehaviorBuilder[T] private (
    * @param handler action to apply when the message matches
    * @return a new behavior with the specified handling appended
    */
-  def signalEquals(signal: Signal, handler: Creator[Behavior[T]]): MutableBehaviorBuilder[T] =
+  def signalEquals(signal: Signal, handler: Creator[Behavior[T]]): ReceiveBuilder[T] =
     withSignal(signal.getClass, Some(_.equals(signal)), _ ⇒ handler.create())
 
-  private def withMessage(`type`: Class[_ <: T], test: Option[T ⇒ Boolean], handler: T ⇒ Behavior[T]): MutableBehaviorBuilder[T] =
-    new MutableBehaviorBuilder[T](Case[T, T](`type`, test, handler) +: messageHandlers, signalHandlers)
+  private def withMessage(`type`: Class[_ <: T], test: Option[T ⇒ Boolean], handler: T ⇒ Behavior[T]): ReceiveBuilder[T] =
+    new ReceiveBuilder[T](Case[T, T](`type`, test, handler) +: messageHandlers, signalHandlers)
 
-  private def withSignal[M <: Signal](`type`: Class[M], test: Option[Signal ⇒ Boolean], handler: Signal ⇒ Behavior[T]): MutableBehaviorBuilder[T] =
-    new MutableBehaviorBuilder[T](messageHandlers, Case[T, Signal](`type`, test, handler) +: signalHandlers)
+  private def withSignal[M <: Signal](`type`: Class[M], test: Option[Signal ⇒ Boolean], handler: Signal ⇒ Behavior[T]): ReceiveBuilder[T] =
+    new ReceiveBuilder[T](messageHandlers, Case[T, Signal](`type`, test, handler) +: signalHandlers)
 }
 
-object MutableBehaviorBuilder {
-  def create[T]: MutableBehaviorBuilder[T] = new MutableBehaviorBuilder[T](Nil, Nil)
+object ReceiveBuilder {
+  def create[T]: ReceiveBuilder[T] = new ReceiveBuilder[T](Nil, Nil)
 
   import scala.language.existentials
 
@@ -144,14 +144,17 @@ object MutableBehaviorBuilder {
 
 }
 
-private[javadsl] class MutableBuiltBehavior[T](
+/**
+  * Receive type for [[Actor.MutableBehavior]]
+  */
+class Receive[T] private[javadsl](
   private val messageHandlers: List[Case[T, T]],
   private val signalHandlers:  List[Case[T, Signal]]
-) extends ExtensibleBehavior[T] {
+) {
 
-  override def receiveMessage(ctx: typed.ActorContext[T], msg: T): Behavior[T] = receive[T](msg, messageHandlers)
+  def receiveMessage(msg: T): Behavior[T] = receive[T](msg, messageHandlers)
 
-  override def receiveSignal(ctx: typed.ActorContext[T], msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
+  def receiveSignal(msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
 
   @tailrec
   private def receive[M](msg: M, handlers: List[Case[T, M]]): Behavior[T] =
