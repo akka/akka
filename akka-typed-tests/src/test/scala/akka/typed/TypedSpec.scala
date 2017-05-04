@@ -30,6 +30,7 @@ import scala.util.control.NonFatal
 import org.scalatest.exceptions.TestFailedException
 import akka.typed.scaladsl.AskPattern
 import scala.util.control.NoStackTrace
+import akka.typed.testkit.TestKitSettings
 
 /**
  * Helper class for writing tests for typed Actors with ScalaTest.
@@ -45,6 +46,8 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   import AskPattern._
 
   def this() = this(ConfigFactory.empty)
+
+  def this(config: String) = this(ConfigFactory.parseString(config))
 
   // extension point
   def setTimeout: Timeout = Timeout(1.minute)
@@ -62,11 +65,26 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
     sys
   }
 
-  trait NativeSystem {
-    def system = nativeSystem
+  trait StartSupport {
+    def system: ActorSystem[TypedSpec.Command]
+
+    private val nameCounter = Iterator.from(0)
+    def nextName(prefix: String = "a"): String = s"$prefix-${nameCounter.next()}"
+
+    def start[T](behv: Behavior[T]): ActorRef[T] = {
+      import akka.typed.scaladsl.AskPattern._
+      import akka.typed.testkit.scaladsl._
+      implicit val testSettings = TestKitSettings(system)
+      Await.result(system ? TypedSpec.Create(behv, nextName()), 3.seconds.dilated)
+    }
   }
+
+  trait NativeSystem {
+    def system: ActorSystem[TypedSpec.Command] = nativeSystem
+  }
+
   trait AdaptedSystem {
-    def system = adaptedSystem
+    def system: ActorSystem[TypedSpec.Command] = adaptedSystem
   }
 
   implicit val timeout = setTimeout
