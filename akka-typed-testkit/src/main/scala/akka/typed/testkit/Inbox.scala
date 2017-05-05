@@ -1,16 +1,15 @@
 /**
  * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.typed
+package akka.typed.testkit
 
-import java.util.concurrent.ConcurrentLinkedQueue
-import akka.actor.ActorPath
-import akka.actor.RootActorPath
-import akka.actor.Address
-import scala.collection.immutable
+import java.util.concurrent.{ ConcurrentLinkedQueue, ThreadLocalRandom }
+
+import akka.actor.{ Address, RootActorPath }
+import akka.typed.{ ActorRef, internal }
+
 import scala.annotation.tailrec
-import akka.actor.ActorRefProvider
-import java.util.concurrent.ThreadLocalRandom
+import scala.collection.immutable
 
 /**
  * Utility for receiving messages outside of an actor. No methods are provided

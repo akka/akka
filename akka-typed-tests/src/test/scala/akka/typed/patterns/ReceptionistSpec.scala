@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.typed._
 import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.Actor._
-import akka.typed.testkit.{ Effect, EffectfulActorContext }
+import akka.typed.testkit.{ Effect, EffectfulActorContext, Inbox }
 
 class ReceptionistSpec extends TypedSpec {
 
