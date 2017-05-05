@@ -5,6 +5,7 @@ Actors
    :maxdepth: 2
 
    actors
+   typed
    fault-tolerance
    dispatchers
    mailboxes
