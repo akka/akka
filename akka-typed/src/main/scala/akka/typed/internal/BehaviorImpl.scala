@@ -139,7 +139,7 @@ import scala.annotation.tailrec
     private def canonical(b: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
       if (isUnhandled(b)) unhandled
       else if ((b eq SameBehavior) || (b eq this)) same
-      else if (!Behavior.isAlive(b)) Behavior.stopped
+      else if (!Behavior.isAlive(b)) b
       else {
         b match {
           case d: DeferredBehavior[T] ⇒ canonical(Behavior.undefer(d, ctx), ctx)

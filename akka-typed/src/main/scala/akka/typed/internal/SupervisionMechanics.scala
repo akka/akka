@@ -7,6 +7,8 @@ package internal
 import scala.util.control.NonFatal
 import akka.event.Logging
 import akka.typed.Behavior.{ DeferredBehavior, undefer, validateAsInitial }
+import akka.typed.Behavior.StoppedBehavior
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -88,10 +90,18 @@ private[typed] trait SupervisionMechanics[T] {
     /*
      * The following order is crucial for things to work properly. Only change this if you're very confident and lucky.
      *
-     * Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
+     *
      */
-    try if ((a ne null) && !a.isInstanceOf[DeferredBehavior[_]]) Behavior.interpretSignal(a, ctx, PostStop)
-    catch { case NonFatal(ex) ⇒ publish(Logging.Error(ex, self.path.toString, clazz(a), "failure during PostStop")) }
+    try a match {
+      case null                   ⇒ // skip PostStop
+      case _: DeferredBehavior[_] ⇒
+      // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
+      case s: StoppedBehavior[_] ⇒ s.postStop match {
+        case OptionVal.Some(postStop) ⇒ Behavior.interpretSignal(postStop, ctx, PostStop)
+        case OptionVal.None           ⇒ // no postStop behavior defined
+      }
+      case _ ⇒ Behavior.interpretSignal(a, ctx, PostStop)
+    } catch { case NonFatal(ex) ⇒ publish(Logging.Error(ex, self.path.toString, clazz(a), "failure during PostStop")) }
     finally try tellWatchersWeDied()
     finally try parent.sendSystem(DeathWatchNotification(self, failed))
     finally {

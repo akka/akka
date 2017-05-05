@@ -18,6 +18,8 @@ import scala.util.control.NonFatal
 import scala.util.control.Exception.Catcher
 import akka.event.Logging.Error
 import akka.event.Logging
+import akka.typed.Behavior.StoppedBehavior
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -324,8 +326,25 @@ private[typed] class ActorCell[T](
 
   protected def next(b: Behavior[T], msg: Any): Unit = {
     if (Behavior.isUnhandled(b)) unhandled(msg)
-    behavior = Behavior.canonicalize(b, behavior, ctx)
-    if (!Behavior.isAlive(behavior)) self.sendSystem(Terminate())
+    else {
+      b match {
+        case s: StoppedBehavior[T] ⇒
+          // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
+          // until Terminate is received, i.e until finishTerminate is invoked, and there PostStop
+          // will be signaled to the previous/postStop behavior
+          s.postStop match {
+            case OptionVal.None ⇒
+              // use previous as the postStop behavior
+              behavior = new Behavior.StoppedBehavior(OptionVal.Some(behavior))
+            case OptionVal.Some(postStop) ⇒
+              // use the given postStop behavior, but canonicalize it
+              behavior = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
+          }
+          self.sendSystem(Terminate())
+        case _ ⇒
+          behavior = Behavior.canonicalize(b, behavior, ctx)
+      }
+    }
   }
 
   private def unhandled(msg: Any): Unit = msg match {
