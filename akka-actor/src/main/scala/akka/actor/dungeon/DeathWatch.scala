@@ -147,6 +147,9 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
         try {
           watching foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
             case (watchee: InternalActorRef, _) ⇒ watchee.sendSystemMessage(Unwatch(watchee, self))
+            case (watchee, _) ⇒
+              // should never happen, suppress "match may not be exhaustive" compiler warning
+              throw new IllegalStateException(s"Expected InternalActorRef, but got [${watchee.getClass.getName}]")
           }
         } finally {
           watching = Map.empty
@@ -218,7 +221,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     }
 
     if (isNonLocal(change)) {
-      def hasNonLocalAddress: Boolean = ((watching.keys exists isNonLocal) || (watchedBy exists isNonLocal))
+      def hasNonLocalAddress: Boolean = ((watching.keysIterator exists isNonLocal) || (watchedBy exists isNonLocal))
       val had = hasNonLocalAddress
       val result = block
       val has = hasNonLocalAddress

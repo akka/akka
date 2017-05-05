@@ -10,18 +10,18 @@ import akka.typed.scaladsl.AskPattern._
 import akka.testkit._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MonitoringSpec extends TypedSpec {
+class WatchSpec extends TypedSpec {
 
   trait Tests {
     implicit def system: ActorSystem[TypedSpec.Command]
 
     def `get notified of actor termination`(): Unit = {
       case object Stop
-      case class StartWatching(watchee: ActorRef[_])
+      case class StartWatching(watchee: ActorRef[Stop.type])
 
       val terminator = Await.result(system ? TypedSpec.Create(immutable[Stop.type] {
         case (ctx, `Stop`) ⇒ stopped
-      }, "t"), 3.seconds /*.dilated*/ )
+      }, "t1"), 3.seconds /*.dilated*/ )
 
       val receivedTerminationSignal: Promise[Unit] = Promise()
 
@@ -29,7 +29,7 @@ class MonitoringSpec extends TypedSpec {
         case (ctx, StartWatching(watchee)) ⇒ ctx.watch(watchee); same
       }.onSignal {
         case (ctx, Terminated(_)) ⇒ receivedTerminationSignal.success(()); stopped
-      }, "w"), 3.seconds /*.dilated*/ )
+      }, "w1"), 3.seconds /*.dilated*/ )
 
       watcher ! StartWatching(terminator)
       terminator ! Stop
@@ -42,11 +42,11 @@ class MonitoringSpec extends TypedSpec {
 
       sealed trait Message
       case object CustomTerminationMessage extends Message
-      case class StartWatchingWith(watchee: ActorRef[_], msg: CustomTerminationMessage.type) extends Message
+      case class StartWatchingWith(watchee: ActorRef[Stop.type], msg: CustomTerminationMessage.type) extends Message
 
       val terminator = Await.result(system ? TypedSpec.Create(immutable[Stop.type] {
         case (ctx, `Stop`) ⇒ stopped
-      }, "t"), 3.seconds /*.dilated*/ )
+      }, "t2"), 3.seconds /*.dilated*/ )
 
       val receivedTerminationSignal: Promise[Unit] = Promise()
 
@@ -57,7 +57,7 @@ class MonitoringSpec extends TypedSpec {
         case (ctx, `CustomTerminationMessage`) ⇒
           receivedTerminationSignal.success(())
           stopped
-      }, "w"), 3.seconds /*.dilated*/ )
+      }, "w2"), 3.seconds /*.dilated*/ )
 
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
       terminator ! Stop

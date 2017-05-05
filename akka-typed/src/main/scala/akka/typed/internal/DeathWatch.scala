@@ -202,7 +202,7 @@ private[typed] trait DeathWatch[T] {
     }
 
     if (isNonLocal(change)) {
-      def hasNonLocalAddress: Boolean = ((watching.keys exists isNonLocal) || (watchedBy exists isNonLocal))
+      def hasNonLocalAddress: Boolean = ((watching.keysIterator exists isNonLocal) || (watchedBy exists isNonLocal))
       val had = hasNonLocalAddress
       val result = block
       val has = hasNonLocalAddress
