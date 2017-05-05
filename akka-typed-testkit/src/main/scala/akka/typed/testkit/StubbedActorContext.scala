@@ -56,6 +56,7 @@ class StubbedActorContext[T](
     }
   }
   override def watch[U](other: ActorRef[U]): Unit = ()
+  override def watchWith[U](other: ActorRef[U], msg: T): Unit = ()
   override def unwatch[U](other: ActorRef[U]): Unit = ()
   override def setReceiveTimeout(d: FiniteDuration, msg: T): Unit = ()
   override def cancelReceiveTimeout(): Unit = ()
