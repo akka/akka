@@ -139,7 +139,7 @@ Looking up Remote Actors
 ``actorSelection(path)`` will obtain an ``ActorSelection`` to an Actor on a remote node, e.g.::
 
   ActorSelection selection =
-    context.actorSelection("akka.tcp://app@10.0.0.1:2552/user/serviceA/worker");
+    context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName");
 
 As you can see from the example above the following pattern is used to find an actor on a remote node::
 
