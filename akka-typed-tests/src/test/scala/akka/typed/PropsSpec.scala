@@ -3,12 +3,12 @@
  */
 package akka.typed
 
-class DeploymentConfigSpec extends TypedSpecSetup {
+class PropsSpec extends TypedSpecSetup {
 
   val dispatcherFirst = DispatcherDefault(MailboxCapacity(666, DispatcherFromConfig("pool")))
   val mailboxFirst = MailboxCapacity(999) withNext dispatcherFirst
 
-  object `A DeploymentConfig` {
+  object `A Props` {
 
     def `must get first dispatcher`(): Unit = {
       dispatcherFirst.firstOrElse[DispatcherSelector](null) should ===(dispatcherFirst)
@@ -31,7 +31,7 @@ class DeploymentConfigSpec extends TypedSpecSetup {
     }
 
     def `must yield all configs of some type`(): Unit = {
-      dispatcherFirst.allOf[DispatcherSelector] should ===(DispatcherDefault() :: DispatcherFromConfig("pool") :: Nil)
+      dispatcherFirst.allOf[DispatcherSelector] should ===(DispatcherSelector.default() :: DispatcherSelector.fromConfig("pool") :: Nil)
       mailboxFirst.allOf[MailboxCapacity] should ===(List(999, 666).map(MailboxCapacity(_)))
     }
 
