@@ -7,6 +7,7 @@ package adapter
 
 import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -39,9 +40,26 @@ import akka.annotation.InternalApi
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
-    if (isUnhandled(b)) unhandled(msg)
-    behavior = canonicalize(b, behavior, ctx)
-    if (!isAlive(behavior)) context.stop(self)
+    if (Behavior.isUnhandled(b)) unhandled(msg)
+    else {
+      b match {
+        case s: StoppedBehavior[T] ⇒
+          // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
+          // until Terminate is received, i.e until postStop is invoked, and there PostStop
+          // will be signaled to the previous/postStop behavior
+          s.postStop match {
+            case OptionVal.None ⇒
+              // use previous as the postStop behavior
+              behavior = new Behavior.StoppedBehavior(OptionVal.Some(behavior))
+            case OptionVal.Some(postStop) ⇒
+              // use the given postStop behavior, but canonicalize it
+              behavior = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
+          }
+          context.stop(self)
+        case _ ⇒
+          behavior = Behavior.canonicalize(b, behavior, ctx)
+      }
+    }
   }
 
   override def unhandled(msg: Any): Unit = msg match {
@@ -59,11 +77,26 @@ import akka.annotation.InternalApi
 
   override def preStart(): Unit =
     behavior = validateAsInitial(undefer(behavior, ctx))
-  override def preRestart(reason: Throwable, message: Option[Any]): Unit =
-    next(Behavior.interpretSignal(behavior, ctx, PreRestart), PreRestart)
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    Behavior.interpretSignal(behavior, ctx, PreRestart)
+    behavior = Behavior.stopped
+  }
+
   override def postRestart(reason: Throwable): Unit =
     behavior = validateAsInitial(undefer(behavior, ctx))
+
   override def postStop(): Unit = {
-    next(Behavior.interpretSignal(behavior, ctx, PostStop), PostStop)
+    behavior match {
+      case null                   ⇒ // skip PostStop
+      case _: DeferredBehavior[_] ⇒
+      // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
+      case s: StoppedBehavior[_] ⇒ s.postStop match {
+        case OptionVal.Some(postStop) ⇒ Behavior.interpretSignal(postStop, ctx, PostStop)
+        case OptionVal.None           ⇒ // no postStop behavior defined
+      }
+      case b ⇒ Behavior.interpretSignal(b, ctx, PostStop)
+    }
+    behavior = Behavior.stopped
   }
 }

@@ -87,7 +87,7 @@ import akka.typed.scaladsl.Actor
   protected final def canonical(b: Behavior[T], ctx: ActorContext[T], afterException: Boolean): Behavior[T] =
     if (Behavior.isUnhandled(b)) Behavior.unhandled
     else if ((b eq Behavior.SameBehavior) || (b eq behavior)) Behavior.same
-    else if (!Behavior.isAlive(b)) Behavior.stopped
+    else if (!Behavior.isAlive(b)) b
     else {
       b match {
         case d: DeferredBehavior[T] ⇒ canonical(Behavior.undefer(d, ctx), ctx, afterException)

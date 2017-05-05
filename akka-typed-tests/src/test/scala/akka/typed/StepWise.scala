@@ -141,6 +141,9 @@ object StepWise {
             ctx.cancelReceiveTimeout()
             run(ctx, tail, f(msg, value))
         } onSignal {
+          case (_, PostStop) ⇒
+            // ignore PostStop here
+            run(ctx, ops, value)
           case (_, other) ⇒ throwIllegalState(trace, s"unexpected $other while waiting for a message")
         }
       case MultiMessage(t, c, f, trace) :: tail ⇒
@@ -157,6 +160,9 @@ object StepWise {
                 run(ctx, tail, f((msg :: acc).reverse, value))
               } else behavior(nextCount, msg :: acc)
           } onSignal {
+            case (_, PostStop) ⇒
+              // ignore PostStop here
+              run(ctx, ops, value)
             case (_, other) ⇒ throwIllegalState(trace, s"unexpected $other while waiting for $c messages (got $count valid ones)")
           }
         }
@@ -175,6 +181,9 @@ object StepWise {
                 run(ctx, tail, f((Right(msg) :: acc).reverse, value))
               } else behavior(nextCount, Right(msg) :: acc)
           } onSignal {
+            case (_, PostStop) ⇒
+              // ignore PostStop here
+              run(ctx, ops, value)
             case (_, other) ⇒
               val nextCount = count + 1
               if (nextCount == c) {
@@ -190,12 +199,16 @@ object StepWise {
           case (_, ReceiveTimeout) ⇒ throwTimeout(trace, s"timeout of $t expired while waiting for termination")
           case other               ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
         } onSignal {
+          case (_, PostStop) ⇒
+            // ignore PostStop here
+            run(ctx, ops, value)
           case (_, t: Terminated) ⇒
             ctx.cancelReceiveTimeout()
             run(ctx, tail, f(t, value))
           case other ⇒ throwIllegalState(trace, s"unexpected $other while waiting for termination")
         }
-      case Nil ⇒ stopped
+      case Nil ⇒
+        stopped
     }
 }
 

@@ -139,13 +139,8 @@ import scala.reflect.ClassTag
       }
       true
     },
-      afterMessage = (ctx, msg, b) ⇒ {
-      // PostStop is not signaled when voluntarily stopped
-      if (!Behavior.isAlive(b))
-        cancelAll()
-      b
-    },
-      afterSignal = (ctx, sig, b) ⇒ b, // TODO optimize by using more ConstantFun
+      afterMessage = (ctx, msg, b) ⇒ b, // TODO optimize by using more ConstantFun
+      afterSignal = (ctx, sig, b) ⇒ b,
       behavior)(ClassTag(classOf[TimerSchedulerImpl.TimerMsg]))
   }
 
