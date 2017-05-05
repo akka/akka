@@ -43,6 +43,8 @@ public class ActorCompile {
   });
   Behavior<MyMsg> actor9 = widened(actor7, pf -> pf.match(MyMsgA.class, x -> x));
 
+  ActorSystem<MyMsg> system = ActorSystem.create("Sys", actor1);
+
   {
     Actor.<MyMsg>immutable((ctx, msg) -> {
       if (msg instanceof MyMsgA) {

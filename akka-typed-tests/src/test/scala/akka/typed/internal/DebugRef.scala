@@ -8,8 +8,8 @@ import akka.{ actor ⇒ a }
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.annotation.tailrec
 
-private[typed] class DebugRef[T](_path: a.ActorPath, override val isLocal: Boolean)
-  extends ActorRef[T](_path) with ActorRefImpl[T] {
+private[typed] class DebugRef[T](override val path: a.ActorPath, override val isLocal: Boolean)
+  extends ActorRef[T] with ActorRefImpl[T] {
 
   private val q = new ConcurrentLinkedQueue[Either[SystemMessage, T]]
 
