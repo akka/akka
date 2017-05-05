@@ -1,11 +1,11 @@
 package akka.typed.javadsl;
 
 import java.util.concurrent.CompletionStage;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import akka.Done;
 import org.scalatest.junit.JUnitSuite;
+import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 import akka.util.Timeout;
 import org.junit.Test;
@@ -14,7 +14,7 @@ import akka.typed.*;
 import static akka.typed.javadsl.Actor.*;
 import static akka.typed.javadsl.AskPattern.*;
 
-public class MonitoringTest extends JUnitSuite {
+public class WatchTest extends JUnitSuite {
 
     static interface Message {}
     static final class RunTest<T> implements Message {
@@ -67,12 +67,15 @@ public class MonitoringTest extends JUnitSuite {
             watched.tell(new Stop());
             return waitingForTermination(msg.replyTo);
         });
-        ActorSystem<RunTest<Done>> system = ActorSystem$.MODULE$.create("sysname", root, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-
-        // Not sure why this does not compile without an explicit cast?
-        // system.tell(new RunTest());
-        CompletionStage<Done> result = AskPattern.ask((ActorRef<RunTest<Done>>)system, (ActorRef<Done> ref) -> new RunTest<Done>(ref), timeout, system.scheduler());
-        result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+        ActorSystem<RunTest<Done>> system = ActorSystem.create("sysname", root);
+        try {
+          // Not sure why this does not compile without an explicit cast?
+          // system.tell(new RunTest());
+          CompletionStage<Done> result = AskPattern.ask((ActorRef<RunTest<Done>>)system, (ActorRef<Done> ref) -> new RunTest<Done>(ref), timeout, system.scheduler());
+          result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+        } finally {
+          Await.ready(system.terminate(), Duration.create(10, TimeUnit.SECONDS));
+        }
     }
 
     @Test
@@ -82,16 +85,19 @@ public class MonitoringTest extends JUnitSuite {
                 ActorRef<Stop> watched = ctx.spawn(exitingActor, "exitingActor");
                 ctx.watchWith(watched, new CustomTerminationMessage());
                 watched.tell(new Stop());
-                return waitingForMessage(((RunTest) msg).replyTo);
+                return waitingForMessage(((RunTest<Done>) msg).replyTo);
             } else {
                 return unhandled();
             }
         });
-        ActorSystem<Message> system = ActorSystem$.MODULE$.create("sysname", root, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-
-        // Not sure why this does not compile without an explicit cast?
-        // system.tell(new RunTest());
-        CompletionStage<Done> result = AskPattern.ask((ActorRef<Message>)system, (ActorRef<Done> ref) -> new RunTest<Done>(ref), timeout, system.scheduler());
-        result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+        ActorSystem<Message> system = ActorSystem.create("sysname", root);
+        try {
+          // Not sure why this does not compile without an explicit cast?
+          // system.tell(new RunTest());
+          CompletionStage<Done> result = AskPattern.ask((ActorRef<Message>)system, (ActorRef<Done> ref) -> new RunTest<Done>(ref), timeout, system.scheduler());
+          result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+        } finally {
+          Await.ready(system.terminate(), Duration.create(10, TimeUnit.SECONDS));
+        }
     }
 }
