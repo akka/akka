@@ -26,7 +26,7 @@ import java.util.Optional
  */
 @DoNotInherit
 @ApiMayChange
-abstract class ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
+abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: internal.ActorRefImpl[T] ⇒
 
   /**
    * The name of this actor system, used to distinguish multiple ones within

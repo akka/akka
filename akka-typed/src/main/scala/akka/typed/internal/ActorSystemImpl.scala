@@ -76,7 +76,7 @@ private[typed] class ActorSystemImpl[-T](
   _ec:                   Option[ExecutionContext],
   _userGuardianBehavior: Behavior[T],
   _userGuardianProps:    Props)
-  extends ActorSystem[T] with ActorRef[T] with ActorRefImpl[T] {
+  extends ActorSystem[T] with ActorRef[T] with ActorRefImpl[T] with ExtensionsImpl {
 
   import ActorSystemImpl._
 
@@ -235,6 +235,8 @@ private[typed] class ActorSystemImpl[-T](
   // now we can start up the loggers
   eventStream.startUnsubscriber(this)
   eventStream.startDefaultLoggers(this)
+
+  loadExtensions()
 
   override def terminate(): Future[Terminated] = {
     theOneWhoWalksTheBubblesOfSpaceTime.sendSystem(Terminate())
