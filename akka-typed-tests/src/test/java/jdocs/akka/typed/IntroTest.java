@@ -5,16 +5,27 @@ package jdocs.akka.typed;
 
 //#imports
 import akka.typed.ActorRef;
+import akka.typed.ActorSystem;
 import akka.typed.Behavior;
 import akka.typed.javadsl.Actor;
+import akka.typed.javadsl.AskPattern;
+import akka.util.Timeout;
+
 //#imports
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class IntroTest {
 
   //#hello-world-actor
-  public static class HelloWorld {
+  public abstract static class HelloWorld {
+    //no instances of this class, it's only a name space for messages
+    // and static methods
+    private HelloWorld() {
+    }
+
     public static final class Greet{
       public final String whom;
       public final ActorRef<Greeted> replyTo;
@@ -40,6 +51,23 @@ public class IntroTest {
     });
   }
   //#hello-world-actor
+
+  public static void main(String[] args) {
+    //#hello-world
+    final ActorSystem<HelloWorld.Greet> system =
+      ActorSystem.create("hello", HelloWorld.greeter);
+
+    final CompletionStage<HelloWorld.Greeted> reply =
+      AskPattern.ask(system,
+        (ActorRef<HelloWorld.Greeted> replyTo) -> new HelloWorld.Greet("world", replyTo),
+        new Timeout(3, TimeUnit.SECONDS), system.scheduler());
+
+    reply.thenAccept(greeting -> {
+      System.out.println("result: " + greeting.whom);
+      system.terminate();
+    });
+    //#hello-world
+  }
 
   //#chatroom-actor
   public static class ChatRoom {
