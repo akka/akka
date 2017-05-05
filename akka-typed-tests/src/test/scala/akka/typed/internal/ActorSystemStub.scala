@@ -11,8 +11,9 @@ import java.util.concurrent.ThreadFactory
 import akka.util.Timeout
 
 private[typed] class ActorSystemStub(val name: String)
-  extends ActorRef[Nothing](a.RootActorPath(a.Address("akka", name)) / "user")
-  with ActorSystem[Nothing] with ActorRefImpl[Nothing] {
+  extends ActorSystem[Nothing] with ActorRef[Nothing] with ActorRefImpl[Nothing] {
+
+  override val path: a.ActorPath = a.RootActorPath(a.Address("akka", name)) / "user"
 
   override val settings: Settings = new Settings(getClass.getClassLoader, ConfigFactory.empty, name)
 
