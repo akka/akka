@@ -255,6 +255,10 @@ import akka.util.OptionVal
         failStage(ex)
       }
 
+      override def postStop(): Unit = {
+        if (!p.isCompleted) p.failure(new AbruptStageTerminationException(this))
+      }
+
       setHandler(in, this)
     }, p.future)
   }
@@ -295,6 +299,10 @@ import akka.util.OptionVal
       override def onUpstreamFailure(ex: Throwable): Unit = {
         p.tryFailure(ex)
         failStage(ex)
+      }
+
+      override def postStop(): Unit = {
+        if (!p.isCompleted) p.failure(new AbruptStageTerminationException(this))
       }
 
       setHandler(in, this)
@@ -552,7 +560,14 @@ import akka.util.OptionVal
         }
 
         switchToFirstElementHandlers()
-        promise.trySuccess(Source.fromGraph(sourceOut.source).runWith(sink)(interpreter.subFusingMaterializer))
+        try {
+          val matVal = Source.fromGraph(sourceOut.source).runWith(sink)(interpreter.subFusingMaterializer)
+          promise.trySuccess(matVal)
+        } catch {
+          case NonFatal(ex) ⇒
+            promise.tryFailure(ex)
+            failStage(ex)
+        }
       }
 
     }

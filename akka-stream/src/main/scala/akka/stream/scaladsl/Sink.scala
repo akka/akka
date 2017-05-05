@@ -147,7 +147,7 @@ object Sink {
   /**
    * A `Sink` that materializes into a `Future` of the last value received.
    * If the stream completes before signaling at least a single element, the Future will be failed with a [[NoSuchElementException]].
-   * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
+   * If the stream signals an error, the Future will be failed with the stream's exception.
    *
    * See also [[lastOption]].
    */
@@ -157,7 +157,7 @@ object Sink {
   /**
    * A `Sink` that materializes into a `Future` of the optional last value received.
    * If the stream completes before signaling at least a single element, the value of the Future will be [[None]].
-   * If the stream signals an error errors before signaling at least a single element, the Future will be failed with the streams exception.
+   * If the stream signals an error, the Future will be failed with the stream's exception.
    *
    * See also [[last]].
    */
@@ -296,21 +296,30 @@ object Sink {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
           new GraphStageLogic(shape) with InHandler with OutHandler {
 
+            var completionSignalled = false
+
             override def onPush(): Unit = pull(in)
 
             override def onPull(): Unit = pull(in)
 
             override def onUpstreamFailure(cause: Throwable): Unit = {
               callback(Failure(cause))
+              completionSignalled = true
               failStage(cause)
             }
 
             override def onUpstreamFinish(): Unit = {
               callback(Success(Done))
+              completionSignalled = true
               completeStage()
             }
 
+            override def postStop(): Unit = {
+              if (!completionSignalled) callback(Failure(new AbruptStageTerminationException(this)))
+            }
+
             setHandlers(in, out, this)
+
           }
       }
     }

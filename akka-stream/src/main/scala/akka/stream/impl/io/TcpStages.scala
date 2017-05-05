@@ -54,7 +54,7 @@ import scala.util.Try
 
       val connectionFlowsAwaitingInitialization = new AtomicLong()
       var listener: ActorRef = _
-      var unbindPromise = Promise[Unit]()
+      val unbindPromise = Promise[Unit]()
       var unbindStarted = false
 
       override def preStart(): Unit = {

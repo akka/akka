@@ -98,10 +98,6 @@ abstract class ClusterShardingCustomShardAllocationSpecConfig(val mode: String) 
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/ClusterShardingCustomShardAllocationSpec/snapshots"
     akka.cluster.sharding.state-store-mode = "$mode"
-    akka.cluster.sharding.distributed-data.durable.lmdb {
-      dir = target/ClusterShardingCustomShardAllocationSpec/sharding-ddata
-      map-size = 10 MiB
-    }
     """))
 }
 
@@ -122,18 +118,6 @@ abstract class ClusterShardingCustomShardAllocationSpec(config: ClusterShardingC
   import config._
 
   override def initialParticipants = roles.size
-
-  val storageLocations = List(new File(system.settings.config.getString(
-    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
-
-  override protected def atStartup() {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
-    enterBarrier("startup")
-  }
-
-  override protected def afterTermination() {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
-  }
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {

@@ -6,9 +6,9 @@
  * [What are Actors?](actors-intro.md)
  * [Akka Libraries and Modules](modules.md)
  * [Your First Akka Application - Hello World](quickstart.md)
- * [Your second Akka application, part 1: Top-level architecture](tutorial_1.md)
- * [Your second Akka application, part 2: The Device actor](tutorial_2.md)
- * [Your second Akka application, part 3: Device groups](tutorial_3.md)
- * [Your second Akka application, part 4: Querying a group of devices](tutorial_4.md)
+ * [Your Second Akka Application, Part 1: Top-level Architecture](tutorial_1.md)
+ * [Your Second Akka Application, Part 2: The Device Actor](tutorial_2.md)
+ * [Your Second Akka Application, Part 3: Device Groups](tutorial_3.md)
+ * [Your Second Akka Application, Part 4: Querying a Group of Devices](tutorial_4.md)
 
 @@@

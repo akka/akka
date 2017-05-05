@@ -195,9 +195,8 @@ class TestKit(system: ActorSystem) {
   def awaitAssert(max: Duration, a: Supplier[Any]): Unit = tp.awaitAssert(a.get, max)
 
   /**
-   * Await until the given assert does not throw an exception or the timeout
-   * expires, whichever comes first. If the timeout expires the last exception
-   * is thrown.
+   * Evaluate the given assert every `interval` until it does not throw an exception.
+   * If the `max` timeout expires the last exception is thrown.
    *
    * Note that the timeout is scaled using Duration.dilated,
    * which uses the configuration entry "akka.test.timefactor".

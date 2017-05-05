@@ -4,29 +4,28 @@ import tutorial_5.Device.{ ReadTemperature, RecordTemperature, RespondTemperatur
 
 object DeviceInProgress1 {
 
-  //#read-protocol-1
   object Device {
+    //#read-protocol-1
     final case object ReadTemperature
     final case class RespondTemperature(value: Option[Double])
+    //#read-protocol-1
   }
-  //#read-protocol-1
 
 }
 
 object DeviceInProgress2 {
 
-  //#read-protocol-2
+  //#device-with-read
+  import akka.actor.{ Actor, ActorLogging, Props }
+
   object Device {
-    //#dummy
+    def props(groupId: String, deviceId: String): Props = Props(new Device(groupId, deviceId))
+
+    //#read-protocol-2
     final case class ReadTemperature(requestId: Long)
     final case class RespondTemperature(requestId: Long, value: Option[Double])
-    //#dummy
+    //#read-protocol-2
   }
-
-  //#read-protocol-2
-
-  //#device-with-read
-  import akka.actor.{ Actor, ActorLogging }
 
   class Device(groupId: String, deviceId: String) extends Actor with ActorLogging {
     var lastTemperatureReading: Option[Double] = None
@@ -47,12 +46,9 @@ object DeviceInProgress2 {
 
 object DeviceInProgress3 {
 
-  //#write-protocol-1
   object Device {
-    final case class ReadTemperature(requestId: Long)
-    final case class RespondTemperature(requestId: Long, value: Option[Double])
-
+    //#write-protocol-1
     final case class RecordTemperature(value: Double)
+    //#write-protocol-1
   }
-  //#write-protocol-1
 }

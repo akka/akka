@@ -6,8 +6,6 @@ package akka.stream.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorRef;
-import akka.dispatch.Foreach;
-import akka.dispatch.Futures;
 import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.japi.function.*;
@@ -19,11 +17,8 @@ import akka.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
 import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import akka.testkit.AkkaJUnitActorSystemResource;
@@ -188,8 +183,8 @@ public class FlowTest extends StreamTest {
   }
 
 
-  @Ignore("StatefulStage to be converted to GraphStage when Java Api is available (#18817)") @Test
-  public void mustBeAbleToUseTransform() {
+  @Test
+  public void mustBeAbleToUseVia() {
     final TestKit probe = new TestKit(system);
     final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
     // duplicate each element, stop after 4 elements, and emit sum to the end

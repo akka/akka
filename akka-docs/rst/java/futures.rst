@@ -22,7 +22,7 @@ it will use its default dispatcher as the ``ExecutionContext``, or you can use t
 by the ``ExecutionContexts`` class to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
 
 .. includecode:: code/jdocs/future/FutureDocTest.java
-   :include: imports1,imports7
+   :include: imports1
 
 .. includecode:: code/jdocs/future/FutureDocTest.java
    :include: diy-execution-context
@@ -256,7 +256,7 @@ After
 ``akka.pattern.Patterns.after`` makes it easy to complete a ``Future`` with a value or exception after a timeout.
 
 .. includecode:: code/jdocs/future/FutureDocTest.java
-   :include: imports8
+   :include: imports7
 
 .. includecode:: code/jdocs/future/FutureDocTest.java
    :include: after

@@ -1,7 +1,7 @@
 .. _fsm-java:
 
 #####
- FSM 
+ FSM
 #####
 
 
@@ -452,6 +452,7 @@ zero.
 Examples
 ========
 
-A bigger FSM example contrasted with Actor's :meth:`become`/:meth:`unbecome` can be found in
-the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_ template named
-`Akka FSM in Scala <http://www.lightbend.com/activator/template/akka-sample-fsm-java-lambda>`_
+A bigger FSM example contrasted with Actor's :meth:`become`/:meth:`unbecome` can be
+downloaded as a ready to run `Akka FSM sample <@exampleCodeService@/akka-samples-fsm-java>`_
+together with a tutorial. The source code of this sample can be found in the
+`Akka Samples Repository <@samples@/akka-sample-fsm-java>`_.

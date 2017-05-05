@@ -3,6 +3,8 @@
  */
 package akka.event
 
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -19,6 +21,8 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.language.existentials
 import scala.util.control.{ NoStackTrace, NonFatal }
+import java.time.ZoneId
+import java.time.LocalDateTime
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -861,14 +865,12 @@ object Logging {
    */
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 
+  private val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss.SSS")
+  private val timeZone = ZoneId.systemDefault()
+
   trait StdOutLogger {
 
     import StdOutLogger._
-    import java.text.SimpleDateFormat
-    import java.util.Date
-
-    private val date = new Date()
-    private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
 
     // format: OFF
     // FIXME: remove those when we have the chance to break binary compatibility
@@ -879,10 +881,9 @@ object Logging {
     private val debugFormat             = DebugFormat
     // format: ON
 
-    def timestamp(event: LogEvent): String = synchronized {
-      date.setTime(event.timestamp)
-      dateFormat.format(date)
-    } // SDF isn't threadsafe
+    def timestamp(event: LogEvent): String = {
+      formatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(event.timestamp), timeZone))
+    }
 
     def print(event: Any): Unit = event match {
       case e: Error   ⇒ error(e)
