@@ -1188,7 +1188,12 @@ object MiMa extends AutoPlugin {
           ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.addAttributes"),
           ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.async")
       ),
-      "2.5.1" -> Seq()
+      "2.5.1" -> Seq(
+          // #22846 Adding dynamic delay in stream
+          ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.delay"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Delay.d"),
+          ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.fusing.Delay.this")
+      )
     )
 
     val Latest24Filters = Release24Filters.last
