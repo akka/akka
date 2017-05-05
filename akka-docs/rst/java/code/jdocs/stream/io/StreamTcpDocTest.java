@@ -71,7 +71,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
 
       final InetSocketAddress localhost = SocketUtil.temporaryServerAddress("127.0.0.1", false);
       final Source<IncomingConnection, CompletionStage<ServerBinding>> connections =
-        Tcp.get(system).bind(localhost.getHostName(), localhost.getPort()); // TODO getHostString in Java7
+        Tcp.get(system).bind(localhost.getHostString(), localhost.getPort());
 
       //#echo-server-simple-handle
       connections.runForeach(connection -> {

@@ -63,21 +63,25 @@ Creating Typed Actors
 
 To create a Typed Actor you need to have one or more interfaces, and one implementation.
 
+The following imports are assumed:
+
+.. includecode:: code/docs/actor/TypedActorDocSpec.scala
+   :include: imports
+
 Our example interface:
 
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala
-   :include: imports,typed-actor-iface
+   :include: typed-actor-iface
+   :exclude: typed-actor-iface-methods
 
-Alright, now we've got some methods we can call, but we need to implement those in SquarerImpl.
+Our example implementation of that interface:
 
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala
-   :include: imports,typed-actor-impl
-
-Excellent, now we have an interface and an implementation of that interface,
-and we know how to create a Typed Actor from that, so let's look at calling these methods.
+   :include: typed-actor-impl
+   :exclude: typed-actor-impl-methods
 
 The most trivial way of creating a Typed Actor instance
-of our Squarer:
+of our ``Squarer``:
 
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala
    :include: typed-actor-create1
@@ -88,7 +92,19 @@ If you need to call a specific constructor you do it like this:
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala
    :include: typed-actor-create2
 
-Since you supply a Props, you can specify which dispatcher to use, what the default timeout should be used and more.
+Since you supply a ``Props``, you can specify which dispatcher to use, what the default timeout should be used and more.
+Now, our ``Squarer`` doesn't have any methods, so we'd better add those.
+
+.. includecode:: code/docs/actor/TypedActorDocSpec.scala
+   :include: typed-actor-iface
+
+Alright, now we've got some methods we can call, but we need to implement those in SquarerImpl.
+
+.. includecode:: code/docs/actor/TypedActorDocSpec.scala
+   :include: typed-actor-impl
+
+Excellent, now we have an interface and an implementation of that interface,
+and we know how to create a Typed Actor from that, so let's look at calling these methods.
 
 Method dispatch semantics
 -------------------------

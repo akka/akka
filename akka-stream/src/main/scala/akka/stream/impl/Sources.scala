@@ -17,6 +17,7 @@ import akka.Done
 import java.util.concurrent.CompletionStage
 
 import akka.annotation.InternalApi
+import akka.util.OptionVal
 
 import scala.compat.java8.FutureConverters._
 import scala.util.Try
@@ -212,10 +213,14 @@ import scala.util.control.NonFatal
 
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
     lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    var open = false
     var blockingStream: S = _
     setHandler(out, this)
 
-    override def preStart(): Unit = blockingStream = create()
+    override def preStart(): Unit = {
+      blockingStream = create()
+      open = true
+    }
 
     @tailrec
     final override def onPull(): Unit = {
@@ -245,15 +250,21 @@ import scala.util.control.NonFatal
     private def restartState(): Unit = {
       close(blockingStream)
       blockingStream = create()
+      open = true
     }
 
     private def closeStage(): Unit =
       try {
         close(blockingStream)
+        open = false
         completeStage()
       } catch {
         case NonFatal(ex) ⇒ failStage(ex)
       }
+
+    override def postStop(): Unit = {
+      if (open) close(blockingStream)
+    }
 
   }
   override def toString = "UnfoldResourceSource"
@@ -273,6 +284,7 @@ import scala.util.control.NonFatal
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
     lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
     var resource = Promise[S]()
+    var open = false
     implicit val context = ExecutionContexts.sameThreadExecutionContext
 
     setHandler(out, this)
@@ -280,22 +292,21 @@ import scala.util.control.NonFatal
     override def preStart(): Unit = createStream(false)
 
     private def createStream(withPull: Boolean): Unit = {
-      val cb = getAsyncCallback[Try[S]] {
+      val createdCallback = getAsyncCallback[Try[S]] {
         case scala.util.Success(res) ⇒
+          open = true
           resource.success(res)
           if (withPull) onPull()
         case scala.util.Failure(t) ⇒ failStage(t)
       }
       try {
-        create().onComplete(cb.invoke)
+        create().onComplete(createdCallback.invoke)
       } catch {
         case NonFatal(ex) ⇒ failStage(ex)
       }
     }
 
-    private def onResourceReady(f: (S) ⇒ Unit): Unit = resource.future.foreach {
-      resource ⇒ f(resource)
-    }
+    private def onResourceReady(f: (S) ⇒ Unit): Unit = resource.future.foreach(f)
 
     val errorHandler: PartialFunction[Throwable, Unit] = {
       case NonFatal(ex) ⇒ decider(ex) match {
@@ -306,7 +317,8 @@ import scala.util.control.NonFatal
         case Supervision.Resume  ⇒ onPull()
       }
     }
-    val callback = getAsyncCallback[Try[Option[T]]] {
+
+    val readCallback = getAsyncCallback[Try[Option[T]]] {
       case scala.util.Success(data) ⇒ data match {
         case Some(d) ⇒ push(out, d)
         case None    ⇒ closeStage()
@@ -314,22 +326,26 @@ import scala.util.control.NonFatal
       case scala.util.Failure(t) ⇒ errorHandler(t)
     }.invoke _
 
-    final override def onPull(): Unit = onResourceReady {
-      case resource ⇒
-        try { readData(resource).onComplete(callback) } catch errorHandler
-    }
+    final override def onPull(): Unit =
+      onResourceReady { resource ⇒
+        try { readData(resource).onComplete(readCallback) } catch errorHandler
+      }
 
     override def onDownstreamFinish(): Unit = closeStage()
 
     private def closeAndThen(f: () ⇒ Unit): Unit = {
       setKeepGoing(true)
-      val cb = getAsyncCallback[Try[Done]] {
-        case scala.util.Success(_) ⇒ f()
-        case scala.util.Failure(t) ⇒ failStage(t)
+      val closedCallback = getAsyncCallback[Try[Done]] {
+        case scala.util.Success(_) ⇒
+          open = false
+          f()
+        case scala.util.Failure(t) ⇒
+          open = false
+          failStage(t)
       }
 
       onResourceReady(res ⇒
-        try { close(res).onComplete(cb.invoke) } catch {
+        try { close(res).onComplete(closedCallback.invoke) } catch {
           case NonFatal(ex) ⇒ failStage(ex)
         })
     }
@@ -337,7 +353,11 @@ import scala.util.control.NonFatal
       resource = Promise[S]()
       createStream(true)
     })
-    private def closeStage(): Unit = closeAndThen(completeStage _)
+    private def closeStage(): Unit = closeAndThen(completeStage)
+
+    override def postStop(): Unit = {
+      if (open) closeStage()
+    }
 
   }
   override def toString = "UnfoldResourceSourceAsync"
@@ -391,10 +411,15 @@ import scala.util.control.NonFatal
           }
         })
 
-        matPromise.tryComplete(
-          Try {
-            subFusingMaterializer.materialize(source.toMat(subSink.sink)(Keep.left), inheritedAttributes)
-          })
+        try {
+          val matVal = subFusingMaterializer.materialize(source.toMat(subSink.sink)(Keep.left), inheritedAttributes)
+          matPromise.trySuccess(matVal)
+        } catch {
+          case NonFatal(ex) ⇒
+            subSink.cancel()
+            failStage(ex)
+            matPromise.tryFailure(ex)
+        }
       }
 
       setHandler(out, this)

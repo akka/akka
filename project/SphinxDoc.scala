@@ -79,7 +79,8 @@ object SphinxDoc {
         "sigarVersion" -> Dependencies.Compile.sigar.revision,
         "sigarLoaderVersion" -> Dependencies.Compile.Provided.sigarLoader.revision,
         "github" -> GitHub.url(v),
-        "samples" -> "http://github.com/akka/akka-samples"
+        "samples" -> "http://github.com/akka/akka-samples/tree/master",
+        "exampleCodeService" -> "https://example.lightbend.com/v1/download"
       )
     },
     preprocess := {

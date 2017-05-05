@@ -17,10 +17,10 @@ object Dependencies {
   val sslConfigVersion = "0.2.1"
   val slf4jVersion = "1.7.23"
   val scalaXmlVersion = "1.0.6"
-  val aeronVersion = "1.2.3"
+  val aeronVersion = "1.2.5"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.8", "2.12.1"),
+    crossScalaVersions := Seq("2.11.11", "2.12.2"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(

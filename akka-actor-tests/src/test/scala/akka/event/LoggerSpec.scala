@@ -15,6 +15,7 @@ import akka.event.Logging._
 import akka.util.Helpers
 import akka.event.Logging.InitializeLogger
 import akka.event.Logging.Warning
+import java.text.SimpleDateFormat
 
 object LoggerSpec {
 
@@ -270,6 +271,17 @@ class LoggerSpec extends WordSpec with Matchers {
       val seconds = c.get(Calendar.SECOND)
       val ms = c.get(Calendar.MILLISECOND)
       Helpers.currentTimeMillisToUTCString(timestamp) should ===(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
+    }
+  }
+
+  "StdOutLogger" must {
+    "format timestamp to with system default TimeZone" in {
+      val log = new StdOutLogger {}
+      val event = Info("test", classOf[String], "test")
+      // this was the format in Akka 2.4 and earlier
+      val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
+      val expected = dateFormat.format(new Date(event.timestamp))
+      log.timestamp(event) should ===(expected)
     }
   }
 

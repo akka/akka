@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.actor
 
@@ -104,9 +104,11 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
         runningJvmHook = true // avoid System.exit from PhaseActorSystemTerminate task
         if (!system.whenTerminated.isCompleted) {
           coord.log.info("Starting coordinated shutdown from JVM shutdown hook")
-          try
-            Await.ready(coord.run(), coord.totalTimeout())
-          catch {
+          try {
+            // totalTimeout will be 0 when no tasks registered, so at least 3.seconds
+            val totalTimeout = coord.totalTimeout().max(3.seconds)
+            Await.ready(coord.run(), totalTimeout)
+          } catch {
             case NonFatal(e) ⇒
               coord.log.warning(
                 "CoordinatedShutdown from JVM shutdown failed: {}",

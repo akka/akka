@@ -32,7 +32,7 @@ object MiMa extends AutoPlugin {
         .max
 
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka25Versions = Seq.empty[String] // FIXME enable once 2.5.0 is out (0 to latestMinorVersionOf("2.5.")).map(patch => s"2.5.$patch")
+      val akka25Versions = (0 to latestMinorVersionOf("2.5.")).map(patch => s"2.5.$patch")
       val akka24StreamVersions = (2 to 12) map ("2.4." + _)
       val akka24WithScala212 =
         (13 to latestMinorVersionOf("2.4."))
@@ -55,10 +55,10 @@ object MiMa extends AutoPlugin {
           else {
             if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions
             else Seq.empty
-          } ++ akka24StreamVersions ++ akka24WithScala212
+          } ++ akka24StreamVersions ++ akka24WithScala212 ++ akka25Versions
           
         case "2.12" => 
-          akka24WithScala212
+          akka24WithScala212 ++ akka25Versions
       }
     }
     
@@ -1072,6 +1072,9 @@ object MiMa extends AutoPlugin {
         FilterAnyProblemStartingWith("akka.remote.artery")
       ),
       "2.4.17" -> Seq(
+        // #22711 changes to groupedWithin internal classes
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.groupedWeightedWithin"),
+
         // #22277 changes to internal classes
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpServerHandler.this"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpClientHandler.this"),
@@ -1118,6 +1121,14 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.serialization"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.DaemonMsgCreateSerializer.this"),
 
+        // #22657 changes to internal classes
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FilePublisher.props"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FilePublisher.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSink.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.this"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSubscriber.props"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSubscriber.this"),
+
         // Internal MessageBuffer for actors
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.PerGroupingBuffer.akka$cluster$pubsub$PerGroupingBuffer$$buffers"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.PerGroupingBuffer.akka$cluster$pubsub$PerGroupingBuffer$_setter_$akka$cluster$pubsub$PerGroupingBuffer$$buffers_="),
@@ -1147,6 +1158,35 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasConfigSerializerId"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getScopeSerializerId"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getScopeManifest")
+      )
+      // make sure that
+      //  * this list ends with the latest released version number
+      //  * is kept in sync between release-2.4 and master branch
+    )
+    
+    val Release25Filters = Seq(
+      "2.5.0" -> Seq(
+          
+          // #22759 LMDB files
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.env"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.db"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.keyBuffer"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.valueBuffer_="),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.valueBuffer"),
+          
+          ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.groupedWeightedWithin"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSubscriber.props"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.this"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSink.this"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FilePublisher.props"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSubscriber.this"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FilePublisher.this"),
+          ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GroupedWithin"),
+          
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.traversalBuilder"),
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.named"),
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.addAttributes"),
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.async")
       ),
       "2.5.1" -> Seq(
         // #22794 watchWith
@@ -1155,14 +1195,11 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching_=")
       )
-      // make sure that
-      //  * this list ends with the latest released version number
-      //  * is kept in sync between release-2.4 and master branch
     )
 
     val Latest24Filters = Release24Filters.last
     val AllFilters =
-      Release24Filters.dropRight(1) :+ (Latest24Filters._1 -> (Latest24Filters._2 ++ bcIssuesBetween24and25))
+      Release25Filters ++ Release24Filters.dropRight(1) :+ (Latest24Filters._1 -> (Latest24Filters._2 ++ bcIssuesBetween24and25))
 
     Map(AllFilters: _*)
   }

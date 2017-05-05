@@ -3,6 +3,9 @@
 Quick Start Guide
 =================
 
+Create a project and add the akka-streams dependency to the build tool of your
+choice as described in :ref:`build-tool`.
+
 A stream usually begins at a source, so this is also how we start an Akka
 Stream. Before we create one, we import the full complement of streaming tools:
 
@@ -11,6 +14,10 @@ Stream. Before we create one, we import the full complement of streaming tools:
 If you want to execute the code samples while you read through the quick start guide, you will also need the following imports:
 
 .. includecode:: ../code/jdocs/stream/QuickStartDocTest.java#other-imports
+
+And a class to hold your code, for example:
+
+.. includecode:: ../code/jdocs/stream/Main.java#main-app
 
 Now we will start with a rather simple source, emitting the integers 1 to 100:
 
@@ -35,6 +42,12 @@ setup to an Actor that runs it. This activation is signaled by having “run” 
 part of the method name; there are other methods that run Akka Streams, and
 they all follow this pattern.
 
+When running this program you might notice it does not
+terminate, because the :class:`ActorSystem` is never terminated. Luckily
+``runForeach`` returns a :class:`CompletionStage<Done>` which resolves when the stream finishes:
+
+.. includecode:: ../code/jdocs/stream/QuickStartDocTest.java#run-source-and-terminate
+
 You may wonder where the Actor gets created that runs the stream, and you are
 probably also asking yourself what this ``materializer`` means. In order to get
 this value we first need to create an Actor system:
@@ -57,7 +70,7 @@ source of integers and write it to a file instead:
 
 First we use the ``scan`` combinator to run a computation over the whole
 stream: starting with the number 1 (``BigInteger.ONE``) we multiple by each of
-the incoming numbers, one after the other; the scan operationemits the initial
+the incoming numbers, one after the other; the scan operation emits the initial
 value and then every calculation result. This yields the series of factorial
 numbers which we stash away as a :class:`Source` for later reuse—it is
 important to keep in mind that nothing is actually computed yet, this is just a
@@ -119,7 +132,7 @@ certain speed: we use the ``throttle`` combinator to slow down the stream to 1
 element per second (the second ``1`` in the argument list is the maximum size
 of a burst that we want to allow—passing ``1`` means that the first element
 gets through immediately and the second then has to wait for one second and so
-on). 
+on).
 
 If you run this program you will see one line printed per second. One aspect
 that is not immediately visible deserves mention, though: if you try and set

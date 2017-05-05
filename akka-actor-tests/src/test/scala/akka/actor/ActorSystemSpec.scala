@@ -157,8 +157,27 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         probe.watch(a)
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
-        EventFilter.info(pattern = "not delivered", occurrences = 1).intercept {
-          a.tell("boom", probe.ref)
+        EventFilter.info(pattern = """from Actor\[akka://LogDeadLetters/system/testProbe.*not delivered""", occurrences = 1).intercept {
+          EventFilter.warning(pattern = """received dead letter from Actor\[akka://LogDeadLetters/system/testProbe""", occurrences = 1).intercept {
+            a.tell("boom", probe.ref)
+          }(sys)
+        }(sys)
+
+      } finally shutdown(sys)
+    }
+
+    "log dead letters sent without sender reference" in {
+      val sys = ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
+      try {
+        val probe = TestProbe()(sys)
+        val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
+        probe.watch(a)
+        a.tell("run", probe.ref)
+        probe.expectTerminated(a)
+        EventFilter.info(pattern = "without sender.*not delivered", occurrences = 1).intercept {
+          EventFilter.warning(pattern = "received dead letter without sender", occurrences = 1).intercept {
+            a.tell("boom", ActorRef.noSender)
+          }(sys)
         }(sys)
 
       } finally shutdown(sys)

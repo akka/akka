@@ -86,7 +86,7 @@ class BackoffSupervisorDocSpec {
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
         randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
-      ).withAutoReset(10.seconds) // the child must send BackoffSupervisor.Reset to its parent
+      ).withAutoReset(10.seconds) // reset if the child does not throw any errors within 10 seconds
         .withSupervisorStrategy(
           OneForOneStrategy() {
             case _: MyException => SupervisorStrategy.Restart

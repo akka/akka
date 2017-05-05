@@ -345,15 +345,13 @@ final class ORSet[A] private[akka] (
    * INTERNAL API
    */
   @InternalApi private[akka] def remove(node: UniqueAddress, element: A): ORSet[A] = {
-    // FIXME use full state for removals, until issue #22648 is fixed
-    //    val deltaDot = VersionVector(node, vvector.versionAt(node))
-    //    val rmOp = ORSet.RemoveDeltaOp(new ORSet(Map(element → deltaDot), vvector))
-    //    val newDelta = delta match {
-    //      case None    ⇒ rmOp
-    //      case Some(d) ⇒ d.merge(rmOp)
-    //    }
-    //    assignAncestor(copy(elementsMap = elementsMap - element, delta = Some(newDelta)))
-    assignAncestor(copy(elementsMap = elementsMap - element, delta = None))
+    val deltaDot = VersionVector(node, vvector.versionAt(node))
+    val rmOp = ORSet.RemoveDeltaOp(new ORSet(Map(element → deltaDot), vvector))
+    val newDelta = delta match {
+      case None    ⇒ rmOp
+      case Some(d) ⇒ d.merge(rmOp)
+    }
+    assignAncestor(copy(elementsMap = elementsMap - element, delta = Some(newDelta)))
   }
 
   /**
@@ -439,9 +437,17 @@ final class ORSet[A] private[akka] (
     val (elem, thatDot) = that.elementsMap.head
     def deleteDots = that.vvector.versionsIterator
     def deleteDotsNodes = deleteDots.map { case (dotNode, _) ⇒ dotNode }
-    val newElementsMap =
-      if (deleteDots.forall { case (dotNode, dotV) ⇒ this.vvector.versionAt(dotNode) <= dotV }) {
-        elementsMap.get(elem) match {
+    val newElementsMap = {
+      val thisDotOption = this.elementsMap.get(elem)
+      val deleteDotsAreGreater = deleteDots.forall {
+        case (dotNode, dotV) ⇒
+          thisDotOption match {
+            case Some(thisDot) ⇒ thisDot.versionAt(dotNode) <= dotV
+            case None          ⇒ false
+          }
+      }
+      if (deleteDotsAreGreater) {
+        thisDotOption match {
           case Some(thisDot) ⇒
             if (thisDot.versionsIterator.forall { case (thisDotNode, _) ⇒ deleteDotsNodes.contains(thisDotNode) })
               elementsMap - elem
@@ -449,9 +455,9 @@ final class ORSet[A] private[akka] (
           case None ⇒
             elementsMap
         }
-      } else {
+      } else
         elementsMap
-      }
+    }
     clearAncestor()
     val newVvector = vvector.merge(that.vvector)
     new ORSet(newElementsMap, newVvector)
