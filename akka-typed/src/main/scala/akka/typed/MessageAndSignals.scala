@@ -42,10 +42,6 @@ final case object PreRestart extends PreRestart {
  * Lifecycle signal that is fired after this actor and all its child actors
  * (transitively) have terminated. The [[Terminated]] signal is only sent to
  * registered watchers after this signal has been processed.
- *
- * <b>IMPORTANT NOTE:</b> if the actor terminated by switching to the
- * `Stopped` behavior then this signal will be ignored (i.e. the
- * Stopped behavior will do nothing in reaction to it).
  */
 sealed abstract class PostStop extends Signal
 final case object PostStop extends PostStop {
