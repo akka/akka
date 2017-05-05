@@ -76,7 +76,7 @@ private[typed] class ActorSystemImpl[-T](
   _ec:                   Option[ExecutionContext],
   _userGuardianBehavior: Behavior[T],
   _userGuardianProps:    Props)
-  extends ActorRef[T](a.RootActorPath(a.Address("akka", name)) / "user") with ActorSystem[T] with ActorRefImpl[T] {
+  extends ActorSystem[T] with ActorRef[T] with ActorRefImpl[T] {
 
   import ActorSystemImpl._
 
@@ -84,6 +84,8 @@ private[typed] class ActorSystemImpl[-T](
     throw new IllegalArgumentException(
       "invalid ActorSystem name [" + name +
         "], must contain only word characters (i.e. [a-zA-Z0-9] plus non-leading '-' or '_')")
+
+  final override val path: a.ActorPath = a.RootActorPath(a.Address("akka", name)) / "user"
 
   override val settings: Settings = new Settings(_cl, _config, name)
 
@@ -189,7 +191,8 @@ private[typed] class ActorSystemImpl[-T](
   private val topLevelActors = new ConcurrentSkipListSet[ActorRefImpl[Nothing]]
   private val terminateTriggered = new AtomicBoolean
   private val theOneWhoWalksTheBubblesOfSpaceTime: ActorRefImpl[Nothing] =
-    new ActorRef[Nothing](rootPath) with ActorRefImpl[Nothing] {
+    new ActorRef[Nothing] with ActorRefImpl[Nothing] {
+      override def path: a.ActorPath = rootPath
       override def tell(msg: Nothing): Unit =
         throw new UnsupportedOperationException("Cannot send to theOneWhoWalksTheBubblesOfSpaceTime")
       override def sendSystem(signal: SystemMessage): Unit = signal match {
@@ -240,7 +243,8 @@ private[typed] class ActorSystemImpl[-T](
   override def whenTerminated: Future[Terminated] = terminationPromise.future
 
   override def deadLetters[U]: ActorRefImpl[U] =
-    new ActorRef[U](rootPath) with ActorRefImpl[U] {
+    new ActorRef[U] with ActorRefImpl[U] {
+      override def path: a.ActorPath = rootPath
       override def tell(msg: U): Unit = eventStream.publish(DeadLetter(msg))
       override def sendSystem(signal: SystemMessage): Unit = {
         signal match {

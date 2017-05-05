@@ -15,6 +15,7 @@ import akka.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
 import akka.util.Timeout
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
+import java.util.Optional
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -25,7 +26,7 @@ import akka.annotation.ApiMayChange
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
+abstract class ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
 
   /**
    * The name of this actor system, used to distinguish multiple ones within
@@ -154,7 +155,7 @@ object ActorSystem {
   import internal._
 
   /**
-   * Create an ActorSystem implementation that is optimized for running
+   * Scala API: Create an ActorSystem implementation that is optimized for running
    * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
    * [[akka.actor.Actor]] instances.
    */
@@ -170,16 +171,26 @@ object ActorSystem {
   }
 
   /**
-   * Java API
+   * Java API: Create an ActorSystem implementation that is optimized for running
+   * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
+   * [[akka.actor.Actor]] instances.
    */
   def create[T](name: String, guardianBehavior: Behavior[T],
-                guardianProps:    java.util.Optional[Props],
-                config:           java.util.Optional[Config],
-                classLoader:      java.util.Optional[ClassLoader],
-                executionContext: java.util.Optional[ExecutionContext]): ActorSystem[T] = {
+                guardianProps:    Optional[Props],
+                config:           Optional[Config],
+                classLoader:      Optional[ClassLoader],
+                executionContext: Optional[ExecutionContext]): ActorSystem[T] = {
     import scala.compat.java8.OptionConverters._
     apply(name, guardianBehavior, guardianProps.asScala.getOrElse(EmptyProps), config.asScala, classLoader.asScala, executionContext.asScala)
   }
+
+  /**
+   * Java API: Create an ActorSystem implementation that is optimized for running
+   * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
+   * [[akka.actor.Actor]] instances.
+   */
+  def create[T](name: String, guardianBehavior: Behavior[T]): ActorSystem[T] =
+    apply(name, guardianBehavior)
 
   /**
    * Create an ActorSystem based on the untyped [[akka.actor.ActorSystem]]
@@ -197,6 +208,7 @@ object ActorSystem {
     // actors can't be created, because we have a custom user guardian. I would imagine that if you have
     // a system of both untyped and typed actors (e.g. adding some typed actors to an existing application)
     // you would start an untyped.ActorSystem and spawn typed actors from that system or from untyped actors.
+    // Same thing with `wrap` below.
 
     Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())

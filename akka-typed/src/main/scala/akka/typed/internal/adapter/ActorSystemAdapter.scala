@@ -11,6 +11,7 @@ import scala.concurrent.ExecutionContextExecutor
 import akka.util.Timeout
 import scala.concurrent.Future
 import akka.annotation.InternalApi
+import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
@@ -20,8 +21,7 @@ import akka.annotation.InternalApi
  * most circumstances.
  */
 @InternalApi private[typed] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
-  extends ActorRef[T](a.RootActorPath(a.Address("akka", untyped.name)) / "user")
-  with ActorSystem[T] with internal.ActorRefImpl[T] {
+  extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] {
 
   import ActorSystemAdapter._
   import ActorRefAdapter.sendSystemMessage
@@ -30,6 +30,9 @@ import akka.annotation.InternalApi
   override def tell(msg: T): Unit = untyped.guardian ! msg
   override def isLocal: Boolean = true
   override def sendSystem(signal: internal.SystemMessage): Unit = sendSystemMessage(untyped.guardian, signal)
+  final override val path: a.ActorPath = a.RootActorPath(a.Address("akka", untyped.name)) / "user"
+
+  override def toString: String = untyped.toString
 
   // Members declared in akka.typed.ActorSystem
   override def deadLetters[U]: ActorRef[U] = ActorRefAdapter(untyped.deadLetters)

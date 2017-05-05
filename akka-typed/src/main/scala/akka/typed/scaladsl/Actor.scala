@@ -39,8 +39,15 @@ object Actor {
   }
 
   /**
-   * Wrap a behavior factory so that it runs upon PreStart, i.e. behavior creation
-   * is deferred to the child actor instead of running within the parent.
+   * `deferred` is a factory for a behavior. Creation of the behavior instance is deferred until
+   * the actor is started, as opposed to `Actor.immutable` that creates the behavior instance
+   * immediately before the actor is running. The `factory` function pass the `ActorContext`
+   * as parameter and that can for example be used for spawning child actors.
+   *
+   * `deferred` is typically used as the outer most behavior when spawning an actor, but it
+   * can also be returned as the next behavior when processing a message or signal. In that
+   * case it will be "undeferred" immediately after it is returned, i.e. next message will be
+   * processed by the undeferred behavior.
    */
   def deferred[T](factory: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
     Behavior.DeferredBehavior(factory)
