@@ -95,14 +95,29 @@ object Behavior {
    * behaviors that delegate (partial) handling to other behaviors.
    */
   def unhandled[T]: Behavior[T] = UnhandledBehavior.asInstanceOf[Behavior[T]]
+
   /**
    * Return this behavior from message processing to signal that this actor
    * shall terminate voluntarily. If this actor has created child actors then
-   * these will be stopped as part of the shutdown procedure. The PostStop
-   * signal that results from stopping this actor will NOT be passed to the
-   * current behavior, it will be effectively ignored.
+   * these will be stopped as part of the shutdown procedure.
+   *
+   * The PostStop signal that results from stopping this actor will be passed to the
+   * current behavior. All other messages and signals will effectively be
+   * ignored.
    */
   def stopped[T]: Behavior[T] = StoppedBehavior.asInstanceOf[Behavior[T]]
+
+  /**
+   * Return this behavior from message processing to signal that this actor
+   * shall terminate voluntarily. If this actor has created child actors then
+   * these will be stopped as part of the shutdown procedure.
+   *
+   * The PostStop signal that results from stopping this actor will be passed to the
+   * given `postStop` behavior. All other messages and signals will effectively be
+   * ignored.
+   */
+  def stopped[T](postStop: Behavior[T]): Behavior[T] =
+    new StoppedBehavior(OptionVal.Some(postStop))
 
   /**
    * A behavior that treats every incoming message as unhandled.
@@ -169,7 +184,13 @@ object Behavior {
   /**
    * INTERNAL API.
    */
-  private[akka] object StoppedBehavior extends Behavior[Nothing] {
+  private[akka] object StoppedBehavior extends StoppedBehavior[Nothing](OptionVal.None)
+
+  /**
+   * INTERNAL API: When the cell is stopping this behavior is used, so
+   * that PostStop can be sent to previous behavior from `finishTerminate`.
+   */
+  private[akka] class StoppedBehavior[T](val postStop: OptionVal[Behavior[T]]) extends Behavior[T] {
     override def toString = "Stopped"
   }
 
@@ -211,7 +232,10 @@ object Behavior {
   /**
    * Returns true if the given behavior is not stopped.
    */
-  def isAlive[T](behavior: Behavior[T]): Boolean = behavior ne StoppedBehavior
+  def isAlive[T](behavior: Behavior[T]): Boolean = behavior match {
+    case _: StoppedBehavior[_] ⇒ false
+    case _                     ⇒ true
+  }
 
   /**
    * Returns true if the given behavior is the special `unhandled` marker.
@@ -243,7 +267,7 @@ object Behavior {
       case SameBehavior | UnhandledBehavior ⇒ throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
       case d: DeferredBehavior[_]           ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
       case IgnoreBehavior                   ⇒ SameBehavior.asInstanceOf[Behavior[T]]
-      case StoppedBehavior                  ⇒ StoppedBehavior.asInstanceOf[Behavior[T]]
+      case s: StoppedBehavior[T]            ⇒ s
       case EmptyBehavior                    ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = msg match {

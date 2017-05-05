@@ -72,7 +72,7 @@ object ActorContextSpec {
   final case class GetAdapter(replyTo: ActorRef[Adapter], name: String = "") extends Command
   final case class Adapter(a: ActorRef[Command]) extends Event
 
-  def subject(monitor: ActorRef[Monitor]): Behavior[Command] =
+  def subject(monitor: ActorRef[Monitor], ignorePostStop: Boolean): Behavior[Command] =
     Actor.immutable[Command] {
       (ctx, message) ⇒
         message match {
@@ -87,13 +87,13 @@ object ActorContextSpec {
             Actor.unhandled
           case Renew(replyTo) ⇒
             replyTo ! Renewed
-            subject(monitor)
+            subject(monitor, ignorePostStop)
           case Throw(ex) ⇒
             throw ex
           case MkChild(name, mon, replyTo) ⇒
             val child = name match {
-              case None    ⇒ ctx.spawnAnonymous(Actor.restarter[Throwable]().wrap(subject(mon)))
-              case Some(n) ⇒ ctx.spawn(Actor.restarter[Throwable]().wrap(subject(mon)), n)
+              case None    ⇒ ctx.spawnAnonymous(Actor.restarter[Throwable]().wrap(subject(mon, ignorePostStop)))
+              case Some(n) ⇒ ctx.spawn(Actor.restarter[Throwable]().wrap(subject(mon, ignorePostStop)), n)
             }
             replyTo ! Created(child)
             Actor.same
@@ -108,7 +108,8 @@ object ActorContextSpec {
             replyTo ! Scheduled
             ctx.schedule(delay, target, msg)
             Actor.same
-          case Stop ⇒ Actor.stopped
+          case Stop ⇒
+            Actor.stopped
           case Kill(ref, replyTo) ⇒
             if (ctx.stop(ref)) replyTo ! Killed
             else replyTo ! NotKilled
@@ -145,7 +146,8 @@ object ActorContextSpec {
             Actor.immutable[Command] {
               case (_, _) ⇒ Actor.unhandled
             } onSignal {
-              case (_, Terminated(_)) ⇒ Actor.unhandled
+              case (_, PostStop) if ignorePostStop ⇒ Actor.same // ignore PostStop here
+              case (_, Terminated(_))              ⇒ Actor.unhandled
               case (_, sig) ⇒
                 monitor ! GotSignal(sig)
                 Actor.same
@@ -155,10 +157,11 @@ object ActorContextSpec {
             Actor.same
         }
     } onSignal {
-      case (ctx, signal) ⇒ monitor ! GotSignal(signal); Actor.same
+      case (_, PostStop) if ignorePostStop ⇒ Actor.same // ignore PostStop here
+      case (ctx, signal)                   ⇒ monitor ! GotSignal(signal); Actor.same
     }
 
-  def oldSubject(monitor: ActorRef[Monitor]): Behavior[Command] = {
+  def oldSubject(monitor: ActorRef[Monitor], ignorePostStop: Boolean): Behavior[Command] = {
     Actor.immutable[Command] {
       case (ctx, message) ⇒ message match {
         case ReceiveTimeout ⇒
@@ -172,13 +175,13 @@ object ActorContextSpec {
           Actor.unhandled
         case Renew(replyTo) ⇒
           replyTo ! Renewed
-          subject(monitor)
+          subject(monitor, ignorePostStop)
         case Throw(ex) ⇒
           throw ex
         case MkChild(name, mon, replyTo) ⇒
           val child = name match {
-            case None    ⇒ ctx.spawnAnonymous(Actor.restarter[Throwable]().wrap(subject(mon)))
-            case Some(n) ⇒ ctx.spawn(Actor.restarter[Throwable]().wrap(subject(mon)), n)
+            case None    ⇒ ctx.spawnAnonymous(Actor.restarter[Throwable]().wrap(subject(mon, ignorePostStop)))
+            case Some(n) ⇒ ctx.spawn(Actor.restarter[Throwable]().wrap(subject(mon, ignorePostStop)), n)
           }
           replyTo ! Created(child)
           Actor.same
@@ -193,7 +196,8 @@ object ActorContextSpec {
           replyTo ! Scheduled
           ctx.schedule(delay, target, msg)
           Actor.same
-        case Stop ⇒ Actor.stopped
+        case Stop ⇒
+          Actor.stopped
         case Kill(ref, replyTo) ⇒
           if (ctx.stop(ref)) replyTo ! Killed
           else replyTo ! NotKilled
@@ -230,7 +234,8 @@ object ActorContextSpec {
           Actor.immutable[Command] {
             case _ ⇒ Actor.unhandled
           } onSignal {
-            case (_, Terminated(_)) ⇒ Actor.unhandled
+            case (_, PostStop) if ignorePostStop ⇒ Actor.same // ignore PostStop here
+            case (_, Terminated(_))              ⇒ Actor.unhandled
             case (_, sig) ⇒
               monitor ! GotSignal(sig)
               Actor.same
@@ -240,6 +245,7 @@ object ActorContextSpec {
           Actor.same
       }
     } onSignal {
+      case (_, PostStop) if ignorePostStop ⇒ Actor.same // ignore PostStop here
       case (_, signal) ⇒
         monitor ! GotSignal(signal)
         Actor.same
@@ -270,7 +276,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     /**
      * The behavior against which to run all the tests.
      */
-    def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command]
+    def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command]
 
     implicit def system: ActorSystem[TypedSpec.Command]
 
@@ -278,10 +284,10 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       if (system eq nativeSystem) suite + "Native"
       else suite + "Adapted"
 
-    def setup(name: String, wrapper: Option[Actor.Restarter[_]] = None)(
+    def setup(name: String, wrapper: Option[Actor.Restarter[_]] = None, ignorePostStop: Boolean = true)(
       proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
       runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
-        val props = wrapper.map(_.wrap(behavior(ctx))).getOrElse(behavior(ctx))
+        val props = wrapper.map(_.wrap(behavior(ctx, ignorePostStop))).getOrElse(behavior(ctx, ignorePostStop))
         val steps = startWith.withKeepTraces(true)(ctx.spawn(props, "subject"))
 
         proc(ctx, steps)
@@ -344,29 +350,30 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       }
     })
 
-    def `01 must correctly wire the lifecycle hooks`(): Unit = sync(setup("ctx01", Some(Actor.restarter[Throwable]())) { (ctx, startWith) ⇒
-      val self = ctx.self
-      val ex = new Exception("KABOOM1")
-      startWith { subj ⇒
-        val log = muteExpectedException[Exception]("KABOOM1", occurrences = 1)
-        subj ! Throw(ex)
-        (subj, log)
-      }.expectMessage(expectTimeout) {
-        case (msg, (subj, log)) ⇒
-          msg should ===(GotSignal(PreRestart))
-          log.assertDone(expectTimeout)
-          ctx.stop(subj)
-      }.expectMessage(expectTimeout) { (msg, _) ⇒
-        msg should ===(GotSignal(PostStop))
-      }
-    })
+    def `01 must correctly wire the lifecycle hooks`(): Unit =
+      sync(setup("ctx01", Some(Actor.restarter[Throwable]()), ignorePostStop = false) { (ctx, startWith) ⇒
+        val self = ctx.self
+        val ex = new Exception("KABOOM1")
+        startWith { subj ⇒
+          val log = muteExpectedException[Exception]("KABOOM1", occurrences = 1)
+          subj ! Throw(ex)
+          (subj, log)
+        }.expectMessage(expectTimeout) {
+          case (msg, (subj, log)) ⇒
+            msg should ===(GotSignal(PreRestart))
+            log.assertDone(expectTimeout)
+            ctx.stop(subj)
+        }.expectMessage(expectTimeout) { (msg, _) ⇒
+          msg should ===(GotSignal(PostStop))
+        }
+      })
 
-    def `02 must not signal PostStop after voluntary termination`(): Unit = sync(setup("ctx02") { (ctx, startWith) ⇒
+    def `02 must signal PostStop after voluntary termination`(): Unit = sync(setup("ctx02", ignorePostStop = false) { (ctx, startWith) ⇒
       startWith.keep { subj ⇒
-        ctx.watch(subj)
         stop(subj)
-      }.expectTermination(expectTimeout) { (t, subj) ⇒
-        t.ref should ===(subj)
+      }.expectMessage(expectTimeout) {
+        case (msg, _) ⇒
+          msg should ===(GotSignal(PostStop))
       }
     })
 
@@ -440,7 +447,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           }.stimulate(_ ! Ping(self), _ ⇒ Pong2)
       })
 
-    def `07 must stop upon Stop`(): Unit = sync(setup("ctx07") { (ctx, startWith) ⇒
+    def `07 must stop upon Stop`(): Unit = sync(setup("ctx07", ignorePostStop = false) { (ctx, startWith) ⇒
       val self = ctx.self
       val ex = new Exception("KABOOM07")
       startWith
@@ -457,7 +464,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       val self = ctx.self
       startWith.mkChild(Some("A"), ctx.spawnAdapter(ChildEvent), self) {
         case (subj, child) ⇒
-          val other = ctx.spawn(behavior(ctx), "A")
+          val other = ctx.spawn(behavior(ctx, ignorePostStop = true), "A")
           subj ! Kill(other, ctx.self)
           child
       }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
@@ -515,7 +522,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       }
     })
 
-    def `13 must terminate upon not handling Terminated`(): Unit = sync(setup("ctx13") { (ctx, startWith) ⇒
+    def `13 must terminate upon not handling Terminated`(): Unit = sync(setup("ctx13", ignorePostStop = false) { (ctx, startWith) ⇒
       val self = ctx.self
       startWith.mkChild(None, ctx.spawnAdapter(ChildEvent), self).keep {
         case (subj, child) ⇒
@@ -531,6 +538,9 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
           child ! Stop
       }.expectMessage(expectTimeout) {
         case (msg, (subj, child)) ⇒
+          msg should ===(ChildEvent(GotSignal(PostStop)))
+      }.expectMessage(expectTimeout) {
+        case (msg, _) ⇒
           msg should ===(GotSignal(PostStop))
       }
     })
@@ -579,7 +589,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
         }
     })
 
-    def `40 must create a working adapter`(): Unit = sync(setup("ctx40") { (ctx, startWith) ⇒
+    def `40 must create a working adapter`(): Unit = sync(setup("ctx40", ignorePostStop = false) { (ctx, startWith) ⇒
       startWith.keep { subj ⇒
         subj ! GetAdapter(ctx.self)
       }.expectMessage(expectTimeout) { (msg, subj) ⇒
@@ -609,8 +619,8 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
 
   trait Normal extends Tests {
     override def suite = "normal"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      subject(ctx.self)
+    override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+      subject(ctx.self, ignorePostStop)
   }
   object `An ActorContext (native)` extends Normal with NativeSystem
   object `An ActorContext (adapted)` extends Normal with AdaptedSystem
@@ -618,32 +628,32 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
   trait Widened extends Tests {
     import Actor._
     override def suite = "widened"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      subject(ctx.self).widen { case x ⇒ x }
+    override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+      subject(ctx.self, ignorePostStop).widen { case x ⇒ x }
   }
   object `An ActorContext with widened Behavior (native)` extends Widened with NativeSystem
   object `An ActorContext with widened Behavior (adapted)` extends Widened with AdaptedSystem
 
   trait Deferred extends Tests {
     override def suite = "deferred"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      Actor.deferred(_ ⇒ subject(ctx.self))
+    override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+      Actor.deferred(_ ⇒ subject(ctx.self, ignorePostStop))
   }
   object `An ActorContext with deferred Behavior (native)` extends Deferred with NativeSystem
   object `An ActorContext with deferred Behavior (adapted)` extends Deferred with AdaptedSystem
 
   trait NestedDeferred extends Tests {
     override def suite = "deferred"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      Actor.deferred(_ ⇒ Actor.deferred(_ ⇒ subject(ctx.self)))
+    override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+      Actor.deferred(_ ⇒ Actor.deferred(_ ⇒ subject(ctx.self, ignorePostStop)))
   }
   object `An ActorContext with nested deferred Behavior (native)` extends NestedDeferred with NativeSystem
   object `An ActorContext with nested deferred Behavior (adapted)` extends NestedDeferred with AdaptedSystem
 
   trait Tap extends Tests {
     override def suite = "tap"
-    override def behavior(ctx: scaladsl.ActorContext[Event]): Behavior[Command] =
-      Actor.tap((_, _) ⇒ (), (_, _) ⇒ (), subject(ctx.self))
+    override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+      Actor.tap((_, _) ⇒ (), (_, _) ⇒ (), subject(ctx.self, ignorePostStop))
   }
   object `An ActorContext with Tap (old-native)` extends Tap with NativeSystem
   object `An ActorContext with Tap (old-adapted)` extends Tap with AdaptedSystem

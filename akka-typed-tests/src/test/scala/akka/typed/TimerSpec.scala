@@ -6,7 +6,6 @@ package akka.typed
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -16,7 +15,6 @@ import akka.typed.scaladsl.AskPattern._
 import akka.typed.scaladsl.TimerScheduler
 import akka.typed.testkit.TestKitSettings
 import akka.typed.testkit.scaladsl._
-import org.scalatest.concurrent.Eventually.eventually
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TimerSpec extends TypedSpec("""
@@ -96,6 +94,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectNoMsg(100.millis)
 
       ref ! End
+      probe.expectMsg(GotPostStop(false))
     }
 
     def `02 must schedule repeated ticks`(): Unit = {
@@ -113,6 +112,7 @@ class TimerSpec extends TypedSpec("""
       }
 
       ref ! End
+      probe.expectMsg(GotPostStop(false))
     }
 
     def `03 must replace timer`(): Unit = {
@@ -132,6 +132,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(Tock(2))
 
       ref ! End
+      probe.expectMsg(GotPostStop(false))
     }
 
     def `04 must cancel timer`(): Unit = {
@@ -147,6 +148,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectNoMsg(dilatedInterval + 100.millis)
 
       ref ! End
+      probe.expectMsg(GotPostStop(false))
     }
 
     def `05 must discard timers from old incarnation after restart, alt 1`(): Unit = {
@@ -170,6 +172,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(Tock(2))
 
       ref ! End
+      probe.expectMsg(GotPostStop(false))
     }
 
     def `06 must discard timers from old incarnation after restart, alt 2`(): Unit = {
@@ -195,6 +198,7 @@ class TimerSpec extends TypedSpec("""
       probe.expectMsg(Tock(1))
 
       ref ! End
+      probe.expectMsg(GotPostStop(false))
     }
 
     def `07 must cancel timers when stopped from exception`(): Unit = {
@@ -210,18 +214,13 @@ class TimerSpec extends TypedSpec("""
 
     def `08 must cancel timers when stopped voluntarily`(): Unit = {
       val probe = TestProbe[Event]("evt")
-      val timerRef = new AtomicReference[TimerScheduler[Command]]
       val behv = Actor.withTimers[Command] { timer ⇒
-        timerRef.set(timer)
         timer.startPeriodicTimer("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
       val ref = start(behv)
       ref ! End
-      // PostStop is not signalled when stopped voluntarily
-      eventually {
-        timerRef.get().isTimerActive("T") should ===(false)
-      }
+      probe.expectMsg(GotPostStop(false))
     }
   }
 
