@@ -17,7 +17,8 @@ import scala.concurrent.Future
  * [[EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
  */
-abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[ActorRef[_]] { this: internal.ActorRefImpl[T] ⇒
+trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] {
+  this: internal.ActorRefImpl[T] ⇒
 
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
@@ -28,14 +29,14 @@ abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[Act
   /**
    * Narrow the type of this `ActorRef, which is always a safe operation.
    */
-  final def narrow[U <: T]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
+  def narrow[U <: T]: ActorRef[U]
 
   /**
    * Unsafe utility method for widening the type accepted by this ActorRef;
    * provided to avoid having to use `asInstanceOf` on the full reference type,
    * which would unfortunately also work on non-ActorRefs.
    */
-  def upcast[U >: T @uncheckedVariance]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
+  def upcast[U >: T @uncheckedVariance]: ActorRef[U]
 
   /**
    * The hierarchical path name of the referenced Actor. The lifecycle of the
@@ -43,28 +44,8 @@ abstract class ActorRef[-T](_path: a.ActorPath) extends java.lang.Comparable[Act
    * and more than one Actor instance can exist with the same path at different
    * points in time, but not concurrently.
    */
-  final val path: a.ActorPath = _path
+  def path: a.ActorPath
 
-  /**
-   * Comparison takes path and the unique id of the actor cell into account.
-   */
-  final override def compareTo(other: ActorRef[_]) = {
-    val x = this.path compareTo other.path
-    if (x == 0) if (this.path.uid < other.path.uid) -1 else if (this.path.uid == other.path.uid) 0 else 1
-    else x
-  }
-
-  final override def hashCode: Int = path.uid
-
-  /**
-   * Equals takes path and the unique id of the actor cell into account.
-   */
-  final override def equals(that: Any): Boolean = that match {
-    case other: ActorRef[_] ⇒ path.uid == other.path.uid && path == other.path
-    case _                  ⇒ false
-  }
-
-  final override def toString: String = s"Actor[${path}#${path.uid}]"
 }
 
 object ActorRef {
@@ -76,6 +57,8 @@ object ActorRef {
      */
     def !(msg: T): Unit = ref.tell(msg)
   }
+
+  // FIXME factory methods for below for Java (trait + object)
 
   /**
    * Create an ActorRef from a Future, buffering up to the given number of

@@ -124,7 +124,10 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
    * started. Its log level can be defined by configuration setting
    * <code>akka.stdout-loglevel</code>.
    */
-  private[typed] class StandardOutLogger extends ActorRef[LogEvent](StandardOutLoggerPath) with ActorRefImpl[LogEvent] with StdOutLogger {
+  private[typed] class StandardOutLogger extends ActorRef[LogEvent] with ActorRefImpl[LogEvent] with StdOutLogger {
+
+    override def path: a.ActorPath = StandardOutLoggerPath
+
     override def tell(message: LogEvent): Unit =
       if (message == null) throw a.InvalidMessageException("Message must not be null")
       else print(message)
