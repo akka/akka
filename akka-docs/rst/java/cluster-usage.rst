@@ -85,9 +85,10 @@ An actor that uses the cluster extension may look like this:
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
-The easiest way to run this example yourself is to download `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-and open the tutorial named `Akka Cluster Samples with Java <http://www.lightbend.com/activator/template/akka-sample-cluster-java>`_.
-It contains instructions of how to run the ``SimpleClusterApp``.
+The easiest way to run this example yourself is to download the ready to run
+`Akka Cluster Sample with Scala <@exampleCodeService@/akka-samples-cluster-java>`_
+together with the tutorial. It contains instructions on how to run the ``SimpleClusterApp``.
+The source code of this sample can be found in the `Akka Samples Repository <@samples@/akka-sample-cluster-java>`_.
 
 Joining to Seed Nodes
 ^^^^^^^^^^^^^^^^^^^^^
@@ -173,9 +174,9 @@ can be performed automatically or manually. By default it must be done manually,
 It can also be performed programmatically with ``Cluster.get(system).down(address)``.
 
 A pre-packaged solution for the downing problem is provided by
-`Split Brain Resolver <http://developer.lightbend.com/jdocs/akka-commercial-addons/current/split-brain-resolver.html>`_,
+`Split Brain Resolver <http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html>`_,
 which is part of the `Lightbend Reactive Platform <http://www.lightbend.com/platform>`_.
-If you don’t use RP, you should anyway carefully read the `documentation <http://developer.lightbend.com/jdocs/akka-commercial-addons/current/split-brain-resolver.html>`_
+If you don’t use RP, you should anyway carefully read the `documentation <http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html>`_
 of the Split Brain Resolver and make sure that the solution you are using handles the concerns
 described there.
 

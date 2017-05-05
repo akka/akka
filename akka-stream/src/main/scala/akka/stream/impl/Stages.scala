@@ -30,6 +30,7 @@ import akka.stream._
     val mapAsyncUnordered = name("mapAsyncUnordered")
     val grouped = name("grouped")
     val groupedWithin = name("groupedWithin")
+    val groupedWeightedWithin = name("groupedWeightedWithin")
     val limit = name("limit")
     val limitWeighted = name("limitWeighted")
     val sliding = name("sliding")

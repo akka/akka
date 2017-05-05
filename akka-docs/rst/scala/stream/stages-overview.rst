@@ -981,12 +981,27 @@ Drop elements until a timeout has fired
 
 groupedWithin
 ^^^^^^^^^^^^^
-Chunk up the stream into groups of elements received within a time window, or limited by the given number of elements,
-whichever happens first.
+Chunk up this stream into groups of elements received within a time window, or limited by the number of the elements,
+whatever happens first. Empty groups will not be emitted if no elements are received from upstream.
+The last group before end-of-stream will contain the buffered elements since the previously emitted group.
 
-**emits** when the configured time elapses since the last group has been emitted
+**emits** when the configured time elapses since the last group has been emitted,
+but not if no elements has been grouped (i.e: no empty groups), or when limit has been reached.
 
-**backpressures** when the group has been assembled (the duration elapsed) and downstream backpressures
+**backpressures** downstream backpressures, and there are `n+1` buffered elements
+
+**completes** when upstream completes
+
+groupedWeightedWithin
+^^^^^^^^^^^^^
+Chunk up this stream into groups of elements received within a time window, or limited by the weight of the elements,
+whatever happens first. Empty groups will not be emitted if no elements are received from upstream.
+The last group before end-of-stream will contain the buffered elements since the previously emitted group.
+
+**emits** when the configured time elapses since the last group has been emitted,
+but not if no elements has been grouped (i.e: no empty groups), or when weight limit has been reached.
+
+**backpressures** downstream backpressures, and buffered group (+ pending element) weighs more than `maxWeight`
 
 **completes** when upstream completes
 

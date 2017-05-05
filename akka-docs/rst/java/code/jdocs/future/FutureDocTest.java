@@ -39,12 +39,9 @@ import static akka.dispatch.Futures.reduce;
 //#imports6
 
 //#imports7
-//#imports7
-
-//#imports8
 import static akka.pattern.Patterns.after;
 import java.util.Arrays;
-//#imports8
+//#imports7
 
 import java.util.ArrayList;
 import java.util.List;

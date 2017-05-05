@@ -10,18 +10,18 @@ contact points. It will establish a connection to a ``ClusterReceptionist`` some
 the cluster. It will monitor the connection to the receptionist and establish a new
 connection if the link goes down. When looking for a new receptionist it uses fresh
 contact points retrieved from previous establishment, or periodically refreshed contacts,
-i.e. not necessarily the initial contact points. 
+i.e. not necessarily the initial contact points.
 
 .. note::
 
   ``ClusterClient`` should not be used when sending messages to actors that run
   within the same cluster. Similar functionality as the ``ClusterClient`` is
-  provided in a more efficient way by :ref:`distributed-pub-sub-scala` for actors that 
-  belong to the same cluster. 
+  provided in a more efficient way by :ref:`distributed-pub-sub-scala` for actors that
+  belong to the same cluster.
 
 Also, note it's necessary to change ``akka.actor.provider`` from ``local``
 to ``remote`` or ``cluster`` when using
-the cluster client. 
+the cluster client.
 
 The receptionist is supposed to be started on all nodes, or all nodes with specified role,
 in the cluster. The receptionist can be started with the ``ClusterClientReceptionist`` extension
@@ -77,11 +77,11 @@ The size of the buffer is configurable and it can be disabled by using a buffer 
 It's worth noting that messages can always be lost because of the distributed nature
 of these actors. As always, additional logic should be implemented in the destination
 (acknowledgement) and in the client (retry) actors to ensure at-least-once message delivery.
- 
+
 An Example
 ----------
 
-On the cluster nodes first start the receptionist. Note, it is recommended to load the extension 
+On the cluster nodes first start the receptionist. Note, it is recommended to load the extension
 when the actor system is started by defining it in the ``akka.extensions`` configuration property::
 
    akka.extensions = ["akka.cluster.client.ClusterClientReceptionist"]
@@ -103,8 +103,7 @@ The ``initialContacts`` parameter is a ``Set[ActorPath]``, which can be created 
 You will probably define the address information of the initial contact points in configuration or system property.
 See also :ref:`cluster-client-config-scala`.
 
-A more comprehensive sample is available in the `Lightbend Activator <http://www.lightbend.com/platform/getstarted>`_
-tutorial named `Distributed workers with Akka and Scala! <http://www.lightbend.com/activator/template/akka-distributed-workers>`_.
+A more comprehensive sample is available in the tutorial named `Distributed workers with Akka and Scala! <https://github.com/typesafehub/activator-akka-distributed-workers-scala>`_.
 
 ClusterClientReceptionist Extension
 -----------------------------------
@@ -153,21 +152,21 @@ maven::
   </dependency>
 
 .. _cluster-client-config-scala:
-  
+
 Configuration
 -------------
 
-The ``ClusterClientReceptionist`` extension (or ``ClusterReceptionistSettings``) can be configured 
+The ``ClusterClientReceptionist`` extension (or ``ClusterReceptionistSettings``) can be configured
 with the following properties:
 
 .. includecode:: ../../../akka-cluster-tools/src/main/resources/reference.conf#receptionist-ext-config
 
-The following configuration properties are read by the ``ClusterClientSettings`` 
-when created with a ``ActorSystem`` parameter. It is also possible to amend the ``ClusterClientSettings`` 
-or create it from another config section with the same layout as below. ``ClusterClientSettings`` is 
-a parameter to the ``ClusterClient.props`` factory method, i.e. each client can be configured 
+The following configuration properties are read by the ``ClusterClientSettings``
+when created with a ``ActorSystem`` parameter. It is also possible to amend the ``ClusterClientSettings``
+or create it from another config section with the same layout as below. ``ClusterClientSettings`` is
+a parameter to the ``ClusterClient.props`` factory method, i.e. each client can be configured
 with different settings if needed.
-  
+
 .. includecode:: ../../../akka-cluster-tools/src/main/resources/reference.conf#cluster-client-config
 
 Failure handling

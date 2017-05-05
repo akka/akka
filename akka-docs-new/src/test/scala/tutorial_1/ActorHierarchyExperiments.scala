@@ -8,31 +8,31 @@ class PrintMyActorRefActor extends Actor {
   override def receive: Receive = {
     case "printit" =>
       val secondRef = context.actorOf(Props.empty, "second-actor")
-      println(secondRef)
+      println(s"Second: $secondRef")
   }
 }
 //#print-refs
 
 //#start-stop
 class StartStopActor1 extends Actor {
-  override def receive: Receive = {
-    case "stop" => context.stop(self)
-  }
-
   override def preStart(): Unit = {
     println("first started")
     context.actorOf(Props[StartStopActor2], "second")
   }
   override def postStop(): Unit = println("first stopped")
+
+  override def receive: Receive = {
+    case "stop" => context.stop(self)
+  }
 }
 
 class StartStopActor2 extends Actor {
+  override def preStart(): Unit = println("second started")
+  override def postStop(): Unit = println("second stopped")
+
   // Actor.emptyBehavior is a useful placeholder when we don't
   // want to handle any messages in the actor.
   override def receive: Receive = Actor.emptyBehavior
-
-  override def preStart(): Unit = println("second started")
-  override def postStop(): Unit = println("second stopped")
 }
 //#start-stop
 
@@ -46,7 +46,6 @@ class SupervisingActor extends Actor {
 }
 
 class SupervisedActor extends Actor {
-
   override def preStart(): Unit = println("supervised actor started")
   override def postStop(): Unit = println("supervised actor stopped")
 
@@ -59,29 +58,34 @@ class SupervisedActor extends Actor {
 //#supervise
 
 class ActorHierarchyExperiments extends AkkaSpec {
-
   "create top and child actor" in {
-
-    //#print-refs
-    val firstRef = system.actorOf(Props[PrintMyActorRefActor], "first-actor")
-    println(firstRef)
-    firstRef ! "printit"
+    // format: OFF
     //#print-refs
 
+val firstRef = system.actorOf(Props[PrintMyActorRefActor], "first-actor")
+println(s"First : $firstRef")
+firstRef ! "printit"
+    //#print-refs
+    // format: ON
   }
 
   "start and stop actors" in {
+    // format: OFF
     //#start-stop
-    val first = system.actorOf(Props[StartStopActor1], "first")
-    first ! "stop"
+
+val first = system.actorOf(Props[StartStopActor1], "first")
+first ! "stop"
     //#start-stop
+    // format: ON
   }
 
   "supervise actors" in {
+    // format: OFF
     //#supervise
-    val supervisingActor = system.actorOf(Props[SupervisingActor], "supervising-actor")
-    supervisingActor ! "failChild"
-    //#supervise
-  }
 
+val supervisingActor = system.actorOf(Props[SupervisingActor], "supervising-actor")
+supervisingActor ! "failChild"
+    //#supervise
+    // format: ON
+  }
 }

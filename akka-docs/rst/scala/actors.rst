@@ -221,10 +221,9 @@ __ Props_
   singleton scope.
 
 Techniques for dependency injection and integration with dependency injection frameworks
-are described in more depth in the 
-`Using Akka with Dependency Injection <http://letitcrash.com/post/55958814293/akka-dependency-injection>`_ 
-guideline and the `Akka Java Spring <http://www.lightbend.com/activator/template/akka-java-spring>`_ tutorial
-in Lightbend Activator.
+are described in more depth in the
+`Using Akka with Dependency Injection <http://letitcrash.com/post/55958814293/akka-dependency-injection>`_
+guideline and the `Akka Java Spring <https://github.com/typesafehub/activator-akka-java-spring>`_ tutorial.
 
 The Inbox
 ---------
@@ -338,7 +337,7 @@ occupying it. ``ActorSelection`` cannot be watched for this reason. It is
 possible to resolve the current incarnation's ``ActorRef`` living under the
 path by sending an ``Identify`` message to the ``ActorSelection`` which
 will be replied to with an ``ActorIdentity`` containing the correct reference
-(see :ref:`actorSelection-scala`). This can also be done with the ``resolveOne`` 
+(see :ref:`actorSelection-scala`). This can also be done with the ``resolveOne``
 method of the :class:`ActorSelection`, which returns a ``Future`` of the matching
 :class:`ActorRef`.
 
@@ -359,7 +358,7 @@ Registering a monitor is easy:
 
 It should be noted that the :class:`Terminated` message is generated
 independent of the order in which registration and termination occur.
-In particular, the watching actor will receive a :class:`Terminated` message even if the 
+In particular, the watching actor will receive a :class:`Terminated` message even if the
 watched actor has already been terminated at the time of registration.
 
 Registering multiple times does not necessarily lead to multiple messages being
@@ -506,8 +505,8 @@ of that reply is guaranteed, it still is a normal message.
 .. includecode:: code/docs/actor/ActorDocSpec.scala#identify
 
 You can also acquire an :class:`ActorRef` for an :class:`ActorSelection` with
-the ``resolveOne`` method of the :class:`ActorSelection`. It returns a ``Future`` 
-of the matching :class:`ActorRef` if such an actor exists. It is completed with 
+the ``resolveOne`` method of the :class:`ActorSelection`. It returns a ``Future``
+of the matching :class:`ActorRef` if such an actor exists. It is completed with
 failure [[akka.actor.ActorNotFound]] if no such actor exists or the identification
 didn't complete within the supplied `timeout`.
 
@@ -790,7 +789,7 @@ before stopping the target actor. Simple cleanup tasks can be handled in ``postS
 Coordinated Shutdown
 --------------------
 
-There is an extension named ``CoordinatedShutdown`` that will stop certain actors and 
+There is an extension named ``CoordinatedShutdown`` that will stop certain actors and
 services in a specific order and perform registered tasks during the shutdown process.
 
 The order of the shutdown phases is defined in configuration ``akka.coordinated-shutdown.phases``.
@@ -802,26 +801,26 @@ More phases can be be added in the application's configuration if needed by over
 additional ``depends-on``. Especially the phases ``before-service-unbind``, ``before-cluster-shutdown`` and
 ``before-actor-system-terminate`` are intended for application specific phases or tasks.
 
-The default phases are defined in a single linear order, but the phases can be ordered as a 
+The default phases are defined in a single linear order, but the phases can be ordered as a
 directed acyclic graph (DAG) by defining the dependencies between the phases.
-The phases are ordered with `topological <https://en.wikipedia.org/wiki/Topological_sorting>`_ sort of the DAG. 
+The phases are ordered with `topological <https://en.wikipedia.org/wiki/Topological_sorting>`_ sort of the DAG.
 
 Tasks can be added to a phase with:
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#coordinated-shutdown-addTask
 
 The returned ``Future[Done]`` should be completed when the task is completed. The task name parameter
-is only used for debugging/logging. 
+is only used for debugging/logging.
 
-Tasks added to the same phase are executed in parallel without any ordering assumptions. 
+Tasks added to the same phase are executed in parallel without any ordering assumptions.
 Next phase will not start until all tasks of previous phase have been completed.
 
 If tasks are not completed within a configured timeout (see :ref:`reference.conf <config-akka-actor>`)
 the next phase will be started anyway. It is possible to configure ``recover=off`` for a phase
 to abort the rest of the shutdown process if a task fails or is not completed within the timeout.
 
-Tasks should typically be registered as early as possible after system startup. When running 
-the coordinated shutdown tasks that have been registered will be performed but tasks that are 
+Tasks should typically be registered as early as possible after system startup. When running
+the coordinated shutdown tasks that have been registered will be performed but tasks that are
 added too late will not be run.
 
 To start the coordinated shutdown process you can invoke ``run`` on the ``CoordinatedShutdown``
@@ -839,9 +838,9 @@ To enable a hard ``System.exit`` as a final action you can configure::
 
 When using :ref:`Akka Cluster <cluster_usage_scala>` the ``CoordinatedShutdown`` will automatically run
 when the cluster node sees itself as ``Exiting``, i.e. leaving from another node will trigger
-the shutdown process on the leaving node. Tasks for graceful leaving of cluster including graceful 
-shutdown of Cluster Singletons and Cluster Sharding are added automatically when Akka Cluster is used, 
-i.e. running the shutdown process will also trigger the graceful leaving if it's not already in progress. 
+the shutdown process on the leaving node. Tasks for graceful leaving of cluster including graceful
+shutdown of Cluster Singletons and Cluster Sharding are added automatically when Akka Cluster is used,
+i.e. running the shutdown process will also trigger the graceful leaving if it's not already in progress.
 
 By default, the ``CoordinatedShutdown`` will be run when the JVM process exits, e.g.
 via ``kill SIGTERM`` signal (``SIGINT`` ctrl-c doesn't work). This behavior can be disabled with::
@@ -849,13 +848,13 @@ via ``kill SIGTERM`` signal (``SIGINT`` ctrl-c doesn't work). This behavior can 
   akka.coordinated-shutdown.run-by-jvm-shutdown-hook=off
 
 If you have application specific JVM shutdown hooks it's recommended that you register them via the
-``CoordinatedShutdown`` so that they are running before Akka internal shutdown hooks, e.g. 
+``CoordinatedShutdown`` so that they are running before Akka internal shutdown hooks, e.g.
 those shutting down Akka Remoting (Artery).
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#coordinated-shutdown-jvm-hook
 
 For some tests it might be undesired to terminate the ``ActorSystem`` via ``CoordinatedShutdown``.
-You can disable that by adding the following to the configuration of the ``ActorSystem`` that is 
+You can disable that by adding the following to the configuration of the ``ActorSystem`` that is
 used in the test::
 
   # Don't terminate ActorSystem via CoordinatedShutdown in tests
