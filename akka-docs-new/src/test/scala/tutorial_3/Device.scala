@@ -9,7 +9,6 @@ import tutorial_3.DeviceManager.{ DeviceRegistered, RequestTrackDevice }
 
 //#device-with-register
 object Device {
-
   def props(groupId: String, deviceId: String): Props = Props(new Device(groupId, deviceId))
 
   final case class RecordTemperature(requestId: Long, value: Double)
@@ -33,7 +32,8 @@ class Device(groupId: String, deviceId: String) extends Actor with ActorLogging 
     case RequestTrackDevice(groupId, deviceId) =>
       log.warning(
         "Ignoring TrackDevice request for {}-{}.This actor is responsible for {}-{}.",
-        groupId, deviceId, this.groupId, this.deviceId)
+        groupId, deviceId, this.groupId, this.deviceId
+      )
 
     case RecordTemperature(id, value) =>
       log.info("Recorded temperature reading {} with {}", value, id)

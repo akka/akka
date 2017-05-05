@@ -63,7 +63,7 @@ class StreamTcpDocSpec extends AkkaSpec {
 
   "initial server banner echo server" in {
     val localhost = SocketUtil.temporaryServerAddress()
-    val connections = Tcp().bind(localhost.getHostName, localhost.getPort) // TODO getHostString in Java7
+    val connections = Tcp().bind(localhost.getHostString, localhost.getPort)
     val serverProbe = TestProbe()
 
     import akka.stream.scaladsl.Framing

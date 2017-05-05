@@ -19,6 +19,7 @@ import com.typesafe.config.Config
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util._
+import java.nio.file.Files
 
 /**
  * INTERNAL API
@@ -120,12 +121,12 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
 
   protected def withOutputStream(metadata: SnapshotMetadata)(p: (OutputStream) ⇒ Unit): File = {
     val tmpFile = snapshotFileForWrite(metadata, extension = "tmp")
-    withStream(new BufferedOutputStream(new FileOutputStream(tmpFile)), p)
+    withStream(new BufferedOutputStream(Files.newOutputStream(tmpFile.toPath())), p)
     tmpFile
   }
 
   private def withInputStream[T](metadata: SnapshotMetadata)(p: (InputStream) ⇒ T): T =
-    withStream(new BufferedInputStream(new FileInputStream(snapshotFileForWrite(metadata))), p)
+    withStream(new BufferedInputStream(Files.newInputStream(snapshotFileForWrite(metadata).toPath())), p)
 
   private def withStream[A <: Closeable, B](stream: A, p: A ⇒ B): B =
     try { p(stream) } finally { stream.close() }

@@ -113,9 +113,8 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
 
     "serialize ORSet delta" in {
       checkSerialization(ORSet().add(address1, "a").delta.get)
-      // FIXME use full state for removals, until issue #22648 is fixed
-      //checkSerialization(ORSet().add(address1, "a").resetDelta.remove(address2, "a").delta.get)
-      //      checkSerialization(ORSet().add(address1, "a").remove(address2, "a").delta.get)
+      checkSerialization(ORSet().add(address1, "a").resetDelta.remove(address2, "a").delta.get)
+      checkSerialization(ORSet().add(address1, "a").remove(address2, "a").delta.get)
       checkSerialization(ORSet().add(address1, "a").resetDelta.clear(address2).delta.get)
       checkSerialization(ORSet().add(address1, "a").clear(address2).delta.get)
     }
@@ -197,9 +196,8 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
 
     "serialize ORMap delta" in {
       checkSerialization(ORMap().put(address1, "a", GSet() + "A").put(address2, "b", GSet() + "B").delta.get)
-      // FIXME use full state for removals, until issue #22648 is fixed
-      //      checkSerialization(ORMap().put(address1, "a", GSet() + "A").resetDelta.remove(address2, "a").delta.get)
-      //      checkSerialization(ORMap().put(address1, "a", GSet() + "A").remove(address2, "a").delta.get)
+      checkSerialization(ORMap().put(address1, "a", GSet() + "A").resetDelta.remove(address2, "a").delta.get)
+      checkSerialization(ORMap().put(address1, "a", GSet() + "A").remove(address2, "a").delta.get)
       checkSerialization(ORMap().put(address1, 1, GSet() + "A").delta.get)
       checkSerialization(ORMap().put(address1, 1L, GSet() + "A").delta.get)
       checkSerialization(ORMap.empty[String, ORSet[String]]
@@ -283,8 +281,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, 1, "A"))
       checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, 1L, "A"))
       checkSerialization(ORMultiMap._emptyWithValueDeltas.addBinding(address1, Flag(), "A"))
-      // FIXME use full state for removals, until issue #22648 is fixed
-      //      checkSerialization(ORMultiMap.emptyWithValueDeltas[String, String].addBinding(address1, "a", "A").remove(address1, "a").delta.get)
+      checkSerialization(ORMultiMap.emptyWithValueDeltas[String, String].addBinding(address1, "a", "A").remove(address1, "a").delta.get)
       checkSerialization(ORMultiMap.emptyWithValueDeltas[String, String]
         .addBinding(address1, "a", "A1")
         .put(address2, "b", Set("B1", "B2", "B3"))

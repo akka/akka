@@ -249,7 +249,7 @@ with message flows:
 
   * :meth:`public <T> List<T> receiveWhile(Duration max, Duration idle, Int messages, Function<Object, T> f)`
 
-    .. includecode:: code/docs/testkit/TestKitDocTest.java#test-receivewhile-full
+    .. includecode:: code/jdocs/testkit/TestKitDocTest.java#test-receivewhile-full
 
     Collect messages as long as
 

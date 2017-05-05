@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.cluster.ddata
 
@@ -118,12 +118,11 @@ object ReplicatorDeltaSpec extends MultiNodeConfig {
         case 3 ⇒
           // ORSet
           val key = rndOrSetkey()
-          // FIXME use full state for removals, until issue #22648 is fixed
-          //          // only removals for KeyF on node first
-          //          if (key == KeyF && onNode == first && rnd.nextBoolean())
-          //            Remove(key, rndRemoveElement(), consistency())
-          //          else
-          Add(key, rndAddElement(), consistency())
+          // only removals for KeyF on node first
+          if (key == KeyF && onNode == first && rnd.nextBoolean())
+            Remove(key, rndRemoveElement(), consistency())
+          else
+            Add(key, rndAddElement(), consistency())
       }
     }.toVector
   }
@@ -242,6 +241,7 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
       val p = TestProbe()
       deltaReplicator.tell(Get(KeyD, ReadLocal), p.ref)
       p.expectMsgType[GetSuccess[ORSet[String]]].dataValue.elements should ===(Set("a", "A"))
+      enterBarrier("read-1")
 
       // and also when doing several at the same time (deltas may be reordered) and then we
       // retry with full state to sort it out

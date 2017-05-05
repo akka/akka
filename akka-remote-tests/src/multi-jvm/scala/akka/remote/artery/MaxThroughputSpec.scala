@@ -3,7 +3,6 @@
  */
 package akka.remote.artery
 
-import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.Date

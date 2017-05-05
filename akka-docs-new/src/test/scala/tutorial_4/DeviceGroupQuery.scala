@@ -37,7 +37,6 @@ class DeviceGroupQuery(
       context.watch(deviceActor)
       deviceActor ! Device.ReadTemperature(0)
     }
-
   }
 
   override def postStop(): Unit = {

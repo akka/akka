@@ -19,6 +19,7 @@ import akka.io.Inet.SocketOption
 import akka.io.Tcp._
 import akka.io.SelectionHandler._
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import java.nio.file.Paths
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
@@ -426,7 +427,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   def PendingWriteFile(commander: ActorRef, filePath: String, offset: Long, count: Long, ack: Event,
                        tail: WriteCommand): PendingWriteFile =
-    new PendingWriteFile(commander, new FileInputStream(filePath).getChannel, offset, count, ack, tail)
+    new PendingWriteFile(commander, FileChannel.open(Paths.get(filePath)), offset, count, ack, tail)
 
   class PendingWriteFile(
     val commander: ActorRef,

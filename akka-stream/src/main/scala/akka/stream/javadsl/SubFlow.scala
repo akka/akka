@@ -536,9 +536,9 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * The last group before end-of-stream will contain the buffered elements
    * since the previously emitted group.
    *
-   * '''Emits when''' the configured time elapses since the last group has been emitted
+   * '''Emits when''' the configured time elapses since the last group has been emitted or `n` elements is buffered
    *
-   * '''Backpressures when''' the configured time elapses since the last group has been emitted
+   * '''Backpressures when''' downstream backpressures, and there are `n+1` buffered elements
    *
    * '''Completes when''' upstream completes (emits last group)
    *
@@ -549,6 +549,27 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    */
   def groupedWithin(n: Int, d: FiniteDuration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
     new SubFlow(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
+
+  /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the weight of the elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted or weight limit reached
+   *
+   * '''Backpressures when''' downstream backpressures, and buffered group (+ pending element) weighs more than `maxWeight`
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
+   */
+  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, Long], d: FiniteDuration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    new SubFlow(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
 
   /**
    * Shifts elements emission in time by a specified amount. It allows to store elements

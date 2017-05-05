@@ -3,6 +3,9 @@
 Quick Start Guide
 =================
 
+Create a project and add the akka-streams dependency to the build tool of your
+choice as described in :ref:`build-tool`.
+
 A stream usually begins at a source, so this is also how we start an Akka
 Stream. Before we create one, we import the full complement of streaming tools:
 
@@ -11,6 +14,10 @@ Stream. Before we create one, we import the full complement of streaming tools:
 If you want to execute the code samples while you read through the quick start guide, you will also need the following imports:
 
 .. includecode:: ../code/docs/stream/QuickStartDocSpec.scala#other-imports
+
+And an object to hold your code, for example:
+
+.. includecode:: ../code/docs/stream/QuickStartDocSpec.scala#main-app
 
 Now we will start with a rather simple source, emitting the integers 1 to 100:
 
@@ -34,6 +41,12 @@ we simply print out the numbers to the console—and pass this little stream
 setup to an Actor that runs it. This activation is signaled by having “run” be
 part of the method name; there are other methods that run Akka Streams, and
 they all follow this pattern.
+
+When running this source in a :class:`scala.App` you might notice it does not
+terminate, because the :class:`ActorSystem` is never terminated. Luckily
+``runForeach`` returns a :class:`Future[Done]` which resolves when the stream finishes:
+
+.. includecode:: ../code/docs/stream/QuickStartDocSpec.scala#run-source-and-terminate
 
 You may wonder where the Actor gets created that runs the stream, and you are
 probably also asking yourself what this ``materializer`` means. In order to get

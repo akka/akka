@@ -116,14 +116,6 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       }
 
       setHandler(out, new OutHandler {
-        override def onDownstreamFinish(): Unit = {
-          //assuming there can be no further in messages
-          downstreamStatus.set(Canceled)
-          dataQueue.clear()
-          // if blocked reading, make sure the take() completes
-          dataQueue.put(ByteString.empty)
-          completeStage()
-        }
         override def onPull(): Unit = {
           implicit val ec = dispatcher
           Future {
@@ -143,6 +135,11 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       })
 
       override def postStop(): Unit = {
+        //assuming there can be no further in messages
+        downstreamStatus.set(Canceled)
+        dataQueue.clear()
+        // if blocked reading, make sure the take() completes
+        dataQueue.put(ByteString.empty)
         // interrupt any pending blocking take
         if (blockingThread != null)
           blockingThread.interrupt()

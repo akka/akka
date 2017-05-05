@@ -11,7 +11,7 @@ import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.InputStreamSinkStage._
 import akka.stream.stage._
-import akka.stream.{ Attributes, Inlet, SinkShape }
+import akka.stream.{ AbruptStageTerminationException, Attributes, Inlet, SinkShape }
 import akka.util.ByteString
 
 import scala.annotation.tailrec
@@ -51,6 +51,8 @@ private[stream] object InputStreamSinkStage {
 
     val logic = new GraphStageLogic(shape) with StageWithCallback with InHandler {
 
+      var completionSignalled = false
+
       private val callback: AsyncCallback[AdapterToStageMessage] =
         getAsyncCallback {
           case ReadElementAcknowledgement ⇒ sendPullIfAllowed()
@@ -77,15 +79,22 @@ private[stream] object InputStreamSinkStage {
 
       override def onUpstreamFinish(): Unit = {
         dataQueue.add(Finished)
+        completionSignalled = true
         completeStage()
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
         dataQueue.add(Failed(ex))
+        completionSignalled = true
         failStage(ex)
       }
 
+      override def postStop(): Unit = {
+        if (!completionSignalled) dataQueue.add(Failed(new AbruptStageTerminationException(this)))
+      }
+
       setHandler(in, this)
+
     }
 
     (logic, new InputStreamAdapter(dataQueue, logic.wakeUp, readTimeout))

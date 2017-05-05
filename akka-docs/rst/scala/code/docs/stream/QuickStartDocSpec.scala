@@ -20,21 +20,23 @@ import java.nio.file.Paths
 import org.scalatest._
 import org.scalatest.concurrent._
 
+//#main-app
+object Main extends App {
+  // Code here
+}
+//#main-app
+
 class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFutures {
   implicit val patience = PatienceConfig(5.seconds)
-
-  //#create-materializer
-  implicit val system = ActorSystem("QuickStart")
-  implicit val materializer = ActorMaterializer()
-  //#create-materializer
-
-  override def afterAll(): Unit = {
-    system.terminate()
-  }
 
   def println(any: Any) = () // silence printing stuff
 
   "demonstrate Source" in {
+    //#create-materializer
+    implicit val system = ActorSystem("QuickStart")
+    implicit val materializer = ActorMaterializer()
+    //#create-materializer
+
     //#create-source
     val source: Source[Int, NotUsed] = Source(1 to 100)
     //#create-source
@@ -57,15 +59,21 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
     //#use-transformed-sink
 
     //#add-streams
-    val done: Future[Done] =
-      factorials
-        .zipWith(Source(0 to 100))((num, idx) => s"$idx! = $num")
-        .throttle(1, 1.second, 1, ThrottleMode.shaping)
-        //#add-streams
-        .take(3)
-        //#add-streams
-        .runForeach(println)
+    factorials
+      .zipWith(Source(0 to 100))((num, idx) => s"$idx! = $num")
+      .throttle(1, 1.second, 1, ThrottleMode.shaping)
+      //#add-streams
+      .take(3)
+      //#add-streams
+      .runForeach(println)
     //#add-streams
+
+    //#run-source-and-terminate
+    val done: Future[Done] = source.runForeach(i => println(i))(materializer)
+
+    implicit val ec = system.dispatcher
+    done.onComplete(_ => system.terminate())
+    //#run-source-and-terminate
 
     done.futureValue
   }
