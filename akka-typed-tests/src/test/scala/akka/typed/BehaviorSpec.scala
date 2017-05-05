@@ -10,7 +10,7 @@ import akka.japi.pf.{ FI, PFBuilder }
 import java.util.function.{ Function ⇒ F1 }
 
 import akka.Done
-import akka.typed.testkit.EffectfulActorContext
+import akka.typed.testkit.{ EffectfulActorContext, Inbox }
 
 class BehaviorSpec extends TypedSpec {
 
