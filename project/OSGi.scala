@@ -50,7 +50,7 @@ object OSGi {
 
   val httpTestkit = osgiPkgHeaders(
     exports = Seq("akka.http.scaladsl.testkit.*", "akka.http.javadsl.testkit.*"),
-    imports = Seq("akka.testkit.*", "akka.stream.testkit.*", "org.junit") map { pkg => optionalResolution(minorVersioned(pkg)) }
+    imports = Seq("akka.testkit.*", "akka.stream.testkit.*", "org.junit") map { pkg => optionalResolution(minorVersionToNextMinorVersion(pkg)) }
   )
 
   val httpSprayJson = osgiPkgHeaders(exports = Seq("akka.http.scaladsl.marshallers.sprayjson"))
@@ -75,13 +75,14 @@ object OSGi {
   private lazy val akkaParboiledImport = projectVersioned("akka.parboiled2.*")
   private lazy val akkaShapelessImport = projectVersioned("akka.shapeless.*")
   private lazy val akkaMacrosImport = projectVersioned("akka.macros.*")
-  private lazy val akkaImport = "akka," + patchVersioned("akka.*")
-  private lazy val configImport = patchVersioned("com.typesafe.config.*")
-  private lazy val scalaImport = minorVersioned("scala.*")
+  private lazy val akkaImport = "akka," + patchVersionToNextMajorVersion("akka.*")
+  private lazy val configImport = patchVersionToNextMinorVersion("com.typesafe.config.*")
+  private lazy val scalaImport = minorVersionToNextMinorVersion("scala.*")
   private lazy val scalaJava8CompatImport = """scala.compat.java8.*;version="$<range;[==,1)>""""
 
   private def projectVersioned(pkg: String) = pkg + """;version="$<range;[===,=+);$<Bundle-Version>>""""
-  private def patchVersioned(pkg: String) = pkg + """;version="$<range;[===,=+)>""""
-  private def minorVersioned(pkg: String) = pkg + """;version="$<range;[==,=+)>""""
+  private def patchVersionToNextMinorVersion(pkg: String) = pkg + """;version="$<range;[===,=+)>""""
+  private def patchVersionToNextMajorVersion(pkg: String) = pkg + """;version="$<range;[===,+)>""""
+  private def minorVersionToNextMinorVersion(pkg: String) = pkg + """;version="$<range;[==,=+)>""""
   private def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
 }
