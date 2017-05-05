@@ -76,7 +76,7 @@ private[typed] class ActorSystemImpl[-T](
   _ec:                   Option[ExecutionContext],
   _userGuardianBehavior: Behavior[T],
   _userGuardianProps:    Props)
-  extends ActorSystem[T] with ActorRef[T] with ActorRefImpl[T]with ExtensionsImpl {
+  extends ActorSystem[T] with ActorRef[T] with ActorRefImpl[T] with ExtensionsImpl {
 
   import ActorSystemImpl._
 

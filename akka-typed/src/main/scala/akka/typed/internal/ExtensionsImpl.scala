@@ -1,13 +1,23 @@
+/**
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ */
 package akka.typed.internal
 
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch }
 
+import akka.annotation.InternalApi
 import akka.typed.{ ActorSystem, Extension, ExtensionId, Extensions }
 
 import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
 import scala.collection.JavaConverters._
 
+/**
+ * Actor system extensions registry
+ *
+ * INTERNAL API
+ */
+@InternalApi
 trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
 
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]

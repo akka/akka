@@ -34,18 +34,15 @@ public class ExtensionsTest extends JUnitSuite {
       return new MyExtImpl();
     }
 
-    @Override
-    public MyExtImpl get(ActorSystem<?> system) {
-      return super.get(system);
+    public static MyExtImpl get(ActorSystem<?> system) {
+      return instance.apply(system);
     }
   }
 
 
   @Test
   public void loadJavaExtensionsFromConfig() {
-
-
-    final ActorSystem<Object> system = ActorSystem$.MODULE$.create(
+    final ActorSystem<Object> system = ActorSystem.create(
         "loadJavaExtensionsFromConfig",
         Behavior.empty(),
         Optional.empty(),
@@ -54,13 +51,30 @@ public class ExtensionsTest extends JUnitSuite {
         Optional.empty()
     );
 
-    // note that this is not the intended end user way to access it
-    assertTrue(system.hasExtension(MyExtension.getInstance()));
+    try {
+      // note that this is not the intended end user way to access it
+      assertTrue(system.hasExtension(MyExtension.getInstance()));
 
-    MyExtImpl instance1 = MyExtension.getInstance().get(system);
-    MyExtImpl instance2 = MyExtension.getInstance().get(system);
+      MyExtImpl instance1 = MyExtension.get(system);
+      MyExtImpl instance2 = MyExtension.get(system);
 
-    assertSame(instance1, instance2);
+      assertSame(instance1, instance2);
+    } finally {
+      system.terminate();
+    }
+  }
+
+  @Test
+  public void loadScalaExtension() {
+    final ActorSystem<Object> system = ActorSystem.create("loadScalaExtension", Behavior.empty());
+    try {
+      DummyExtension1 instance1 = DummyExtension1.get(system);
+      DummyExtension1 instance2 = DummyExtension1.get(system);
+
+      assertSame(instance1, instance2);
+    } finally {
+      system.terminate();
+    }
   }
 
 

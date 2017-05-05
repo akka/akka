@@ -13,6 +13,7 @@ import scala.concurrent.Future
 class DummyExtension1 extends Extension
 object DummyExtension1 extends ExtensionId[DummyExtension1] {
   def createExtension(system: ActorSystem[_]) = new DummyExtension1
+  def get(system: ActorSystem[_]): DummyExtension1 = apply(system)
 }
 
 class SlowExtension extends Extension
@@ -140,6 +141,15 @@ class ExtensionsSpec extends TypedSpecSetup with ScalaFutures {
           "ExtensionsSpec08",
           Some(ConfigFactory.parseString("""akka.library-extensions += "akka.typed.MissingExtension"""))
         ) { _ ⇒ () }
+      }
+
+    def `09 load an extension implemented in Java`(): Unit =
+      withEmptyActorSystem("ExtensionsSpec09") { system ⇒
+        // no way to make apply work cleanly with extensions implemented in Java
+        val instance1 = ExtensionsTest.MyExtension.get(system)
+        val instance2 = ExtensionsTest.MyExtension.get(system)
+
+        instance1 should be theSameInstanceAs instance2
       }
 
     def withEmptyActorSystem[T](name: String, config: Option[Config] = None)(f: ActorSystem[_] ⇒ T): T = {
