@@ -7,6 +7,7 @@ package internal
 import akka.Done
 import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.Actor._
+import akka.typed.testkit.Inbox
 import akka.util.Timeout
 import org.junit.runner.RunWith
 import org.scalactic.ConversionCheckedTripleEquals
