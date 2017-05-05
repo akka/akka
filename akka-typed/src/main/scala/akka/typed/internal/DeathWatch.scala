@@ -41,15 +41,29 @@ private[typed] trait DeathWatch[T] {
 
   type ARImpl = ActorRefImpl[Nothing]
 
-  private var watching = Set.empty[ARImpl]
+  /**
+   * This map holds a [[None]] for actors for which we send a [[Terminated]] notification on termination,
+   * ``Some(message)`` for actors for which we send a custom termination message.
+   */
+  private var watching = Map.empty[ARImpl, Option[T]]
   private var watchedBy = Set.empty[ARImpl]
 
-  final def watch[U](_a: ActorRef[U]): Unit = {
-    val a = _a.sorry
+  final def watch[U](subject: ActorRef[U]): Unit = {
+    val a = subject.sorry
     if (a != self && !watching.contains(a)) {
       maintainAddressTerminatedSubscription(a) {
         a.sendSystem(Watch(a, self))
-        watching += a
+        watching = watching.updated(a, None)
+      }
+    }
+  }
+
+  final def watchWith[U](subject: ActorRef[U], msg: T): Unit = {
+    val a = subject.sorry
+    if (a != self && !watching.contains(a)) {
+      maintainAddressTerminatedSubscription(a) {
+        a.sendSystem(Watch(a, self))
+        watching = watching.updated(a, Some(msg))
       }
     }
   }
@@ -70,14 +84,21 @@ private[typed] trait DeathWatch[T] {
    */
   protected def watchedActorTerminated(actor: ARImpl, failure: Throwable): Boolean = {
     removeChild(actor)
-    if (watching.contains(actor)) {
-      maintainAddressTerminatedSubscription(actor) {
-        watching -= actor
-      }
-      if (maySend) {
-        val t = Terminated(actor)(failure)
-        next(Behavior.interpretSignal(behavior, ctx, t), t)
-      }
+    watching.get(actor) match {
+      case None ⇒ // We're apparently no longer watching this actor.
+      case Some(optionalMessage) ⇒
+        maintainAddressTerminatedSubscription(actor) {
+          watching -= actor
+        }
+        if (maySend) {
+          optionalMessage match {
+            case None ⇒
+              val t = Terminated(actor)(failure)
+              next(Behavior.interpretSignal(behavior, ctx, t), t)
+            case Some(msg) ⇒
+              next(Behavior.interpretMessage(behavior, ctx, msg), msg)
+          }
+        }
     }
     if (isTerminating && terminatingMap.isEmpty) {
       finishTerminate()
@@ -118,9 +139,9 @@ private[typed] trait DeathWatch[T] {
     if (watching.nonEmpty) {
       maintainAddressTerminatedSubscription() {
         try {
-          watching.foreach(watchee ⇒ watchee.sendSystem(Unwatch(watchee, self)))
+          watching.foreach { case (watchee, _) ⇒ watchee.sendSystem(Unwatch(watchee, self)) }
         } finally {
-          watching = Set.empty
+          watching = Map.empty
         }
       }
     }
@@ -163,7 +184,7 @@ private[typed] trait DeathWatch[T] {
       for (a ← watchedBy; if a.path.address == address) watchedBy -= a
     }
 
-    for (a ← watching; if a.path.address == address) {
+    for ((a, _) ← watching; if a.path.address == address) {
       self.sendSystem(DeathWatchNotification(a, null))
     }
   }
@@ -181,7 +202,7 @@ private[typed] trait DeathWatch[T] {
     }
 
     if (isNonLocal(change)) {
-      def hasNonLocalAddress: Boolean = ((watching exists isNonLocal) || (watchedBy exists isNonLocal))
+      def hasNonLocalAddress: Boolean = ((watching.keys exists isNonLocal) || (watchedBy exists isNonLocal))
       val had = hasNonLocalAddress
       val result = block
       val has = hasNonLocalAddress

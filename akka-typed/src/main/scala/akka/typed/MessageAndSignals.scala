@@ -59,8 +59,9 @@ final case object PostStop extends PostStop {
  * idempotent, meaning that registering twice has the same effect as registering
  * once. Registration does not need to happen before the Actor terminates, a
  * notification is guaranteed to arrive after both registration and termination
- * have occurred. Termination of a remote Actor can also be effected by declaring
- * the Actor’s home system as failed (e.g. as a result of being unreachable).
+ * have occurred. This message is also sent when the watched actor is on a node
+ * that has been removed from the cluster when using akka-cluster or has been
+ * marked unreachable when using akka-remote directly.
  */
 final case class Terminated(ref: ActorRef[Nothing])(failed: Throwable) extends Signal {
   def wasFailed: Boolean = failed ne null

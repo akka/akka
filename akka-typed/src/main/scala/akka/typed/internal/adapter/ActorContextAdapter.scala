@@ -41,6 +41,7 @@ import akka.annotation.InternalApi
         }
     }
   override def watch[U](other: ActorRef[U]) = { untyped.watch(toUntyped(other)) }
+  override def watchWith[U](other: ActorRef[U], msg: T) = { untyped.watchWith(toUntyped(other), msg) }
   override def unwatch[U](other: ActorRef[U]) = { untyped.unwatch(toUntyped(other)) }
   var receiveTimeoutMsg: T = null.asInstanceOf[T]
   override def setReceiveTimeout(d: FiniteDuration, msg: T) = {
