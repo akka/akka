@@ -164,17 +164,54 @@ private[akka] case object EmptyProps extends Props {
 }
 
 /**
- * Subclasses of this type describe which thread pool shall be used to run
- * the actor to which this configuration is applied.
+ * Not intended for user extension.
+ */
+@DoNotInherit
+abstract class DispatcherSelector extends Props
+
+/**
+ * Factories for [[DispatcherSelector]]s which describe which thread pool shall be used to run
+ * the actor to which this configuration is applied. Se the individual factory methods for details
+ * on the options.
  *
  * The default configuration if none of these options are present is to run
  * the actor on the same executor as its parent.
- *
- * INTERNAL API
  */
-@DoNotInherit
-@InternalApi
-private[akka] sealed trait DispatcherSelector extends Props
+object DispatcherSelector {
+
+  /**
+   * Scala API:
+   * Run the actor on the same executor as its parent.
+   */
+  def default(): DispatcherSelector = DispatcherDefault()
+
+  /**
+   * Java API:
+   * Run the actor on the same executor as its parent.
+   */
+  def defaultDispatcher(): DispatcherSelector = default()
+
+  /**
+   * Look up an executor definition in the [[ActorSystem]] configuration.
+   * ExecutorServices created in this fashion will be shut down when the
+   * ActorSystem terminates.
+   */
+  def fromConfig(path: String): DispatcherSelector = DispatcherFromConfig(path)
+
+  /**
+   * Directly use the given Executor whenever the actor needs to be run.
+   * No attempt will be made to shut down this thread pool when the [[ActorSystem]] terminates.
+   */
+  def fromExecutor(executor: Executor): DispatcherSelector = DispatcherFromExecutor(executor)
+
+  /**
+   * Directly use the given ExecutionContext whenever the actor needs to be run.
+   * No attempt will be made to shut down this thread pool when the [[ActorSystem]] terminates.
+   */
+  def fromExecutionContext(executionContext: ExecutionContext): DispatcherSelector =
+    DispatcherFromExecutionContext(executionContext)
+
+}
 
 /**
  * Use the [[ActorSystem]] default executor to run the actor.
