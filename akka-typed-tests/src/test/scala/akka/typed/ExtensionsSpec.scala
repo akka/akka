@@ -44,7 +44,7 @@ object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
   }
 }
 
-class ExtensionsSpec extends TypedSpecSetup with ScalaFutures {
+class ExtensionsSpec extends TypedSpecSetup {
 
   object `The extensions subsystem` {
 

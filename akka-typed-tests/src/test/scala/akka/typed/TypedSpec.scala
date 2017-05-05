@@ -32,12 +32,18 @@ import akka.typed.scaladsl.AskPattern
 
 import scala.util.control.NoStackTrace
 import akka.typed.testkit.{ Inbox, TestKitSettings }
+import org.scalatest.time.Span
 
 /**
  * Helper class for writing tests for typed Actors with ScalaTest.
  */
 @RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TypedSpecSetup extends RefSpec with Matchers with BeforeAndAfterAll with ScalaFutures with TypeCheckedTripleEquals
+class TypedSpecSetup extends RefSpec with Matchers with BeforeAndAfterAll with ScalaFutures with TypeCheckedTripleEquals {
+
+  // TODO hook this up with config like in akka-testkit/AkkaSpec?
+  implicit val akkaPatience = PatienceConfig(3.seconds, Span(100, org.scalatest.time.Millis))
+
+}
 
 /**
  * Helper class for writing tests against both ActorSystemImpl and ActorSystemAdapter.
