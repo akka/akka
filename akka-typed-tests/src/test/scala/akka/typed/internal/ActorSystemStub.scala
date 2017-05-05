@@ -5,9 +5,12 @@ package akka.typed
 package internal
 
 import akka.{ actor ⇒ a, event ⇒ e }
+
 import scala.concurrent._
 import com.typesafe.config.ConfigFactory
 import java.util.concurrent.ThreadFactory
+
+import akka.typed.testkit.Inbox
 import akka.util.Timeout
 
 private[typed] class ActorSystemStub(val name: String)

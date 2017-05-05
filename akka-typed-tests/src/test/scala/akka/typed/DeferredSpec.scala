@@ -6,12 +6,10 @@ package akka.typed
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.typed.scaladsl.Actor
 import akka.typed.scaladsl.Actor.BehaviorDecorators
 import akka.typed.scaladsl.AskPattern._
-import akka.typed.testkit.EffectfulActorContext
-import akka.typed.testkit.TestKitSettings
+import akka.typed.testkit.{ EffectfulActorContext, Inbox, TestKitSettings }
 import akka.typed.testkit.scaladsl._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

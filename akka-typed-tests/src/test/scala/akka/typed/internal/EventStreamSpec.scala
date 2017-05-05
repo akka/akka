@@ -8,6 +8,7 @@ import akka.Done
 import akka.event.Logging._
 import akka.typed.scaladsl.Actor._
 import akka.typed.scaladsl.AskPattern._
+import akka.typed.testkit.Inbox
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout

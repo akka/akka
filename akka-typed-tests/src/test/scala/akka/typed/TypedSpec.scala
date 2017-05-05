@@ -29,8 +29,9 @@ import org.junit.runner.RunWith
 import scala.util.control.NonFatal
 import org.scalatest.exceptions.TestFailedException
 import akka.typed.scaladsl.AskPattern
+
 import scala.util.control.NoStackTrace
-import akka.typed.testkit.TestKitSettings
+import akka.typed.testkit.{ Inbox, TestKitSettings }
 
 /**
  * Helper class for writing tests for typed Actors with ScalaTest.
