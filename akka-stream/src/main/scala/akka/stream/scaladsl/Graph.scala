@@ -5,6 +5,7 @@ package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.stream._
+import akka.stream.impl.FixedSizeBuffer.FixedSizeBuffer
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.Stages.DefaultAttributes
@@ -15,6 +16,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
+import scala.util.Random
 import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
@@ -275,6 +277,120 @@ final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolea
     }
 
   }
+}
+
+object MergePrioritized {
+  /**
+   * Create a new `MergePrioritized` with specified number of input ports.
+   *
+   * @param inputPorts number of input ports
+   * @param priorities priorities of the input ports
+   * @param eagerComplete if true, the merge will complete as soon as one of its inputs completes.
+   */
+  def apply[T](inputPorts: Int, priorities: Seq[Int], eagerComplete: Boolean = false): GraphStage[UniformFanInShape[T, T]] = new MergePrioritized(inputPorts, priorities, eagerComplete)
+}
+
+/**
+ * Merge several streams, taking elements as they arrive from input streams
+ * (picking from prioritized once when several have elements ready).
+ *
+ * A `MergePrioritized` has one `out` port, one or more input port with their priorities.
+ *
+ * '''Emits when''' one of the inputs has an element available, preferring
+ * a input based on its priority if multiple have elements available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete (eagerComplete=false) or one upstream completes (eagerComplete=true), default value is `false`
+ *
+ * '''Cancels when''' downstream cancels
+ *
+ * A `Broadcast` has one `in` port and 2 or more `out` ports.
+ */
+final class MergePrioritized[T] private (val inputPorts: Int, val priorities: Seq[Int], val eagerComplete: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
+  require(inputPorts >= 1, "A Merge must have one or more input ports")
+  require(inputPorts == priorities.size, "Priorities of all inputPorts should be defined")
+
+  val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("MergePrioritized.in" + i))
+  val out: Outlet[T] = Outlet[T]("MergePrioritized.out")
+  override def initialAttributes: Attributes = DefaultAttributes.mergePrioritized
+  override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
+
+    private val allBuffers = Vector.tabulate(priorities.size)(i ⇒ FixedSizeBuffer[Inlet[T]](priorities(i)))
+    private def pending(buffers: FixedSizeBuffer[Inlet[T]]*): Boolean = buffers.exists(_.nonEmpty)
+
+    private var runningUpstreams = inputPorts
+    private def upstreamsClosed = runningUpstreams == 0
+
+    override def preStart(): Unit = in.foreach(tryPull)
+
+    private def dequeueAndDispatch(): Unit = {
+      toss match {
+        case Some(buffer) ⇒
+          val in = buffer.dequeue()
+          push(out, grab(in))
+          if (upstreamsClosed && !pending(allBuffers: _*)) completeStage() else tryPull(in)
+        case None ⇒
+          if (upstreamsClosed && !pending(allBuffers: _*)) completeStage()
+      }
+    }
+
+    (in zip allBuffers).foreach {
+      case (inlet, buffer) ⇒
+        setHandler(inlet, new InHandler {
+          override def onPush(): Unit = {
+            if (isAvailable(out) && !pending(allBuffers: _*)) {
+              push(out, grab(inlet))
+              tryPull(inlet)
+            } else {
+              buffer.enqueue(inlet)
+            }
+          }
+
+          override def onUpstreamFinish(): Unit = {
+            if (eagerComplete) {
+              in.foreach(cancel)
+              runningUpstreams = 0
+              if (!pending(allBuffers: _*)) completeStage()
+            } else {
+              runningUpstreams -= 1
+              if (upstreamsClosed && !pending(allBuffers: _*)) completeStage()
+            }
+          }
+        })
+    }
+
+    override def onPull(): Unit = {
+      if (pending(allBuffers: _*)) dequeueAndDispatch()
+    }
+
+    setHandler(out, this)
+
+    private def toss = {
+      var ix = 0
+      var tp = 0
+      val list = mutable.ListBuffer[(Int, Range)]()
+
+      while (ix < in.size) {
+        if (allBuffers(ix).nonEmpty) {
+          val priority = priorities(ix)
+          val priorityRange = tp until (tp + priority)
+          list += ((ix, priorityRange))
+          tp += priority
+        }
+        ix += 1
+      }
+
+      val r = Random.nextInt(tp)
+      list.find(_._2.contains(r)).map {
+        case (i, _) ⇒ allBuffers(i)
+      }
+    }
+  }
+
+  override def toString = "MergePrioritized"
 }
 
 object Interleave {
