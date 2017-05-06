@@ -15,6 +15,17 @@ tasks are making progress even though they might not be executing simultaneously
 time slicing where parts of tasks are executed sequentially and mixed with
 parts of other tasks. *Parallelism* on the other hand arise when the execution can be truly simultaneous.
 
+Non-blocking vs. Blocking
+-------------------------
+
+We talk about *blocking* if the delay of one thread can indefinitely delay some of the other threads. A good example
+is a resource which can be used exclusively by one thread using mutual exclusion. If a thread holds on to the resource
+indefinitely (for example accidentally running an infinite loop) other threads waiting on the resource can not progress.
+In contrast, *non-blocking* means that no thread is able to indefinitely delay others.
+
+Non-blocking operations are preferred to blocking ones, as the overall progress of the system is not trivially guaranteed
+when it contains blocking operations.
+
 Asynchronous vs. Synchronous
 ----------------------------
 
@@ -27,17 +38,6 @@ A synchronous API may use blocking to implement synchrony, but this is not a nec
 might give a similar behavior as blocking. In general, it is preferred to use asynchronous APIs, as they guarantee that
 the system is able to progress. Actors are asynchronous by nature: an actor can progress after a message send without
 waiting for the actual delivery to happen.
-
-Non-blocking vs. Blocking
--------------------------
-
-We talk about *blocking* if the delay of one thread can indefinitely delay some of the other threads. A good example
-is a resource which can be used exclusively by one thread using mutual exclusion. If a thread holds on to the resource
-indefinitely (for example accidentally running an infinite loop) other threads waiting on the resource can not progress.
-In contrast, *non-blocking* means that no thread is able to indefinitely delay others.
-
-Non-blocking operations are preferred to blocking ones, as the overall progress of the system is not trivially guaranteed
-when it contains blocking operations.
 
 Deadlock vs. Starvation vs. Live-lock
 -------------------------------------
