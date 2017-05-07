@@ -366,17 +366,3 @@ Akka HTTP also allows you to define custome HTTP methods, other than the well-kn
 To use a custom HTTP method, you need to define it, and then add it to parser settings like below:
 
 @@snip [CustomHttpMethodSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
-
-## The URI model
-
-Akka HTTP offers its own specialised URI model class which is tuned for both performance and idiomatic usage within
-other types of the HTTP model. For example, an `HTTPRequest`'s target URI is parsed into this type, where all character
-escaping and other URI specific semantics are applied.
-
-### Obtaining the Raw Request URI
-
-Sometimes it may be needed to obtain the "raw" value of an incoming URI, without applying any escaping or parsing to it.
-While this use-case is rare, it comes up every once in a while. It is possible to obtain the "raw" request URI in Akka
-HTTP Server side by turning on the `akka.http.server.raw-request-uri-header` flag.
-When enabled, a `Raw-Request-URI` header will be added to each request. This header will hold the original raw request's
-URI that was used. For an example check the reference configuration.
