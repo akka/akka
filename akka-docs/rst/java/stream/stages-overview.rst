@@ -1004,7 +1004,7 @@ but not if no elements has been grouped (i.e: no empty groups), or when limit ha
 **completes** when upstream completes
 
 groupedWeightedWithin
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 Chunk up this stream into groups of elements received within a time window, or limited by the weight of the elements,
 whatever happens first. Empty groups will not be emitted if no elements are received from upstream.
 The last group before end-of-stream will contain the buffered elements since the previously emitted group.
@@ -1341,6 +1341,16 @@ mergePreferred
 Merge multiple sources. Prefer one source if all sources has elements ready.
 
 **emits** when one of the inputs has an element available, preferring a defined input if multiple have elements available
+
+**backpressures** when downstream backpressures
+
+**completes** when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting ``eagerComplete=true``.)
+
+mergePrioritized
+^^^^^^^^^^^^^^^^
+Merge multiple sources. Prefer sources depending on priorities if all sources has elements ready.
+
+**emits** when one of the inputs has an element available, preferring inputs based on their priorities if multiple have elements available
 
 **backpressures** when downstream backpressures
 

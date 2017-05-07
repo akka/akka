@@ -37,6 +37,7 @@ Akka Streams currently provide these junctions (for a detailed list see :ref:`st
 
  - ``Merge[In]`` – *(N inputs , 1 output)* picks randomly from inputs pushing them one by one to its output
  - ``MergePreferred[In]`` – like :class:`Merge` but if elements are available on ``preferred`` port, it picks from it, otherwise randomly from ``others``
+ - ``MergePrioritized[In]`` – like :class:`Merge` but if elements are available on all input ports, it picks from them randomly based on their ``priority``
  - ``ZipWith[A,B,...,Out]`` – *(N inputs, 1 output)* which takes a function of N inputs that given a value for each input emits 1 output element
  - ``Zip[A,B]`` – *(2 inputs, 1 output)* is a :class:`ZipWith` specialised to zipping input streams of ``A`` and ``B`` into an ``(A,B)`` tuple stream
  - ``Concat[A]`` – *(2 inputs, 1 output)* concatenates two streams (first consume one, then the second one)
