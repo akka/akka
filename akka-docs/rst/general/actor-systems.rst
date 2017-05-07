@@ -169,3 +169,19 @@ in which messages are processed in large systems is not controllable by the
 application author, but this is also not intended. Take a step back and relax
 while Akka does the heavy lifting under the hood.
 
+Terminating ActorSystem
+-----------------------
+
+When you know everything is done for your application, you can call the
+``terminate`` method of ``ActorSystem``. That will stop the guardian
+actor, which in turn will recursively stop all its child actors, the system
+guardian.
+
+If you want to execute some operations when terminating ``ActorSystem``,
+you can register callback with the ``registerOnTermination`` method.
+You can call it multiple times to register multiple callbacks.
+
+There is also a ``whenTerminated`` method which returns ``Future``
+that completes when ``ActorSystem`` is fully terminated.
+Note that ``whenTerminated`` will not complete until all registered
+callbacks with ``registerOnTermination`` are finished.
