@@ -64,9 +64,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with GenericOut
             val subSource = new SubSourceOutlet[ByteString](s"substream-out-$streamId")
             (Source.fromGraph(subSource.source), Open(new BufferedOutlet[ByteString](subSource) {
               override def onDownstreamFinish(): Unit =
-                // FIXME: when substream (= request entity) is cancelled, we need to RST_STREAM
-                // if the stream is finished and sent a RST_STREAM we can just remove the incoming stream from our map
-                incomingStreams -= streamId
+                multiplexer.pushControlFrame(RstStreamFrame(streamId, ErrorCode.CANCEL))
+              incomingStreams -= streamId
             }))
           }
 
@@ -84,7 +83,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with GenericOut
         outlet.push(d.payload)
         maybeFinishStream(d.endStream)
       case r: RstStreamFrame ⇒
-        outlet.fail(new PeerClosedStreamException(r.streamId, r.errorCode.toString))
+        outlet.fail(new PeerClosedStreamException(r.streamId, r.errorCode))
         multiplexer.cancelSubStream(r.streamId)
         Closed
 

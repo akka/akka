@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
 import akka.stream.Attributes
+import akka.stream.scaladsl.Sink
 
 import scala.collection.mutable
 import scala.collection.immutable
@@ -97,8 +98,11 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           endStreamSent = true
           buffer = ByteString.empty
           maybeInlet.foreach(_.cancel())
-          maybeInlet = None
-          outStreams.remove(streamId)
+
+          if (maybeInlet.isDefined) {
+            maybeInlet = None
+            outStreams.remove(streamId)
+          } // else we haven't seen the response yet and need to keep around the record until the response arrives
         }
 
         def cancelStream(): Unit = closeStream()
@@ -139,13 +143,26 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       override def pushControlFrame(frame: FrameEvent): Unit = state.pushControlFrame(frame)
 
       override def registerSubStream(sub: Http2SubStream): Unit = {
-        pushControlFrame(sub.initialHeaders)
-        sub.initialHeaders.priorityInfo.foreach(updatePriority)
-        if (!sub.initialHeaders.endStream) { // if endStream is set, the source is never read
-          val subIn = new SubSinkInlet[ByteString](s"substream-in-${sub.streamId}")
-          val info = streamFor(sub.streamId)
-          info.registerIncomingData(subIn)
-          sub.data.runWith(subIn.sink)(subFusingMaterializer)
+        val info = streamFor(sub.streamId)
+
+        if (!info.endStreamSent) {
+          pushControlFrame(sub.initialHeaders)
+          sub.initialHeaders.priorityInfo.foreach(updatePriority)
+
+          if (sub.initialHeaders.endStream) {
+            // if endStream is set, we cancel the source and remove the stream
+            sub.data.runWith(Sink.cancelled)(subFusingMaterializer)
+            info.closeStream()
+            outStreams.remove(sub.streamId)
+          } else {
+            val subIn = new SubSinkInlet[ByteString](s"substream-in-${sub.streamId}")
+            info.registerIncomingData(subIn)
+            sub.data.runWith(subIn.sink)(subFusingMaterializer)
+          }
+        } else {
+          // stream was cancelled before it we got the response stream
+          sub.data.runWith(Sink.cancelled)(subFusingMaterializer)
+          outStreams.remove(sub.streamId)
         }
       }
 
