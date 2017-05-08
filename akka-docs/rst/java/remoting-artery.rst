@@ -49,7 +49,11 @@ Preparing your ActorSystem for Remoting
 
 The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project::
 
-  "com.typesafe.akka" %% "akka-remote" % "@version@" @crossString@
+  <dependency>
+    <groupId>com.typesafe.akka</groupId>
+    <artifactId>akka-remote_@binVersion@</artifactId>
+    <version>@version@</version>
+  </dependency>
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
 to your ``application.conf`` file::
@@ -134,8 +138,8 @@ Looking up Remote Actors
 
 ``actorSelection(path)`` will obtain an ``ActorSelection`` to an Actor on a remote node, e.g.::
 
-  val selection =
-    context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName")
+  ActorSelection selection =
+    context.actorSelection("akka://actorSystemName@10.0.0.1:25520/user/actorName");
 
 As you can see from the example above the following pattern is used to find an actor on a remote node::
 
@@ -147,7 +151,7 @@ As you can see from the example above the following pattern is used to find an a
 
 Once you obtained a selection to the actor you can interact with it in the same way you would with a local actor, e.g.::
 
-  selection ! "Pretty awesome feature"
+  selection.tell("Pretty awesome feature", getSelf());
 
 To acquire an :class:`ActorRef` for an :class:`ActorSelection` you need to
 send a message to the selection and use the ``sender`` reference of the reply from
@@ -303,7 +307,7 @@ Messages sent with actor selection are by default discarded in untrusted mode, b
 permission to receive actor selection messages can be granted to specific actors
 defined in configuration::
 
-    akka.remote.artery..trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
+    akka.remote.artery.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
 
 The actual message must still not be of type :class:`PossiblyHarmful`.
 
