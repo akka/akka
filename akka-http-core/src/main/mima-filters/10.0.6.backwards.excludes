@@ -5,3 +5,12 @@ ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.Http2Shadow$Http
 ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.Http2Shadow$Http2SupportNotPresentException$")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.Http2Shadow$")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.Http2Shadow")
+
+# Internal API changes
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.parsing.ParserOutput#StrictEntityCreator.entity")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.parsing.ParserOutput#StrictEntityCreator.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.parsing.ParserOutput#StrictEntityCreator.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.parsing.ParserOutput#StrictEntityCreator.copy$default$1")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.parsing.ParserOutput#StrictEntityCreator.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.parsing.ParserOutput$StrictEntityCreator$")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.parsing.ParserOutput#StrictEntityCreator.apply")

@@ -14,6 +14,7 @@ import akka.http.scaladsl.model._
 import headers._
 import ParserOutput._
 import akka.annotation.InternalApi
+import akka.stream.scaladsl.Source
 
 /**
  * INTERNAL API
@@ -154,41 +155,53 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
           startNewMessage(input, bodyStart)
       }
 
-    if (statusCode.allowsEntity && (contextForCurrentResponse.get.requestMethod != HttpMethods.HEAD)) {
-      teh match {
-        case None ⇒ clh match {
-          case Some(`Content-Length`(contentLength)) ⇒
-            if (contentLength == 0) finishEmptyResponse()
-            else if (contentLength <= input.size - bodyStart) {
-              val cl = contentLength.toInt
-              emitResponseStart(strictEntity(cth, input, bodyStart, cl))
-              setCompletionHandling(HttpMessageParser.CompletionOk)
-              emit(MessageEnd)
-              startNewMessage(input, bodyStart + cl)
-            } else {
-              emitResponseStart(defaultEntity(cth, contentLength))
-              parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
-            }
-          case None ⇒
+    if (statusCode.allowsEntity) {
+      contextForCurrentResponse.get.requestMethod match {
+        case HttpMethods.HEAD ⇒ clh match {
+          case Some(`Content-Length`(contentLength)) if contentLength > 0 ⇒
             emitResponseStart {
-              StreamedEntityCreator { entityParts ⇒
-                val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
-                HttpEntity.CloseDelimited(contentType(cth), HttpEntity.limitableByteSource(data))
-              }
+              StrictEntityCreator(HttpEntity.Default(contentType(cth), contentLength, Source.empty))
             }
             setCompletionHandling(HttpMessageParser.CompletionOk)
-            parseToCloseBody(input, bodyStart, totalBytesRead = 0)
+            emit(MessageEnd)
+            startNewMessage(input, bodyStart)
+          case _ ⇒ finishEmptyResponse()
         }
+        case _ ⇒ teh match {
+          case None ⇒ clh match {
+            case Some(`Content-Length`(contentLength)) ⇒
+              if (contentLength == 0) finishEmptyResponse()
+              else if (contentLength <= input.size - bodyStart) {
+                val cl = contentLength.toInt
+                emitResponseStart(strictEntity(cth, input, bodyStart, cl))
+                setCompletionHandling(HttpMessageParser.CompletionOk)
+                emit(MessageEnd)
+                startNewMessage(input, bodyStart + cl)
+              } else {
+                emitResponseStart(defaultEntity(cth, contentLength))
+                parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
+              }
+            case None ⇒
+              emitResponseStart {
+                StreamedEntityCreator { entityParts ⇒
+                  val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
+                  HttpEntity.CloseDelimited(contentType(cth), HttpEntity.limitableByteSource(data))
+                }
+              }
+              setCompletionHandling(HttpMessageParser.CompletionOk)
+              parseToCloseBody(input, bodyStart, totalBytesRead = 0)
+          }
 
-        case Some(te) ⇒
-          val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
-          if (te.isChunked) {
-            if (clh.isEmpty) {
-              emitResponseStart(chunkedEntity(cth), completedHeaders)
-              parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
-            } else failMessageStart("A chunked response must not contain a Content-Length header.")
-          } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
-            expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
+          case Some(te) ⇒
+            val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
+            if (te.isChunked) {
+              if (clh.isEmpty) {
+                emitResponseStart(chunkedEntity(cth), completedHeaders)
+                parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
+              } else failMessageStart("A chunked response must not contain a Content-Length header.")
+            } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
+              expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
+        }
       }
     } else finishEmptyResponse()
   }
