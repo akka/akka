@@ -1,0 +1,7 @@
+# Mima filters needed to check newer versions against 10.0.6
+
+# Internal class moved to impl package
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.Http2Shadow$Http2SupportNotPresentException")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.Http2Shadow$Http2SupportNotPresentException$")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.Http2Shadow$")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.Http2Shadow")
