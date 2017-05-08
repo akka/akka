@@ -106,7 +106,7 @@ configured proxy.
 
 .. includecode:: ../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala#create-singleton-proxy
 
-A more comprehensive sample is available in the tutorial named `Distributed workers with Akka and Scala! <https://github.com/typesafehub/activator-akka-distributed-workers-java>`_.
+A more comprehensive sample is available in the tutorial named `Distributed workers with Akka and Scala! <https://github.com/typesafehub/activator-akka-distributed-workers>`_.
 
 Dependencies
 ------------
