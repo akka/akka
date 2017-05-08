@@ -27,7 +27,6 @@ import org.scalactic.CanEqual
 import org.junit.runner.RunWith
 
 import scala.util.control.NonFatal
-import org.scalatest.exceptions.TestFailedException
 import akka.typed.scaladsl.AskPattern
 
 import scala.util.control.NoStackTrace
@@ -95,7 +94,6 @@ abstract class TypedSpec(val config: Config) extends TypedSpecSetup {
   }
 
   implicit val timeout = setTimeout
-  implicit val patience = PatienceConfig(3.seconds)
   implicit def scheduler = nativeSystem.scheduler
 
   override def afterAll(): Unit = {
