@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import akka.dispatch.forkjoin.ThreadLocalRandom
 import akka.stream._
 import akka.stream.impl.FixedSizeBuffer.FixedSizeBuffer
 import akka.stream.impl._
@@ -16,7 +17,6 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
-import scala.util.Random
 import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
@@ -327,7 +327,7 @@ final class MergePrioritized[T] private (val inputPorts: Int, val priorities: Se
     override def preStart(): Unit = in.foreach(tryPull)
 
     private def dequeueAndDispatch(): Unit = {
-      toss match {
+      selectNextElement() match {
         case Some(buffer) ⇒
           val in = buffer.dequeue()
           push(out, grab(in))
@@ -368,7 +368,7 @@ final class MergePrioritized[T] private (val inputPorts: Int, val priorities: Se
 
     setHandler(out, this)
 
-    private def toss = {
+    private def selectNextElement() = {
       var ix = 0
       var tp = 0
       val list = mutable.ListBuffer[(Int, Range)]()
@@ -383,7 +383,7 @@ final class MergePrioritized[T] private (val inputPorts: Int, val priorities: Se
         ix += 1
       }
 
-      val r = Random.nextInt(tp)
+      val r = ThreadLocalRandom.current().nextInt(tp)
       list.find(_._2.contains(r)).map {
         case (i, _) ⇒ allBuffers(i)
       }
