@@ -246,7 +246,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
           .run(materializer)
 
       waitFor(pair.second).first.isSuccess should be(true)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "create a cached connection pool to a https server (with four parameters)" in {
@@ -266,7 +266,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
           .run(materializer)
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "create a cached connection pool (with a String and a Materializer)" in {
@@ -284,7 +284,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
           .run(materializer)
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "create a host connection pool (with a ConnectHttp and a Materializer)" in {
@@ -302,7 +302,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
       pair.first.shutdown(system.dispatcher)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "create a host connection pool to a https server (with four parameters)" in {
@@ -322,7 +322,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
       pair.first.shutdown(system.dispatcher)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "create a host connection pool (with a String and a Materializer)" in {
@@ -340,7 +340,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
       pair.first.shutdown(system.dispatcher)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "allow access to the default client https context" in {
@@ -376,7 +376,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
         .run(materializer)
 
       waitFor(response).status() should be(StatusCodes.OK)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "create an outgoing connection (with 6 parameters)" in {
@@ -393,7 +393,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
         .run(materializer)
 
       waitFor(response).status() should be(StatusCodes.OK)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "allow a single request (with two parameters)" in {
@@ -401,7 +401,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       val response = http.singleRequest(HttpRequest.GET(s"http://$host:$port/"), materializer)
 
       waitFor(response).status() should be(StatusCodes.OK)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "allow a single request (with three parameters)" in {
@@ -409,7 +409,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       val response = http.singleRequest(HttpRequest.GET(s"http://$host:$port/"), http.defaultClientHttpsContext, materializer)
 
       waitFor(response).status() should be(StatusCodes.OK)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "allow a single request (with five parameters)" in {
@@ -417,7 +417,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       val response = http.singleRequest(HttpRequest.GET(s"http://$host:$port/"), http.defaultClientHttpsContext, poolSettings, loggingAdapter, materializer)
 
       waitFor(response).status() should be(StatusCodes.OK)
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "interact with a websocket through a flow (with with one parameter)" in {
@@ -430,7 +430,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
       waitFor(pair.first).response.status() should be(StatusCodes.SWITCHING_PROTOCOLS)
       waitFor(pair.second).asTextMessage.getStrictText should be("hello")
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
     "interact with a websocket through a flow (with five parameters)" in {
@@ -443,7 +443,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
       waitFor(pair.first).response.status() should be(StatusCodes.SWITCHING_PROTOCOLS)
       waitFor(pair.second).asTextMessage.getStrictText should be("hello")
-      binding.unbind()
+      waitFor(binding.unbind())
     }
 
   }
@@ -470,7 +470,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
   }
 
   private def waitFor[T](completionStage: CompletionStage[T]): T =
-    completionStage.toCompletableFuture.get(3, TimeUnit.SECONDS)
+    completionStage.toCompletableFuture.get(10, TimeUnit.SECONDS)
 
   override protected def afterAll() = TestKit.shutdownActorSystem(system)
 }
