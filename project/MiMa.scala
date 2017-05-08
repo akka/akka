@@ -33,7 +33,8 @@ object MiMa extends AutoPlugin {
           "10.0.2",
           "10.0.3",
           "10.0.4",
-          "10.0.5"
+          "10.0.5",
+          "10.0.6"
       )
         .map((version: String) => organization.value %% name.value % version)
   )
