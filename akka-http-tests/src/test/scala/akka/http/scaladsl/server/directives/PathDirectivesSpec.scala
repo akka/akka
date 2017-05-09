@@ -146,6 +146,18 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     "accept [/foo/bar/baz]" inThe test("/baz")
   }
 
+  """pathPrefix(".*")""" should {
+    val test = testFor(pathPrefix(".*".r) { echoCaptureAndUnmatchedPath })
+    "accept [/]" inThe test(":")
+    "accept [/abc]" inThe test("abc:")
+  }
+
+  """pathPrefix("(.)*.r")""" should {
+    val test = testFor(pathPrefix("(.)*".r) { echoCaptureAndUnmatchedPath })
+    "accept [/]" inThe test(":")
+    "accept [/abc]" inThe test("c:")
+  }
+
   """pathPrefix("ab[cd]+".r)""" should {
     val test = testFor(pathPrefix("ab[cd]+".r) { echoCaptureAndUnmatchedPath })
     "reject [/bar]" inThe test()

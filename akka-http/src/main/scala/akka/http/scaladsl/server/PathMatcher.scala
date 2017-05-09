@@ -221,6 +221,9 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
         def apply(value: T, more: Out) = Tuple1(mops(value, more._1))
       }
   }
+
+  /** The empty match returned when a Regex matcher matches the empty path */
+  private[http] val EmptyMatch = Matched(Path.Empty, Tuple1(""))
 }
 
 /**
@@ -263,27 +266,36 @@ trait ImplicitPathMatcherConstruction {
    *
    * @group pathmatcherimpl
    */
-  implicit def _regex2PathMatcher(regex: Regex): PathMatcher1[String] = regex.groupCount match {
-    case 0 ⇒ new PathMatcher1[String] {
-      def apply(path: Path) = path match {
-        case Path.Segment(segment, tail) ⇒ regex findPrefixOf segment match {
-          case Some(m) ⇒ Matched(segment.substring(m.length) :: tail, Tuple1(m))
-          case None    ⇒ Unmatched
-        }
-        case _ ⇒ Unmatched
-      }
+  implicit def _regex2PathMatcher(regex: Regex): PathMatcher1[String] = {
+    lazy val matchesEmptyPath = "" match {
+      case `regex`(_*) ⇒ true
+      case _           ⇒ false
     }
-    case 1 ⇒ new PathMatcher1[String] {
-      def apply(path: Path) = path match {
-        case Path.Segment(segment, tail) ⇒ regex findPrefixMatchOf segment match {
-          case Some(m) ⇒ Matched(segment.substring(m.end) :: tail, Tuple1(m.group(1)))
-          case None    ⇒ Unmatched
+
+    regex.groupCount match {
+      case 0 ⇒ new PathMatcher1[String] {
+        def apply(path: Path) = path match {
+          case Path.Segment(segment, tail) ⇒ regex findPrefixOf segment match {
+            case Some(m) ⇒ Matched(segment.substring(m.length) :: tail, Tuple1(m))
+            case None    ⇒ Unmatched
+          }
+          case Path.Empty if matchesEmptyPath ⇒ PathMatcher.EmptyMatch
+          case _                              ⇒ Unmatched
         }
-        case _ ⇒ Unmatched
       }
+      case 1 ⇒ new PathMatcher1[String] {
+        def apply(path: Path) = path match {
+          case Path.Segment(segment, tail) ⇒ regex findPrefixMatchOf segment match {
+            case Some(m) ⇒ Matched(segment.substring(m.end) :: tail, Tuple1(m.group(1)))
+            case None    ⇒ Unmatched
+          }
+          case Path.Empty if matchesEmptyPath ⇒ PathMatcher.EmptyMatch
+          case _                              ⇒ Unmatched
+        }
+      }
+      case _ ⇒ throw new IllegalArgumentException("Path regex '" + regex.pattern.pattern +
+        "' must not contain more than one capturing group")
     }
-    case _ ⇒ throw new IllegalArgumentException("Path regex '" + regex.pattern.pattern +
-      "' must not contain more than one capturing group")
   }
   /**
    * Creates a PathMatcher from the given Map of path segments (prefixes) to extracted values.
