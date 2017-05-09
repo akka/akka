@@ -16,7 +16,7 @@ Download
 
 There are several ways to download Akka. You can download it as part of the Lightbend Platform
 (as described above). You can download the full distribution, which includes all modules.
-Or you can use a build tool like Maven or SBT to download dependencies from the Akka Maven repository.
+Or you can use a build tool like Maven or sbt to download dependencies from the Akka Maven repository.
 
 Modules
 -------
@@ -134,18 +134,18 @@ For snapshot versions, the snapshot repository needs to be added as well:
 **Note**: for snapshot versions both ``SNAPSHOT`` and timestamped versions are published.
 
 
-Using Akka with SBT
+Using Akka with sbt
 -------------------
 
-The simplest way to get started with Akka and SBT is to use a `Gitter8 <http://www.foundweekends.org/giter8/>`_ template
+The simplest way to get started with Akka and sbt is to use a `Gitter8 <http://www.foundweekends.org/giter8/>`_ template
 named `Hello Akka! <https://github.com/akka/hello-akka.g8>`_. If you have `sbt` already installed, you can create a project
 from this template by running::
 
    sbt new akka/hello-akka.g8
 
-Summary of the essential parts for using Akka with SBT:
+Summary of the essential parts for using Akka with sbt:
 
-SBT installation instructions on `http://www.scala-sbt.org/release/tutorial/Setup.html <http://www.scala-sbt.org/release/tutorial/Setup.html>`_
+sbt installation instructions on `http://www.scala-sbt.org/release/tutorial/Setup.html <http://www.scala-sbt.org/release/tutorial/Setup.html>`_
 
 ``build.sbt`` file:
 
@@ -160,7 +160,7 @@ SBT installation instructions on `http://www.scala-sbt.org/release/tutorial/Setu
     libraryDependencies +=
       "com.typesafe.akka" %% "akka-actor" % "@version@" @crossString@
 
-**Note**: the libraryDependencies setting above is specific to SBT v0.12.x and higher.  If you are using an older version of SBT, the libraryDependencies should look like this:
+**Note**: the libraryDependencies setting above is specific to sbt v0.12.x and higher.  If you are using an older version of sbt, the libraryDependencies should look like this:
 
 .. parsed-literal::
 
@@ -216,17 +216,17 @@ For snapshot versions, the snapshot repository needs to be added as well:
 Using Akka with Eclipse
 -----------------------
 
-Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate an Eclipse project.
+Setup sbt project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate an Eclipse project.
 
 Using Akka with IntelliJ IDEA
 -----------------------------
 
-Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate an IntelliJ IDEA project.
+Setup sbt project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate an IntelliJ IDEA project.
 
 Using Akka with NetBeans
 ------------------------
 
-Setup SBT project and then use `nbsbt <https://github.com/dcaoyuan/nbsbt>`_ to generate a NetBeans project.
+Setup sbt project and then use `nbsbt <https://github.com/dcaoyuan/nbsbt>`_ to generate a NetBeans project.
 
 You should also use `nbscala <https://github.com/dcaoyuan/nbscala>`_ for general scala support in the IDE.
 
