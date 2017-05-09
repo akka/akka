@@ -178,4 +178,4 @@ actor, which in turn will recursively stop all its child actors, the system
 guardian.
 
 If you want to execute some operations while terminating ``ActorSystem``,
-look at ``CoordinatedShutdown`` [:ref:`Java <coordinated-shutdown-java>`, :ref:`Scala <routing-scala>`]
+look at ``CoordinatedShutdown`` [:ref:`Java <coordinated-shutdown-java>`, :ref:`Scala <coordinated-shutdown-scala>`]
