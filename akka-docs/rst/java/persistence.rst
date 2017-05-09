@@ -94,7 +94,7 @@ The example defines two data types, ``Cmd`` and ``Evt`` to represent commands an
 
 The persistent actor's ``createReceiveRecover`` method defines how ``state`` is updated during recovery by handling ``Evt``
 and ``SnapshotOffer`` messages. The persistent actor's ``createReceive`` method is a command handler. In this example,
-a command is handled by generating two events which are then persisted and handled. Events are persisted by calling
+a command is handled by generating an event which is then persisted and handled. Events are persisted by calling
 ``persist`` with an event (or a sequence of events) as first argument and an event handler as second argument.
 
 The ``persist`` method persists events asynchronously and the event handler is executed for successfully persisted
