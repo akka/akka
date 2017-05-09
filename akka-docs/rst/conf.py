@@ -8,7 +8,7 @@ import sys, os
 # -- General configuration -----------------------------------------------------
 
 sys.path.append(os.path.abspath('../_sphinx/exts'))
-extensions = ['sphinx.ext.todo', 'includecode', 'includecode2']
+extensions = ['sphinx.ext.todo', 'includecode', 'includecode2', 'sitemap']
 
 templates_path = ['_templates']
 source_suffix = '.rst'
@@ -29,8 +29,11 @@ show_authors = True
 
 html_theme = 'akka'
 html_theme_path = ['../_sphinx/themes']
-html_favicon = '../_sphinx/static/favicon.ico'
+html_theme_options = {
+    "base_url": "http://doc.akka.io/docs/akka/current/"
+}
 
+html_favicon = '../_sphinx/static/favicon.ico'
 html_title = 'Akka Documentation'
 html_logo = '../_sphinx/static/logo.png'
 #html_favicon = None
