@@ -1019,7 +1019,7 @@ Delay the initial element by a user specified duration from stream materializati
 
 delay
 ^^^^^
-Delay every element passed through with a specific duration.
+Delay every element passed through with a specific duration or a duration which is a function of the element.
 
 **emits** there is a pending element in the buffer and configured time for this element elapsed
 

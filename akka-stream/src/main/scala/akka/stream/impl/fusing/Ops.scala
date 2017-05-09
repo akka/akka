@@ -1532,7 +1532,7 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy) extends SimpleLinearGraphStage[T] {
+@InternalApi private[akka] final class Delay[T](val f: T ⇒ FiniteDuration, val strategy: DelayOverflowStrategy) extends SimpleLinearGraphStage[T] {
   private[this] def timerName = "DelayedTimer"
 
   final val DelayPrecisionMS = 10
@@ -1545,7 +1545,6 @@ private[stream] object Collect {
         case None                        ⇒ throw new IllegalStateException(s"Couldn't find InputBuffer Attribute for $this")
         case Some(InputBuffer(min, max)) ⇒ max
       }
-    val delayMillis = d.toMillis
 
     var buffer: BufferImpl[(Long, T)] = _ // buffer has pairs timestamp with upstream element
 
@@ -1574,7 +1573,7 @@ private[stream] object Collect {
       case DropNew ⇒
         () ⇒ {
           grab(in)
-          if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
+          if (!isTimerActive(timerName)) scheduleOnce(timerName, f(buffer.peek()._2))
         }
       case DropBuffer ⇒
         () ⇒ {
@@ -1597,7 +1596,7 @@ private[stream] object Collect {
       else {
         grabAndPull()
         if (!isTimerActive(timerName)) {
-          scheduleOnce(timerName, d)
+          scheduleOnce(timerName, f(buffer.peek()._2))
         }
       }
     }
@@ -1615,7 +1614,7 @@ private[stream] object Collect {
 
     def onPull(): Unit = {
       if (!isTimerActive(timerName) && !buffer.isEmpty) {
-        val waitTime = nextElementWaitTime()
+        val waitTime = nextElementWaitTime(buffer.peek()._2)
         if (waitTime < 0) {
           push(out, buffer.dequeue()._2)
         } else {
@@ -1634,8 +1633,8 @@ private[stream] object Collect {
 
     def completeIfReady(): Unit = if (isClosed(in) && buffer.isEmpty) completeStage()
 
-    def nextElementWaitTime(): Long = {
-      delayMillis - NANOSECONDS.toMillis(System.nanoTime() - buffer.peek()._1)
+    def nextElementWaitTime(t: T): Long = {
+      f(t).toMillis - NANOSECONDS.toMillis(System.nanoTime() - buffer.peek()._1)
     }
 
     final override protected def onTimer(key: Any): Unit = {
@@ -1643,7 +1642,7 @@ private[stream] object Collect {
         push(out, buffer.dequeue()._2)
 
       if (!buffer.isEmpty) {
-        val waitTime = nextElementWaitTime()
+        val waitTime = nextElementWaitTime(buffer.peek()._2)
         if (waitTime > DelayPrecisionMS)
           scheduleOnce(timerName, waitTime.millis)
       }

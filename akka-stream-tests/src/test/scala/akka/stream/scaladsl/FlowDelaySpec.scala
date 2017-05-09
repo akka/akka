@@ -10,7 +10,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.{ ActorMaterializer, Attributes, BufferOverflowException, DelayOverflowStrategy }
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.ThrottleMode
@@ -26,6 +26,17 @@ class FlowDelaySpec extends StreamSpec {
       Await.result(
         Source(1 to 10).delay(1.seconds).grouped(100).runWith(Sink.head),
         1200.millis) should ===(1 to 10)
+    }
+
+    "deliver elements with dynamic time shifts" taggedAs TimingTest in {
+      Source(1 to 3).map(_.seconds).delay(e ⇒ e, DelayOverflowStrategy.dropTail).runWith(TestSink.probe[FiniteDuration])
+        .request(3)
+        .expectNoMsg(800.millis)
+        .expectNext(300.millis, 1.second)
+        .expectNoMsg(800.millis)
+        .expectNext(300.millis, 2.seconds)
+        .expectNoMsg(800.millis)
+        .expectNext(300.millis, 3.seconds)
     }
 
     "add delay to initialDelay if exists upstream" taggedAs TimingTest in {
