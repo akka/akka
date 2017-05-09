@@ -4,23 +4,27 @@
 
 package akka.io
 
-import java.util.{ Iterator ⇒ JIterator }
+import java.util.{Iterator => JIterator}
 import java.util.concurrent.atomic.AtomicBoolean
-import java.nio.channels.{ SelectableChannel, SelectionKey, CancelledKeyException }
+import java.nio.channels.{CancelledKeyException, SelectableChannel, SelectionKey}
 import java.nio.channels.SelectionKey._
 import java.nio.channels.spi.SelectorProvider
+
 import com.typesafe.config.Config
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.concurrent.ExecutionContext
 import akka.event.LoggingAdapter
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
 import akka.util.Helpers.Requiring
 import akka.util.SerializedSuspendableExecutionContext
 import akka.actor._
 import akka.routing.RandomPool
 import akka.event.Logging
 import java.nio.channels.ClosedChannelException
+
+import sun.nio.ch.SelectionKeyImpl
 
 abstract class SelectionHandlerSettings(config: Config) {
   import config._
@@ -112,7 +116,10 @@ private[io] object SelectionHandler {
 
     private[this] val select = new Task {
       def tryRun(): Unit = {
+        import scala.collection.JavaConverters._
+        log.warning(selector + " Selecting... " + selector.keys().asScala.map(key => "" + key.asInstanceOf[SelectionKeyImpl].interestOps()))
         if (selector.select() > 0) { // This assumes select return value == selectedKeys.size
+          log.warning("select() > 0")
           val keys = selector.selectedKeys
           val iterator = keys.iterator()
           while (iterator.hasNext) {
@@ -124,7 +131,10 @@ private[io] object SelectionHandler {
                 key.interestOps(key.interestOps & ~readyOps) // prevent immediate reselection by always clearing
                 val connection = key.attachment.asInstanceOf[ActorRef]
                 readyOps match {
-                  case OP_READ                   ⇒ connection ! ChannelReadable
+                  case OP_READ ⇒ {
+                    log.warning("OP_READ")
+                    connection ! ChannelReadable
+                  }
                   case OP_WRITE                  ⇒ connection ! ChannelWritable
                   case OP_READ_AND_WRITE         ⇒ { connection ! ChannelWritable; connection ! ChannelReadable }
                   case x if (x & OP_ACCEPT) > 0  ⇒ connection ! ChannelAcceptable
@@ -139,6 +149,8 @@ private[io] object SelectionHandler {
             }
           }
           keys.clear() // we need to remove the selected keys from the set, otherwise they remain selected
+        } else {
+          log.warning(selector + " No longer selecting...")
         }
         wakeUp.set(false)
       }
@@ -155,6 +167,7 @@ private[io] object SelectionHandler {
       execute {
         new Task {
           def tryRun(): Unit = try {
+            log.warning("registering")
             val key = channel.register(selector, initialOps, channelActor)
             channelActor ! new ChannelRegistration {
               def enableInterest(ops: Int): Unit = enableInterestOps(key, ops)
@@ -188,9 +201,14 @@ private[io] object SelectionHandler {
       execute {
         new Task {
           def tryRun(): Unit = {
+            log.warning(selector + s" Registering interest in $ops")
+
             val currentOps = key.interestOps
             val newOps = currentOps | ops
-            if (newOps != currentOps) key.interestOps(newOps)
+            if (newOps != currentOps) {
+              key.interestOps(newOps)
+              selector.wakeup()
+            }
           }
         }
       }
@@ -199,6 +217,7 @@ private[io] object SelectionHandler {
       execute {
         new Task {
           def tryRun(): Unit = {
+            log.warning(selector + s" De-registering interest in $ops")
             val currentOps = key.interestOps
             val newOps = currentOps & ~ops
             if (newOps != currentOps) key.interestOps(newOps)

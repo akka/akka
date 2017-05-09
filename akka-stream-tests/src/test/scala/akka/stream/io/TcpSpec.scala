@@ -28,7 +28,9 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.util.Try
 
-class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.timeout = 2s") with TcpHelper {
+class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.timeout = 2s\n" +
+  "akka.io.tcp.trace-logging = on\n" +
+  "akka.loglevel = DEBUG") with TcpHelper {
 
   "Outgoing TCP stream" must {
 
@@ -305,7 +307,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
     "shut down both streams when connection is aborted remotely" in assertAllStagesStopped {
       // Client gets a PeerClosed event and does not know that the write side is also closed
       val testData = ByteString(1, 2, 3, 4, 5)
-      val server = new Server()
+      val server = new Server(new InetSocketAddress("127.0.0.1", 4343))
 
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
@@ -313,7 +315,10 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
       Source.fromPublisher(tcpWriteProbe.publisherProbe).via(Tcp().outgoingConnection(server.address)).to(Sink.fromSubscriber(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
+      Thread.sleep(300)
+
       serverConnection.abort()
+      log.warning("Expecting")
       tcpReadProbe.subscriberProbe.expectSubscriptionAndError()
       tcpWriteProbe.tcpWriteSubscription.expectCancellation()
 

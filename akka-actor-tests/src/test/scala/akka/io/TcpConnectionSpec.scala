@@ -37,6 +37,9 @@ object TcpConnectionSpec {
 class TcpConnectionSpec extends AkkaSpec("""
     akka.io.tcp.register-timeout = 500ms
     akka.actor.serialize-creators = on
+	akka.io.tcp.trace-logging = on
+	akka.loglevel = "DEBUG"
+	akka.io.tcp.direct-buffer-size = 512 KiB
     """) { thisSpecs ⇒
   import TcpConnectionSpec._
 

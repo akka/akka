@@ -222,7 +222,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     info.registration.enableInterest(OP_READ)
   }
 
-  def doRead(info: ConnectionInfo, closeCommander: Option[ActorRef]): Unit =
+  def doRead(info: ConnectionInfo, closeCommander: Option[ActorRef]): Unit = {
+    log.warning("doRead " + readingSuspended)
     if (!readingSuspended) {
       @tailrec def innerRead(buffer: ByteBuffer, remainingLimit: Int): ReadResult =
         if (remainingLimit > 0) {
@@ -261,6 +262,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         case e: IOException ⇒ handleError(info.handler, e)
       } finally bufferPool.release(buffer)
     }
+    log.warning("readingSuspended now " + readingSuspended)
+
+  }
 
   def doWrite(info: ConnectionInfo): Unit = pendingWrite = pendingWrite.doWrite(info)
 
