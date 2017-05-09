@@ -13,10 +13,15 @@ For XML Akka HTTP currently provides support for [Scala XML](https://github.com/
 The @github[ScalaXmlSupport](/akka-http-marshallers-scala/akka-http-xml/src/main/scala/akka/http/scaladsl/marshallers/xml/ScalaXmlSupport.scala) trait provides a `FromEntityUnmarshaller[NodeSeq]` and `ToEntityMarshaller[NodeSeq]` that
 you can use directly or build upon.
 
-This is how you enable support for (un)marshalling from and to XML with [Scala XML](https://github.com/scala/scala-xml) `NodeSeq`:
+In order to enable support for (un)marshalling from and to XML with [Scala XML](https://github.com/scala/scala-xml) `NodeSeq` you must add
+the following dependency:
 
- 1. Add a library dependency onto `"com.typesafe.akka" %% "akka-http-xml" % "1.x"`.
- 2. `import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._` or mix in the
+@@@vars
+```sbt
+"com.typesafe.akka" %% "akka-http-xml" % "$project.version$"
+```
+@@@
+
+Once you have done this (un)marshalling between XML and `NodeSeq` instances should work nicely and transparently,
+by either using `import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._` or mixing in the
 `akka.http.scaladsl.marshallers.xml.ScalaXmlSupport` trait.
-
-Once you have done this (un)marshalling between XML and `NodeSeq` instances should work nicely and transparently.
