@@ -1192,6 +1192,14 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.async")
       ),
       "2.5.1" -> Seq(
+          
+        // #22868 store shards
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.sendUpdate"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.waitingForUpdate"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.getState"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.waitingForState"),
+        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.this"),
+          
         // #21213 Feature request: Let BackoffSupervisor reply to messages when its child is stopped
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffSupervisor.this"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.copy"),
