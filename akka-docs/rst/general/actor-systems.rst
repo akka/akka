@@ -177,11 +177,5 @@ When you know everything is done for your application, you can call the
 actor, which in turn will recursively stop all its child actors, the system
 guardian.
 
-If you want to execute some operations when terminating ``ActorSystem``,
-you can register callback with the ``registerOnTermination`` method.
-You can call it multiple times to register multiple callbacks.
-
-There is also a ``whenTerminated`` method which returns ``Future``
-that completes when ``ActorSystem`` is fully terminated.
-Note that ``whenTerminated`` will not complete until all registered
-callbacks with ``registerOnTermination`` are finished.
+If you want to execute some operations while terminating ``ActorSystem``,
+look at ``CoordinatedShutdown`` [:ref:`Java <coordinated-shutdown-java>`, :ref:`Scala <routing-scala>`]
