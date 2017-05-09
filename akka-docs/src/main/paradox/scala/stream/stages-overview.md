@@ -1047,16 +1047,14 @@ Creates a `Flow` from a `Sink` and a `Source` where the Flow's input will be sen
 and the `Flow` 's output will come from the Source.
 
 Note that termination events, like completion and cancelation is not automatically propagated through to the "other-side"
-of the such-composed Flow. Use `CoupledTerminationFlow` if you want to couple termination of both of the ends,
+of the such-composed Flow. Use `Flow.fromSinkAndSourceCoupled` if you want to couple termination of both of the ends,
 for example most useful in handling websocket connections.
 
 ---------------------------------------------------------------
 
-### CoupledTerminationFlow.fromSinkAndSource
+### Flow.fromSinkAndSourceCoupled
 
 Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow them them.
-Similar to `Flow.fromSinkAndSource` however that API does not connect the completion signals of the wrapped stages.
-
 Similar to `Flow.fromSinkAndSource` however couples the termination of these two stages.
 
 E.g. if the emitted `Flow` gets a cancellation, the `Source` of course is cancelled,
