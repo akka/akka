@@ -14,6 +14,7 @@
   <link rel="stylesheet" type="text/css" href="$page.base$lib/normalize.css/normalize.css"/>
   <link rel="stylesheet" type="text/css" href="$page.base$lib/foundation/dist/foundation.min.css"/>
   <link rel="stylesheet" type="text/css" href="$page.base$css/page.css"/>
+  <link rel="canonical" href="http://doc.akka.io/docs/akka-http/current/$page.self.absolute.href$"/>
 
   $!
   <link rel="shortcut icon" href="$page.base$images/favicon.ico" />
@@ -81,7 +82,7 @@ $page.content$
                 <div>
                   $source()$
                 </div>
-                
+
                 $if(page.next.html)$
                 <div class="nav-next">
                   <p><strong>Next:</strong> $page.next.html$</p>
