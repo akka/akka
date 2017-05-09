@@ -171,7 +171,7 @@ next step is verifying that it works correctly within its intended environment
 (if the individual actors are simple enough, possibly because they use the
 :mod:`FSM` module, this might also be the first step). The definition of the
 environment depends of course very much on the problem at hand and the level at
-which you intend to test, ranging for functional/integration tests to full
+which you intend to test, ranging from functional/integration tests to full
 system tests. The minimal setup consists of the test procedure, which provides
 the desired stimuli, the actor under test, and an actor receiving replies.
 Bigger systems replace the actor under test with a network of actors, apply
