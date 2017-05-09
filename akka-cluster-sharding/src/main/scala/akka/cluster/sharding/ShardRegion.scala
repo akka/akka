@@ -4,6 +4,7 @@
 package akka.cluster.sharding
 
 import java.net.URLEncoder
+
 import akka.pattern.AskTimeoutException
 import akka.util.{ MessageBufferMap, Timeout }
 import akka.pattern.{ ask, pipe }
@@ -12,12 +13,14 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus
+
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.concurrent.Promise
 import akka.Done
+import akka.cluster.sharding.Shard.StartEntity
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -439,6 +442,7 @@ private[akka] class ShardRegion(
     case query: ShardRegionQuery                 ⇒ receiveQuery(query)
     case msg: RestartShard                       ⇒ deliverMessage(msg, sender())
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
+    case msg: Shard.StartEntity                  ⇒ deliverStartEntity(msg, sender())
     case unknownMsg                              ⇒ log.warning("Message does not have an extractor defined in shard [{}] so it was ignored: {}", typeName, unknownMsg)
   }
 
@@ -697,6 +701,16 @@ private[akka] class ShardRegion(
     }
     loggedFullBufferWarning = false
     retryCount = 0
+  }
+
+  def deliverStartEntity(msg: StartEntity, snd: ActorRef): Unit = {
+    try {
+      deliverMessage(msg, snd)
+    } catch {
+      case ex: MatchError ⇒
+        log.error(ex, "When using remember-entities the shard id extractor must handle ShardRegion.StartEntity(id).")
+      // TODO fail sharding entirely?
+    }
   }
 
   def deliverMessage(msg: Any, snd: ActorRef): Unit =

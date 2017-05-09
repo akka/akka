@@ -28,7 +28,7 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
 
   "ClusterShardingMessageSerializer" must {
 
-    "be able to serializable ShardCoordinator snapshot State" in {
+    "be able to serialize ShardCoordinator snapshot State" in {
       val state = State(
         shards = Map("a" → region1, "b" → region2, "c" → region2),
         regions = Map(region1 → Vector("a"), region2 → Vector("b", "c"), region3 → Vector.empty[String]),
@@ -37,7 +37,7 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
       checkSerialization(state)
     }
 
-    "be able to serializable ShardCoordinator domain events" in {
+    "be able to serialize ShardCoordinator domain events" in {
       checkSerialization(ShardRegionRegistered(region1))
       checkSerialization(ShardRegionProxyRegistered(regionProxy1))
       checkSerialization(ShardRegionTerminated(region1))
@@ -46,7 +46,7 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
       checkSerialization(ShardHomeDeallocated("a"))
     }
 
-    "be able to serializable ShardCoordinator remote messages" in {
+    "be able to serialize ShardCoordinator remote messages" in {
       checkSerialization(Register(region1))
       checkSerialization(RegisterProxy(regionProxy1))
       checkSerialization(RegisterAck(region1))
@@ -61,21 +61,25 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
       checkSerialization(GracefulShutdownReq(region1))
     }
 
-    "be able to serializable PersistentShard snapshot state" in {
+    "be able to serialize PersistentShard snapshot state" in {
       checkSerialization(Shard.State(Set("e1", "e2", "e3")))
     }
 
-    "be able to serializable PersistentShard domain events" in {
+    "be able to serialize PersistentShard domain events" in {
       checkSerialization(Shard.EntityStarted("e1"))
       checkSerialization(Shard.EntityStopped("e1"))
     }
 
-    "be able to serializable GetShardStats" in {
+    "be able to serialize GetShardStats" in {
       checkSerialization(Shard.GetShardStats)
     }
 
-    "be able to serializable ShardStats" in {
+    "be able to serialize ShardStats" in {
       checkSerialization(Shard.ShardStats("a", 23))
+    }
+
+    "be able to serialize StartEntity" in {
+      checkSerialization(Shard.StartEntity("42"))
     }
   }
 }

@@ -3,12 +3,11 @@
  */
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
 import java.io.File
 
 import akka.actor._
-import akka.cluster.Cluster
-import akka.cluster.sharding.ShardRegion.GracefulShutdown
+import akka.cluster.{ Cluster, MemberStatus }
+import akka.cluster.sharding.Shard.StartEntity
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testconductor.RoleName
@@ -18,11 +17,6 @@ import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
 
 import scala.concurrent.duration._
-import akka.cluster.sharding.ShardRegion.GetClusterShardingStats
-import akka.cluster.sharding.ShardRegion.ClusterShardingStats
-import akka.cluster.MemberStatus
-
-import scala.concurrent.Await
 
 object ClusterShardingRememberEntitiesNewExtractorSpec {
 
@@ -46,12 +40,14 @@ object ClusterShardingRememberEntitiesNewExtractorSpec {
   }
 
   val extractShardId1: ShardRegion.ExtractShardId = {
-    case id: Int ⇒ (id % shardCount).toString
+    case id: Int         ⇒ (id % shardCount).toString
+    case StartEntity(id) ⇒ extractShardId1(id.toInt)
   }
 
   val extractShardId2: ShardRegion.ExtractShardId = {
     // always bump it one shard id
-    case id: Int ⇒ ((id + 1) % shardCount).toString
+    case id: Int         ⇒ ((id + 1) % shardCount).toString
+    case StartEntity(id) ⇒ extractShardId2(id.toInt)
   }
 
 }
@@ -85,10 +81,30 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
     }
     """))
 
-  nodeConfig(second, third, fourth, fifth)(ConfigFactory.parseString(
+  val roleConfig = ConfigFactory.parseString(
     """
       akka.cluster.roles = [sharding]
-    """))
+    """)
+
+  // we pretend node 4 and 5 are new incarnations of node 2 and 3 as they never run in parallel
+  // so we can use the same lmdb store for them and have node 4 pick up the persisted data of node 2
+  val ddataNodeAConfig = ConfigFactory.parseString(
+    """
+      akka.cluster.sharding.distributed-data.durable.lmdb {
+        dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-node-a
+      }
+    """)
+  val ddataNodeBConfig = ConfigFactory.parseString(
+    """
+      akka.cluster.sharding.distributed-data.durable.lmdb {
+        dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-node-b
+      }
+    """)
+
+  nodeConfig(second)(roleConfig.withFallback(ddataNodeAConfig))
+  nodeConfig(third)(roleConfig.withFallback(ddataNodeBConfig))
+  nodeConfig(fourth)(roleConfig.withFallback(ddataNodeAConfig))
+  nodeConfig(fifth)(roleConfig.withFallback(ddataNodeBConfig))
 
 }
 

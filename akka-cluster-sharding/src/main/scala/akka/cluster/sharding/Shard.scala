@@ -47,7 +47,7 @@ private[akka] object Shard {
   sealed trait ShardCommand
 
   /**
-   * When an remembering entities and the entity stops without issuing a `Passivate`, we
+   * When remembering entities and the entity stops without issuing a `Passivate`, we
    * restart it after a back off using this message.
    */
   final case class RestartEntity(entity: EntityId) extends ShardCommand
@@ -57,6 +57,14 @@ private[akka] object Shard {
    * to restart batches of entity actors at a time.
    */
   final case class RestartEntities(entity: Set[EntityId]) extends ShardCommand
+
+  /**
+   * When remembering entities and a shard is started, each entity id that needs to
+   * be running will trigger this message being sent through sharding. For this to work
+   * the message must be handled by the shard id extractor.
+   */
+  final case class StartEntity(entity: EntityId) extends ShardCommand
+  final case class StartEntityAck(entity: EntityId)
 
   /**
    * A case class which represents a state change for the Shard
@@ -177,7 +185,17 @@ private[akka] class Shard(
 
   def receiveShardCommand(msg: ShardCommand): Unit = msg match {
     case RestartEntity(id)    ⇒ getEntity(id)
-    case RestartEntities(ids) ⇒ ids foreach getEntity
+    case StartEntity(id)      ⇒ startEntity(id)
+    case RestartEntities(ids) ⇒ restartEntities(ids)
+  }
+
+  def startEntity(id: String): Unit = {
+    getEntity(id)
+    sender() ! StartEntityAck(id)
+  }
+
+  def restartEntities(ids: Set[EntityId]): Unit = {
+    context.actorOf(RememberEntityStarter.props(typeName, ids))
   }
 
   def receiveShardRegionCommand(msg: ShardRegionCommand): Unit = msg match {
@@ -315,6 +333,49 @@ private[akka] class Shard(
       state = state.copy(state.entities + id)
       a
     }
+  }
+}
+
+private[akka] object RememberEntityStarter {
+  def props(typeName: String, ids: Set[ShardRegion.EntityId]) = Props(new RememberEntityStarter(typeName, ids))
+}
+
+/**
+ * INTERNAL API: Actor responsible for starting entities when rememberEntities is enabled
+ */
+private[akka] class RememberEntityStarter(typeName: String, ids: Set[ShardRegion.EntityId]) extends Actor {
+
+  import context.dispatcher
+  import scala.concurrent.duration._
+
+  case object Tick
+
+  // TODO make configurable? more sane default?
+  val resendInterval = 5.seconds
+
+  val region = ClusterSharding(context.system).shardRegion(typeName)
+  var waitingForAck = ids
+
+  sendStart(ids)
+
+  val cancelable = context.system.scheduler.schedule(resendInterval, resendInterval, self, Tick)
+
+  def sendStart(ids: Set[ShardRegion.EntityId]): Unit = {
+    ids.foreach(id ⇒ region ! Shard.StartEntity(id))
+  }
+
+  override def receive = {
+    case Shard.StartEntityAck(id) ⇒
+      waitingForAck -= id
+      if (waitingForAck.isEmpty) context.stop(self)
+
+    case Tick ⇒
+      sendStart(waitingForAck)
+
+  }
+
+  override def postStop(): Unit = {
+    cancelable.cancel()
   }
 }
 
