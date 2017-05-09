@@ -58,6 +58,7 @@ private[io] trait ChannelRegistry {
 private[io] trait ChannelRegistration extends NoSerializationVerificationNeeded {
   def enableInterest(op: Int)
   def disableInterest(op: Int)
+  def wakeUp()
 }
 
 private[io] object SelectionHandler {
@@ -159,6 +160,7 @@ private[io] object SelectionHandler {
             channelActor ! new ChannelRegistration {
               def enableInterest(ops: Int): Unit = enableInterestOps(key, ops)
               def disableInterest(ops: Int): Unit = disableInterestOps(key, ops)
+              def wakeUp(): Unit = selector.wakeup()
             }
           } catch {
             case _: ClosedChannelException ⇒
