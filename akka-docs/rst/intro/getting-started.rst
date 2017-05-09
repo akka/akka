@@ -242,7 +242,7 @@ Do not use -optimize Scala compiler flag
 Build from sources
 ------------------
 
-Akka uses Git and is hosted at `Github <https://github.com>`_.
+Akka uses Git and is hosted at `GitHub <https://github.com>`_.
 
 * Akka: clone the Akka repository from `<https://github.com/akka/akka>`_
 
