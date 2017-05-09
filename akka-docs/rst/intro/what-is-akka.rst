@@ -22,7 +22,7 @@ Akka is Open Source and available under the Apache 2 License.
 Download from http://akka.io/downloads.
 
 Please note that all code samples compile, so if you want direct access to the sources, have a look
-over at the Akka Docs subproject on github: for `Java <@github@/akka-docs/rst/java/code/docs>`_ 
+over at the Akka Docs subproject on github: for `Java <@github@/akka-docs/rst/java/code/jdocs>`_ 
 and `Scala <@github@/akka-docs/rst/scala/code/docs>`_.
 
 
