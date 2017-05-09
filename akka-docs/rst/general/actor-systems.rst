@@ -169,3 +169,13 @@ in which messages are processed in large systems is not controllable by the
 application author, but this is also not intended. Take a step back and relax
 while Akka does the heavy lifting under the hood.
 
+Terminating ActorSystem
+-----------------------
+
+When you know everything is done for your application, you can call the
+``terminate`` method of ``ActorSystem``. That will stop the guardian
+actor, which in turn will recursively stop all its child actors, the system
+guardian.
+
+If you want to execute some operations while terminating ``ActorSystem``,
+look at ``CoordinatedShutdown`` [:ref:`Java <coordinated-shutdown-java>`, :ref:`Scala <coordinated-shutdown-scala>`]
