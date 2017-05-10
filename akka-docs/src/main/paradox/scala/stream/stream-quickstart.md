@@ -3,7 +3,7 @@
 # Quick Start Guide
 
 Create a project and add the akka-streams dependency to the build tool of your
-choice as described in @ref:[Using a build tool](../../intro/getting-started.md#build-tool).
+choice as described in @ref:[Using a build tool](../../scala/intro/getting-started.md#build-tool).
 
 A stream usually begins at a source, so this is also how we start an Akka
 Stream. Before we create one, we import the full complement of streaming tools:

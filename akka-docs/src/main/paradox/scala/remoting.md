@@ -100,7 +100,7 @@ the `ActorSelection`, which returns a `Future` of the matching
 
 @@@ note
 
-For more details on how actor addresses and paths are formed and used, please refer to @ref:[Actor References, Paths and Addresses](../general/addressing.md).
+For more details on how actor addresses and paths are formed and used, please refer to @ref:[Actor References, Paths and Addresses](../scala/general/addressing.md).
 
 @@@
 
@@ -521,7 +521,7 @@ Creating and working with keystores and certificates is well documented in the
 [Generating X.509 Certificates](http://typesafehub.github.io/ssl-config/CertificateGeneration.html#using-keytool)
 section of Lightbend's SSL-Config library.
 
-Since an Akka remoting is inherently @ref:[peer-to-peer](../general/remoting.md#symmetric-communication) both the key-store as well as trust-store
+Since an Akka remoting is inherently @ref:[peer-to-peer](../scala/general/remoting.md#symmetric-communication) both the key-store as well as trust-store
 need to be configured on each remoting node participating in the cluster.
 
 The official [Java Secure Socket Extension documentation](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html)
@@ -619,7 +619,7 @@ marking them `PossiblyHarmful` so that a client cannot forge them.
 ## Remote Configuration
 
 There are lots of configuration properties that are related to remoting in Akka. We refer to the
-@ref:[reference configuration](../general/configuration.md#config-akka-remote) for more information.
+@ref:[reference configuration](../scala/general/configuration.md#config-akka-remote) for more information.
 
 @@@ note
 

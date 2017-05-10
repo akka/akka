@@ -7,9 +7,9 @@
 * [event-bus](event-bus.md)
 * [logging](logging.md)
 * [scheduler](scheduler.md)
-* [../common/duration](../common/duration.md)
-* [../common/circuitbreaker](../common/circuitbreaker.md)
+* [../scala/common/duration](../scala/common/duration.md)
+* [../scala/common/circuitbreaker](../scala/common/circuitbreaker.md)
 * [extending-akka](extending-akka.md)
-* [../intro/deployment-scenarios](../intro/deployment-scenarios.md)
+* [../scala/intro/deployment-scenarios](../scala/intro/deployment-scenarios.md)
 
 @@@

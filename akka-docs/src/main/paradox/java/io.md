@@ -101,4 +101,4 @@ A `ByteStringBuilder` can be wrapped in a `java.io.OutputStream` via the `asOutp
 
 ## Architecture in-depth
 
-For further details on the design and internal architecture see @ref:[I/O Layer Design](../dev/io-layer.md).
+For further details on the design and internal architecture see @ref:[I/O Layer Design](../scala/dev/io-layer.md).

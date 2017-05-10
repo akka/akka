@@ -368,7 +368,7 @@ within([min, ]max) {
 }
 ```
 
-The block given to `within` must complete after a @ref:[Duration](../common/duration.md) which
+The block given to `within` must complete after a @ref:[Duration](../scala/common/duration.md) which
 is between `min` and `max`, where the former defaults to zero. The
 deadline calculated by adding the `max` parameter to the block's start
 time is implicitly available within the block to all examination methods, if
@@ -820,4 +820,4 @@ when writing the tests or alternatively the `sequential` keyword.
 ## Configuration
 
 There are several configuration properties for the TestKit module, please refer
-to the @ref:[reference configuration](../general/configuration.md#config-akka-testkit).
+to the @ref:[reference configuration](../scala/general/configuration.md#config-akka-testkit).

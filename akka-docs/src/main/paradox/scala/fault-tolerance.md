@@ -1,6 +1,6 @@
 # Fault Tolerance
 
-As explained in @ref:[Actor Systems](../general/actor-systems.md) each actor is the supervisor of its
+As explained in @ref:[Actor Systems](../scala/general/actor-systems.md) each actor is the supervisor of its
 children, and as such each actor defines fault handling supervisor strategy.
 This strategy cannot be changed afterwards as it is an integral part of the
 actor system’s structure.
@@ -104,7 +104,7 @@ by overriding the `logFailure` method.
 ## Supervision of Top-Level Actors
 
 Toplevel actors means those which are created using `system.actorOf()`, and
-they are children of the @ref:[User Guardian](../general/supervision.md#user-guardian). There are no
+they are children of the @ref:[User Guardian](../scala/general/supervision.md#user-guardian). There are no
 special rules applied in this case, the guardian simply applies the configured
 strategy.
 

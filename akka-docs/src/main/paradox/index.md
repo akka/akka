@@ -4,7 +4,6 @@
 
 @@@ index
 
-* [guide](guide/index.md)
 * [java](java.md)
 * [scala](scala.md)
 

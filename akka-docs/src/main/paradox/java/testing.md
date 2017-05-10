@@ -316,7 +316,7 @@ for managing time constraints:
 
 @@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-within }
 
-The block in `within` must complete after a @ref:[Duration](../common/duration.md) which
+The block in `within` must complete after a @ref:[Duration](../scala/common/duration.md) which
 is between `min` and `max`, where the former defaults to zero. The
 deadline calculated by adding the `max` parameter to the block's start
 time is implicitly available within the block to all examination methods, if
@@ -679,4 +679,4 @@ akka {
 ## Configuration
 
 There are several configuration properties for the TestKit module, please refer
-to the @ref:[reference configuration](../general/configuration.md#config-akka-testkit).
+to the @ref:[reference configuration](../scala/general/configuration.md#config-akka-testkit).

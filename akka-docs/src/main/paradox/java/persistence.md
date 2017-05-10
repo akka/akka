@@ -1098,7 +1098,7 @@ When testing Persistence based projects always rely on @ref:[asynchronous messag
 ## Configuration
 
 There are several configuration properties for the persistence module, please refer
-to the @ref:[reference configuration](../general/configuration.md#config-akka-persistence).
+to the @ref:[reference configuration](../scala/general/configuration.md#config-akka-persistence).
 
 ## Multiple persistence plugin configurations
 

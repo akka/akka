@@ -775,7 +775,7 @@ Make sure you understand the security implications of enabling remote monitoring
 ## Configuration
 
 There are several configuration properties for the cluster. We refer to the
-@ref:[reference configuration](../general/configuration.md#config-akka-cluster) for more information.
+@ref:[reference configuration](../scala/general/configuration.md#config-akka-cluster) for more information.
 
 ### Cluster Info Logging
 
