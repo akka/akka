@@ -9,6 +9,7 @@ import akka.Done
 import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage._
+import akka.util.ConstantFun
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.annotation.unchecked.uncheckedVariance

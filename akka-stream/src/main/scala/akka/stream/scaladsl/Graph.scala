@@ -10,6 +10,7 @@ import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec

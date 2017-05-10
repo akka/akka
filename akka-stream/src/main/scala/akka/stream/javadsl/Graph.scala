@@ -6,8 +6,8 @@ package akka.stream.javadsl
 import akka.NotUsed
 import akka.stream._
 import akka.japi.{ Pair, function }
+import akka.util.ConstantFun
 import scala.annotation.unchecked.uncheckedVariance
-import akka.stream.impl.ConstantFun
 
 /**
  * Merge several streams, taking elements as they arrive from input streams

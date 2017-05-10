@@ -3,10 +3,11 @@
  */
 package akka.stream.javadsl
 
+import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, function }
-import akka.stream.impl.{ ConstantFun, StreamLayout }
+import akka.stream.impl.StreamLayout
 import akka.stream._
 import org.reactivestreams.Processor
 
