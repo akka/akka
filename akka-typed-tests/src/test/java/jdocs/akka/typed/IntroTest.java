@@ -7,6 +7,7 @@ package jdocs.akka.typed;
 import akka.typed.ActorRef;
 import akka.typed.ActorSystem;
 import akka.typed.Behavior;
+import akka.typed.Terminated;
 import akka.typed.javadsl.Actor;
 import akka.typed.javadsl.AskPattern;
 import akka.util.Timeout;
@@ -16,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
 
 public class IntroTest {
 
@@ -130,29 +133,75 @@ public class IntroTest {
     }
 
     private static Behavior<Command> chatRoom(List<ActorRef<SessionEvent>> sessions) {
-      return Actor.immutable((ctx, msg) -> {
-        if (msg instanceof GetSession) {
-          GetSession getSession = (GetSession) msg;
+      return Actor.immutable(Command.class)
+        .onMessage(GetSession.class, (ctx, getSession) -> {
           ActorRef<PostMessage> wrapper = ctx.spawnAdapter(p ->
             new PostSessionMessage(getSession.screenName, p.message));
           getSession.replyTo.tell(new SessionGranted(wrapper));
-          // TODO mutable collection :(
-          List<ActorRef<SessionEvent>> newSessions = new ArrayList<ActorRef<SessionEvent>>(sessions);
+          List<ActorRef<SessionEvent>> newSessions =
+            new ArrayList<ActorRef<SessionEvent>>(sessions);
           newSessions.add(getSession.replyTo);
           return chatRoom(newSessions);
-        } else if (msg instanceof PostSessionMessage) {
-          PostSessionMessage post = (PostSessionMessage) msg;
+        })
+        .onMessage(PostSessionMessage.class, (ctx, post) -> {
           MessagePosted mp = new MessagePosted(post.screenName, post.message);
           sessions.forEach(s -> s.tell(mp));
           return Actor.same();
-        } else {
-          return Actor.unhandled();
-        }
-      });
+        })
+        .build();
     }
     //#chatroom-behavior
 
   }
   //#chatroom-actor
+
+  //#chatroom-gabbler
+  public static abstract class Gabbler {
+    private Gabbler() {
+    }
+
+    public static Behavior<ChatRoom.SessionEvent> behavior() {
+      return Actor.immutable(ChatRoom.SessionEvent.class)
+        .onMessage(ChatRoom.SessionDenied.class, (ctx, msg) -> {
+          System.out.println("cannot start chat room session: " + msg.reason);
+          return Actor.stopped();
+        })
+        .onMessage(ChatRoom.SessionGranted.class, (ctx, msg) -> {
+          msg.handle.tell(new ChatRoom.PostMessage("Hello World!"));
+          return Actor.same();
+        })
+        .onMessage(ChatRoom.MessagePosted.class, (ctx, msg) -> {
+          System.out.println("message has been posted by '" +
+            msg.screenName +"': " + msg.message);
+          return Actor.stopped();
+        })
+        .build();
+    }
+
+  }
+  //#chatroom-gabbler
+
+  public static void runChatRoom() throws Exception {
+
+    //#chatroom-main
+    Behavior<Void> main = Actor.deferred(ctx -> {
+      ActorRef<ChatRoom.Command> chatRoom =
+        ctx.spawn(ChatRoom.behavior(), "chatRoom");
+      ActorRef<ChatRoom.SessionEvent> gabbler =
+          ctx.spawn(Gabbler.behavior(), "gabbler");
+      ctx.watch(gabbler);
+      chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
+
+      return Actor.immutable(Void.class)
+        .onSignal(Terminated.class, (c, sig) -> Actor.stopped())
+        .build();
+    });
+
+    final ActorSystem<Void> system =
+      ActorSystem.create("ChatRoomDemo", main);
+
+    Await.result(system.whenTerminated(), Duration.create(3, TimeUnit.SECONDS));
+    //#chatroom-main
+  }
 
 }

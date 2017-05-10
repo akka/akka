@@ -134,7 +134,7 @@ class IntroSpec extends TypedSpec {
       }
 
     val system = ActorSystem("ChatRoomDemo", main)
-    Await.result(system.whenTerminated, 1.second)
+    Await.result(system.whenTerminated, 3.seconds)
     //#chatroom-main
   }
 
