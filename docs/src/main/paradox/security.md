@@ -1,11 +1,11 @@
-# Security announcements
+# Security Announcements
 
-## Receiving security advisories
+## Receiving Security Advisories
 The best way to receive any and all security announcements is to subscribe to the [Akka security list](https://groups.google.com/forum/#!forum/akka-security).
 
 The mailing list is very low traffic, and receives notifications only after security reports have been managed by the core team and fixes are publicly available.
 
-## Reporting vulnerabilities
+## Reporting Vulnerabilities
 
 We strongly encourage people to report such problems to our private security mailing list first, before disclosing them in a public forum.
 
