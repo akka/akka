@@ -1,25 +1,21 @@
-.. _actors-general:
+# What is an Actor?
 
-What is an Actor?
-=================
-
-The previous section about :ref:`actor-systems` explained how actors form
+The previous section about @ref:[Actor Systems](actor-systems.md) explained how actors form
 hierarchies and are the smallest unit when building an application. This
 section looks at one such actor in isolation, explaining the concepts you
 encounter while implementing it. For a more in depth reference with all the
 details please refer to
-:ref:`Actors (Scala) <actors-scala>` and :ref:`Actors (Java) <actors-java>`.
+@ref:[Actors (Scala)](../scala/actors.md) and @ref:[Actors (Java)](../java/actors.md).
 
-An actor is a container for `State`_, `Behavior`_, a `Mailbox`_, `Child Actors`_
-and a `Supervisor Strategy`_. All of this is encapsulated behind an `Actor
-Reference`_. One noteworthy aspect is that actors have an explicit lifecycle,
+An actor is a container for [State](#state), [Behavior](#behavior), a [Mailbox](#mailbox), [Child Actors](#child-actors)
+and a [Supervisor Strategy](#supervisor-strategy). All of this is encapsulated behind an [Actor
+Reference](#actor-reference). One noteworthy aspect is that actors have an explicit lifecycle,
 they are not automatically destroyed when no longer referenced; after having
 created one, it is your responsibility to make sure that it will eventually be
 terminated as well—which also gives you control over how resources are released
-`When an Actor Terminates`_.
+[When an Actor Terminates](#when-an-actor-terminates).
 
-Actor Reference
----------------
+## Actor Reference
 
 As detailed below, an actor object needs to be shielded from the outside in
 order to benefit from the actor model. Therefore, actors are represented to the
@@ -32,12 +28,11 @@ But the most important aspect is that it is not possible to look inside an
 actor and get hold of its state from the outside, unless the actor unwisely
 publishes this information itself.
 
-State
------
+## State
 
 Actor objects will typically contain some variables which reflect possible
 states the actor may be in. This can be an explicit state machine (e.g. using
-the :ref:`fsm-scala` module), or it could be a counter, set of listeners,
+the @ref:[FSM](../scala/fsm.md) module), or it could be a counter, set of listeners,
 pending requests, etc. These data are what make an actor valuable, and they
 must be protected from corruption by other actors. The good news is that Akka
 actors conceptually each have their own light-weight thread, which is
@@ -58,10 +53,9 @@ the actor. This is to enable the ability of self-healing of the system.
 
 Optionally, an actor's state can be automatically recovered to the state
 before a restart by persisting received messages and replaying them after
-restart (see :ref:`persistence-scala`).
+restart (see @ref:[Persistence](../scala/persistence.md)).
 
-Behavior
---------
+## Behavior
 
 Every time a message is processed, it is matched against the current behavior
 of the actor. Behavior means a function which defines the actions to be taken
@@ -71,12 +65,11 @@ e.g. because different clients obtain authorization over time, or because the
 actor may go into an “out-of-service” mode and later come back. These changes
 are achieved by either encoding them in state variables which are read from the
 behavior logic, or the function itself may be swapped out at runtime, see the
-``become`` and ``unbecome`` operations. However, the initial behavior defined
+`become` and `unbecome` operations. However, the initial behavior defined
 during construction of the actor object is special in the sense that a restart
 of the actor will reset its behavior to this initial one.
 
-Mailbox
--------
+## Mailbox
 
 An actor’s purpose is the processing of messages, and these messages were sent
 to the actor from other actors (or from outside the actor system). The piece
@@ -103,23 +96,21 @@ dequeued message, there is no scanning the mailbox for the next matching one.
 Failure to handle a message will typically be treated as a failure, unless this
 behavior is overridden.
 
-Child Actors
-------------
+## Child Actors
 
 Each actor is potentially a supervisor: if it creates children for delegating
 sub-tasks, it will automatically supervise them. The list of children is
 maintained within the actor’s context and the actor has access to it.
-Modifications to the list are done by creating (``context.actorOf(...)``) or
-stopping (``context.stop(child)``) children and these actions are reflected
+Modifications to the list are done by creating (`context.actorOf(...)`) or
+stopping (`context.stop(child)`) children and these actions are reflected
 immediately. The actual creation and termination actions happen behind the
 scenes in an asynchronous way, so they do not “block” their supervisor.
 
-Supervisor Strategy
--------------------
+## Supervisor Strategy
 
 The final piece of an actor is its strategy for handling faults of its
 children. Fault handling is then done transparently by Akka, applying one
-of the strategies described in :ref:`supervision` for each incoming failure.
+of the strategies described in @ref:[Supervision and Monitoring](supervision.md) for each incoming failure.
 As this strategy is fundamental to how an actor system is structured, it
 cannot be changed once an actor has been created.
 
@@ -129,8 +120,7 @@ children should be grouped beneath intermediate supervisors with matching
 strategies, preferring once more the structuring of actor systems according to
 the splitting of tasks into sub-tasks.
 
-When an Actor Terminates
-------------------------
+## When an Actor Terminates
 
 Once an actor terminates, i.e. fails in a way which is not handled by a
 restart, stops itself or is stopped by its supervisor, it will free up its
@@ -146,5 +136,3 @@ tests: we register the TestEventListener on the event bus to which the dead
 letters are forwarded, and that will log a warning for every dead letter
 received—this has been very helpful for deciphering test failures more quickly.
 It is conceivable that this feature may also be of use for other purposes.
-
-

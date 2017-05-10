@@ -1,22 +1,21 @@
-.. _scala-api:
+# Scala Documentation
 
-Scala Documentation
-===================
+@@toc { depth=2 }
 
-.. toctree::
-   :maxdepth: 2
+@@@ index
 
-   security/index
-   intro/index-scala
-   general/index
-   scala/index-actors
-   scala/index-futures
-   scala/index-network
-   scala/index-utilities
-   scala/stream/index
-   scala/http/index
-   scala/howto
-   dev/index
-   project/index
-   additional/index
+* [security/index](security/index.md)
+* [intro/index-scala](intro/index-scala.md)
+* [general/index](general/index.md)
+* [scala/index-actors](scala/index-actors.md)
+* [scala/index-futures](scala/index-futures.md)
+* [scala/index-network](scala/index-network.md)
+* [scala/index-utilities](scala/index-utilities.md)
+* [scala/stream/index](scala/stream/index.md)
+* [scala/http/index](scala/http/index.md)
+* [scala/howto](scala/howto.md)
+* [dev/index](dev/index.md)
+* [project/index](project/index.md)
+* [additional/index](additional/index.md)
 
+@@@

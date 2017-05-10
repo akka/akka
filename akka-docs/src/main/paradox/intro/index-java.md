@@ -1,13 +1,14 @@
-Introduction
-============
+# Introduction
 
-.. toctree::
-   :maxdepth: 2
+@@toc { depth=2 }
 
-   what-is-akka
-   why-akka
-   getting-started
-   ../java/hello-world
-   deployment-scenarios
-   use-cases
+@@@ index
 
+* [what-is-akka](what-is-akka.md)
+* [why-akka](why-akka.md)
+* [getting-started](getting-started.md)
+* [../java/hello-world](../java/hello-world.md)
+* [deployment-scenarios](deployment-scenarios.md)
+* [use-cases](use-cases.md)
+
+@@@

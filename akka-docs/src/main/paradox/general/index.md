@@ -1,15 +1,17 @@
-General
-=======
+# General
 
-.. toctree::
-   :maxdepth: 2
+@@toc { depth=2 }
 
-   terminology
-   actor-systems
-   actors
-   supervision
-   addressing
-   remoting
-   jmm
-   message-delivery-reliability
-   configuration
+@@@ index
+
+* [terminology](terminology.md)
+* [actor-systems](actor-systems.md)
+* [actors](actors.md)
+* [supervision](supervision.md)
+* [addressing](addressing.md)
+* [remoting](remoting.md)
+* [jmm](jmm.md)
+* [message-delivery-reliability](message-delivery-reliability.md)
+* [configuration](configuration.md)
+
+@@@

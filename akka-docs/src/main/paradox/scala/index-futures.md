@@ -1,8 +1,10 @@
-Futures and Agents
-==================
+# Futures and Agents
 
-.. toctree::
-   :maxdepth: 2
+@@toc { depth=2 }
 
-   futures
-   agents
+@@@ index
+
+* [futures](futures.md)
+* [agents](agents.md)
+
+@@@

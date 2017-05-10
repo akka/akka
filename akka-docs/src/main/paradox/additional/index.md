@@ -1,11 +1,13 @@
-Additional Information
-======================
+# Additional Information
 
-.. toctree::
-   :maxdepth: 2
+@@toc { depth=2 }
 
-   ../common/binary-compatibility-rules
-   ../common/may-change
-   faq
-   books
-   osgi
+@@@ index
+
+* [../common/binary-compatibility-rules](../common/binary-compatibility-rules.md)
+* [../common/may-change](../common/may-change.md)
+* [faq](faq.md)
+* [books](books.md)
+* [osgi](osgi.md)
+
+@@@

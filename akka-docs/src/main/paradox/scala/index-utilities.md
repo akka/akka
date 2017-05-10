@@ -1,14 +1,15 @@
-Utilities
-=========
+# Utilities
 
-.. toctree::
-   :maxdepth: 2
+@@toc { depth=2 }
 
-   event-bus
-   logging
-   scheduler
-   ../common/duration
-   ../common/circuitbreaker
-   extending-akka
-   ../intro/deployment-scenarios
+@@@ index
 
+* [event-bus](event-bus.md)
+* [logging](logging.md)
+* [scheduler](scheduler.md)
+* [../common/duration](../common/duration.md)
+* [../common/circuitbreaker](../common/circuitbreaker.md)
+* [extending-akka](extending-akka.md)
+* [../intro/deployment-scenarios](../intro/deployment-scenarios.md)
+
+@@@

@@ -1,12 +1,13 @@
-Information for Akka Developers
-===============================
+# Information for Akka Developers
 
-.. toctree::
-   :maxdepth: 2
+@@toc { depth=2 }
 
-   building-akka
-   multi-jvm-testing
-   io-layer
-   developer-guidelines
-   documentation
+@@@ index
 
+* [building-akka](building-akka.md)
+* [multi-jvm-testing](multi-jvm-testing.md)
+* [io-layer](io-layer.md)
+* [developer-guidelines](developer-guidelines.md)
+* [documentation](documentation.md)
+
+@@@

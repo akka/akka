@@ -1,10 +1,12 @@
 package docs.camel
 
+//#imports
 import akka.actor.{ Props, ActorSystem }
 import akka.camel.CamelExtension
 
 import language.postfixOps
 import akka.util.Timeout
+//#imports
 
 object Introduction {
   def foo(): Unit = {

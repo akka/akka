@@ -1,54 +1,43 @@
-.. _fsm-java:
+# FSM
 
-#####
- FSM
-#####
-
-
-Overview
-========
+## Overview
 
 The FSM (Finite State Machine) is available as an abstract base class that implements
-an Akka Actor and is best described in the `Erlang design principles
-<http://www.erlang.org/documentation/doc-4.8.2/doc/design_principles/fsm.html>`_
+an Akka Actor and is best described in the [Erlang design principles](http://www.erlang.org/documentation/doc-4.8.2/doc/design_principles/fsm.html)
 
 A FSM can be described as a set of relations of the form:
 
-  **State(S) x Event(E) -> Actions (A), State(S')**
+>
+**State(S) x Event(E) -> Actions (A), State(S')**
 
 These relations are interpreted as meaning:
 
-  *If we are in state S and the event E occurs, we should perform the actions A
-  and make a transition to the state S'.*
+>
+*If we are in state S and the event E occurs, we should perform the actions A
+and make a transition to the state S'.*
 
+## A Simple Example
 
-A Simple Example
-================
-
-To demonstrate most of the features of the :class:`AbstractFSM` class, consider an
+To demonstrate most of the features of the `AbstractFSM` class, consider an
 actor which shall receive and queue messages while they arrive in a burst and
 send them on after the burst ended or a flush request is received.
 
 First, consider all of the below to use these import statements:
 
-.. includecode:: code/jdocs/actor/fsm/Buncher.java#simple-imports
+@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #simple-imports }
 
 The contract of our “Buncher” actor is that it accepts or produces the following messages:
 
-.. includecode:: code/jdocs/actor/fsm/Events.java
-   :include: simple-events
-   :exclude: boilerplate
+@@snip [Events.java](code/jdocs/actor/fsm/Events.java) { #simple-events }
 
-``SetTarget`` is needed for starting it up, setting the destination for the
-``Batches`` to be passed on; ``Queue`` will add to the internal queue while
-``Flush`` will mark the end of a burst.
+`SetTarget` is needed for starting it up, setting the destination for the
+`Batches` to be passed on; `Queue` will add to the internal queue while
+`Flush` will mark the end of a burst.
 
-The actor can be in two states: no message queued (aka ``Idle``) or some
-message queued (aka ``Active``). The states and the state data is defined like this:
+The actor can be in two states: no message queued (aka `Idle`) or some
+message queued (aka `Active`). The states and the state data is defined like this:
 
-.. includecode:: code/jdocs/actor/fsm/Buncher.java
-   :include: simple-state
-   :exclude: boilerplate
+@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #simple-state }
 
 The actor starts out in the idle state. Once a message arrives it will go to the
 active state and stay there as long as messages keep arriving and no flush is
@@ -57,214 +46,206 @@ reference to send the batches to and the actual queue of messages.
 
 Now let’s take a look at the skeleton for our FSM actor:
 
-.. includecode:: code/jdocs/actor/fsm/Buncher.java
-   :include: simple-fsm
-   :exclude: transition-elided,unhandled-elided
+@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #simple-fsm }
 
-The basic strategy is to declare the actor, by inheriting the :class:`AbstractFSM` class
+The basic strategy is to declare the actor, by inheriting the `AbstractFSM` class
 and specifying the possible states and data values as type parameters. Within
 the body of the actor a DSL is used for declaring the state machine:
 
- * :meth:`startWith` defines the initial state and initial data
- * then there is one :meth:`when(<state>) { ... }` declaration per state to be
-   handled (could potentially be multiple ones, the passed
-   :class:`PartialFunction` will be concatenated using :meth:`orElse`)
- * finally starting it up using :meth:`initialize`, which performs the
-   transition into the initial state and sets up timers (if required).
+>
+ * `startWith` defines the initial state and initial data
+ * then there is one `when(<state>) { ... }` declaration per state to be
+handled (could potentially be multiple ones, the passed
+`PartialFunction` will be concatenated using `orElse`)
+ * finally starting it up using `initialize`, which performs the
+transition into the initial state and sets up timers (if required).
 
-In this case, we start out in the ``Idle`` and ``Uninitialized`` state, where
-only the ``SetTarget()`` message is handled; ``stay`` prepares to end this
-event’s processing for not leaving the current state, while the ``using``
-modifier makes the FSM replace the internal state (which is ``Uninitialized``
-at this point) with a fresh ``Todo()`` object containing the target actor
-reference. The ``Active`` state has a state timeout declared, which means that
-if no message is received for 1 second, a ``FSM.StateTimeout`` message will be
-generated. This has the same effect as receiving the ``Flush`` command in this
-case, namely to transition back into the ``Idle`` state and resetting the
+In this case, we start out in the `Idle` and `Uninitialized` state, where
+only the `SetTarget()` message is handled; `stay` prepares to end this
+event’s processing for not leaving the current state, while the `using`
+modifier makes the FSM replace the internal state (which is `Uninitialized`
+at this point) with a fresh `Todo()` object containing the target actor
+reference. The `Active` state has a state timeout declared, which means that
+if no message is received for 1 second, a `FSM.StateTimeout` message will be
+generated. This has the same effect as receiving the `Flush` command in this
+case, namely to transition back into the `Idle` state and resetting the
 internal queue to the empty vector. But how do messages get queued? Since this
 shall work identically in both states, we make use of the fact that any event
-which is not handled by the ``when()`` block is passed to the
-``whenUnhandled()`` block:
+which is not handled by the `when()` block is passed to the
+`whenUnhandled()` block:
 
-.. includecode:: code/jdocs/actor/fsm/Buncher.java#unhandled-elided
+@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #unhandled-elided }
 
-The first case handled here is adding ``Queue()`` requests to the internal
-queue and going to the ``Active`` state (this does the obvious thing of staying
-in the ``Active`` state if already there), but only if the FSM data are not
-``Uninitialized`` when the ``Queue()`` event is received. Otherwise—and in all
+The first case handled here is adding `Queue()` requests to the internal
+queue and going to the `Active` state (this does the obvious thing of staying
+in the `Active` state if already there), but only if the FSM data are not
+`Uninitialized` when the `Queue()` event is received. Otherwise—and in all
 other non-handled cases—the second case just logs a warning and does not change
 the internal state.
 
-The only missing piece is where the ``Batches`` are actually sent to the
-target, for which we use the ``onTransition`` mechanism: you can declare
+The only missing piece is where the `Batches` are actually sent to the
+target, for which we use the `onTransition` mechanism: you can declare
 multiple such blocks and all of them will be tried for matching behavior in
 case a state transition occurs (i.e. only when the state actually changes).
 
-.. includecode:: code/jdocs/actor/fsm/Buncher.java#transition-elided
+@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #transition-elided }
 
 The transition callback is a partial function which takes as input a pair of
 states—the current and the next state. During the state change, the old state
-data is available via ``stateData`` as shown, and the new state data would be
-available as ``nextStateData``.
+data is available via `stateData` as shown, and the new state data would be
+available as `nextStateData`.
 
 To verify that this buncher actually works, it is quite easy to write a test
-using the :ref:`akka-testkit`, here using JUnit as an example:
+using the <!-- FIXME: More than one link target with name akka-testkit in path Some(/java/fsm.rst) --> akka-testkit, here using JUnit as an example:
 
-.. includecode:: code/jdocs/actor/fsm/BuncherTest.java
-   :include: test-code
+@@snip [BuncherTest.java](code/jdocs/actor/fsm/BuncherTest.java) { #test-code }
 
-Reference
-=========
+## Reference
 
-The AbstractFSM Class
----------------------
+### The AbstractFSM Class
 
-The :class:`AbstractFSM` abstract class is the base class used to implement an FSM. It implements
+The `AbstractFSM` abstract class is the base class used to implement an FSM. It implements
 Actor since an Actor is created to drive the FSM.
 
-.. includecode:: code/jdocs/actor/fsm/Buncher.java
-   :include: simple-fsm
-   :exclude: fsm-body
+@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #simple-fsm }
 
-.. note::
+@@@ note
 
-   The AbstractFSM class defines a ``receive`` method which handles internal messages
-   and passes everything else through to the FSM logic (according to the
-   current state). When overriding the ``receive`` method, keep in mind that
-   e.g. state timeout handling depends on actually passing the messages through
-   the FSM logic.
+The AbstractFSM class defines a `receive` method which handles internal messages
+and passes everything else through to the FSM logic (according to the
+current state). When overriding the `receive` method, keep in mind that
+e.g. state timeout handling depends on actually passing the messages through
+the FSM logic.
 
-The :class:`AbstractFSM` class takes two type parameters:
+@@@
 
- #. the supertype of all state names, usually an enum,
- #. the type of the state data which are tracked by the :class:`AbstractFSM` module
-    itself.
+The `AbstractFSM` class takes two type parameters:
 
-.. _fsm-philosophy:
+>
+ 1. the supertype of all state names, usually an enum,
+ 2. the type of the state data which are tracked by the `AbstractFSM` module
+itself.
 
-.. note::
+@@@ note
 
-   The state data together with the state name describe the internal state of
-   the state machine; if you stick to this scheme and do not add mutable fields
-   to the FSM class you have the advantage of making all changes of the
-   internal state explicit in a few well-known places.
+The state data together with the state name describe the internal state of
+the state machine; if you stick to this scheme and do not add mutable fields
+to the FSM class you have the advantage of making all changes of the
+internal state explicit in a few well-known places.
 
-Defining States
----------------
+@@@
+
+### Defining States
 
 A state is defined by one or more invocations of the method
 
-  :func:`when(<name>[, stateTimeout = <timeout>])(stateFunction)`.
+>
+`when(<name>[, stateTimeout = <timeout>])(stateFunction)`.
 
 The given name must be an object which is type-compatible with the first type
-parameter given to the :class:`AbstractFSM` class. This object is used as a hash key,
-so you must ensure that it properly implements :meth:`equals` and
-:meth:`hashCode`; in particular it must not be mutable. The easiest fit for
+parameter given to the `AbstractFSM` class. This object is used as a hash key,
+so you must ensure that it properly implements `equals` and
+`hashCode`; in particular it must not be mutable. The easiest fit for
 these requirements are case objects.
 
-If the :meth:`stateTimeout` parameter is given, then all transitions into this
+If the `stateTimeout` parameter is given, then all transitions into this
 state, including staying, receive this timeout by default. Initiating the
 transition with an explicit timeout may be used to override this default, see
-`Initiating Transitions`_ for more information. The state timeout of any state
+[Initiating Transitions](#initiating-transitions) for more information. The state timeout of any state
 may be changed during action processing with
-:func:`setStateTimeout(state, duration)`. This enables runtime configuration
+`setStateTimeout(state, duration)`. This enables runtime configuration
 e.g. via external message.
 
-The :meth:`stateFunction` argument is a :class:`PartialFunction[Event, State]`,
+The `stateFunction` argument is a `PartialFunction[Event, State]`,
 which is conveniently given using the state function builder syntax as
 demonstrated below:
 
-.. includecode:: code/jdocs/actor/fsm/Buncher.java
-   :include: when-syntax
+@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #when-syntax }
 
-.. warning::
+@@@ warning
 
-  It is required that you define handlers for each of the possible FSM states,
-  otherwise there will be failures when trying to switch to undeclared states.
+It is required that you define handlers for each of the possible FSM states,
+otherwise there will be failures when trying to switch to undeclared states.
+
+@@@
 
 It is recommended practice to declare the states as an enum and then verify that there is a
-``when`` clause for each of the states. If you want to leave the handling of a state
+`when` clause for each of the states. If you want to leave the handling of a state
 “unhandled” (more below), it still needs to be declared like this:
 
-.. includecode:: code/jdocs/actor/fsm/FSMDocTest.java#NullFunction
+@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #NullFunction }
 
-Defining the Initial State
---------------------------
+### Defining the Initial State
 
 Each FSM needs a starting point, which is declared using
 
-  :func:`startWith(state, data[, timeout])`
+>
+`startWith(state, data[, timeout])`
 
 The optionally given timeout argument overrides any specification given for the
 desired initial state. If you want to cancel a default timeout, use
-:obj:`Duration.Inf`.
+`Duration.Inf`.
 
-Unhandled Events
-----------------
+### Unhandled Events
 
 If a state doesn't handle a received event a warning is logged. If you want to
 do something else in this case you can specify that with
-:func:`whenUnhandled(stateFunction)`:
+`whenUnhandled(stateFunction)`:
 
-.. includecode:: code/jdocs/actor/fsm/FSMDocTest.java
-   :include: unhandled-syntax
+@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #unhandled-syntax }
 
 Within this handler the state of the FSM may be queried using the
-:meth:`stateName` method.
+`stateName` method.
 
 **IMPORTANT**: This handler is not stacked, meaning that each invocation of
-:func:`whenUnhandled` replaces the previously installed handler.
+`whenUnhandled` replaces the previously installed handler.
 
-Initiating Transitions
-----------------------
+### Initiating Transitions
 
-The result of any :obj:`stateFunction` must be a definition of the next state
-unless terminating the FSM, which is described in `Termination from Inside`_.
+The result of any `stateFunction` must be a definition of the next state
+unless terminating the FSM, which is described in [Termination from Inside](#termination-from-inside).
 The state definition can either be the current state, as described by the
-:func:`stay` directive, or it is a different state as given by
-:func:`goto(state)`. The resulting object allows further qualification by way
+`stay` directive, or it is a different state as given by
+`goto(state)`. The resulting object allows further qualification by way
 of the modifiers described in the following:
 
-* :meth:`forMax(duration)`
-
-  This modifier sets a state timeout on the next state. This means that a timer
-  is started which upon expiry sends a :obj:`StateTimeout` message to the FSM.
-  This timer is canceled upon reception of any other message in the meantime;
-  you can rely on the fact that the :obj:`StateTimeout` message will not be
-  processed after an intervening message.
-
-  This modifier can also be used to override any default timeout which is
-  specified for the target state. If you want to cancel the default timeout,
-  use :obj:`Duration.Inf`.
-
-* :meth:`using(data)`
-
-  This modifier replaces the old state data with the new data given. If you
-  follow the advice :ref:`above <fsm-philosophy>`, this is the only place where
-  internal state data are ever modified.
-
-* :meth:`replying(msg)`
-
-  This modifier sends a reply to the currently processed message and otherwise
-  does not modify the state transition.
+ * 
+   `forMax(duration)`
+   This modifier sets a state timeout on the next state. This means that a timer
+is started which upon expiry sends a `StateTimeout` message to the FSM.
+This timer is canceled upon reception of any other message in the meantime;
+you can rely on the fact that the `StateTimeout` message will not be
+processed after an intervening message.
+   This modifier can also be used to override any default timeout which is
+specified for the target state. If you want to cancel the default timeout,
+use `Duration.Inf`.
+ * 
+   `using(data)`
+   This modifier replaces the old state data with the new data given. If you
+follow the advice [above](#fsm-philosophy), this is the only place where
+internal state data are ever modified.
+ * 
+   `replying(msg)`
+   This modifier sends a reply to the currently processed message and otherwise
+does not modify the state transition.
 
 All modifiers can be chained to achieve a nice and concise description:
 
-.. includecode:: code/jdocs/actor/fsm/FSMDocTest.java
-   :include: modifier-syntax
+@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #modifier-syntax }
 
 The parentheses are not actually needed in all cases, but they visually
 distinguish between modifiers and their arguments and therefore make the code
 even more pleasant to read for foreigners.
 
-.. note::
+@@@ note
 
-   Please note that the ``return`` statement may not be used in :meth:`when`
-   blocks or similar; this is a Scala restriction. Either refactor your code
-   using ``if () ... else ...`` or move it into a method definition.
+Please note that the `return` statement may not be used in `when`
+blocks or similar; this is a Scala restriction. Either refactor your code
+using `if () ... else ...` or move it into a method definition.
 
-Monitoring Transitions
-----------------------
+@@@
+
+### Monitoring Transitions
 
 Transitions occur "between states" conceptually, which means after any actions
 you have put into the event handling block; this is obvious since the next
@@ -273,186 +254,184 @@ not need to worry about the exact order with respect to setting the internal
 state variable, as everything within the FSM actor is running single-threaded
 anyway.
 
-Internal Monitoring
-^^^^^^^^^^^^^^^^^^^
+#### Internal Monitoring
 
 Up to this point, the FSM DSL has been centered on states and events. The dual
 view is to describe it as a series of transitions. This is enabled by the
 method
 
-  :func:`onTransition(handler)`
+>
+`onTransition(handler)`
 
 which associates actions with a transition instead of with a state and event.
 The handler is a partial function which takes a pair of states as input; no
 resulting state is needed as it is not possible to modify the transition in
 progress.
 
-.. includecode:: code/jdocs/actor/fsm/FSMDocTest.java
-   :include: transition-syntax
+@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #transition-syntax }
 
 It is also possible to pass a function object accepting two states to
-:func:`onTransition`, in case your transition handling logic is implemented as
+`onTransition`, in case your transition handling logic is implemented as
 a method:
 
-.. includecode:: code/jdocs/actor/fsm/FSMDocTest.java
-   :include: alt-transition-syntax
+@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #alt-transition-syntax }
 
 The handlers registered with this method are stacked, so you can intersperse
-:func:`onTransition` blocks with :func:`when` blocks as suits your design. It
+`onTransition` blocks with `when` blocks as suits your design. It
 should be noted, however, that *all handlers will be invoked for each
 transition*, not only the first matching one. This is designed specifically so
 you can put all transition handling for a certain aspect into one place without
 having to worry about earlier declarations shadowing later ones; the actions
 are still executed in declaration order, though.
 
-.. note::
+@@@ note
 
-   This kind of internal monitoring may be used to structure your FSM according
-   to transitions, so that for example the cancellation of a timer upon leaving
-   a certain state cannot be forgot when adding new target states.
+This kind of internal monitoring may be used to structure your FSM according
+to transitions, so that for example the cancellation of a timer upon leaving
+a certain state cannot be forgot when adding new target states.
 
-External Monitoring
-^^^^^^^^^^^^^^^^^^^
+@@@
+
+#### External Monitoring
 
 External actors may be registered to be notified of state transitions by
-sending a message :class:`SubscribeTransitionCallBack(actorRef)`. The named
-actor will be sent a :class:`CurrentState(self, stateName)` message immediately
-and will receive :class:`Transition(actorRef, oldState, newState)` messages
+sending a message `SubscribeTransitionCallBack(actorRef)`. The named
+actor will be sent a `CurrentState(self, stateName)` message immediately
+and will receive `Transition(actorRef, oldState, newState)` messages
 whenever a new state is reached. External monitors may be unregistered by
-sending :class:`UnsubscribeTransitionCallBack(actorRef)` to the FSM actor.
+sending `UnsubscribeTransitionCallBack(actorRef)` to the FSM actor.
 
 Stopping a listener without unregistering will not remove the listener from the
-subscription list; use :class:`UnsubscribeTransitionCallback` before stopping
+subscription list; use `UnsubscribeTransitionCallback` before stopping
 the listener.
 
-Timers
-------
+### Timers
 
-Besides state timeouts, FSM manages timers identified by :class:`String` names.
+Besides state timeouts, FSM manages timers identified by `String` names.
 You may set a timer using
 
-  :func:`setTimer(name, msg, interval, repeat)`
+>
+`setTimer(name, msg, interval, repeat)`
 
-where :obj:`msg` is the message object which will be sent after the duration
-:obj:`interval` has elapsed. If :obj:`repeat` is :obj:`true`, then the timer is
-scheduled at fixed rate given by the :obj:`interval` parameter.
+where `msg` is the message object which will be sent after the duration
+`interval` has elapsed. If `repeat` is `true`, then the timer is
+scheduled at fixed rate given by the `interval` parameter.
 Any existing timer with the same name will automatically be canceled before
 adding the new timer.
 
 Timers may be canceled using
 
-  :func:`cancelTimer(name)`
+>
+`cancelTimer(name)`
 
 which is guaranteed to work immediately, meaning that the scheduled message
 will not be processed after this call even if the timer already fired and
 queued it. The status of any timer may be inquired with
 
-  :func:`isTimerActive(name)`
+>
+`isTimerActive(name)`
 
 These named timers complement state timeouts because they are not affected by
 intervening reception of other messages.
 
-Termination from Inside
------------------------
+### Termination from Inside
 
 The FSM is stopped by specifying the result state as
 
-  :func:`stop([reason[, data]])`
+>
+`stop([reason[, data]])`
 
-The reason must be one of :obj:`Normal` (which is the default), :obj:`Shutdown`
-or :obj:`Failure(reason)`, and the second argument may be given to change the
+The reason must be one of `Normal` (which is the default), `Shutdown`
+or `Failure(reason)`, and the second argument may be given to change the
 state data which is available during termination handling.
 
-.. note::
+@@@ note
 
-   It should be noted that :func:`stop` does not abort the actions and stop the
-   FSM immediately. The stop action must be returned from the event handler in
-   the same way as a state transition (but note that the ``return`` statement
-   may not be used within a :meth:`when` block).
+It should be noted that `stop` does not abort the actions and stop the
+FSM immediately. The stop action must be returned from the event handler in
+the same way as a state transition (but note that the `return` statement
+may not be used within a `when` block).
 
-.. includecode:: code/jdocs/actor/fsm/FSMDocTest.java
-   :include: stop-syntax
+@@@
 
-You can use :func:`onTermination(handler)` to specify custom code that is
+@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #stop-syntax }
+
+You can use `onTermination(handler)` to specify custom code that is
 executed when the FSM is stopped. The handler is a partial function which takes
-a :class:`StopEvent(reason, stateName, stateData)` as argument:
+a `StopEvent(reason, stateName, stateData)` as argument:
 
-.. includecode:: code/jdocs/actor/fsm/FSMDocTest.java
-   :include: termination-syntax
+@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #termination-syntax }
 
-As for the :func:`whenUnhandled` case, this handler is not stacked, so each
-invocation of :func:`onTermination` replaces the previously installed handler.
+As for the `whenUnhandled` case, this handler is not stacked, so each
+invocation of `onTermination` replaces the previously installed handler.
 
-Termination from Outside
-------------------------
+### Termination from Outside
 
-When an :class:`ActorRef` associated to a FSM is stopped using the
-:meth:`stop()` method, its :meth:`postStop` hook will be executed. The default
-implementation by the :class:`AbstractFSM` class is to execute the
-:meth:`onTermination` handler if that is prepared to handle a
-:obj:`StopEvent(Shutdown, ...)`.
+When an `ActorRef` associated to a FSM is stopped using the
+`stop()` method, its `postStop` hook will be executed. The default
+implementation by the `AbstractFSM` class is to execute the
+`onTermination` handler if that is prepared to handle a
+`StopEvent(Shutdown, ...)`.
 
-.. warning::
+@@@ warning
 
-  In case you override :meth:`postStop` and want to have your
-  :meth:`onTermination` handler called, do not forget to call
-  ``super.postStop``.
+In case you override `postStop` and want to have your
+`onTermination` handler called, do not forget to call
+`super.postStop`.
 
-Testing and Debugging Finite State Machines
-===========================================
+@@@
+
+## Testing and Debugging Finite State Machines
 
 During development and for trouble shooting FSMs need care just as any other
-actor. There are specialized tools available as described in :ref:`TestFSMRef`
+actor. There are specialized tools available as described in @ref:[TestFSMRef](../scala/testing.md#testfsmref)
 and in the following.
 
-Event Tracing
--------------
+### Event Tracing
 
-The setting ``akka.actor.debug.fsm`` in :ref:`configuration` enables logging of an
-event trace by :class:`LoggingFSM` instances:
+The setting `akka.actor.debug.fsm` in <!-- FIXME: More than one link target with name configuration in path Some(/java/fsm.rst) --> configuration enables logging of an
+event trace by `LoggingFSM` instances:
 
-.. includecode:: code/jdocs/actor/fsm/FSMDocTest.java
-   :include: logging-fsm
-   :exclude: body-elided
+@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
 
 This FSM will log at DEBUG level:
 
-  * all processed events, including :obj:`StateTimeout` and scheduled timer
-    messages
-  * every setting and cancellation of named timers
-  * all state transitions
+>
+ * all processed events, including `StateTimeout` and scheduled timer
+messages
+ * every setting and cancellation of named timers
+ * all state transitions
 
 Life cycle changes and special messages can be logged as described for
-:ref:`Actors <actor.logging-scala>`.
+@ref:[Actors](../scala/testing.md#actor-logging-scala).
 
-Rolling Event Log
------------------
+### Rolling Event Log
 
-The :class:`AbstractLoggingFSM` class adds one more feature to the FSM: a rolling event
+The `AbstractLoggingFSM` class adds one more feature to the FSM: a rolling event
 log which may be used during debugging (for tracing how the FSM entered a
 certain failure state) or for other creative uses:
 
-.. includecode:: code/jdocs/actor/fsm/FSMDocTest.java
-   :include: logging-fsm
+@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
 
-The :meth:`logDepth` defaults to zero, which turns off the event log.
+The `logDepth` defaults to zero, which turns off the event log.
 
-.. warning::
+@@@ warning
 
-  The log buffer is allocated during actor creation, which is why the
-  configuration is done using a virtual method call. If you want to override
-  with a ``val``, make sure that its initialization happens before the
-  initializer of :class:`LoggingFSM` runs, and do not change the value returned
-  by ``logDepth`` after the buffer has been allocated.
+The log buffer is allocated during actor creation, which is why the
+configuration is done using a virtual method call. If you want to override
+with a `val`, make sure that its initialization happens before the
+initializer of `LoggingFSM` runs, and do not change the value returned
+by `logDepth` after the buffer has been allocated.
 
-The contents of the event log are available using method :meth:`getLog`, which
-returns an :class:`IndexedSeq[LogEntry]` where the oldest entry is at index
+@@@
+
+The contents of the event log are available using method `getLog`, which
+returns an `IndexedSeq[LogEntry]` where the oldest entry is at index
 zero.
 
-Examples
-========
+## Examples
 
-A bigger FSM example contrasted with Actor's :meth:`become`/:meth:`unbecome` can be
-downloaded as a ready to run `Akka FSM sample <@exampleCodeService@/akka-samples-fsm-java>`_
+A bigger FSM example contrasted with Actor's `become`/`unbecome` can be
+downloaded as a ready to run [Akka FSM sample](@exampleCodeService@/akka-samples-fsm-java)
 together with a tutorial. The source code of this sample can be found in the
-`Akka Samples Repository <@samples@/akka-sample-fsm-java>`_.
+[Akka Samples Repository](@samples@/akka-sample-fsm-java).

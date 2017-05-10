@@ -1,50 +1,39 @@
-.. _io-layer:
+# I/O Layer Design
 
-################
-I/O Layer Design
-################
-
-The ``akka.io`` package has been developed in collaboration between the Akka
-and `spray.io`_ teams. Its design incorporates the experiences with the
-``spray-io`` module along with improvements that were jointly developed for
+The `akka.io` package has been developed in collaboration between the Akka
+and [spray.io](http://spray.io) teams. Its design incorporates the experiences with the
+`spray-io` module along with improvements that were jointly developed for
 more general consumption as an actor-based service.
 
-Requirements
-============
+## Requirements
 
 In order to form a general and extensible IO layer basis for a wide range of
 applications, with Akka remoting and spray HTTP being the initial ones, the
 following requirements were established as key drivers for the design:
 
-* scalability to millions of concurrent connections
+ * scalability to millions of concurrent connections
+ * lowest possible latency in getting data from an input channel into the
+target actor’s mailbox
+ * maximal throughput
+ * optional back-pressure in both directions (i.e. throttling local senders as
+well as allowing local readers to throttle remote senders, where allowed by
+the protocol)
+ * a purely actor-based API with immutable data representation
+ * extensibility for integrating new transports by way of a very lean SPI; the
+goal is to not force I/O mechanisms into a lowest common denominator but
+instead allow completely protocol-specific user-level APIs.
 
-* lowest possible latency in getting data from an input channel into the
-  target actor’s mailbox
-
-* maximal throughput
-
-* optional back-pressure in both directions (i.e. throttling local senders as
-  well as allowing local readers to throttle remote senders, where allowed by
-  the protocol)
-
-* a purely actor-based API with immutable data representation
-
-* extensibility for integrating new transports by way of a very lean SPI; the
-  goal is to not force I/O mechanisms into a lowest common denominator but
-  instead allow completely protocol-specific user-level APIs.
-
-Basic Architecture
-==================
+## Basic Architecture
 
 Each transport implementation will be made available as a separate Akka
-extension, offering an :class:`ActorRef` representing the initial point of
+extension, offering an `ActorRef` representing the initial point of
 contact for client code. This "manager" accepts requests for establishing a
 communications channel (e.g. connect or listen on a TCP socket). Each
 communications channel is represented by one dedicated actor, which is exposed
 to client code for all interaction with this channel over its entire lifetime.
 
 The central element of the implementation is the transport-specific “selector”
-actor; in the case of TCP this would wrap a :class:`java.nio.channels.Selector`.
+actor; in the case of TCP this would wrap a `java.nio.channels.Selector`.
 The channel actors register their interest in readability or writability of
 their channel by sending corresponding messages to their assigned selector
 actor. However, the actual channel reading and writing is performed by the
@@ -67,7 +56,7 @@ levels, with the management actor at the top-, the channel actors at the leaf-
 and the selector actors at the mid-level.
 
 Back-pressure for output is enabled by allowing the user to specify within its
-:class:`Write` messages whether it wants to receive an acknowledgement for
+`Write` messages whether it wants to receive an acknowledgement for
 enqueuing that write to the O/S kernel. Back-pressure for input is enabled by
 sending the channel actor a message which temporarily disables read interest
 for the channel until reading is re-enabled with a corresponding resume command.
@@ -76,8 +65,7 @@ consuming data at the receiving end (thereby causing them to remain in the
 kernels read buffers) is propagated back to the sender, linking these two
 mechanisms across the network.
 
-Design Benefits
-===============
+## Design Benefits
 
 Staying within the actor model for the whole implementation allows us to remove
 the need for explicit thread handling logic, and it also means that there are
@@ -96,13 +84,12 @@ actors to notice the demise of their user-level handler actors and terminate in
 an orderly fashion in that case as well; this naturally reduces the chances of
 leaking open channels.
 
-The choice of using :class:`ActorRef` for exposing all functionality entails
+The choice of using `ActorRef` for exposing all functionality entails
 that these references can be distributed or delegated freely and in general
 handled as the user sees fit, including the use of remoting and life-cycle
 monitoring (just to name two).
 
-How to go about Adding a New Transport
-======================================
+## How to go about Adding a New Transport
 
 The best start is to study the TCP reference implementation to get a good grip
 on the basic working principle and then design an implementation, which is
@@ -111,6 +98,3 @@ differences between I/O mechanisms (e.g. compare file I/O to a message broker)
 and the goal of this I/O layer is explicitly **not** to shoehorn all of them
 into a uniform API, which is why only the basic architecture ideas are
 documented here.
-
-.. _spray.io: http://spray.io
-
