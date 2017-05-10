@@ -1,6 +1,3 @@
-
-.. highlightlang:: none
-
 .. _building-akka:
 
 ###############

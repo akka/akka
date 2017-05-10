@@ -191,6 +191,7 @@ In case your write logic is state-less and you just need to convert the events f
 before writing into the alternative datastore, then the projection is as simple as:
 
 .. includecode:: code/jdocs/persistence/PersistenceQueryDocTest.java#projection-into-different-store-simple-classes
+
 .. includecode:: code/jdocs/persistence/PersistenceQueryDocTest.java#projection-into-different-store-simple
 
 Resumable projections
