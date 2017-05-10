@@ -1,5 +1,3 @@
-.. highlightlang:: rest
-
 .. _documentation:
 
 #########################

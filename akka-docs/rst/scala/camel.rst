@@ -211,6 +211,7 @@ result in the `Exchange`_ failing with a TimeoutException set on the failure of 
 The timeout on the consumer actor can be overridden with the ``replyTimeout``, as shown below.
 
 .. includecode:: code/docs/camel/Consumers.scala#Consumer4
+
 .. _Exchange: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java
 .. _ask: @github@/akka-actor/src/main/scala/akka/pattern/AskSupport.scala
 
@@ -390,8 +391,6 @@ URI options
 ^^^^^^^^^^^
 
 The following URI options are supported:
-
-.. tabularcolumns:: |l|l|l|L|
 
 +--------------+----------+---------+-------------------------------------------+
 | Name         | Type     | Default | Description                               |

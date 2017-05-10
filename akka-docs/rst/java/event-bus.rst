@@ -142,6 +142,7 @@ used for :class:`RemotingLifecycleEvent`). The following example demonstrates
 how a simple subscription works. Given a simple actor:
 
 .. includecode:: code/jdocs/event/LoggingDocTest.java#imports-deadletter
+
 .. includecode:: code/jdocs/event/LoggingDocTest.java#deadletter-actor
 
 it can be subscribed like this:
