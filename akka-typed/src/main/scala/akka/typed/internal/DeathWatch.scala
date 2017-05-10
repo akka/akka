@@ -44,7 +44,7 @@ private[typed] trait DeathWatch[T] {
   private var watching = Set.empty[ARImpl]
   private var watchedBy = Set.empty[ARImpl]
 
-  final def watch[U](_a: ActorRef[U]): ActorRef[U] = {
+  final def watch(_a: ActorRef[_]): Unit = {
     val a = _a.sorry
     if (a != self && !watching.contains(a)) {
       maintainAddressTerminatedSubscription(a) {
@@ -52,10 +52,9 @@ private[typed] trait DeathWatch[T] {
         watching += a
       }
     }
-    a
   }
 
-  final def unwatch[U](_a: ActorRef[U]): ActorRef[U] = {
+  final def unwatch(_a: ActorRef[_]): Unit = {
     val a = _a.sorry
     if (a != self && watching.contains(a)) {
       a.sendSystem(Unwatch(a, self))
@@ -63,7 +62,6 @@ private[typed] trait DeathWatch[T] {
         watching -= a
       }
     }
-    a
   }
 
   /**
@@ -137,7 +135,7 @@ private[typed] trait DeathWatch[T] {
         if (system.settings.untyped.DebugLifecycle) publish(Debug(self.path.toString, clazz(behavior), s"now watched by $watcher"))
       }
     } else if (!watcheeSelf && watcherSelf) {
-      watch[Nothing](watchee)
+      watch(watchee)
     } else {
       publish(Warning(self.path.toString, clazz(behavior), "BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, self)))
     }
@@ -153,7 +151,7 @@ private[typed] trait DeathWatch[T] {
         if (system.settings.untyped.DebugLifecycle) publish(Debug(self.path.toString, clazz(behavior), s"no longer watched by $watcher"))
       }
     } else if (!watcheeSelf && watcherSelf) {
-      unwatch[Nothing](watchee)
+      unwatch(watchee)
     } else {
       publish(Warning(self.path.toString, clazz(behavior), "BUG: illegal Unwatch(%s,%s) for %s".format(watchee, watcher, self)))
     }

@@ -45,7 +45,7 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
     Full[Command] {
       case Msg(ctx, Register(actor)) ⇒
         if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"watching $actor in order to unsubscribe from EventStream when it terminates"))
-        ctx.watch[Nothing](actor)
+        ctx.watch(actor)
         Same
 
       case Msg(ctx, UnregisterIfNoMoreSubscribedChannels(actor)) if hasSubscriptions(actor) ⇒ Same
@@ -53,7 +53,7 @@ private[typed] class EventStreamImpl(private val debug: Boolean)(implicit privat
 
       case Msg(ctx, UnregisterIfNoMoreSubscribedChannels(actor)) ⇒
         if (debug) publish(e.Logging.Debug(simpleName(getClass), getClass, s"unwatching $actor, since has no subscriptions"))
-        ctx.unwatch[Nothing](actor)
+        ctx.unwatch(actor)
         Same
 
       case Sig(ctx, Terminated(actor)) ⇒

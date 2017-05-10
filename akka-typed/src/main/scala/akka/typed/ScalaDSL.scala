@@ -166,7 +166,7 @@ object ScalaDSL {
       lazy val fallback: (MessageOrSignal[T]) ⇒ Behavior[T] = {
         case Sig(context, PreRestart) ⇒
           context.children foreach { child ⇒
-            context.unwatch[Nothing](child)
+            context.unwatch(child)
             context.stop(child)
           }
           behavior.applyOrElse(Sig(context, PostStop), fallback)

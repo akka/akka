@@ -22,7 +22,9 @@ object EventStreamSpec {
       ContextAware { ctx ⇒
         Total {
           case Logger.Initialize(es, replyTo) ⇒
-            replyTo ! ctx.watch(ctx.spawn(Static { (ev: LogEvent) ⇒ logged :+= ev }, "logger"))
+            val logger = ctx.spawn(Static { (ev: LogEvent) ⇒ logged :+= ev }, "logger")
+            ctx.watch(logger)
+            replyTo ! logger
             Empty
         }
       }

@@ -77,11 +77,11 @@ class EffectfulActorContext[T](_name: String, _initialBehavior: Behavior[T], _ma
     effectQueue.offer(Stopped(child.path.name))
     super.stop(child)
   }
-  override def watch[U](other: ActorRef[U]): ActorRef[U] = {
+  override def watch(other: ActorRef[_]): Unit = {
     effectQueue.offer(Watched(other))
     super.watch(other)
   }
-  override def unwatch[U](other: ActorRef[U]): ActorRef[U] = {
+  override def unwatch(other: ActorRef[_]): Unit = {
     effectQueue.offer(Unwatched(other))
     super.unwatch(other)
   }
