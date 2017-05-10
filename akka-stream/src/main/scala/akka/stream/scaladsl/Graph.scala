@@ -317,31 +317,16 @@ final class MergePrioritized[T] private (val inputPorts: Int, val priorities: Se
   override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, in: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
-
     private val allBuffers = Vector.tabulate(priorities.size)(i ⇒ FixedSizeBuffer[Inlet[T]](priorities(i)))
-    private def pending(buffers: FixedSizeBuffer[Inlet[T]]*): Boolean = buffers.exists(_.nonEmpty)
-
     private var runningUpstreams = inputPorts
-    private def upstreamsClosed = runningUpstreams == 0
 
     override def preStart(): Unit = in.foreach(tryPull)
-
-    private def dequeueAndDispatch(): Unit = {
-      selectNextElement() match {
-        case Some(buffer) ⇒
-          val in = buffer.dequeue()
-          push(out, grab(in))
-          if (upstreamsClosed && !pending(allBuffers: _*)) completeStage() else tryPull(in)
-        case None ⇒
-          if (upstreamsClosed && !pending(allBuffers: _*)) completeStage()
-      }
-    }
 
     (in zip allBuffers).foreach {
       case (inlet, buffer) ⇒
         setHandler(inlet, new InHandler {
           override def onPush(): Unit = {
-            if (isAvailable(out) && !pending(allBuffers: _*)) {
+            if (isAvailable(out) && pending == 0) {
               push(out, grab(inlet))
               tryPull(inlet)
             } else {
@@ -353,40 +338,55 @@ final class MergePrioritized[T] private (val inputPorts: Int, val priorities: Se
             if (eagerComplete) {
               in.foreach(cancel)
               runningUpstreams = 0
-              if (!pending(allBuffers: _*)) completeStage()
+              if (pending == 0) completeStage()
             } else {
               runningUpstreams -= 1
-              if (upstreamsClosed && !pending(allBuffers: _*)) completeStage()
+              if (upstreamsClosed && pending == 0) completeStage()
             }
           }
         })
     }
 
     override def onPull(): Unit = {
-      if (pending(allBuffers: _*)) dequeueAndDispatch()
+      if (pending > 0) dequeueAndDispatch()
     }
 
     setHandler(out, this)
 
+    private def pending: Int = allBuffers.count(_.nonEmpty)
+
+    private def upstreamsClosed = runningUpstreams == 0
+
+    private def dequeueAndDispatch(): Unit = {
+      val in = selectNextElement()
+      push(out, grab(in))
+      if (upstreamsClosed && pending == 0) completeStage() else tryPull(in)
+    }
+
     private def selectNextElement() = {
-      var ix = 0
       var tp = 0
-      val list = mutable.ListBuffer[(Int, Range)]()
+      var ix = 0
 
       while (ix < in.size) {
         if (allBuffers(ix).nonEmpty) {
-          val priority = priorities(ix)
-          val priorityRange = tp until (tp + priority)
-          list += ((ix, priorityRange))
-          tp += priority
+          tp += priorities(ix)
         }
         ix += 1
       }
 
-      val r = ThreadLocalRandom.current().nextInt(tp)
-      list.find(_._2.contains(r)).map {
-        case (i, _) ⇒ allBuffers(i)
+      var r = ThreadLocalRandom.current().nextInt(tp)
+      var next: Inlet[T] = null
+      ix = 0
+
+      while (ix < in.size && next == null) {
+        if (allBuffers(ix).nonEmpty) {
+          r -= priorities(ix)
+          if (r < 0) next = allBuffers(ix).dequeue()
+        }
+        ix += 1
       }
+
+      next
     }
   }
 
