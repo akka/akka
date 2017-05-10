@@ -215,6 +215,7 @@ result in the `Exchange`_ failing with a TimeoutException set on the failure of 
 The timeout on the consumer actor can be overridden with the ``replyTimeout``, as shown below.
 
 .. includecode:: code/jdocs/camel/Consumer4.java#Consumer4
+
 .. _Exchange: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java
 .. _ask: @github@/akka-actor/src/main/scala/akka/pattern/Patterns.scala
 
@@ -252,7 +253,9 @@ message is forwarded to a target actor instead of being replied to the original
 sender.
 
 .. includecode:: code/jdocs/camel/ResponseReceiver.java#RouteResponse
+
 .. includecode:: code/jdocs/camel/Forwarder.java#RouteResponse
+
 .. includecode:: code/jdocs/camel/OnRouteResponseTestBase.java#RouteResponse
 
 Before producing messages to endpoints, producer actors can pre-process them by
@@ -396,8 +399,6 @@ URI options
 
 The following URI options are supported:
 
-.. tabularcolumns:: |l|l|l|L|
-
 +--------------+----------+---------+------------------------------------------------+
 | Name         | Type     | Default | Description                                    |
 +==============+==========+=========+================================================+
@@ -427,7 +428,9 @@ In the following example, a custom route to an actor is created, using the
 actor's path.
 
 .. includecode:: code/jdocs/camel/Responder.java#CustomRoute
+
 .. includecode:: code/jdocs/camel/CustomRouteBuilder.java#CustomRoute
+
 .. includecode:: code/jdocs/camel/CustomRouteTestBase.java#CustomRoute
 
 The `CamelPath.toCamelUri` converts the `ActorRef` to the Camel actor component URI format which points to the actor endpoint as described above.

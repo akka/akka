@@ -43,6 +43,7 @@ Java provides less syntactic sugar, so you have to spell out the operations as
 method calls instead:
 
 .. includecode:: code/docs/duration/Java.java#import
+
 .. includecode:: code/docs/duration/Java.java#dsl
 
 Deadline
