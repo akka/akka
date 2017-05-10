@@ -1,7 +1,3 @@
-.. _stream-config:
+# Configuration
 
-#############
-Configuration
-#############
-
-.. literalinclude:: ../../../../akka-stream/src/main/resources/reference.conf
+@@snip [reference.conf]../../../../../../akka-stream/src/main/resources/reference.conf)

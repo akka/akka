@@ -1,8 +1,4 @@
-.. _howto-java:
-
-######################
-HowTo: Common Patterns
-######################
+# HowTo: Common Patterns
 
 This section lists common actor patterns which have been found to be useful,
 elegant or instructive. Anything is welcome, example topics being message
@@ -10,45 +6,46 @@ routing strategies, supervision patterns, restart handling, etc. As a special
 bonus, additions to this section are marked with the contributor’s name, and it
 would be nice if every Akka user who finds a recurring pattern in his or her
 code could share it for the profit of all. Where applicable it might also make
-sense to add to the ``akka.pattern`` package for creating an `OTP-like library
-<http://www.erlang.org/doc/man_index.html>`_.
+sense to add to the `akka.pattern` package for creating an [OTP-like library](http://www.erlang.org/doc/man_index.html).
 
 You might find some of the patterns described in the Scala chapter of 
-:ref:`howto-scala` useful even though the example code is written in Scala.
+@ref:[HowTo: Common Patterns](../scala/howto.md) useful even though the example code is written in Scala.
 
-Scheduling Periodic Messages
-============================
+## Scheduling Periodic Messages
 
 This pattern describes how to schedule periodic messages to yourself in two different
 ways.
 
 The first way is to set up periodic message scheduling in the constructor of the actor,
-and cancel that scheduled sending in ``postStop`` or else we might have multiple registered
+and cancel that scheduled sending in `postStop` or else we might have multiple registered
 message sends to the same actor.
 
-.. note::
+@@@ note
 
-   With this approach the scheduled periodic message send will be restarted with the actor on restarts.
-   This also means that the time period that elapses between two tick messages during a restart may drift
-   off based on when you restart the scheduled message sends relative to the time that the last message was
-   sent, and how long the initial delay is. Worst case scenario is ``interval`` plus ``initialDelay``.
+With this approach the scheduled periodic message send will be restarted with the actor on restarts.
+This also means that the time period that elapses between two tick messages during a restart may drift
+off based on when you restart the scheduled message sends relative to the time that the last message was
+sent, and how long the initial delay is. Worst case scenario is `interval` plus `initialDelay`.
 
-.. includecode:: code/jdocs/pattern/SchedulerPatternTest.java#schedule-constructor
+@@@
 
-The second variant sets up an initial one shot message send in the ``preStart`` method
+@@snip [SchedulerPatternTest.java](code/jdocs/pattern/SchedulerPatternTest.java) { #schedule-constructor }
+
+The second variant sets up an initial one shot message send in the `preStart` method
 of the actor, and the then the actor when it receives this message sets up a new one shot
-message send. You also have to override ``postRestart`` so we don't call ``preStart``
+message send. You also have to override `postRestart` so we don't call `preStart`
 and schedule the initial message send again.
 
-.. note::
+@@@ note
 
-   With this approach we won't fill up the mailbox with tick messages if the actor is
-   under pressure, but only schedule a new tick message when we have seen the previous one.
+With this approach we won't fill up the mailbox with tick messages if the actor is
+under pressure, but only schedule a new tick message when we have seen the previous one.
 
-.. includecode:: code/jdocs/pattern/SchedulerPatternTest.java#schedule-receive
+@@@
 
-Single-Use Actor Trees with High-Level Error Reporting
-======================================================
+@@snip [SchedulerPatternTest.java](code/jdocs/pattern/SchedulerPatternTest.java) { #schedule-receive }
+
+## Single-Use Actor Trees with High-Level Error Reporting
 
 *Contributed by: Rick Latrine*
 
@@ -66,11 +63,11 @@ Such an actor is unlikely to be reused in a different actor hierarchy and contai
 
 This pattern provides a way to encapsulate supervision and error propagation to the temporary actor.
 Finally the promise returned by Patterns.ask() is fulfilled as a failure, including the exception
-(see also :ref:`scala-java-compat` for Java compatibility).
+(see also @ref:[Java 8 and Scala Compatibility](scala-compat.md) for Java compatibility).
 
 Let's have a look at the example code:
 
-.. includecode:: code/jdocs/pattern/SupervisedAsk.java
+@@snip [SupervisedAsk.java](code/jdocs/pattern/SupervisedAsk.java) { # }
 
 In the askOf method the SupervisorCreator is sent the user message.
 The SupervisorCreator creates a SupervisorActor and forwards the message.
@@ -83,5 +80,4 @@ Afterwards the actor hierarchy is stopped.
 
 Finally we are able to execute an actor and receive the results or exceptions.
 
-.. includecode:: code/jdocs/pattern/SupervisedAskSpec.java
-
+@@snip [SupervisedAskSpec.java](code/jdocs/pattern/SupervisedAskSpec.java) { # }

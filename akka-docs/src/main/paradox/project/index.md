@@ -1,11 +1,13 @@
-Project Information
-===================
+# Project Information
 
-.. toctree::
-   :maxdepth: 2
+@@toc { depth=2 }
 
-   migration-guides
-   issue-tracking
-   licenses
-   sponsors
-   links
+@@@ index
+
+* [migration-guides](migration-guides.md)
+* [issue-tracking](issue-tracking.md)
+* [licenses](licenses.md)
+* [sponsors](sponsors.md)
+* [links](links.md)
+
+@@@

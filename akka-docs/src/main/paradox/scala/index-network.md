@@ -1,21 +1,23 @@
-Networking
-==========
+# Networking
 
-.. toctree::
-   :maxdepth: 2
+@@toc { depth=2 }
 
-   ../common/cluster
-   cluster-usage
-   cluster-singleton
-   distributed-pub-sub
-   cluster-client
-   cluster-sharding
-   cluster-metrics
-   distributed-data
-   remoting
-   remoting-artery
-   serialization
-   io
-   io-tcp
-   io-udp
-   camel
+@@@ index
+
+* [../common/cluster](../common/cluster.md)
+* [cluster-usage](cluster-usage.md)
+* [cluster-singleton](cluster-singleton.md)
+* [distributed-pub-sub](distributed-pub-sub.md)
+* [cluster-client](cluster-client.md)
+* [cluster-sharding](cluster-sharding.md)
+* [cluster-metrics](cluster-metrics.md)
+* [distributed-data](distributed-data.md)
+* [remoting](remoting.md)
+* [remoting-artery](remoting-artery.md)
+* [serialization](serialization.md)
+* [io](io.md)
+* [io-tcp](io-tcp.md)
+* [io-udp](io-udp.md)
+* [camel](camel.md)
+
+@@@

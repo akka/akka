@@ -1,4 +1,5 @@
 *#
+*.md=
 *.log
 *.orig
 *.jfr

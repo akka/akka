@@ -1,8 +1,11 @@
-# Akka Documentation
+# Contents
+
+@@toc { depth=1 }
 
 @@@ index
 
-* [Beginners Guide](guide/index.md)
-* [Reference](reference/index.md)
+* [guide](guide/index.md)
+* [java](java.md)
+* [scala](scala.md)
 
 @@@
