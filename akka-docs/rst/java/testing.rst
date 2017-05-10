@@ -500,6 +500,7 @@ create a fabricated parent in your test. This, however, does not enable you to t
 the parent actor in isolation.
 
 .. includecode:: code/jdocs/testkit/ParentChildTest.java#test-fabricated-parent-creator
+
 .. includecode:: code/jdocs/testkit/ParentChildTest.java#test-fabricated-parent
 
 Externalize child making from the parent
@@ -509,6 +510,7 @@ Alternatively, you can tell the parent how to create its child. There are two wa
 to do this: by giving it a :class:`Props` object or by giving it a function which takes care of creating the child actor:
 
 .. includecode:: code/jdocs/testkit/ParentChildTest.java#test-dependentparent
+
 .. includecode:: code/jdocs/testkit/ParentChildTest.java#test-dependentparent-generic
 
 Creating the :class:`Actor` is straightforward and the function may look like this in your test code:

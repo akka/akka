@@ -118,6 +118,7 @@ There are two edge cases in actor creation with :class:`Props`:
 * An actor with :class:`AnyVal` arguments.
 
 .. includecode:: code/docs/actor/PropsEdgeCaseSpec.scala#props-edge-cases-value-class
+
 .. includecode:: code/docs/actor/PropsEdgeCaseSpec.scala#props-edge-cases-value-class-example
 
 * An actor with default constructor values.

@@ -73,6 +73,7 @@ dispatcher to use, see more below). Here are some examples of how to create a
 :class:`Props` instance.
 
 .. includecode:: code/jdocs/actor/ActorDocTest.java#import-props
+
 .. includecode:: code/jdocs/actor/ActorDocTest.java#creating-props
 
 The second variant shows how to pass constructor arguments to the
@@ -137,6 +138,7 @@ Actors are created by passing a :class:`Props` instance into the
 :class:`ActorContext`.
 
 .. includecode:: code/jdocs/actor/ActorDocTest.java#import-actorRef
+
 .. includecode:: code/jdocs/actor/ActorDocTest.java#system-actorOf
 
 Using the :class:`ActorSystem` will create top-level actors, supervised by the
@@ -179,6 +181,7 @@ constructor arguments are determined by a dependency injection framework.
 __ Props_
 
 .. includecode:: code/jdocs/actor/DependencyInjectionDocTest.java#import
+
 .. includecode:: code/jdocs/actor/DependencyInjectionDocTest.java
    :include: creating-indirectly
    :exclude: obtain-fresh-Actor-instance-from-DI-framework
@@ -320,6 +323,7 @@ termination (see `Stopping Actors`_). This service is provided by the
 Registering a monitor is easy:
 
 .. includecode:: code/jdocs/actor/ActorDocTest.java#import-terminated
+
 .. includecode:: code/jdocs/actor/ActorDocTest.java#watch
 
 It should be noted that the :class:`Terminated` message is generated
@@ -469,6 +473,7 @@ negative result is generated. Please note that this does not mean that delivery
 of that reply is guaranteed, it still is a normal message.
 
 .. includecode:: code/jdocs/actor/ActorDocTest.java#import-identify
+
 .. includecode:: code/jdocs/actor/ActorDocTest.java#identify
 
 You can also acquire an :class:`ActorRef` for an :class:`ActorSelection` with
@@ -546,6 +551,7 @@ The ``ask`` pattern involves actors as well as futures, hence it is offered as
 a use pattern rather than a method on :class:`ActorRef`:
 
 .. includecode:: code/jdocs/actor/ActorDocTest.java#import-ask
+
 .. includecode:: code/jdocs/actor/ActorDocTest.java#ask-pipe
 
 This example demonstrates ``ask`` together with the ``pipe`` pattern on
