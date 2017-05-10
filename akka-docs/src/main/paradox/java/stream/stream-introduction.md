@@ -65,7 +65,7 @@ and for best results we recommend the following approach:
 
  * Read the @ref:[Quick Start Guide](stream-quickstart.md#stream-quickstart-java) to get a feel for how streams
 look like and what they can do.
- * The top-down learners may want to peruse the @ref:[Design Principles behind Akka Streams](../../general/stream/stream-design.md) at this
+ * The top-down learners may want to peruse the @ref:[Design Principles behind Akka Streams](../../scala/general/stream/stream-design.md) at this
 point.
  * The bottom-up learners may feel more at home rummaging through the
 @ref:[Streams Cookbook](stream-cookbook.md).

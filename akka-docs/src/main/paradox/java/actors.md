@@ -17,8 +17,8 @@ its syntax from Erlang.
 
 Since Akka enforces parental supervision every actor is supervised and
 (potentially) the supervisor of its children, it is advisable that you
-familiarize yourself with @ref:[Actor Systems](../general/actor-systems.md) and <!-- FIXME: More than one link target with name supervision in path Some(/java/actors.rst) --> supervision and it
-may also help to read @ref:[Actor References, Paths and Addresses](../general/addressing.md).
+familiarize yourself with @ref:[Actor Systems](../scala/general/actor-systems.md) and <!-- FIXME: More than one link target with name supervision in path Some(/java/actors.rst) --> supervision and it
+may also help to read @ref:[Actor References, Paths and Addresses](../scala/general/addressing.md).
 
 @@@
 
@@ -140,7 +140,7 @@ create a child actor.
 
 It is recommended to create a hierarchy of children, grand-children and so on
 such that it fits the logical failure-handling structure of the application,
-see @ref:[Actor Systems](../general/actor-systems.md).
+see @ref:[Actor Systems](../scala/general/actor-systems.md).
 
 The call to `actorOf` returns an instance of `ActorRef`. This is a
 handle to the actor instance and the only way to interact with it. The
@@ -175,7 +175,7 @@ constructor arguments are determined by a dependency injection framework.
 You might be tempted at times to offer an `IndirectActorProducer`
 which always returns the same instance, e.g. by using a static field. This is
 not supported, as it goes against the meaning of an actor restart, which is
-described here: @ref:[What Restarting Means](../general/supervision.md#supervision-restart).
+described here: @ref:[What Restarting Means](../scala/general/supervision.md#supervision-restart).
 
 When using a dependency injection framework, actor beans *MUST NOT* have
 singleton scope.
@@ -374,7 +374,7 @@ usual.
 Be aware that the ordering of failure notifications relative to user messages
 is not deterministic. In particular, a parent might restart its child before
 it has processed the last messages sent by the child before the failure.
-See @ref:[Discussion: Message Ordering](../general/message-delivery-reliability.md#message-ordering) for details.
+See @ref:[Discussion: Message Ordering](../scala/general/message-delivery-reliability.md#message-ordering) for details.
 
 @@@
 
@@ -390,7 +390,7 @@ sent to a stopped actor will be redirected to the `deadLetters` of the
 <a id="actorselection-java"></a>
 ## Identifying Actors via Actor Selection
 
-As described in @ref:[Actor References, Paths and Addresses](../general/addressing.md), each actor has a unique logical path, which
+As described in @ref:[Actor References, Paths and Addresses](../scala/general/addressing.md), each actor has a unique logical path, which
 is obtained by following the chain of actors from child to parent until
 reaching the root of the actor system, and it has a physical path, which may
 differ if the supervision chain includes any remote supervisors. These paths
@@ -573,7 +573,7 @@ on the enclosing actor from within the callback. This would break the actor
 encapsulation and may introduce synchronization bugs and race conditions because
 the callback will be scheduled concurrently to the enclosing actor. Unfortunately
 there is not yet a way to detect these illegal accesses at compile time. See also:
-@ref:[Actors and shared mutable state](../general/jmm.md#jmm-shared-state)
+@ref:[Actors and shared mutable state](../scala/general/jmm.md#jmm-shared-state)
 
 @@@
 
@@ -784,7 +784,7 @@ is only used for debugging/logging.
 Tasks added to the same phase are executed in parallel without any ordering assumptions.
 Next phase will not start until all tasks of previous phase have been completed.
 
-If tasks are not completed within a configured timeout (see @ref:[reference.conf](../general/configuration.md#config-akka-actor))
+If tasks are not completed within a configured timeout (see @ref:[reference.conf](../scala/general/configuration.md#config-akka-actor))
 the next phase will be started anyway. It is possible to configure `recover=off` for a phase
 to abort the rest of the shutdown process if a task fails or is not completed within the timeout.
 
@@ -938,7 +938,7 @@ You can kill an actor by sending a `Kill` message. This will cause the actor
 to throw a `ActorKilledException`, triggering a failure. The actor will
 suspend operation and its supervisor will be asked how to handle the failure,
 which may mean resuming the actor, restarting it or terminating it completely.
-See @ref:[What Supervision Means](../general/supervision.md#supervision-directives) for more information.
+See @ref:[What Supervision Means](../scala/general/supervision.md#supervision-directives) for more information.
 
 Use `Kill` like this:
 
@@ -1008,7 +1008,7 @@ Please note, that the child actors are *still restarted*, but no new `ActorRef` 
 the same principles for the children, ensuring that their `preStart()` method is called only at the creation of their
 refs.
 
-For more information see @ref:[What Restarting Means](../general/supervision.md#supervision-restart).
+For more information see @ref:[What Restarting Means](../scala/general/supervision.md#supervision-restart).
 
 ### Initialization via message passing
 

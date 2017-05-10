@@ -4,7 +4,7 @@
 
 @@@ index
 
-* [../common/cluster](../common/cluster.md)
+* [../scala/common/cluster](../scala/common/cluster.md)
 * [cluster-usage](cluster-usage.md)
 * [cluster-singleton](cluster-singleton.md)
 * [distributed-pub-sub](distributed-pub-sub.md)

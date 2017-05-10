@@ -4,9 +4,9 @@
 
 @@@ index
 
-* [security/index](security/index.md)
-* [intro/index-java](intro/index-java.md)
-* [general/index](general/index.md)
+* [security/index](java/security/index.md)
+* [intro/index-java](java/intro/index-java.md)
+* [general/index](java/general/index.md)
 * [java/index-actors](java/index-actors.md)
 * [java/index-futures](java/index-futures.md)
 * [java/index-network](java/index-network.md)
@@ -15,8 +15,8 @@
 * [java/http/index](java/http/index.md)
 * [java/howto](java/howto.md)
 * [java/scala-compat](java/scala-compat.md)
-* [dev/index](dev/index.md)
-* [project/index](project/index.md)
-* [additional/index](additional/index.md)
+* [dev/index](java/dev/index.md)
+* [project/index](java/project/index.md)
+* [additional/index](java/additional/index.md)
 
 @@@

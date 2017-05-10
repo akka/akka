@@ -11,7 +11,7 @@ communication with at-least-once message delivery semantics.
 
 Akka persistence is inspired by and the official replacement of the [eventsourced](https://github.com/eligosource/eventsourced) library. It follows the same
 concepts and architecture of [eventsourced](https://github.com/eligosource/eventsourced) but significantly differs on API and implementation level. See also
-@ref:[migration-eventsourced-2.3](../project/migration-guide-eventsourced-2.3.x.md)
+@ref:[migration-eventsourced-2.3](../scala/project/migration-guide-eventsourced-2.3.x.md)
 
 ## Dependencies
 
@@ -1095,7 +1095,7 @@ When testing Persistence based projects always rely on @ref:[asynchronous messag
 ## Configuration
 
 There are several configuration properties for the persistence module, please refer
-to the @ref:[reference configuration](../general/configuration.md#config-akka-persistence).
+to the @ref:[reference configuration](../scala/general/configuration.md#config-akka-persistence).
 
 ## Multiple persistence plugin configurations
 
