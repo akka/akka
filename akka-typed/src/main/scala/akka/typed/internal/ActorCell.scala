@@ -351,7 +351,7 @@ private[typed] class ActorCell[T](
    */
   private def processMessage(msg: T): Unit = {
     if (Debug) println(s"[$thread] $self processing message $msg")
-    next(behavior.message(this, msg), msg)
+    next(behavior.receiveMessage(this, msg), msg)
     if (Thread.interrupted())
       throw new InterruptedException("Interrupted while processing actor messages")
   }

@@ -180,7 +180,7 @@ class BehaviorSpec extends TypedSpec {
   trait Unhandled extends Common {
     def `must return Unhandled`(): Unit = {
       val Setup(ctx, inbox, aux) = mkCtx()
-      ctx.currentBehavior.message(ctx, Miss) should be(Behavior.unhandledBehavior)
+      ctx.currentBehavior.receiveMessage(ctx, Miss) should be(Behavior.unhandledBehavior)
       inbox.receiveAll() should ===(Missed :: Nil)
       checkAux(Miss, aux)
     }

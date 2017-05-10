@@ -20,8 +20,8 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
   behavior: Behavior[T] = initialBehavior) extends Behavior[T] {
 
   private def restart(ctx: ActorContext[T]): Behavior[T] = {
-    try behavior.management(ctx, PreRestart) catch { case NonFatal(_) ⇒ }
-    Behavior.canonicalize(initialBehavior.management(ctx, PreStart), initialBehavior)
+    try behavior.receiveSignal(ctx, PreRestart) catch { case NonFatal(_) ⇒ }
+    Behavior.canonicalize(initialBehavior.receiveSignal(ctx, PreStart), initialBehavior)
   }
 
   private def canonical(b: Behavior[T]): Behavior[T] =
@@ -31,9 +31,9 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
     else if (b eq behavior) Same
     else Restarter[T, Thr](initialBehavior, resume)(b)
 
-  override def management(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
+  override def receiveSignal(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     val b =
-      try behavior.management(ctx, signal)
+      try behavior.receiveSignal(ctx, signal)
       catch {
         case ex: Thr ⇒
           ctx.system.eventStream.publish(Logging.Error(ex, ctx.self.toString, behavior.getClass, ex.getMessage))
@@ -42,9 +42,9 @@ final case class Restarter[T, Thr <: Throwable: ClassTag](initialBehavior: Behav
     canonical(b)
   }
 
-  override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
+  override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
     val b =
-      try behavior.message(ctx, msg)
+      try behavior.receiveMessage(ctx, msg)
       catch {
         case ex: Thr ⇒
           ctx.system.eventStream.publish(Logging.Error(ex, ctx.self.toString, behavior.getClass, ex.getMessage))
@@ -66,14 +66,14 @@ final case class MutableRestarter[T, Thr <: Throwable: ClassTag](initialBehavior
   private[this] var current = initialBehavior
 
   private def restart(ctx: ActorContext[T]): Behavior[T] = {
-    try current.management(ctx, PreRestart) catch { case NonFatal(_) ⇒ }
+    try current.receiveSignal(ctx, PreRestart) catch { case NonFatal(_) ⇒ }
     current = initialBehavior
-    current.management(ctx, PreStart)
+    current.receiveSignal(ctx, PreStart)
   }
 
-  override def management(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
+  override def receiveSignal(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     val b =
-      try current.management(ctx, signal)
+      try current.receiveSignal(ctx, signal)
       catch {
         case ex: Thr ⇒
           ctx.system.eventStream.publish(Logging.Error(ex, ctx.self.toString, current.getClass, ex.getMessage))
@@ -83,9 +83,9 @@ final case class MutableRestarter[T, Thr <: Throwable: ClassTag](initialBehavior
     if (Behavior.isAlive(current)) this else Stopped
   }
 
-  override def message(ctx: ActorContext[T], msg: T): Behavior[T] = {
+  override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
     val b =
-      try current.message(ctx, msg)
+      try current.receiveMessage(ctx, msg)
       catch {
         case ex: Thr ⇒
           ctx.system.eventStream.publish(Logging.Error(ex, ctx.self.toString, current.getClass, ex.getMessage))

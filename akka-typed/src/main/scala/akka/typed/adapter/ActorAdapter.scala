@@ -25,11 +25,11 @@ private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Ac
           failures -= ref
           Terminated(ActorRefAdapter(ref))(ex)
         } else Terminated(ActorRefAdapter(ref))(null)
-      next(behavior.management(ctx, msg), msg)
+      next(behavior.receiveSignal(ctx, msg), msg)
     case a.ReceiveTimeout ⇒
-      next(behavior.message(ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
+      next(behavior.receiveMessage(ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
     case msg: T @unchecked ⇒
-      next(behavior.message(ctx, msg), msg)
+      next(behavior.receiveMessage(ctx, msg), msg)
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
@@ -51,11 +51,11 @@ private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Ac
   }
 
   override def preStart(): Unit =
-    next(behavior.management(ctx, PreStart), PreStart)
+    next(behavior.receiveSignal(ctx, PreStart), PreStart)
   override def preRestart(reason: Throwable, message: Option[Any]): Unit =
-    next(behavior.management(ctx, PreRestart), PreRestart)
+    next(behavior.receiveSignal(ctx, PreRestart), PreRestart)
   override def postRestart(reason: Throwable): Unit =
-    next(behavior.management(ctx, PreStart), PreStart)
+    next(behavior.receiveSignal(ctx, PreStart), PreStart)
   override def postStop(): Unit =
-    next(behavior.management(ctx, PostStop), PostStop)
+    next(behavior.receiveSignal(ctx, PostStop), PostStop)
 }

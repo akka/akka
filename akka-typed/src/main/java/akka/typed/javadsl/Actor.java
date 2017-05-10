@@ -38,7 +38,7 @@ public abstract class Actor {
     }
 
     @Override
-    public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
+    public Behavior<T> receiveSignal(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
       if (msg instanceof PreStart) {
         return Behavior.preStart(producer.apply(ctx), ctx);
       } else
@@ -46,7 +46,7 @@ public abstract class Actor {
     }
 
     @Override
-    public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
+    public Behavior<T> receiveMessage(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
       throw new IllegalStateException("Deferred behavior must receive PreStart as first signal");
     }
   }
@@ -62,12 +62,12 @@ public abstract class Actor {
     }
 
     @Override
-    public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
+    public Behavior<T> receiveSignal(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
       return signal.apply(ctx, msg);
     }
 
     @Override
-    public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
+    public Behavior<T> receiveMessage(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
       return message.apply(ctx, msg);
     }
   }
@@ -80,12 +80,12 @@ public abstract class Actor {
     }
 
     @Override
-    public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
+    public Behavior<T> receiveSignal(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
       return Same();
     }
 
     @Override
-    public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
+    public Behavior<T> receiveMessage(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
       message.apply(ctx, msg);
       return Same();
     }
@@ -115,15 +115,15 @@ public abstract class Actor {
     }
 
     @Override
-    public Behavior<T> management(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
+    public Behavior<T> receiveSignal(akka.typed.ActorContext<T> ctx, Signal msg) throws Exception {
       signal.apply(ctx, msg);
-      return canonicalize(behavior.management(ctx, msg));
+      return canonicalize(behavior.receiveSignal(ctx, msg));
     }
 
     @Override
-    public Behavior<T> message(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
+    public Behavior<T> receiveMessage(akka.typed.ActorContext<T> ctx, T msg) throws Exception {
       message.apply(ctx, msg);
-      return canonicalize(behavior.message(ctx, msg));
+      return canonicalize(behavior.receiveMessage(ctx, msg));
     }
   }
 

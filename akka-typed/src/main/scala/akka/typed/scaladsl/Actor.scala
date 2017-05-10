@@ -193,13 +193,13 @@ object Actor {
         if (next eq behavior) Same else Widened(next, matcher)
       } else Stopped
 
-    override def management(ctx: AC[U], msg: Signal): Behavior[U] =
-      postProcess(behavior.management(ctx.as[T], msg))
+    override def receiveSignal(ctx: AC[U], msg: Signal): Behavior[U] =
+      postProcess(behavior.receiveSignal(ctx.as[T], msg))
 
-    override def message(ctx: AC[U], msg: U): Behavior[U] =
+    override def receiveMessage(ctx: AC[U], msg: U): Behavior[U] =
       matcher.applyOrElse(msg, nullFun) match {
         case null        ⇒ Unhandled
-        case transformed ⇒ postProcess(behavior.message(ctx.as[T], transformed))
+        case transformed ⇒ postProcess(behavior.receiveMessage(ctx.as[T], transformed))
       }
 
     override def toString: String = s"${behavior.toString}.widen(${LineNumbers(matcher)})"
@@ -210,12 +210,12 @@ object Actor {
    * is deferred to the child actor instead of running within the parent.
    */
   final case class Deferred[T](factory: ActorContext[T] ⇒ Behavior[T]) extends Behavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = {
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = {
       if (msg != PreStart) throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
       Behavior.preStart(factory(ctx), ctx)
     }
 
-    override def message(ctx: AC[T], msg: T): Behavior[T] =
+    override def receiveMessage(ctx: AC[T], msg: T): Behavior[T] =
       throw new IllegalStateException(s"Deferred must receive PreStart as first message (got $msg)")
 
     override def toString: String = s"Deferred(${LineNumbers(factory)})"
@@ -276,8 +276,8 @@ object Actor {
     behavior: (ActorContext[T], T) ⇒ Behavior[T],
     signal:   (ActorContext[T], Signal) ⇒ Behavior[T] = Behavior.unhandledSignal.asInstanceOf[(ActorContext[T], Signal) ⇒ Behavior[T]])
     extends Behavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = signal(ctx, msg)
-    override def message(ctx: AC[T], msg: T) = behavior(ctx, msg)
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = signal(ctx, msg)
+    override def receiveMessage(ctx: AC[T], msg: T) = behavior(ctx, msg)
     override def toString = s"Stateful(${LineNumbers(behavior)})"
   }
 
@@ -293,8 +293,8 @@ object Actor {
    * that do not create child actors themselves.
    */
   final case class Stateless[T](behavior: (ActorContext[T], T) ⇒ Any) extends Behavior[T] {
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = Unhandled
-    override def message(ctx: AC[T], msg: T): Behavior[T] = {
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = Unhandled
+    override def receiveMessage(ctx: AC[T], msg: T): Behavior[T] = {
       behavior(ctx, msg)
       this
     }
@@ -315,13 +315,13 @@ object Actor {
       else if (behv eq sameBehavior) Same
       else if (isAlive(behv)) Tap(signal, mesg, behv)
       else Stopped
-    override def management(ctx: AC[T], msg: Signal): Behavior[T] = {
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = {
       signal(ctx, msg)
-      canonical(behavior.management(ctx, msg))
+      canonical(behavior.receiveSignal(ctx, msg))
     }
-    override def message(ctx: AC[T], msg: T): Behavior[T] = {
+    override def receiveMessage(ctx: AC[T], msg: T): Behavior[T] = {
       mesg(ctx, msg)
-      canonical(behavior.message(ctx, msg))
+      canonical(behavior.receiveMessage(ctx, msg))
     }
     override def toString = s"Tap(${LineNumbers(signal)},${LineNumbers(mesg)},$behavior)"
   }
