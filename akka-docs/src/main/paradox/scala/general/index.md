@@ -1,4 +1,4 @@
-# General
+# General Concepts
 
 @@toc { depth=2 }
 

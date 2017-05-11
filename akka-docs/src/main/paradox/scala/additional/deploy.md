@@ -1,6 +1,4 @@
-# Use-case and Deployment Scenarios
-
-## How can I use and deploy Akka?
+# How can I deploy Akka?
 
 Akka can be used in different ways:
 
@@ -36,3 +34,6 @@ described here: @ref:[Akka behind NAT or in a Docker container](../../scala/remo
 
 For an example of how to set up a project using Akka Cluster and Docker take a look at the
 ["akka-docker-cluster" sample](https://github.com/muuki88/activator-akka-docker).
+
+
+

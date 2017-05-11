@@ -459,7 +459,7 @@ deterministically in the serialization.
 
 This is a protobuf representation of the above `TwoPhaseSet`:
 
-@@snip [TwoPhaseSetMessages.proto]($code$/protobuf/TwoPhaseSetMessages.proto) { #twophaseset }
+@@snip [TwoPhaseSetMessages.proto]($code$/../main/protobuf/TwoPhaseSetMessages.proto) { #twophaseset }
 
 The serializer for the `TwoPhaseSet`:
 
@@ -481,7 +481,7 @@ The two embedded `GSet` can be serialized as illustrated above, but in general w
 new data types from the existing built in types it is better to make use of the existing
 serializer for those types. This can be done by declaring those as bytes fields in protobuf:
 
-@@snip [TwoPhaseSetMessages.proto]($code$/protobuf/TwoPhaseSetMessages.proto) { #twophaseset2 }
+@@snip [TwoPhaseSetMessages.proto]($code$/../main/protobuf/TwoPhaseSetMessages.proto) { #twophaseset2 }
 
 and use the methods `otherMessageToProto` and `otherMessageFromBinary` that are provided
 by the `SerializationSupport` trait to serialize and deserialize the `GSet` instances. This

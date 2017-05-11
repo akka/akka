@@ -1,14 +1,14 @@
-# Akka Documentation
+# Getting Started Guide
 
 @@@ index
 
- * [What is Akka?](introduction.md)
- * [What are Actors?](actors-intro.md)
- * [Akka Libraries and Modules](modules.md)
- * [Your First Akka Application - Hello World](quickstart.md)
- * [Your Second Akka Application, Part 1: Top-level Architecture](tutorial_1.md)
- * [Your Second Akka Application, Part 2: The Device Actor](tutorial_2.md)
- * [Your Second Akka Application, Part 3: Device Groups](tutorial_3.md)
- * [Your Second Akka Application, Part 4: Querying a Group of Devices](tutorial_4.md)
+ * [introduction](introduction.md)
+ * [actors-intro](actors-intro.md)
+ * [modules](modules.md)
+ * [quickstart](quickstart.md)
+ * [part1](tutorial_1.md)
+ * [part2](tutorial_2.md)
+ * [part3](tutorial_3.md)
+ * [part4](tutorial_4.md)
 
 @@@
