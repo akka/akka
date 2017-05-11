@@ -118,11 +118,11 @@ Let's take a look at this router in action. What can be more demanding than calc
 
 The backend worker that performs the factorial calculation:
 
-@@snip [FactorialBackend.scala](code/docs/cluster/FactorialBackend.scala) { #backend }
+@@snip [FactorialBackend.scala]($code$/scala/docs/cluster/FactorialBackend.scala) { #backend }
 
 The frontend that receives user jobs and delegates to the backends via the router:
 
-@@snip [FactorialFrontend.scala](code/docs/cluster/FactorialFrontend.scala) { #frontend }
+@@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #frontend }
 
 As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
 
@@ -152,9 +152,9 @@ other things work in the same way as other routers.
 
 The same type of router could also have been defined in code:
 
-@@snip [FactorialFrontend.scala](code/docs/cluster/FactorialFrontend.scala) { #router-lookup-in-code }
+@@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #router-lookup-in-code }
 
-@@snip [FactorialFrontend.scala](code/docs/cluster/FactorialFrontend.scala) { #router-deploy-in-code }
+@@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #router-deploy-in-code }
 
 The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
 [Akka Cluster Sample with Scala](@exampleCodeService@/akka-samples-cluster-scala)
@@ -165,7 +165,7 @@ The source code of this sample can be found in the [Akka Samples Repository](@sa
 
 It is possible to subscribe to the metrics events directly to implement other functionality.
 
-@@snip [MetricsListener.scala](code/docs/cluster/MetricsListener.scala) { #metrics-listener }
+@@snip [MetricsListener.scala]($code$/scala/docs/cluster/MetricsListener.scala) { #metrics-listener }
 
 ## Custom Metrics Collector
 
@@ -183,4 +183,4 @@ Custom metrics collector implementation class must be specified in the
 
 The Cluster metrics extension can be configured with the following properties:
 
-@@snip [reference.conf]../../../../../akka-cluster-metrics/src/main/resources/reference.conf) { # }
+@@snip [reference.conf]($akka$/akka-cluster-metrics/src/main/resources/reference.conf)

@@ -76,7 +76,7 @@ ip-addresses or host names of the machines in `application.conf` instead of `127
 
 An actor that uses the cluster extension may look like this:
 
-@@snip [SimpleClusterListener.java](code/jdocs/cluster/SimpleClusterListener.java) { type=java }
+@@snip [SimpleClusterListener.java]($code$/java/jdocs/cluster/SimpleClusterListener.java) { type=java }
 
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
@@ -219,7 +219,7 @@ A more graceful exit can be performed if you tell the cluster that a node shall 
 This can be performed using [cluster_jmx_java](#cluster-jmx-java) or [cluster_http_java](#cluster-http-java).
 It can also be performed programmatically with:
 
-@@snip [ClusterDocTest.java](code/jdocs/cluster/ClusterDocTest.java) { #leave }
+@@snip [ClusterDocTest.java]($code$/java/jdocs/cluster/ClusterDocTest.java) { #leave }
 
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving.
@@ -261,7 +261,7 @@ have no knowledge about the existence of the new members. You should for example
 You can subscribe to change notifications of the cluster membership by using
 `Cluster.get(system).subscribe`.
 
-@@snip [SimpleClusterListener2.java](code/jdocs/cluster/SimpleClusterListener2.java) { #subscribe }
+@@snip [SimpleClusterListener2.java]($code$/java/jdocs/cluster/SimpleClusterListener2.java) { #subscribe }
 
 A snapshot of the full state, `akka.cluster.ClusterEvent.CurrentClusterState`, is sent to the subscriber
 as the first message, followed by events for incremental updates.
@@ -278,7 +278,7 @@ the events corresponding to the current state to mimic what you would have seen 
 listening to the events when they occurred in the past. Note that those initial events only correspond
 to the current state and it is not the full history of all changes that actually has occurred in the cluster.
 
-@@snip [SimpleClusterListener.java](code/jdocs/cluster/SimpleClusterListener.java) { #subscribe }
+@@snip [SimpleClusterListener.java]($code$/java/jdocs/cluster/SimpleClusterListener.java) { #subscribe }
 
 The events to track the life-cycle of members are:
 
@@ -313,11 +313,11 @@ added or removed to the cluster dynamically.
 
 Messages:
 
-@@snip [TransformationMessages.java](code/jdocs/cluster/TransformationMessages.java) { #messages }
+@@snip [TransformationMessages.java]($code$/java/jdocs/cluster/TransformationMessages.java) { #messages }
 
 The backend worker that performs the transformation job:
 
-@@snip [TransformationBackend.java](code/jdocs/cluster/TransformationBackend.java) { #backend }
+@@snip [TransformationBackend.java]($code$/java/jdocs/cluster/TransformationBackend.java) { #backend }
 
 Note that the `TransformationBackend` actor subscribes to cluster events to detect new,
 potential, frontend nodes, and send them a registration message so that they know
@@ -325,7 +325,7 @@ that they can use the backend worker.
 
 The frontend that receives user jobs and delegates to one of the registered backend workers:
 
-@@snip [TransformationFrontend.java](code/jdocs/cluster/TransformationFrontend.java) { #frontend }
+@@snip [TransformationFrontend.java]($code$/java/jdocs/cluster/TransformationFrontend.java) { #frontend }
 
 Note that the `TransformationFrontend` actor watch the registered backend
 to be able to remove it from its list of available backend workers.
@@ -376,7 +376,7 @@ You can start the actors in a `registerOnMemberUp` callback, which will
 be invoked when the current member status is changed to 'Up', i.e. the cluster
 has at least the defined number of members.
 
-@@snip [FactorialFrontendMain.java](code/jdocs/cluster/FactorialFrontendMain.java) { #registerOnUp }
+@@snip [FactorialFrontendMain.java]($code$/java/jdocs/cluster/FactorialFrontendMain.java) { #registerOnUp }
 
 This callback can be used for other things than starting actors.
 
@@ -574,7 +574,7 @@ Set it to a lower value if you want to limit total number of routees.
 
 The same type of router could also have been defined in code:
 
-@@snip [StatsService.java](code/jdocs/cluster/StatsService.java) { #router-lookup-in-code }
+@@snip [StatsService.java]($code$/java/jdocs/cluster/StatsService.java) { #router-lookup-in-code }
 
 See [cluster_configuration_java](#cluster-configuration-java) section for further descriptions of the settings.
 
@@ -591,17 +591,17 @@ the average number of characters per word when all results have been collected.
 
 Messages:
 
-@@snip [StatsMessages.java](code/jdocs/cluster/StatsMessages.java) { #messages }
+@@snip [StatsMessages.java]($code$/java/jdocs/cluster/StatsMessages.java) { #messages }
 
 The worker that counts number of characters in each word:
 
-@@snip [StatsWorker.java](code/jdocs/cluster/StatsWorker.java) { #worker }
+@@snip [StatsWorker.java]($code$/java/jdocs/cluster/StatsWorker.java) { #worker }
 
 The service that receives text from users and splits it up into words, delegates to workers and aggregates:
 
-@@snip [StatsService.java](code/jdocs/cluster/StatsService.java) { #service }
+@@snip [StatsService.java]($code$/java/jdocs/cluster/StatsService.java) { #service }
 
-@@snip [StatsAggregator.java](code/jdocs/cluster/StatsAggregator.java) { #aggregator }
+@@snip [StatsAggregator.java]($code$/java/jdocs/cluster/StatsAggregator.java) { #aggregator }
 
 Note, nothing cluster specific so far, just plain actors.
 
@@ -658,7 +658,7 @@ Set it to a lower value if you want to limit total number of routees.
 
 The same type of router could also have been defined in code:
 
-@@snip [StatsService.java](code/jdocs/cluster/StatsService.java) { #router-deploy-in-code }
+@@snip [StatsService.java]($code$/java/jdocs/cluster/StatsService.java) { #router-deploy-in-code }
 
 See [cluster_configuration_java](#cluster-configuration-java) section for further descriptions of the settings.
 
@@ -668,12 +668,12 @@ Let's take a look at how to use a cluster aware router on single master node tha
 and deploys workers. To keep track of a single master we use the @ref:[Cluster Singleton](cluster-singleton.md)
 in the cluster-tools module. The `ClusterSingletonManager` is started on each node.
 
-@@snip [StatsSampleOneMasterMain.java](code/jdocs/cluster/StatsSampleOneMasterMain.java) { #create-singleton-manager }
+@@snip [StatsSampleOneMasterMain.java]($code$/java/jdocs/cluster/StatsSampleOneMasterMain.java) { #create-singleton-manager }
 
 We also need an actor on each node that keeps track of where current single master exists and
 delegates jobs to the `StatsService`. That is provided by the `ClusterSingletonProxy`.
 
-@@snip [StatsSampleOneMasterMain.java](code/jdocs/cluster/StatsSampleOneMasterMain.java) { #singleton-proxy }
+@@snip [StatsSampleOneMasterMain.java]($code$/java/jdocs/cluster/StatsSampleOneMasterMain.java) { #singleton-proxy }
 
 The `ClusterSingletonProxy` receives text from users and delegates to the current `StatsService`, the single
 master. It listens to cluster events to lookup the `StatsService` on the oldest node.

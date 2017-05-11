@@ -59,20 +59,20 @@ can explicitly remove entries with `DistributedPubSubMediator.Unsubscribe`.
 
 An example of a subscriber actor:
 
-@@snip [DistributedPubSubMediatorSpec.scala]../../../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #subscriber }
+@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #subscriber }
 
 Subscriber actors can be started on several nodes in the cluster, and all will receive
 messages published to the "content" topic.
 
-@@snip [DistributedPubSubMediatorSpec.scala]../../../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-subscribers }
+@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-subscribers }
 
 A simple actor that publishes to this "content" topic:
 
-@@snip [DistributedPubSubMediatorSpec.scala]../../../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publisher }
+@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publisher }
 
 It can publish messages to the topic from anywhere in the cluster:
 
-@@snip [DistributedPubSubMediatorSpec.scala]../../../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publish-message }
+@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publish-message }
 
 ### Topic Groups
 
@@ -128,20 +128,20 @@ can explicitly remove entries with `DistributedPubSubMediator.Remove`.
 
 An example of a destination actor:
 
-@@snip [DistributedPubSubMediatorSpec.scala]../../../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-destination }
+@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-destination }
 
 Destination actors can be started on several nodes in the cluster, and all will receive
 messages sent to the path (without address information).
 
-@@snip [DistributedPubSubMediatorSpec.scala]../../../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-send-destinations }
+@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-send-destinations }
 
 A simple actor that sends to the path:
 
-@@snip [DistributedPubSubMediatorSpec.scala]../../../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #sender }
+@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #sender }
 
 It can send messages to the path from anywhere in the cluster:
 
-@@snip [DistributedPubSubMediatorSpec.scala]../../../../../akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-message }
+@@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-message }
 
 It is also possible to broadcast messages to the actors that have been registered with
 `Put`. Send `DistributedPubSubMediator.SendToAll` message to the local mediator and the wrapped message
@@ -165,7 +165,7 @@ want to use different cluster roles for different mediators.
 
 The `DistributedPubSub` extension can be configured with the following properties:
 
-@@snip [reference.conf]../../../../../akka-cluster-tools/src/main/resources/reference.conf) { #pub-sub-ext-config }
+@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #pub-sub-ext-config }
 
 It is recommended to load the extension when the actor system is started by defining it in
 `akka.extensions` configuration property. Otherwise it will be activated when first used

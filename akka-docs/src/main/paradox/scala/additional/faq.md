@@ -79,7 +79,7 @@ exhaustiveness.
 Here is an example where the compiler will warn you that the match in
 receive isn't exhaustive:
 
-@@snip [Faq.scala](code/docs/faq/Faq.scala) { #exhaustiveness-check }
+@@snip [Faq.scala]($code$/scala/docs/faq/Faq.scala) { #exhaustiveness-check }
 
 ## Remoting
 

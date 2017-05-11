@@ -87,11 +87,11 @@ Here's how a :class:
 
 #### Scala
 
-@@snip [CircuitBreakerDocSpec.scala](code/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #imports1 #circuit-breaker-initialization }
+@@snip [CircuitBreakerDocSpec.scala]($code$/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #imports1 #circuit-breaker-initialization }
 
 #### Java
 
-@@snip [DangerousJavaActor.java](code/docs/circuitbreaker/DangerousJavaActor.java) { #imports1 #circuit-breaker-initialization }
+@@snip [DangerousJavaActor.java]($code$/java/jdocs/circuitbreaker/DangerousJavaActor.java) { #imports1 #circuit-breaker-initialization }
 
 ### Future & Synchronous based API
 
@@ -101,11 +101,11 @@ The Synchronous API would also wrap your call with the circuit breaker logic, ho
 
 #### Scala
 
-@@snip [CircuitBreakerDocSpec.scala](code/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #circuit-breaker-usage }
+@@snip [CircuitBreakerDocSpec.scala]($code$/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #circuit-breaker-usage }
 
 #### Java
 
-@@snip [DangerousJavaActor.java](code/docs/circuitbreaker/DangerousJavaActor.java) { #circuit-breaker-usage }
+@@snip [DangerousJavaActor.java]($code$/java/jdocs/circuitbreaker/DangerousJavaActor.java) { #circuit-breaker-usage }
 
 @@@ note
 
@@ -146,7 +146,7 @@ Type of `defineFailureFn`: `Try[T] ⇒ Boolean`
 
 This is a function which takes in a `Try[T]` and return a `Boolean`. The `Try[T]` correspond to the `Future[T]` of the protected call. This function should return `true` if the call should increase failure count, else false.
 
-@@snip [CircuitBreakerDocSpec.scala](code/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #even-no-as-failure }
+@@snip [CircuitBreakerDocSpec.scala]($code$/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #even-no-as-failure }
 
 #### Java
 
@@ -155,7 +155,7 @@ Type of `defineFailureFn`:  `BiFunction[Optional[T], Optional[Throwable], java.l
 For Java Api, the signature is a bit different as there's no `Try` in Java, so the response of protected call is modelled using `Optional[T]` for succeeded return value and `Optional[Throwable]` for exception, and the rules of return type is the same.
 Ie. this function should return `true` if the call should increase failure count, else false.
 
-@@snip [EvenNoFailureJavaExample.java](code/docs/circuitbreaker/EvenNoFailureJavaExample.java) { #even-no-as-failure }
+@@snip [EvenNoFailureJavaExample.java]($code$/java/jdocs/circuitbreaker/EvenNoFailureJavaExample.java) { #even-no-as-failure }
 
 ### Low level API
 
@@ -171,8 +171,8 @@ The below examples doesn't make a remote call when the state is *HalfOpen*. Usin
 
 #### Scala
 
-@@snip [CircuitBreakerDocSpec.scala](code/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #circuit-breaker-tell-pattern }
+@@snip [CircuitBreakerDocSpec.scala]($code$/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #circuit-breaker-tell-pattern }
 
 #### Java
 
-@@snip [TellPatternJavaActor.java](code/docs/circuitbreaker/TellPatternJavaActor.java) { #circuit-breaker-tell-pattern }
+@@snip [TellPatternJavaActor.java]($code$/java/jdocs/circuitbreaker/TellPatternJavaActor.java) { #circuit-breaker-tell-pattern }

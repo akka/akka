@@ -42,18 +42,18 @@ Agents are created by invoking `Agent(value)` passing in the Agent's initial
 value and providing an implicit `ExecutionContext` to be used for it, for these
 examples we're going to use the default global one, but YMMV:
 
-@@snip [AgentDocSpec.scala](code/docs/agent/AgentDocSpec.scala) { #create }
+@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #create }
 
 ## Reading an Agent's value
 
 Agents can be dereferenced (you can get an Agent's value) by invoking the Agent
 with parentheses like this:
 
-@@snip [AgentDocSpec.scala](code/docs/agent/AgentDocSpec.scala) { #read-apply }
+@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #read-apply }
 
 Or by using the get method:
 
-@@snip [AgentDocSpec.scala](code/docs/agent/AgentDocSpec.scala) { #read-get }
+@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #read-get }
 
 Reading an Agent's current value does not involve any message passing and
 happens immediately. So while updates to an Agent are asynchronous, reading the
@@ -69,7 +69,7 @@ the update will be applied but dispatches to an Agent from a single thread will
 occur in order. You apply a value or a function by invoking the `send`
 function.
 
-@@snip [AgentDocSpec.scala](code/docs/agent/AgentDocSpec.scala) { #send }
+@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #send }
 
 You can also dispatch a function to update the internal state but on its own
 thread. This does not use the reactive thread pool and can be used for
@@ -77,21 +77,21 @@ long-running or blocking operations. You do this with the `sendOff`
 method. Dispatches using either `sendOff` or `send` will still be executed
 in order.
 
-@@snip [AgentDocSpec.scala](code/docs/agent/AgentDocSpec.scala) { #send-off }
+@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #send-off }
 
 All `send` methods also have a corresponding `alter` method that returns a `Future`.
 See @ref:[Futures](futures.md) for more information on `Futures`.
 
-@@snip [AgentDocSpec.scala](code/docs/agent/AgentDocSpec.scala) { #alter }
+@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #alter }
 
-@@snip [AgentDocSpec.scala](code/docs/agent/AgentDocSpec.scala) { #alter-off }
+@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #alter-off }
 
 ## Awaiting an Agent's value
 
 You can also get a `Future` to the Agents value, that will be completed after the
 currently queued updates have completed:
 
-@@snip [AgentDocSpec.scala](code/docs/agent/AgentDocSpec.scala) { #read-future }
+@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #read-future }
 
 See @ref:[Futures](futures.md) for more information on `Futures`.
 
@@ -104,7 +104,7 @@ as-is. They are so-called 'persistent'.
 
 Example of monadic usage:
 
-@@snip [AgentDocSpec.scala](code/docs/agent/AgentDocSpec.scala) { #monadic-example }
+@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #monadic-example }
 
 ## Configuration
 
@@ -120,4 +120,4 @@ that transaction. If you send to an Agent within a transaction then the dispatch
 to the Agent will be held until that transaction commits, and discarded if the
 transaction is aborted. Here's an example:
 
-@@snip [AgentDocSpec.scala](code/docs/agent/AgentDocSpec.scala) { #transfer-example }
+@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #transfer-example }

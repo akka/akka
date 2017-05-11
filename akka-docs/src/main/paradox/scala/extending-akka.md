@@ -20,23 +20,23 @@ So let's create a sample extension that just lets us count the number of times s
 
 First, we define what our `Extension` should do:
 
-@@snip [ExtensionDocSpec.scala](code/docs/extension/ExtensionDocSpec.scala) { #extension }
+@@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #extension }
 
 Then we need to create an `ExtensionId` for our extension so we can grab a hold of it.
 
-@@snip [ExtensionDocSpec.scala](code/docs/extension/ExtensionDocSpec.scala) { #extensionid }
+@@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #extensionid }
 
 Wicked! Now all we need to do is to actually use it:
 
-@@snip [ExtensionDocSpec.scala](code/docs/extension/ExtensionDocSpec.scala) { #extension-usage }
+@@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #extension-usage }
 
 Or from inside of an Akka Actor:
 
-@@snip [ExtensionDocSpec.scala](code/docs/extension/ExtensionDocSpec.scala) { #extension-usage-actor }
+@@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #extension-usage-actor }
 
 You can also hide extension behind traits:
 
-@@snip [ExtensionDocSpec.scala](code/docs/extension/ExtensionDocSpec.scala) { #extension-usage-actor-trait }
+@@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #extension-usage-actor-trait }
 
 That's all there is to it!
 
@@ -45,7 +45,7 @@ That's all there is to it!
 To be able to load extensions from your Akka configuration you must add FQCNs of implementations of either `ExtensionId` or `ExtensionIdProvider`
 in the `akka.extensions` section of the config you provide to your `ActorSystem`.
 
-@@snip [ExtensionDocSpec.scala](code/docs/extension/ExtensionDocSpec.scala) { #config }
+@@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #config }
 
 ## Applicability
 
@@ -59,15 +59,15 @@ The <!-- FIXME: More than one link target with name configuration in path Some(/
 
 Sample configuration:
 
-@@snip [SettingsExtensionDocSpec.scala](code/docs/extension/SettingsExtensionDocSpec.scala) { #config }
+@@snip [SettingsExtensionDocSpec.scala]($code$/scala/docs/extension/SettingsExtensionDocSpec.scala) { #config }
 
 The `Extension`:
 
-@@snip [SettingsExtensionDocSpec.scala](code/docs/extension/SettingsExtensionDocSpec.scala) { #imports #extension #extensionid }
+@@snip [SettingsExtensionDocSpec.scala]($code$/scala/docs/extension/SettingsExtensionDocSpec.scala) { #imports #extension #extensionid }
 
 Use it:
 
-@@snip [SettingsExtensionDocSpec.scala](code/docs/extension/SettingsExtensionDocSpec.scala) { #extension-usage-actor }
+@@snip [SettingsExtensionDocSpec.scala]($code$/scala/docs/extension/SettingsExtensionDocSpec.scala) { #extension-usage-actor }
 
 ## Library extensions
 

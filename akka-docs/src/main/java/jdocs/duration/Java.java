@@ -2,7 +2,7 @@
  * Copyright (C) 2013-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package docs.duration;
+package jdocs.duration;
 
 //#import
 import scala.concurrent.duration.Duration;

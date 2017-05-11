@@ -37,7 +37,7 @@ function there is a builder named `ReceiveBuilder` that you can use.
 
 Here is an example:
 
-@@snip [MyActor.java](code/jdocs/actor/MyActor.java) { #imports #my-actor }
+@@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #imports #my-actor }
 
 Please note that the Akka Actor `receive` message loop is exhaustive, which
 is different compared to Erlang and the late Scala Actors. This means that you
@@ -64,9 +64,9 @@ creating an actor including associated deployment information (e.g. which
 dispatcher to use, see more below). Here are some examples of how to create a
 `Props` instance.
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #import-props }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-props }
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #creating-props }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #creating-props }
 
 The second variant shows how to pass constructor arguments to the
 `Actor` being created, but it should only be used outside of actors as
@@ -80,7 +80,7 @@ found.
 
 #### Dangerous Variants
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #creating-props-deprecated }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #creating-props-deprecated }
 
 This method is not recommended to be used within another actor because it
 encourages to close over the enclosing scope, resulting in non-serializable
@@ -113,14 +113,14 @@ associated with using the `Props.create(...)` method which takes a by-name
 argument, since within a companion object the given code block will not retain
 a reference to its enclosing scope:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #props-factory }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #props-factory }
 
 Another good practice is to declare what messages an Actor can receive
 as close to the actor definition as possible (e.g. as static classes
 inside the Actor or using other suitable class), which makes it easier to know
 what it can receive.
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #messages-in-companion }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #messages-in-companion }
 
 ### Creating Actors with Props
 
@@ -128,15 +128,15 @@ Actors are created by passing a `Props` instance into the
 `actorOf` factory method which is available on `ActorSystem` and
 `ActorContext`.
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #import-actorRef }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-actorRef }
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #system-actorOf }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #system-actorOf }
 
 Using the `ActorSystem` will create top-level actors, supervised by the
 actor system’s provided guardian actor, while using an actor’s context will
 create a child actor.
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #context-actorOf }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #context-actorOf }
 
 It is recommended to create a hierarchy of children, grand-children and so on
 such that it fits the logical failure-handling structure of the application,
@@ -166,9 +166,9 @@ be part of the `Props` as well, as described [above](Props_). But there
 are cases when a factory method must be used, for example when the actual
 constructor arguments are determined by a dependency injection framework.
 
-@@snip [DependencyInjectionDocTest.java](code/jdocs/actor/DependencyInjectionDocTest.java) { #import }
+@@snip [DependencyInjectionDocTest.java]($code$/java/jdocs/actor/DependencyInjectionDocTest.java) { #import }
 
-@@snip [DependencyInjectionDocTest.java](code/jdocs/actor/DependencyInjectionDocTest.java) { #creating-indirectly }
+@@snip [DependencyInjectionDocTest.java]($code$/java/jdocs/actor/DependencyInjectionDocTest.java) { #creating-indirectly }
 
 @@@ warning
 
@@ -195,13 +195,13 @@ cannot do: receiving multiple replies (e.g. by subscribing an `ActorRef`
 to a notification service) and watching other actors’ lifecycle. For these
 purposes there is the `Inbox` class:
 
-@@snip [InboxDocTest.java](code/jdocs/actor/InboxDocTest.java) { #inbox }
+@@snip [InboxDocTest.java]($code$/java/jdocs/actor/InboxDocTest.java) { #inbox }
 
 The `send` method wraps a normal `tell` and supplies the internal
 actor’s reference as the sender. This allows the reply to be received on the
 last line.  Watching an actor is quite simple as well:
 
-@@snip [InboxDocTest.java](code/jdocs/actor/InboxDocTest.java) { #watch }
+@@snip [InboxDocTest.java]($code$/java/jdocs/actor/InboxDocTest.java) { #watch }
 
 ## Actor API
 
@@ -241,7 +241,7 @@ time).
 The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #lifecycle-callbacks }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #lifecycle-callbacks }
 
 The implementations shown above are the defaults provided by the `AbstractActor`
 class.
@@ -300,9 +300,9 @@ termination (see [Stopping Actors](#stopping-actors)). This service is provided 
 
 Registering a monitor is easy:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #import-terminated }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-terminated }
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #watch }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #watch }
 
 It should be noted that the `Terminated` message is generated
 independent of the order in which registration and termination occur.
@@ -327,7 +327,7 @@ no `Terminated` message for that actor will be processed anymore.
 
 Right after starting the actor, its `preStart` method is invoked.
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #preStart }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #preStart }
 
 This method is called when the actor is first created. During restarts it is
 called by the default implementation of `postRestart`, which means that
@@ -400,7 +400,7 @@ actors may look up other actors by specifying absolute or relative
 paths—logical or physical—and receive back an `ActorSelection` with the
 result:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #selection-local }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #selection-local }
 
 @@@ note
 
@@ -429,7 +429,7 @@ structure, i.e. the supervisor.
 The path elements of an actor selection may contain wildcard patterns allowing for
 broadcasting of messages to that section:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #selection-wildcard }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #selection-wildcard }
 
 Messages can be sent via the `ActorSelection` and the path of the
 `ActorSelection` is looked up when delivering each message. If the selection
@@ -445,9 +445,9 @@ actors which are traversed in the sense that if a concrete name lookup fails
 negative result is generated. Please note that this does not mean that delivery
 of that reply is guaranteed, it still is a normal message.
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #import-identify }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-identify }
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #identify }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #identify }
 
 You can also acquire an `ActorRef` for an `ActorSelection` with
 the `resolveOne` method of the `ActorSelection`. It returns a
@@ -458,7 +458,7 @@ didn't complete within the supplied *timeout*.
 
 Remote actor addresses may also be looked up, if @ref:[remoting](remoting.md) is enabled:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #selection-remote }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #selection-remote }
 
 An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample-java).
 
@@ -470,7 +470,7 @@ convention.
 
 Here is an example of an immutable message:
 
-@@snip [ImmutableMessage.java](code/jdocs/actor/ImmutableMessage.java) { #immutable-message }
+@@snip [ImmutableMessage.java]($code$/java/jdocs/actor/ImmutableMessage.java) { #immutable-message }
 
 ## Send messages
 
@@ -502,7 +502,7 @@ to your message, since the sender reference is sent along with the message.
 This is the preferred way of sending messages. No blocking waiting for a
 message. This gives the best concurrency and scalability characteristics.
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #tell }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #tell }
 
 The sender reference is passed along with the message and available within the
 receiving actor via its `getSender()` method while processing this
@@ -519,9 +519,9 @@ the ask-pattern described next..
 The `ask` pattern involves actors as well as futures, hence it is offered as
 a use pattern rather than a method on `ActorRef`:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #import-ask }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-ask }
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #ask-pipe }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #ask-pipe }
 
 This example demonstrates `ask` together with the `pipe` pattern on
 futures, because this is likely to be a common combination. Please note that
@@ -552,7 +552,7 @@ This is *not done automatically* when an actor throws an exception while process
 
 @@@
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #reply-exception }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #reply-exception }
 
 If the actor does not complete the future, it will expire after the timeout period,
 specified as parameter to the `ask` method; this will complete the
@@ -584,7 +584,7 @@ original sender address/reference is maintained even though the message is going
 through a 'mediator'. This can be useful when writing actors that work as
 routers, load-balancers, replicators etc.
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #forward }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #forward }
 
 <a id="actors-receive-java"></a>
 ## Receive messages
@@ -592,7 +592,7 @@ routers, load-balancers, replicators etc.
 An actor has to define its initial receive behavior by implementing
 the `createReceive` method in the `AbstractActor`:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #createReceive }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #createReceive }
 
 The return type is `AbstractActor.Receive` that defines which messages your Actor can handle,
 along with the implementation of how the messages should be processed.
@@ -600,18 +600,18 @@ You can build such behavior with a builder named `ReceiveBuilder`.
 
 Here is an example:
 
-@@snip [MyActor.java](code/jdocs/actor/MyActor.java) { #imports #my-actor }
+@@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #imports #my-actor }
 
 In case you want to provide many `match` cases but want to avoid creating a long call
 trail, you can split the creation of the builder into multiple statements as in the example:
 
-@@snip [GraduallyBuiltActor.java](code/jdocs/actor/GraduallyBuiltActor.java) { #imports #actor }
+@@snip [GraduallyBuiltActor.java]($code$/java/jdocs/actor/GraduallyBuiltActor.java) { #imports #actor }
 
 Using small methods is a good practice, also in actors. It's recommended to delegate the
 actual work of the message processing to methods instead of defining a huge `ReceiveBuilder`
 with lots of code in each lambda. A well structured actor can look like this:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #well-structured }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #well-structured }
 
 That has benefits such as:
 
@@ -633,7 +633,7 @@ that the JVM can have problems optimizing and the resulting code might not be as
 untyped version. When extending `UntypedAbstractActor` each message is received as an untyped
 `Object` and you have to inspect and cast it to the actual message type in other ways, like this:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #optimized }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #optimized }
 
 <a id="lambdaactor-reply"></a>
 ## Reply to messages
@@ -645,7 +645,7 @@ for replying later, or passing on to other actors. If there is no sender (a
 message was sent without an actor or future context) then the sender
 defaults to a 'dead-letter' actor ref.
 
-@@snip [MyActor.java](code/jdocs/actor/MyActor.java) { #reply }
+@@snip [MyActor.java]($code$/java/jdocs/actor/MyActor.java) { #reply }
 
 ## Receive timeout
 
@@ -661,7 +661,7 @@ timeout there must have been an idle period beforehand as configured via this me
 Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
 periods). Pass in *Duration.Undefined* to switch off this feature.
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #receive-timeout }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #receive-timeout }
 
 Messages marked with `NotInfluenceReceiveTimeout` will not reset the timer. This can be useful when
 `ReceiveTimeout` should be fired by external inactivity but not influenced by internal activity,
@@ -676,7 +676,7 @@ child actors and the system for stopping top level actors. The actual terminatio
 the actor is performed asynchronously, i.e. `stop` may return before the actor is
 stopped.
 
-@@snip [MyStoppingActor.java](code/jdocs/actor/MyStoppingActor.java) { #my-stopping-actor }
+@@snip [MyStoppingActor.java]($code$/java/jdocs/actor/MyStoppingActor.java) { #my-stopping-actor }
 
 Processing of the current message, if any, will continue before the actor is stopped,
 but additional messages in the mailbox will not be processed. By default these
@@ -702,7 +702,7 @@ whole system.
 The `postStop()` hook is invoked after an actor is fully stopped. This
 enables cleaning up of resources:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #postStop }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #postStop }
 
 @@@ note
 
@@ -722,18 +722,18 @@ stop the actor when the message is processed. `PoisonPill` is enqueued as
 ordinary messages and will be handled after messages that were already queued
 in the mailbox.
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #poison-pill }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #poison-pill }
 
 ### Graceful Stop
 
 `gracefulStop` is useful if you need to wait for termination or compose ordered
 termination of several actors:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #import-gracefulStop }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-gracefulStop }
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #gracefulStop }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop }
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #gracefulStop-actor }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop-actor }
 
 When `gracefulStop()` returns successfully, the actor’s `postStop()` hook
 will have been executed: there exists a happens-before edge between the end of
@@ -764,7 +764,7 @@ services in a specific order and perform registered tasks during the shutdown pr
 The order of the shutdown phases is defined in configuration `akka.coordinated-shutdown.phases`.
 The default phases are defined as:
 
-@@snip [reference.conf]../../../../../akka-actor/src/main/resources/reference.conf) { #coordinated-shutdown-phases }
+@@snip [reference.conf]($akka$/akka-actor/src/main/resources/reference.conf) { #coordinated-shutdown-phases }
 
 More phases can be be added in the application's configuration if needed by overriding a phase with an
 additional `depends-on`. Especially the phases `before-service-unbind`, `before-cluster-shutdown` and
@@ -776,7 +776,7 @@ The phases are ordered with [topological](https://en.wikipedia.org/wiki/Topologi
 
 Tasks can be added to a phase with:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-addTask }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-addTask }
 
 The returned `CompletionStage<Done>` should be completed when the task is completed. The task name parameter
 is only used for debugging/logging.
@@ -795,7 +795,7 @@ added too late will not be run.
 To start the coordinated shutdown process you can invoke `runAll` on the `CoordinatedShutdown`
 extension:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-run }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-run }
 
 It's safe to call the `runAll` method multiple times. It will only run once.
 
@@ -824,7 +824,7 @@ If you have application specific JVM shutdown hooks it's recommended that you re
 `CoordinatedShutdown` so that they are running before Akka internal shutdown hooks, e.g.
 those shutting down Akka Remoting (Artery).
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-jvm-hook }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-jvm-hook }
 
 For some tests it might be undesired to terminate the `ActorSystem` via `CoordinatedShutdown`.
 You can disable that by adding the following to the configuration of the `ActorSystem` that is
@@ -854,7 +854,7 @@ Please note that the actor will revert to its original behavior when restarted b
 
 To hotswap the Actor behavior using `become`:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #hot-swap-actor }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #hot-swap-actor }
 
 This variant of the `become` method is useful for many different things,
 such as to implement a Finite State Machine (FSM, for an example see [Dining
@@ -868,7 +868,7 @@ of “pop” operations (i.e. `unbecome`) matches the number of “push” ones
 in the long run, otherwise this amounts to a memory leak (which is why this
 behavior is not the default).
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #swapper }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #swapper }
 
 <a id="stash-java"></a>
 ## Stash
@@ -894,7 +894,7 @@ control over the mailbox, see the documentation on mailboxes: @ref:[Mailboxes](m
 
 Here is an example of the `AbstractActorWithStash` class in action:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #stash }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #stash }
 
 Invoking `stash()` adds the current message (the message that the
 actor received last) to the actor's stash. It is typically invoked
@@ -942,7 +942,7 @@ See @ref:[What Supervision Means](../scala/general/supervision.md#supervision-di
 
 Use `Kill` like this:
 
-@@snip [ActorDocTest.java](code/jdocs/actor/ActorDocTest.java) { #kill }
+@@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #kill }
 
 ## Actors and exceptions
 
@@ -1002,7 +1002,7 @@ this behavior, and ensure that there is only one call to `preStart()`.
 One useful usage of this pattern is to disable creation of new `ActorRefs` for children during restarts. This can be
 achieved by overriding `preRestart()`:
 
-@@snip [InitializationDocTest.java](code/jdocs/actor/InitializationDocTest.java) { #preStartInit }
+@@snip [InitializationDocTest.java]($code$/java/jdocs/actor/InitializationDocTest.java) { #preStartInit }
 
 Please note, that the child actors are *still restarted*, but no new `ActorRef` is created. One can recursively apply
 the same principles for the children, ensuring that their `preStart()` method is called only at the creation of their
@@ -1017,7 +1017,7 @@ for example in the presence of circular dependencies. In this case the actor sho
 and use `become()` or a finite state-machine state transition to encode the initialized and uninitialized states
 of the actor.
 
-@@snip [InitializationDocTest.java](code/jdocs/actor/InitializationDocTest.java) { #messageInit }
+@@snip [InitializationDocTest.java]($code$/java/jdocs/actor/InitializationDocTest.java) { #messageInit }
 
 If the actor may receive messages before it has been initialized, a useful tool can be the `Stash` to save messages
 until the initialization finishes, and replaying them after the actor became initialized.

@@ -29,7 +29,7 @@ sent, and how long the initial delay is. Worst case scenario is `interval` plus 
 
 @@@
 
-@@snip [SchedulerPatternTest.java](code/jdocs/pattern/SchedulerPatternTest.java) { #schedule-constructor }
+@@snip [SchedulerPatternTest.java]($code$/java/jdocs/pattern/SchedulerPatternTest.java) { #schedule-constructor }
 
 The second variant sets up an initial one shot message send in the `preStart` method
 of the actor, and the then the actor when it receives this message sets up a new one shot
@@ -43,7 +43,7 @@ under pressure, but only schedule a new tick message when we have seen the previ
 
 @@@
 
-@@snip [SchedulerPatternTest.java](code/jdocs/pattern/SchedulerPatternTest.java) { #schedule-receive }
+@@snip [SchedulerPatternTest.java]($code$/java/jdocs/pattern/SchedulerPatternTest.java) { #schedule-receive }
 
 ## Single-Use Actor Trees with High-Level Error Reporting
 
@@ -67,7 +67,7 @@ Finally the promise returned by Patterns.ask() is fulfilled as a failure, includ
 
 Let's have a look at the example code:
 
-@@snip [SupervisedAsk.java](code/jdocs/pattern/SupervisedAsk.java) { # }
+@@snip [SupervisedAsk.java]($code$/java/jdocs/pattern/SupervisedAsk.java)
 
 In the askOf method the SupervisorCreator is sent the user message.
 The SupervisorCreator creates a SupervisorActor and forwards the message.
@@ -80,4 +80,4 @@ Afterwards the actor hierarchy is stopped.
 
 Finally we are able to execute an actor and receive the results or exceptions.
 
-@@snip [SupervisedAskSpec.java](code/jdocs/pattern/SupervisedAskSpec.java) { # }
+@@snip [SupervisedAskSpec.java]($code$/java/jdocs/pattern/SupervisedAskSpec.java)

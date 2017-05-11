@@ -127,7 +127,7 @@ sent, and how long the initial delay is. Worst case scenario is `interval` plus 
 
 @@@
 
-@@snip [SchedulerPatternSpec.scala](code/docs/pattern/SchedulerPatternSpec.scala) { #schedule-constructor }
+@@snip [SchedulerPatternSpec.scala]($code$/scala/docs/pattern/SchedulerPatternSpec.scala) { #schedule-constructor }
 
 The second variant sets up an initial one shot message send in the `preStart` method
 of the actor, and the then the actor when it receives this message sets up a new one shot
@@ -141,4 +141,4 @@ under pressure, but only schedule a new tick message when we have seen the previ
 
 @@@
 
-@@snip [SchedulerPatternSpec.scala](code/docs/pattern/SchedulerPatternSpec.scala) { #schedule-receive }
+@@snip [SchedulerPatternSpec.scala]($code$/scala/docs/pattern/SchedulerPatternSpec.scala) { #schedule-receive }

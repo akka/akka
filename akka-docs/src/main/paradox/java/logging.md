@@ -12,9 +12,9 @@ synchronously.
 Create a `LoggingAdapter` and use the `error`, `warning`, `info`, or `debug` methods,
 as illustrated in this example:
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #imports }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #imports }
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #my-actor }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #my-actor }
 
 The first parameter to `Logging.getLogger` could also be any
 `LoggingBus`, specifically `system.eventStream()`; in the demonstrated
@@ -36,7 +36,7 @@ placeholders results in a warning being appended to the log statement (i.e. on
 the same line with the same severity). You may pass a Java array as the only
 substitution argument to have its elements be treated individually:
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #array }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #array }
 
 The Java `Class` of the log source is also included in the generated
 `LogEvent`. In case of a simple string this is replaced with a “marker”
@@ -246,9 +246,9 @@ logger available in the 'akka-slf4j' module.
 
 Example of creating a listener:
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #imports #imports-listener }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #imports #imports-listener }
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #my-event-listener }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #my-event-listener }
 
 ## Logging to stdout during startup and shutdown
 
@@ -413,9 +413,9 @@ if it is not set to a new map. Use `log.clearMDC()`.
 
 @@@
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #imports-mdc }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #imports-mdc }
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #mdc-actor }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #mdc-actor }
 
 Now, the values will be available in the MDC, so you can use them in the layout pattern:
 

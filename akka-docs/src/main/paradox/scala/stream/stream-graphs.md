@@ -48,7 +48,7 @@ and each circle corresponds to either a `Junction` or a `Source` or `Sink` if it
 or ending a `Flow`. Junctions must always be created with defined type parameters, as otherwise the `Nothing` type
 will be inferred.
 
-@@snip [GraphDSLDocSpec.scala](../code/docs/stream/GraphDSLDocSpec.scala) { #simple-graph-dsl }
+@@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #simple-graph-dsl }
 
 @@@ note
 
@@ -79,7 +79,7 @@ In the example below we prepare a graph that consists of two parallel streams,
 in which we re-use the same instance of `Flow`, yet it will properly be
 materialized as two connections between the corresponding Sources and Sinks:
 
-@@snip [GraphDSLDocSpec.scala](../code/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-reusing-a-flow }
+@@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-reusing-a-flow }
 
 <a id="partial-graph-dsl-scala"></a>
 ## Constructing and combining Partial Graphs
@@ -100,7 +100,7 @@ Let's imagine we want to provide users with a specialized element that given 3 i
 the greatest int value of each zipped triple. We'll want to expose 3 input ports (unconnected sources) and one output port
 (unconnected sink).
 
-@@snip [StreamPartialGraphDSLDocSpec.scala](../code/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #simple-partial-graph-dsl }
+@@snip [StreamPartialGraphDSLDocSpec.scala]($code$/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #simple-partial-graph-dsl }
 
 As you can see, first we construct the partial graph that contains all the zipping and comparing of stream
 elements. This partial graph will have three inputs and one output, wherefore we use the `UniformFanInShape`.
@@ -140,12 +140,12 @@ from the function passed in . The single outlet must be provided to the `SourceS
 Refer to the example below, in which we create a Source that zips together two numbers, to see this graph
 construction in action:
 
-@@snip [StreamPartialGraphDSLDocSpec.scala](../code/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #source-from-partial-graph-dsl }
+@@snip [StreamPartialGraphDSLDocSpec.scala]($code$/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #source-from-partial-graph-dsl }
 
 Similarly the same can be done for a `Sink[T]`, using `SinkShape.of` in which case the provided value
 must be an `Inlet[T]`. For defining a `Flow[T]` we need to expose both an inlet and an outlet:
 
-@@snip [StreamPartialGraphDSLDocSpec.scala](../code/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #flow-from-partial-graph-dsl }
+@@snip [StreamPartialGraphDSLDocSpec.scala]($code$/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #flow-from-partial-graph-dsl }
 
 ## Combining Sources and Sinks with simplified API
 
@@ -153,11 +153,11 @@ There is a simplified API you can use to combine sources and sinks with junction
 `Merge[In]` and `Concat[A]` without the need for using the Graph DSL. The combine method takes care of constructing
 the necessary graph underneath. In following example we combine two sources into one (fan-in):
 
-@@snip [StreamPartialGraphDSLDocSpec.scala](../code/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #source-combine }
+@@snip [StreamPartialGraphDSLDocSpec.scala]($code$/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #source-combine }
 
 The same can be done for a `Sink[T]` but in this case it will be fan-out:
 
-@@snip [StreamPartialGraphDSLDocSpec.scala](../code/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #sink-combine }
+@@snip [StreamPartialGraphDSLDocSpec.scala]($code$/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #sink-combine }
 
 ## Building reusable Graph components
 
@@ -173,7 +173,7 @@ where jobs of higher priority can be sent.
 Altogether, our junction will have two input ports of type `I` (for the normal and priority jobs) and an output port
 of type `O`. To represent this interface, we need to define a custom `Shape`. The following lines show how to do that.
 
-@@snip [GraphDSLDocSpec.scala](../code/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-shape }
+@@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-shape }
 
 <a id="predefined-shapes"></a>
 ## Predefined shapes
@@ -192,20 +192,20 @@ with multiple input (or output) ports of different types.
 Since our shape has two input ports and one output port, we can just use the `FanInShape` DSL to define
 our custom shape:
 
-@@snip [GraphDSLDocSpec.scala](../code/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-shape2 }
+@@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-shape2 }
 
 Now that we have a `Shape` we can wire up a Graph that represents
 our worker pool. First, we will merge incoming normal and priority jobs using `MergePreferred`, then we will send the jobs
 to a `Balance` junction which will fan-out to a configurable number of workers (flows), finally we merge all these
 results together and send them out through our only output port. This is expressed by the following code:
 
-@@snip [GraphDSLDocSpec.scala](../code/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-create }
+@@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-create }
 
 All we need to do now is to use our custom junction in a graph. The following code simulates some simple workers
 and jobs using plain strings and prints out the results. Actually we used *two* instances of our worker pool junction
 using `add()` twice.
 
-@@snip [GraphDSLDocSpec.scala](../code/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-use }
+@@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-use }
 
 <a id="bidi-flow-scala"></a>
 ## Bidirectional Flows
@@ -220,19 +220,19 @@ this purpose exists the special type `BidiFlow` which is a graph that
 has exactly two open inlets and two open outlets. The corresponding shape is
 called `BidiShape` and is defined like this:
 
-@@snip [Shape.scala]../../../../../../akka-stream/src/main/scala/akka/stream/Shape.scala) { #bidi-shape }
+@@snip [Shape.scala]($akka$/akka-stream/src/main/scala/akka/stream/Shape.scala) { #bidi-shape }
 
 A bidirectional flow is defined just like a unidirectional `Flow` as
 demonstrated for the codec mentioned above:
 
-@@snip [BidiFlowDocSpec.scala](../code/docs/stream/BidiFlowDocSpec.scala) { #codec }
+@@snip [BidiFlowDocSpec.scala]($code$/scala/docs/stream/BidiFlowDocSpec.scala) { #codec }
 
 The first version resembles the partial graph constructor, while for the simple
 case of a functional 1:1 transformation there is a concise convenience method
 as shown on the last line. The implementation of the two functions is not
 difficult either:
 
-@@snip [BidiFlowDocSpec.scala](../code/docs/stream/BidiFlowDocSpec.scala) { #codec-impl }
+@@snip [BidiFlowDocSpec.scala]($code$/scala/docs/stream/BidiFlowDocSpec.scala) { #codec-impl }
 
 In this way you could easily integrate any other serialization library that
 turns an object into a sequence of bytes.
@@ -242,11 +242,11 @@ a framing protocol means that any received chunk of bytes may correspond to
 zero or more messages. This is best implemented using a `GraphStage`
 (see also @ref:[Custom processing with GraphStage](stream-customize.md#graphstage-scala)).
 
-@@snip [BidiFlowDocSpec.scala](../code/docs/stream/BidiFlowDocSpec.scala) { #framing }
+@@snip [BidiFlowDocSpec.scala]($code$/scala/docs/stream/BidiFlowDocSpec.scala) { #framing }
 
 With these implementations we can build a protocol stack and test it:
 
-@@snip [BidiFlowDocSpec.scala](../code/docs/stream/BidiFlowDocSpec.scala) { #compose }
+@@snip [BidiFlowDocSpec.scala]($code$/scala/docs/stream/BidiFlowDocSpec.scala) { #compose }
 
 This example demonstrates how `BidiFlow` subgraphs can be hooked
 together and also turned around with the `.reversed` method. The test
@@ -262,12 +262,12 @@ can be used in the graph as an ordinary source or outlet, and which will eventua
 If the materialized value is needed at more than one place, it is possible to call `materializedValue` any number of
 times to acquire the necessary number of outlets.
 
-@@snip [GraphDSLDocSpec.scala](../code/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue }
+@@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue }
 
 Be careful not to introduce a cycle where the materialized value actually contributes to the materialized value.
 The following example demonstrates a case where the materialized `Future` of a fold is fed back to the fold itself.
 
-@@snip [GraphDSLDocSpec.scala](../code/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue-cycle }
+@@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue-cycle }
 
 <a id="graph-cycles-scala"></a>
 ## Graph cycles, liveness and deadlocks
@@ -291,7 +291,7 @@ see there are cases where this is very helpful.
 
 @@@
 
-@@snip [GraphCyclesSpec.scala](../code/docs/stream/GraphCyclesSpec.scala) { #deadlocked }
+@@snip [GraphCyclesSpec.scala]($code$/scala/docs/stream/GraphCyclesSpec.scala) { #deadlocked }
 
 Running this we observe that after a few numbers have been printed, no more elements are logged to the console -
 all processing stops after some time. After some investigation we observe that:
@@ -309,7 +309,7 @@ If we modify our feedback loop by replacing the `Merge` junction with a `MergePr
 before trying the other lower priority input ports. Since we feed back through the preferred port it is always guaranteed
 that the elements in the cycles can flow.
 
-@@snip [GraphCyclesSpec.scala](../code/docs/stream/GraphCyclesSpec.scala) { #unfair }
+@@snip [GraphCyclesSpec.scala]($code$/scala/docs/stream/GraphCyclesSpec.scala) { #unfair }
 
 If we run the example we see that the same sequence of numbers are printed
 over and over again, but the processing does not stop. Hence, we avoided the deadlock, but `source` is still
@@ -327,7 +327,7 @@ be balanced (as many elements are removed as many are injected) then there would
 To make our cycle both live (not deadlocking) and fair we can introduce a dropping element on the feedback arc. In this
 case we chose the `buffer()` operation giving it a dropping strategy `OverflowStrategy.dropHead`.
 
-@@snip [GraphCyclesSpec.scala](../code/docs/stream/GraphCyclesSpec.scala) { #dropping }
+@@snip [GraphCyclesSpec.scala]($code$/scala/docs/stream/GraphCyclesSpec.scala) { #dropping }
 
 If we run this example we see that
 
@@ -346,7 +346,7 @@ the beginning instead. To achieve this we modify our first graph by replacing th
 Since `ZipWith` takes one element from `source` *and* from the feedback arc to inject one element into the cycle,
 we maintain the balance of elements.
 
-@@snip [GraphCyclesSpec.scala](../code/docs/stream/GraphCyclesSpec.scala) { #zipping-dead }
+@@snip [GraphCyclesSpec.scala]($code$/scala/docs/stream/GraphCyclesSpec.scala) { #zipping-dead }
 
 Still, when we try to run the example it turns out that no element is printed at all! After some investigation we
 realize that:
@@ -358,7 +358,7 @@ These two conditions are a typical "chicken-and-egg" problem. The solution is to
 element into the cycle that is independent from `source`. We do this by using a `Concat` junction on the backwards
 arc that injects a single element using `Source.single`.
 
-@@snip [GraphCyclesSpec.scala](../code/docs/stream/GraphCyclesSpec.scala) { #zipping-live }
+@@snip [GraphCyclesSpec.scala]($code$/scala/docs/stream/GraphCyclesSpec.scala) { #zipping-live }
 
 When we run the above example we see that processing starts and never stops. The important takeaway from this example
 is that balanced cycles often need an initial "kick-off" element to be injected into the cycle.
