@@ -41,7 +41,7 @@ Below is an example of an actor that schedules tick messages to itself and for e
 adds or removes elements from a `ORSet` (observed-remove set). It also subscribes to
 changes of this.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #data-bot }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #data-bot }
 
 <a id="replicator-update-scala"></a>
 ### Update
@@ -89,7 +89,7 @@ left all of the remaining nodes are used. Reachable nodes are prefered over unre
 
 Note that `WriteMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #update }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #update }
 
 As reply of the `Update` a `Replicator.UpdateSuccess` is sent to the sender of the
 `Update` if the value was successfully replicated according to the supplied consistency
@@ -98,9 +98,9 @@ sent back. Note that a `Replicator.UpdateTimeout` reply does not mean that the u
 or was rolled back. It may still have been replicated to some nodes, and will eventually
 be replicated to all nodes with the gossip protocol.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #update-response1 }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #update-response1 }
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #update-response2 }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #update-response2 }
 
 You will always see your own writes. For example if you send two `Update` messages
 changing the value of the same `key`, the `modify` function of the second message will
@@ -111,7 +111,7 @@ does not care about, but is included in the reply messages. This is a convenient
 way to pass contextual information (e.g. original sender) without having to use `ask`
 or maintain local correlation data structures.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #update-request-context }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #update-request-context }
 
 <a id="replicator-get-scala"></a>
 ### Get
@@ -130,16 +130,16 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 
 Note that `ReadMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #get }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #get }
 
 As reply of the `Get` a `Replicator.GetSuccess` is sent to the sender of the
 `Get` if the value was successfully retrieved according to the supplied consistency
 level within the supplied timeout. Otherwise a `Replicator.GetFailure` is sent.
 If the key does not exist the reply will be `Replicator.NotFound`.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #get-response1 }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-response1 }
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #get-response2 }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-response2 }
 
 You will always read your own writes. For example if you send a `Update` message
 followed by a `Get` of the same `key` the `Get` will retrieve the change that was
@@ -151,7 +151,7 @@ In the `Get` message you can pass an optional request context in the same way as
 `Update` message, described above. For example the original sender can be passed and replied
 to after receiving and transforming `GetSuccess`.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #get-request-context }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-request-context }
 
 ### Consistency
 
@@ -203,11 +203,11 @@ the total size of the cluster.
 
 Here is an example of using `WriteMajority` and `ReadMajority`:
 
-@@snip [ShoppingCart.scala](code/docs/ddata/ShoppingCart.scala) { #read-write-majority }
+@@snip [ShoppingCart.scala]($code$/scala/docs/ddata/ShoppingCart.scala) { #read-write-majority }
 
-@@snip [ShoppingCart.scala](code/docs/ddata/ShoppingCart.scala) { #get-cart }
+@@snip [ShoppingCart.scala]($code$/scala/docs/ddata/ShoppingCart.scala) { #get-cart }
 
-@@snip [ShoppingCart.scala](code/docs/ddata/ShoppingCart.scala) { #add-item }
+@@snip [ShoppingCart.scala]($code$/scala/docs/ddata/ShoppingCart.scala) { #add-item }
 
 In some rare cases, when performing an `Update` it is needed to first try to fetch latest data from
 other nodes. That can be done by first sending a `Get` with `ReadMajority` and then continue with
@@ -219,7 +219,7 @@ performed (hence the name observed-removed set).
 
 The following example illustrates how to do that:
 
-@@snip [ShoppingCart.scala](code/docs/ddata/ShoppingCart.scala) { #remove-item }
+@@snip [ShoppingCart.scala]($code$/scala/docs/ddata/ShoppingCart.scala) { #remove-item }
 
 @@@ warning
 
@@ -244,7 +244,7 @@ immediately.
 The subscriber is automatically removed if the subscriber is terminated. A subscriber can
 also be deregistered with the `Replicator.Unsubscribe` message.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #subscribe }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #subscribe }
 
 ### Delete
 
@@ -265,7 +265,7 @@ In the *Delete* message you can pass an optional request context in the same way
 *Update* message, described above. For example the original sender can be passed and replied
 to after receiving and transforming *DeleteSuccess*.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #delete }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #delete }
 
 @@@ warning
 
@@ -331,7 +331,7 @@ It is tracking the increments (P) separate from the decrements (N). Both P and N
 as two internal `GCounter`. Merge is handled by merging the internal P and N counters.
 The value of the counter is the value of the P counter minus the value of the N counter.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #pncounter }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #pncounter }
 
 `GCounter` and `PNCounter` have support for [delta_crdt_scala](#delta-crdt-scala) and don't need causal
 delivery of deltas.
@@ -341,7 +341,7 @@ When the counters are placed in a `PNCounterMap` as opposed to placing them as s
 values they are guaranteed to be replicated together as one unit, which is sometimes necessary for
 related data.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #pncountermap }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #pncountermap }
 
 ### Sets
 
@@ -349,7 +349,7 @@ If you only need to add elements to a set and not remove elements the `GSet` (gr
 the data type to use. The elements can be any type of values that can be serialized.
 Merge is simply the union of the two sets.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #gset }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #gset }
 
 `GSet` has support for [delta_crdt_scala](#delta-crdt-scala) and it doesn't require causal delivery of deltas.
 
@@ -362,7 +362,7 @@ The version for the node that added the element is also tracked for each element
 called "birth dot". The version vector and the dots are used by the `merge` function to
 track causality of the operations and resolve concurrent updates.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #orset }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #orset }
 
 `ORSet` has support for [delta_crdt_scala](#delta-crdt-scala) and it requires causal delivery of deltas.
 
@@ -390,7 +390,7 @@ It is a specialized `ORMap` with `PNCounter` values.
 `LWWMap` (last writer wins map) is a specialized `ORMap` with `LWWRegister` (last writer wins register)
 values.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #ormultimap }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #ormultimap }
 
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e.
 when you update a map the whole map is replicated. Therefore, instead of using one `ORMap`
@@ -409,7 +409,7 @@ in the below section about `LWWRegister`.
 `Flag` is a data type for a boolean value that is initialized to `false` and can be switched
 to `true`. Thereafter it cannot be changed. `true` wins over `false` in merge.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #flag }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #flag }
 
 `LWWRegister` (last writer wins register) can hold any (serializable) value.
 
@@ -420,13 +420,13 @@ value is not important for concurrent updates occurring within the clock skew.
 Merge takes the register updated by the node with lowest address (`UniqueAddress` is ordered)
 if the timestamps are exactly the same.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #lwwregister }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #lwwregister }
 
 Instead of using timestamps based on `System.currentTimeMillis()` time it is possible to
 use a timestamp value based on something else, for example an increasing version number
 from a database record that is used for optimistic concurrency control.
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #lwwregister-custom-clock }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #lwwregister-custom-clock }
 
 For first-write-wins semantics you can use the `LWWRegister#reverseClock` instead of the
 `LWWRegister#defaultClock`.
@@ -451,7 +451,7 @@ Here is s simple implementation of a custom `TwoPhaseSet` that is using two inte
 to keep track of addition and removals.  A `TwoPhaseSet` is a set where an element may be added and
 removed, but never added again thereafter.
 
-@@snip [TwoPhaseSet.scala](code/docs/ddata/TwoPhaseSet.scala) { #twophaseset }
+@@snip [TwoPhaseSet.scala]($code$/scala/docs/ddata/TwoPhaseSet.scala) { #twophaseset }
 
 Data types should be immutable, i.e. "modifying" methods should return a new instance.
 
@@ -471,36 +471,36 @@ deterministically in the serialization.
 
 This is a protobuf representation of the above `TwoPhaseSet`:
 
-@@snip [TwoPhaseSetMessages.proto]../../protobuf/TwoPhaseSetMessages.proto) { #twophaseset }
+@@snip [TwoPhaseSetMessages.proto]($code$/protobuf/TwoPhaseSetMessages.proto) { #twophaseset }
 
 The serializer for the `TwoPhaseSet`:
 
-@@snip [TwoPhaseSetSerializer.scala](code/docs/ddata/protobuf/TwoPhaseSetSerializer.scala) { #serializer }
+@@snip [TwoPhaseSetSerializer.scala]($code$/scala/docs/ddata/protobuf/TwoPhaseSetSerializer.scala) { #serializer }
 
 Note that the elements of the sets are sorted so the SHA-1 digests are the same
 for the same elements.
 
 You register the serializer in configuration:
 
-@@snip [DistributedDataDocSpec.scala](code/docs/ddata/DistributedDataDocSpec.scala) { #serializer-config }
+@@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #serializer-config }
 
 Using compression can sometimes be a good idea to reduce the data size. Gzip compression is
 provided by the `akka.cluster.ddata.protobuf.SerializationSupport` trait:
 
-@@snip [TwoPhaseSetSerializer.scala](code/docs/ddata/protobuf/TwoPhaseSetSerializer.scala) { #compression }
+@@snip [TwoPhaseSetSerializer.scala]($code$/scala/docs/ddata/protobuf/TwoPhaseSetSerializer.scala) { #compression }
 
 The two embedded `GSet` can be serialized as illustrated above, but in general when composing
 new data types from the existing built in types it is better to make use of the existing
 serializer for those types. This can be done by declaring those as bytes fields in protobuf:
 
-@@snip [TwoPhaseSetMessages.proto]../../protobuf/TwoPhaseSetMessages.proto) { #twophaseset2 }
+@@snip [TwoPhaseSetMessages.proto]($code$/protobuf/TwoPhaseSetMessages.proto) { #twophaseset2 }
 
 and use the methods `otherMessageToProto` and `otherMessageFromBinary` that are provided
 by the `SerializationSupport` trait to serialize and deserialize the `GSet` instances. This
 works with any type that has a registered Akka serializer. This is how such an serializer would
 look like for the `TwoPhaseSet`:
 
-@@snip [TwoPhaseSetSerializer2.scala](code/docs/ddata/protobuf/TwoPhaseSetSerializer2.scala) { #serializer }
+@@snip [TwoPhaseSetSerializer2.scala]($code$/scala/docs/ddata/protobuf/TwoPhaseSetSerializer2.scala) { #serializer }
 
 <a id="ddata-durable-scala"></a>
 ### Durable Storage
@@ -654,4 +654,4 @@ maven:
 
 The `DistributedData` extension can be configured with the following properties:
 
-@@snip [reference.conf]../../../../../akka-distributed-data/src/main/resources/reference.conf) { #distributed-data }
+@@snip [reference.conf]($akka$/akka-distributed-data/src/main/resources/reference.conf) { #distributed-data }

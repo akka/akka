@@ -126,11 +126,11 @@ Let's take a look at this router in action. What can be more demanding than calc
 
 The backend worker that performs the factorial calculation:
 
-@@snip [FactorialBackend.java](code/jdocs/cluster/FactorialBackend.java) { #backend }
+@@snip [FactorialBackend.java]($code$/java/jdocs/cluster/FactorialBackend.java) { #backend }
 
 The frontend that receives user jobs and delegates to the backends via the router:
 
-@@snip [FactorialFrontend.java](code/jdocs/cluster/FactorialFrontend.java) { #frontend }
+@@snip [FactorialFrontend.java]($code$/java/jdocs/cluster/FactorialFrontend.java) { #frontend }
 
 As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
 
@@ -160,9 +160,9 @@ other things work in the same way as other routers.
 
 The same type of router could also have been defined in code:
 
-@@snip [FactorialFrontend.java](code/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code }
+@@snip [FactorialFrontend.java]($code$/java/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code }
 
-@@snip [FactorialFrontend.java](code/jdocs/cluster/FactorialFrontend.java) { #router-deploy-in-code }
+@@snip [FactorialFrontend.java]($code$/java/jdocs/cluster/FactorialFrontend.java) { #router-deploy-in-code }
 
 The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
 [Akka Cluster Sample with Scala](@exampleCodeService@/akka-samples-cluster-java)
@@ -173,7 +173,7 @@ The source code of this sample can be found in the [Akka Samples Repository](@sa
 
 It is possible to subscribe to the metrics events directly to implement other functionality.
 
-@@snip [MetricsListener.java](code/jdocs/cluster/MetricsListener.java) { #metrics-listener }
+@@snip [MetricsListener.java]($code$/java/jdocs/cluster/MetricsListener.java) { #metrics-listener }
 
 ## Custom Metrics Collector
 
@@ -191,4 +191,4 @@ Custom metrics collector implementation class must be specified in the
 
 The Cluster metrics extension can be configured with the following properties:
 
-@@snip [reference.conf]../../../../../akka-cluster-metrics/src/main/resources/reference.conf) { # }
+@@snip [reference.conf]($akka$/akka-cluster-metrics/src/main/resources/reference.conf)

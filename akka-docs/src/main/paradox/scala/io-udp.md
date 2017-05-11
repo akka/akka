@@ -18,7 +18,7 @@ offered using distinct IO extensions described below.
 
 ### Simple Send
 
-@@snip [UdpDocSpec.scala](code/docs/io/UdpDocSpec.scala) { #sender }
+@@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #sender }
 
 The simplest form of UDP usage is to just send datagrams without the need of
 getting a reply. To this end a “simple sender” facility is provided as
@@ -39,7 +39,7 @@ want to close the ephemeral port the sender is bound to.
 
 ### Bind (and Send)
 
-@@snip [UdpDocSpec.scala](code/docs/io/UdpDocSpec.scala) { #listener }
+@@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #listener }
 
 If you want to implement a UDP server which listens on a socket for incoming
 datagrams then you need to use the `Bind` command as shown above. The
@@ -64,7 +64,7 @@ bind-and-send service we saw earlier, but the main difference is that a
 connection is only able to send to the `remoteAddress` it was connected to,
 and will receive datagrams only from that address.
 
-@@snip [UdpDocSpec.scala](code/docs/io/UdpDocSpec.scala) { #connected }
+@@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #connected }
 
 Consequently the example shown here looks quite similar to the previous one,
 the biggest difference is the absence of remote address information in
@@ -90,12 +90,12 @@ To select a Protocol Family you must extend `akka.io.Inet.DatagramChannelCreator
 class which extends `akka.io.Inet.SocketOption`. Provide custom logic
 for opening a datagram channel by overriding `create` method.
 
-@@snip [ScalaUdpMulticast.scala](code/docs/io/ScalaUdpMulticast.scala) { #inet6-protocol-family }
+@@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #inet6-protocol-family }
 
 Another socket option will be needed to join a multicast group.
 
-@@snip [ScalaUdpMulticast.scala](code/docs/io/ScalaUdpMulticast.scala) { #multicast-group }
+@@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #multicast-group }
 
 Socket options must be provided to `UdpMessage.Bind` message.
 
-@@snip [ScalaUdpMulticast.scala](code/docs/io/ScalaUdpMulticast.scala) { #bind }
+@@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #bind }

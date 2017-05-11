@@ -38,13 +38,13 @@ by the `akka.scheduler.tick-duration` configuration property.
 
 Schedule to send the "foo"-message to the testActor after 50ms:
 
-@@snip [SchedulerDocTest.java](code/jdocs/actor/SchedulerDocTest.java) { #imports1 }
+@@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #imports1 }
 
-@@snip [SchedulerDocTest.java](code/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-message }
+@@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-message }
 
 Schedule a Runnable, that sends the current time to the testActor, to be executed after 50ms:
 
-@@snip [SchedulerDocTest.java](code/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-thunk }
+@@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-thunk }
 
 @@@ warning
 
@@ -59,13 +59,13 @@ variant accepting a message and an `ActorRef` to schedule a message to self
 
 Schedule to send the "Tick"-message to the `tickActor` after 0ms repeating every 50ms:
 
-@@snip [SchedulerDocTest.java](code/jdocs/actor/SchedulerDocTest.java) { #imports1 #imports2 }
+@@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #imports1 #imports2 }
 
-@@snip [SchedulerDocTest.java](code/jdocs/actor/SchedulerDocTest.java) { #schedule-recurring }
+@@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-recurring }
 
 ## From `akka.actor.ActorSystem`
 
-@@snip [ActorSystem.scala]../../../../../akka-actor/src/main/scala/akka/actor/ActorSystem.scala) { #scheduler }
+@@snip [ActorSystem.scala]($akka$/akka-actor/src/main/scala/akka/actor/ActorSystem.scala) { #scheduler }
 
 @@@ warning
 
@@ -81,7 +81,7 @@ The actual scheduler implementation is loaded reflectively upon
 different one using the `akka.scheduler.implementation` configuration
 property. The referenced class must implement the following interface:
 
-@@snip [AbstractScheduler.java]../../../../../akka-actor/src/main/java/akka/actor/AbstractScheduler.java) { #scheduler }
+@@snip [AbstractScheduler.java]($akka$/akka-actor/src/main/java/akka/actor/AbstractScheduler.java) { #scheduler }
 
 ## The Cancellable interface
 
@@ -97,4 +97,4 @@ scheduled task was canceled or will (eventually) have run.
 
 @@@
 
-@@snip [Scheduler.scala]../../../../../akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #cancellable }
+@@snip [Scheduler.scala]($akka$/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #cancellable }

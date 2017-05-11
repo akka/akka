@@ -205,7 +205,7 @@ which in this sample corresponds to `sampleActorSystem@127.0.0.1:2553`.
 
 Once you have configured the properties above you would do the following in code:
 
-@@snip [RemoteDeploymentDocSpec.scala](code/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
+@@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
 
 The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
@@ -241,15 +241,15 @@ precedence.
 
 With these imports:
 
-@@snip [RemoteDeploymentDocSpec.scala](code/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
+@@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
 
 and a remote address like this:
 
-@@snip [RemoteDeploymentDocSpec.scala](code/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address-artery }
+@@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address-artery }
 
 you can advise the system to create a child on that remote node like so:
 
-@@snip [RemoteDeploymentDocSpec.scala](code/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
+@@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
 
 ### Remote deployment whitelist
 
@@ -264,7 +264,7 @@ The list of allowed classes has to be configured on the "remote" system, in othe
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentWhitelistSpec.scala]../../../../../akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
+@@snip [RemoteDeploymentWhitelistSpec.scala]($akka$/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
 
 Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
 
@@ -483,7 +483,7 @@ remained the same, we recommend reading the @ref:[Serialization](serialization.m
 
 Implementing an `akka.serialization.ByteBufferSerializer` works the same way as any other serializer,
 
-@@snip [Serializer.scala]../../../../../akka-actor/src/main/scala/akka/serialization/Serializer.scala) { #ByteBufferSerializer }
+@@snip [Serializer.scala]($akka$/akka-actor/src/main/scala/akka/serialization/Serializer.scala) { #ByteBufferSerializer }
 
 Implementing a serializer for Artery is therefore as simple as implementing this interface, and binding the serializer
 as usual (which is explained in @ref:[Serialization](serialization.md)).
@@ -494,7 +494,7 @@ The array based methods will be used when `ByteBuffer` is not used, e.g. in Akka
 
 Note that the array based methods can be implemented by delegation like this:
 
-@@snip [ByteBufferSerializerDocSpec.scala](code/docs/actor/ByteBufferSerializerDocSpec.scala) { #bytebufserializer-with-manifest }
+@@snip [ByteBufferSerializerDocSpec.scala]($code$/scala/docs/actor/ByteBufferSerializerDocSpec.scala) { #bytebufserializer-with-manifest }
 
 <a id="disable-java-serializer-scala-artery"></a>
 ### Disabling the Java Serializer
@@ -551,14 +551,14 @@ It is absolutely feasible to combine remoting with @ref:[Routing](routing.md).
 
 A pool of remote deployed routees can be configured as:
 
-@@snip [RouterDocSpec.scala](../scala/code/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-pool-artery }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-pool-artery }
 
 This configuration setting will clone the actor defined in the `Props` of the `remotePool` 10
 times and deploy it evenly distributed across the two given target nodes.
 
 A group of remote actors can be configured as:
 
-@@snip [RouterDocSpec.scala](../scala/code/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group-artery }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group-artery }
 
 This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
@@ -761,7 +761,7 @@ There are lots of configuration properties that are related to remoting in Akka.
 Setting properties like the listening IP and port number programmatically is
 best done by using something like the following:
 
-@@snip [RemoteDeploymentDocTest.java](../java/code/jdocs/remoting/RemoteDeploymentDocTest.java) { #programmatic-artery }
+@@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #programmatic-artery }
 
 @@@
 

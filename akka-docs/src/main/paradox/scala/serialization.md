@@ -12,12 +12,12 @@ For Akka to know which `Serializer` to use for what, you need edit your [Configu
 in the "akka.actor.serializers"-section you bind names to implementations of the `akka.serialization.Serializer`
 you wish to use, like this:
 
-@@snip [SerializationDocSpec.scala](code/docs/serialization/SerializationDocSpec.scala) { #serialize-serializers-config }
+@@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-serializers-config }
 
 After you've bound names to different implementations of `Serializer` you need to wire which classes
 should be serialized using which `Serializer`, this is done in the "akka.actor.serialization-bindings"-section:
 
-@@snip [SerializationDocSpec.scala](code/docs/serialization/SerializationDocSpec.scala) { #serialization-bindings-config }
+@@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #serialization-bindings-config }
 
 You only need to specify the name of an interface or abstract base class of the
 messages. In case of ambiguity, i.e. the message implements several of the
@@ -53,11 +53,11 @@ akka.actor.serialization-bindings {
 
 Normally, messages sent between local actors (i.e. same JVM) do not undergo serialization. For testing, sometimes, it may be desirable to force serialization on all messages (both remote and local). If you want to do this in order to verify that your messages are serializable you can enable the following config option:
 
-@@snip [SerializationDocSpec.scala](code/docs/serialization/SerializationDocSpec.scala) { #serialize-messages-config }
+@@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-messages-config }
 
 If you want to verify that your `Props` are serializable you can enable the following config option:
 
-@@snip [SerializationDocSpec.scala](code/docs/serialization/SerializationDocSpec.scala) { #serialize-creators-config }
+@@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-creators-config }
 
 @@@ warning
 
@@ -70,7 +70,7 @@ We recommend having these config options turned on **only** when you're running 
 If you want to programmatically serialize/deserialize using Akka Serialization,
 here's some examples:
 
-@@snip [SerializationDocSpec.scala](code/docs/serialization/SerializationDocSpec.scala) { #imports #programmatic }
+@@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #imports #programmatic }
 
 For more information, have a look at the `ScalaDoc` for `akka.serialization._`
 
@@ -82,7 +82,7 @@ The first code snippet on this page contains a configuration file that reference
 
 A custom `Serializer` has to inherit from `akka.serialization.Serializer` and can be defined like the following:
 
-@@snip [SerializationDocSpec.scala](code/docs/serialization/SerializationDocSpec.scala) { #imports #my-own-serializer }
+@@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #imports #my-own-serializer }
 
 The manifest is a type hint so that the same serializer can be used for different
 classes. The manifest parameter in `fromBinary` is the class of the object that
@@ -111,7 +111,7 @@ class name if you used `includeManifest=true`, otherwise it will be the empty st
 
 This is how a `SerializerWithStringManifest` looks like:
 
-@@snip [SerializationDocSpec.scala](code/docs/serialization/SerializationDocSpec.scala) { #my-own-serializer2 }
+@@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #my-own-serializer2 }
 
 You must also bind it to a name in your [Configuration]() and then list which classes
 that should be serialized using it.
@@ -133,7 +133,7 @@ In the general case, the local address to be used depends on the type of remote
 address which shall be the recipient of the serialized information. Use
 `Serialization.serializedActorPath(actorRef)` like this:
 
-@@snip [SerializationDocSpec.scala](code/docs/serialization/SerializationDocSpec.scala) { #imports #actorref-serializer }
+@@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #imports #actorref-serializer }
 
 This assumes that serialization happens in the context of sending a message
 through the remote transport. There are other uses of serialization, though,
@@ -148,7 +148,7 @@ transport per se, which makes this question a bit more interesting. To find out
 the appropriate address to use when sending to `remoteAddr` you can use
 `ActorRefProvider.getExternalAddressFor(remoteAddr)` like this:
 
-@@snip [SerializationDocSpec.scala](code/docs/serialization/SerializationDocSpec.scala) { #external-address }
+@@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #external-address }
 
 @@@ note
 
@@ -174,7 +174,7 @@ lenient as Akka’s RemoteActorRefProvider).
 There is also a default remote address which is the one used by cluster support
 (and typical systems have just this one); you can get it like this:
 
-@@snip [SerializationDocSpec.scala](code/docs/serialization/SerializationDocSpec.scala) { #external-address-default }
+@@snip [SerializationDocSpec.scala]($code$/scala/docs/serialization/SerializationDocSpec.scala) { #external-address-default }
 
 ### Deep serialization of Actors
 

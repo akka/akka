@@ -31,7 +31,7 @@ in more depth.
 
 For the sake of demonstration let us consider the following strategy:
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #strategy }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #strategy }
 
 I have chosen a few well-known exception types in order to demonstrate the
 application of the fault handling directives described in <!-- FIXME: More than one link target with name supervision in path Some(/scala/fault-tolerance.rst) --> supervision.
@@ -75,7 +75,7 @@ in the same way as the default strategy defined above.
 
 You can combine your own strategy with the default strategy:
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #default-strategy-fallback }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #default-strategy-fallback }
 
 ### Stopping Supervisor Strategy
 
@@ -113,41 +113,41 @@ strategy.
 The following section shows the effects of the different directives in practice,
 where a test setup is needed. First off, we need a suitable supervisor:
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #supervisor }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #supervisor }
 
 This supervisor will be used to create a child, with which we can experiment:
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #child }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #child }
 
 The test is easier by using the utilities described in @ref:[Testing Actor Systems](testing.md).
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #testkit }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #testkit }
 
 Let us create actors:
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #create }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #create }
 
 The first test shall demonstrate the `Resume` directive, so we try it out by
 setting some non-initial state in the actor and have it fail:
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #resume }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #resume }
 
 As you can see the value 42 survives the fault handling directive. Now, if we
 change the failure to a more serious `NullPointerException`, that will no
 longer be the case:
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #restart }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #restart }
 
 And finally in case of the fatal `IllegalArgumentException` the child will be
 terminated by the supervisor:
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #stop }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #stop }
 
 Up to now the supervisor was completely unaffected by the child’s failure,
 because the directives set did handle it. In case of an `Exception`, this is not
 true anymore and the supervisor escalates the failure.
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #escalate-kill }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #escalate-kill }
 
 The supervisor itself is supervised by the top-level actor provided by the
 `ActorSystem`, which has the default policy to restart in case of all
@@ -159,9 +159,9 @@ child not to survive this failure.
 In case this is not desired (which depends on the use case), we need to use a
 different supervisor which overrides this behavior.
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #supervisor2 }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #supervisor2 }
 
 With this parent, the child survives the escalated restart, as demonstrated in
 the last test:
 
-@@snip [FaultHandlingDocSpec.scala](code/docs/actor/FaultHandlingDocSpec.scala) { #escalate-restart }
+@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #escalate-restart }

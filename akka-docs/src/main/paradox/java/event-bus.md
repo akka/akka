@@ -4,7 +4,7 @@ Originally conceived as a way to send messages to groups of actors, the
 `EventBus` has been generalized into a set of abstract base classes
 implementing a simple interface:
 
-@@snip [EventBusDocTest.java](code/jdocs/event/EventBusDocTest.java) { #event-bus-api }
+@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #event-bus-api }
 
 @@@ note
 
@@ -44,11 +44,11 @@ compare subscribers and how exactly to classify.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocTest.java](code/jdocs/event/EventBusDocTest.java) { #lookup-bus }
+@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #lookup-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocTest.java](code/jdocs/event/EventBusDocTest.java) { #lookup-bus-test }
+@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #lookup-bus-test }
 
 This classifier is efficient in case no subscribers exist for a particular event.
 
@@ -64,11 +64,11 @@ classifier hierarchy.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocTest.java](code/jdocs/event/EventBusDocTest.java) { #subchannel-bus }
+@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocTest.java](code/jdocs/event/EventBusDocTest.java) { #subchannel-bus-test }
+@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus-test }
 
 This classifier is also efficient in case no subscribers are found for an
 event, but it uses conventional locking to synchronize an internal classifier
@@ -86,11 +86,11 @@ stations by geographical reachability (for old-school radio-wave transmission).
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocTest.java](code/jdocs/event/EventBusDocTest.java) { #scanning-bus }
+@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #scanning-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocTest.java](code/jdocs/event/EventBusDocTest.java) { #scanning-bus-test }
+@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #scanning-bus-test }
 
 This classifier takes always a time which is proportional to the number of
 subscriptions, independent of how many actually match.
@@ -109,11 +109,11 @@ takes care of unsubscribing terminated actors automatically.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocTest.java](code/jdocs/event/EventBusDocTest.java) { #actor-bus }
+@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #actor-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocTest.java](code/jdocs/event/EventBusDocTest.java) { #actor-bus-test }
+@@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #actor-bus-test }
 
 This classifier is still is generic in the event type, and it is efficient for
 all use cases.
@@ -128,19 +128,19 @@ Classification](#subchannel-classification) which enables registering to related
 used for `RemotingLifecycleEvent`). The following example demonstrates
 how a simple subscription works. Given a simple actor:
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #imports-deadletter }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #imports-deadletter }
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #deadletter-actor }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #deadletter-actor }
 
 it can be subscribed like this:
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #deadletters }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #deadletters }
 
 It is also worth pointing out that thanks to the way the subchannel classification
 is implemented in the event stream, it is possible to subscribe to a group of events, by
 subscribing to their common superclass as demonstrated in the following example:
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #superclass-subscription-eventstream }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #superclass-subscription-eventstream }
 
 Similarly to [Actor Classification](#actor-classification), `EventStream` will automatically remove subscribers when they terminate.
 
@@ -191,11 +191,11 @@ and since they are nothing to worry about, they are suppressed from the default 
 However, in case you find yourself in need of debugging these kinds of low level suppressed dead letters,
 it's still possible to subscribe to them explicitly:
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #suppressed-deadletters }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #suppressed-deadletters }
 
 or all dead letters (including the suppressed ones):
 
-@@snip [LoggingDocTest.java](code/jdocs/event/LoggingDocTest.java) { #all-deadletters }
+@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #all-deadletters }
 
 ### Other Uses
 

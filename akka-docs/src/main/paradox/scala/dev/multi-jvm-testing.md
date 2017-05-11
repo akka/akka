@@ -9,7 +9,7 @@ The multi-JVM testing is an sbt plugin that you can find at [http://github.com/s
 
 You can add it as a plugin by adding the following to your project/plugins.sbt:
 
-@@snip [plugins.sbt]../project/plugins.sbt) { #sbt-multi-jvm }
+@@snip [plugins.sbt]($akka$/project/plugins.sbt) { #sbt-multi-jvm }
 
 You can then add multi-JVM testing to `build.sbt` or `project/Build.scala` by including the `MultiJvm`
 settings and config. Please note that MultiJvm test sources are located in `src/multi-jvm/...`,

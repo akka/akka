@@ -42,7 +42,7 @@ Read journals are implemented as [Community plugins](http://akka.io/community/#p
 databases). For example, given a library that provides a `akka.persistence.query.my-read-journal` obtaining the related
 journal is as simple as:
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #basic-usage }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #basic-usage }
 
 Journal implementers are encouraged to put this identifier in a variable known to the user, such that one can access it via
 `getJournalFor(NoopJournal.class, NoopJournal.identifier)`, however this is not enforced.
@@ -71,11 +71,11 @@ The predefined queries are:
 By default this stream should be assumed to be a "live" stream, which means that the journal should keep emitting new
 persistence ids as they come into the system:
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #all-persistence-ids-live }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #all-persistence-ids-live }
 
 If your usage does not require a live stream, you can use the `currentPersistenceIds` query:
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #all-persistence-ids-snap }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #all-persistence-ids-snap }
 
 #### EventsByPersistenceIdQuery and CurrentEventsByPersistenceIdQuery
 
@@ -83,7 +83,7 @@ If your usage does not require a live stream, you can use the `currentPersistenc
 however, since it is a stream it is possible to keep it alive and watch for additional incoming events persisted by the
 persistent actor identified by the given `persistenceId`. 
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #events-by-persistent-id }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #events-by-persistent-id }
 
 Most journals will have to revert to polling in order to achieve this, 
 which can typically be configured with a `refresh-interval` configuration property.
@@ -102,7 +102,7 @@ Some journals may support tagging of events via an @ref:[Event Adapters](persist
 `akka.persistence.journal.Tagged` with the given `tags`. The journal may support other ways of doing tagging - again,
 how exactly this is implemented depends on the used journal. Here is an example of such a tagging event adapter:
 
-@@snip [LeveldbPersistenceQueryDocTest.java](code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }
+@@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }
 
 @@@ note
 
@@ -119,7 +119,7 @@ In the example below we query all events which have been tagged (we assume this 
 @ref:[EventAdapter](persistence.md#event-adapters-java), or that the journal is smart enough that it can figure out what we mean by this
 tag - for example if the journal stored the events as json it may try to find those with the field `tag` set to this value etc.).
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #events-by-tag }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #events-by-tag }
 
 As you can see, we can use all the usual stream combinators available from @ref:[Streams](stream/index.md) on the resulting query stream,
 including for example taking the first 10 and cancelling the stream. It is worth pointing out that the built-in `EventsByTag`
@@ -139,11 +139,11 @@ stream, for example if it's finite or infinite, strictly ordered or not ordered 
 is defined as the second type parameter of the returned `Source`, which allows journals to provide users with their
 specialised query object, as demonstrated in the sample below:
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-types }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-types }
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-definition }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-definition }
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-usage }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-usage }
 
 ## Performance and denormalization
 
@@ -174,7 +174,7 @@ it may be more efficient or interesting to query it (instead of the source event
 If the read datastore exposes a [Reactive Streams](http://reactive-streams.org) interface then implementing a simple projection
 is as simple as, using the read-journal and feeding it into the databases driver interface, for example like so:
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-rs }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-rs }
 
 ### Materialize view using mapAsync
 
@@ -184,9 +184,9 @@ you may have to implement the write logic using plain functions or Actors instea
 In case your write logic is state-less and you just need to convert the events from one data type to another
 before writing into the alternative datastore, then the projection is as simple as:
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-simple-classes }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-simple-classes }
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-simple }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-simple }
 
 ### Resumable projections
 
@@ -198,9 +198,9 @@ The example below additionally highlights how you would use Actors to implement 
 you need to do some complex logic that would be best handled inside an Actor before persisting the event
 into the other datastore:
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-actor-run }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-actor-run }
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-actor }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-actor }
 
 <a id="read-journal-plugin-api-java"></a>
 ## Query plugins
@@ -232,11 +232,11 @@ As illustrated below one of the implementations can delegate to the other.
 
 Below is a simple journal implementation:
 
-@@snip [PersistenceQueryDocTest.java](code/jdocs/persistence/PersistenceQueryDocTest.java) { #my-read-journal }
+@@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #my-read-journal }
 
 And the `EventsByTag` could be backed by such an Actor for example:
 
-@@snip [MyEventsByTagJavaPublisher.java](code/jdocs/persistence/query/MyEventsByTagJavaPublisher.java) { #events-by-tag-publisher }
+@@snip [MyEventsByTagJavaPublisher.java]($code$/java/jdocs/persistence/query/MyEventsByTagJavaPublisher.java) { #events-by-tag-publisher }
 
 The `ReadJournalProvider` class must have a constructor with one of these signatures:
 

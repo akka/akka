@@ -2,19 +2,19 @@
 
 The code snippets through-out this section assume the following imports:
 
-@@snip [IODocTest.java](code/jdocs/io/japi/IODocTest.java) { #imports }
+@@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #imports }
 
 All of the Akka I/O APIs are accessed through manager objects. When using an I/O API, the first step is to acquire a
 reference to the appropriate manager. The code below shows how to acquire a reference to the `Tcp` manager.
 
-@@snip [EchoManager.java](code/jdocs/io/japi/EchoManager.java) { #manager }
+@@snip [EchoManager.java]($code$/java/jdocs/io/japi/EchoManager.java) { #manager }
 
 The manager is an actor that handles the underlying low level I/O resources (selectors, channels) and instantiates
 workers for specific tasks, such as listening to incoming connections.
 
 ## Connecting
 
-@@snip [IODocTest.java](code/jdocs/io/japi/IODocTest.java) { #client }
+@@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #client }
 
 The first step of connecting to a remote address is sending a `Connect`
 message to the TCP manager; in addition to the simplest form shown above there
@@ -56,7 +56,7 @@ fine-grained connection close events, see [Closing Connections](#closing-connect
 
 ## Accepting connections
 
-@@snip [IODocTest.java](code/jdocs/io/japi/IODocTest.java) { #server }
+@@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #server }
 
 To create a TCP server and listen for inbound connections, a `Bind`
 command has to be sent to the TCP manager.  This will instruct the TCP manager
@@ -75,7 +75,7 @@ handler when sending the `Register` message. Writes can be sent from any
 actor in the system to the connection actor (i.e. the actor which sent the
 `Connected` message). The simplistic handler is defined as:
 
-@@snip [IODocTest.java](code/jdocs/io/japi/IODocTest.java) { #simplistic-handler }
+@@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #simplistic-handler }
 
 For a more complete sample which also takes into account the possibility of
 failures when sending please see [Throttling Reads and Writes](#throttling-reads-and-writes) below.
@@ -211,18 +211,18 @@ this allows the example `EchoHandler` to write all outstanding data back
 to the client before fully closing the connection. This is enabled using a flag
 upon connection activation (observe the `Register` message):
 
-@@snip [EchoManager.java](code/jdocs/io/japi/EchoManager.java) { #echo-manager }
+@@snip [EchoManager.java]($code$/java/jdocs/io/japi/EchoManager.java) { #echo-manager }
 
 With this preparation let us dive into the handler itself:
 
-@@snip [SimpleEchoHandler.java](code/jdocs/io/japi/SimpleEchoHandler.java) { #simple-echo-handler }
+@@snip [SimpleEchoHandler.java]($code$/java/jdocs/io/japi/SimpleEchoHandler.java) { #simple-echo-handler }
 
 The principle is simple: when having written a chunk always wait for the
 `Ack` to come back before sending the next chunk. While waiting we switch
 behavior such that new incoming data are buffered. The helper functions used
 are a bit lengthy but not complicated:
 
-@@snip [SimpleEchoHandler.java](code/jdocs/io/japi/SimpleEchoHandler.java) { #simple-helpers }
+@@snip [SimpleEchoHandler.java]($code$/java/jdocs/io/japi/SimpleEchoHandler.java) { #simple-helpers }
 
 The most interesting part is probably the last: an `Ack` removes the oldest
 data chunk from the buffer, and if that was the last chunk then we either close
@@ -243,14 +243,14 @@ how end-to-end back-pressure is realized across a TCP connection.
 
 ## NACK-Based Write Back-Pressure with Suspending
 
-@@snip [EchoHandler.java](code/jdocs/io/japi/EchoHandler.java) { #echo-handler }
+@@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #echo-handler }
 
 The principle here is to keep writing until a `CommandFailed` is
 received, using acknowledgements only to prune the resend buffer. When a such a
 failure was received, transition into a different state for handling and handle
 resending of all queued data:
 
-@@snip [EchoHandler.java](code/jdocs/io/japi/EchoHandler.java) { #buffering }
+@@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #buffering }
 
 It should be noted that all writes which are currently buffered have also been
 sent to the connection actor upon entering this state, which means that the
@@ -263,7 +263,7 @@ is exploited by the `EchoHandler` to switch to an ACK-based approach for
 the first ten writes after a failure before resuming the optimistic
 write-through behavior.
 
-@@snip [EchoHandler.java](code/jdocs/io/japi/EchoHandler.java) { #closing }
+@@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #closing }
 
 Closing the connection while still sending all data is a bit more involved than
 in the ACK-based approach: the idea is to always send all outstanding messages
@@ -272,7 +272,7 @@ behavior to await the `WritingResumed` event and start over.
 
 The helper functions are very similar to the ACK-based case:
 
-@@snip [EchoHandler.java](code/jdocs/io/japi/EchoHandler.java) { #helpers }
+@@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #helpers }
 
 ## Read Back-Pressure with Pull Mode
 
@@ -284,7 +284,7 @@ since the rate of writing might be slower than the rate of the arrival of new da
 With the Pull mode this buffer can be completely eliminated as the following snippet
 demonstrates:
 
-@@snip [JavaReadBackPressure.java](code/jdocs/io/JavaReadBackPressure.java) { #pull-reading-echo }
+@@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-reading-echo }
 
 The idea here is that reading is not resumed until the previous write has been
 completely acknowledged by the connection actor. Every pull mode connection
@@ -297,7 +297,7 @@ a buffer.
 To enable pull reading on an outbound connection the `pullMode` parameter of
 the `Connect` should be set to `true`:
 
-@@snip [JavaReadBackPressure.java](code/jdocs/io/JavaReadBackPressure.java) { #pull-mode-connect }
+@@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-mode-connect }
 
 ### Pull Mode Reading for Inbound Connections
 
@@ -305,7 +305,7 @@ The previous section demonstrated how to enable pull reading mode for outbound
 connections but it is possible to create a listener actor with this mode of reading
 by setting the `pullMode` parameter of the `Bind` command to `true`:
 
-@@snip [JavaReadBackPressure.java](code/jdocs/io/JavaReadBackPressure.java) { #pull-mode-bind }
+@@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-mode-bind }
 
 One of the effects of this setting is that all connections accepted by this listener
 actor will use pull mode reading.
@@ -318,7 +318,7 @@ it a `ResumeAccepting` message.
 Listener actors with pull mode start suspended so to start accepting connections
 a `ResumeAccepting`  command has to be sent to the listener actor after binding was successful:
 
-@@snip [JavaReadBackPressure.java](code/jdocs/io/JavaReadBackPressure.java) { #pull-accepting }
+@@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-accepting }
 
 As shown in the example after handling an incoming connection we need to resume accepting again.
 The `ResumeAccepting` message accepts a `batchSize` parameter that specifies how

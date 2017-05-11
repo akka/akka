@@ -1,4 +1,4 @@
-package docs.circuitbreaker;
+package jdocs.circuitbreaker;
 
 import akka.actor.AbstractActor;
 import akka.pattern.CircuitBreaker;

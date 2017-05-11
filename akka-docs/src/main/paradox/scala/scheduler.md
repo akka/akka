@@ -36,11 +36,11 @@ by the `akka.scheduler.tick-duration` configuration property.
 
 ## Some examples
 
-@@snip [SchedulerDocSpec.scala](code/docs/actor/SchedulerDocSpec.scala) { #imports1 #schedule-one-off-message }
+@@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #imports1 #schedule-one-off-message }
 
-@@snip [SchedulerDocSpec.scala](code/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-thunk }
+@@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-thunk }
 
-@@snip [SchedulerDocSpec.scala](code/docs/actor/SchedulerDocSpec.scala) { #schedule-recurring }
+@@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-recurring }
 
 @@@ warning
 
@@ -55,7 +55,7 @@ necessary parameters) and then call the method when the message is received.
 
 ## From `akka.actor.ActorSystem`
 
-@@snip [ActorSystem.scala]../../../../../akka-actor/src/main/scala/akka/actor/ActorSystem.scala) { #scheduler }
+@@snip [ActorSystem.scala]($akka$/akka-actor/src/main/scala/akka/actor/ActorSystem.scala) { #scheduler }
 
 @@@ warning
 
@@ -71,7 +71,7 @@ The actual scheduler implementation is loaded reflectively upon
 different one using the `akka.scheduler.implementation` configuration
 property. The referenced class must implement the following interface:
 
-@@snip [Scheduler.scala]../../../../../akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #scheduler }
+@@snip [Scheduler.scala]($akka$/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #scheduler }
 
 ## The Cancellable interface
 
@@ -87,4 +87,4 @@ scheduled task was canceled or will (eventually) have run.
 
 @@@
 
-@@snip [Scheduler.scala]../../../../../akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #cancellable }
+@@snip [Scheduler.scala]($akka$/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #cancellable }

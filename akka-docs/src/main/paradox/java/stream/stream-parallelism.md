@@ -23,7 +23,7 @@ are two pancakes being cooked at the same time, one being cooked on its first si
 completion.
 This is how this setup would look like implemented as a stream:
 
-@@snip [FlowParallelismDocTest.java](../code/jdocs/stream/FlowParallelismDocTest.java) { #pipelining }
+@@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelining }
 
 The two `map` stages in sequence (encapsulated in the "frying pan" flows) will be executed in a pipelined way,
 basically doing the same as Roland with his frying pans:
@@ -53,7 +53,7 @@ the results on a shared plate. Whenever a pan becomes empty, he takes the next s
 In essence he parallelizes the same process over multiple pans. This is how this setup will look like if implemented
 using streams:
 
-@@snip [FlowParallelismDocTest.java](../code/jdocs/stream/FlowParallelismDocTest.java) { #parallelism }
+@@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #parallelism }
 
 The benefit of parallelizing is that it is easy to scale. In the pancake example
 it is easy to add a third frying pan with Patrik's method, but Roland cannot add a third frying pan,
@@ -75,7 +75,7 @@ First, let's look at how we can parallelize pipelined processing stages. In the 
 will employ two chefs, each working using Roland's pipelining method, but we use the two chefs in parallel, just like
 Patrik used the two frying pans. This is how it looks like if expressed as streams:
 
-@@snip [FlowParallelismDocTest.java](../code/jdocs/stream/FlowParallelismDocTest.java) { #parallel-pipeline }
+@@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #parallel-pipeline }
 
 The above pattern works well if there are many independent jobs that do not depend on the results of each other, but
 the jobs themselves need multiple processing steps where each step builds on the result of
@@ -93,7 +93,7 @@ plate.
 
 This is again straightforward to implement with the streams API:
 
-@@snip [FlowParallelismDocTest.java](../code/jdocs/stream/FlowParallelismDocTest.java) { #pipelined-parallel }
+@@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelined-parallel }
 
 This usage pattern is less common but might be usable if a certain step in the pipeline might take wildly different
 times to finish different jobs. The reason is that there are more balance-merge steps in this pattern

@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package docs.circuitbreaker;
+package jdocs.circuitbreaker;
 
 //#imports1
 

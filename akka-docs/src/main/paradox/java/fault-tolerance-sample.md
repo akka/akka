@@ -35,4 +35,4 @@
 
 # Full Source Code of the Fault Tolerance Sample
 
-@@snip [FaultHandlingDocSample.java](code/jdocs/actor/FaultHandlingDocSample.java) { #all }
+@@snip [FaultHandlingDocSample.java]($code$/java/jdocs/actor/FaultHandlingDocSample.java) { #all }

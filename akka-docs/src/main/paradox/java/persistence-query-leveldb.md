@@ -21,7 +21,7 @@ Make sure that you have the following dependency in your project:
 The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery`
 extension:
 
-@@snip [LeveldbPersistenceQueryDocTest.java](code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #get-read-journal }
+@@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #get-read-journal }
 
 ## Supported Queries
 
@@ -30,7 +30,7 @@ extension:
 `eventsByPersistenceId` is used for retrieving events for a specific `PersistentActor` 
 identified by `persistenceId`.
 
-@@snip [LeveldbPersistenceQueryDocTest.java](code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByPersistenceId }
+@@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByPersistenceId }
 
 You can retrieve a subset of all events by specifying `fromSequenceNr` and `toSequenceNr`
 or use `0L` and `Long.MAX_VALUE` respectively to retrieve all events. Note that
@@ -58,7 +58,7 @@ backend journal.
 
 `allPersistenceIds` is used for retrieving all `persistenceIds` of all persistent actors.
 
-@@snip [LeveldbPersistenceQueryDocTest.java](code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #AllPersistenceIds }
+@@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #AllPersistenceIds }
 
 The returned event stream is unordered and you can expect different order for multiple
 executions of the query.
@@ -79,12 +79,12 @@ backend journal.
 `eventsByTag` is used for retrieving events that were marked with a given tag, e.g. 
 all domain events of an Aggregate Root type.
 
-@@snip [LeveldbPersistenceQueryDocTest.java](code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByTag }
+@@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByTag }
 
 To tag events you create an @ref:[Event Adapters](persistence.md#event-adapters-java) that wraps the events in a `akka.persistence.journal.Tagged`
 with the given `tags`.
 
-@@snip [LeveldbPersistenceQueryDocTest.java](code/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }
+@@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }
 
 You can use `NoOffset` to retrieve all events with a given tag or retrieve a subset of all
 events by specifying a `Sequence` `offset`. The `offset` corresponds to an ordered sequence number for
@@ -132,4 +132,4 @@ for the default `LeveldbReadJournal.Identifier`.
 
 It can be configured with the following properties:
 
-@@snip [reference.conf]../../../../../akka-persistence-query/src/main/resources/reference.conf) { #query-leveldb }
+@@snip [reference.conf]($akka$/akka-persistence-query/src/main/resources/reference.conf) { #query-leveldb }
