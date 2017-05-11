@@ -21,7 +21,9 @@ paradoxProperties ++= Map(
   "snip.code.base_dir" -> (sourceDirectory in Compile).value.getAbsolutePath,
   "snip.akka.base_dir" -> ((baseDirectory in Compile).value / "..").getAbsolutePath
 )
-paradoxTheme := Some("com.lightbend.akka" % "paradox-theme-akka" % "0.1.0-SNAPSHOT")
+
+resolvers += Resolver.bintrayRepo("2m", "maven")
+paradoxTheme := Some("com.lightbend.akka" % "paradox-theme-akka" % "b74885b8+20170511-1711")
 paradoxNavigationDepth := 1
 paradoxNavigationExpandDepth := Some(1)
 paradoxNavigationIncludeHeaders := true
