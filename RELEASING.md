@@ -13,6 +13,11 @@
 10. Create a news item on https://github.com/akka/akka.github.com
 11. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
 
+### Follow up steps
+
+1. Update Akka HTTP dependency in akka-http seed templates ([scala](https://github.com/akka/akka-http-scala-seed.g8/) & java) 
+2. Update Akka HTTP dependency in [akka-management](https://github.com/akka/akka-management/blob/master/project/Dependencies.scala)
+
 ### Under the Travis hood
 
 Here is what happens in detail when Travis CI is building a git tagged commit:
