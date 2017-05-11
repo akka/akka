@@ -74,12 +74,12 @@ trait MethodDirectives {
    */
   def extractMethod: Directive1[HttpMethod] = _extractMethod
 
-  //#method
   /**
    * Rejects all requests whose HTTP method does not match the given one.
    *
    * @group method
    */
+  //#method
   def method(httpMethod: HttpMethod): Directive0 =
     extractMethod.flatMap[Unit] {
       case `httpMethod` ⇒ pass
