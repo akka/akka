@@ -91,7 +91,7 @@ from the RequestContext with the extract directive and then flatMap with
 some kind of filtering logic. For example, this is the implementation
 of the method directive:
 
-@@signature [MethodDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #method }
+@@snip [MethodDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #method }
 
 The explicit type parameter `[Unit]` on the flatMap is needed in this case
 because the result of the flatMap is directly concatenated with the
