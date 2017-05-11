@@ -204,7 +204,7 @@ Next we prepare an protocol definition using the protobuf Interface Description 
 the serializer code to be used on the Akka Serialization layer (notice that the schema aproach allows us to easily rename
 fields, as long as the numeric identifiers of the fields do not change):
 
-@@snip [FlightAppModels.proto]($code$/protobuf/FlightAppModels.proto) { #protobuf-read-optional-proto }
+@@snip [FlightAppModels.proto]($code$/../main/protobuf/FlightAppModels.proto) { #protobuf-read-optional-proto }
 
 The serializer implementation uses the protobuf generated classes to marshall the payloads.
 Optional fields can be handled explicitly or missing values by calling the `has...` methods on the protobuf object,

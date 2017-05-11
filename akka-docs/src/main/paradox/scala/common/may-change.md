@@ -28,12 +28,7 @@ that the module or API wasn't useful.
 
 These are the current complete modules marked as **may change**:
 
-@@toc { depth=1 }
+* @ref:[Multi Node Testing](../../scala/multi-node-testing.md)
+* @ref:[Akka Typed](../../scala/typed.md)
 
-@@@ index
-
-* [../dev/multi-node-testing](../dev/multi-node-testing.md)
-* [../../scala/typed](../../scala/typed.md)
-
-@@@
 

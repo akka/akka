@@ -4,7 +4,7 @@
 
 @@@ index
 
-* [../scala/common/cluster](../scala/common/cluster.md)
+* [common/cluster](common/cluster.md)
 * [cluster-usage](cluster-usage.md)
 * [cluster-singleton](cluster-singleton.md)
 * [distributed-pub-sub](distributed-pub-sub.md)
@@ -19,5 +19,6 @@
 * [io-tcp](io-tcp.md)
 * [io-udp](io-udp.md)
 * [camel](camel.md)
+* [multi-jvm-testing](multi-jvm-testing.md)
 
 @@@
