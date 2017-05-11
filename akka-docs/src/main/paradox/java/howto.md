@@ -9,7 +9,7 @@ code could share it for the profit of all. Where applicable it might also make
 sense to add to the `akka.pattern` package for creating an [OTP-like library](http://www.erlang.org/doc/man_index.html).
 
 You might find some of the patterns described in the Scala chapter of 
-@ref:[HowTo: Common Patterns](../scala/howto.md) useful even though the example code is written in Scala.
+@ref:[HowTo: Common Patterns](howto.md) useful even though the example code is written in Scala.
 
 ## Scheduling Periodic Messages
 

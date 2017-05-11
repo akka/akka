@@ -195,7 +195,7 @@ Provided as a built-in pattern the `akka.pattern.BackoffSupervisor` implements t
 
 This pattern is useful when the started actor fails <a id="^1" href="#1">[1]</a> because some external resource is not available,
 and we need to give it some time to start-up again. One of the prime examples when this is useful is
-when a @ref:[PersistentActor](../../scala/persistence.md) fails (by stopping) with a persistence failure - which indicates that
+when a @ref:[PersistentActor](../persistence.md) fails (by stopping) with a persistence failure - which indicates that
 the database may be down or overloaded, in such situations it makes most sense to give it a little bit of time
 to recover before the peristent actor is started.
 
@@ -279,4 +279,4 @@ Please note that creating one-off actors from an all-for-one supervisor entails
 that failures escalated by the temporary actor will affect all the permanent
 ones. If this is not desired, install an intermediate supervisor; this can very
 easily be done by declaring a router of size 1 for the worker, see
-@ref:[Routing](../../scala/routing.md) or @ref:[Routing](../../java/routing.md).
+@ref:[Routing](../routing.md).

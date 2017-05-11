@@ -260,55 +260,35 @@ members in quorum decisions.
 
 #### State Diagram for the Member States (`akka.cluster.allow-weakly-up-members=off`)
 
-![member-states.png](../images/member-states.png)
+![member-states.png](../../images/member-states.png)
 
 #### State Diagram for the Member States (`akka.cluster.allow-weakly-up-members=on`)
 
-![member-states-weakly-up.png](../images/member-states-weakly-up.png)
+![member-states-weakly-up.png](../../images/member-states-weakly-up.png)
 
 #### Member States
 
- * 
-   **joining**
-   : transient state when joining a cluster
+ * **joining** - transient state when joining a cluster
    
- * 
-   **weakly up**
-   : transient state while network split (only if `akka.cluster.allow-weakly-up-members=on`)
+ * **weakly up** - transient state while network split (only if `akka.cluster.allow-weakly-up-members=on`)
    
- * 
-   **up**
-   : normal operating state
+ * **up** - normal operating state
    
- * 
-   **leaving**
-    / 
-   **exiting**
-   : states during graceful removal
+ * **leaving** / **exiting** - states during graceful removal
    
- * 
-   **down**
-   : marked as down (no longer part of cluster decisions)
+ * **down** - marked as down (no longer part of cluster decisions)
    
- * 
-   **removed**
-   : tombstone state (no longer a member)
+ * **removed** - tombstone state (no longer a member)
    
 
 #### User Actions
 
- * 
-   **join**
-   : join a single node to a cluster - can be explicit or automatic on
+ * **join** - join a single node to a cluster - can be explicit or automatic on
 startup if a node to join have been specified in the configuration
    
- * 
-   **leave**
-   : tell a node to leave the cluster gracefully
+ * **leave** - tell a node to leave the cluster gracefully
    
- * 
-   **down**
-   : mark a node as down
+ * **down** - mark a node as down
    
 
 #### Leader Actions
@@ -321,15 +301,8 @@ The `leader` has the following duties:
 
 #### Failure Detection and Unreachability
 
- * 
-   fd*
-   : the failure detector of one of the monitoring nodes has triggered
+ * **fd*** - the failure detector of one of the monitoring nodes has triggered
 causing the monitored node to be marked as unreachable
    
- * 
-   unreachable*
-   : unreachable is not a real member states but more of a flag in addition
-to the state signaling that the cluster is unable to talk to this node,
-after being unreachable the failure detector may detect it as reachable
-again and thereby remove the flag
+ * **unreachable*** - unreachable is not a real member states but more of a flag in addition to the state signaling that the cluster is unable to talk to this node, after being unreachable the failure detector may detect it as reachable again and thereby remove the flag
    

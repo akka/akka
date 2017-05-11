@@ -1,9 +1,9 @@
 
-<a id="stream-quickstart-scala"></a>
+<a id="stream-quickstart"></a>
 # Quick Start Guide
 
 Create a project and add the akka-streams dependency to the build tool of your
-choice as described in @ref:[Using a build tool](../../scala/guide/quickstart.md).
+choice as described in @ref:[Using a build tool](../guide/quickstart.md).
 
 A stream usually begins at a source, so this is also how we start an Akka
 Stream. Before we create one, we import the full complement of streaming tools:
@@ -146,7 +146,7 @@ second the throttle combinator will assert *back-pressure* upstream.
 
 This is basically all there is to Akka Streams in a nutshell—glossing over the
 fact that there are dozens of sources and sinks and many more stream
-transformation combinators to choose from, see also @ref:[stages-overview_scala](stages-overview.md).
+transformation combinators to choose from, see also @ref:[stages overview](stages-overview.md).
 
 # Reactive Tweets
 
@@ -167,7 +167,7 @@ Here's the data model we'll be working with throughout the quickstart examples:
 @@@ note
 
 If you would like to get an overview of the used vocabulary first instead of diving head-first
-into an actual example you can have a look at the @ref:[Core concepts](stream-flows-and-basics.md#core-concepts-scala) and @ref:[Defining and running streams](stream-flows-and-basics.md#defining-and-running-streams-scala)
+into an actual example you can have a look at the @ref:[Core concepts](stream-flows-and-basics.md#core-concepts) and @ref:[Defining and running streams](stream-flows-and-basics.md#defining-and-running-streams)
 sections of the docs, and then come back to this quickstart to see it all pieced together into a simple example application.
 
 @@@
@@ -183,7 +183,7 @@ which will be responsible for materializing and running the streams we are about
 @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #materializer-setup }
 
 The `ActorMaterializer` can optionally take `ActorMaterializerSettings` which can be used to define
-materialization properties, such as default buffer sizes (see also @ref:[Buffers for asynchronous stages](stream-rate.md#async-stream-buffers-scala)), the dispatcher to
+materialization properties, such as default buffer sizes (see also @ref:[Buffers for asynchronous stages](stream-rate.md#async-stream-buffers)), the dispatcher to
 be used by the pipeline etc. These can be overridden with `withAttributes` on `Flow`, `Source`, `Sink` and `Graph`.
 
 Let's assume we have a stream of tweets readily available. In Akka this is expressed as a `Source[Out, M]`:
@@ -193,7 +193,7 @@ Let's assume we have a stream of tweets readily available. In Akka this is expre
 Streams always start flowing from a `Source[Out,M1]` then can continue through `Flow[In,Out,M2]` elements or
 more advanced graph elements to finally be consumed by a `Sink[In,M3]` (ignore the type parameters `M1`, `M2`
 and `M3` for now, they are not relevant to the types of the elements produced/consumed by these classes – they are
-"materialized types", which we'll talk about [below](#materialized-values-quick-scala)).
+"materialized types", which we'll talk about [below](#materialized-values-quick)).
 
 The operations should look familiar to anyone who has used the Scala Collections library,
 however they operate on streams and not collections of data (which is a very important distinction, as some operations
@@ -201,7 +201,7 @@ only make sense in streaming and vice versa):
 
 @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #authors-filter-map }
 
-Finally in order to @ref:[materialize](stream-flows-and-basics.md#stream-materialization-scala) and run the stream computation we need to attach
+Finally in order to @ref:[materialize](stream-flows-and-basics.md#stream-materialization) and run the stream computation we need to attach
 the Flow to a `Sink` that will get the Flow running. The simplest way to do this is to call
 `runWith(sink)` on a `Source`. For convenience a number of common Sinks are predefined and collected as methods on
 the `Sink` companion object.
@@ -274,14 +274,14 @@ A graph can also have one of several other shapes, with one or more unconnected 
 expresses a graph that is a *partial graph*. Concepts around composing and nesting graphs in large structures are
 explained in detail in @ref:[Modularity, Composition and Hierarchy](stream-composition.md). It is also possible to wrap complex computation graphs
 as Flows, Sinks or Sources, which will be explained in detail in
-@ref:[Constructing Sources, Sinks and Flows from Partial Graphs](stream-graphs.md#constructing-sources-sinks-flows-from-partial-graphs-scala).
+@ref:[Constructing Sources, Sinks and Flows from Partial Graphs](stream-graphs.md#constructing-sources-sinks-flows-from-partial-graphs).
 
 ## Back-pressure in action
 
 One of the main advantages of Akka Streams is that they *always* propagate back-pressure information from stream Sinks
 (Subscribers) to their Sources (Publishers). It is not an optional feature, and is enabled at all times. To learn more
 about the back-pressure protocol used by Akka Streams and all other Reactive Streams compatible implementations read
-@ref:[Back-pressure explained](stream-flows-and-basics.md#back-pressure-explained-scala).
+@ref:[Back-pressure explained](stream-flows-and-basics.md#back-pressure-explained).
 
 A typical problem applications (not using Akka Streams) like this often face is that they are unable to process the incoming data fast enough,
 either temporarily or by design, and will start buffering incoming data until there's no more space to buffer, resulting
@@ -295,7 +295,7 @@ The `buffer` element takes an explicit and required `OverflowStrategy`, which de
 when it receives another element while it is full. Strategies provided include dropping the oldest element (`dropHead`),
 dropping the entire buffer, signalling errors etc. Be sure to pick and choose the strategy that fits your use case best.
 
-<a id="materialized-values-quick-scala"></a>
+<a id="materialized-values-quick"></a>
 ## Materialized values
 
 So far we've been only processing data using Flows and consuming it into some kind of external Sink - be it by printing
@@ -336,7 +336,7 @@ will be different, as illustrated by this example:
 @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-runnable-flow-materialized-twice }
 
 Many elements in Akka Streams provide materialized values which can be used for obtaining either results of computation or
-steering these elements which will be discussed in detail in @ref:[Stream Materialization](stream-flows-and-basics.md#stream-materialization-scala). Summing up this section, now we know
+steering these elements which will be discussed in detail in @ref:[Stream Materialization](stream-flows-and-basics.md#stream-materialization). Summing up this section, now we know
 what happens behind the scenes when we run this one-liner, which is equivalent to the multi line version above:
 
 @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-fold-count-oneline }

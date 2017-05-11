@@ -81,7 +81,7 @@ See @ref:[Futures](futures.md) for more information on `Futures`.
 ## Configuration
 
 There are several configuration properties for the agents module, please refer
-to the @ref:[reference configuration](../scala/general/configuration.md#config-akka-agent).
+to the @ref:[reference configuration](general/configuration.md#config-akka-agent).
 
 ## Deprecated Transactional Agents
 

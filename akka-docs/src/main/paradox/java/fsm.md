@@ -96,7 +96,7 @@ data is available via `stateData` as shown, and the new state data would be
 available as `nextStateData`.
 
 To verify that this buncher actually works, it is quite easy to write a test
-using the <!-- FIXME: More than one link target with name akka-testkit in path Some(/java/fsm.rst) --> akka-testkit, here using JUnit as an example:
+using the @ref:[TestKit](testing.md), here using JUnit as an example:
 
 @@snip [BuncherTest.java]($code$/java/jdocs/actor/fsm/BuncherTest.java) { #test-code }
 
@@ -384,12 +384,12 @@ In case you override `postStop` and want to have your
 ## Testing and Debugging Finite State Machines
 
 During development and for trouble shooting FSMs need care just as any other
-actor. There are specialized tools available as described in @ref:[TestFSMRef](../scala/testing.md#testfsmref)
+actor. There are specialized tools available as described in @ref:[TestFSMRef](testing.md#testfsmref)
 and in the following.
 
 ### Event Tracing
 
-The setting `akka.actor.debug.fsm` in <!-- FIXME: More than one link target with name configuration in path Some(/java/fsm.rst) --> configuration enables logging of an
+The setting `akka.actor.debug.fsm` in @ref:[configuration](general/configuration.md) enables logging of an
 event trace by `LoggingFSM` instances:
 
 @@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
@@ -403,7 +403,7 @@ messages
  * all state transitions
 
 Life cycle changes and special messages can be logged as described for
-@ref:[Actors](../scala/testing.md#actor-logging-scala).
+@ref:[Actors](testing.md#actor-logging).
 
 ### Rolling Event Log
 

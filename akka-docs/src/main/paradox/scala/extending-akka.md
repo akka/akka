@@ -52,10 +52,10 @@ in the `akka.extensions` section of the config you provide to your `ActorSystem`
 The sky is the limit!
 By the way, did you know that Akka's `Typed Actors`, `Serialization` and other features are implemented as Akka Extensions?
 
-<a id="extending-akka-scala-settings"></a>
+<a id="extending-akka-settings"></a>
 ### Application specific settings
 
-The <!-- FIXME: More than one link target with name configuration in path Some(/scala/extending-akka.rst) --> configuration can be used for application specific settings. A good practice is to place those settings in an Extension.
+The @ref:[configuration](general/configuration.md) can be used for application specific settings. A good practice is to place those settings in an Extension.
 
 Sample configuration:
 

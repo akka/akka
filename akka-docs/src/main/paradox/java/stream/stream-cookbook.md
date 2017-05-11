@@ -11,7 +11,7 @@ This part also serves as supplementary material for the main body of documentati
 open while reading the manual and look for examples demonstrating various streaming concepts
 as they appear in the main body of documentation.
 
-If you need a quick reference of the available processing stages used in the recipes see @ref:[stages-overview_java](stages-overview.md).
+If you need a quick reference of the available processing stages used in the recipes see @ref:[stages overview](stages-overview.md).
 
 ## Working with Flows
 
@@ -79,7 +79,7 @@ demand comes in and then reset the stage state. It will then complete the stage.
 
 @@snip [RecipeDigest.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeDigest.java) { #calculating-digest2 }
 
-<a id="cookbook-parse-lines-java"></a>
+<a id="cookbook-parse-lines"></a>
 ### Parsing lines from a stream of ByteStrings
 
 **Situation:** A stream of bytes is given as a stream of `ByteString` s containing lines terminated by line ending

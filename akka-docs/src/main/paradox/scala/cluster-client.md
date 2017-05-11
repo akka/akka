@@ -101,7 +101,7 @@ The `initialContacts` parameter is a `Set[ActorPath]`, which can be created like
 @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #initialContacts }
 
 You will probably define the address information of the initial contact points in configuration or system property.
-See also [Configuration](#cluster-client-config-scala).
+See also [Configuration](#cluster-client-config).
 
 A more comprehensive sample is available in the tutorial named [Distributed workers with Akka and Scala!](https://github.com/typesafehub/activator-akka-distributed-workers-scala).
 
@@ -155,7 +155,7 @@ maven:
 </dependency>
 ```
 
-<a id="cluster-client-config-scala"></a>
+<a id="cluster-client-config"></a>
 ## Configuration
 
 The `ClusterClientReceptionist` extension (or `ClusterReceptionistSettings`) can be configured

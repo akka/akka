@@ -103,13 +103,6 @@ example invoking a synchronous-only API.
 
 @@@
 
-@@@ note
-
-There is also a `CircuitBreakerProxy` actor that you can use, which is an alternative implementation of the pattern.
-The main difference is that it is intended to be used only for request-reply interactions with another actor. See <!-- FIXME: unresolved link reference: circuit-breaker-proxy --> circuit-breaker-proxy
-
-@@@
-
 ### Control failure count explicitly
 
 By default, the circuit breaker treat `Exception` as failure in synchronized API, or failed `Future` as failure in future based API.

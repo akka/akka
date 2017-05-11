@@ -6,9 +6,9 @@ routees yourselves or use a self contained router actor with configuration capab
 
 Different routing strategies can be used, according to your application's needs. Akka comes with
 several useful routing strategies right out of the box. But, as you will see in this chapter, it is
-also possible to [create your own](#custom-router-java).
+also possible to [create your own](#custom-router).
 
-<a id="simple-router-java"></a>
+<a id="simple-router"></a>
 ## A Simple Router
 
 The following example illustrates how to use a `Router` and manage the routees from within an actor.
@@ -40,9 +40,9 @@ outside of actors.
 @@@ note
 
 In general, any message sent to a router will be sent onwards to its routees, but there is one exception.
-The special [Broadcast Messages](#broadcast-messages-java) will send to *all* of a router's routees.
-However, do not use [Broadcast Messages](#broadcast-messages-java) when you use [BalancingPool](#balancing-pool-java) for routees
-as described in [Specially Handled Messages](#router-special-messages-java).
+The special [Broadcast Messages](#broadcast-messages) will send to *all* of a router's routees.
+However, do not use [Broadcast Messages](#broadcast-messages) when you use [BalancingPool](#balancing-pool) for routees
+as described in [Specially Handled Messages](#router-special-messages).
 
 @@@
 
@@ -72,13 +72,13 @@ original sender, not to the router actor.
 @@@ note
 
 In general, any message sent to a router will be sent onwards to its routees, but there are a
-few exceptions. These are documented in the [Specially Handled Messages](#router-special-messages-java) section below.
+few exceptions. These are documented in the [Specially Handled Messages](#router-special-messages) section below.
 
 @@@
 
 ### Pool
 
-The following code and configuration snippets show how to create a [round-robin](#round-robin-router-java) router that forwards messages to five `Worker` routees. The
+The following code and configuration snippets show how to create a [round-robin](#round-robin-router) router that forwards messages to five `Worker` routees. The
 routees will be created as the router's children.
 
 @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-pool }
@@ -103,7 +103,7 @@ deployment requires the `akka-remote` module to be included in the classpath.
 #### Senders
 
 When a routee sends a message, it can @ref:[set itself as the sender
-](actors.md#actors-tell-sender-java).
+](actors.md#actors-tell-sender).
 
 @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #reply-with-self }
 
@@ -190,7 +190,7 @@ of the router actor.
 
 @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #create-parent }
 
-<a id="round-robin-router-java"></a>
+<a id="round-robin-router"></a>
 ### RoundRobinPool and RoundRobinGroup
 
 Routes in a [round-robin](http://en.wikipedia.org/wiki/Round-robin) fashion to its routees.
@@ -239,7 +239,7 @@ RandomGroup defined in code:
 
 @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #paths #random-group-2 }
 
-<a id="balancing-pool-java"></a>
+<a id="balancing-pool"></a>
 ### BalancingPool
 
 A Router that will try to redistribute work from busy routees to idle routees.
@@ -262,8 +262,8 @@ a restriction on the message queue implementation as BalancingPool does.
 
 @@@ note
 
-Do not use [Broadcast Messages](#broadcast-messages-java) when you use [BalancingPool](#balancing-pool-java) for routers,
-as described in [Specially Handled Messages](#router-special-messages-java).
+Do not use [Broadcast Messages](#broadcast-messages) when you use [BalancingPool](#balancing-pool) for routers,
+as described in [Specially Handled Messages](#router-special-messages).
 
 @@@
 
@@ -368,7 +368,7 @@ BroadcastGroup defined in code:
 
 Broadcast routers always broadcast *every* message to their routees. If you do not want to
 broadcast every message, then you can use a non-broadcasting router and use
-[Broadcast Messages](#broadcast-messages-java) as needed.
+[Broadcast Messages](#broadcast-messages) as needed.
 
 @@@
 
@@ -488,7 +488,7 @@ ConsistentHashingGroup defined in code:
 `virtual-nodes-factor` is the number of virtual nodes per routee that is used in the 
 consistent hash node ring to make the distribution more uniform.
 
-<a id="router-special-messages-java"></a>
+<a id="router-special-messages"></a>
 ## Specially Handled Messages
 
 Most messages sent to router actors will be forwarded according to the routers' routing logic.
@@ -496,9 +496,9 @@ However there are a few types of messages that have special behavior.
 
 Note that these special messages, except for the `Broadcast` message, are only handled by 
 self contained router actors and not by the `akka.routing.Router` component described 
-in [A Simple Router](#simple-router-java).
+in [A Simple Router](#simple-router).
 
-<a id="broadcast-messages-java"></a>
+<a id="broadcast-messages"></a>
 ### Broadcast Messages
 
 A `Broadcast` message can be used to send a message to *all* of a router's routees. When a router
@@ -516,8 +516,8 @@ routees. It is up to each routee actor to handle the received payload message.
 
 @@@ note
 
-Do not use [Broadcast Messages](#broadcast-messages-java) when you use [BalancingPool](#balancing-pool-java) for routers.
-Routees on [BalancingPool](#balancing-pool-java) shares the same mailbox instance, thus some routees can
+Do not use [Broadcast Messages](#broadcast-messages) when you use [BalancingPool](#balancing-pool) for routers.
+Routees on [BalancingPool](#balancing-pool) shares the same mailbox instance, thus some routees can
 possibly get the broadcast message multiple times, while other routees get no broadcast message.
 
 @@@
@@ -525,7 +525,7 @@ possibly get the broadcast message multiple times, while other routees get no br
 ### PoisonPill Messages
 
 A `PoisonPill` message has special handling for all actors, including for routers. When any actor
-receives a `PoisonPill` message, that actor will be stopped. See the @ref:[PoisonPill](actors.md#poison-pill-java)
+receives a `PoisonPill` message, that actor will be stopped. See the @ref:[PoisonPill](actors.md#poison-pill)
 documentation for details.
 
 @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #poisonPill }
@@ -538,7 +538,7 @@ However, a `PoisonPill` message sent to a router may still affect its routees, b
 stop the router and when the router stops it also stops its children. Stopping children is normal
 actor behavior. The router will stop routees that it has created as children. Each child will
 process its current message and then stop. This may lead to some messages being unprocessed.
-See the documentation on @ref:[Stopping actors](actors.md#stopping-actors-java) for more information.
+See the documentation on @ref:[Stopping actors](actors.md#stopping-actors) for more information.
 
 If you wish to stop a router and its routees, but you would like the routees to first process all
 the messages currently in their mailboxes, then you should not send a `PoisonPill` message to the
@@ -550,10 +550,8 @@ routees aren't children of the router, i.e. even routees programmatically provid
 
 With the code shown above, each routee will receive a `PoisonPill` message. Each routee will
 continue to process its messages as normal, eventually processing the `PoisonPill`. This will
-cause the routee to stop. After all routees have stopped the router will itself be <!-- FIXME: unresolved link reference: stopped
-automatically <note-router-terminated-children-java> --> stopped
-automatically <note-router-terminated-children-java> unless it is a dynamic router, e.g. using
-a resizer.
+cause the routee to stop. After all routees have stopped the router will itself be stopped
+automatically unless it is a dynamic router, e.g. using a resizer.
 
 @@@ note
 
@@ -565,7 +563,7 @@ discusses in more detail how `PoisonPill` messages can be used to shut down rout
 ### Kill Messages
 
 `Kill` messages are another type of message that has special handling. See
-@ref:[Killing an Actor](actors.md#killing-actors-java) for general information about how actors handle `Kill` messages.
+@ref:[Killing an Actor](actors.md#killing-actors) for general information about how actors handle `Kill` messages.
 
 When a `Kill` message is sent to a router the router processes the message internally, and does
 *not* send it on to its routees. The router will throw an `ActorKilledException` and fail. It
@@ -598,7 +596,7 @@ an ordinary message you are not guaranteed that the routees have been changed wh
 is routed. If you need to know when the change has been applied you can send `AddRoutee` followed by `GetRoutees`
 and when you receive the `Routees` reply you know that the preceding change has been applied.
 
-<a id="resizable-routers-java"></a>
+<a id="resizable-routers"></a>
 ## Dynamically Resizable Pool
 
 All pools can be used with a fixed number of routees or with a resize strategy to adjust the number
@@ -619,7 +617,7 @@ Pool with default resizer defined in configuration:
 @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #resize-pool-1 }
 
 Several more configuration options are available and described in `akka.actor.deployment.default.resizer`
-section of the reference <!-- FIXME: More than one link target with name configuration in path Some(/java/routing.rst) --> configuration.
+section of the reference @ref:[configuration](general/configuration.md).
 
 Pool with resizer defined in code:
 
@@ -660,7 +658,7 @@ Pool with `OptimalSizeExploringResizer` defined in configuration:
 @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #optimal-size-exploring-resize-pool }
 
 Several more configuration options are available and described in `akka.actor.deployment.default.optimal-size-exploring-resizer`
-section of the reference <!-- FIXME: More than one link target with name configuration in path Some(/java/routing.rst) --> configuration.
+section of the reference @ref:[configuration](general/configuration.md).
 
 @@@ note
 
@@ -674,7 +672,7 @@ Dispatchers](#configuring-dispatchers) for more information.
 
 @@@
 
-<a id="router-design-java"></a>
+<a id="router-design"></a>
 ## How Routing is Designed within Akka
 
 On the surface routers look like normal actors, but they are actually implemented differently.
@@ -693,7 +691,7 @@ routers were implemented with normal actors. Fortunately all of this complexity 
 consumers of the routing API. However, it is something to be aware of when implementing your own
 routers.
 
-<a id="custom-router-java"></a>
+<a id="custom-router"></a>
 ## Custom Router
 
 You can create your own router should you not find any of the ones provided by Akka sufficient for your needs.
@@ -701,7 +699,7 @@ In order to roll your own router you have to fulfill certain criteria which are 
 
 Before creating your own router you should consider whether a normal actor with router-like
 behavior might do the job just as well as a full-blown router. As explained
-[above](#router-design-java), the primary benefit of routers over normal actors is their
+[above](#router-design), the primary benefit of routers over normal actors is their
 higher performance. But they are somewhat more complicated to write than normal actors. Therefore if
 lower maximum throughput is acceptable in your application you may wish to stick with traditional
 actors. This section, however, assumes that you wish to get maximum performance and so demonstrates
@@ -724,7 +722,7 @@ A unit test of the routing logic:
 @@snip [CustomRouterDocTest.java]($code$/java/jdocs/routing/CustomRouterDocTest.java) { #unit-test-logic }
 
 You could stop here and use the `RedundancyRoutingLogic` with a `akka.routing.Router`
-as described in [A Simple Router](#simple-router-java).
+as described in [A Simple Router](#simple-router).
 
 Let us continue and make this into a self contained, configurable, router actor.
 
@@ -752,7 +750,7 @@ The deployment section of the configuration is passed to the constructor.
 ## Configuring Dispatchers
 
 The dispatcher for created children of the pool will be taken from
-`Props` as described in @ref:[Dispatchers](../scala/dispatchers.md).
+`Props` as described in @ref:[Dispatchers](dispatchers.md).
 
 To make it easy to define the dispatcher of the routees of the pool you can
 define the dispatcher inline in the deployment section of the config.

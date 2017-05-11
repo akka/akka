@@ -60,8 +60,8 @@ instead of using `TestActorRef` whenever possible.
 
 Due to the synchronous nature of `TestActorRef` it will **not** work with some support
 traits that Akka provides as they require asynchronous behaviours to function properly.
-Examples of traits that do not mix well with test actor refs are @ref:[PersistentActor](persistence.md#event-sourcing-java)
-and @ref:[AtLeastOnceDelivery](persistence.md#at-least-once-delivery-java) provided by @ref:[Akka Persistence](persistence.md).
+Examples of traits that do not mix well with test actor refs are @ref:[PersistentActor](persistence.md#event-sourcing)
+and @ref:[AtLeastOnceDelivery](persistence.md#at-least-once-delivery) provided by @ref:[Akka Persistence](persistence.md).
 
 @@@
 
@@ -140,7 +140,7 @@ Feel free to experiment with the possibilities, and if you find useful
 patterns, don't hesitate to let the Akka forums know about them! Who knows,
 common operations might even be worked into nice DSLs.
 
-<a id="async-integration-testing-java"></a>
+<a id="async-integration-testing"></a>
 ## Asynchronous Integration Testing with `TestKit`
 
 When you are reasonably sure that your actor's business logic is correct, the
@@ -319,7 +319,7 @@ for managing time constraints:
 
 @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-within }
 
-The block in `within` must complete after a @ref:[Duration](../scala/common/duration.md) which
+The block in `within` must complete after a @ref:[Duration](common/duration.md) which
 is between `min` and `max`, where the former defaults to zero. The
 deadline calculated by adding the `max` parameter to the block's start
 time is implicitly available within the block to all examination methods, if
@@ -639,7 +639,7 @@ actor semantics
 exception stack traces
  * Exclusion of certain classes of dead-lock scenarios
 
-<a id="actor-logging-java"></a>
+<a id="actor-logging"></a>
 ## Tracing Actor Invocations
 
 The testing facilities described up to this point were aiming at formulating
@@ -682,4 +682,4 @@ akka {
 ## Configuration
 
 There are several configuration properties for the TestKit module, please refer
-to the @ref:[reference configuration](../scala/general/configuration.md#config-akka-testkit).
+to the @ref:[reference configuration](general/configuration.md#config-akka-testkit).

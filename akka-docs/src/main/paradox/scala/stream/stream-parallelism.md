@@ -65,7 +65,7 @@ One drawback of the example code above that it does not preserve the ordering of
 if children like to track their "own" pancakes. In those cases the `Balance` and `Merge` stages should be replaced
 by strict-round robing balancing and merging stages that put in and take out pancakes in a strict order.
 
-A more detailed example of creating a worker pool can be found in the cookbook: @ref:[Balancing jobs to a fixed pool of workers](stream-cookbook.md#cookbook-balance-scala)
+A more detailed example of creating a worker pool can be found in the cookbook: @ref:[Balancing jobs to a fixed pool of workers](stream-cookbook.md#cookbook-balance)
 
 ## Combining pipelining and parallel processing
 
