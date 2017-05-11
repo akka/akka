@@ -152,7 +152,7 @@ lazy val docs = project("docs")
     paradoxTheme := Some(builtinParadoxTheme("generic")),
     paradoxNavigationDepth := 3,
     paradoxProperties in Compile ++= Map(
-      "akka.version" -> Dependencies.akkaVersion,
+      "akka.version" -> Dependencies.akkaVersion.value,
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scala.version" -> scalaVersion.value,
       "scaladoc.version" -> scalaVersion.value,

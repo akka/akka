@@ -28,11 +28,13 @@ object AkkaDependency {
 
         project.dependsOn(withConfig)
       } else {
-        val dep = "com.typesafe.akka" %% module % Dependencies.akkaVersion
-        val withConfig =
-          if (config == "") dep
-          else dep % config
-        project.settings(libraryDependencies += withConfig)
+        project.settings(libraryDependencies += {
+          val dep = "com.typesafe.akka" %% module % Dependencies.akkaVersion.value
+          val withConfig =
+            if (config == "") dep
+            else dep % config
+          withConfig
+        })
       }
   }
 }
