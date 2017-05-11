@@ -1,4 +1,4 @@
-# Your Second Akka Application, Part 2: The Device Actor
+# Part 2: The Device Actor
 
 In part 1 we explained how to view actor systems _in the large_, i.e. how components should be represented, how
 actors should be arranged in the hierarchy. In this part, we will look at actors _in the small_ by implementing an

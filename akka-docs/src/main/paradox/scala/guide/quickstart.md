@@ -1,4 +1,4 @@
-# Your First Akka Application - Hello World
+# Quickstart
 
 After all this introduction, we are ready to build our first actor system. We will do so in three chapters.
 This first chapter will help you to set up your project, tools and have a simple "Hello World" demo running.

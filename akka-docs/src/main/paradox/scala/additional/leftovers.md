@@ -1,57 +1,66 @@
-# Getting Started
+# TODO
+
+These topics should be incorporated somewhere?
 
 ## Prerequisites
 
 Akka requires that you have [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or
 later installed on your machine.
 
-[Lightbend Inc.](http://www.lightbend.com) provides a commercial build of Akka and related projects such as Scala or Play
-as part of the [Lightbend Reactive Platform](http://www.lightbend.com/platform) which is made available
-for Java 6 in case your project can not upgrade to Java 8 just yet. It also includes additional commercial features or libraries.
+## Akka can be used in different ways
 
-## Download
+Akka is a toolkit, not a framework: you integrate it into your build like any other library
+without having to follow a particular source code layout. When expressing your systems as collaborating
+Actors you may feel pushed more towards proper encapsulation of internal state, you may find that
+there is a natural separation between business logic and inter-component communication.
 
-There are several ways to download Akka. You can download it as part of the Lightbend Platform
-(as described above). You can download the full distribution, which includes all modules.
-Or you can use a build tool like Maven or SBT to download dependencies from the Akka Maven repository.
+Akka applications are typically deployed as follows:
 
-## Modules
+ * as a library: used as a regular JAR on the classpath or in a web app.
+ * packaged with [sbt-native-packager](https://github.com/sbt/sbt-native-packager).
+ * packaged and deployed using [Lightbend ConductR](http://www.lightbend.com/products/conductr).
+ 
+## How can I use and deploy Akka?
 
-Akka is very modular and consists of several JARs containing different features.
+Akka can be used in different ways:
 
- * `akka-actor` – Classic Actors, Typed Actors, IO Actor etc.
- * `akka-agent` – Agents, integrated with Scala STM
- * `akka-camel` – Apache Camel integration
- * `akka-cluster` – Cluster membership management, elastic routers.
- * `akka-cluster-sharding` – Cluster Sharding of actors.
- * `akka-cluster-tools` – Additoinal Cluster utilities, such as Singleton, Pub/Sub and Client.
- * `akka-distributed-data` – Cluster data with CRDTs.
- * `akka-osgi` – Utilities for using Akka in OSGi containers
- * `akka-osgi-aries` – Aries blueprint for provisioning actor systems
- * `akka-remote` – Remote Actors
- * `akka-slf4j` – SLF4J Logger (event bus listener)
- * `akka-stream` – Reactive stream processing
- * `akka-testkit` – Toolkit for testing Actor systems
+ * As a library: used as a regular JAR on the classpath and/or in a web app, to
+be put into `WEB-INF/lib`
+ * As an application packaged with [sbt-native-packager](https://github.com/sbt/sbt-native-packager)
+ * As an application packaged and deployed using [Lightbend ConductR](http://www.lightbend.com/products/conductr).
 
-In addition to these stable modules there are several which are on their way
-into the stable core but are still marked @ref:[may change](../common/may-change.md) at this point. This
-does not mean that they do not function as intended, it primarily means that
-their API has not yet solidified enough in order to be considered frozen. You
-can help accelerating this process by giving feedback on these modules on our
-mailing list.
+### Native Packager
 
- * `akka-contrib` – an assortment of contributions which may or may not be
-moved into core modules, see <!-- FIXME: unresolved link reference: akka-contrib --> akka-contrib for more details.
+[sbt-native-packager](https://github.com/sbt/sbt-native-packager) is a tool for creating
+distributions of any type of application, including Akka applications.
 
-The filename of the actual JAR is for example `@jarName@` (and analog for
-the other modules).
+Define sbt version in `project/build.properties` file:
 
-How to see the JARs dependencies of each Akka module is described in the
-<!-- FIXME: More than one link target with name dependencies in path Some(/intro/getting-started.rst) --> dependencies section.
+```none
+sbt.version=0.13.13
+```
 
-## Using a release distribution
+Add [sbt-native-packager](https://github.com/sbt/sbt-native-packager) in `project/plugins.sbt` file:
 
-Download the release you need from [http://akka.io/downloads](http://akka.io/downloads) and unzip it.
+```none
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.1.5")
+```
+
+Follow the instructions for the `JavaAppPackaging` in the [sbt-native-packager plugin documentation](http://sbt-native-packager.readthedocs.io/en/latest/archetypes/java_app/index.html).
+
+### In a Docker container
+
+You can use both Akka remoting and Akka Cluster inside of Docker containers. But note
+that you will need to take special care with the network configuration when using Docker,
+described here: @ref:[Akka behind NAT or in a Docker container](../../scala/remoting.md#remote-configuration-nat)
+
+For an example of how to set up a project using Akka Cluster and Docker take a look at the
+["akka-docker-cluster" sample](https://github.com/muuki88/activator-akka-docker).
+
+## Commercial Support
+
+Akka is available from Lightbend Inc. under a commercial license which includes
+development or production support, read more [here](http://www.lightbend.com/how/subscription).
 
 ## Using a snapshot version
 
@@ -69,16 +78,6 @@ The use of Akka SNAPSHOTs, nightlies and milestone releases is discouraged unles
 ## Using a build tool
 
 Akka can be used with build tools that support Maven repositories.
-
-## Maven repositories
-
-For Akka version 2.1-M2 and onwards:
-
-[Maven Central](https://repo1.maven.org/maven2/)
-
-For previous Akka versions:
-
-[Akka Repo](http://repo.akka.io/releases/)
 
 ## Using Akka with Maven
 
@@ -230,10 +229,8 @@ Strange behavior has been reported by users that have tried it.
 ## Build from sources
 
 Akka uses Git and is hosted at [Github](https://github.com).
-
- * Akka: clone the Akka repository from [https://github.com/akka/akka](https://github.com/akka/akka)
-
-Continue reading the page on @ref:[Building Akka](../dev/building-akka.md)
+ 
+Continue reading the [CONTRIBUTING](https://github.com/akka/akka/blob/master/CONTRIBUTING.md)
 
 ## Need help?
 
