@@ -18,9 +18,9 @@ to ensure that a fix can be provided without delay.
 
 ## Security Related Documentation
 
- * @ref:[Disabling the Java Serializer](../../scala/remoting.md#disable-java-serializer-scala)
- * @ref:[Remote deployment whitelist](../../scala/remoting.md#remote-deployment-whitelist-scala)
- * @ref:[Remote Security](../../scala/remoting.md#remote-security-scala)
+ * @ref:[Disabling the Java Serializer](../remoting.md#disable-java-serializer-scala)
+ * @ref:[Remote deployment whitelist](../remoting.md#remote-deployment-whitelist-scala)
+ * @ref:[Remote Security](../remoting.md#remote-security-scala)
 
 ## Fixed Security Vulnerabilities
 
