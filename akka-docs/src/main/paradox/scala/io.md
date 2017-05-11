@@ -22,7 +22,7 @@ as an entry point for the API. I/O is broken into several drivers. The manager f
 is accessible through the `IO` entry point. For example the following code
 looks up the TCP manager and returns its `ActorRef`:
 
-@@snip [IODocSpec.scala](code/docs/io/IODocSpec.scala) { #manager }
+@@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #manager }
 
 The manager receives I/O command messages and instantiates worker actors in response. The worker actors present
 themselves to the API user in the reply to the command that was sent. For example after a `Connect` command sent to

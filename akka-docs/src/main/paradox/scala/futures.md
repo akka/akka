@@ -13,7 +13,7 @@ which is very similar to a `java.util.concurrent.Executor`. if you have an `Acto
 it will use its default dispatcher as the `ExecutionContext`, or you can use the factory methods provided
 by the `ExecutionContext` companion object to wrap `Executors` and `ExecutorServices`, or even create your own.
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #diy-execution-context }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #diy-execution-context }
 
 ### Within Actors
 
@@ -24,7 +24,7 @@ actor (e.g. all CPU bound and no latency requirements), then it may be easiest
 to reuse the dispatcher for running the Futures by importing
 `context.dispatcher`.
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #context-dispatcher }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #context-dispatcher }
 
 ## Use With Actors
 
@@ -33,7 +33,7 @@ which only works if the original sender was an `Actor`) and the second is throug
 
 Using an `Actor`'s `?` method to send a message will return a `Future`:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #ask-blocking }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #ask-blocking }
 
 This will cause the current thread to block and wait for the `Actor` to 'complete' the `Future` with it's reply.
 Blocking is discouraged though as it will cause performance problems.
@@ -42,14 +42,14 @@ Alternatives to blocking are discussed further within this documentation. Also n
 an `Actor` is a `Future[Any]` since an `Actor` is dynamic. That is why the `asInstanceOf` is used in the above sample.
 When using non-blocking it is better to use the `mapTo` method to safely try to cast a `Future` to an expected type:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #map-to }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #map-to }
 
 The `mapTo` method will return a new `Future` that contains the result if the cast was successful,
 or a `ClassCastException` if not. Handling `Exception`s will be discussed further within this documentation.
 
 To send the result of a `Future` to an `Actor`, you can use the `pipe` construct:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #pipe-to }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #pipe-to }
 
 ## Use Directly
 
@@ -57,7 +57,7 @@ A common use case within Akka is to have some computation performed concurrently
 If you find yourself creating a pool of `Actor`s for the sole reason of performing a calculation in parallel,
 there is an easier (and faster) way:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #future-eval }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #future-eval }
 
 In the above code the block passed to `Future` will be executed by the default `Dispatcher`,
 with the return value of the block used to complete the `Future` (in this case, the result would be the string: "HelloWorld").
@@ -66,15 +66,15 @@ and we also avoid the overhead of managing an `Actor`.
 
 You can also create already completed Futures using the `Future` companion, which can be either successes:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #successful }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #successful }
 
 Or failures:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #failed }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #failed }
 
 It is also possible to create an empty `Promise`, to be filled later, and obtain the corresponding `Future`:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #promise }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #promise }
 
 ## Functional Futures
 
@@ -87,7 +87,7 @@ The first method for working with `Future` functionally is `map`. This method ta
 which performs some operation on the result of the `Future`, and returning a new result.
 The return value of the `map` method is another `Future` that will contain the new result:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #map }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #map }
 
 In this example we are joining two strings together within a `Future`. Instead of waiting for this to complete,
 we apply our function that calculates the length of the string using the `map` method.
@@ -99,24 +99,24 @@ string "HelloWorld" and is unaffected by the `map`.
 The `map` method is fine if we are modifying a single `Future`,
 but if 2 or more `Future`s are involved `map` will not allow you to combine them together:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #wrong-nested-map }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #wrong-nested-map }
 
 `f3` is a `Future[Future[Int]]` instead of the desired `Future[Int]`. Instead, the `flatMap` method should be used:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #flat-map }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #flat-map }
 
 Composing futures using nested combinators it can sometimes become quite complicated and hard to read, in these cases using Scala's
 'for comprehensions' usually yields more readable code. See next section for examples.
 
 If you need to do conditional propagation, you can use `filter`:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #filter }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #filter }
 
 ### For Comprehensions
 
 Since `Future` has a `map`, `filter` and `flatMap` method it can be easily used in a 'for comprehension':
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #for-comprehension }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #for-comprehension }
 
 Something to keep in mind when doing this is even though it looks like parts of the above example can run in parallel,
 each step of the for comprehension is run sequentially. This will happen on separate threads for each step but
@@ -130,7 +130,7 @@ A common use case for this is combining the replies of several `Actor`s into a s
 without resorting to calling `Await.result` or `Await.ready` to block for each result.
 First an example of using `Await.result`:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #composing-wrong }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #composing-wrong }
 
 @@@ warning
 
@@ -144,7 +144,7 @@ Here we wait for the results from the first 2 `Actor`s before sending that resul
 We called `Await.result` 3 times, which caused our little program to block 3 times before getting our final result.
 Now compare that to this example:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #composing }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #composing }
 
 Here we have 2 actors processing a single message each. Once the 2 results are available
 (note that we don't block to get these results!), they are being added together and sent to a third `Actor`,
@@ -155,7 +155,7 @@ The `sequence` and `traverse` helper methods can make it easier to handle more c
 Both of these methods are ways of turning, for a subclass `T` of `Traversable`, `T[Future[A]]` into a `Future[T[A]]`.
 For example:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #sequence-ask }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #sequence-ask }
 
 To better explain what happened in the example, `Future.sequence` is taking the `List[Future[Int]]`
 and turning it into a `Future[List[Int]]`. We can then use `map` to work with the `List[Int]` directly,
@@ -164,11 +164,11 @@ and we find the sum of the `List`.
 The `traverse` method is similar to `sequence`, but it takes a `T[A]` and a function `A => Future[B]` to return a `Future[T[B]]`,
 where `T` is again a subclass of Traversable. For example, to use `traverse` to sum the first 100 odd numbers:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #traverse }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #traverse }
 
 This is the same result as this example:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #sequence }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #sequence }
 
 But it may be faster to use `traverse` as it doesn't have to create an intermediate `List[Future[Int]]`.
 
@@ -177,7 +177,7 @@ from the type of the start-value and the type of the futures and returns somethi
 and then applies the function to all elements in the sequence of futures, asynchronously,
 the execution will start when the last of the Futures is completed.
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #fold }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #fold }
 
 That's all it takes!
 
@@ -185,7 +185,7 @@ If the sequence passed to `fold` is empty, it will return the start-value, in th
 In some cases you don't have a start-value and you're able to use the value of the first completing `Future` in the sequence
 as the start-value, you can use `reduce`, it works like this:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #reduce }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #reduce }
 
 Same as with `fold`, the execution will be done asynchronously when the last of the `Future` is completed,
 you can also parallelize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
@@ -195,11 +195,11 @@ you can also parallelize it by chunking your futures into sub-sequences and redu
 Sometimes you just want to listen to a `Future` being completed, and react to that not by creating a new `Future`, but by side-effecting.
 For this Scala supports `onComplete`, `onSuccess` and `onFailure`, of which the last two are specializations of the first.
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #onSuccess }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #onSuccess }
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #onFailure }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #onFailure }
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #onComplete }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #onComplete }
 
 ## Define Ordering
 
@@ -209,19 +209,19 @@ But there's a solution and it's name is `andThen`. It creates a new `Future` wit
 the specified callback, a `Future` that will have the same result as the `Future` it's called on,
 which allows for ordering like in the following sample:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #and-then }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #and-then }
 
 ## Auxiliary Methods
 
 `Future` `fallbackTo` combines 2 Futures into a new `Future`, and will hold the successful value of the second `Future`
 if the first `Future` fails.
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #fallback-to }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #fallback-to }
 
 You can also combine two Futures into a new `Future` that will hold a tuple of the two Futures successful results,
 using the `zip` operation.
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #zip }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #zip }
 
 ## Exceptions
 
@@ -233,7 +233,7 @@ If a `Future` does contain an `Exception`, calling `Await.result` will cause it 
 It is also possible to handle an `Exception` by returning a different result.
 This is done with the `recover` method. For example:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #recover }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #recover }
 
 In this example, if the actor replied with a `akka.actor.Status.Failure` containing the `ArithmeticException`,
 our `Future` would have a result of 0. The `recover` method works very similarly to the standard try/catch blocks,
@@ -243,10 +243,10 @@ it will behave as if we hadn't used the `recover` method.
 You can also use the `recoverWith` method, which has the same relationship to `recover` as `flatMap` has to `map`,
 and is use like this:
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #try-recover }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #try-recover }
 
 ## After
 
 `akka.pattern.after` makes it easy to complete a `Future` with a value or exception after a timeout.
 
-@@snip [FutureDocSpec.scala](code/docs/future/FutureDocSpec.scala) { #after }
+@@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #after }

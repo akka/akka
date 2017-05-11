@@ -31,14 +31,14 @@ dispatched to the same agent from other threads.
 Agents are created by invoking `new Agent<ValueType>(value, executionContext)` – passing in the Agent's initial
 value and providing an `ExecutionContext` to be used for it:
 
-@@snip [AgentDocTest.java](code/jdocs/agent/AgentDocTest.java) { #import-agent #create type=java }
+@@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-agent #create type=java }
 
 ## Reading an Agent's value
 
 Agents can be dereferenced (you can get an Agent's value) by invoking the Agent
 with `get()` like this:
 
-@@snip [AgentDocTest.java](code/jdocs/agent/AgentDocTest.java) { #read-get type=java }
+@@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #read-get type=java }
 
 Reading an Agent's current value does not involve any message passing and
 happens immediately. So while updates to an Agent are asynchronous, reading the
@@ -47,7 +47,7 @@ state of an Agent is synchronous.
 You can also get a `Future` to the Agents value, that will be completed after the
 currently queued updates have completed:
 
-@@snip [AgentDocTest.java](code/jdocs/agent/AgentDocTest.java) { #import-future #read-future type=java }
+@@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-future #read-future type=java }
 
 See @ref:[Futures](futures.md) for more information on `Futures`.
 
@@ -61,7 +61,7 @@ the update will be applied but dispatches to an Agent from a single thread will
 occur in order. You apply a value or a function by invoking the `send`
 function.
 
-@@snip [AgentDocTest.java](code/jdocs/agent/AgentDocTest.java) { #import-function #send type=java }
+@@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-function #send type=java }
 
 You can also dispatch a function to update the internal state but on its own
 thread. This does not use the reactive thread pool and can be used for
@@ -69,14 +69,14 @@ long-running or blocking operations. You do this with the `sendOff`
 method. Dispatches using either `sendOff` or `send` will still be executed
 in order.
 
-@@snip [AgentDocTest.java](code/jdocs/agent/AgentDocTest.java) { #import-function #send-off type=java }
+@@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-function #send-off type=java }
 
 All `send` methods also have a corresponding `alter` method that returns a `Future`.
 See @ref:[Futures](futures.md) for more information on `Futures`.
 
-@@snip [AgentDocTest.java](code/jdocs/agent/AgentDocTest.java) { #import-future #import-function #alter type=java }
+@@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-future #import-function #alter type=java }
 
-@@snip [AgentDocTest.java](code/jdocs/agent/AgentDocTest.java) { #import-future #import-function #alter-off type=java }
+@@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-future #import-function #alter-off type=java }
 
 ## Configuration
 

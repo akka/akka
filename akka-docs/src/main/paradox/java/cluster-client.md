@@ -88,17 +88,17 @@ akka.extensions = ["akka.cluster.client.ClusterClientReceptionist"]
 
 Next, register the actors that should be available for the client.
 
-@@snip [ClusterClientTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #server }
+@@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #server }
 
 On the client you create the `ClusterClient` actor and use it as a gateway for sending
 messages to the actors identified by their path (without address information) somewhere
 in the cluster.
 
-@@snip [ClusterClientTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #client }
+@@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #client }
 
 The `initialContacts` parameter is a `Set<ActorPath>`, which can be created like this:
 
-@@snip [ClusterClientTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #initialContacts }
+@@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #initialContacts }
 
 You will probably define the address information of the initial contact points in configuration or system property.
 See also [Configuration](#cluster-client-config-java).
@@ -129,11 +129,11 @@ The following code snippet declares an actor that will receive notifications on 
 receptionists), as they become available. The code illustrates subscribing to the events and receiving the `ClusterClient`
 initial state.
 
-@@snip [ClusterClientTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #clientEventsListener }
+@@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #clientEventsListener }
 
 Similarly we can have an actor that behaves in a similar fashion for learning what cluster clients contact a `ClusterClientReceptionist`:
 
-@@snip [ClusterClientTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #receptionistEventsListener }
+@@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #receptionistEventsListener }
 
 ## Dependencies
 
@@ -161,7 +161,7 @@ maven:
 The `ClusterClientReceptionist` extension (or `ClusterReceptionistSettings`) can be configured
 with the following properties:
 
-@@snip [reference.conf]../../../../../akka-cluster-tools/src/main/resources/reference.conf) { #receptionist-ext-config }
+@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #receptionist-ext-config }
 
 The following configuration properties are read by the `ClusterClientSettings`
 when created with a `ActorSystem` parameter. It is also possible to amend the `ClusterClientSettings`
@@ -169,7 +169,7 @@ or create it from another config section with the same layout as below. `Cluster
 a parameter to the `ClusterClient.props` factory method, i.e. each client can be configured
 with different settings if needed.
 
-@@snip [reference.conf]../../../../../akka-cluster-tools/src/main/resources/reference.conf) { #cluster-client-config }
+@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #cluster-client-config }
 
 ## Failure handling
 

@@ -12,7 +12,7 @@ synchronously.
 Create a `LoggingAdapter` and use the `error`, `warning`, `info`, or `debug` methods,
 as illustrated in this example:
 
-@@snip [LoggingDocSpec.scala](code/docs/event/LoggingDocSpec.scala) { #my-actor }
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #my-actor }
 
 For convenience, you can mix in the `log` member into actors, instead of defining it as above.
 
@@ -38,7 +38,7 @@ placeholders results in a warning being appended to the log statement (i.e. on
 the same line with the same severity). You may pass an array as the only
 substitution argument to have its elements be treated individually:
 
-@@snip [LoggingDocSpec.scala](code/docs/event/LoggingDocSpec.scala) { #array }
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #array }
 
 The Java `Class` of the log source is also included in the generated
 `LogEvent`. In case of a simple string this is replaced with a “marker”
@@ -223,7 +223,7 @@ using implicit parameters and thus fully customizable: simply create your own
 instance of `LogSource[T]` and have it in scope when creating the
 logger.
 
-@@snip [LoggingDocSpec.scala](code/docs/event/LoggingDocSpec.scala) { #my-source }
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #my-source }
 
 This example creates a log source which mimics traditional usage of Java
 loggers, which are based upon the originating object’s class name as log
@@ -292,7 +292,7 @@ logger available in the 'akka-slf4j' module.
 
 Example of creating a listener:
 
-@@snip [LoggingDocSpec.scala](code/docs/event/LoggingDocSpec.scala) { #my-event-listener }
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #my-event-listener }
 
 ## Logging to stdout during startup and shutdown
 
@@ -453,13 +453,13 @@ if it is not set to a new map. Use `log.clearMDC()`.
 
 @@@
 
-@@snip [LoggingDocSpec.scala](code/docs/event/LoggingDocSpec.scala) { #mdc }
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #mdc }
 
 For convenience, you can mix in the `log` member into actors, instead of defining it as above.
 This trait also lets you override `def mdc(msg: Any): MDC` for specifying MDC values
 depending on current message and lets you forget about the cleanup as well, since it already does it for you.
 
-@@snip [LoggingDocSpec.scala](code/docs/event/LoggingDocSpec.scala) { #mdc-actor }
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #mdc-actor }
 
 Now, the values will be available in the MDC, so you can use them in the layout pattern:
 

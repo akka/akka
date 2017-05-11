@@ -25,12 +25,12 @@ general, more targeted recipes are available as separate sections (@ref:[Buffers
 The simplest solution is to simply use a `map` operation and use `println` to print the elements received to the console.
 While this recipe is rather simplistic, it is often suitable for a quick debug session.
 
-@@snip [RecipeLoggingElements.scala](../code/docs/stream/cookbook/RecipeLoggingElements.scala) { #println-debug }
+@@snip [RecipeLoggingElements.scala]($code$/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #println-debug }
 
 Another approach to logging is to use `log()` operation which allows configuring logging for elements flowing through
 the stream as well as completion and erroring.
 
-@@snip [RecipeLoggingElements.scala](../code/docs/stream/cookbook/RecipeLoggingElements.scala) { #log-custom }
+@@snip [RecipeLoggingElements.scala]($code$/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #log-custom }
 
 ### Flattening a stream of sequences
 
@@ -41,7 +41,7 @@ The `mapConcat` operation can be used to implement a one-to-many transformation 
 in the form of `In => immutable.Seq[Out]`. In this case we want to map a `Seq` of elements to the elements in the
 collection itself, so we can just call `mapConcat(identity)`.
 
-@@snip [RecipeFlattenSeq.scala](../code/docs/stream/cookbook/RecipeFlattenSeq.scala) { #flattening-seqs }
+@@snip [RecipeFlattenSeq.scala]($code$/scala/docs/stream/cookbook/RecipeFlattenSeq.scala) { #flattening-seqs }
 
 ### Draining a stream to a strict collection
 
@@ -54,11 +54,11 @@ The function `limit` or `take` should always be used in conjunction in order to 
 
 For example, this is best avoided:
 
-@@snip [RecipeSeq.scala](../code/docs/stream/cookbook/RecipeSeq.scala) { #draining-to-seq-unsafe }
+@@snip [RecipeSeq.scala]($code$/scala/docs/stream/cookbook/RecipeSeq.scala) { #draining-to-seq-unsafe }
 
 Rather, use `limit` or `take` to ensure that the resulting `Seq` will contain only up to `max` elements:
 
-@@snip [RecipeSeq.scala](../code/docs/stream/cookbook/RecipeSeq.scala) { #draining-to-seq-safe }
+@@snip [RecipeSeq.scala]($code$/scala/docs/stream/cookbook/RecipeSeq.scala) { #draining-to-seq-safe }
 
 ### Calculating the digest of a ByteString stream
 
@@ -75,7 +75,7 @@ At this point we want to emit the digest value, but we cannot do it with `push` 
 be no downstream demand. Instead we call `emit` which will temporarily replace the handlers, emit the provided value when
 demand comes in and then reset the stage state. It will then complete the stage.
 
-@@snip [RecipeDigest.scala](../code/docs/stream/cookbook/RecipeDigest.scala) { #calculating-digest }
+@@snip [RecipeDigest.scala]($code$/scala/docs/stream/cookbook/RecipeDigest.scala) { #calculating-digest }
 
 <a id="cookbook-parse-lines-scala"></a>
 ### Parsing lines from a stream of ByteStrings
@@ -86,7 +86,7 @@ needs to be parsed.
 
 The `Framing` helper object contains a convenience method to parse messages from a stream of `ByteString` s:
 
-@@snip [RecipeParseLines.scala](../code/docs/stream/cookbook/RecipeParseLines.scala) { #parse-lines }
+@@snip [RecipeParseLines.scala]($code$/scala/docs/stream/cookbook/RecipeParseLines.scala) { #parse-lines }
 
 ### Dealing with compressed data streams
 
@@ -95,7 +95,7 @@ The `Framing` helper object contains a convenience method to parse messages from
 The `Compression` helper object contains convenience methods for decompressing data streams compressed with
 Gzip or Deflate.
 
-@@snip [RecipeDecompress.scala](../code/docs/stream/cookbook/RecipeDecompress.scala) { #decompress-gzip }
+@@snip [RecipeDecompress.scala]($code$/scala/docs/stream/cookbook/RecipeDecompress.scala) { #decompress-gzip }
 
 ### Implementing reduce-by-key
 
@@ -124,7 +124,7 @@ any given time. If the `groupBy` operator encounters more keys than this
 number then the stream cannot continue without violating its resource bound, in
 this case `groupBy` will terminate with a failure.
 
-@@snip [RecipeReduceByKey.scala](../code/docs/stream/cookbook/RecipeReduceByKey.scala) { #word-count }
+@@snip [RecipeReduceByKey.scala]($code$/scala/docs/stream/cookbook/RecipeReduceByKey.scala) { #word-count }
 
 By extracting the parts specific to *wordcount* into
 
@@ -134,7 +134,7 @@ By extracting the parts specific to *wordcount* into
 
 we get a generalized version below:
 
-@@snip [RecipeReduceByKey.scala](../code/docs/stream/cookbook/RecipeReduceByKey.scala) { #reduce-by-key-general }
+@@snip [RecipeReduceByKey.scala]($code$/scala/docs/stream/cookbook/RecipeReduceByKey.scala) { #reduce-by-key-general }
 
 @@@ note
 
@@ -157,7 +157,7 @@ will be emitted. This is achieved by using `mapConcat`
  * Then we take this new stream of message topic pairs (containing a separate pair for each topic a given message
 belongs to) and feed it into groupBy, using the topic as the group key.
 
-@@snip [RecipeMultiGroupBy.scala](../code/docs/stream/cookbook/RecipeMultiGroupBy.scala) { #multi-groupby }
+@@snip [RecipeMultiGroupBy.scala]($code$/scala/docs/stream/cookbook/RecipeMultiGroupBy.scala) { #multi-groupby }
 
 ## Working with Graphs
 
@@ -172,14 +172,14 @@ trigger signal arrives.
 This recipe solves the problem by simply zipping the stream of `Message` elements with the stream of `Trigger`
 signals. Since `Zip` produces pairs, we simply map the output stream selecting the first element of the pair.
 
-@@snip [RecipeManualTrigger.scala](../code/docs/stream/cookbook/RecipeManualTrigger.scala) { #manually-triggered-stream }
+@@snip [RecipeManualTrigger.scala]($code$/scala/docs/stream/cookbook/RecipeManualTrigger.scala) { #manually-triggered-stream }
 
 Alternatively, instead of using a `Zip`, and then using `map` to get the first element of the pairs, we can avoid
 creating the pairs in the first place by using `ZipWith` which takes a two argument function to produce the output
 element. If this function would return a pair of the two argument it would be exactly the behavior of `Zip` so
 `ZipWith` is a generalization of zipping.
 
-@@snip [RecipeManualTrigger.scala](../code/docs/stream/cookbook/RecipeManualTrigger.scala) { #manually-triggered-stream-zipwith }
+@@snip [RecipeManualTrigger.scala]($code$/scala/docs/stream/cookbook/RecipeManualTrigger.scala) { #manually-triggered-stream-zipwith }
 
 <a id="cookbook-balance-scala"></a>
 ### Balancing jobs to a fixed pool of workers
@@ -197,7 +197,7 @@ we wire the outputs of these workers to a `Merge` element that will collect the 
 
 To make the worker stages run in parallel we mark them as asynchronous with *async*.
 
-@@snip [RecipeWorkerPool.scala](../code/docs/stream/cookbook/RecipeWorkerPool.scala) { #worker-pool }
+@@snip [RecipeWorkerPool.scala]($code$/scala/docs/stream/cookbook/RecipeWorkerPool.scala) { #worker-pool }
 
 ## Working with rate
 
@@ -216,7 +216,7 @@ the speed of the upstream unaffected by the downstream.
 When the upstream is faster, the reducing process of the `conflate` starts. Our reducer function simply takes
 the freshest element. This in a simple dropping operation.
 
-@@snip [RecipeSimpleDrop.scala](../code/docs/stream/cookbook/RecipeSimpleDrop.scala) { #simple-drop }
+@@snip [RecipeSimpleDrop.scala]($code$/scala/docs/stream/cookbook/RecipeSimpleDrop.scala) { #simple-drop }
 
 There is a more general version of `conflate` named `conflateWithSeed` that allows to express more complex aggregations, more
 similar to a `fold`.
@@ -233,7 +233,7 @@ defining a dropping strategy instead of the default `Backpressure`. This allows 
 between the different consumers (the buffer smooths out small rate variances), but also allows faster consumers to
 progress by dropping from the buffer of the slow consumers if necessary.
 
-@@snip [RecipeDroppyBroadcast.scala](../code/docs/stream/cookbook/RecipeDroppyBroadcast.scala) { #droppy-bcast }
+@@snip [RecipeDroppyBroadcast.scala]($code$/scala/docs/stream/cookbook/RecipeDroppyBroadcast.scala) { #droppy-bcast }
 
 ### Collecting missed ticks
 
@@ -252,7 +252,7 @@ count of the missed ticks so far.
 As a result, we have a flow of `Int` where the number represents the missed ticks. A number 0 means that we were
 able to consume the tick fast enough (i.e. zero means: 1 non-missed tick + 0 missed ticks)
 
-@@snip [RecipeMissedTicks.scala](../code/docs/stream/cookbook/RecipeMissedTicks.scala) { #missed-ticks }
+@@snip [RecipeMissedTicks.scala]($code$/scala/docs/stream/cookbook/RecipeMissedTicks.scala) { #missed-ticks }
 
 ### Create a stream processor that repeats the last element seen
 
@@ -266,7 +266,7 @@ to feed the downstream if no upstream element is ready yet. In the `onPush()` ha
 `currentValue` variable and immediately relieve the upstream by calling `pull()`. The downstream `onPull` handler
 is very similar, we immediately relieve the downstream by emitting `currentValue`.
 
-@@snip [RecipeHold.scala](../code/docs/stream/cookbook/RecipeHold.scala) { #hold-version-1 }
+@@snip [RecipeHold.scala]($code$/scala/docs/stream/cookbook/RecipeHold.scala) { #hold-version-1 }
 
 While it is relatively simple, the drawback of the first version is that it needs an arbitrary initial element which is not
 always possible to provide. Hence, we create a second version where the downstream might need to wait in one single
@@ -279,7 +279,7 @@ version is that we check if we have received the first value and only emit if we
 first element comes in we must check if there possibly already was demand from downstream so that we in that case can
 push the element directly.
 
-@@snip [RecipeHold.scala](../code/docs/stream/cookbook/RecipeHold.scala) { #hold-version-2 }
+@@snip [RecipeHold.scala]($code$/scala/docs/stream/cookbook/RecipeHold.scala) { #hold-version-2 }
 
 ### Globally limiting the rate of a set of streams
 
@@ -299,13 +299,13 @@ of the sender is added to a queue. Once the timer for replenishing the pending p
 message, we increment the pending permits counter and send a reply to each of the waiting senders. If there are more
 waiting senders than permits available we will stay in the `closed` state.
 
-@@snip [RecipeGlobalRateLimit.scala](../code/docs/stream/cookbook/RecipeGlobalRateLimit.scala) { #global-limiter-actor }
+@@snip [RecipeGlobalRateLimit.scala]($code$/scala/docs/stream/cookbook/RecipeGlobalRateLimit.scala) { #global-limiter-actor }
 
 To create a Flow that uses this global limiter actor we use the `mapAsync` function with the combination of the `ask`
 pattern. We also define a timeout, so if a reply is not received during the configured maximum wait period the returned
 future from `ask` will fail, which will fail the corresponding stream as well.
 
-@@snip [RecipeGlobalRateLimit.scala](../code/docs/stream/cookbook/RecipeGlobalRateLimit.scala) { #global-limiter-flow }
+@@snip [RecipeGlobalRateLimit.scala]($code$/scala/docs/stream/cookbook/RecipeGlobalRateLimit.scala) { #global-limiter-flow }
 
 @@@ note
 
@@ -332,7 +332,7 @@ and an empty or nonempty remaining buffer.
 Both `onPush()` and `onPull()` calls `emitChunk()` the only difference is that the push handler also stores
 the incoming chunk by appending to the end of the buffer.
 
-@@snip [RecipeByteStrings.scala](../code/docs/stream/cookbook/RecipeByteStrings.scala) { #bytestring-chunker }
+@@snip [RecipeByteStrings.scala]($code$/scala/docs/stream/cookbook/RecipeByteStrings.scala) { #bytestring-chunker }
 
 ### Limit the number of bytes passing through a stream of ByteStrings
 
@@ -343,7 +343,7 @@ This recipe uses a `GraphStage` to implement the desired feature. In the only ha
 `onPush()` we just update a counter and see if it gets larger than `maximumBytes`. If a violation happens
 we signal failure, otherwise we forward the chunk we have received.
 
-@@snip [RecipeByteStrings.scala](../code/docs/stream/cookbook/RecipeByteStrings.scala) { #bytes-limiter }
+@@snip [RecipeByteStrings.scala]($code$/scala/docs/stream/cookbook/RecipeByteStrings.scala) { #bytes-limiter }
 
 ### Compact ByteStrings in a stream of ByteStrings
 
@@ -354,7 +354,7 @@ chain we want to have clean copies that are no longer referencing the original `
 The recipe is a simple use of map, calling the `compact()` method of the `ByteString` elements. This does
 copying of the underlying arrays, so this should be the last element of a long chain if used.
 
-@@snip [RecipeByteStrings.scala](../code/docs/stream/cookbook/RecipeByteStrings.scala) { #compacting-bytestrings }
+@@snip [RecipeByteStrings.scala]($code$/scala/docs/stream/cookbook/RecipeByteStrings.scala) { #compacting-bytestrings }
 
 ### Injecting keep-alive messages into a stream of ByteStrings
 
@@ -363,4 +363,4 @@ but only if this does not interfere with normal traffic.
 
 There is a built-in operation that allows to do this directly:
 
-@@snip [RecipeKeepAlive.scala](../code/docs/stream/cookbook/RecipeKeepAlive.scala) { #inject-keepalive }
+@@snip [RecipeKeepAlive.scala]($code$/scala/docs/stream/cookbook/RecipeKeepAlive.scala) { #inject-keepalive }

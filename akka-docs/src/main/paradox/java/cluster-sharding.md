@@ -35,7 +35,7 @@ See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing-java).
 
 This is how an entity actor may look like:
 
-@@snip [ClusterShardingTest.java]../../../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-actor }
+@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-actor }
 
 The above actor uses event sourcing and the support provided in `AbstractPersistentActor` to store its state.
 It does not have to be a persistent actor, but in case of failure or migration of entities between nodes it must be able to recover
@@ -48,12 +48,12 @@ When using the sharding extension you are first, typically at system startup on 
 in the cluster, supposed to register the supported entity types with the `ClusterSharding.start`
 method. `ClusterSharding.start` gives you the reference which you can pass along.
 
-@@snip [ClusterShardingTest.java]../../../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-start }
+@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-start }
 
 The `messageExtractor` defines application specific methods to extract the entity
 identifier and the shard identifier from incoming messages.
 
-@@snip [ClusterShardingTest.java]../../../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-extractor }
+@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-extractor }
 
 This example illustrates two different ways to define the entity identifier in the messages:
 
@@ -88,7 +88,7 @@ The `ShardRegion` will lookup the location of the shard for the entity if it doe
 delegate the message to the right node and it will create the entity actor on demand, i.e. when the
 first message for a specific entity is delivered.
 
-@@snip [ClusterShardingTest.java]../../../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-usage }
+@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-usage }
 
 ## How it works
 
@@ -300,11 +300,11 @@ If you need to use another `supervisorStrategy` for the entity actors than the d
 you need to create an intermediate parent actor that defines the `supervisorStrategy` to the
 child entity actor.
 
-@@snip [ClusterShardingTest.java]../../../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #supervisor }
+@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #supervisor }
 
 You start such a supervisor in the same way as if it was the entity actor.
 
-@@snip [ClusterShardingTest.java]../../../../../akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-supervisor-start }
+@@snip [ClusterShardingTest.java]($akka$/akka-cluster-sharding/src/test/java/akka/cluster/sharding/ClusterShardingTest.java) { #counter-supervisor-start }
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
 
@@ -398,7 +398,7 @@ with the same layout as below. `ClusterShardingSettings` is a parameter to the `
 the `ClusterSharding` extension, i.e. each each entity type can be configured with different settings
 if needed.
 
-@@snip [reference.conf]../../../../../akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
+@@snip [reference.conf]($akka$/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
 
 Custom shard allocation strategy can be defined in an optional parameter to
 `ClusterSharding.start`. See the API documentation of `AbstractShardAllocationStrategy` for details

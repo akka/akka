@@ -86,7 +86,7 @@ scenario when integrating with external systems.
 On each node in the cluster you need to start the `ClusterSingletonManager` and
 supply the `Props` of the singleton actor, in this case the JMS queue consumer.
 
-@@snip [ClusterSingletonManagerTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-manager }
+@@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-manager }
 
 Here we limit the singleton to nodes tagged with the `"worker"` role, but all nodes, independent of
 role, can be used by not specifying `withRole`.
@@ -98,7 +98,7 @@ perfectly fine `terminationMessage` if you only need to stop the actor.
 With the names given above, access to the singleton can be obtained from any cluster node using a properly
 configured proxy.
 
-@@snip [ClusterSingletonManagerTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-proxy }
+@@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-proxy }
 
 A more comprehensive sample is available in the tutorial named [Distributed workers with Akka and Java!](https://github.com/typesafehub/activator-akka-distributed-workers-java).
 
@@ -130,7 +130,7 @@ or create it from another config section with the same layout as below. `Cluster
 a parameter to the `ClusterSingletonManager.props` factory method, i.e. each singleton can be configured
 with different settings if needed.
 
-@@snip [reference.conf]../../../../../akka-cluster-tools/src/main/resources/reference.conf) { #singleton-config }
+@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-config }
 
 The following configuration properties are read by the `ClusterSingletonProxySettings`
 when created with a `ActorSystem` parameter. It is also possible to amend the `ClusterSingletonProxySettings`
@@ -138,4 +138,4 @@ or create it from another config section with the same layout as below. `Cluster
 a parameter to the `ClusterSingletonProxy.props` factory method, i.e. each singleton proxy can be configured
 with different settings if needed.
 
-@@snip [reference.conf]../../../../../akka-cluster-tools/src/main/resources/reference.conf) { #singleton-proxy-config }
+@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-proxy-config }

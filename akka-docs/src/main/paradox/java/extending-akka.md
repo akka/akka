@@ -20,23 +20,23 @@ So let's create a sample extension that just lets us count the number of times s
 
 First, we define what our `Extension` should do:
 
-@@snip [ExtensionDocTest.java](code/jdocs/extension/ExtensionDocTest.java) { #imports }
+@@snip [ExtensionDocTest.java]($code$/java/jdocs/extension/ExtensionDocTest.java) { #imports }
 
-@@snip [ExtensionDocTest.java](code/jdocs/extension/ExtensionDocTest.java) { #extension }
+@@snip [ExtensionDocTest.java]($code$/java/jdocs/extension/ExtensionDocTest.java) { #extension }
 
 Then we need to create an `ExtensionId` for our extension so we can grab a hold of it.
 
-@@snip [ExtensionDocTest.java](code/jdocs/extension/ExtensionDocTest.java) { #imports }
+@@snip [ExtensionDocTest.java]($code$/java/jdocs/extension/ExtensionDocTest.java) { #imports }
 
-@@snip [ExtensionDocTest.java](code/jdocs/extension/ExtensionDocTest.java) { #extensionid }
+@@snip [ExtensionDocTest.java]($code$/java/jdocs/extension/ExtensionDocTest.java) { #extensionid }
 
 Wicked! Now all we need to do is to actually use it:
 
-@@snip [ExtensionDocTest.java](code/jdocs/extension/ExtensionDocTest.java) { #extension-usage }
+@@snip [ExtensionDocTest.java]($code$/java/jdocs/extension/ExtensionDocTest.java) { #extension-usage }
 
 Or from inside of an Akka Actor:
 
-@@snip [ExtensionDocTest.java](code/jdocs/extension/ExtensionDocTest.java) { #extension-usage-actor }
+@@snip [ExtensionDocTest.java]($code$/java/jdocs/extension/ExtensionDocTest.java) { #extension-usage-actor }
 
 That's all there is to it!
 
@@ -63,17 +63,17 @@ The <!-- FIXME: More than one link target with name configuration in path Some(/
 
 Sample configuration:
 
-@@snip [SettingsExtensionDocSpec.scala](../scala/code/docs/extension/SettingsExtensionDocSpec.scala) { #config }
+@@snip [SettingsExtensionDocSpec.scala]($code$/scala/docs/extension/SettingsExtensionDocSpec.scala) { #config }
 
 The `Extension`:
 
-@@snip [SettingsExtensionDocTest.java](code/jdocs/extension/SettingsExtensionDocTest.java) { #imports }
+@@snip [SettingsExtensionDocTest.java]($code$/java/jdocs/extension/SettingsExtensionDocTest.java) { #imports }
 
-@@snip [SettingsExtensionDocTest.java](code/jdocs/extension/SettingsExtensionDocTest.java) { #extension #extensionid }
+@@snip [SettingsExtensionDocTest.java]($code$/java/jdocs/extension/SettingsExtensionDocTest.java) { #extension #extensionid }
 
 Use it:
 
-@@snip [SettingsExtensionDocTest.java](code/jdocs/extension/SettingsExtensionDocTest.java) { #extension-usage-actor }
+@@snip [SettingsExtensionDocTest.java]($code$/java/jdocs/extension/SettingsExtensionDocTest.java) { #extension-usage-actor }
 
 ## Library extensions
 

@@ -56,20 +56,20 @@ can explicitly remove entries with `DistributedPubSubMediator.Unsubscribe`.
 
 An example of a subscriber actor:
 
-@@snip [DistributedPubSubMediatorTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #subscriber }
+@@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #subscriber }
 
 Subscriber actors can be started on several nodes in the cluster, and all will receive
 messages published to the "content" topic.
 
-@@snip [DistributedPubSubMediatorTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-subscribers }
+@@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-subscribers }
 
 A simple actor that publishes to this "content" topic:
 
-@@snip [DistributedPubSubMediatorTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publisher }
+@@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publisher }
 
 It can publish messages to the topic from anywhere in the cluster:
 
-@@snip [DistributedPubSubMediatorTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publish-message }
+@@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publish-message }
 
 ### Topic Groups
 
@@ -125,20 +125,20 @@ can explicitly remove entries with `DistributedPubSubMediator.Remove`.
 
 An example of a destination actor:
 
-@@snip [DistributedPubSubMediatorTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-destination }
+@@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-destination }
 
 Subscriber actors can be started on several nodes in the cluster, and all will receive
 messages published to the "content" topic.
 
-@@snip [DistributedPubSubMediatorTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-send-destinations }
+@@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-send-destinations }
 
 A simple actor that publishes to this "content" topic:
 
-@@snip [DistributedPubSubMediatorTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #sender }
+@@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #sender }
 
 It can publish messages to the topic from anywhere in the cluster:
 
-@@snip [DistributedPubSubMediatorTest.java]../../../../../akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-message }
+@@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-message }
 
 It is also possible to broadcast messages to the actors that have been registered with
 `Put`. Send `DistributedPubSubMediator.SendToAll` message to the local mediator and the wrapped message 
@@ -162,7 +162,7 @@ want to use different cluster roles for different mediators.
 
 The `DistributedPubSub` extension can be configured with the following properties:
 
-@@snip [reference.conf]../../../../../akka-cluster-tools/src/main/resources/reference.conf) { #pub-sub-ext-config }
+@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #pub-sub-ext-config }
 
 It is recommended to load the extension when the actor system is started by defining it in
 `akka.extensions` configuration property. Otherwise it will be activated when first used

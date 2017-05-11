@@ -12,12 +12,12 @@ It is possible to require a certain type of message queue for a certain type of 
 by having that actor implement the parameterized interface `RequiresMessageQueue`. Here is
 an example:
 
-@@snip [MyBoundedActor.java](code/jdocs/actor/MyBoundedActor.java) { #my-bounded-untyped-actor }
+@@snip [MyBoundedActor.java]($code$/java/jdocs/actor/MyBoundedActor.java) { #my-bounded-untyped-actor }
 
 The type parameter to the `RequiresMessageQueue` interface needs to be mapped to a mailbox in
 configuration like this:
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #bounded-mailbox-config #required-mailbox-config }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #bounded-mailbox-config #required-mailbox-config }
 
 Now every time you create an actor of type `MyBoundedActor` it will try to get a bounded
 mailbox. If the actor has a different mailbox configured in deployment, either directly or via
@@ -181,27 +181,27 @@ The following mailboxes should only be used with zero `mailbox-push-timeout-time
 
 How to create a PriorityMailbox:
 
-@@snip [DispatcherDocTest.java](../java/code/jdocs/dispatcher/DispatcherDocTest.java) { #prio-mailbox }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #prio-mailbox }
 
 And then add it to the configuration:
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #prio-dispatcher-config }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-dispatcher-config }
 
 And then an example on how you would use it:
 
-@@snip [DispatcherDocTest.java](../java/code/jdocs/dispatcher/DispatcherDocTest.java) { #prio-dispatcher }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #prio-dispatcher }
 
 It is also possible to configure a mailbox type directly like this:
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #prio-mailbox-config-java #mailbox-deployment-config }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-mailbox-config-java #mailbox-deployment-config }
 
 And then use it either from deployment like this:
 
-@@snip [DispatcherDocTest.java](code/jdocs/dispatcher/DispatcherDocTest.java) { #defining-mailbox-in-config }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-mailbox-in-config }
 
 Or code like this:
 
-@@snip [DispatcherDocTest.java](code/jdocs/dispatcher/DispatcherDocTest.java) { #defining-mailbox-in-code }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-mailbox-in-code }
 
 ### ControlAwareMailbox
 
@@ -210,23 +210,23 @@ immediately no matter how many other messages are already in its mailbox.
 
 It can be configured like this:
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #control-aware-mailbox-config }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #control-aware-mailbox-config }
 
 Control messages need to extend the `ControlMessage` trait:
 
-@@snip [DispatcherDocTest.java](../java/code/jdocs/dispatcher/DispatcherDocTest.java) { #control-aware-mailbox-messages }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #control-aware-mailbox-messages }
 
 And then an example on how you would use it:
 
-@@snip [DispatcherDocTest.java](../java/code/jdocs/dispatcher/DispatcherDocTest.java) { #control-aware-dispatcher }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #control-aware-dispatcher }
 
 ## Creating your own Mailbox type
 
 An example is worth a thousand quacks:
 
-@@snip [MyUnboundedMailbox.java](code/jdocs/dispatcher/MyUnboundedMailbox.java) { #mailbox-implementation-example }
+@@snip [MyUnboundedMailbox.java]($code$/java/jdocs/dispatcher/MyUnboundedMailbox.java) { #mailbox-implementation-example }
 
-@@snip [MyUnboundedMessageQueueSemantics.java](code/jdocs/dispatcher/MyUnboundedMessageQueueSemantics.java) { #mailbox-implementation-example }
+@@snip [MyUnboundedMessageQueueSemantics.java]($code$/java/jdocs/dispatcher/MyUnboundedMessageQueueSemantics.java) { #mailbox-implementation-example }
 
 And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
 configuration, or the mailbox configuration.
@@ -245,11 +245,11 @@ dispatcher or mailbox setting using it.
 
 You can also use the mailbox as a requirement on the dispatcher like this:
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #custom-mailbox-config-java }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #custom-mailbox-config-java }
 
 Or by defining the requirement on your actor class like this:
 
-@@snip [DispatcherDocTest.java](code/jdocs/dispatcher/DispatcherDocTest.java) { #require-mailbox-on-actor }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #require-mailbox-on-actor }
 
 ## Special Semantics of `system.actorOf`
 
