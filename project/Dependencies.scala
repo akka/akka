@@ -23,8 +23,8 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.11", "2.12.1"),
     scalaVersion := crossScalaVersions.value.head,
-    akkaVersion := "2.4.18",
-    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.4"),
+    akkaVersion := sys.props.getOrElse("akka.build.version", "2.4.18"),
+    scalaCheckVersion := sys.props.getOrElse("akka.build.scalaCheckVersion", "1.13.4"),
     scalaTestVersion := "3.0.0",
     specs2Version := "3.8.6",
     java8CompatVersion := "0.8.0"
