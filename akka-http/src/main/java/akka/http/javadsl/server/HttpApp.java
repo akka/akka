@@ -73,7 +73,7 @@ public abstract class HttpApp extends AllDirectives {
 
     CompletionStage<ServerBinding> bindingFuture = Http
       .get(theSystem)
-      .bindAndHandle(route().flow(theSystem, materializer),
+      .bindAndHandle(routes().flow(theSystem, materializer),
         ConnectHttp.toHost(host, port),
         settings,
         theSystem.log(),
@@ -162,7 +162,6 @@ public abstract class HttpApp extends AllDirectives {
   /**
    * Override to implement the route that will be served by this http server.
    */
-  protected abstract Route route();
-
+  protected abstract Route routes();
 
 }

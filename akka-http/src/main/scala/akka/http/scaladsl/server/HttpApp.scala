@@ -70,7 +70,7 @@ abstract class HttpApp extends Directives {
     implicit val executionContext = theSystem.dispatcher
 
     val bindingFuture = Http().bindAndHandle(
-      handler = route,
+      handler = routes,
       interface = host,
       port = port,
       settings = settings)
@@ -146,8 +146,7 @@ abstract class HttpApp extends Directives {
   }
 
   /**
-   * Override to implement the route that will be served by this http server.
+   * Override to implement the routes that will be served by this http server.
    */
-  protected def route: Route
-
+  protected def routes: Route
 }

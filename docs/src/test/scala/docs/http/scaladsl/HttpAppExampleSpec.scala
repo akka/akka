@@ -17,7 +17,7 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
-      def route: Route =
+      override def routes: Route =
         path("hello") {
           get {
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
@@ -40,7 +40,7 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
-      def route: Route =
+      override def routes: Route =
         path("hello") {
           get {
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
@@ -63,7 +63,7 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
-      def route: Route =
+      override def routes: Route =
         path("hello") {
           get {
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
@@ -96,7 +96,7 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
-      def route: Route =
+      override def routes: Route =
         path("hello") {
           get {
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
@@ -123,7 +123,7 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
-      def route: Route =
+      override def routes: Route =
         path("hello") {
           get {
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
@@ -151,7 +151,7 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     class WebServer extends HttpApp {
-      def route: Route =
+      override def routes: Route =
         path("hello") {
           get {
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))

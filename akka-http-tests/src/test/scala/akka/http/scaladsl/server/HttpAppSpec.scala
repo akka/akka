@@ -31,7 +31,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
     val shutdownPromise = Promise[Done]()
     val bindingPromise = Promise[Done]()
 
-    override protected def route: Route =
+    override protected def routes: Route =
       path("foo") {
         complete("bar")
       } ~

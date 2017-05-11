@@ -43,7 +43,7 @@ public class HttpAppExampleTest extends JUnitSuite {
     // Server definition
     class MinimalHttpApp extends HttpApp {
       @Override
-      protected Route route() {
+      protected Route routes() {
         return path("hello", () ->
           get(() ->
             complete("<h1>Say hello to akka-http</h1>")
@@ -79,7 +79,7 @@ public class HttpAppExampleTest extends JUnitSuite {
     class SelfDestroyingHttpApp extends HttpApp {
 
       @Override
-      protected Route route() {
+      protected Route routes() {
         return path("hello", () ->
           get(() ->
               complete("<h1>Say hello to akka-http</h1>")
@@ -114,7 +114,7 @@ public class HttpAppExampleTest extends JUnitSuite {
     class FailBindingOverrideHttpApp extends HttpApp {
 
       @Override
-      protected Route route() {
+      protected Route routes() {
         return path("hello", () ->
           get(() ->
             complete("<h1>Say hello to akka-http</h1>")
@@ -157,7 +157,7 @@ public class HttpAppExampleTest extends JUnitSuite {
     class PostShutdownOverrideHttpApp extends HttpApp {
 
       @Override
-      protected Route route() {
+      protected Route routes() {
         return path("hello", () ->
           get(() ->
             complete("<h1>Say hello to akka-http</h1>")

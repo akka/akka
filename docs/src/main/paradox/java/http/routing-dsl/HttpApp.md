@@ -12,7 +12,7 @@ in the Akka documentation.
 ## Introduction
 
 The objective of `HttpApp` is to help you start an HTTP server with just a few lines of code.
-This is accomplished just by extending `HttpApp` and implementing the `route()` method.
+This is accomplished just by extending `HttpApp` and implementing the `routes()` method.
 If desired, `HttpApp` provides different hook methods that can be overridden to change its default behavior.
 
 ## Minimal Example

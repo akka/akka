@@ -18,7 +18,7 @@ public class MinimalHttpApp extends HttpApp {
   CompletableFuture<Done> bindingPromise = new CompletableFuture<>();
 
   @Override
-  protected Route route() {
+  protected Route routes() {
     return route(path("foo", () ->
         complete("bar")
       ),
