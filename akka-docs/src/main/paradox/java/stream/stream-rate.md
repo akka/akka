@@ -3,7 +3,7 @@
 When upstream and downstream rates differ, especially when the throughput has spikes, it can be useful to introduce
 buffers in a stream. In this chapter we cover how buffers are used in Akka Streams.
 
-<a id="async-stream-buffers-java"></a>
+<a id="async-stream-buffers"></a>
 ## Buffers for asynchronous stages
 
 In this section we will discuss internal buffers that are introduced as an optimization when using asynchronous stages.

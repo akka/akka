@@ -92,7 +92,7 @@ bytes to different objects.
 Then you only need to fill in the blanks, bind it to a name in your [Configuration]() and then
 list which classes that should be serialized using it.
 
-<a id="string-manifest-serializer-scala"></a>
+<a id="string-manifest-serializer"></a>
 ### Serializer with String Manifest
 
 The `Serializer` illustrated above supports a class based manifest (type hint).

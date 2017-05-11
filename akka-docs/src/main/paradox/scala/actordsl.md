@@ -41,13 +41,13 @@ construction).
 
 ### Life-cycle management
 
-Life-cycle hooks are also exposed as DSL elements (see @ref:[Start Hook](actors.md#start-hook-scala) and @ref:[Stop Hook](actors.md#stop-hook-scala)), where later invocations of the methods shown below will replace the contents of the respective hooks:
+Life-cycle hooks are also exposed as DSL elements (see @ref:[Start Hook](actors.md#start-hook) and @ref:[Stop Hook](actors.md#stop-hook)), where later invocations of the methods shown below will replace the contents of the respective hooks:
 
 @@snip [ActorDSLSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #simple-start-stop }
 
 The above is enough if the logical life-cycle of the actor matches the restart
 cycles (i.e. `whenStopping` is executed before a restart and `whenStarting`
-afterwards). If that is not desired, use the following two hooks (see @ref:[Restart Hooks](actors.md#restart-hook-scala)):
+afterwards). If that is not desired, use the following two hooks (see @ref:[Restart Hooks](actors.md#restart-hook)):
 
 @@snip [ActorDSLSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #failing-actor }
 

@@ -119,7 +119,7 @@ includes the following suggestions:
 
 >
  * Do the blocking call within an actor (or a set of actors managed by a router
-[@ref:[Java](../../java/routing.md), @ref:[Scala](../../scala/routing.md)]), making sure to
+@ref:[router](../routing.md),  making sure to
 configure a thread pool which is either dedicated for this purpose or
 sufficiently sized.
  * Do the blocking call within a `Future`, ensuring an upper bound on
@@ -143,9 +143,8 @@ on which DBMS is deployed on what hardware.
 @@@ note
 
 Configuring thread pools is a task best delegated to Akka, simply configure
-in the `application.conf` and instantiate through an `ActorSystem`
-[@ref:[Java](../../java/dispatchers.md#dispatcher-lookup-java), @ref:[Scala
-](../../scala/dispatchers.md#dispatcher-lookup-scala)]
+in the `application.conf` and instantiate through an
+@ref:[`ActorSystem`](../dispatchers.md#dispatcher-lookup)
 
 @@@
 
@@ -167,4 +166,4 @@ actor, which in turn will recursively stop all its child actors, the system
 guardian.
 
 If you want to execute some operations while terminating `ActorSystem`,
-look at `CoordinatedShutdown` [@ref:[Java](../../java/actors.md#coordinated-shutdown-java), @ref:[Scala](../../scala/actors.md#coordinated-shutdown-scala)]
+look at @ref:[`CoordinatedShutdown`](../actors.md#coordinated-shutdown).

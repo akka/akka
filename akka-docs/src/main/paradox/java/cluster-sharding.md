@@ -19,7 +19,7 @@ the sender to know the location of the destination actor. This is achieved by se
 the messages via a `ShardRegion` actor provided by this extension, which knows how
 to route the message with the entity id to the final destination.
 
-Cluster sharding will not be active on members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up-java) 
+Cluster sharding will not be active on members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up) 
 if that feature is enabled.
 
 @@@ warning
@@ -27,7 +27,7 @@ if that feature is enabled.
 **Don't use Cluster Sharding together with Automatic Downing**,
 since it allows the cluster to split up into two separate clusters, which in turn will result
 in *multiple shards and entities* being started, one in each separate cluster!
-See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing-java).
+See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
 
 @@@
 
@@ -166,7 +166,7 @@ must be to begin the rebalancing. This strategy can be replaced by an applicatio
 implementation.
 
 The state of shard locations in the `ShardCoordinator` is persistent (durable) with
-@ref:[distributed_data_java](distributed-data.md) or @ref:[Persistence](persistence.md) to survive failures. When a crashed or 
+@ref:[Distributed Data](distributed-data.md) or @ref:[Persistence](persistence.md) to survive failures. When a crashed or 
 unreachable coordinator node has been removed (via down) from the cluster a new `ShardCoordinator` singleton
 actor will take over and the state is recovered. During such a failure period shards
 with known location are still available, while messages for new (unknown) shards
@@ -183,11 +183,11 @@ unused shards due to the round-trip to the coordinator. Rebalancing of shards ma
 also add latency. This should be considered when designing the application specific
 shard resolution, e.g. to avoid too fine grained shards.
 
-<a id="cluster-sharding-mode-java"></a>
+<a id="cluster-sharding-mode"></a>
 ## Distributed Data vs. Persistence Mode
 
-The state of the coordinator and the state of [cluster_sharding_remembering_java](#cluster-sharding-remembering-java) of the shards
-are persistent (durable) to survive failures. @ref:[distributed_data_java](distributed-data.md) or @ref:[Persistence](persistence.md)
+The state of the coordinator and the state of [Remembering Entities](#cluster-sharding-remembering) of the shards
+are persistent (durable) to survive failures. @ref:[Distributed Data](distributed-data.md) or @ref:[Persistence](persistence.md)
 can be used for the storage. Distributed Data is used by default.
 
 The functionality when using the two modes is the same. If your sharded entities are not using Akka Persistence
@@ -207,11 +207,11 @@ akka.cluster.sharding.state-store-mode = ddata
 ```
 
 The state of the `ShardCoordinator` will be replicated inside a cluster by the 
-@ref:[distributed_data_java](distributed-data.md) module with `WriteMajority`/`ReadMajority` consistency.
+@ref:[Distributed Data](distributed-data.md) module with `WriteMajority`/`ReadMajority` consistency.
 The state of the coordinator is not durable, it's not stored to disk. When all nodes in
 the cluster have been stopped the state is lost and not needed any more.
 
-The state of [cluster_sharding_remembering_java](#cluster-sharding-remembering-java) is also durable, i.e. it is stored to
+The state of [Remembering Entities](#cluster-sharding-remembering) is also durable, i.e. it is stored to
 disk. The stored entities are started also after a complete cluster restart.
 
 Cluster Sharding  is using its own Distributed Data `Replicator` per node role. In this way you can use a subset of
@@ -241,7 +241,7 @@ until at least that number of regions have been started and registered to the co
 avoids that many shards are allocated to the first region that registers and only later are 
 rebalanced to other nodes.
 
-See @ref:[min-members_java](cluster-usage.md#min-members-java) for more information about `min-nr-of-members`.
+See @ref:[How To Startup when Cluster Size Reached](cluster-usage.md#min-members) for more information about `min-nr-of-members`.
 
 ## Proxy Only Mode
 
@@ -263,7 +263,7 @@ then supposed to stop itself. Incoming messages will be buffered by the `Shard`
 between reception of `Passivate` and termination of the entity. Such buffered messages
 are thereafter delivered to a new incarnation of the entity.
 
-<a id="cluster-sharding-remembering-java"></a>
+<a id="cluster-sharding-remembering"></a>
 ## Remembering Entities
 
 The list of entities in each `Shard` can be made persistent (durable) by setting
@@ -275,8 +275,8 @@ a `Passivate` message must be sent to the parent of the entity actor, otherwise 
 entity will be automatically restarted after the entity restart backoff specified in 
 the configuration.
 
-When [Distributed Data mode](#cluster-sharding-mode-java) is used the identifiers of the entities are
-stored in @ref:[ddata_durable_java](distributed-data.md#ddata-durable-java) of Distributed Data. You may want to change the 
+When [Distributed Data mode](#cluster-sharding-mode) is used the identifiers of the entities are
+stored in @ref:[Durable Storage](distributed-data.md#ddata-durable) of Distributed Data. You may want to change the 
 configuration of the akka.cluster.sharding.distributed-data.durable.lmdb.dir`, since
 the default directory contains the remote port of the actor system. If using a dynamically
 assigned port (0) it will be different each time and the previously stored data will not
@@ -316,10 +316,10 @@ to the `ShardRegion` actor to handoff all shards that are hosted by that `ShardR
 During this period other regions will buffer messages for those shards in the same way as when a rebalance is
 triggered by the coordinator. When the shards have been stopped the coordinator will allocate these shards elsewhere.
 
-This is performed automatically by the @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown-java) and is therefore part of the 
+This is performed automatically by the @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown) and is therefore part of the 
 graceful leaving process of a cluster member.
 
-<a id="removeinternalclustershardingdata-java"></a>
+<a id="removeinternalclustershardingdata"></a>
 ## Removal of Internal Cluster Sharding Data
 
 The Cluster Sharding coordinator stores the locations of the shards using Akka Persistence.
@@ -346,7 +346,7 @@ and there was a network partition.
 **Don't use Cluster Sharding together with Automatic Downing**,
 since it allows the cluster to split up into two separate clusters, which in turn will result
 in *multiple shards and entities* being started, one in each separate cluster!
-See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing-java).
+See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
 
 @@@
 

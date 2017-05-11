@@ -56,10 +56,10 @@ definition - in a backwards compatible way - such that the new deserialization c
 
 The most common schema changes you will likely are:
 
- * [adding a field to an event type](#add-field-scala),
- * [remove or rename field in event type](#rename-field-scala),
- * [remove event type](#remove-event-class-scala),
- * [split event into multiple smaller events](#split-large-event-into-smaller-scala).
+ * [adding a field to an event type](#add-field),
+ * [remove or rename field in event type](#rename-field),
+ * [remove event type](#remove-event-class),
+ * [split event into multiple smaller events](#split-large-event-into-smaller).
 
 The following sections will explain some patterns which can be used to safely evolve your schema when facing those changes.
 
@@ -121,7 +121,7 @@ serializers, and the yellow payload indicates the user provided event (by callin
 As you can see, the `PersistentMessage` acts as an envelope around the payload, adding various fields related to the
 origin of the event (`persistenceId`, `sequenceNr` and more).
 
-More advanced techniques (e.g. [Remove event class and ignore events](#remove-event-class-scala)) will dive into using the manifests for increasing the
+More advanced techniques (e.g. [Remove event class and ignore events](#remove-event-class)) will dive into using the manifests for increasing the
 flexibility of the persisted vs. exposed types even more. However for now we will focus on the simpler evolution techniques,
 concerning simply configuring the payload serializers.
 
@@ -169,7 +169,7 @@ Deserialization will be performed by the same serializer which serialized the me
 because of the `identifier` being stored together with the message.
 
 Please refer to the @ref:[Akka Serialization](serialization.md) documentation for more advanced use of serializers,
-especially the @ref:[Serializer with String Manifest](serialization.md#string-manifest-serializer-scala) section since it is very useful for Persistence based applications
+especially the @ref:[Serializer with String Manifest](serialization.md#string-manifest-serializer) section since it is very useful for Persistence based applications
 dealing with schema evolutions, as we will see in some of the examples below.
 
 ## Schema evolution in action
@@ -179,7 +179,7 @@ some of the various options one might go about handling the described situation.
 a complete guide, so feel free to adapt these techniques depending on your serializer's capabilities
 and/or other domain specific limitations.
 
-<a id="add-field-scala"></a>
+<a id="add-field"></a>
 ### Add fields
 
 **Situation:**
@@ -213,7 +213,7 @@ the field to this event type:
 
 @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #protobuf-read-optional }
 
-<a id="rename-field-scala"></a>
+<a id="rename-field"></a>
 ### Rename fields
 
 **Situation:**
@@ -279,7 +279,7 @@ changes in the message format.
 
 @@@
 
-<a id="remove-event-class-scala"></a>
+<a id="remove-event-class"></a>
 ### Remove event class and ignore events
 
 **Situation:**
@@ -291,7 +291,7 @@ and should be deleted. You still have to be able to replay from a journal which 
 
 The problem of removing an event type from the domain model is not as much its removal, as the implications
 for the recovery mechanisms that this entails. For example, a naive way of filtering out certain kinds of events from
-being delivered to a recovering `PersistentActor` is pretty simple, as one can simply filter them out in an @ref:[EventAdapter](persistence.md#event-adapters-scala):
+being delivered to a recovering `PersistentActor` is pretty simple, as one can simply filter them out in an @ref:[EventAdapter](persistence.md#event-adapters):
 
 ![persistence-drop-event.png](../images/persistence-drop-event.png)
 > 
@@ -320,7 +320,7 @@ this before starting to deserialize the object.
 
 This aproach allows us to *remove the original class from our classpath*, which makes for less "old" classes lying around in the project.
 This can for example be implemented by using an `SerializerWithStringManifest`
-(documented in depth in @ref:[Serializer with String Manifest](serialization.md#string-manifest-serializer-scala)). By looking at the string manifest, the serializer can notice
+(documented in depth in @ref:[Serializer with String Manifest](serialization.md#string-manifest-serializer)). By looking at the string manifest, the serializer can notice
 that the type is no longer needed, and skip the deserialization all-together:
 
 ![persistence-drop-event-serializer.png](../images/persistence-drop-event-serializer.png)
@@ -338,7 +338,7 @@ and emits and empty `EventSeq` whenever such object is encoutered:
 
 @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #string-serializer-skip-deleved-event-by-manifest-adapter }
 
-<a id="detach-domain-from-data-model-scala"></a>
+<a id="detach-domain-from-data-model"></a>
 ### Detach domain model from data model
 
 **Situation:**
@@ -376,14 +376,14 @@ as long as the mapping logic is able to convert between them:
 The same technique could also be used directly in the Serializer if the end result of marshalling is bytes.
 Then the serializer can simply convert the bytes do the domain object by using the generated protobuf builders.
 
-<a id="store-human-readable-scala"></a>
+<a id="store-human-readable"></a>
 ### Store events as human-readable data model
 
 **Situation:**
 You want to keep your persisted events in a human-readable format, for example JSON.
 
 **Solution:**
-This is a special case of the [Detach domain model from data model](#detach-domain-from-data-model-scala) pattern, and thus requires some co-operation
+This is a special case of the [Detach domain model from data model](#detach-domain-from-data-model) pattern, and thus requires some co-operation
 from the Journal implementation to achieve this.
 
 An example of a Journal which may implement this pattern is MongoDB, however other databases such as PostgreSQL
@@ -423,7 +423,7 @@ that provides that functionality, or – implement one yourself.
 
 @@@
 
-<a id="split-large-event-into-smaller-scala"></a>
+<a id="split-large-event-into-smaller"></a>
 ### Split large event into fine-grained events
 
 **Situation:**

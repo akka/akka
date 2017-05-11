@@ -58,7 +58,7 @@ listening for connections and handling messages as not to interfere with other a
 @@@
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-All settings are described in [Remote Configuration](#remote-configuration-scala).
+All settings are described in [Remote Configuration](#remote-configuration).
 
 ## Types of Remote Interaction
 
@@ -100,7 +100,7 @@ the `ActorSelection`, which returns a `Future` of the matching
 
 @@@ note
 
-For more details on how actor addresses and paths are formed and used, please refer to @ref:[Actor References, Paths and Addresses](../scala/general/addressing.md).
+For more details on how actor addresses and paths are formed and used, please refer to @ref:[Actor References, Paths and Addresses](general/addressing.md).
 
 @@@
 
@@ -191,7 +191,7 @@ you can advise the system to create a child on that remote node like so:
 
 @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
 
-<a id="remote-deployment-whitelist-scala"></a>
+<a id="remote-deployment-whitelist"></a>
 ### Remote deployment whitelist
 
 As remote deployment can potentially be abused by both users and even attackers a whitelist feature
@@ -232,7 +232,7 @@ is restarted. After a restart communication can be resumed again and the link ca
 ## Watching Remote Actors
 
 Watching a remote actor is not different than watching a local actor, as described in
-@ref:[Lifecycle Monitoring aka DeathWatch](actors.md#deathwatch-scala).
+@ref:[Lifecycle Monitoring aka DeathWatch](actors.md#deathwatch).
 
 ### Failure Detector
 
@@ -256,7 +256,7 @@ phi = -log10(1 - F(timeSinceLastHeartbeat))
 where F is the cumulative distribution function of a normal distribution with mean
 and standard deviation estimated from historical heartbeat inter-arrival times.
 
-In the [Remote Configuration](#remote-configuration-scala) you can adjust the `akka.remote.watch-failure-detector.threshold`
+In the [Remote Configuration](#remote-configuration) you can adjust the `akka.remote.watch-failure-detector.threshold`
 to define when a *phi* value is considered to be a failure.
 
 A low `threshold` is prone to generate many false positives but ensures
@@ -282,7 +282,7 @@ a standard deviation of 100 ms.
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
 `akka.remote.watch-failure-detector.acceptable-heartbeat-pause`. You may want to
-adjust the [Remote Configuration](#remote-configuration-scala) of this depending on you environment.
+adjust the [Remote Configuration](#remote-configuration) of this depending on you environment.
 This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 3 seconds.
 
@@ -295,7 +295,7 @@ those actors are serializable. Failing to do so will cause the system to behave 
 
 For more information please see @ref:[Serialization](serialization.md).
 
-<a id="disable-java-serializer-scala"></a>
+<a id="disable-java-serializer"></a>
 ### Disabling the Java Serializer
 
 Since the `2.4.11` release of Akka it is possible to entirely disable the default Java Serialization mechanism.
@@ -372,7 +372,7 @@ The attempts are logged with the SECURITY marker.
 Please note that this option does not stop you from manually invoking java serialization.
 
 Please note that this means that you will have to configure different serializers which will able to handle all of your
-remote messages. Please refer to the @ref:[Serialization](serialization.md) documentation as well as @ref:[ByteBuffer based serialization](remoting-artery.md#remote-bytebuffer-serialization-scala) to learn how to do this.
+remote messages. Please refer to the @ref:[Serialization](serialization.md) documentation as well as @ref:[ByteBuffer based serialization](remoting-artery.md#remote-bytebuffer-serialization) to learn how to do this.
 
 ## Routers with Remote Destinations
 
@@ -393,7 +393,7 @@ This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
 That is not done by the router.
 
-<a id="remote-sample-scala"></a>
+<a id="remote-sample"></a>
 ## Remoting Sample
 
 You can download a ready to run [remoting sample](@exampleCodeService@/akka-samples-remote-scala)
@@ -456,17 +456,17 @@ To be notified  when the remoting subsystem has been shut down, listen to `Remot
 
 To intercept generic remoting related errors, listen to `RemotingErrorEvent` which holds the `Throwable` cause.
 
-<a id="remote-security-scala"></a>
+<a id="remote-security"></a>
 ## Remote Security
 
 An `ActorSystem` should not be exposed via Akka Remote over plain TCP to an untrusted network (e.g. internet).
 It should be protected by network security, such as a firewall. If that is not considered as enough protection
-[TLS with mutual authentication](#remote-tls-scala)  should be enabled.
+[TLS with mutual authentication](#remote-tls)  should be enabled.
 
-It is also security best-practice to [disable the Java serializer](#disable-java-serializer-scala) because of
+It is also security best-practice to [disable the Java serializer](#disable-java-serializer) because of
 its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
 
-<a id="remote-tls-scala"></a>
+<a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
 
 SSL can be used as the remote transport by adding `akka.remote.netty.ssl` to the `enabled-transport` configuration section.
@@ -521,7 +521,7 @@ Creating and working with keystores and certificates is well documented in the
 [Generating X.509 Certificates](http://typesafehub.github.io/ssl-config/CertificateGeneration.html#using-keytool)
 section of Lightbend's SSL-Config library.
 
-Since an Akka remoting is inherently @ref:[peer-to-peer](../scala/general/remoting.md#symmetric-communication) both the key-store as well as trust-store
+Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store
 need to be configured on each remoting node participating in the cluster.
 
 The official [Java Secure Socket Extension documentation](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html)
@@ -539,7 +539,7 @@ the other (the "server").
 Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate
 by compromising any node with certificates issued by the same internal PKI tree.
 
-See also a description of the settings in the [Remote Configuration](#remote-configuration-scala) section.
+See also a description of the settings in the [Remote Configuration](#remote-configuration) section.
 
 @@@ note
 
@@ -572,11 +572,9 @@ as a marker trait to user-defined messages.
 
 Untrusted mode does not give full protection against attacks by itself.
 It makes it slightly harder to perform malicious or unintended actions but
-it should be complemented with [disabled Java serializer](#disable-java-serializer-scala).
+it should be complemented with [disabled Java serializer](#disable-java-serializer).
 Additional protection can be achieved when running in an untrusted network by
-network security (e.g. firewalls) and/or enabling <!-- FIXME: unresolved link reference: tls with mutual
-authentication <remote-tls-scala> --> TLS with mutual
-authentication <remote-tls-scala>.
+network security (e.g. firewalls) and/or enabling [TLS with mutual authentication](#remote-tls).
 
 @@@
 
@@ -615,11 +613,11 @@ marking them `PossiblyHarmful` so that a client cannot forge them.
 
 @@@
 
-<a id="remote-configuration-scala"></a>
+<a id="remote-configuration"></a>
 ## Remote Configuration
 
 There are lots of configuration properties that are related to remoting in Akka. We refer to the
-@ref:[reference configuration](../scala/general/configuration.md#config-akka-remote) for more information.
+@ref:[reference configuration](general/configuration.md#config-akka-remote) for more information.
 
 @@@ note
 

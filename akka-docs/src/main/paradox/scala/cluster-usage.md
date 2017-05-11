@@ -1,6 +1,6 @@
 # Cluster Usage
 
-For introduction to the Akka Cluster concepts please see <!-- FIXME: More than one link target with name cluster in path Some(/scala/cluster-usage.rst) --> cluster.
+For introduction to the Akka Cluster concepts please see @ref:[Cluster Specification](common/cluster.md).
 
 ## Preparing Your Project for Clustering
 
@@ -89,7 +89,7 @@ it sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
 it retries this procedure until successful or shutdown.
 
-You define the seed nodes in the [cluster_configuration_scala](#cluster-configuration-scala) file (application.conf):
+You define the seed nodes in the [configuration](#cluster-configuration) file (application.conf):
 
 ```
 akka.cluster.seed-nodes = [
@@ -120,7 +120,7 @@ seed nodes in the existing cluster.
 
 If you don't configure seed nodes you need to join the cluster programmatically or manually.
 
-Manual joining can be performed by using [cluster_jmx_scala](#cluster-jmx-scala) or [cluster_http_scala](#cluster-http-scala).
+Manual joining can be performed by using [JMX](#cluster-jmx) or [HTTP](#cluster-http).
 Joining programmatically can be performed with `Cluster(system).join`. Unsuccessful join attempts are
 automatically retried after the time period defined in configuration property `retry-unsuccessful-join-after`.
 Retries can be disabled by setting the property to `off`.
@@ -156,7 +156,7 @@ when you start the `ActorSystem`.
 
 @@@
 
-<a id="automatic-vs-manual-downing-scala"></a>
+<a id="automatic-vs-manual-downing"></a>
 ## Downing
 
 When a member is considered by the failure detector to be unreachable the
@@ -164,7 +164,7 @@ leader is not allowed to perform its duties, such as changing status of
 new joining members to 'Up'. The node must first become reachable again, or the
 status of the unreachable member must be changed to 'Down'. Changing status to 'Down'
 can be performed automatically or manually. By default it must be done manually, using
-[cluster_jmx_scala](#cluster-jmx-scala) or [cluster_http_scala](#cluster-http-scala).
+[JMX](#cluster-jmx) or [HTTP](#cluster-http).
 
 It can also be performed programmatically with `Cluster(system).down(address)`.
 
@@ -197,7 +197,7 @@ can also happen because of long GC pauses or system overload.
 
 We recommend against using the auto-down feature of Akka Cluster in production.
 This is crucial for correct behavior if you use @ref:[Cluster Singleton](cluster-singleton.md) or
-@ref:[cluster_sharding_scala](cluster-sharding.md), especially together with Akka @ref:[Persistence](persistence.md).
+@ref:[Cluster Sharding](cluster-sharding.md), especially together with Akka @ref:[Persistence](persistence.md).
 For Akka Persistence with Cluster Sharding it can result in corrupt data in case
 of network partitions.
 
@@ -212,7 +212,7 @@ as unreachable and removed after the automatic or manual downing as described
 above.
 
 A more graceful exit can be performed if you tell the cluster that a node shall leave.
-This can be performed using [cluster_jmx_scala](#cluster-jmx-scala) or [cluster_http_scala](#cluster-http-scala).
+This can be performed using [JMX](#cluster-jmx) or [HTTP](#cluster-http).
 It can also be performed programmatically with:
 
 @@snip [ClusterDocSpec.scala]($code$/scala/docs/cluster/ClusterDocSpec.scala) { #leave }
@@ -220,7 +220,7 @@ It can also be performed programmatically with:
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving.
 
-The @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown-scala) will automatically run when the cluster node sees itself as
+The @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown) will automatically run when the cluster node sees itself as
 `Exiting`, i.e. leaving from another node will trigger the shutdown process on the leaving node.
 Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and
 Cluster Sharding are added automatically when Akka Cluster is used, i.e. running the shutdown
@@ -229,7 +229,7 @@ process will also trigger the graceful leaving if it's not already in progress.
 Normally this is handled automatically, but in case of network failures during this process it might still
 be necessary to set the node’s status to `Down` in order to complete the removal.
 
-<a id="weakly-up-scala"></a>
+<a id="weakly-up"></a>
 ## WeaklyUp Members
 
 If a node is `unreachable` then gossip convergence is not possible and therefore any
@@ -251,7 +251,7 @@ in this state, but you should be aware of that members on the other side of a ne
 have no knowledge about the existence of the new members. You should for example not count
 `WeaklyUp` members in quorum decisions.
 
-<a id="cluster-subscriber-scala"></a>
+<a id="cluster-subscriber"></a>
 ## Subscribe to Cluster Events
 
 You can subscribe to change notifications of the cluster membership by using
@@ -346,7 +346,7 @@ and it is typically defined in the start script as a system property or environm
 
 The roles of the nodes is part of the membership information in `MemberEvent` that you can subscribe to.
 
-<a id="min-members-scala"></a>
+<a id="min-members"></a>
 ## How To Startup when Cluster Size Reached
 
 A common use case is to start actors after the cluster has been initialized,
@@ -382,7 +382,7 @@ This callback can be used for other things than starting actors.
 You can do some clean up in a `registerOnMemberRemoved` callback, which will
 be invoked when the current member status is changed to 'Removed' or the cluster have been shutdown.
 
-An alternative is to register tasks to the @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown-scala).
+An alternative is to register tasks to the @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown).
 
 @@@ note
 
@@ -408,7 +408,7 @@ Distributes actors across several nodes in the cluster and supports interaction
 with the actors using their logical identifier, but without having to care about
 their physical location in the cluster.
 
-See @ref:[cluster_sharding_scala](cluster-sharding.md)
+See @ref:[Cluster Sharding](cluster-sharding.md)
 
 ## Distributed Publish Subscribe
 
@@ -431,7 +431,7 @@ See @ref:[Cluster Client](cluster-client.md).
 *Akka Distributed Data* is useful when you need to share data between nodes in an
 Akka Cluster. The data is accessed with an actor providing a key-value store like API.
 
-See @ref:[distributed_data_scala](distributed-data.md).
+See @ref:[Distributed Data](distributed-data.md).
 
 ## Failure Detector
 
@@ -469,7 +469,7 @@ phi = -log10(1 - F(timeSinceLastHeartbeat))
 where F is the cumulative distribution function of a normal distribution with mean
 and standard deviation estimated from historical heartbeat inter-arrival times.
 
-In the [cluster_configuration_scala](#cluster-configuration-scala) you can adjust the `akka.cluster.failure-detector.threshold`
+In the [configuration](#cluster-configuration) you can adjust the `akka.cluster.failure-detector.threshold`
 to define when a *phi* value is considered to be a failure.
 
 A low `threshold` is prone to generate many false positives but ensures
@@ -495,7 +495,7 @@ a standard deviation of 100 ms.
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
 `akka.cluster.failure-detector.acceptable-heartbeat-pause`. You may want to
-adjust the [cluster_configuration_scala](#cluster-configuration-scala) of this depending on you environment.
+adjust the [configuration](#cluster-configuration) of this depending on you environment.
 This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 3 seconds.
 
@@ -507,9 +507,9 @@ actor. Death watch generates the `Terminated` message to the watching actor when
 unreachable cluster node has been downed and removed.
 
 If you encounter suspicious false positives when the system is under load you should
-define a separate dispatcher for the cluster actors as described in [cluster_dispatcher_scala](#cluster-dispatcher-scala).
+define a separate dispatcher for the cluster actors as described in [Cluster Dispatcher](#cluster-dispatcher).
 
-<a id="cluster-aware-routers-scala"></a>
+<a id="cluster-aware-routers"></a>
 ## Cluster Aware Routers
 
 All @ref:[routers](routing.md) can be made aware of member nodes in the cluster, i.e.
@@ -519,7 +519,7 @@ automatically unregistered from the router. When new nodes join the cluster, add
 routees are added to the router, according to the configuration. Routees are also added
 when a node becomes reachable again, after having been unreachable.
 
-Cluster aware routers make use of members with status [WeaklyUp](#weakly-up-scala) if that feature
+Cluster aware routers make use of members with status [WeaklyUp](#weakly-up) if that feature
 is enabled.
 
 There are two distinct types of routers.
@@ -564,7 +564,7 @@ the router will try to use them as soon as the member status is changed to 'Up'.
 
 The actor paths without address information that are defined in `routees.paths` are used for selecting the
 actors to which the messages will be forwarded to by the router.
-Messages will be forwarded to the routees using @ref:[ActorSelection](actors.md#actorselection-scala), so the same delivery semantics should be expected.
+Messages will be forwarded to the routees using @ref:[ActorSelection](actors.md#actorselection), so the same delivery semantics should be expected.
 It is possible to limit the lookup of routees to member nodes tagged with a certain role by specifying `use-role`.
 
 `max-total-nr-of-instances` defines total number of routees in the cluster. By default `max-total-nr-of-instances`
@@ -575,7 +575,7 @@ The same type of router could also have been defined in code:
 
 @@snip [StatsService.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsService.scala) { #router-lookup-in-code }
 
-See [cluster_configuration_scala](#cluster-configuration-scala) section for further descriptions of the settings.
+See [configuration](#cluster-configuration) section for further descriptions of the settings.
 
 ### Router Example with Group of Routees
 
@@ -658,7 +658,7 @@ The same type of router could also have been defined in code:
 
 @@snip [StatsService.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsService.scala) { #router-deploy-in-code }
 
-See [cluster_configuration_scala](#cluster-configuration-scala) section for further descriptions of the settings.
+See [configuration](#cluster-configuration) section for further descriptions of the settings.
 
 ### Router Example with Pool of Remote Deployed Routees
 
@@ -717,13 +717,13 @@ and to the registered subscribers on the system event bus with the help of `clus
 
 ## How to Test
 
-@ref:[Multi Node Testing](../scala/multi-node-testing.md) is useful for testing cluster applications.
+@ref:[Multi Node Testing](multi-node-testing.md) is useful for testing cluster applications.
 
-Set up your project according to the instructions in @ref:[Multi Node Testing](../scala/multi-node-testing.md) and @ref:[Multi JVM Testing](../scala/multi-jvm-testing.md), i.e.
+Set up your project according to the instructions in @ref:[Multi Node Testing](multi-node-testing.md) and @ref:[Multi JVM Testing](multi-jvm-testing.md), i.e.
 add the `sbt-multi-jvm` plugin and the dependency to `akka-multi-node-testkit`.
 
-First, as described in @ref:[Multi Node Testing](../scala/multi-node-testing.md), we need some scaffolding to configure the `MultiNodeSpec`.
-Define the participating roles and their [cluster_configuration_scala](#cluster-configuration-scala) in an object extending `MultiNodeConfig`:
+First, as described in @ref:[Multi Node Testing](multi-node-testing.md), we need some scaffolding to configure the `MultiNodeSpec`.
+Define the participating roles and their [configuration](#cluster-configuration) in an object extending `MultiNodeConfig`:
 
 @@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #MultiNodeConfig }
 
@@ -751,7 +751,7 @@ From the test you interact with the cluster using the `Cluster` extension, e.g. 
 
 @@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #join }
 
-Notice how the *testActor* from @ref:[testkit](testing.md) is added as [subscriber](#cluster-subscriber-scala)
+Notice how the *testActor* from @ref:[testkit](testing.md) is added as [subscriber](#cluster-subscriber)
 to cluster changes and then waiting for certain events, such as in this case all members becoming 'Up'.
 
 The above code was running for all roles (JVMs). `runOn` is a convenient utility to declare that a certain block
@@ -769,13 +769,13 @@ the actor system for a specific role. This can also be used to grab the `akka.ac
 
 ## Management
 
-<a id="cluster-http-scala"></a>
+<a id="cluster-http"></a>
 ### HTTP
 
 Information and management of the cluster is available with a HTTP API.
-See documentation of [akka/akka-cluster-management](https://github.com/akka/akka-cluster-management).
+See documentation of [Akka Management](http://developer.lightbend.com/docs/akka-management/current/).
 
-<a id="cluster-jmx-scala"></a>
+<a id="cluster-jmx"></a>
 ### JMX
 
 Information and management of the cluster is available as JMX MBeans with the root name `akka.Cluster`.
@@ -792,18 +792,18 @@ From JMX you can:
 
 Member nodes are identified by their address, in format *akka.<protocol>://<actor-system-name>@<hostname>:<port>*.
 
-<a id="cluster-command-line-scala"></a>
+<a id="cluster-command-line"></a>
 ### Command Line
 
 @@@ warning
 
 **Deprecation warning** - The command line script has been deprecated and is scheduled for removal
-in the next major version. Use the [cluster_http_scala](#cluster-http-scala) API with [curl](https://curl.haxx.se/)
+in the next major version. Use the [HTTP management](#cluster-http) API with [curl](https://curl.haxx.se/)
 or similar instead.
 
 @@@
 
-The cluster can be managed with the script `akka-cluster` provided in the Akka github repository here: @[github@/akka-cluster/jmx-client](mailto:github@/akka-cluster/jmx-client). Place the script and the `jmxsh-R5.jar` library in the same directory.
+The cluster can be managed with the script `akka-cluster` provided in the Akka github repository here: [@github@/akka-cluster/jmx-client](@github@/akka-cluster/jmx-client). Place the script and the `jmxsh-R5.jar` library in the same directory.
 
 Run it without parameters to see instructions about how to use the script:
 
@@ -835,11 +835,11 @@ To be able to use the script you must enable remote monitoring and management wh
 as described in [Monitoring and Management Using JMX Technology](http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html).
 Make sure you understand the security implications of enabling remote monitoring and management.
 
-<a id="cluster-configuration-scala"></a>
+<a id="cluster-configuration"></a>
 ## Configuration
 
 There are several configuration properties for the cluster. We refer to the
-@ref:[reference configuration](../scala/general/configuration.md#config-akka-cluster) for more information.
+@ref:[reference configuration](general/configuration.md#config-akka-cluster) for more information.
 
 ### Cluster Info Logging
 
@@ -849,7 +849,7 @@ You can silence the logging of cluster events at info level with configuration p
 akka.cluster.log-info = off
 ```
 
-<a id="cluster-dispatcher-scala"></a>
+<a id="cluster-dispatcher"></a>
 ### Cluster Dispatcher
 
 Under the hood the cluster extension is implemented with actors and it can be necessary

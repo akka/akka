@@ -25,7 +25,7 @@ and add the following configuration stanza to your `application.conf`
 akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 ```
 
-Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up-scala), if that feature is enabled,
+Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up), if that feature is enabled,
 will participate in Cluster Metrics collection and dissemination.
 
 ## Metrics Collector
@@ -112,7 +112,7 @@ It can be configured to use a specific MetricsSelector to produce the probabilit
  * `mix` / `MixMetricsSelector` - Combines heap, cpu and load. Weights based on mean of remaining capacity of the combined selectors.
  * Any custom implementation of `akka.cluster.metrics.MetricsSelector`
 
-The collected metrics values are smoothed with [exponential weighted moving average](http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average). In the @ref:[cluster_configuration_scala](cluster-usage.md#cluster-configuration-scala) you can adjust how quickly past data is decayed compared to new data.
+The collected metrics values are smoothed with [exponential weighted moving average](http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average). In the @ref:[Cluster configuration](cluster-usage.md#cluster-configuration) you can adjust how quickly past data is decayed compared to new data.
 
 Let's take a look at this router in action. What can be more demanding than calculating factorials?
 

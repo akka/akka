@@ -66,7 +66,7 @@ containers violates assumption 1, unless additional steps are taken in the
 network configuration to allow symmetric communication between involved systems.
 In such situations Akka can be configured to bind to a different network
 address than the one used for establishing connections between Akka nodes.
-See @ref:[Akka behind NAT or in a Docker container](../../scala/remoting.md#remote-configuration-nat).
+See @ref:[Akka behind NAT or in a Docker container](../remoting.md#remote-configuration-nat).
 
 ## Marking Points for Scaling Up with Routers
 
@@ -81,4 +81,4 @@ up a configurable number of children of the desired type and route to them in
 the configured fashion. Once such a router has been declared, its configuration
 can be freely overridden from the configuration file, including mixing it with
 the remote deployment of (some of) the children. Read more about
-this in @ref:[Routing (Scala)](../../scala/routing.md) and @ref:[Routing (Java)](../../java/routing.md).
+this in @ref:[Routing](../routing.md).

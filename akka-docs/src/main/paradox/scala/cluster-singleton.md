@@ -50,7 +50,7 @@ It's worth noting that messages can always be lost because of the distributed na
 As always, additional logic should be implemented in the singleton (acknowledgement) and in the
 client (retry) actors to ensure at-least-once message delivery.
 
-The singleton instance will not run on members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up-scala).
+The singleton instance will not run on members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up).
 
 ## Potential problems to be aware of
 
@@ -60,7 +60,7 @@ This pattern may seem to be very tempting to use at first, but it has several dr
  * you can not rely on the cluster singleton to be *non-stop* available — e.g. when the node on which the singleton has
 been running dies, it will take a few seconds for this to be noticed and the singleton be migrated to another node,
  * in the case of a *network partition* appearing in a Cluster that is using Automatic Downing  (see Auto Downing docs for
-@ref:[Downing](cluster-usage.md#automatic-vs-manual-downing-scala)),
+@ref:[Downing](cluster-usage.md#automatic-vs-manual-downing)),
 it may happen that the isolated clusters each decide to spin up their own singleton, meaning that there might be multiple
 singletons running in the system, yet the Clusters have no way of finding out about them (because of the partition).
 

@@ -4,8 +4,7 @@ The previous section about @ref:[Actor Systems](actor-systems.md) explained how 
 hierarchies and are the smallest unit when building an application. This
 section looks at one such actor in isolation, explaining the concepts you
 encounter while implementing it. For a more in depth reference with all the
-details please refer to
-@ref:[Actors (Scala)](../../scala/actors.md) and @ref:[Actors (Java)](../../java/actors.md).
+details please refer to @ref:[Actors](../actors.md).
 
 An actor is a container for [State](#state), [Behavior](#behavior), a [Mailbox](#mailbox), [Child Actors](#child-actors)
 and a [Supervisor Strategy](#supervisor-strategy). All of this is encapsulated behind an [Actor
@@ -32,7 +31,7 @@ publishes this information itself.
 
 Actor objects will typically contain some variables which reflect possible
 states the actor may be in. This can be an explicit state machine (e.g. using
-the @ref:[FSM](../../scala/fsm.md) module), or it could be a counter, set of listeners,
+the @ref:[FSM](../fsm.md) module), or it could be a counter, set of listeners,
 pending requests, etc. These data are what make an actor valuable, and they
 must be protected from corruption by other actors. The good news is that Akka
 actors conceptually each have their own light-weight thread, which is
@@ -53,7 +52,7 @@ the actor. This is to enable the ability of self-healing of the system.
 
 Optionally, an actor's state can be automatically recovered to the state
 before a restart by persisting received messages and replaying them after
-restart (see @ref:[Persistence](../../scala/persistence.md)).
+restart (see @ref:[Persistence](../persistence.md)).
 
 ## Behavior
 

@@ -93,12 +93,12 @@ be different
 
 If you still do not see anything, look at what the logging of remote
 life-cycle events tells you (normally logged at INFO level) or switch on 
-@ref:[Auxiliary remote logging options](../../java/logging.md#logging-remote-java)
+@ref:[Auxiliary remote logging options](../logging.md#logging-remote)
 to see all sent and received messages (logged at DEBUG level).
 
 ### Which options shall I enable when debugging remoting issues?
 
-Have a look at the @ref:[Remote Configuration](../../java/remoting.md#remote-configuration-java), the typical candidates are:
+Have a look at the @ref:[Remote Configuration](../remoting.md#remote-configuration), the typical candidates are:
 
  * *akka.remote.log-sent-messages*
  * *akka.remote.log-received-messages*
@@ -170,4 +170,4 @@ To enable different types of debug logging add the following to your configurati
  * `akka.actor.debug.autoreceive` will log all *special* messages like `Kill`, `PoisonPill` e.t.c. sent to all actors
  * `akka.actor.debug.lifecycle` will log all actor lifecycle events of all actors
 
-Read more about it in the docs for @ref:[Logging](../../java/logging.md) and @ref:[actor.logging-scala](../../scala/testing.md#actor-logging-scala).
+Read more about it in the docs for @ref:[Logging](../logging.md) and @ref:[actor.logging-scala](../testing.md#actor-logging).
