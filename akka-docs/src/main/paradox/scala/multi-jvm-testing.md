@@ -196,5 +196,5 @@ the sbt prompt.
 ## Multi Node Additions
 
 There has also been some additions made to the `SbtMultiJvm` plugin to accommodate the
-@ref:[may change](../common/may-change.md) module @ref:[multi node testing](multi-node-testing.md),
+@ref:[may change](common/may-change.md) module @ref:[multi node testing](multi-node-testing.md),
 described in that section.
