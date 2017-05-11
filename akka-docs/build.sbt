@@ -8,7 +8,7 @@ Formatting.docFormatSettings
 Dependencies.docs
 
 unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
-additionalTasks in ValidatePR += paradox
+additionalTasks in ValidatePR += paradox in Compile
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)
 disablePlugins(MimaPlugin)
