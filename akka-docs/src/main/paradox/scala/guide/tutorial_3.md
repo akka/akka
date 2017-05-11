@@ -1,4 +1,4 @@
-# Your Second Akka Application, Part 3: Device Groups and Manager
+# Part 3: Device Groups and Manager
 
 In this chapter, we will integrate our device actors into a component that manages devices. When a new device comes
 online, there is no actor representing it. We need to be able to ask the device manager component to create a new

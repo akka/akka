@@ -1,4 +1,4 @@
-# Your Second Akka Application, Part 4: Querying a Group of Devices
+# Part 4: Querying a Group of Devices
 
 The conversational patterns we have seen so far were simple in the sense that they required no or little state to be kept in the
 actor that is only relevant to the conversation. Our device actors either simply returned a reading, which required no

@@ -1,5 +1,11 @@
 # Java 8 and Scala Compatibility
 
+## Scala and Java APIs
+
+Akka has both a @ref:[Scala Documentation](../scala.md) and a @ref:[Java Documentation](../java.md).
+
+## Java 8 types
+
 Starting with Akka 2.4.2 we have begun to introduce Java 8 types (most
 prominently `java.util.concurrent.CompletionStage` and
 `java.util.Optional`) where that was possible without breaking binary or

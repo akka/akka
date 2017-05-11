@@ -1,4 +1,4 @@
-# The Second Akka Application, Part 1: Top-level Architecture
+# Part 1: Top-level Architecture
 
 In this and the following chapters, we will build a sample Akka application to introduce you to the language of
 actors and how solutions can be formulated with them. It is a common hurdle for beginners to translate their project
