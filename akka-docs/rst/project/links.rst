@@ -27,7 +27,7 @@ Downloads
 Source Code
 ^^^^^^^^^^^
 
-Akka uses Git and is hosted at `Github <http://github.com>`_.
+Akka uses Git and is hosted at `GitHub <http://github.com>`_.
 
 * Akka: clone the Akka repository from `<http://github.com/akka/akka>`_
 

@@ -10,10 +10,10 @@ This page describes how to build and run Akka from the latest source code.
 Get the Source Code
 ===================
 
-Akka uses `Git`_ and is hosted at `Github`_.
+Akka uses `Git`_ and is hosted at `GitHub`_.
 
 .. _Git: http://git-scm.com
-.. _Github: http://github.com
+.. _GitHub: http://github.com
 
 You first need Git installed on your machine. You can then clone the source
 repository from http://github.com/akka/akka.
