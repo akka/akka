@@ -14,7 +14,6 @@
 * [scala/index-utilities](scala/index-utilities.md)
 * [common/other-modules](scala/common/other-modules.md)
 * [scala/howto](scala/howto.md)
-* [dev/index](scala/dev/index.md)
 * [project/index](scala/project/index.md)
 * [additional/index](scala/additional/index.md)
 
