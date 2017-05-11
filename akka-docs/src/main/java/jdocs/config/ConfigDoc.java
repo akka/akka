@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package docs.config;
+package jdocs.config;
 
 import akka.actor.ActorSystem;
 import com.typesafe.config.*;

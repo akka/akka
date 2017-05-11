@@ -46,7 +46,7 @@ They have their niche, use them sparingly.
 Before we create our first Typed Actor we should first go through the tools that we have at our disposal,
 it's located in `akka.actor.TypedActor`.
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-extension-tools }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-extension-tools }
 
 @@@ warning
 
@@ -63,34 +63,34 @@ To create a Typed Actor you need to have one or more interfaces, and one impleme
 
 The following imports are assumed:
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #imports }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #imports }
 
 Our example interface:
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-iface }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-iface }
 
 Our example implementation of that interface:
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-impl }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-impl }
 
 The most trivial way of creating a Typed Actor instance
 of our `Squarer`:
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-create1 }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-create1 }
 
 First type is the type of the proxy, the second type is the type of the implementation.
 If you need to call a specific constructor you do it like this:
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-create2 }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-create2 }
 
 Since you supply a `Props`, you can specify which dispatcher to use, what the default timeout should be used and more.
 Now, our `Squarer` doesn't have any methods, so we'd better add those.
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-iface }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-iface }
 
 Alright, now we've got some methods we can call, but we need to implement those in SquarerImpl.
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-impl }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-impl }
 
 Excellent, now we have an interface and an implementation of that interface,
 and we know how to create a Typed Actor from that, so let's look at calling these methods.
@@ -115,25 +115,25 @@ we *strongly* recommend that parameters passed are immutable.
 
 ### One-way message send
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-oneway }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-oneway }
 
 As simple as that! The method will be executed on another thread; asynchronously.
 
 ### Request-reply message send
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-option }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-option }
 
 This will block for as long as the timeout that was set in the Props of the Typed Actor,
 if needed. It will return `None` if a timeout occurs.
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-strict }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-strict }
 
 This will block for as long as the timeout that was set in the Props of the Typed Actor,
 if needed. It will throw a `java.util.concurrent.TimeoutException` if a timeout occurs.
 
 ### Request-reply-with-future message send
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-future }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-future }
 
 This call is asynchronous, and the Future returned can be used for asynchronous composition.
 
@@ -141,11 +141,11 @@ This call is asynchronous, and the Future returned can be used for asynchronous 
 
 Since Akka's Typed Actors are backed by Akka Actors they must be stopped when they aren't needed anymore.
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-stop }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-stop }
 
 This asynchronously stops the Typed Actor associated with the specified proxy ASAP.
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-poisonpill }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-poisonpill }
 
 This asynchronously stops the Typed Actor associated with the specified proxy
 after it's done with all calls that were made prior to this call.
@@ -155,7 +155,7 @@ after it's done with all calls that were made prior to this call.
 Since you can obtain a contextual Typed Actor Extension by passing in an `ActorContext`
 you can create child Typed Actors by invoking `typedActorOf(..)` on that:
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-hierarchy }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-hierarchy }
 
 You can also create a child Typed Actor in regular Akka Actors by giving the `ActorContext`
 as an input parameter to TypedActor.get(…).
@@ -202,15 +202,15 @@ The ActorRef needs to accept `MethodCall` messages.
 
 Since `TypedActors` are backed by `Akka Actors`, you can use `typedActorOf` to proxy `ActorRefs` potentially residing on remote nodes.
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-remote }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-remote }
 
 ## Supercharging
 
 Here's an example on how you can use traits to mix in behavior in your Typed Actors.
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-supercharge }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-supercharge }
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-actor-supercharge-usage }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-supercharge-usage }
 
 ## Typed Router pattern
 
@@ -220,10 +220,10 @@ which can implement a specific routing logic, such as `smallest-mailbox` or `con
 Routers are not provided directly for typed actors, but it is really easy to leverage an untyped router and use a typed proxy in front of it.
 To showcase this let's create typed actors that assign themselves some random `id`, so we know that in fact, the router has sent the message to different actors:
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-router-types }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-router-types }
 
 In order to round robin among a few instances of such actors, you can simply create a plain untyped router,
 and then facade it with a `TypedActor` like shown in the example below. This works because typed actors of course
 communicate using the same mechanisms as normal actors, and methods calls on them get transformed into message sends of `MethodCall` messages.
 
-@@snip [TypedActorDocSpec.scala](code/docs/actor/TypedActorDocSpec.scala) { #typed-router }
+@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-router }

@@ -15,7 +15,7 @@ use `ask` in `mapAsync`. The back-pressure of the stream is maintained by
 the `Future` of the `ask` and the mailbox of the actor will not be filled with
 more messages than the given `parallelism` of the `mapAsync` stage.
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #mapAsync-ask }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #mapAsync-ask }
 
 Note that the messages received in the actor will be in the same order as
 the stream elements, i.e. the `parallelism` does not change the ordering
@@ -28,7 +28,7 @@ The actor must reply to the `sender()` for each message from the stream. That
 reply will complete the `Future` of the `ask` and it will be the element that
 is emitted downstreams from `mapAsync`.
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #ask-actor }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #ask-actor }
 
 The stream can be completed with failure by sending `akka.actor.Status.Failure`
 as reply from the actor.
@@ -113,24 +113,24 @@ performed with `mapAsync` or `mapAsyncUnordered`.
 For example, sending emails to the authors of selected tweets using an external
 email service:
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #email-server-send }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #email-server-send }
 
 We start with the tweet stream of authors:
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #tweet-authors }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #tweet-authors }
 
 Assume that we can lookup their email address using:
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #email-address-lookup }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #email-address-lookup }
 
 Transforming the stream of authors to a stream of email addresses by using the `lookupEmail`
 service can be done with `mapAsync`:
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #email-addresses-mapAsync }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #email-addresses-mapAsync }
 
 Finally, sending the emails:
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #send-emails }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #send-emails }
 
 `mapAsync` is applying the given function that is calling out to the external service to
 each of the elements as they pass through this processing step. The function returns a `Future`
@@ -152,23 +152,23 @@ result stream onwards for further processing or storage.
 Note that `mapAsync` preserves the order of the stream elements. In this example the order
 is not important and then we can use the more efficient `mapAsyncUnordered`:
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #external-service-mapAsyncUnordered }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #external-service-mapAsyncUnordered }
 
 In the above example the services conveniently returned a `Future` of the result.
 If that is not the case you need to wrap the call in a `Future`. If the service call
 involves blocking you must also make sure that you run it on a dedicated execution context, to
 avoid starvation and disturbance of other tasks in the system.
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #blocking-mapAsync }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #blocking-mapAsync }
 
 The configuration of the `"blocking-dispatcher"` may look something like:
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #blocking-dispatcher-config }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #blocking-dispatcher-config }
 
 An alternative for blocking calls is to perform them in a `map` operation, still using a
 dedicated dispatcher for that operation.
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #blocking-map }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #blocking-map }
 
 However, that is not exactly the same as `mapAsync`, since the `mapAsync` may run
 several calls concurrently, but `map` performs them one at a time.
@@ -176,7 +176,7 @@ several calls concurrently, but `map` performs them one at a time.
 For a service that is exposed as an actor, or if an actor is used as a gateway in front of an
 external service, you can use `ask`:
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #save-tweets }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #save-tweets }
 
 Note that if the `ask` is not completed within the given timeout the stream is completed with failure.
 If that is not desired outcome you can use `recover` on the `ask` `Future`.
@@ -204,14 +204,14 @@ successive calls as long as there is downstream demand of several elements.
 
 Here is a fictive service that we can use to illustrate these aspects.
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-service }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-service }
 
 Elements starting with a lower case character are simulated to take longer time
 to process.
 
 Here is how we can use it with `mapAsync`:
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-mapAsync }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-mapAsync }
 
 The output may look like this:
 
@@ -268,7 +268,7 @@ calls are limited by the buffer size (4) of the `ActorMaterializerSettings`.
 
 Here is how we can use the same service with `mapAsyncUnordered`:
 
-@@snip [IntegrationDocSpec.scala](../code/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-mapAsyncUnordered }
+@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-mapAsyncUnordered }
 
 The output may look like this:
 
@@ -338,19 +338,19 @@ An incomplete list of other implementations:
 
 The two most important interfaces in Reactive Streams are the `Publisher` and `Subscriber`.
 
-@@snip [ReactiveStreamsDocSpec.scala](../code/docs/stream/ReactiveStreamsDocSpec.scala) { #imports }
+@@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #imports }
 
 Let us assume that a library provides a publisher of tweets:
 
-@@snip [ReactiveStreamsDocSpec.scala](../code/docs/stream/ReactiveStreamsDocSpec.scala) { #tweets-publisher }
+@@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #tweets-publisher }
 
 and another library knows how to store author handles in a database:
 
-@@snip [ReactiveStreamsDocSpec.scala](../code/docs/stream/ReactiveStreamsDocSpec.scala) { #author-storage-subscriber }
+@@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #author-storage-subscriber }
 
 Using an Akka Streams `Flow` we can transform the stream and connect those:
 
-@@snip [ReactiveStreamsDocSpec.scala](../code/docs/stream/ReactiveStreamsDocSpec.scala) { #authors #connect-all }
+@@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #authors #connect-all }
 
 The `Publisher` is used as an input `Source` to the flow and the
 `Subscriber` is used as an output `Sink`.
@@ -359,23 +359,23 @@ A `Flow` can also be also converted to a `RunnableGraph[Processor[In, Out]]` whi
 materializes to a `Processor` when `run()` is called. `run()` itself can be called multiple
 times, resulting in a new `Processor` instance each time.
 
-@@snip [ReactiveStreamsDocSpec.scala](../code/docs/stream/ReactiveStreamsDocSpec.scala) { #flow-publisher-subscriber }
+@@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #flow-publisher-subscriber }
 
 A publisher can be connected to a subscriber with the `subscribe` method.
 
 It is also possible to expose a `Source` as a `Publisher`
 by using the Publisher-`Sink`:
 
-@@snip [ReactiveStreamsDocSpec.scala](../code/docs/stream/ReactiveStreamsDocSpec.scala) { #source-publisher }
+@@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #source-publisher }
 
 A publisher that is created with `Sink.asPublisher(fanout = false)` supports only a single subscription.
 Additional subscription attempts will be rejected with an `IllegalStateException`.
 
 A publisher that supports multiple subscribers using fan-out/broadcasting is created as follows:
 
-@@snip [ReactiveStreamsDocSpec.scala](../code/docs/stream/ReactiveStreamsDocSpec.scala) { #author-alert-subscriber #author-storage-subscriber }
+@@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #author-alert-subscriber #author-storage-subscriber }
 
-@@snip [ReactiveStreamsDocSpec.scala](../code/docs/stream/ReactiveStreamsDocSpec.scala) { #source-fanoutPublisher }
+@@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #source-fanoutPublisher }
 
 The input buffer size of the stage controls how far apart the slowest subscriber can be from the fastest subscriber
 before slowing down the stream.
@@ -383,12 +383,12 @@ before slowing down the stream.
 To make the picture complete, it is also possible to expose a `Sink` as a `Subscriber`
 by using the Subscriber-`Source`:
 
-@@snip [ReactiveStreamsDocSpec.scala](../code/docs/stream/ReactiveStreamsDocSpec.scala) { #sink-subscriber }
+@@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #sink-subscriber }
 
 It is also possible to use re-wrap `Processor` instances as a `Flow` by
 passing a factory function that will create the `Processor` instances:
 
-@@snip [ReactiveStreamsDocSpec.scala](../code/docs/stream/ReactiveStreamsDocSpec.scala) { #use-processor }
+@@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #use-processor }
 
 Please note that a factory is necessary to achieve reusability of the resulting `Flow`.
 
@@ -436,7 +436,7 @@ stream publisher that keeps track of the subscription life cycle and requested e
 
 Here is an example of such an actor. It dispatches incoming jobs to the attached subscriber:
 
-@@snip [ActorPublisherDocSpec.scala](../code/docs/stream/ActorPublisherDocSpec.scala) { #job-manager }
+@@snip [ActorPublisherDocSpec.scala]($code$/scala/docs/stream/ActorPublisherDocSpec.scala) { #job-manager }
 
 You send elements to the stream by calling `onNext`. You are allowed to send as many
 elements as have been requested by the stream subscriber. This amount can be inquired with
@@ -468,7 +468,7 @@ More detailed information can be found in the API documentation.
 
 This is how it can be used as input `Source` to a `Flow`:
 
-@@snip [ActorPublisherDocSpec.scala](../code/docs/stream/ActorPublisherDocSpec.scala) { #actor-publisher-usage }
+@@snip [ActorPublisherDocSpec.scala]($code$/scala/docs/stream/ActorPublisherDocSpec.scala) { #actor-publisher-usage }
 
 A publisher that is created with `Sink.asPublisher` supports a specified number of subscribers. Additional
 subscription attempts will be rejected with an `IllegalStateException`.
@@ -493,7 +493,7 @@ messages from the stream. It can also receive other, non-stream messages, in the
 
 Here is an example of such an actor. It dispatches incoming jobs to child worker actors:
 
-@@snip [ActorSubscriberDocSpec.scala](../code/docs/stream/ActorSubscriberDocSpec.scala) { #worker-pool }
+@@snip [ActorSubscriberDocSpec.scala]($code$/scala/docs/stream/ActorSubscriberDocSpec.scala) { #worker-pool }
 
 Subclass must define the `RequestStrategy` to control stream back pressure.
 After each incoming message the `ActorSubscriber` will automatically invoke
@@ -511,4 +511,4 @@ More detailed information can be found in the API documentation.
 
 This is how it can be used as output `Sink` to a `Flow`:
 
-@@snip [ActorSubscriberDocSpec.scala](../code/docs/stream/ActorSubscriberDocSpec.scala) { #actor-subscriber-usage }
+@@snip [ActorSubscriberDocSpec.scala]($code$/scala/docs/stream/ActorSubscriberDocSpec.scala) { #actor-subscriber-usage }

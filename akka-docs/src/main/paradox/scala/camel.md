@@ -27,7 +27,7 @@ APIs. The [camel-extra](http://code.google.com/p/camel-extra/) project provides 
 Usage of Camel's integration components in Akka is essentially a
 one-liner. Here's an example.
 
-@@snip [Introduction.scala](code/docs/camel/Introduction.scala) { #Consumer-mina }
+@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #Consumer-mina }
 
 The above example exposes an actor over a TCP endpoint via Apache
 Camel's [Mina component](http://camel.apache.org/mina2.html). The actor implements the endpointUri method to define
@@ -36,14 +36,14 @@ clients can immediately send messages to and receive responses from that
 actor. If the message exchange should go over HTTP (via Camel's <!-- FIXME: duplicate target id: jetty component --> `Jetty
 component`_), only the actor's endpointUri method must be changed.
 
-@@snip [Introduction.scala](code/docs/camel/Introduction.scala) { #Consumer }
+@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #Consumer }
 
 ### Producer
 
 Actors can also trigger message exchanges with external systems i.e. produce to
 Camel endpoints.
 
-@@snip [Introduction.scala](code/docs/camel/Introduction.scala) { #imports #Producer }
+@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #imports #Producer }
 
 In the above example, any message sent to this actor will be sent to
 the JMS queue `orders`. Producer actors may choose from the same set of Camel
@@ -73,7 +73,7 @@ The `CamelExtension` object provides access to the [Camel](@github@/akka-camel/s
 The [Camel](@github@/akka-camel/src/main/scala/akka/camel/Camel.scala) trait in turn provides access to two important Apache Camel objects, the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) and the <!-- FIXME: duplicate target id: producertemplate --> `ProducerTemplate`_.
 Below you can see how you can get access to these Apache Camel objects.
 
-@@snip [Introduction.scala](code/docs/camel/Introduction.scala) { #CamelExtension }
+@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelExtension }
 
 One `CamelExtension` is only loaded once for every one `ActorSystem`, which makes it safe to call the `CamelExtension` at any point in your code to get to the
 Apache Camel objects associated with it. There is one [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) and one <!-- FIXME: duplicate target id: producertemplate --> `ProducerTemplate`_ for every one `ActorSystem` that uses a `CamelExtension`.
@@ -83,7 +83,7 @@ This interface define a single method `getContext` used to load the [CamelContex
 
 Below an example on how to add the ActiveMQ component to the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java), which is required when you would like to use the ActiveMQ component.
 
-@@snip [Introduction.scala](code/docs/camel/Introduction.scala) { #CamelExtensionAddComponent }
+@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelExtensionAddComponent }
 
 The [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) joins the lifecycle of the `ActorSystem` and `CamelExtension` it is associated with; the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) is started when
 the `CamelExtension` is created, and it is shut down when the associated `ActorSystem` is shut down. The same is true for the <!-- FIXME: unresolved link reference: producertemplate --> `ProducerTemplate`_.
@@ -96,12 +96,12 @@ Publication is done asynchronously; setting up an endpoint may still be in progr
 requested the actor to be created. Some Camel components can take a while to startup, and in some cases you might want to know when the endpoints are activated and ready to be used.
 The [Camel](@github@/akka-camel/src/main/scala/akka/camel/Camel.scala) trait allows you to find out when the endpoint is activated or deactivated.
 
-@@snip [Introduction.scala](code/docs/camel/Introduction.scala) { #CamelActivation }
+@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelActivation }
 
 The above code shows that you can get a `Future` to the activation of the route from the endpoint to the actor, or you can wait in a blocking fashion on the activation of the route.
 An `ActivationTimeoutException` is thrown if the endpoint could not be activated within the specified timeout. Deactivation works in a similar fashion:
 
-@@snip [Introduction.scala](code/docs/camel/Introduction.scala) { #CamelDeactivation }
+@@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelDeactivation }
 
 Deactivation of a Consumer or a Producer actor happens when the actor is terminated. For a Consumer, the route to the actor is stopped. For a Producer, the [SendProcessor](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/processor/SendProcessor.java) is stopped.
 A `DeActivationTimeoutException` is thrown if the associated camel objects could not be deactivated within the specified timeout.
@@ -113,7 +113,7 @@ trait. For example, the following actor class (Consumer1) implements the
 endpointUri method, which is declared in the Consumer trait, in order to receive
 messages from the `file:data/input/actor` Camel endpoint.
 
-@@snip [Consumers.scala](code/docs/camel/Consumers.scala) { #Consumer1 }
+@@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer1 }
 
 Whenever a file is put into the data/input/actor directory, its content is
 picked up by the Camel [file component](http://camel.apache.org/file2.html) and sent as message to the
@@ -125,7 +125,7 @@ Here's another example that sets the endpointUri to
 component`_ to start an embedded [Jetty](http://www.eclipse.org/jetty/) server, accepting HTTP connections
 from localhost on port 8877.
 
-@@snip [Consumers.scala](code/docs/camel/Consumers.scala) { #Consumer2 }
+@@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer2 }
 
 After starting the actor, clients can send messages to that actor by POSTing to
 `http://localhost:8877/camel/default`. The actor sends a response by using the
@@ -152,7 +152,7 @@ In this case, consumer actors must reply either with a
 special akka.camel.Ack message (positive acknowledgement) or a akka.actor.Status.Failure (negative
 acknowledgement).
 
-@@snip [Consumers.scala](code/docs/camel/Consumers.scala) { #Consumer3 }
+@@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer3 }
 
 <a id="camel-timeout"></a>
 ### Consumer timeout
@@ -169,13 +169,13 @@ and the actor replies to the endpoint when the response is ready. The ask reques
 result in the [Exchange](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java) failing with a TimeoutException set on the failure of the [Exchange](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java).
 The timeout on the consumer actor can be overridden with the `replyTimeout`, as shown below.
 
-@@snip [Consumers.scala](code/docs/camel/Consumers.scala) { #Consumer4 }
+@@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer4 }
 
 ## Producer Actors
 
 For sending messages to Camel endpoints, actors need to mixin the [Producer](@github@/akka-camel/src/main/scala/akka/camel/Producer.scala) trait and implement the endpointUri method.
 
-@@snip [Producers.scala](code/docs/camel/Producers.scala) { #Producer1 }
+@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #Producer1 }
 
 Producer1 inherits a default implementation of the receive method from the
 Producer trait. To customize a producer actor's default behavior you must override the [Producer](@github@/akka-camel/src/main/scala/akka/camel/Producer.scala).transformResponse and
@@ -189,7 +189,7 @@ configured endpoint) will, by default, be returned to the original sender. The
 following example uses the ask pattern to send a message to a
 Producer actor and waits for a response.
 
-@@snip [Producers.scala](code/docs/camel/Producers.scala) { #AskProducer }
+@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #AskProducer }
 
 The future contains the response CamelMessage, or an `AkkaCamelException` when an error occurred, which contains the headers of the response.
 
@@ -201,12 +201,12 @@ response processing by overriding the routeResponse method. In the following exa
 message is forwarded to a target actor instead of being replied to the original
 sender.
 
-@@snip [Producers.scala](code/docs/camel/Producers.scala) { #RouteResponse }
+@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #RouteResponse }
 
 Before producing messages to endpoints, producer actors can pre-process them by
 overriding the [Producer](@github@/akka-camel/src/main/scala/akka/camel/Producer.scala).transformOutgoingMessage method.
 
-@@snip [Producers.scala](code/docs/camel/Producers.scala) { #TransformOutgoingMessage }
+@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #TransformOutgoingMessage }
 
 ### Producer configuration options
 
@@ -215,14 +215,14 @@ one-way or two-way (by initiating in-only or in-out message exchanges,
 respectively). By default, the producer initiates an in-out message exchange
 with the endpoint. For initiating an in-only exchange, producer actors have to override the oneway method to return true.
 
-@@snip [Producers.scala](code/docs/camel/Producers.scala) { #Oneway }
+@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #Oneway }
 
 ### Message correlation
 
 To correlate request with response messages, applications can set the
 *Message.MessageExchangeId* message header.
 
-@@snip [Producers.scala](code/docs/camel/Producers.scala) { #Correlate }
+@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #Correlate }
 
 ### ProducerTemplate
 
@@ -230,12 +230,12 @@ The [Producer](@github@/akka-camel/src/main/scala/akka/camel/Producer.scala) tra
 convenient way for actors to produce messages to Camel endpoints. Actors may also use a Camel <!-- FIXME: unresolved link reference: producertemplate --> `ProducerTemplate`_ for producing
 messages to endpoints.
 
-@@snip [Producers.scala](code/docs/camel/Producers.scala) { #ProducerTemplate }
+@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #ProducerTemplate }
 
 For initiating a two-way message exchange, one of the
 `ProducerTemplate.request*` methods must be used.
 
-@@snip [Producers.scala](code/docs/camel/Producers.scala) { #RequestProducerTemplate }
+@@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #RequestProducerTemplate }
 
 <a id="camel-asynchronous-routing"></a>
 ## Asynchronous routing
@@ -349,7 +349,7 @@ actor's path. the Akka camel package contains an implicit `toActorRouteDefinitio
 reference an `ActorRef` directly as shown in the below example, The route starts from a [Jetty](http://www.eclipse.org/jetty/) endpoint and
 ends at the target actor.
 
-@@snip [CustomRoute.scala](code/docs/camel/CustomRoute.scala) { #CustomRoute }
+@@snip [CustomRoute.scala]($code$/scala/docs/camel/CustomRoute.scala) { #CustomRoute }
 
 When a message is received on the jetty endpoint, it is routed to the Responder actor, which in return replies back to the client of
 the HTTP request.
@@ -366,7 +366,7 @@ For example, an extension could be a custom error handler that redelivers messag
 The following examples demonstrate how to extend a route to a consumer actor for
 handling exceptions thrown by that actor.
 
-@@snip [CustomRoute.scala](code/docs/camel/CustomRoute.scala) { #ErrorThrowingConsumer }
+@@snip [CustomRoute.scala]($code$/scala/docs/camel/CustomRoute.scala) { #ErrorThrowingConsumer }
 
 The above ErrorThrowingConsumer sends the Failure back to the sender in preRestart
 because the Exception that is thrown in the actor would

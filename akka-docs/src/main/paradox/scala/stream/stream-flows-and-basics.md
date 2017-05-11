@@ -77,7 +77,7 @@ starting up Actors). Thanks to Flows being simply a description of the processin
 thread-safe, and freely shareable*, which means that it is for example safe to share and send them between actors, to have
 one actor prepare the work, and then have it be materialized at some completely different place in the code.
 
-@@snip [FlowDocSpec.scala](../code/docs/stream/FlowDocSpec.scala) { #materialization-in-steps }
+@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materialization-in-steps }
 
 After running (materializing) the `RunnableGraph[T]` we get back the materialized value of type T. Every stream processing
 stage can produce a materialized value, and it is the responsibility of the user to combine them to a new type.
@@ -91,12 +91,12 @@ there is a convenience method called `runWith()` available for `Sink`, `Source` 
 a supplied `Source` (in order to run a `Sink`), a `Sink` (in order to run a `Source`) or
 both a `Source` and a `Sink` (in order to run a `Flow`, since it has neither attached yet).
 
-@@snip [FlowDocSpec.scala](../code/docs/stream/FlowDocSpec.scala) { #materialization-runWith }
+@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materialization-runWith }
 
 It is worth pointing out that since processing stages are *immutable*, connecting them returns a new processing stage,
 instead of modifying the existing instance, so while constructing long flows, remember to assign the new value to a variable or run it:
 
-@@snip [FlowDocSpec.scala](../code/docs/stream/FlowDocSpec.scala) { #source-immutable }
+@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #source-immutable }
 
 @@@ note
 
@@ -116,18 +116,18 @@ In the example below we create two running materialized instance of the stream t
 variable, and both materializations give us a different `Future` from the map even though we used the same `sink`
 to refer to the future:
 
-@@snip [FlowDocSpec.scala](../code/docs/stream/FlowDocSpec.scala) { #stream-reuse }
+@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #stream-reuse }
 
 ### Defining sources, sinks and flows
 
 The objects `Source` and `Sink` define various ways to create sources and sinks of elements. The following
 examples show some of the most useful constructs (refer to the API documentation for more details):
 
-@@snip [FlowDocSpec.scala](../code/docs/stream/FlowDocSpec.scala) { #source-sink }
+@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #source-sink }
 
 There are various ways to wire up different parts of a stream, the following examples show some of the available options:
 
-@@snip [FlowDocSpec.scala](../code/docs/stream/FlowDocSpec.scala) { #flow-connecting }
+@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-connecting }
 
 ### Illegal stream elements
 
@@ -242,7 +242,7 @@ To allow for parallel processing you will have to insert asynchronous boundaries
 graphs by way of adding `Attributes.asyncBoundary` using the method `async` on `Source`, `Sink` and `Flow`
 to pieces that shall communicate with the rest of the graph in an asynchronous fashion.
 
-@@snip [FlowDocSpec.scala](../code/docs/stream/FlowDocSpec.scala) { #flow-async }
+@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-async }
 
 In this example we create two regions within the flow which will be executed in one Actor each—assuming that adding
 and multiplying integers is an extremely costly operation this will lead to a performance gain since two CPUs can
@@ -283,7 +283,7 @@ to somehow express how these values should be composed to a final value when we 
 many combinator methods have variants that take an additional argument, a function, that will be used to combine the
 resulting values. Some examples of using these combiners are illustrated in the example below.
 
-@@snip [FlowDocSpec.scala](../code/docs/stream/FlowDocSpec.scala) { #flow-mat-combine }
+@@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-mat-combine }
 
 @@@ note
 

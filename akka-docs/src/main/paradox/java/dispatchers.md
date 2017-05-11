@@ -18,14 +18,14 @@ gives excellent performance in most cases.
 
 Dispatchers implement the `ExecutionContext` interface and can thus be used to run `Future` invocations etc.
 
-@@snip [DispatcherDocTest.java](code/jdocs/dispatcher/DispatcherDocTest.java) { #lookup }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #lookup }
 
 ## Setting the dispatcher for an Actor
 
 So in case you want to give your `Actor` a different dispatcher than the default, you need to do two things, of which the first is
 is to configure the dispatcher:
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #my-dispatcher-config }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #my-dispatcher-config }
 
 @@@ note
 
@@ -38,7 +38,7 @@ You can read more about parallelism in the JDK's [ForkJoinPool documentation](ht
 
 Another example that uses the "thread-pool-executor":
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
 
 @@@ note
 
@@ -51,15 +51,15 @@ For more options, see the default-dispatcher section of the <!-- FIXME: More tha
 
 Then you create the actor as usual and define the dispatcher in the deployment configuration.
 
-@@snip [DispatcherDocTest.java](../java/code/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-config }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-config }
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #dispatcher-deployment-config }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #dispatcher-deployment-config }
 
 An alternative to the deployment configuration is to define the dispatcher in code.
 If you define the `dispatcher` in the deployment configuration then this value will be used instead
 of programmatically provided parameter.
 
-@@snip [DispatcherDocTest.java](../java/code/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-code }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-code }
 
 @@@ note
 
@@ -110,23 +110,23 @@ for details and restrictions.
 
 Configuring a dispatcher with fixed thread pool size, e.g. for actors that perform blocking IO:
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
 
 And then using it:
 
-@@snip [DispatcherDocTest.java](../java/code/jdocs/dispatcher/DispatcherDocTest.java) { #defining-fixed-pool-size-dispatcher }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-fixed-pool-size-dispatcher }
 
 Another example that uses the thread pool based on the number of cores (e.g. for CPU bound tasks)
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #my-thread-pool-dispatcher-config }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #my-thread-pool-dispatcher-config }
 
 Configuring a `PinnedDispatcher`:
 
-@@snip [DispatcherDocSpec.scala](../scala/code/docs/dispatcher/DispatcherDocSpec.scala) { #my-pinned-dispatcher-config }
+@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #my-pinned-dispatcher-config }
 
 And then using it:
 
-@@snip [DispatcherDocTest.java](../java/code/jdocs/dispatcher/DispatcherDocTest.java) { #defining-pinned-dispatcher }
+@@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-pinned-dispatcher }
 
 Note that `thread-pool-executor` configuration as per the above `my-thread-pool-dispatcher` example is
 NOT applicable. This is because every actor will have its own thread pool when using `PinnedDispatcher`,

@@ -24,11 +24,11 @@ send them on after the burst ended or a flush request is received.
 
 First, consider all of the below to use these import statements:
 
-@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #simple-imports }
+@@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #simple-imports }
 
 The contract of our “Buncher” actor is that it accepts or produces the following messages:
 
-@@snip [Events.java](code/jdocs/actor/fsm/Events.java) { #simple-events }
+@@snip [Events.java]($code$/java/jdocs/actor/fsm/Events.java) { #simple-events }
 
 `SetTarget` is needed for starting it up, setting the destination for the
 `Batches` to be passed on; `Queue` will add to the internal queue while
@@ -37,7 +37,7 @@ The contract of our “Buncher” actor is that it accepts or produces the follo
 The actor can be in two states: no message queued (aka `Idle`) or some
 message queued (aka `Active`). The states and the state data is defined like this:
 
-@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #simple-state }
+@@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #simple-state }
 
 The actor starts out in the idle state. Once a message arrives it will go to the
 active state and stay there as long as messages keep arriving and no flush is
@@ -46,7 +46,7 @@ reference to send the batches to and the actual queue of messages.
 
 Now let’s take a look at the skeleton for our FSM actor:
 
-@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #simple-fsm }
+@@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #simple-fsm }
 
 The basic strategy is to declare the actor, by inheriting the `AbstractFSM` class
 and specifying the possible states and data values as type parameters. Within
@@ -74,7 +74,7 @@ shall work identically in both states, we make use of the fact that any event
 which is not handled by the `when()` block is passed to the
 `whenUnhandled()` block:
 
-@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #unhandled-elided }
+@@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #unhandled-elided }
 
 The first case handled here is adding `Queue()` requests to the internal
 queue and going to the `Active` state (this does the obvious thing of staying
@@ -88,7 +88,7 @@ target, for which we use the `onTransition` mechanism: you can declare
 multiple such blocks and all of them will be tried for matching behavior in
 case a state transition occurs (i.e. only when the state actually changes).
 
-@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #transition-elided }
+@@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #transition-elided }
 
 The transition callback is a partial function which takes as input a pair of
 states—the current and the next state. During the state change, the old state
@@ -98,7 +98,7 @@ available as `nextStateData`.
 To verify that this buncher actually works, it is quite easy to write a test
 using the <!-- FIXME: More than one link target with name akka-testkit in path Some(/java/fsm.rst) --> akka-testkit, here using JUnit as an example:
 
-@@snip [BuncherTest.java](code/jdocs/actor/fsm/BuncherTest.java) { #test-code }
+@@snip [BuncherTest.java]($code$/java/jdocs/actor/fsm/BuncherTest.java) { #test-code }
 
 ## Reference
 
@@ -107,7 +107,7 @@ using the <!-- FIXME: More than one link target with name akka-testkit in path S
 The `AbstractFSM` abstract class is the base class used to implement an FSM. It implements
 Actor since an Actor is created to drive the FSM.
 
-@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #simple-fsm }
+@@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #simple-fsm }
 
 @@@ note
 
@@ -160,7 +160,7 @@ The `stateFunction` argument is a `PartialFunction[Event, State]`,
 which is conveniently given using the state function builder syntax as
 demonstrated below:
 
-@@snip [Buncher.java](code/jdocs/actor/fsm/Buncher.java) { #when-syntax }
+@@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #when-syntax }
 
 @@@ warning
 
@@ -173,7 +173,7 @@ It is recommended practice to declare the states as an enum and then verify that
 `when` clause for each of the states. If you want to leave the handling of a state
 “unhandled” (more below), it still needs to be declared like this:
 
-@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #NullFunction }
+@@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #NullFunction }
 
 ### Defining the Initial State
 
@@ -192,7 +192,7 @@ If a state doesn't handle a received event a warning is logged. If you want to
 do something else in this case you can specify that with
 `whenUnhandled(stateFunction)`:
 
-@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #unhandled-syntax }
+@@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #unhandled-syntax }
 
 Within this handler the state of the FSM may be queried using the
 `stateName` method.
@@ -231,7 +231,7 @@ does not modify the state transition.
 
 All modifiers can be chained to achieve a nice and concise description:
 
-@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #modifier-syntax }
+@@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #modifier-syntax }
 
 The parentheses are not actually needed in all cases, but they visually
 distinguish between modifiers and their arguments and therefore make the code
@@ -268,13 +268,13 @@ The handler is a partial function which takes a pair of states as input; no
 resulting state is needed as it is not possible to modify the transition in
 progress.
 
-@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #transition-syntax }
+@@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #transition-syntax }
 
 It is also possible to pass a function object accepting two states to
 `onTransition`, in case your transition handling logic is implemented as
 a method:
 
-@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #alt-transition-syntax }
+@@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #alt-transition-syntax }
 
 The handlers registered with this method are stacked, so you can intersperse
 `onTransition` blocks with `when` blocks as suits your design. It
@@ -354,13 +354,13 @@ may not be used within a `when` block).
 
 @@@
 
-@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #stop-syntax }
+@@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #stop-syntax }
 
 You can use `onTermination(handler)` to specify custom code that is
 executed when the FSM is stopped. The handler is a partial function which takes
 a `StopEvent(reason, stateName, stateData)` as argument:
 
-@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #termination-syntax }
+@@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #termination-syntax }
 
 As for the `whenUnhandled` case, this handler is not stacked, so each
 invocation of `onTermination` replaces the previously installed handler.
@@ -392,7 +392,7 @@ and in the following.
 The setting `akka.actor.debug.fsm` in <!-- FIXME: More than one link target with name configuration in path Some(/java/fsm.rst) --> configuration enables logging of an
 event trace by `LoggingFSM` instances:
 
-@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
+@@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
 
 This FSM will log at DEBUG level:
 
@@ -411,7 +411,7 @@ The `AbstractLoggingFSM` class adds one more feature to the FSM: a rolling event
 log which may be used during debugging (for tracing how the FSM entered a
 certain failure state) or for other creative uses:
 
-@@snip [FSMDocTest.java](code/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
+@@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
 
 The `logDepth` defaults to zero, which turns off the event log.
 

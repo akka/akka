@@ -4,7 +4,7 @@ Originally conceived as a way to send messages to groups of actors, the
 `EventBus` has been generalized into a set of composable traits
 implementing a simple interface:
 
-@@snip [EventBus.scala]../../../../../akka-actor/src/main/scala/akka/event/EventBus.scala) { #event-bus-api }
+@@snip [EventBus.scala]($akka$/akka-actor/src/main/scala/akka/event/EventBus.scala) { #event-bus-api }
 
 @@@ note
 
@@ -44,11 +44,11 @@ compare subscribers and how exactly to classify.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocSpec.scala](code/docs/event/EventBusDocSpec.scala) { #lookup-bus }
+@@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #lookup-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocSpec.scala](code/docs/event/EventBusDocSpec.scala) { #lookup-bus-test }
+@@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #lookup-bus-test }
 
 This classifier is efficient in case no subscribers exist for a particular event.
 
@@ -64,11 +64,11 @@ classifier hierarchy.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocSpec.scala](code/docs/event/EventBusDocSpec.scala) { #subchannel-bus }
+@@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #subchannel-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocSpec.scala](code/docs/event/EventBusDocSpec.scala) { #subchannel-bus-test }
+@@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #subchannel-bus-test }
 
 This classifier is also efficient in case no subscribers are found for an
 event, but it uses conventional locking to synchronize an internal classifier
@@ -86,11 +86,11 @@ stations by geographical reachability (for old-school radio-wave transmission).
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocSpec.scala](code/docs/event/EventBusDocSpec.scala) { #scanning-bus }
+@@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #scanning-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocSpec.scala](code/docs/event/EventBusDocSpec.scala) { #scanning-bus-test }
+@@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #scanning-bus-test }
 
 This classifier takes always a time which is proportional to the number of
 subscriptions, independent of how many actually match.
@@ -109,11 +109,11 @@ takes care of unsubscribing terminated actors automatically.
 
 The necessary methods to be implemented are illustrated with the following example:
 
-@@snip [EventBusDocSpec.scala](code/docs/event/EventBusDocSpec.scala) { #actor-bus }
+@@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #actor-bus }
 
 A test for this implementation may look like this:
 
-@@snip [EventBusDocSpec.scala](code/docs/event/EventBusDocSpec.scala) { #actor-bus-test }
+@@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #actor-bus-test }
 
 This classifier is still is generic in the event type, and it is efficient for
 all use cases.
@@ -128,13 +128,13 @@ Classification](#subchannel-classification) which enables registering to related
 used for `RemotingLifecycleEvent`). The following example demonstrates
 how a simple subscription works:
 
-@@snip [LoggingDocSpec.scala](code/docs/event/LoggingDocSpec.scala) { #deadletters }
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #deadletters }
 
 It is also worth pointing out that thanks to the way the subchannel classification
 is implemented in the event stream, it is possible to subscribe to a group of events, by
 subscribing to their common superclass as demonstrated in the following example:
 
-@@snip [LoggingDocSpec.scala](code/docs/event/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
 
 Similarly to [Actor Classification](#actor-classification), `EventStream` will automatically remove subscribers when they terminate.
 
@@ -185,11 +185,11 @@ and since they are nothing to worry about, they are suppressed from the default 
 However, in case you find yourself in need of debugging these kinds of low level suppressed dead letters,
 it's still possible to subscribe to them explicitly:
 
-@@snip [LoggingDocSpec.scala](code/docs/event/LoggingDocSpec.scala) { #suppressed-deadletters }
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #suppressed-deadletters }
 
 or all dead letters (including the suppressed ones):
 
-@@snip [LoggingDocSpec.scala](code/docs/event/LoggingDocSpec.scala) { #all-deadletters }
+@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #all-deadletters }
 
 ### Other Uses
 

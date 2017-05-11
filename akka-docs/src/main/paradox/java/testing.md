@@ -71,7 +71,7 @@ Having access to the actual `Actor` object allows application of all
 traditional unit testing techniques on the contained methods. Obtaining a
 reference is done like this:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-actor-ref }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-actor-ref }
 
 Since `TestActorRef` is generic in the actor type it returns the
 underlying actor with its proper static type. From this point on you may bring
@@ -93,7 +93,7 @@ usual. This trick is made possible by the `CallingThreadDispatcher`
 described below (see [CallingThreadDispatcher](#callingthreaddispatcher)); this dispatcher is set
 implicitly for any actor instantiated into a `TestActorRef`.
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-behavior }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-behavior }
 
 As the `TestActorRef` is a subclass of `LocalActorRef` with a few
 special extras, also aspects like supervision and restarting work properly, but
@@ -123,7 +123,7 @@ any thrown exceptions, then there is another mode available for you: just use
 the `receive` method on `TestActorRef`, which will be forwarded to the
 underlying actor:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-expecting-exceptions }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-expecting-exceptions }
 
 ### Use Cases
 
@@ -157,7 +157,7 @@ principle stays the same in that a single procedure drives the test.
 The `TestKit` class contains a collection of tools which makes this
 common task easy.
 
-@@snip [TestKitSampleTest.java](code/jdocs/testkit/TestKitSampleTest.java) { #fullsample }
+@@snip [TestKitSampleTest.java]($code$/java/jdocs/testkit/TestKitSampleTest.java) { #fullsample }
 
 The `TestKit` contains an actor named `testActor` which is the
 entry point for messages to be examined with the various `expectMsg...`
@@ -183,7 +183,7 @@ case of failure) so that all actors—including the test actor—are stopped.
 The above mentioned `expectMsgEquals` is not the only method for
 formulating assertions concerning received messages, the full set is this:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-expect }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-expect }
 
 In these examples, the maximum durations you will find mentioned below are left
 out, in which case they use the default value from configuration item
@@ -243,25 +243,29 @@ messages are returned.
 In addition to message reception assertions there are also methods which help
 with message flows:
 
->
- * 
-   `public <T> List<T> receiveWhile(Duration max, Duration idle, Int messages, Function<Object, T> f)`
-   @@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-receivewhile-full }
-   Collect messages as long as
-    * they are matching the given function
-    * the given time interval is not used up
-    * the next message is received within the idle timeout
-    * the number of messages has not yet reached the maximum
-   All collected messages are returned.
- * 
-   `public void awaitCond(Duration max, Duration interval, Supplier<Boolean> p)`
-   @@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-awaitCond }
+`public <T> List<T> receiveWhile(Duration max, Duration idle, Int messages, Function<Object, T> f)`
+
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-receivewhile-full }
+
+Collect messages as long as
+* they are matching the given function
+* the given time interval is not used up
+* the next message is received within the idle timeout
+* the number of messages has not yet reached the maximum
+All collected messages are returned.
+
+`public void awaitCond(Duration max, Duration interval, Supplier<Boolean> p)`
+
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-awaitCond }
+
    Poll the given condition every `interval` until it returns `true` or
 the `max` duration is used up.
- * 
-   `public void awaitAssert(Duration max, Duration interval, Supplier<Object> a)`
-   @@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-awaitAssert }
-   Poll the given assert function every `interval` until it does not throw
+
+`public void awaitAssert(Duration max, Duration interval, Supplier<Object> a)`
+
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-awaitAssert }
+
+Poll the given assert function every `interval` until it does not throw
 an exception or the `max` duration is used up. If the timeout expires the
 last exception is thrown.
 
@@ -269,11 +273,10 @@ There are also cases where not all messages sent to the test kit are actually
 relevant to the test, but removing them would mean altering the actors under
 test. For this purpose it is possible to ignore certain messages:
 
->
- * 
-   `public void ignoreMsg(Function<Object, Boolean> f)`
-   `public void ignoreMsg()`
-   @@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-ignoreMsg }
+`public void ignoreMsg(Function<Object, Boolean> f)`
+`public void ignoreMsg()`
+
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-ignoreMsg }
 
 ### Expecting Log Messages
 
@@ -284,7 +287,7 @@ handler with the `TestEventListener` and using an `EventFilter`
 allows assertions on log messages, including those which are generated by
 exceptions:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-event-filter }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-event-filter }
 
 If a number of occurrences is specific—as demonstrated above—then `intercept()`
 will block until that number of matching messages have been received or the
@@ -314,7 +317,7 @@ the positive or negative result must be obtained. Lower time limits need to be
 checked external to the examination, which is facilitated by a new construct
 for managing time constraints:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-within }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-within }
 
 The block in `within` must complete after a @ref:[Duration](../scala/common/duration.md) which
 is between `min` and `max`, where the former defaults to zero. The
@@ -347,7 +350,7 @@ internally scaled by a factor taken from the [Configuration](),
 You can scale other durations with the same factor by using `dilated` method
 in `TestKit`.
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #duration-dilation }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #duration-dilation }
 
 ### Using Multiple Probe Actors
 
@@ -358,7 +361,7 @@ Another approach is to use it for creation of simple probe actors to be
 inserted in the message flows. The functionality is best explained using a
 small example:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-probe }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-probe }
 
 This simple test verifies an equally simple Forwarder actor by injecting a
 probe as the forwarder’s target.  Another example would be two actors A and B
@@ -370,12 +373,12 @@ the test setup.
 If you have many test probes, you can name them to get meaningful actor names
 in test logs and assertions:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-probe-with-custom-name }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-with-custom-name }
 
 Probes may also be equipped with custom assertions to make your test code even
 more concise and clear:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-special-probe }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-special-probe }
 
 You have complete flexibility here in mixing and matching the
 `TestKit` facilities with your own checks and choosing an intuitive
@@ -397,7 +400,7 @@ means that it is dangerous to try watching e.g. `TestActorRef` from a
 
 A `TestKit` can register itself for DeathWatch of any other actor:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-probe-watch }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-watch }
 
 #### Replying to Messages Received by Probes
 
@@ -406,14 +409,14 @@ The probe stores the sender of the last dequeued message (i.e. after its
 `getLastSender()` method. This information can also implicitly be used
 for having the probe reply to the last received message:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-probe-reply }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-reply }
 
 #### Forwarding Messages Received by Probes
 
 The probe can also forward a received message (i.e. after its `expectMsg*`
 reception), retaining the original sender:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-probe-forward }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-forward }
 
 #### Auto-Pilot
 
@@ -424,7 +427,7 @@ keep a test running and verify traces later you can also install an
 This code can be used to forward messages, e.g. in a chain `A --> Probe -->
 B`, as long as a certain protocol is obeyed.
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-auto-pilot }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-auto-pilot }
 
 The `run` method must return the auto-pilot for the next message, wrapped
 in an `Option`; setting it to `None` terminates the auto-pilot.
@@ -437,7 +440,7 @@ described [above](#testkit-within) is local to each probe. Hence, probes
 do not react to each other's deadlines or to the deadline set in an enclosing
 `TestKit` instance:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #test-within-probe }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-within-probe }
 
 Here, the `expectMsgEquals` call will use the default timeout.
 
@@ -458,14 +461,14 @@ Conversely, a parent's binding to its child can be lessened as follows:
 
 For example, the structure of the code you want to test may follow this pattern:
 
-@@snip [ParentChildTest.java](code/jdocs/testkit/ParentChildTest.java) { #test-example }
+@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-example }
 
 #### Introduce child to its parent
 
 The first option is to avoid use of the `context.parent` function and create
 a child with a custom parent by passing an explicit reference to its parent instead.
 
-@@snip [ParentChildTest.java](code/jdocs/testkit/ParentChildTest.java) { #test-dependentchild }
+@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-dependentchild }
 
 #### Create the child using TestKit
 
@@ -473,7 +476,7 @@ The `TestKit` class can in fact create actors that will run with the test probe 
 This will cause any messages the child actor sends to *getContext().getParent()* to
 end up in the test probe.
 
-@@snip [ParentChildTest.java](code/jdocs/testkit/ParentChildTest.java) { #test-TestProbe-parent }
+@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-TestProbe-parent }
 
 #### Using a fabricated parent
 
@@ -481,26 +484,26 @@ If you prefer to avoid modifying the child constructor you can
 create a fabricated parent in your test. This, however, does not enable you to test
 the parent actor in isolation.
 
-@@snip [ParentChildTest.java](code/jdocs/testkit/ParentChildTest.java) { #test-fabricated-parent-creator }
+@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-fabricated-parent-creator }
 
-@@snip [ParentChildTest.java](code/jdocs/testkit/ParentChildTest.java) { #test-fabricated-parent }
+@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-fabricated-parent }
 
 #### Externalize child making from the parent
 
 Alternatively, you can tell the parent how to create its child. There are two ways
 to do this: by giving it a `Props` object or by giving it a function which takes care of creating the child actor:
 
-@@snip [ParentChildTest.java](code/jdocs/testkit/ParentChildTest.java) { #test-dependentparent }
+@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-dependentparent }
 
-@@snip [ParentChildTest.java](code/jdocs/testkit/ParentChildTest.java) { #test-dependentparent-generic }
+@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-dependentparent-generic }
 
 Creating the `Actor` is straightforward and the function may look like this in your test code:
 
-@@snip [ParentChildTest.java](code/jdocs/testkit/ParentChildTest.java) { #child-maker-test }
+@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #child-maker-test }
 
 And like this in your application code:
 
-@@snip [ParentChildTest.java](code/jdocs/testkit/ParentChildTest.java) { #child-maker-prod }
+@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #child-maker-prod }
 
 Which of these methods is the best depends on what is most important to test. The
 most generic option is to create the parent actor by passing it a function that is
@@ -520,7 +523,7 @@ so long as all intervening actors run on this dispatcher.
 
 Just set the dispatcher as you normally would:
 
-@@snip [TestKitDocTest.java](code/jdocs/testkit/TestKitDocTest.java) { #calling-thread-dispatcher }
+@@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #calling-thread-dispatcher }
 
 ### How it works
 

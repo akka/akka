@@ -18,7 +18,7 @@ offered using distinct IO extensions described below.
 
 ### Simple Send
 
-@@snip [UdpDocTest.java](code/jdocs/io/UdpDocTest.java) { #sender }
+@@snip [UdpDocTest.java]($code$/java/jdocs/io/UdpDocTest.java) { #sender }
 
 The simplest form of UDP usage is to just send datagrams without the need of
 getting a reply. To this end a “simple sender” facility is provided as
@@ -39,7 +39,7 @@ want to close the ephemeral port the sender is bound to.
 
 ### Bind (and Send)
 
-@@snip [UdpDocTest.java](code/jdocs/io/UdpDocTest.java) { #listener }
+@@snip [UdpDocTest.java]($code$/java/jdocs/io/UdpDocTest.java) { #listener }
 
 If you want to implement a UDP server which listens on a socket for incoming
 datagrams then you need to use the `bind` command as shown above. The
@@ -64,7 +64,7 @@ bind-and-send service we saw earlier, but the main difference is that a
 connection is only able to send to the `remoteAddress` it was connected to,
 and will receive datagrams only from that address.
 
-@@snip [UdpDocTest.java](code/jdocs/io/UdpDocTest.java) { #connected }
+@@snip [UdpDocTest.java]($code$/java/jdocs/io/UdpDocTest.java) { #connected }
 
 Consequently the example shown here looks quite similar to the previous one,
 the biggest difference is the absence of remote address information in
@@ -90,12 +90,12 @@ To select a Protocol Family you must extend `akka.io.Inet.DatagramChannelCreator
 class which implements `akka.io.Inet.SocketOption`. Provide custom logic
 for opening a datagram channel by overriding `create` method.
 
-@@snip [JavaUdpMulticast.java](code/jdocs/io/JavaUdpMulticast.java) { #inet6-protocol-family }
+@@snip [JavaUdpMulticast.java]($code$/java/jdocs/io/JavaUdpMulticast.java) { #inet6-protocol-family }
 
 Another socket option will be needed to join a multicast group.
 
-@@snip [JavaUdpMulticast.java](code/jdocs/io/JavaUdpMulticast.java) { #multicast-group }
+@@snip [JavaUdpMulticast.java]($code$/java/jdocs/io/JavaUdpMulticast.java) { #multicast-group }
 
 Socket options must be provided to `UdpMessage.bind` command.
 
-@@snip [JavaUdpMulticast.java](code/jdocs/io/JavaUdpMulticast.java) { #bind }
+@@snip [JavaUdpMulticast.java]($code$/java/jdocs/io/JavaUdpMulticast.java) { #bind }

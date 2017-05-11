@@ -8,7 +8,7 @@ Formatting.docFormatSettings
 Dependencies.docs
 
 unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
-//TODO: additionalTasks in ValidatePR += paradox in Paradox
+additionalTasks in ValidatePR += paradox
 
 enablePlugins(ScaladocNoVerificationOfDiagrams)
 disablePlugins(MimaPlugin)
@@ -17,7 +17,9 @@ enablePlugins(ParadoxPlugin)
 paradoxProperties ++= Map(
   "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
   "scala.version" -> scalaVersion.value,
-  "akka.version" -> version.value
+  "akka.version" -> version.value,
+  "snip.code.base_dir" -> (sourceDirectory in Compile).value.getAbsolutePath,
+  "snip.akka.base_dir" -> ((baseDirectory in Compile).value / "..").getAbsolutePath
 )
 paradoxTheme := Some("com.lightbend.akka" % "paradox-theme-akka" % "0.1.0-SNAPSHOT")
 paradoxNavigationDepth := 1

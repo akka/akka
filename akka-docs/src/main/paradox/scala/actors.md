@@ -32,7 +32,7 @@ along with the implementation of how the messages should be processed.
 
 Here is an example:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
 
 Please note that the Akka Actor `receive` message loop is exhaustive, which
 is different compared to Erlang and the late Scala Actors. This means that you
@@ -59,7 +59,7 @@ creating an actor including associated deployment information (e.g. which
 dispatcher to use, see more below). Here are some examples of how to create a
 `Props` instance.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #creating-props }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #creating-props }
 
 The second variant shows how to pass constructor arguments to the
 `Actor` being created, but it should only be used outside of actors as
@@ -80,7 +80,7 @@ for cases when the actor constructor takes value classes as arguments.
 
 #### Dangerous Variants
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #creating-props-deprecated }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #creating-props-deprecated }
 
 This method is not recommended to be used within another actor because it
 encourages to close over the enclosing scope, resulting in non-serializable
@@ -110,13 +110,13 @@ There are two edge cases in actor creation with `Props`:
 
  * An actor with `AnyVal` arguments.
 
-@@snip [PropsEdgeCaseSpec.scala](code/docs/actor/PropsEdgeCaseSpec.scala) { #props-edge-cases-value-class }
+@@snip [PropsEdgeCaseSpec.scala]($code$/scala/docs/actor/PropsEdgeCaseSpec.scala) { #props-edge-cases-value-class }
 
-@@snip [PropsEdgeCaseSpec.scala](code/docs/actor/PropsEdgeCaseSpec.scala) { #props-edge-cases-value-class-example }
+@@snip [PropsEdgeCaseSpec.scala]($code$/scala/docs/actor/PropsEdgeCaseSpec.scala) { #props-edge-cases-value-class-example }
 
  * An actor with default constructor values.
 
-@@snip [PropsEdgeCaseSpec.scala](code/docs/actor/PropsEdgeCaseSpec.scala) { #props-edge-cases-default-values }
+@@snip [PropsEdgeCaseSpec.scala]($code$/scala/docs/actor/PropsEdgeCaseSpec.scala) { #props-edge-cases-default-values }
 
 In both cases an `IllegalArgumentException` will be thrown stating
 no matching constructor could be found.
@@ -133,13 +133,13 @@ associated with using the `Props.apply(...)` method which takes a by-name
 argument, since within a companion object the given code block will not retain
 a reference to its enclosing scope:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #props-factory }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #props-factory }
 
 Another good practice is to declare what messages an Actor can receive
 in the companion object of the Actor, which makes easier
 to know what it can receive:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #messages-in-companion }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #messages-in-companion }
 
 ### Creating Actors with Props
 
@@ -147,13 +147,13 @@ Actors are created by passing a `Props` instance into the
 `actorOf` factory method which is available on `ActorSystem` and
 `ActorContext`.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #system-actorOf }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #system-actorOf }
 
 Using the `ActorSystem` will create top-level actors, supervised by the
 actor system’s provided guardian actor, while using an actor’s context will
 create a child actor.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #context-actorOf }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #context-actorOf }
 
 It is recommended to create a hierarchy of children, grand-children and so on
 such that it fits the logical failure-handling structure of the application,
@@ -184,7 +184,7 @@ value classes.
 In these cases you should either unpack the arguments or create the props by
 calling the constructor manually:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #actor-with-value-class-argument }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #actor-with-value-class-argument }
 
 ### Dependency Injection
 
@@ -193,7 +193,7 @@ be part of the `Props` as well, as described [above](Props_). But there
 are cases when a factory method must be used, for example when the actual
 constructor arguments are determined by a dependency injection framework.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #creating-indirectly }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #creating-indirectly }
 
 @@@ warning
 
@@ -220,14 +220,14 @@ cannot do: receiving multiple replies (e.g. by subscribing an `ActorRef`
 to a notification service) and watching other actors’ lifecycle. For these
 purposes there is the `Inbox` class:
 
-@@snip [ActorDSLSpec.scala]../../../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #inbox }
+@@snip [ActorDSLSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #inbox }
 
 There is an implicit conversion from inbox to actor reference which means that
 in this example the sender reference will be that of the actor hidden away
 within the inbox. This allows the reply to be received on the last line.
 Watching an actor is quite simple as well:
 
-@@snip [ActorDSLSpec.scala]../../../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #watch }
+@@snip [ActorDSLSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #watch }
 
 ## Actor API
 
@@ -266,12 +266,12 @@ time).
 
 You can import the members in the `context` to avoid prefixing access with `context.`
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #import-context }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #import-context }
 
 The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following:
 
-@@snip [Actor.scala]../../../../../akka-actor/src/main/scala/akka/actor/Actor.scala) { #lifecycle-hooks }
+@@snip [Actor.scala]($akka$/akka-actor/src/main/scala/akka/actor/Actor.scala) { #lifecycle-hooks }
 
 The implementations shown above are the defaults provided by the `Actor`
 trait.
@@ -332,7 +332,7 @@ termination (see [Stopping Actors](#stopping-actors)). This service is provided 
 
 Registering a monitor is easy:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #watch }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #watch }
 
 It should be noted that the `Terminated` message is generated
 independent of the order in which registration and termination occur.
@@ -357,7 +357,7 @@ no `Terminated` message for that actor will be processed anymore.
 
 Right after starting the actor, its `preStart` method is invoked.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #preStart }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #preStart }
 
 This method is called when the actor is first created. During restarts it is
 called by the default implementation of `postRestart`, which means that
@@ -430,7 +430,7 @@ actors may look up other actors by specifying absolute or relative
 paths—logical or physical—and receive back an `ActorSelection` with the
 result:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #selection-local }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #selection-local }
 
 @@@ note
 
@@ -459,7 +459,7 @@ structure, i.e. the supervisor.
 The path elements of an actor selection may contain wildcard patterns allowing for
 broadcasting of messages to that section:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #selection-wildcard }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #selection-wildcard }
 
 Messages can be sent via the `ActorSelection` and the path of the
 `ActorSelection` is looked up when delivering each message. If the selection
@@ -475,7 +475,7 @@ actors which are traversed in the sense that if a concrete name lookup fails
 negative result is generated. Please note that this does not mean that delivery
 of that reply is guaranteed, it still is a normal message.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #identify }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #identify }
 
 You can also acquire an `ActorRef` for an `ActorSelection` with
 the `resolveOne` method of the `ActorSelection`. It returns a `Future`
@@ -485,7 +485,7 @@ didn't complete within the supplied *timeout*.
 
 Remote actor addresses may also be looked up, if @ref:[remoting](remoting.md) is enabled:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #selection-remote }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #selection-remote }
 
 An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample-scala).
 
@@ -534,7 +534,7 @@ remoting. So always prefer `tell` for performance, and only `ask` if you must.
 This is the preferred way of sending messages. No blocking waiting for a
 message. This gives the best concurrency and scalability characteristics.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #tell }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #tell }
 
 If invoked from within an Actor, then the sending actor reference will be
 implicitly passed along with the message and available to the receiving Actor
@@ -550,7 +550,7 @@ If invoked from an instance that is **not** an Actor the sender will be
 The `ask` pattern involves actors as well as futures, hence it is offered as
 a use pattern rather than a method on `ActorRef`:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #ask-pipeTo }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #ask-pipeTo }
 
 This example demonstrates `ask` together with the `pipeTo` pattern on
 futures, because this is likely to be a common combination. Please note that
@@ -573,7 +573,7 @@ This is *not done automatically* when an actor throws an exception while process
 
 @@@
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #reply-exception }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #reply-exception }
 
 If the actor does not complete the future, it will expire after the timeout
 period, completing it with an `AskTimeoutException`.  The timeout is
@@ -581,11 +581,11 @@ taken from one of the following locations in order of precedence:
 
  1. explicitly given timeout as in:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #using-explicit-timeout }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-explicit-timeout }
 
  2. implicit argument of type `akka.util.Timeout`, e.g.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #using-implicit-timeout }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-implicit-timeout }
 
 See @ref:[Futures](futures.md) for more information on how to await or query a
 future.
@@ -614,19 +614,19 @@ original sender address/reference is maintained even though the message is going
 through a 'mediator'. This can be useful when writing actors that work as
 routers, load-balancers, replicators etc.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #forward }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #forward }
 
 ## Receive messages
 
 An Actor has to implement the `receive` method to receive messages:
 
-@@snip [Actor.scala]../../../../../akka-actor/src/main/scala/akka/actor/Actor.scala) { #receive }
+@@snip [Actor.scala]($akka$/akka-actor/src/main/scala/akka/actor/Actor.scala) { #receive }
 
 This method returns a `PartialFunction`, e.g. a ‘match/case’ clause in
 which the message can be matched against the different case clauses using Scala
 pattern matching. Here is an example:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #imports1 #my-actor }
 
 <a id="actor-reply"></a>
 ## Reply to messages
@@ -658,7 +658,7 @@ timeout there must have been an idle period beforehand as configured via this me
 Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
 periods). Pass in *Duration.Undefined* to switch off this feature.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #receive-timeout }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #receive-timeout }
 
 Messages marked with `NotInfluenceReceiveTimeout` will not reset the timer. This can be useful when
 `ReceiveTimeout` should be fired by external inactivity but not influenced by internal activity,
@@ -673,7 +673,7 @@ the actor itself or child actors and the system for stopping top level actors. T
 termination of the actor is performed asynchronously, i.e. `stop` may return before
 the actor is stopped.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #stoppingActors-actor }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #stoppingActors-actor }
 
 Processing of the current message, if any, will continue before the actor is stopped,
 but additional messages in the mailbox will not be processed. By default these
@@ -699,7 +699,7 @@ whole system.
 The `postStop()` hook is invoked after an actor is fully stopped. This
 enables cleaning up of resources:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #postStop }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #postStop }
 
 @@@ note
 
@@ -724,9 +724,9 @@ in the mailbox.
 `gracefulStop` is useful if you need to wait for termination or compose ordered
 termination of several actors:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #gracefulStop }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop }
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #gracefulStop-actor }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop-actor }
 
 When `gracefulStop()` returns successfully, the actor’s `postStop()` hook
 will have been executed: there exists a happens-before edge between the end of
@@ -757,7 +757,7 @@ services in a specific order and perform registered tasks during the shutdown pr
 The order of the shutdown phases is defined in configuration `akka.coordinated-shutdown.phases`.
 The default phases are defined as:
 
-@@snip [reference.conf]../../../../../akka-actor/src/main/resources/reference.conf) { #coordinated-shutdown-phases }
+@@snip [reference.conf]($akka$/akka-actor/src/main/resources/reference.conf) { #coordinated-shutdown-phases }
 
 More phases can be be added in the application's configuration if needed by overriding a phase with an
 additional `depends-on`. Especially the phases `before-service-unbind`, `before-cluster-shutdown` and
@@ -769,7 +769,7 @@ The phases are ordered with [topological](https://en.wikipedia.org/wiki/Topologi
 
 Tasks can be added to a phase with:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-addTask }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-addTask }
 
 The returned `Future[Done]` should be completed when the task is completed. The task name parameter
 is only used for debugging/logging.
@@ -788,7 +788,7 @@ added too late will not be run.
 To start the coordinated shutdown process you can invoke `run` on the `CoordinatedShutdown`
 extension:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-run }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-run }
 
 It's safe to call the `run` method multiple times. It will only run once.
 
@@ -817,7 +817,7 @@ If you have application specific JVM shutdown hooks it's recommended that you re
 `CoordinatedShutdown` so that they are running before Akka internal shutdown hooks, e.g.
 those shutting down Akka Remoting (Artery).
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-jvm-hook }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-jvm-hook }
 
 For some tests it might be undesired to terminate the `ActorSystem` via `CoordinatedShutdown`.
 You can disable that by adding the following to the configuration of the `ActorSystem` that is
@@ -849,7 +849,7 @@ Please note that the actor will revert to its original behavior when restarted b
 
 To hotswap the Actor behavior using `become`:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #hot-swap-actor }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #hot-swap-actor }
 
 This variant of the `become` method is useful for many different things,
 such as to implement a Finite State Machine (FSM, for an example see [Dining
@@ -863,7 +863,7 @@ of “pop” operations (i.e. `unbecome`) matches the number of “push” ones
 in the long run, otherwise this amounts to a memory leak (which is why this
 behavior is not the default).
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #swapper }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #swapper }
 
 ### Encoding Scala Actors nested receives without accidentally leaking memory
 
@@ -892,7 +892,7 @@ mailbox, see the documentation on mailboxes: @ref:[Mailboxes](mailboxes.md).
 
 Here is an example of the `Stash` in action:
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #stash }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #stash }
 
 Invoking `stash()` adds the current message (the message that the
 actor received last) to the actor's stash. It is typically invoked
@@ -994,7 +994,7 @@ For example, imagine you have a set of actors which are either `Producers` or `C
 have an actor share both behaviors. This can be easily achieved without having to duplicate code by extracting the behaviors to
 traits and implementing the actor's `receive` as combination of these partial functions.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #receive-orElse }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #receive-orElse }
 
 Instead of inheritance the same pattern can be applied via composition - one would simply compose the receive method using partial functions from delegates.
 
@@ -1027,7 +1027,7 @@ this behavior, and ensure that there is only one call to `preStart()`.
 One useful usage of this pattern is to disable creation of new `ActorRefs` for children during restarts. This can be
 achieved by overriding `preRestart()`:
 
-@@snip [InitializationDocSpec.scala](code/docs/actor/InitializationDocSpec.scala) { #preStartInit }
+@@snip [InitializationDocSpec.scala]($code$/scala/docs/actor/InitializationDocSpec.scala) { #preStartInit }
 
 Please note, that the child actors are *still restarted*, but no new `ActorRef` is created. One can recursively apply
 the same principles for the children, ensuring that their `preStart()` method is called only at the creation of their
@@ -1042,7 +1042,7 @@ for example in the presence of circular dependencies. In this case the actor sho
 and use `become()` or a finite state-machine state transition to encode the initialized and uninitialized states
 of the actor.
 
-@@snip [InitializationDocSpec.scala](code/docs/actor/InitializationDocSpec.scala) { #messageInit }
+@@snip [InitializationDocSpec.scala]($code$/scala/docs/actor/InitializationDocSpec.scala) { #messageInit }
 
 If the actor may receive messages before it has been initialized, a useful tool can be the `Stash` to save messages
 until the initialization finishes, and replaying them after the actor became initialized.

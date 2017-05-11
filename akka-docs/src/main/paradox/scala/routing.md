@@ -13,7 +13,7 @@ also possible to [create your own](#custom-router-scala).
 
 The following example illustrates how to use a `Router` and manage the routees from within an actor.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #router-in-actor }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #router-in-actor }
 
 We create a `Router` and specify that it should use `RoundRobinRoutingLogic` when routing the
 messages to the routees.
@@ -81,14 +81,14 @@ few exceptions. These are documented in the [Specially Handled Messages](#router
 The following code and configuration snippets show how to create a [round-robin](#round-robin-router-scala) router that forwards messages to five `Worker` routees. The
 routees will be created as the router's children.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-round-robin-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #round-robin-pool-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-1 }
 
 Here is the same example, but with the router configuration provided programmatically instead of
 from configuration.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #round-robin-pool-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-2 }
 
 #### Remote Deployed Routees
 
@@ -98,20 +98,20 @@ fashion. In order to deploy routees remotely, wrap the router configuration in a
 `RemoteRouterConfig`, attaching the remote addresses of the nodes to deploy to. Remote
 deployment requires the `akka-remote` module to be included in the classpath.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #remoteRoutees }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #remoteRoutees }
 
 #### Senders
 
 By default, when a routee sends a message, it will @ref:[implicitly set itself as the sender
 ](actors.md#actors-tell-sender-scala).
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #reply-without-sender }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #reply-without-sender }
 
 However, it is often useful for routees to set the *router* as a sender. For example, you might want
 to set the router as the sender if you want to hide the details of the routees behind the router.
 The following code snippet shows how to set the parent router as sender.
 
-@@snip [ActorDocSpec.scala](code/docs/actor/ActorDocSpec.scala) { #reply-with-sender }
+@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #reply-with-sender }
 
 #### Supervision
 
@@ -139,7 +139,7 @@ by specifying the strategy when defining the router.
 
 Setting the strategy is easily done:
 
-@@snip [RoutingSpec.scala]../../../../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala) { #supervision }
+@@snip [RoutingSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala) { #supervision }
 
 @@@ note
 
@@ -160,25 +160,25 @@ to these paths.
 The example below shows how to create a router by providing it with the path strings of three
 routee actors. 
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-round-robin-group }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-group }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #round-robin-group-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-group-1 }
 
 Here is the same example, but with the router configuration provided programmatically instead of
 from configuration.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #round-robin-group-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-group-2 }
 
 The routee actors are created externally from the router:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #create-workers }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #create-workers }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #create-worker-actors }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #create-worker-actors }
 
 The paths may contain protocol and address information for actors running on remote hosts.
 Remoting requires the `akka-remote` module to be included in the classpath.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group }
 
 ## Router usage
 
@@ -188,7 +188,7 @@ The router actors in this section are created from within a top level actor name
 Note that deployment paths in the configuration starts with `/parent/` followed by the name
 of the router actor. 
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #create-parent }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #create-parent }
 
 <a id="round-robin-router-scala"></a>
 ### RoundRobinPool and RoundRobinGroup
@@ -197,23 +197,23 @@ Routes in a [round-robin](http://en.wikipedia.org/wiki/Round-robin) fashion to i
 
 RoundRobinPool defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-round-robin-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #round-robin-pool-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-1 }
 
 RoundRobinPool defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #round-robin-pool-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-2 }
 
 RoundRobinGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-round-robin-group }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-group }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #round-robin-group-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-group-1 }
 
 RoundRobinGroup defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #paths #round-robin-group-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #round-robin-group-2 }
 
 ### RandomPool and RandomGroup
 
@@ -221,23 +221,23 @@ This router type selects one of its routees randomly for each message.
 
 RandomPool defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-random-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-random-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #random-pool-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #random-pool-1 }
 
 RandomPool defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #random-pool-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #random-pool-2 }
 
 RandomGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-random-group }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-random-group }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #random-group-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #random-group-1 }
 
 RandomGroup defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #paths #random-group-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #random-group-2 }
 
 <a id="balancing-pool-scala"></a>
 ### BalancingPool
@@ -269,19 +269,19 @@ as described in [Specially Handled Messages](#router-special-messages-scala),
 
 BalancingPool defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-balancing-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #balancing-pool-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #balancing-pool-1 }
 
 BalancingPool defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #balancing-pool-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #balancing-pool-2 }
 
 Addition configuration for the balancing dispatcher, which is used by the pool,
 can be configured in the `pool-dispatcher` section of the router deployment
 configuration.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-balancing-pool2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool2 }
 
 The `BalancingPool` automatically uses a special `BalancingDispatcher` for its
 routees - disregarding any dispatcher that is set on the routee Props object.
@@ -294,14 +294,14 @@ can be configured as explained in @ref:[Dispatchers](dispatchers.md). In situati
 routees are expected to perform blocking operations it may be useful to replace it
 with a `thread-pool-executor` hinting the number of allocated threads explicitly:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-balancing-pool3 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool3 }
 
 It is also possible to change the `mailbox` used by the balancing dispatcher for
 scenarios where the default unbounded mailbox is not well suited. An example of such
 a scenario could arise whether there exists the need to manage priority for each message.
 You can then implement a priority mailbox and configure your dispatcher:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-balancing-pool4 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool4 }
 
 @@@ note
 
@@ -328,13 +328,13 @@ since their mailbox size is unknown
 
 SmallestMailboxPool defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-smallest-mailbox-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-smallest-mailbox-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #smallest-mailbox-pool-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #smallest-mailbox-pool-1 }
 
 SmallestMailboxPool defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #smallest-mailbox-pool-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #smallest-mailbox-pool-2 }
 
 There is no Group variant of the SmallestMailboxPool because the size of the mailbox
 and the internal dispatching state of the actor is not practically available from the paths
@@ -346,23 +346,23 @@ A broadcast router forwards the message it receives to *all* its routees.
 
 BroadcastPool defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-broadcast-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-broadcast-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #broadcast-pool-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcast-pool-1 }
 
 BroadcastPool defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #broadcast-pool-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcast-pool-2 }
 
 BroadcastGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-broadcast-group }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-broadcast-group }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #broadcast-group-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcast-group-1 }
 
 BroadcastGroup defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #paths #broadcast-group-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #broadcast-group-2 }
 
 @@@ note
 
@@ -383,23 +383,23 @@ It is expecting at least one reply within a configured duration, otherwise it wi
 
 ScatterGatherFirstCompletedPool defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-scatter-gather-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-scatter-gather-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #scatter-gather-pool-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #scatter-gather-pool-1 }
 
 ScatterGatherFirstCompletedPool defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #scatter-gather-pool-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #scatter-gather-pool-2 }
 
 ScatterGatherFirstCompletedGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-scatter-gather-group }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-scatter-gather-group }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #scatter-gather-group-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #scatter-gather-group-1 }
 
 ScatterGatherFirstCompletedGroup defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #paths #scatter-gather-group-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #scatter-gather-group-2 }
 
 ### TailChoppingPool and TailChoppingGroup
 
@@ -415,23 +415,23 @@ This optimisation was described nicely in a blog post by Peter Bailis:
 
 TailChoppingPool defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-tail-chopping-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-tail-chopping-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #tail-chopping-pool-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #tail-chopping-pool-1 }
 
 TailChoppingPool defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #tail-chopping-pool-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #tail-chopping-pool-2 }
 
 TailChoppingGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-tail-chopping-group }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-tail-chopping-group }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #tail-chopping-group-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #tail-chopping-group-1 }
 
 TailChoppingGroup defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #paths #tail-chopping-group-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #tail-chopping-group-2 }
 
 ### ConsistentHashingPool and ConsistentHashingGroup
 
@@ -457,9 +457,9 @@ the same time for one router. The `hashMapping` is tried first.
 
 Code example:
 
-@@snip [ConsistentHashingRouterDocSpec.scala](code/docs/routing/ConsistentHashingRouterDocSpec.scala) { #cache-actor }
+@@snip [ConsistentHashingRouterDocSpec.scala]($code$/scala/docs/routing/ConsistentHashingRouterDocSpec.scala) { #cache-actor }
 
-@@snip [ConsistentHashingRouterDocSpec.scala](code/docs/routing/ConsistentHashingRouterDocSpec.scala) { #consistent-hashing-router }
+@@snip [ConsistentHashingRouterDocSpec.scala]($code$/scala/docs/routing/ConsistentHashingRouterDocSpec.scala) { #consistent-hashing-router }
 
 In the above example you see that the `Get` message implements `ConsistentHashable` itself,
 while the `Entry` message is wrapped in a `ConsistentHashableEnvelope`. The `Evict`
@@ -467,23 +467,23 @@ message is handled by the `hashMapping` partial function.
 
 ConsistentHashingPool defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-consistent-hashing-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-consistent-hashing-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #consistent-hashing-pool-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #consistent-hashing-pool-1 }
 
 ConsistentHashingPool defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #consistent-hashing-pool-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #consistent-hashing-pool-2 }
 
 ConsistentHashingGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-consistent-hashing-group }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-consistent-hashing-group }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #consistent-hashing-group-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #consistent-hashing-group-1 }
 
 ConsistentHashingGroup defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #paths #consistent-hashing-group-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #consistent-hashing-group-2 }
 
 `virtual-nodes-factor` is the number of virtual nodes per routee that is used in the 
 consistent hash node ring to make the distribution more uniform.
@@ -508,7 +508,7 @@ matter how that router would normally route its messages.
 The example below shows how you would use a `Broadcast` message to send a very important message
 to every routee of a router.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #broadcastDavyJonesWarning }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcastDavyJonesWarning }
 
 In this example the router receives the `Broadcast` message, extracts its payload
 (`"Watch out for Davy Jones' locker"`), and then sends the payload on to all of the router's
@@ -528,7 +528,7 @@ A `PoisonPill` message has special handling for all actors, including for router
 receives a `PoisonPill` message, that actor will be stopped. See the @ref:[PoisonPill](actors.md#poison-pill-scala)
 documentation for details.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #poisonPill }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #poisonPill }
 
 For a router, which normally passes on messages to routees, it is important to realise that
 `PoisonPill` messages are processed by the router only. `PoisonPill` messages sent to a router
@@ -546,7 +546,7 @@ router. Instead you should wrap a `PoisonPill` message inside a `Broadcast` mess
 routee will receive the `PoisonPill` message. Note that this will stop all routees, even if the
 routees aren't children of the router, i.e. even routees programmatically provided to the router.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #broadcastPoisonPill }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcastPoisonPill }
 
 With the code shown above, each routee will receive a `PoisonPill` message. Each routee will
 continue to process its messages as normal, eventually processing the `PoisonPill`. This will
@@ -575,14 +575,14 @@ Routees that are children of the router will also be suspended, and will be affe
 supervision directive that is applied to the router. Routees that are not the routers children, i.e.
 those that were created externally to the router, will not be affected.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #kill }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #kill }
 
 As with the `PoisonPill` message, there is a distinction between killing a router, which
 indirectly kills its children (who happen to be routees), and killing routees directly (some of whom
 may not be children.) To kill routees directly the router should be sent a `Kill` message wrapped
 in a `Broadcast` message.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #broadcastKill }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcastKill }
 
 ### Management Messages
 
@@ -614,16 +614,16 @@ pressure is lower than certain threshold. Both thresholds are configurable.
 
 Pool with default resizer defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-resize-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-resize-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #resize-pool-1 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #resize-pool-1 }
 
 Several more configuration options are available and described in `akka.actor.deployment.default.resizer`
 section of the reference <!-- FIXME: More than one link target with name configuration in path Some(/scala/routing.rst) --> configuration.
 
 Pool with resizer defined in code:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #resize-pool-2 }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #resize-pool-2 }
 
 *It is also worth pointing out that if you define the ``router`` in the configuration file then this value
 will be used instead of any programmatically sent parameters.*
@@ -656,9 +656,9 @@ The memory usage is O(n) where n is the number of sizes you allow, i.e. upperBou
 
 Pool with `OptimalSizeExploringResizer` defined in configuration:
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-optimal-size-exploring-resize-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-optimal-size-exploring-resize-pool }
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #optimal-size-exploring-resize-pool }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #optimal-size-exploring-resize-pool }
 
 Several more configuration options are available and described in `akka.actor.deployment.default.optimal-size-exploring-resizer`
 section of the reference <!-- FIXME: More than one link target with name configuration in path Some(/scala/routing.rst) --> configuration.
@@ -712,7 +712,7 @@ The router created in this example is replicating each message to a few destinat
 
 Start with the routing logic:
 
-@@snip [CustomRouterDocSpec.scala](code/docs/routing/CustomRouterDocSpec.scala) { #routing-logic }
+@@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #routing-logic }
 
 `select` will be called for each message and in this example pick a few destinations by round-robin,
 by reusing the existing `RoundRobinRoutingLogic` and wrap the result in a `SeveralRoutees`
@@ -722,7 +722,7 @@ The implementation of the routing logic must be thread safe, since it might be u
 
 A unit test of the routing logic: 
 
-@@snip [CustomRouterDocSpec.scala](code/docs/routing/CustomRouterDocSpec.scala) { #unit-test-logic }
+@@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #unit-test-logic }
 
 You could stop here and use the `RedundancyRoutingLogic` with a `akka.routing.Router`
 as described in [A Simple Router](#simple-router-scala).
@@ -732,23 +732,23 @@ Let us continue and make this into a self contained, configurable, router actor.
 Create a class that extends `Pool`, `Group` or `CustomRouterConfig`. That class is a factory
 for the routing logic and holds the configuration for the router. Here we make it a `Group`.
 
-@@snip [CustomRouterDocSpec.scala](code/docs/routing/CustomRouterDocSpec.scala) { #group }
+@@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #group }
 
 This can be used exactly as the router actors provided by Akka.
 
-@@snip [CustomRouterDocSpec.scala](code/docs/routing/CustomRouterDocSpec.scala) { #usage-1 }
+@@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #usage-1 }
 
 Note that we added a constructor in `RedundancyGroup` that takes a `Config` parameter.
 That makes it possible to define it in configuration.
 
-@@snip [CustomRouterDocSpec.scala](code/docs/routing/CustomRouterDocSpec.scala) { #config }
+@@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #config }
 
 Note the fully qualified class name in the `router` property. The router class must extend
 `akka.routing.RouterConfig` (`Pool`, `Group` or `CustomRouterConfig`) and have 
 constructor with one `com.typesafe.config.Config` parameter.
 The deployment section of the configuration is passed to the constructor.
 
-@@snip [CustomRouterDocSpec.scala](code/docs/routing/CustomRouterDocSpec.scala) { #usage-2 }
+@@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #usage-2 }
 
 ## Configuring Dispatchers
 
@@ -758,7 +758,7 @@ The dispatcher for created children of the pool will be taken from
 To make it easy to define the dispatcher of the routees of the pool you can
 define the dispatcher inline in the deployment section of the config.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #config-pool-dispatcher }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-pool-dispatcher }
 
 That is the only thing you need to do enable a dedicated dispatcher for a
 pool.
@@ -779,7 +779,7 @@ the actor system’s default dispatcher. All standard routers allow setting this
 property in their constructor or factory method, custom routers have to
 implement the method in a suitable way.
 
-@@snip [RouterDocSpec.scala](code/docs/routing/RouterDocSpec.scala) { #dispatchers }
+@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #dispatchers }
 
 @@@ note
 

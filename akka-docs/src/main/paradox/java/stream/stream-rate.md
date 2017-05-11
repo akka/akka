@@ -12,7 +12,7 @@ To run a stage asynchronously it has to be marked explicitly as such using the `
 asynchronously means that a stage, after handing out an element to its downstream consumer is able to immediately
 process the next message. To demonstrate what we mean by this, let's take a look at the following example:
 
-@@snip [StreamBuffersRateDocTest.java](../code/jdocs/stream/StreamBuffersRateDocTest.java) { #pipelining }
+@@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #pipelining }
 
 Running the above example, one of the possible outputs looks like this:
 
@@ -61,16 +61,16 @@ akka.stream.materializer.max-input-buffer-size = 16
 
 Alternatively they can be set by passing a `ActorMaterializerSettings` to the materializer:
 
-@@snip [StreamBuffersRateDocTest.java](../code/jdocs/stream/StreamBuffersRateDocTest.java) { #materializer-buffer }
+@@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #materializer-buffer }
 
 If the buffer size needs to be set for segments of a `Flow` only, it is possible by defining a separate
 `Flow` with these attributes:
 
-@@snip [StreamBuffersRateDocTest.java](../code/jdocs/stream/StreamBuffersRateDocTest.java) { #section-buffer }
+@@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #section-buffer }
 
 Here is an example of a code that demonstrate some of the issues caused by internal buffers:
 
-@@snip [StreamBuffersRateDocTest.java](../code/jdocs/stream/StreamBuffersRateDocTest.java) { #buffering-abstraction-leak }
+@@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #buffering-abstraction-leak }
 
 Running the above example one would expect the number *3* to be printed in every 3 seconds (the `conflateWithSeed`
 step here is configured so that it counts the number of elements received before the downstream `ZipWith` consumes
@@ -94,7 +94,7 @@ pipeline of an application.
 The example below will ensure that 1000 jobs (but not more) are dequeued from an external (imaginary) system and
 stored locally in memory - relieving the external system:
 
-@@snip [StreamBuffersRateDocTest.java](../code/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-backpressure }
+@@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-backpressure }
 
 The next example will also queue up 1000 jobs locally, but if there are more jobs waiting
 in the imaginary external systems, it makes space for the new element by
@@ -102,12 +102,12 @@ dropping one element from the *tail* of the buffer. Dropping from the tail is a 
 it must be noted that this will drop the *youngest* waiting job. If some "fairness" is desired in the sense that
 we want to be nice to jobs that has been waiting for long, then this option can be useful.
 
-@@snip [StreamBuffersRateDocTest.java](../code/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-droptail }
+@@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-droptail }
 
 Instead of dropping the youngest element from the tail of the buffer a new element can be dropped without
 enqueueing it to the buffer at all.
 
-@@snip [StreamBuffersRateDocTest.java](../code/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-dropnew }
+@@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-dropnew }
 
 Here is another example with a queue of 1000 jobs, but it makes space for the new element by
 dropping one element from the *head* of the buffer. This is the *oldest*
@@ -116,13 +116,13 @@ resent if not processed in a certain period. The oldest element will be
 retransmitted soon, (in fact a retransmitted duplicate might be already in the queue!)
 so it makes sense to drop it first.
 
-@@snip [StreamBuffersRateDocTest.java](../code/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-drophead }
+@@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-drophead }
 
 Compared to the dropping strategies above, dropBuffer drops all the 1000
 jobs it has enqueued once the buffer gets full. This aggressive strategy
 is useful when dropping jobs is preferred to delaying jobs.
 
-@@snip [StreamBuffersRateDocTest.java](../code/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-dropbuffer }
+@@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-dropbuffer }
 
 If our imaginary external job provider is a client using our API, we might
 want to enforce that the client cannot have more than 1000 queued jobs
@@ -130,7 +130,7 @@ otherwise we consider it flooding and terminate the connection. This is
 easily achievable by the error strategy which simply fails the stream
 once the buffer gets full.
 
-@@snip [StreamBuffersRateDocTest.java](../code/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-fail }
+@@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-fail }
 
 ## Rate transformation
 
@@ -142,7 +142,7 @@ useful to combine elements from a producer until a demand signal comes from a co
 Below is an example snippet that summarizes fast stream of elements to a standard deviation, mean and count of
 elements that have arrived  while the stats have been calculated.
 
-@@snip [RateTransformationDocTest.java](../code/jdocs/stream/RateTransformationDocTest.java) { #conflate-summarize }
+@@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #conflate-summarize }
 
 This example demonstrates that such flow's rate is decoupled. The element rate at the start of the flow
 can be much higher that the element rate at the end of the flow.
@@ -151,7 +151,7 @@ Another possible use of `conflate` is to not consider all elements for summary w
 Example below demonstrates how `conflate` can be used to implement random drop of elements when consumer is not able
 to keep up with the producer.
 
-@@snip [RateTransformationDocTest.java](../code/jdocs/stream/RateTransformationDocTest.java) { #conflate-sample }
+@@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #conflate-sample }
 
 ### Understanding expand
 
@@ -161,12 +161,12 @@ allows to extrapolate a value to be sent as an element to a consumer.
 As a simple use of `expand` here is a flow that sends the same element to consumer when producer does not send any
 new elements.
 
-@@snip [RateTransformationDocTest.java](../code/jdocs/stream/RateTransformationDocTest.java) { #expand-last }
+@@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #expand-last }
 
 Expand also allows to keep some state between demand requests from the downstream. Leveraging this, here is a flow
 that tracks and reports a drift between fast consumer and slow producer.
 
-@@snip [RateTransformationDocTest.java](../code/jdocs/stream/RateTransformationDocTest.java) { #expand-drift }
+@@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #expand-drift }
 
 Note that all of the elements coming from upstream will go through `expand` at least once. This means that the
 output of this flow is going to report a drift of zero if producer is fast enough, or a larger drift otherwise.

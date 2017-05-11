@@ -31,7 +31,7 @@ in more depth.
 
 For the sake of demonstration let us consider the following strategy:
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #strategy }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #strategy }
 
 I have chosen a few well-known exception types in order to demonstrate the
 application of the fault handling directives described in <!-- FIXME: More than one link target with name supervision in path Some(/java/fault-tolerance.rst) --> supervision.
@@ -105,42 +105,42 @@ strategy.
 The following section shows the effects of the different directives in practice,
 where a test setup is needed. First off, we need a suitable supervisor:
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #supervisor }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #supervisor }
 
 This supervisor will be used to create a child, with which we can experiment:
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #child }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #child }
 
 The test is easier by using the utilities described in <!-- FIXME: More than one link target with name akka-testkit in path Some(/java/fault-tolerance.rst) --> akka-testkit,
 where `TestProbe` provides an actor ref useful for receiving and inspecting replies.
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #testkit }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #testkit }
 
 Let us create actors:
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #create }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #create }
 
 The first test shall demonstrate the `Resume` directive, so we try it out by
 setting some non-initial state in the actor and have it fail:
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #resume }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #resume }
 
 As you can see the value 42 survives the fault handling directive. Now, if we
 change the failure to a more serious `NullPointerException`, that will no
 longer be the case:
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #restart }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #restart }
 
 And finally in case of the fatal `IllegalArgumentException` the child will be
 terminated by the supervisor:
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #stop }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #stop }
 
 Up to now the supervisor was completely unaffected by the child’s failure,
 because the directives set did handle it. In case of an `Exception`, this is not
 true anymore and the supervisor escalates the failure.
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #escalate-kill }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #escalate-kill }
 
 The supervisor itself is supervised by the top-level actor provided by the
 `ActorSystem`, which has the default policy to restart in case of all
@@ -152,9 +152,9 @@ child not to survive this failure.
 In case this is not desired (which depends on the use case), we need to use a
 different supervisor which overrides this behavior.
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #supervisor2 }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #supervisor2 }
 
 With this parent, the child survives the escalated restart, as demonstrated in
 the last test:
 
-@@snip [FaultHandlingTest.java](code/jdocs/actor/FaultHandlingTest.java) { #escalate-restart }
+@@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #escalate-restart }

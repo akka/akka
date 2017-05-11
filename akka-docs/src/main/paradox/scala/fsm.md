@@ -24,17 +24,17 @@ send them on after the burst ended or a flush request is received.
 
 First, consider all of the below to use these import statements:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #simple-imports }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #simple-imports }
 
 The contract of our “Buncher” actor is that it accepts or produces the following messages:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #simple-events }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #simple-events }
 
 `SetTarget` is needed for starting it up, setting the destination for the
 `Batches` to be passed on; `Queue` will add to the internal queue while
 `Flush` will mark the end of a burst.
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #simple-state }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #simple-state }
 
 The actor can be in two states: no message queued (aka `Idle`) or some
 message queued (aka `Active`). It will stay in the active state as long as
@@ -44,7 +44,7 @@ the actual queue of messages.
 
 Now let’s take a look at the skeleton for our FSM actor:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #simple-fsm }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #simple-fsm }
 
 The basic strategy is to declare the actor, mixing in the `FSM` trait
 and specifying the possible states and data values as type parameters. Within
@@ -72,7 +72,7 @@ shall work identically in both states, we make use of the fact that any event
 which is not handled by the `when()` block is passed to the
 `whenUnhandled()` block:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #unhandled-elided }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #unhandled-elided }
 
 The first case handled here is adding `Queue()` requests to the internal
 queue and going to the `Active` state (this does the obvious thing of staying
@@ -86,7 +86,7 @@ target, for which we use the `onTransition` mechanism: you can declare
 multiple such blocks and all of them will be tried for matching behavior in
 case a state transition occurs (i.e. only when the state actually changes).
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #transition-elided }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #transition-elided }
 
 The transition callback is a partial function which takes as input a pair of
 states—the current and the next state. The FSM trait includes a convenience
@@ -108,7 +108,7 @@ To verify that this buncher actually works, it is quite easy to write a test
 using the @ref:[Testing Actor Systems](testing.md), which is conveniently bundled with ScalaTest traits
 into `AkkaSpec`:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #test-code }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #test-code }
 
 ## Reference
 
@@ -117,7 +117,7 @@ into `AkkaSpec`:
 The `FSM` trait inherits directly from `Actor`, when you
 extend `FSM` you must be aware that an actor is actually created:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #simple-fsm }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #simple-fsm }
 
 @@@ note
 
@@ -171,7 +171,7 @@ The `stateFunction` argument is a `PartialFunction[Event, State]`,
 which is conveniently given using the partial function literal syntax as
 demonstrated below:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #when-syntax }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #when-syntax }
 
 The `Event(msg: Any, data: D)` case class is parameterized with the data
 type held by the FSM for convenient pattern matching.
@@ -188,7 +188,7 @@ sealed trait and then verify that there is a `when` clause for each of the
 states. If you want to leave the handling of a state “unhandled” (more below),
 it still needs to be declared like this:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #NullFunction }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #NullFunction }
 
 ### Defining the Initial State
 
@@ -207,7 +207,7 @@ If a state doesn't handle a received event a warning is logged. If you want to
 do something else in this case you can specify that with
 `whenUnhandled(stateFunction)`:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #unhandled-syntax }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #unhandled-syntax }
 
 Within this handler the state of the FSM may be queried using the
 `stateName` method.
@@ -246,7 +246,7 @@ does not modify the state transition.
 
 All modifiers can be chained to achieve a nice and concise description:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #modifier-syntax }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #modifier-syntax }
 
 The parentheses are not actually needed in all cases, but they visually
 distinguish between modifiers and their arguments and therefore make the code
@@ -283,7 +283,7 @@ The handler is a partial function which takes a pair of states as input; no
 resulting state is needed as it is not possible to modify the transition in
 progress.
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #transition-syntax }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #transition-syntax }
 
 The convenience extractor `->` enables decomposition of the pair of states
 with a clear visual reminder of the transition's direction. As usual in pattern
@@ -295,7 +295,7 @@ It is also possible to pass a function object accepting two states to
 `onTransition`, in case your transition handling logic is implemented as
 a method:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #alt-transition-syntax }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #alt-transition-syntax }
 
 The handlers registered with this method are stacked, so you can intersperse
 `onTransition` blocks with `when` blocks as suits your design. It
@@ -341,13 +341,13 @@ transformed using Scala’s full supplement of functional programming tools. In
 order to retain type inference, there is a helper function which may be used in
 case some common handling logic shall be applied to different clauses:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #transform-syntax }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #transform-syntax }
 
 It goes without saying that the arguments to this method may also be stored, to
 be used several times, e.g. when applying the same transformation to several
 `when()` blocks:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #alt-transform-syntax }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #alt-transform-syntax }
 
 ### Timers
 
@@ -398,13 +398,13 @@ may not be used within a `when` block).
 
 @@@
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #stop-syntax }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #stop-syntax }
 
 You can use `onTermination(handler)` to specify custom code that is
 executed when the FSM is stopped. The handler is a partial function which takes
 a `StopEvent(reason, stateName, stateData)` as argument:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #termination-syntax }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #termination-syntax }
 
 As for the `whenUnhandled` case, this handler is not stacked, so each
 invocation of `onTermination` replaces the previously installed handler.
@@ -436,7 +436,7 @@ and in the following.
 The setting `akka.actor.debug.fsm` in <!-- FIXME: More than one link target with name configuration in path Some(/scala/fsm.rst) --> configuration enables logging of an
 event trace by `LoggingFSM` instances:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #logging-fsm }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #logging-fsm }
 
 This FSM will log at DEBUG level:
 
@@ -455,7 +455,7 @@ The `LoggingFSM` trait adds one more feature to the FSM: a rolling event
 log which may be used during debugging (for tracing how the FSM entered a
 certain failure state) or for other creative uses:
 
-@@snip [FSMDocSpec.scala](code/docs/actor/FSMDocSpec.scala) { #logging-fsm }
+@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #logging-fsm }
 
 The `logDepth` defaults to zero, which turns off the event log.
 
