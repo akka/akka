@@ -29,7 +29,7 @@ The protocol for obtaining the current temperature from the device actor is rath
 
 We need two messages, one for the request, and one for the reply. A first attempt could look like this:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_2/DeviceInProgress.scala) { #read-protocol-1 }
+@@snip [Hello.scala]($code$/scala/tutorial_2/DeviceInProgress.scala) { #read-protocol-1 }
 
 This is a fine approach, but it limits the flexibility of the protocol. To understand why we need to talk
 about message ordering and message delivery guarantees in general.
@@ -139,12 +139,12 @@ can be helpful to put an additional query ID field in the message which helps us
 
 Hence, we add one more field to our messages, so that an ID can be provided by the requester:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_2/DeviceInProgress.scala) { #read-protocol-2 }
+@@snip [Hello.scala]($code$/scala/tutorial_2/DeviceInProgress.scala) { #read-protocol-2 }
 
 Our device actor has the responsibility to use the same ID for the response of a given query. Now we can sketch
 our device actor:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_2/DeviceInProgress.scala) { #device-with-read }
+@@snip [Hello.scala]($code$/scala/tutorial_2/DeviceInProgress.scala) { #device-with-read }
 
 We maintain the current temperature, initially set to `None`, and we simply report it back if queried. We also
 added fields for the ID of the device and the group it belongs to, which we will use later.
@@ -152,7 +152,7 @@ added fields for the ID of the device and the group it belongs to, which we will
 We can already write a simple test for this functionality (we use ScalaTest but any other test framework can be
 used with the Akka Testkit):
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_2/DeviceSpec.scala) { #device-read-test }
+@@snip [Hello.scala]($code$/scala/tutorial_2/DeviceSpec.scala) { #device-read-test }
 
 ## The Write Protocol
 
@@ -162,7 +162,7 @@ As a first attempt, we could model recording the current temperature in the devi
 
 Such a message could possibly look like this:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_2/DeviceInProgress.scala) { #write-protocol-1 }
+@@snip [Hello.scala]($code$/scala/tutorial_2/DeviceInProgress.scala) { #write-protocol-1 }
 
 The problem with this approach is that the sender of the record temperature message can never be sure if the message
 was processed or not. We have seen that Akka does not guarantee delivery of these messages and leaves it to the
@@ -172,12 +172,12 @@ Just like in the case of temperature queries and responses, it is a good idea to
 
 Putting read and write protocol together, the device actor will look like this:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_2/Device.scala) { #full-device }
+@@snip [Hello.scala]($code$/scala/tutorial_2/Device.scala) { #full-device }
 
 We are also responsible for writing a new test case now, exercising both the read/query and write/record functionality
 together:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_2/DeviceSpec.scala) { #device-write-read-test }
+@@snip [Hello.scala]($code$/scala/tutorial_2/DeviceSpec.scala) { #device-write-read-test }
 
 ## What is Next?
 

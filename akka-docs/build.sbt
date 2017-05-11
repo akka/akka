@@ -18,8 +18,8 @@ paradoxProperties ++= Map(
   "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
   "scala.version" -> scalaVersion.value,
   "akka.version" -> version.value,
-  "snip.code.base_dir" -> (sourceDirectory in Compile).value.getAbsolutePath,
-  "snip.akka.base_dir" -> ((baseDirectory in Compile).value / "..").getAbsolutePath
+  "snip.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
+  "snip.akka.base_dir" -> ((baseDirectory in Test).value / "..").getAbsolutePath
 )
 
 resolvers += Resolver.bintrayRepo("2m", "maven")

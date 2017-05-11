@@ -81,7 +81,7 @@ is known up front: device groups and device actors are created on-demand. The st
 Now that the steps are defined, we only need to define the messages that we will use to communicate requests and
 their acknowledgement:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_3/DeviceManager.scala) { #device-manager-msgs }
+@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-msgs }
 
 As you see, in this case, we have not included a request ID field in the messages. Since registration is usually happening
 once, at the component that connects the system to some network protocol, we will usually have no use for the ID.
@@ -104,7 +104,7 @@ the code looks like:
 value. This is achieved by variables included in backticks, like `` `variable` ``, and it means that the pattern
 only match if it contains the value of `variable` in that position.
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_3/Device.scala) { #device-with-register }
+@@snip [Hello.scala]($code$/scala/tutorial_3/Device.scala) { #device-with-register }
 
 We should not leave features untested, so we immediately write two new test cases, one exercising successful
 registration, the other testing the case when IDs don't match:
@@ -114,7 +114,7 @@ and fails if it receives any messages during this period. If no messages are rec
 assertion passes. It is usually a good idea to keep these timeouts low (but not too low) because they add significant
 test execution time otherwise.
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_3/DeviceSpec.scala) { #device-registration-tests }
+@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-registration-tests }
 
 ## Device Group
 
@@ -127,18 +127,18 @@ by using `forward` instead of the `!` operator. The only difference between the 
 sender while `!` always sets the sender to be the current actor. Just like with our device actor, we ensure that we don't
 respond to wrong group IDs:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_3/DeviceGroup.scala) { #device-group-register }
+@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-register }
 
 Just as we did with the device, we test this new functionality. We also test that the actors returned for the two
 different IDs are actually different, and we also attempt to record a temperature reading for each of the devices
 to see if the actors are responding.
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test-registration }
+@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test-registration }
 
 It might be, that a device actor already exists for the registration request. In this case, we would like to use
 the existing actor instead of a new one. We have not tested this yet, so we need to fix this:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test3 }
+@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test3 }
 
 So far, we have implemented everything for registering device actors in the group. Devices come and go, however, so
 we will need a way to remove those from the `Map[String, ActorRef]`. We will assume that when a device is removed, its corresponding device actor
@@ -163,13 +163,13 @@ its ID, which we need to remove it from the map of existing device to device act
 need to introduce another placeholder, `Map[ActorRef, String]`, that allow us to find out the device ID corresponding to a given `ActorRef`. Putting
 this together the result is:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_3/DeviceGroup.scala) { #device-group-remove }
+@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-remove }
 
 So far we have no means to get what devices the group device actor keeps track of and, therefore, we cannot test our
 new functionality yet. To make it testable, we add a new query capability (message `RequestDeviceList(requestId: Long)`) that simply lists the currently active
 device IDs:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_3/DeviceGroup.scala) { #device-group-full }
+@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-full }
 
 We almost have everything to test the removal of devices. What is missing is:
 
@@ -183,14 +183,14 @@ We add two more test cases now. In the first, we just test that we get back the 
 a few devices. The second test case makes sure that the device ID is properly removed after the device actor has
  been stopped:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
+@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
 
 ## Device Manager
 
 The only part that remains now is the entry point for our device manager component. This actor is very similar to
 the device group actor, with the only difference that it creates device group actors instead of device actors:
 
-@@snip [Hello.scala](../../../../test/scala/tutorial_3/DeviceManager.scala) { #device-manager-full }
+@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-full }
 
 We leave tests of the device manager as an exercise as it is very similar to the tests we have written for the group
 actor.

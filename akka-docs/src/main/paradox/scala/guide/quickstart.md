@@ -111,14 +111,14 @@ The usual pattern is to have your system set up to stop on external signal (i.e.
 
 Once there is an `ActorSystem` we can populate it with actors. This is done by using the `actorOf` method. The `actorOf` method expects a `Props` instance and the name of the actor to be created. You can think of the `Props` as a configuration value for what actor to create and how it should be created. Creating an actor with the `actorOf` method will return an `ActorRef` instance. Think of the `ActorRef` as a unique address with which it is possible to message the actor instance. The `ActorRef` object contains a few methods with which you can send messages to the actor instance. One of them is called `tell`, or in the Scala case simply `!` (bang), and this method is used in the example here below. Calling the `!` method is an asynchronous operation and it instructs Akka to send a message to the actor instance that is uniquely identified by the actor reference.
 
-@@snip [HelloWorldApp.scala](../../../../test/scala/quickstart/HelloWorldApp.scala) { #create-send }
+@@snip [HelloWorldApp.scala]($code$/scala/quickstart/HelloWorldApp.scala) { #create-send }
 
 Before we can create any actor in the actor system we must define one first. Luckily, creating actors in Akka is quite simple! Just have your actor class extend `akka.actor.Actor` and override the method `receive: Receive` and you are good to go. As for our `HelloWorldActor` class, it extends `Actor` and overrides the `receive` method as per the requirement. Our implementation of the `receive` method expects messages of type `String`. For every `String` message it receives it will print "Hello " and the value of the `String`. Since the message we send in the main class is "World" we expect the string "Hello World" to be printed when running the application.
 
-@@snip [HelloWorldApp.scala](../../../../test/scala/quickstart/HelloWorldApp.scala) { #actor-impl }
+@@snip [HelloWorldApp.scala]($code$/scala/quickstart/HelloWorldApp.scala) { #actor-impl }
 
 Here is the full example:
 
-@@snip [HelloWorldApp.scala](../../../../test/scala/quickstart/HelloWorldApp.scala) { #full-example }
+@@snip [HelloWorldApp.scala]($code$/scala/quickstart/HelloWorldApp.scala) { #full-example }
 
 Now that you have seen the basics of an Akka application it is time to dive deeper.
