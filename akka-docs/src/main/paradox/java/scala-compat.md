@@ -1,5 +1,8 @@
 # Java 8 and Scala Compatibility
 
+Akka requires that you have [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or
+later installed on your machine.
+
 ## Scala and Java APIs
 
 Akka has both a @ref:[Scala Documentation](../scala.md) and a @ref:[Java Documentation](../java.md).
@@ -27,3 +30,12 @@ we can rely on Scala 2.12 to provide full interoperability—this will mean that
 Scala users can directly implement Java Functional Interfaces using lambda syntax
 as well as that Java users can directly implement Scala functions using lambda
 syntax.
+
+## Do not use -optimize Scala compiler flag
+
+@@@ warning
+
+Akka has not been compiled or tested with -optimize Scala compiler flag.
+Strange behavior has been reported by users that have tried it.
+
+@@@
