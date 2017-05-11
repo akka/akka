@@ -7,8 +7,8 @@
 * [event-bus](event-bus.md)
 * [logging](logging.md)
 * [scheduler](scheduler.md)
-* [../scala/common/duration](../scala/common/duration.md)
-* [../scala/common/circuitbreaker](../scala/common/circuitbreaker.md)
+* [common/duration](common/duration.md)
+* [common/circuitbreaker](common/circuitbreaker.md)
 * [extending-akka](extending-akka.md)
 
 @@@
