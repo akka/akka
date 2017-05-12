@@ -79,10 +79,10 @@ Creating a non-top-level actor is possible from any actor, by invoking `context.
 signature as its top-level counterpart. This is how it looks like in practice:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #print-refs }
+:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #print-refs }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #print-refs }
+:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #print-refs }
 
 We see that the following two lines are printed
 
@@ -131,10 +131,10 @@ The actor API exposes many lifecycle hooks that the actor implementation can ove
 Again, we can try out all this with a simple experiment:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #start-stop }
+:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #start-stop }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #start-stop }
+:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #start-stop }
 
 After running it, we get the output
 
@@ -160,10 +160,10 @@ stop and restart the child. If you don't change the default strategy all failure
 the default strategy in this simple experiment:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #supervise }
+:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #supervise }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #supervise }
+:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #supervise }
 
 After running the snippet, we see the following output on the console:
 
@@ -224,18 +224,18 @@ is that we have dropped using `println()` and instead use @scala[the `ActorLoggi
 logging facility built into Akka directly. Furthermore, we are using a recommended creational pattern for actors; define a `props()` @scala[method in the [companion object](http://docs.scala-lang.org/tutorials/tour/singleton-objects.html#companions) of] @java[static method on] the actor:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_1/IotSupervisor.scala) { #iot-supervisor }
+:   @@snip [IotSupervisor.scala]($code$/scala/tutorial_1/IotSupervisor.scala) { #iot-supervisor }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_1/IotSupervisor.java) { #iot-supervisor }
+:   @@snip [IotSupervisor.java]($code$/java/jdocs/tutorial_1/IotSupervisor.java) { #iot-supervisor }
 
 All we need now is to tie this up with a class with the `main` entry point:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_1/IotApp.scala) { #iot-app }
+:   @@snip [IotApp.scala]($code$/scala/tutorial_1/IotApp.scala) { #iot-app }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_1/IotMain.java) { #iot-app }
+:   @@snip [IotMain.java]($code$/java/jdocs/tutorial_1/IotMain.java) { #iot-app }
 
 This application does very little for now, but we have the first actor in place and we are ready to extend it further.
 

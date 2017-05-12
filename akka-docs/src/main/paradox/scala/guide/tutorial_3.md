@@ -81,7 +81,7 @@ is known up front: device groups and device actors are created on-demand. The st
 Now that the steps are defined, we only need to define the messages that we will use to communicate requests and
 their acknowledgement:
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-msgs }
+@@snip [DeviceManager.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-msgs }
 
 As you see, in this case, we have not included a request ID field in the messages. Since registration is usually happening
 once, at the component that connects the system to some network protocol, we will usually have no use for the ID.
@@ -105,10 +105,10 @@ value. This is achieved by variables included in backticks, like `` `variable` `
 only match if it contains the value of `variable` in that position.]
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_3/Device.scala) { #device-with-register }
+:   @@snip [Device.scala]($code$/scala/tutorial_3/Device.scala) { #device-with-register }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_3/Device.java) { #device-with-register }
+:   @@snip [Device.java]($code$/java/jdocs/tutorial_3/Device.java) { #device-with-register }
 
 We should not leave features untested, so we immediately write two new test cases, one exercising successful
 registration, the other testing the case when IDs don't match:
@@ -119,10 +119,10 @@ assertion passes. It is usually a good idea to keep these timeouts low (but not 
 test execution time otherwise.
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-registration-tests }
+:   @@snip [DeviceSpec.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-registration-tests }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_3/DeviceTest.java) { #device-registration-tests }
+:   @@snip [DeviceTest.java]($code$/java/jdocs/tutorial_3/DeviceTest.java) { #device-registration-tests }
 
 ## Device Group
 
@@ -136,29 +136,29 @@ sender while @scala[`!`] @java[`tell`] always sets the sender to be the current 
 respond to wrong group IDs:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-register }
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-register }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-register }
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-register }
 
 Just as we did with the device, we test this new functionality. We also test that the actors returned for the two
 different IDs are actually different, and we also attempt to record a temperature reading for each of the devices
 to see if the actors are responding.
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test-registration }
+:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test-registration }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test-registration }
+:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test-registration }
 
 It might be, that a device actor already exists for the registration request. In this case, we would like to use
 the existing actor instead of a new one. We have not tested this yet, so we need to fix this:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test3 }
+:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test3 }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test3 }
+:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test3 }
 >>>>>>> integrate-docs-scala-java:akka-docs-new/src/main/paradox/guide/tutorial_3.md
 
 So far, we have implemented everything for registering device actors in the group. Devices come and go, however, so
@@ -185,20 +185,20 @@ need to introduce another placeholder, @scala[`Map[String, ActorRef]`] @java[`Ma
 this together the result is:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-remove }
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-remove }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-remove }
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-remove }
 
 So far we have no means to get what devices the group device actor keeps track of and, therefore, we cannot test our
 new functionality yet. To make it testable, we add a new query capability (message @scala[`RequestDeviceList(requestId: Long)`] @java[`RequestDeviceList`]) that simply lists the currently active
 device IDs:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-full }
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-full }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-full }
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-full }
 
 We almost have everything to test the removal of devices. What is missing is:
 
@@ -214,10 +214,10 @@ a few devices. The second test case makes sure that the device ID is properly re
 
 =======
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
+:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-list-terminate-test }
+:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-list-terminate-test }
 
 ## Device Manager
 
@@ -225,10 +225,10 @@ The only part that remains now is the entry point for our device manager compone
 the device group actor, with the only difference that it creates device group actors instead of device actors:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-full }
+:   @@snip [DeviceManager.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-full }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_3/DeviceManager.java) { #device-manager-full }
+:   @@snip [DeviceManager.java]($code$/java/jdocs/tutorial_3/DeviceManager.java) { #device-manager-full }
 
 We leave tests of the device manager as an exercise as it is very similar to the tests we have written for the group
 actor.

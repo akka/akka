@@ -42,10 +42,10 @@ that each device can be in, according to the query:
 Summarizing these in message types we can add the following to `DeviceGroup`:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroup.scala) { #query-protocol }
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_4/DeviceGroup.scala) { #query-protocol }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroup.java) { #query-protocol }
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_4/DeviceGroup.java) { #query-protocol }
 
 ## Implementing the Query
 
@@ -95,10 +95,10 @@ until the timeout to mark these as not available.
 Putting together all these, the outline of our actor looks like this:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-outline }
+:   @@snip [DeviceGroupQuery.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-outline }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-outline }
+:   @@snip [DeviceGroupQuery.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-outline }
 
 The query actor, apart from the pending timer, has one stateful aspect about it: the actors that did not answer so far or,
 from the other way around, the set of actors that have replied or stopped. One way to track this state is
@@ -120,10 +120,10 @@ we will discuss later. In the case of timeout, we need to simply take all the ac
 reply to the submitter of the query with the collected results and stop the query actor:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-state }
+:   @@snip [DeviceGroupQuery.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-state }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-state }
+:   @@snip [DeviceGroupQuery.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-state }
 
 What is not yet clear, how we will "mutate" the `answersSoFar` and `stillWaiting` data structures. One important
 thing to note is that the function `waitingForReplies` **does not handle the messages directly. It returns a `Receive`
@@ -153,10 +153,10 @@ only the first call will have any effect, the rest is simply ignored.
 With all this knowledge, we can create the `receivedResponse` method:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-collect-reply }
+:   @@snip [DeviceGroupQuery.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-collect-reply }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-collect-reply }
+:   @@snip [DeviceGroupQuery.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-collect-reply }
 
 It is quite natural to ask at this point, what have we gained by using the `context.become()` trick instead of
 just making the `repliesSoFar` and `stillWaiting` structures mutable fields of the actor (i.e. `var`s)? In this
@@ -171,10 +171,10 @@ with the solution we have used here as it helps structuring more complex actor c
 Our query actor is now done:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-full }
+:   @@snip [DeviceGroupQuery.scala]($code$/scala/tutorial_4/DeviceGroupQuery.scala) { #query-full }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-full }
+:   @@snip [DeviceGroupQuery.java]($code$/java/jdocs/tutorial_4/DeviceGroupQuery.java) { #query-full }
 
 ## Testing
 
@@ -185,46 +185,46 @@ to the query actor, so we can easily pass in @scala[`TestProbe`] @java[`TestKit`
 there are two devices and both report a temperature:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-normal }
+:   @@snip [DeviceGroupQuerySpec.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-normal }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-normal }
+:   @@snip [DeviceGroupQueryTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-normal }
 
 That was the happy case, but we know that sometimes devices cannot provide a temperature measurement. This
 scenario is just slightly different from the previous:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-no-reading }
+:   @@snip [DeviceGroupQuerySpec.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-no-reading }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-no-reading }
+:   @@snip [DeviceGroupQueryTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-no-reading }
 
 We also know, that sometimes device actors stop before answering:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-stopped }
+:   @@snip [DeviceGroupQuerySpec.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-stopped }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-stopped }
+:   @@snip [DeviceGroupQueryTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-stopped }
 
 If you remember, there is another case related to device actors stopping. It is possible that we get a normal reply
 from a device actor, but then receive a `Terminated` for the same actor later. In this case, we would like to keep
 the first reply and not mark the device as `DeviceNotAvailable`. We should test this, too:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-stopped-later }
+:   @@snip [DeviceGroupQuerySpec.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-stopped-later }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-stopped-later }
+:   @@snip [DeviceGroupQueryTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-stopped-later }
 
 The final case is when not all devices respond in time. To keep our test relatively fast, we will construct the
 `DeviceGroupQuery` actor with a smaller timeout:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-timeout }
+:   @@snip [DeviceGroupQuerySpec.scala]($code$/scala/tutorial_4/DeviceGroupQuerySpec.scala) { #query-test-timeout }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-timeout }
+:   @@snip [DeviceGroupQueryTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupQueryTest.java) { #query-test-timeout }
 
 Our query works as expected now, it is time to include this new functionality in the `DeviceGroup` actor now.
 
@@ -234,10 +234,10 @@ Including the query feature in the group actor is fairly simple now. We did all 
 itself, the group actor only needs to create it with the right initial parameters and nothing else.
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroup.scala) { #query-added }
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_4/DeviceGroup.scala) { #query-added }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroup.java) { #query-added }
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_4/DeviceGroup.java) { #query-added }
 
 It is probably worth to reiterate what we said at the beginning of the chapter. By keeping the temporary state
 that is only relevant to the query itself in a separate actor we keep the group actor implementation very simple. It delegates
@@ -250,7 +250,7 @@ We close this chapter by testing that everything works together. This test is ju
 now exercising the group query feature:
 
 Scala
-:   @@snip [Hello.scala]($code$/scala/tutorial_4/DeviceGroupSpec.scala) { #group-query-integration-test }
+:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_4/DeviceGroupSpec.scala) { #group-query-integration-test }
 
 Java
-:   @@snip [Hello.java]($code$/java/jdocs/tutorial_4/DeviceGroupTest.java) { #group-query-integration-test }
+:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupTest.java) { #group-query-integration-test }

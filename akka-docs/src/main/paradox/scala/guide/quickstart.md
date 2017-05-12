@@ -131,6 +131,6 @@ Scala
 :   @@snip [HelloWorldApp.scala]($code$/scala/quickstart/HelloWorldApp.scala) { #full-example }
 
 Java
-:   @@snip [HelloWorldMain.scala]($code$/java/jdocs/quickstart/HelloWorldMain.java) { #full-example }
+:   @@snip [HelloWorldMain.java]($code$/java/jdocs/quickstart/HelloWorldMain.java) { #full-example }
 
 Now that you have seen the basics of an Akka application it is time to dive deeper.
