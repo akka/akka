@@ -329,21 +329,8 @@ The following URI options are supported:
 
 |Name         | Type     | Default | Description                                                                                                                                                                                                                                                              |
 |-------------|----------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|replyTimeout | Duration | false | 
-The reply timeout, specified in the same
-way that you use the duration in akka,
-for instance `10 seconds` except that
-in the url it is handy to use a +
-between the amount and the unit, like
-for example `200+millis`
-See also [Consumer timeout](#camel-timeout).|
-|autoAck      | Boolean  | true  | 
-If set to true, in-only message exchanges
-are auto-acknowledged when the message is
-added to the actor's mailbox. If set to
-false, actors must acknowledge the
-receipt of the message.
-See also [Delivery acknowledgements](#camel-acknowledgements).              |
+|replyTimeout | Duration | false | The reply timeout, specified in the same way that you use the duration in akka, for instance `10 seconds` except that in the url it is handy to use a + between the amount and the unit, like for example `200+millis` See also [Consumer timeout](#camel-timeout).|
+|autoAck      | Boolean  | true  | If set to true, in-only message exchanges are auto-acknowledged when the message is added to the actor's mailbox. If set to false, actors must acknowledge the receipt of the message.  See also [Delivery acknowledgements](#camel-acknowledgements).              |
 
 Here's an actor endpoint URI example containing an actor path:
 
