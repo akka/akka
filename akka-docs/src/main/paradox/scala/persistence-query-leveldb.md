@@ -8,9 +8,11 @@ Note that implementations for other journals may have different semantics.
 Akka persistence LevelDB query implementation is bundled in the `akka-persistence-query` artifact.
 Make sure that you have the following dependency in your project:
 
+@@@vars
 ```
-"com.typesafe.akka" %% "akka-persistence-query" % "@version@" @crossString@
+"com.typesafe.akka" %% "akka-persistence-query" % $akka.version$
 ```
+@@@
 
 ## How to get the ReadJournal
 

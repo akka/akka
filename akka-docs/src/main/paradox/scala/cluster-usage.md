@@ -6,9 +6,11 @@ For introduction to the Akka Cluster concepts please see @ref:[Cluster Specifica
 
 The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project:
 
+@@@vars
 ```
-"com.typesafe.akka" %% "akka-cluster" % "@version@" @crossString@
+"com.typesafe.akka" %% "akka-cluster" % $akka.version$
 ```
+@@@
 
 ## A Simple Cluster Example
 
@@ -77,9 +79,9 @@ The actor registers itself as subscriber of certain cluster events. It receives 
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
 The easiest way to run this example yourself is to download the ready to run
-[Akka Cluster Sample with Scala](@exampleCodeService@/akka-samples-cluster-scala)
+@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)
 together with the tutorial. It contains instructions on how to run the `SimpleClusterApp`.
-The source code of this sample can be found in the [Akka Samples Repository](@samples@/akka-sample-cluster-scala).
+The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-cluster-scala).
 
 ## Joining to Seed Nodes
 
@@ -331,9 +333,9 @@ actor. Death watch generates the `Terminated` message to the watching actor when
 unreachable cluster node has been downed and removed.
 
 The easiest way to run **Worker Dial-in Example** example yourself is to download the ready to run
-[Akka Cluster Sample with Scala](@exampleCodeService@/akka-samples-cluster-scala)
+@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)
 together with the tutorial. It contains instructions on how to run the **Worker Dial-in Example** sample.
-The source code of this sample can be found in the [Akka Samples Repository](@samples@/akka-sample-cluster-scala).
+The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-cluster-scala).
 
 ## Node Roles
 
@@ -623,9 +625,9 @@ This means that user requests can be sent to `StatsService` on any node and it w
 `StatsWorker` on all nodes.
 
 The easiest way to run **Router Example with Group of Routees** example yourself is to download the ready to run
-[Akka Cluster Sample with Scala](@exampleCodeService@/akka-samples-cluster-scala)
+@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)
 together with the tutorial. It contains instructions on how to run the **Router Example with Group of Routees** sample.
-The source code of this sample can be found in the [Akka Samples Repository](@samples@/akka-sample-cluster-scala).
+The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-cluster-scala).
 
 ### Router with Pool of Remote Deployed Routees
 
@@ -706,9 +708,9 @@ akka.actor.deployment {
 ```
 
 The easiest way to run **Router Example with Pool of Remote Deployed Routees** example yourself is to download the ready to run
-[Akka Cluster Sample with Scala](@exampleCodeService@/akka-samples-cluster-scala)
+@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)
 together with the tutorial. It contains instructions on how to run the **Router Example with Pool of Remote Deployed Routees** sample.
-The source code of this sample can be found in the [Akka Samples Repository](@samples@/akka-sample-cluster-scala).
+The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-cluster-scala).
 
 ## Cluster Metrics
 
@@ -803,7 +805,7 @@ or similar instead.
 
 @@@
 
-The cluster can be managed with the script `akka-cluster` provided in the Akka github repository here: [@github@/akka-cluster/jmx-client](@github@/akka-cluster/jmx-client). Place the script and the `jmxsh-R5.jar` library in the same directory.
+The cluster can be managed with the script `akka-cluster` provided in the Akka github repository @extref[here](github:akka-cluster/jmx-client). Place the script and the `jmxsh-R5.jar` library in the same directory.
 
 Run it without parameters to see instructions about how to use the script:
 

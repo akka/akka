@@ -6,13 +6,15 @@ For introduction to the Akka Cluster concepts please see @ref:[Cluster Specifica
 
 The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project:
 
+@@@vars
 ```
 <dependency>
   <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-cluster_@binVersion@</artifactId>
-  <version>@version@</version>
+  <artifactId>akka-cluster_$scala.binary_version$</artifactId>
+  <version>$akka.version$</version>
 </dependency>
 ```
+@@@
 
 <a id="cluster-simple-example"></a>
 ## A Simple Cluster Example
@@ -82,9 +84,9 @@ The actor registers itself as subscriber of certain cluster events. It receives 
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
 The easiest way to run this example yourself is to download the ready to run
-[Akka Cluster Sample with Scala](@exampleCodeService@/akka-samples-cluster-java)
+@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-java)
 together with the tutorial. It contains instructions on how to run the `SimpleClusterApp`.
-The source code of this sample can be found in the [Akka Samples Repository](@samples@/akka-sample-cluster-java).
+The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-cluster-java).
 
 ## Joining to Seed Nodes
 
@@ -739,7 +741,7 @@ or similar instead.
 
 @@@
 
-The cluster can be managed with the script `akka-cluster` provided in the Akka github repository here: [@github@/akka-cluster/jmx-client](@github@/akka-cluster/jmx-client). Place the script and the `jmxsh-R5.jar` library in the same directory.
+The cluster can be managed with the script `akka-cluster` provided in the Akka github repository @extref[here](github:akka-cluster/jmx-client). Place the script and the `jmxsh-R5.jar` library in the same directory.
 
 Run it without parameters to see instructions about how to use the script:
 

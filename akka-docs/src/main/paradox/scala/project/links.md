@@ -37,7 +37,7 @@ Nightly builds are available in [http://repo.akka.io/snapshots](http://repo.akka
 timestamped versions.
 
 For timestamped versions, pick a timestamp from
-[http://repo.akka.io/snapshots/com/typesafe/akka/akka-actor_@binVersion@](http://repo.akka.io/snapshots/com/typesafe/akka/akka-actor_@binVersion@)/.
+[http://repo.akka.io/snapshots/com/typesafe/akka](http://repo.akka.io/snapshots/com/typesafe/akka).
 All Akka modules that belong to the same build have the same timestamp.
 
 @@@ warning
@@ -56,10 +56,11 @@ resolvers += "Akka Snapshots" at "http://repo.akka.io/snapshots/"
 
 Define the library dependencies with the timestamp as version. For example:
 
+@@@vars
 ```
-libraryDependencies += "com.typesafe.akka" % "akka-remote_@binVersion@" %
-  "2.5-20170510-230859"
+libraryDependencies += "com.typesafe.akka" % "akka-remote_$scala.binary_version$" % "2.5-20170510-230859"
 ```
+@@@
 
 ### maven definition of snapshot repository
 
@@ -78,12 +79,14 @@ Make sure that you add the repository to the maven repositories in pom.xml:
 
 Define the library dependencies with the timestamp as version. For example:
 
+@@@vars
 ```
 <dependencies>
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-remote_@binVersion@</artifactId>
+    <artifactId>akka-remote_$scala.binary_version$</artifactId>
     <version>2.5-20170510-230859</version>
   </dependency>
 </dependencies>
 ```
+@@@

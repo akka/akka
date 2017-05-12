@@ -152,11 +152,14 @@ complete the test names.
 
 The multi node testing kit is a separate jar file. Make sure that you have the following dependency in your project:
 
+@@@vars
 ```
-"com.typesafe.akka" %% "akka-multi-node-testkit" % "@version@" @crossString@```
+"com.typesafe.akka" %% "akka-multi-node-testkit" % $akka.version$
+```
+@@@
 
 If you are using the latest nightly build you should pick a timestamped Akka version from
-[http://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_@binVersion@/](http://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_@binVersion@/).
+[http://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/](http://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/).
 We recommend against using `SNAPSHOT` in order to obtain stable builds.
 
 ## A Multi Node Testing Example
@@ -177,8 +180,8 @@ message send/receive.
 @@snip [MultiNodeSample.scala]($akka$/akka-remote-tests/src/multi-jvm/scala/akka/remote/sample/MultiNodeSample.scala) { #package #spec }
 
 The easiest way to run this example yourself is to download the ready to run
-[Akka Multi-Node Testing Sample with Scala](@exampleCodeService@/akka-samples-multi-node-scala)
-together with the tutorial. The source code of this sample can be found in the [Akka Samples Repository](@samples@/akka-sample-multi-node-scala).
+@extref[Akka Multi-Node Testing Sample with Scala](ecs:akka-samples-multi-node-scala)
+together with the tutorial. The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-multi-node-scala).
 
 ## Things to Keep in Mind
 

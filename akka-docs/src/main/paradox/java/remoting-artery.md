@@ -45,13 +45,15 @@ are also different.
 
 The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project:
 
+@@@vars
 ```
 <dependency>
   <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-remote_@binVersion@</artifactId>
-  <version>@version@</version>
+  <artifactId>akka-remote_$scala.binary_version$</artifactId>
+  <version>$akka.version$</version>
 </dependency>
 ```
+@@@
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
 to your `application.conf` file:
@@ -569,9 +571,9 @@ That is not done by the router.
 <a id="remote-sample-java-artery"></a>
 ## Remoting Sample
 
-You can download a ready to run [remoting sample](@exampleCodeService@/akka-samples-remote-java)
+You can download a ready to run @extref[remoting sample](ecs:akka-samples-remote-java)
 together with a tutorial for a more hands-on experience. The source code of this sample can be found in the
-[Akka Samples Repository](@samples@/akka-sample-remote-java).
+@extref[Akka Samples Repository](samples:akka-sample-remote-java).
 
 ## Performance tuning
 
@@ -717,7 +719,7 @@ the system might have less latency than at low message rates.
 
 @@@ note
 
-In this version (@version@) the flight-recorder is disabled by default because there is no automatic
+In this version ($akka.version$) the flight-recorder is disabled by default because there is no automatic
 file name and path calculation implemented to make it possible to reuse the same file for every restart of
 the same actor system without clashing with files produced by other systems (possibly running on the same machine).
 Currently, you have to set the path and file names yourself to avoid creating an unbounded number

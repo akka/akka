@@ -17,9 +17,11 @@ network and/or Akka configuration will have to be changed as described in
 
 The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project:
 
+@@@vars
 ```
-"com.typesafe.akka" %% "akka-remote" % "@version@" @crossString@
+"com.typesafe.akka" %% "akka-remote" % $akka.version$
 ```
+@@@
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
 to your `application.conf` file:
@@ -396,9 +398,9 @@ That is not done by the router.
 <a id="remote-sample"></a>
 ## Remoting Sample
 
-You can download a ready to run [remoting sample](@exampleCodeService@/akka-samples-remote-scala)
+You can download a ready to run @extref[remoting sample](ecs:akka-samples-remote-scala)
 together with a tutorial for a more hands-on experience. The source code of this sample can be found in the
-[Akka Samples Repository](@samples@/akka-sample-remote-scala).
+@extref[Akka Samples Repository](samples:akka-sample-remote-scala).
 
 ### Remote Events
 
