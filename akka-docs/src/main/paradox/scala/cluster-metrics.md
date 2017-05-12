@@ -14,9 +14,11 @@ Cluster Metrics Extension is a separate Akka module delivered in `akka-cluster-m
 To enable usage of the extension you need to add the following dependency to your project:
 :
 
+@@@vars
 ```
-"com.typesafe.akka" % "akka-cluster-metrics_@binVersion@" % "@version@"
+"com.typesafe.akka" % "akka-cluster-metrics_$scala.binary_version$" % "$akka.version$"
 ```
+@@@
 
 and add the following configuration stanza to your `application.conf`
 :
@@ -94,9 +96,11 @@ unique per instance directory. You can control the extract directory with the
 To enable usage of Sigar you can add the following dependency to the user project
 :
 
+@@@vars
 ```
-"io.kamon" % "sigar-loader" % "@sigarLoaderVersion@"
+"io.kamon" % "sigar-loader" % "$sigar_loader.version$"
 ```
+@@@
 
 You can download Kamon sigar-loader from [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Csigar-loader)
 
@@ -157,9 +161,9 @@ The same type of router could also have been defined in code:
 @@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #router-deploy-in-code }
 
 The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
-[Akka Cluster Sample with Scala](@exampleCodeService@/akka-samples-cluster-scala)
+@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)
 together with the tutorial. It contains instructions on how to run the **Adaptive Load Balancing** sample.
-The source code of this sample can be found in the [Akka Samples Repository](@samples@/akka-sample-cluster-scala).
+The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-cluster-scala).
 
 ## Subscribe to Metrics Events
 

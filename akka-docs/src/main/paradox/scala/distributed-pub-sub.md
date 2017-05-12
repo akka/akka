@@ -186,18 +186,20 @@ If you are looking for at-least-once delivery guarantee, we recommend [Kafka Akk
 
 To use Distributed Publish Subscribe you must add the following dependency in your project.
 
-sbt:
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-cluster-tools" % $akka.version$
+    ```
+    @@@
 
-```
-"com.typesafe.akka" %% "akka-cluster-tools" % "@version@" @crossString@
-```
-
-maven:
-
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-cluster-tools_@binVersion@</artifactId>
-  <version>@version@</version>
-</dependency>
-```
+Maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-cluster-tools_$scala.binary_version$</artifactId>
+      <version>$akka.version$</version>
+    </dependency>
+    ```
+    @@@

@@ -476,6 +476,6 @@ zero.
 ## Examples
 
 A bigger FSM example contrasted with Actor's `become`/`unbecome` can be
-downloaded as a ready to run [Akka FSM sample](@exampleCodeService@/akka-samples-fsm-scala)
+downloaded as a ready to run @extref[Akka FSM sample](ecs:akka-samples-fsm-scala)
 together with a tutorial. The source code of this sample can be found in the
-[Akka Samples Repository](@samples@/akka-sample-fsm-scala).
+@extref[Akka Samples Repository](samples:akka-sample-fsm-scala).

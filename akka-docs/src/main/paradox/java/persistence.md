@@ -13,13 +13,15 @@ communication with at-least-once message delivery semantics.
 
 Akka persistence is a separate jar file. Make sure that you have the following dependency in your project:
 
+@@@vars
 ```
 <dependency>
   <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-persistence_@binVersion@</artifactId>
-  <version>@version@</version>
+  <artifactId>akka-persistence_$scala.binary_version$</artifactId>
+  <version>$akka.version$</version>
 </dependency>
 ```
+@@@
 
 The Akka persistence extension comes with few built-in persistence plugins, including
 in-memory heap based journal, local file-system based snapshot-store and LevelDB based journal.
@@ -104,9 +106,9 @@ stored, e.g. due to serialization error, `onPersistRejected` will be invoked (lo
 by default), and the actor continues with next message.
 
 The easiest way to run this example yourself is to download the ready to run
-[Akka Persistence Sample with Scala](@exampleCodeService@/akka-samples-persistence-java)
+@extref[Akka Persistence Sample with Scala](ecs:akka-samples-persistence-java)
 together with the tutorial. It contains instructions on how to run the `PersistentActorExample`.
-The source code of this sample can be found in the [Akka Samples Repository](@samples@/akka-sample-persistence-java).
+The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-persistence-java).
 
 @@@ note
 
@@ -897,7 +899,7 @@ The TCK is usable from Java as well as Scala projects. For Java you need to incl
 <dependency>
   <groupId>com.typesafe.akka</groupId>
   <artifactId>akka-persistence-tck_${scala.version}</artifactId>
-  <version>@version@</version>
+  <version>$akka.version$</version>
   <scope>test</scope>
 </dependency>
 ```

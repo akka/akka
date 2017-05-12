@@ -28,4 +28,4 @@ It can be [signed online](http://www.lightbend.com/contribute/cla).
 ## Licenses for Dependency Libraries
 
 Each dependency and its license can be seen in the project build file (the comment on the side of each dependency):
-[AkkaBuild.scala](@github@/project/AkkaBuild.scala#L1054) 
+@extref[AkkaBuild.scala](github:project/AkkaBuild.scala#L1054) 

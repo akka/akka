@@ -14,9 +14,11 @@ recommend (in the spirit of CQRS) of splitting up the write/read sides into sepa
 
 Akka persistence query is a separate jar file. Make sure that you have the following dependency in your project:
 
+@@@vars
 ```
-"com.typesafe.akka" %% "akka-persistence-query" % "@version@" @crossString@
+"com.typesafe.akka" %% "akka-persistence-query" % $akka.version$
 ```
+@@@
 
 ## Design overview
 
