@@ -11,7 +11,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
   override type Outputs = Int
 
   override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
-    val mergePrioritized = b add MergePrioritized[Outputs](2, Seq(20, 80))
+    val mergePrioritized = b add MergePrioritized[Outputs](Seq(20, 80))
 
     override def left: Inlet[Outputs] = mergePrioritized.in(0)
     override def right: Inlet[Outputs] = mergePrioritized.in(1)
@@ -30,7 +30,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val probe = TestSubscriber.manualProbe[Int]()
 
       RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
-        val merge = b.add(MergePrioritized[Int](3, immutable.Seq(6, 3, 1)))
+        val merge = b.add(MergePrioritized[Int](immutable.Seq(6, 3, 1)))
         s1.out ~> merge.in(0)
         s2.out ~> merge.in(1)
         s3.out ~> merge.in(2)
@@ -59,7 +59,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val probe = TestSubscriber.manualProbe[Int]()
 
       RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
-        val merge = b.add(MergePrioritized[Int](3, immutable.Seq(6, 3, 1)))
+        val merge = b.add(MergePrioritized[Int](immutable.Seq(6, 3, 1)))
         s1.out ~> merge.in(0)
         s2.out ~> merge.in(1)
         s3.out ~> merge.in(2)
@@ -93,7 +93,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val probe = TestSubscriber.manualProbe[Int]()
 
       RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
-        val merge = b.add(MergePrioritized[Int](3, immutable.Seq(6, 3, 1)))
+        val merge = b.add(MergePrioritized[Int](immutable.Seq(6, 3, 1)))
         s1.out ~> merge.in(0)
         s2.out ~> merge.in(1)
         s3.out ~> merge.in(2)
@@ -127,7 +127,7 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val probe = TestSubscriber.manualProbe[Int]()
 
       RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
-        val merge = b.add(MergePrioritized[Int](3, immutable.Seq(6, 3, 1)))
+        val merge = b.add(MergePrioritized[Int](immutable.Seq(6, 3, 1)))
         s1.out ~> merge.in(0)
         s2.out ~> merge.in(1)
         s3.out ~> merge.in(2)
@@ -149,10 +149,6 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
 
       threes shouldEqual 0
       (ones / twos).round shouldBe 2
-    }
-
-    "complete when one of the sources complete if eager complete is set to true" in {
-      pending
     }
   }
 }

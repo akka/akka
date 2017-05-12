@@ -3,10 +3,11 @@
  */
 package akka.stream.scaladsl
 
+import java.util.SplittableRandom
+
 import akka.NotUsed
 import akka.dispatch.forkjoin.ThreadLocalRandom
 import akka.stream._
-import akka.stream.impl.FixedSizeBuffer.FixedSizeBuffer
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.Stages.DefaultAttributes
@@ -283,11 +284,10 @@ object MergePrioritized {
   /**
    * Create a new `MergePrioritized` with specified number of input ports.
    *
-   * @param inputPorts number of input ports
    * @param priorities priorities of the input ports
    * @param eagerComplete if true, the merge will complete as soon as one of its inputs completes.
    */
-  def apply[T](inputPorts: Int, priorities: Seq[Int], eagerComplete: Boolean = false): GraphStage[UniformFanInShape[T, T]] = new MergePrioritized(inputPorts, priorities, eagerComplete)
+  def apply[T](priorities: Seq[Int], eagerComplete: Boolean = false): GraphStage[UniformFanInShape[T, T]] = new MergePrioritized(priorities, eagerComplete)
 }
 
 /**
@@ -307,9 +307,10 @@ object MergePrioritized {
  *
  * A `Broadcast` has one `in` port and 2 or more `out` ports.
  */
-final class MergePrioritized[T] private (val inputPorts: Int, val priorities: Seq[Int], val eagerComplete: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
-  require(inputPorts >= 1, "A Merge must have one or more input ports")
-  require(inputPorts == priorities.size, "Priorities of all inputPorts should be defined")
+final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComplete: Boolean) extends GraphStage[UniformFanInShape[T, T]] {
+  private val inputPorts = priorities.size
+  require(inputPorts > 0, "A Merge must have one or more input ports")
+  require(priorities.forall(_ > 0), "Priorities should be positive integers")
 
   val in: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i ⇒ Inlet[T]("MergePrioritized.in" + i))
   val out: Outlet[T] = Outlet[T]("MergePrioritized.out")
@@ -319,6 +320,7 @@ final class MergePrioritized[T] private (val inputPorts: Int, val priorities: Se
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler {
     private val allBuffers = Vector.tabulate(priorities.size)(i ⇒ FixedSizeBuffer[Inlet[T]](priorities(i)))
     private var runningUpstreams = inputPorts
+    private val randomGen = new SplittableRandom
 
     override def preStart(): Unit = in.foreach(tryPull)
 
@@ -374,7 +376,7 @@ final class MergePrioritized[T] private (val inputPorts: Int, val priorities: Se
         ix += 1
       }
 
-      var r = ThreadLocalRandom.current().nextInt(tp)
+      var r = randomGen.nextInt(tp)
       var next: Inlet[T] = null
       ix = 0
 
