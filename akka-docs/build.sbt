@@ -23,7 +23,8 @@ paradoxProperties ++= Map(
 )
 
 resolvers += Resolver.bintrayRepo("2m", "maven")
-paradoxTheme := Some("com.lightbend.akka" % "paradox-theme-akka" % "b74885b8+20170511-1711")
+paradoxTheme := Some("com.lightbend.akka" % "paradox-theme-akka" % "0.1.0-SNAPSHOT")
 paradoxNavigationDepth := 1
 paradoxNavigationExpandDepth := Some(1)
 paradoxNavigationIncludeHeaders := true
+paradoxGroups := Map("Languages" -> Seq("Scala", "Java"))
