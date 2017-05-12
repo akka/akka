@@ -3,6 +3,7 @@
 @@@ index
 
 * [Beginners Guide](guide/index.md)
-* [Reference](reference/index.md)
+* [Java Reference](java.md)
+* [Scala Reference](scala.md)
 
 @@@

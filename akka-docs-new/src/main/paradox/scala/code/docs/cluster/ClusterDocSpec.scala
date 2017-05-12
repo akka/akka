@@ -1,0 +1,27 @@
+/**
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+package scala.docs.cluster
+
+import akka.cluster.Cluster
+import akka.testkit.AkkaSpec
+
+object ClusterDocSpec {
+
+  val config =
+    """
+    akka.actor.provider = "cluster"
+    akka.remote.netty.tcp.port = 0
+    """
+}
+
+class ClusterDocSpec extends AkkaSpec(ClusterDocSpec.config) {
+
+  "demonstrate leave" in {
+    //#leave
+    val cluster = Cluster(system)
+    cluster.leave(cluster.selfAddress)
+    //#leave
+  }
+
+}
