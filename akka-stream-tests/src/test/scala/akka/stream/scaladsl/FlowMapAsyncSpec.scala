@@ -7,11 +7,12 @@ import java.util.concurrent.{ LinkedBlockingQueue, ThreadLocalRandom }
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.{ TestLatch, TestProbe }
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -96,45 +97,68 @@ class FlowMapAsyncSpec extends StreamSpec {
       latch.countDown()
     }
 
-    "a failure mid-stream MUST cause a failure" in assertAllStagesStopped {
+    "a failure mid-stream MUST cause a failure ASAP (stopping strategy)" in assertAllStagesStopped {
       import system.dispatcher
+      val pa = Promise[String]()
+      val pb = Promise[String]()
+      val pc = Promise[String]()
+      val pd = Promise[String]()
+      val pe = Promise[String]()
+      val pf = Promise[String]()
 
-      val runResults = for (i ← 1.to(100)) yield {
-        val input = Seq("a", "b", "c", "d", "e", "f", "g")
+      val input = pa :: pb :: pc :: pd :: pe :: pf :: Nil
 
-        Source.fromIterator(() ⇒ input.iterator)
-          .mapAsync(5)(l ⇒ Future {
-            if (l == "b") throw new IllegalArgumentException("no b")
-            else l.toUpperCase
-          })
-          .named(s"stream-$i")
-          .runWith(Sink.seq)
+      val probe = Source.fromIterator(() ⇒ input.iterator)
+        .mapAsync(5)(p ⇒ p.future.map(_.toUpperCase))
+        .runWith(TestSink.probe)
+
+      import TestSubscriber._
+      var gotErrorAlready = false
+      val elementOrErrorOk: PartialFunction[SubscriberEvent, Unit] = {
+        case OnNext("A") ⇒ () // is fine
+        case OnNext("B") ⇒ () // is fine
+        case OnError(ex) if ex.getMessage == "Boom at C" && !gotErrorAlready ⇒
+          gotErrorAlready = true // fine, error can over-take elements 
       }
+      probe.request(100)
 
-      runResults foreach { result ⇒
-        Await.result(result.failed, 1.second) // all runs should be failed
-      }
+      // placing the future completion signals here is important
+      // the ordering is meant to expose a race between the failure at C and subsequent elements
+      pa.success("a")
+      pb.success("b")
+      pc.failure(new Exception("Boom at C"))
+      pd.success("d")
+      pe.success("e")
+      pf.success("f")
+
+      probe.expectEventPF(elementOrErrorOk)
+      if (!gotErrorAlready) probe.expectEventPF(elementOrErrorOk)
+      if (!gotErrorAlready) probe.expectError().getMessage should ===("Boom at C")
     }
+    "a failure mid-stream must skip element with resume strategy" in assertAllStagesStopped {
+      val pa = Promise[String]()
+      val pb = Promise[String]()
+      val pc = Promise[String]()
+      val pd = Promise[String]()
+      val pe = Promise[String]()
+      val pf = Promise[String]()
 
-    "signal future failure asap" in assertAllStagesStopped {
-      val latch = TestLatch(1)
-      val done = Source(1 to 5)
-        .map { n ⇒
-          if (n == 1) n
-          else {
-            // slow upstream should not block the error
-            Await.ready(latch, 10.seconds)
-            n
-          }
-        }
-        .mapAsync(4) { n ⇒
-          if (n == 1) Future.failed(new RuntimeException("err1") with NoStackTrace)
-          else Future.successful(n)
-        }.runWith(Sink.ignore)
-      intercept[RuntimeException] {
-        Await.result(done, remainingOrDefault)
-      }.getMessage should be("err1")
-      latch.countDown()
+      val input = pa :: pb :: pc :: pd :: pe :: pf :: Nil
+
+      val elements = Source.fromIterator(() ⇒ input.iterator)
+        .mapAsync(5)(p ⇒ p.future)
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
+        .runWith(Sink.seq)
+
+      // the problematic ordering:
+      pa.success("a")
+      pb.success("b")
+      pd.success("d")
+      pe.success("e")
+      pf.success("f")
+      pc.failure(new Exception("Booom!"))
+
+      elements.futureValue should ===(List("a", "b", /* no c */ "d", "e", "f"))
     }
 
     "signal error from mapAsync" in assertAllStagesStopped {
