@@ -22,8 +22,4 @@ paradoxProperties ++= Map(
   "snip.akka.base_dir" -> ((baseDirectory in Test).value / "..").getAbsolutePath
 )
 
-resolvers += Resolver.bintrayRepo("2m", "maven")
-paradoxTheme := Some("com.lightbend.akka" % "paradox-theme-akka" % "b74885b8+20170511-1711")
-paradoxNavigationDepth := 1
-paradoxNavigationExpandDepth := Some(1)
-paradoxNavigationIncludeHeaders := true
+resolvers += Resolver.bintrayRepo("2m", "sbt-plugin-releases") // for the cutom released paradox generic theme
