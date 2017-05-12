@@ -1,9 +1,9 @@
 package akka.stream.scaladsl
 
+import akka.NotUsed
+import akka.stream.testkit.TestSubscriber.ManualProbe
 import akka.stream.{ ClosedShape, Inlet, Outlet }
 import akka.stream.testkit.{ TestSubscriber, TwoStreamsSetup }
-
-import scala.collection.immutable
 
 class GraphMergePrioritizedSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._
@@ -16,7 +16,6 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
     override def left: Inlet[Outputs] = mergePrioritized.in(0)
     override def right: Inlet[Outputs] = mergePrioritized.in(1)
     override def out: Outlet[Outputs] = mergePrioritized.out
-
   }
 
   "merge prioritized" must {
@@ -27,16 +26,11 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val source2 = Source.fromIterator(() ⇒ (4 to 6).iterator)
       val source3 = Source.fromIterator(() ⇒ (7 to 9).iterator)
 
+      val priorities = Seq(6, 3, 1)
+
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
-        val merge = b.add(MergePrioritized[Int](immutable.Seq(6, 3, 1)))
-        s1.out ~> merge.in(0)
-        s2.out ~> merge.in(1)
-        s3.out ~> merge.in(2)
-        merge.out ~> Sink.fromSubscriber(probe)
-        ClosedShape
-      }).run()
+      threeSourceMerge(source1, source2, source3, priorities, probe).run()
 
       val subscription = probe.expectSubscription()
 
@@ -56,16 +50,11 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val source2 = Source.fromIterator(() ⇒ Seq.fill(elementCount)(2).iterator)
       val source3 = Source.fromIterator(() ⇒ Seq.fill(elementCount)(3).iterator)
 
+      val priorities = Seq(6, 3, 1)
+
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
-        val merge = b.add(MergePrioritized[Int](immutable.Seq(6, 3, 1)))
-        s1.out ~> merge.in(0)
-        s2.out ~> merge.in(1)
-        s3.out ~> merge.in(2)
-        merge.out ~> Sink.fromSubscriber(probe)
-        ClosedShape
-      }).run()
+      threeSourceMerge(source1, source2, source3, priorities, probe).run()
 
       val subscription = probe.expectSubscription()
 
@@ -90,16 +79,11 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val source2 = Source.fromIterator(() ⇒ Seq.empty[Int].iterator)
       val source3 = Source.fromIterator(() ⇒ Seq.empty[Int].iterator)
 
+      val priorities = Seq(6, 3, 1)
+
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
-        val merge = b.add(MergePrioritized[Int](immutable.Seq(6, 3, 1)))
-        s1.out ~> merge.in(0)
-        s2.out ~> merge.in(1)
-        s3.out ~> merge.in(2)
-        merge.out ~> Sink.fromSubscriber(probe)
-        ClosedShape
-      }).run()
+      threeSourceMerge(source1, source2, source3, priorities, probe).run()
 
       val subscription = probe.expectSubscription()
 
@@ -124,16 +108,11 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       val source2 = Source.fromIterator(() ⇒ Seq.fill(elementCount)(2).iterator)
       val source3 = Source.fromIterator(() ⇒ Seq.empty[Int].iterator)
 
+      val priorities = Seq(6, 3, 1)
+
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
-        val merge = b.add(MergePrioritized[Int](immutable.Seq(6, 3, 1)))
-        s1.out ~> merge.in(0)
-        s2.out ~> merge.in(1)
-        s3.out ~> merge.in(2)
-        merge.out ~> Sink.fromSubscriber(probe)
-        ClosedShape
-      }).run()
+      threeSourceMerge(source1, source2, source3, priorities, probe).run()
 
       val subscription = probe.expectSubscription()
 
@@ -150,5 +129,16 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
       threes shouldEqual 0
       (ones / twos).round shouldBe 2
     }
+  }
+
+  private def threeSourceMerge[T](source1: Source[T, NotUsed], source2: Source[T, NotUsed], source3: Source[T, NotUsed], priorities: Seq[Int], probe: ManualProbe[T]) = {
+    RunnableGraph.fromGraph(GraphDSL.create(source1, source2, source3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
+      val merge = b.add(MergePrioritized[T](priorities))
+      s1.out ~> merge.in(0)
+      s2.out ~> merge.in(1)
+      s3.out ~> merge.in(2)
+      merge.out ~> Sink.fromSubscriber(probe)
+      ClosedShape
+    })
   }
 }
