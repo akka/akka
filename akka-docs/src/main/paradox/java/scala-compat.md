@@ -3,10 +3,6 @@
 Akka requires that you have [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or
 later installed on your machine.
 
-## Scala and Java APIs
-
-Akka has both a @ref:[Scala Documentation](../scala.md) and a @ref:[Java Documentation](../java.md).
-
 ## Java 8 types
 
 Starting with Akka 2.4.2 we have begun to introduce Java 8 types (most
