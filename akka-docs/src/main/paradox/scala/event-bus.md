@@ -32,7 +32,7 @@ for any concrete implementation.
 
 The classifiers presented here are part of the Akka distribution, but rolling
 your own in case you do not find a perfect match is not difficult, check the
-implementation of the existing ones on [github](@github@/akka-actor/src/main/scala/akka/event/EventBus.scala) 
+implementation of the existing ones on @extref[github](github:akka-actor/src/main/scala/akka/event/EventBus.scala) 
 
 ### Lookup Classification
 

@@ -180,7 +180,7 @@ to the network socket.
 
 These write back-pressure models (with the exception of the second which is rather specialised) are
 demonstrated in complete examples below. The full and contiguous source is
-available [on GitHub](@github@/akka-docs/rst/scala/code/docs/io/EchoServer.scala).
+available @extref[on GitHub](github:akka-docs/rst/scala/code/docs/io/EchoServer.scala).
 
 For back-pressuring reads there are two modes of operation
 

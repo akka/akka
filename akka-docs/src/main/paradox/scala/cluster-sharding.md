@@ -375,21 +375,23 @@ different persistenceId.
 
 To use the Cluster Sharding you must add the following dependency in your project.
 
-sbt:
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-cluster-sharding" % $akka.version$
+    ```
+    @@@
 
-```
-"com.typesafe.akka" %% "akka-cluster-sharding" % "@version@" @crossString@
-```
-
-maven:
-
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-cluster-sharding_@binVersion@</artifactId>
-  <version>@version@</version>
-</dependency>
-```
+Maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-cluster-sharding_$scala.binary_version$</artifactId>
+      <version>$akka.version$</version>
+    </dependency>
+    ```
+    @@@
 
 ## Configuration
 

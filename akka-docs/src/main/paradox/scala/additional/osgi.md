@@ -70,7 +70,7 @@ in an application composed of multiple JARs to reside under a single package nam
 might scan all classes from `com.example.plugins` for specific service implementations with that package existing in
 several contributed JARs.
    While it is possible to support overlapping packages with complex manifest headers, it's much better to use non-overlapping
-package spaces and facilities such as [Akka Cluster](@github@/akka-docs/rst/scala/code/docs/akka/current/common/cluster.html)
+package spaces and facilities such as @extref[Akka Cluster](github:akka-docs/rst/scala/code/docs/akka/current/common/cluster.html)
 for service discovery. Stylistically, many organizations opt to use the root package path as the name of the bundle
 distribution file.
 
@@ -104,14 +104,16 @@ from the application bundle and all transitive dependencies.
 
 The `ActorSystemActivator` class is included in the `akka-osgi` artifact:
 
+@@@vars
 ```
 <dependency>
   <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-osgi_@binVersion@</artifactId>
-  <version>@version@</version>
+  <artifactId>akka-osgi_$scala.binary_version$</artifactId>
+  <version>$akka.version$</version>
 </dependency>
 ```
+@@@
 
 ## Sample
 
-A complete sample project is provided in [akka-sample-osgi-dining-hakkers](@samples@/tree/master/akka-sample-osgi-dining-hakkers)
+A complete sample project is provided in @extref[akka-sample-osgi-dining-hakkers](samples:akka-sample-osgi-dining-hakkers)

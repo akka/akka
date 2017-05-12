@@ -579,7 +579,7 @@ API documentation of the `Replicator` for details.
 ## Samples
 
 Several interesting samples are included and described in the
-tutorial named [Akka Distributed Data Samples with Java](@exampleCodeService@/akka-samples-distributed-data-java) ([source code](@samples@/akka-sample-distributed-data-java))
+tutorial named @extref[Akka Distributed Data Samples with Java](ecs:akka-samples-distributed-data-java) (@extref[source code](samples:akka-sample-distributed-data-java))
 
  * Low Latency Voting Service
  * Highly Available Shopping Cart
@@ -624,21 +624,23 @@ paper by Mark Shapiro et. al.
 
 To use Distributed Data you must add the following dependency in your project.
 
-sbt:
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-distributed-data" % $akka.version$
+    ```
+    @@@
 
-```
-"com.typesafe.akka" %% "akka-distributed-data" % "@version@" @crossString@
-```
-
-maven:
-
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-distributed-data_@binVersion@</artifactId>
-  <version>@version@</version>
-</dependency>
-```
+Maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-distributed-data_$scala.binary_version$</artifactId>
+      <version>$akka.version$</version>
+    </dependency>
+    ```
+    @@@
 
 ## Configuration
 
