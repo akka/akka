@@ -145,7 +145,7 @@ Asynchronous Integration Testing with :class:`TestKit`
 When you are reasonably sure that your actor's business logic is correct, the
 next step is verifying that it works correctly within its intended environment.
 The definition of the environment depends of course very much on the problem at
-hand and the level at which you intend to test, ranging for
+hand and the level at which you intend to test, ranging from
 functional/integration tests to full system tests. The minimal setup consists
 of the test procedure, which provides the desired stimuli, the actor under
 test, and an actor receiving replies.  Bigger systems replace the actor under
