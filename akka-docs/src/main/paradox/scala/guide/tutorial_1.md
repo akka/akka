@@ -78,7 +78,11 @@ convenient terminology, and we will stick to it.
 Creating a non-top-level actor is possible from any actor, by invoking `context.actorOf()` which has the exact same
 signature as its top-level counterpart. This is how it looks like in practice:
 
-@@snip [Hello.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #print-refs }
+Scala
+:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #print-refs }
+
+Java
+:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #print-refs }
 
 We see that the following two lines are printed
 
@@ -126,7 +130,11 @@ The actor API exposes many lifecycle hooks that the actor implementation can ove
 
 Again, we can try out all this with a simple experiment:
 
-@@snip [Hello.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #start-stop }
+Scala
+:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #start-stop }
+
+Java
+:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #start-stop }
 
 After running it, we get the output
 
@@ -151,7 +159,11 @@ to the parent, which decides how to handle the exception caused by the child act
 stop and restart the child. If you don't change the default strategy all failures result in a restart. We won't change
 the default strategy in this simple experiment:
 
-@@snip [Hello.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #supervise }
+Scala
+:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #supervise }
+
+Java
+:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #supervise }
 
 After running the snippet, we see the following output on the console:
 
@@ -208,14 +220,22 @@ represents the whole application. In other words, we will have a single top-leve
 the main components as children of this actor.
 
 The first actor happens to be rather simple now, as we have not implemented any of the components yet. What is new
-is that we have dropped using `println()` and instead use the `ActorLogging` helper trait which allows us to use the
-logging facility built into Akka directly. Furthermore, we are using a recommended creational pattern for actors; define a `props()` method in the [companion object](http://docs.scala-lang.org/tutorials/tour/singleton-objects.html#companions) of the actor:
+is that we have dropped using `println()` and instead use @scala[the `ActorLogging` helper trait] @java[`akka.event.Logging`] which allows us to use the
+logging facility built into Akka directly. Furthermore, we are using a recommended creational pattern for actors; define a `props()` @scala[method in the [companion object](http://docs.scala-lang.org/tutorials/tour/singleton-objects.html#companions) of] @java[static method on] the actor:
 
-@@snip [Hello.scala]($code$/scala/tutorial_1/IotSupervisor.scala) { #iot-supervisor }
+Scala
+:   @@snip [IotSupervisor.scala]($code$/scala/tutorial_1/IotSupervisor.scala) { #iot-supervisor }
+
+Java
+:   @@snip [IotSupervisor.java]($code$/java/jdocs/tutorial_1/IotSupervisor.java) { #iot-supervisor }
 
 All we need now is to tie this up with a class with the `main` entry point:
 
-@@snip [Hello.scala]($code$/scala/tutorial_1/IotApp.scala) { #iot-app }
+Scala
+:   @@snip [IotApp.scala]($code$/scala/tutorial_1/IotApp.scala) { #iot-app }
+
+Java
+:   @@snip [IotMain.java]($code$/java/jdocs/tutorial_1/IotMain.java) { #iot-app }
 
 This application does very little for now, but we have the first actor in place and we are ready to extend it further.
 

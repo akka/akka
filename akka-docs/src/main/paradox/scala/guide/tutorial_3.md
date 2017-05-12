@@ -81,7 +81,7 @@ is known up front: device groups and device actors are created on-demand. The st
 Now that the steps are defined, we only need to define the messages that we will use to communicate requests and
 their acknowledgement:
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-msgs }
+@@snip [DeviceManager.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-msgs }
 
 As you see, in this case, we have not included a request ID field in the messages. Since registration is usually happening
 once, at the component that connects the system to some network protocol, we will usually have no use for the ID.
@@ -100,48 +100,68 @@ message is preserved in the upper layers.* We will show you in the next section 
 We also add a safeguard against requests that come with a mismatched group or device ID. This is how the resulting
 the code looks like:
 
-> NOTE: We used a feature of scala pattern matching where we can match if a certain field equals to an expected
+>@scala[NOTE: We used a feature of scala pattern matching where we can match if a certain field equals to an expected
 value. This is achieved by variables included in backticks, like `` `variable` ``, and it means that the pattern
-only match if it contains the value of `variable` in that position.
+only match if it contains the value of `variable` in that position.]
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/Device.scala) { #device-with-register }
+Scala
+:   @@snip [Device.scala]($code$/scala/tutorial_3/Device.scala) { #device-with-register }
+
+Java
+:   @@snip [Device.java]($code$/java/jdocs/tutorial_3/Device.java) { #device-with-register }
 
 We should not leave features untested, so we immediately write two new test cases, one exercising successful
 registration, the other testing the case when IDs don't match:
 
-> NOTE: We used the `expectNoMsg()` helper method from `TestProbe`. This assertion waits until the defined time-limit
+> NOTE: We used the `expectNoMsg()` helper method from @scala[`TestProbe`] @java[`TestKit`]. This assertion waits until the defined time-limit
 and fails if it receives any messages during this period. If no messages are received during the waiting period the
 assertion passes. It is usually a good idea to keep these timeouts low (but not too low) because they add significant
 test execution time otherwise.
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-registration-tests }
+Scala
+:   @@snip [DeviceSpec.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-registration-tests }
+
+Java
+:   @@snip [DeviceTest.java]($code$/java/jdocs/tutorial_3/DeviceTest.java) { #device-registration-tests }
 
 ## Device Group
 
 We are done with the registration support at the device level, now we have to implement it at the group level. A group
 has more work to do when it comes to registrations. It must either forward the request to an existing child, or it
-should create one. To be able to look up child actors by their device IDs we will use a `Map[String, ActorRef]`.
+should create one. To be able to look up child actors by their device IDs we will use a @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`].
 
 We also want to keep the original sender of the request so that our device actor can reply directly. This is possible
-by using `forward` instead of the `!` operator. The only difference between the two is that `forward` keeps the original
-sender while `!` always sets the sender to be the current actor. Just like with our device actor, we ensure that we don't
+by using `forward` instead of the @scala[`!`] @java[`tell`] operator. The only difference between the two is that `forward` keeps the original
+sender while @scala[`!`] @java[`tell`] always sets the sender to be the current actor. Just like with our device actor, we ensure that we don't
 respond to wrong group IDs:
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-register }
+Scala
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-register }
+
+Java
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-register }
 
 Just as we did with the device, we test this new functionality. We also test that the actors returned for the two
 different IDs are actually different, and we also attempt to record a temperature reading for each of the devices
 to see if the actors are responding.
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test-registration }
+Scala
+:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test-registration }
+
+Java
+:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test-registration }
 
 It might be, that a device actor already exists for the registration request. In this case, we would like to use
 the existing actor instead of a new one. We have not tested this yet, so we need to fix this:
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test3 }
+Scala
+:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-test3 }
+
+Java
+:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test3 }
 
 So far, we have implemented everything for registering device actors in the group. Devices come and go, however, so
-we will need a way to remove those from the `Map[String, ActorRef]`. We will assume that when a device is removed, its corresponding device actor
+we will need a way to remove those from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`]. We will assume that when a device is removed, its corresponding device actor
 is simply stopped. We need some way for the parent to be notified when one of the device actors are stopped. Unfortunately,
 supervision will not help because it is used for error scenarios, not graceful stopping.
 
@@ -155,42 +175,58 @@ longer perform its duties after its collaborator actor has been stopped. In our 
 after one device have been stopped, so we need to handle this message. The steps we need to follow are the following:
 
  1. Whenever we create a new device actor, we must also watch it.
- 2. When we are notified that a device actor has been stopped we also need to remove it from the `Map[String, ActorRef]` which maps
+ 2. When we are notified that a device actor has been stopped we also need to remove it from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`] which maps
     devices to device actors.
 
 Unfortunately, the `Terminated` message contains only contains the `ActorRef` of the child actor but we do not know
 its ID, which we need to remove it from the map of existing device to device actor mappings. To be able to do this removal, we
-need to introduce another placeholder, `Map[ActorRef, String]`, that allow us to find out the device ID corresponding to a given `ActorRef`. Putting
+need to introduce another placeholder, @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`], that allow us to find out the device ID corresponding to a given `ActorRef`. Putting
 this together the result is:
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-remove }
+Scala
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-remove }
+
+Java
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-remove }
 
 So far we have no means to get what devices the group device actor keeps track of and, therefore, we cannot test our
-new functionality yet. To make it testable, we add a new query capability (message `RequestDeviceList(requestId: Long)`) that simply lists the currently active
+new functionality yet. To make it testable, we add a new query capability (message @scala[`RequestDeviceList(requestId: Long)`] @java[`RequestDeviceList`]) that simply lists the currently active
 device IDs:
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-full }
+Scala
+:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_3/DeviceGroup.scala) { #device-group-full }
+
+Java
+:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_3/DeviceGroup.java) { #device-group-full }
 
 We almost have everything to test the removal of devices. What is missing is:
 
  * Stopping a device actor from our test case, from the outside: any actor can be stopped by simply sending a special
    the built-in message, `PoisonPill`, which instructs the actor to stop.
  * Be notified once the device actor is stopped: we can use the _Death Watch_ facility for this purpose, too. Thankfully
-   the `TestProbe` has two messages that we can easily use, `watch()` to watch a specific actor, and `expectTerminated`
+   the @scala[`TestProbe`] @java[`TestKit`] has two messages that we can easily use, `watch()` to watch a specific actor, and `expectTerminated`
    to assert that the watched actor has been terminated.
 
 We add two more test cases now. In the first, we just test that we get back the list of proper IDs once we have added
 a few devices. The second test case makes sure that the device ID is properly removed after the device actor has
  been stopped:
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
+Scala
+:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
+
+Java
+:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-list-terminate-test }
 
 ## Device Manager
 
 The only part that remains now is the entry point for our device manager component. This actor is very similar to
 the device group actor, with the only difference that it creates device group actors instead of device actors:
 
-@@snip [Hello.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-full }
+Scala
+:   @@snip [DeviceManager.scala]($code$/scala/tutorial_3/DeviceManager.scala) { #device-manager-full }
+
+Java
+:   @@snip [DeviceManager.java]($code$/java/jdocs/tutorial_3/DeviceManager.java) { #device-manager-full }
 
 We leave tests of the device manager as an exercise as it is very similar to the tests we have written for the group
 actor.
