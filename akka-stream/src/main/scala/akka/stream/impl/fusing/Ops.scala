@@ -1103,11 +1103,12 @@ private[stream] object Collect {
 @InternalApi private[akka] object MapAsync {
 
   final class Holder[T](var elem: Try[T], val cb: AsyncCallback[Holder[T]]) extends (Try[T] ⇒ Unit) {
-    def setElem(t: Try[T]): Unit =
+    def setElem(t: Try[T]): Unit = {
       elem = t match {
         case Success(null) ⇒ Failure[T](ReactiveStreamsCompliance.elementMustNotBeNullException)
         case other         ⇒ other
       }
+    }
 
     override def apply(t: Try[T]): Unit = {
       setElem(t)
@@ -1156,15 +1157,20 @@ private[stream] object Collect {
 
       @tailrec private def pushOne(): Unit =
         if (buffer.isEmpty) {
-          if (isClosed(in)) completeStage()
-          else if (!hasBeenPulled(in)) pull(in)
+          if (isClosed(in)) {
+            if (todo == 0) completeStage()
+          } else if (!hasBeenPulled(in)) pull(in)
         } else if (buffer.peek().elem == NotYetThere) {
           if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
         } else buffer.dequeue().elem match {
           case Success(elem) ⇒
             push(out, elem)
             if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
-          case Failure(ex) ⇒ pushOne()
+          case Failure(e) ⇒
+            decider(e) match {
+              case Supervision.Stop ⇒ failStage(e)
+              case _                ⇒ pushOne() // skip this element
+            }
         }
 
       override def onPush(): Unit = {

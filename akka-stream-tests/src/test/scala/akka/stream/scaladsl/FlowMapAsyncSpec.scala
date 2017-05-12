@@ -3,27 +3,22 @@
  */
 package akka.stream.scaladsl
 
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.{ LinkedBlockingQueue, ThreadLocalRandom }
+import java.util.concurrent.atomic.AtomicInteger
 
-import scala.util.control.NoStackTrace
-import akka.stream.ActorMaterializer
-import akka.stream.testkit._
-import akka.stream.testkit.Utils._
-import akka.testkit.TestLatch
-import akka.testkit.TestProbe
 import akka.stream.ActorAttributes.supervisionStrategy
+import akka.stream.ActorMaterializer
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.testkit.Utils._
+import akka.stream.testkit._
+import akka.testkit.{ TestLatch, TestProbe }
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.annotation.tailrec
-import scala.concurrent.Promise
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.LinkedBlockingQueue
-
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 class FlowMapAsyncSpec extends StreamSpec {
 
@@ -99,6 +94,26 @@ class FlowMapAsyncSpec extends StreamSpec {
       sub.request(10)
       c.expectError().getMessage should be("err1")
       latch.countDown()
+    }
+
+    "a failure mid-stream MUST cause a failure" in assertAllStagesStopped {
+      import system.dispatcher
+
+      val runResults = for (i ← 1.to(100)) yield {
+        val input = Seq("a", "b", "c", "d", "e", "f", "g")
+
+        Source.fromIterator(() ⇒ input.iterator)
+          .mapAsync(5)(l ⇒ Future {
+            if (l == "b") throw new IllegalArgumentException("no b")
+            else l.toUpperCase
+          })
+          .named(s"stream-$i")
+          .runWith(Sink.seq)
+      }
+
+      runResults foreach { result ⇒
+        Await.result(result.failed, 1.second) // all runs should be failed
+      }
     }
 
     "signal future failure asap" in assertAllStagesStopped {
