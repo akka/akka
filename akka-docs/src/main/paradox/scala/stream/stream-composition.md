@@ -232,7 +232,7 @@ needs to return a different object that provides the necessary interaction capab
 Unlike actors though, each of the processing stages might provide a materialized value, so when we compose multiple
 stages or modules, we need to combine the materialized value as well (there are default rules which make this easier,
 for example *to()* and *via()* takes care of the most common case of taking the materialized value to the left.
-See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat-scala) for details). We demonstrate how this works by a code example and a diagram which
+See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat) for details). We demonstrate how this works by a code example and a diagram which
 graphically demonstrates what is happening.
 
 The propagation of the individual materialized values from the enclosed modules towards the top will look like this:
@@ -272,7 +272,7 @@ the `Future[Sink]` part, and wraps the other two values in a custom case class `
 @@@ note
 
 The nested structure in the above example is not necessary for combining the materialized values, it just
-demonstrates how the two features work together. See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat-scala) for further examples
+demonstrates how the two features work together. See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat) for further examples
 of combining materialized values without nesting and hierarchy involved.
 
 @@@
@@ -283,7 +283,7 @@ We have seen that we can use `named()` to introduce a nesting level in the fluid
 `create()` from `GraphDSL`). Apart from having the effect of adding a nesting level, `named()` is actually
 a shorthand for calling `withAttributes(Attributes.name("someName"))`. Attributes provide a way to fine-tune certain
 aspects of the materialized running entity. For example buffer sizes for asynchronous stages can be controlled via
-attributes (see @ref:[Buffers for asynchronous stages](stream-rate.md#async-stream-buffers-scala)). When it comes to hierarchic composition, attributes are inherited
+attributes (see @ref:[Buffers for asynchronous stages](stream-rate.md#async-stream-buffers)). When it comes to hierarchic composition, attributes are inherited
 by nested modules, unless they override them with a custom value.
 
 The code below, a modification of an earlier example sets the `inputBuffer` attribute on certain modules, but not

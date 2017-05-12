@@ -241,11 +241,7 @@ supported.
 ## Application specific settings
 
 The configuration can also be used for application specific settings.
-A good practice is to place those settings in an Extension, as described in:
-
->
- * Scala API: @ref:[extending-akka-scala.settings](../../scala/extending-akka.md#extending-akka-scala-settings)
- * Java API: @ref:[extending-akka-java.settings](../../java/extending-akka.md#extending-akka-java-settings)
+A good practice is to place those settings in an @ref:[Extension](../extending-akka.md#extending-akka-settings).
 
 ## Configuring multiple ActorSystem
 

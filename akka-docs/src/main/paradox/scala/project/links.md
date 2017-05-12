@@ -33,7 +33,7 @@ All Akka releases are published via Sonatype to Maven Central, see
 
 ## Snapshots Repository
 
-Nightly builds are available in [http://repo.akka.io/snapshots](http://repo.akka.io/snapshots)/ as both `SNAPSHOT` and
+Nightly builds are available in [http://repo.akka.io/snapshots](http://repo.akka.io/snapshots/) as both `SNAPSHOT` and
 timestamped versions.
 
 For timestamped versions, pick a timestamp from

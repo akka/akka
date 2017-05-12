@@ -29,12 +29,12 @@ with a specific role. It communicates with other `Replicator` instances with the
 actor using the `Replicator.props`. If it is started as an ordinary actor it is important
 that it is given the same name, started on same path, on all nodes.
 
-Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up-java),
+Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up),
 will participate in Distributed Data. This means that the data will be replicated to the
-@ref:[WeaklyUp](cluster-usage.md#weakly-up-java) nodes with the background gossip protocol. Note that it
+@ref:[WeaklyUp](cluster-usage.md#weakly-up) nodes with the background gossip protocol. Note that it
 will not participate in any actions where the consistency mode is to read/write from all
-nodes or the majority of nodes. The @ref:[WeaklyUp](cluster-usage.md#weakly-up-java) node is not counted
-as part of the cluster. So 3 nodes + 5 @ref:[WeaklyUp](cluster-usage.md#weakly-up-java) is essentially a
+nodes or the majority of nodes. The @ref:[WeaklyUp](cluster-usage.md#weakly-up) node is not counted
+as part of the cluster. So 3 nodes + 5 @ref:[WeaklyUp](cluster-usage.md#weakly-up) is essentially a
 3 node cluster as far as consistent actions are concerned.
 
 Below is an example of an actor that schedules tick messages to itself and for each tick
@@ -43,7 +43,7 @@ changes of this.
 
 @@snip [DataBot.java]($code$/java/jdocs/ddata/DataBot.java) { #data-bot }
 
-<a id="replicator-update-java"></a>
+<a id="replicator-update"></a>
 ### Update
 
 To modify and replicate a data value you send a `Replicator.Update` message to the local
@@ -76,16 +76,10 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
  * `WriteAll` the value will immediately be written to all nodes in the cluster
 (or all nodes in the cluster role group)
 
-When you specify to write to 
-`n`
- out of 
-`x`
- nodes, the update will first replicate to 
-`n`
- nodes. If there are not
-: enough Acks after 1/5th of the timeout, the update will be replicated to `n` other nodes. If there are less than n nodes
-left all of the remaining nodes are used. Reachable nodes are prefered over unreachable nodes.
-
+When you specify to write to `n` out of `x`  nodes, the update will first replicate to `n` nodes. 
+If there are not enough Acks after 1/5th of the timeout, the update will be replicated to `n` other 
+nodes. If there are less than n nodes left all of the remaining nodes are used. Reachable nodes 
+are prefered over unreachable nodes.
 
 Note that `WriteMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
 
@@ -113,7 +107,7 @@ or maintain local correlation data structures.
 
 @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #update-request-context }
 
-<a id="replicator-get-java"></a>
+<a id="replicator-get"></a>
 ### Get
 
 To retrieve the current value of a data you send `Replicator.Get` message to the
@@ -155,7 +149,7 @@ to after receiving and transforming `GetSuccess`.
 
 ### Consistency
 
-The consistency level that is supplied in the [replicator_update_java](#replicator-update-java) and [replicator_get_java](#replicator-get-java)
+The consistency level that is supplied in the [Update](#replicator-update) and [Get](#replicator-get)
 specifies per request how many replicas that must respond successfully to a write and read request.
 
 For low latency reads you use `ReadLocal` with the risk of retrieving stale data, i.e. updates
@@ -185,6 +179,14 @@ By combining `WriteMajority` and `ReadMajority` levels a read always reflects th
 The `Replicator` writes and reads to a majority of replicas, i.e. **N / 2 + 1**. For example,
 in a 5 node cluster it writes to 3 nodes and reads from 3 nodes. In a 6 node cluster it writes
 to 4 nodes and reads from 4 nodes.
+
+You can define a minimum number of nodes for `WriteMajority` and `ReadMajority`,
+this will minimize the risk of reading steal data. Minimum cap is
+provided by minCap property of `WriteMajority` and `ReadMajority` and defines the required majority.
+If the minCap is higher then **N / 2 + 1** the minCap will be used.
+
+For example if the minCap is 5 the `WriteMajority` and `ReadMajority` for cluster of 3 nodes will be 3, for
+cluster of 6 nodes will be 5 and for cluster of 12 nodes will be 7 ( **N / 2 + 1** ).
 
 For small clusters (<7) the risk of membership changes between a WriteMajority and ReadMajority
 is rather high and then the nice properties of combining majority write and reads are not
@@ -265,7 +267,7 @@ types that support both updates and removals, for example `ORMap` or `ORSet`.
 
 @@@
 
-<a id="delta-crdt-java"></a>
+<a id="delta-crdt"></a>
 ### delta-CRDT
 
 [Delta State Replicated Data Types](http://arxiv.org/abs/1603.01529)
@@ -321,7 +323,7 @@ The value of the counter is the value of the P counter minus the value of the N 
 
 @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #pncounter }
 
-`GCounter` and `PNCounter` have support for [delta_crdt_java](#delta-crdt-java) and don't need causal
+`GCounter` and `PNCounter` have support for [delta-CRDT](#delta-crdt) and don't need causal
 delivery of deltas.
 
 Several related counters can be managed in a map with the `PNCounterMap` data type.
@@ -339,7 +341,7 @@ Merge is simply the union of the two sets.
 
 @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #gset }
 
-`GSet` has support for [delta_crdt_java](#delta-crdt-java) and it doesn't require causal delivery of deltas.
+`GSet` has support for [delta-CRDT](#delta-crdt) and it doesn't require causal delivery of deltas.
 
 If you need add and remove operations you should use the `ORSet` (observed-remove set).
 Elements can be added and removed any number of times. If an element is concurrently added and
@@ -352,7 +354,7 @@ track causality of the operations and resolve concurrent updates.
 
 @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #orset }
 
-`ORSet` has support for [delta_crdt_java](#delta-crdt-java) and it requires causal delivery of deltas.
+`ORSet` has support for [delta-CRDT](#delta-crdt) and it requires causal delivery of deltas.
 
 ### Maps
 
@@ -490,7 +492,7 @@ look like for the `TwoPhaseSet`:
 
 @@snip [TwoPhaseSetSerializer2.java]($code$/java/jdocs/ddata/protobuf/TwoPhaseSetSerializer2.java) { #serializer }
 
-<a id="ddata-durable-java"></a>
+<a id="ddata-durable"></a>
 ### Durable Storage
 
 By default the data is only kept in memory. It is redundant since it is replicated to other nodes
@@ -553,7 +555,7 @@ Note that you should be prepared to receive `WriteFailure` as reply to an `Updat
 durable entry if the data could not be stored for some reason. When enabling `write-behind-interval`
 such errors will only be logged and `UpdateSuccess` will still be the reply to the `Update`.
 
-There is one important caveat when it comes pruning of [crdt_garbage_java](#crdt-garbage-java) for durable data.
+There is one important caveat when it comes pruning of [CRDT Garbage](#crdt-garbage) for durable data.
 If and old data entry that was never pruned is injected and merged with existing data after
 that the pruning markers have been removed the value will not be correct. The time-to-live
 of the markers is defined by configuration
@@ -563,7 +565,7 @@ This would be possible if a node with durable data didn't participate in the pru
 be stopped for longer time than this duration and if it is joining again after this
 duration its data should first be manually removed (from the lmdb directory).
 
-<a id="crdt-garbage-java"></a>
+<a id="crdt-garbage"></a>
 ### CRDT Garbage
 
 One thing that can be problematic with CRDTs is that some data types accumulate history (garbage).
@@ -602,7 +604,7 @@ be able to improve this if needed, but the design is still not intended for bill
 All data is held in memory, which is another reason why it is not intended for *Big Data*.
 
 When a data entry is changed the full state of that entry may be replicated to other nodes
-if it doesn't support [delta_crdt_java](#delta-crdt-java). The full state is also replicated for delta-CRDTs,
+if it doesn't support [delta-CRDT](#delta-crdt). The full state is also replicated for delta-CRDTs,
 for example when new nodes are added to the cluster or when deltas could not be propagated because
 of network partitions or similar problems. This means that you cannot have too large
 data entries, because then the remote message size will be too large.

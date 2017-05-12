@@ -528,7 +528,7 @@ states (for example `Try` in Scala).
 These stages can transform the rate of incoming elements since there are stages that emit multiple elements for a
 single input (e.g. `mapConcat') or consume multiple elements before emitting one output (e.g. `filter`).
 However, these rate transformations are data-driven, i.e. it is the incoming elements that define how the
-rate is affected. This is in contrast with [detached-stages-overview_scala](#detached-stages-overview-scala) which can change their processing behavior
+rate is affected. This is in contrast with [detached stages](#detached-stages-overview) which can change their processing behavior
 depending on being backpressured by downstream or not.
 
 ### map
@@ -986,7 +986,7 @@ Delay every element passed through with a specific duration.
 
 **completes** when upstream completes and buffered elements has been drained
 
-<a id="detached-stages-overview-scala"></a>
+<a id="detached-stages-overview"></a>
 ## Backpressure aware stages
 
 These stages are aware of the backpressure provided by their downstreams and able to adapt their behavior to that signal.

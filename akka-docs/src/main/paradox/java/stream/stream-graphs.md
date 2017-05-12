@@ -11,14 +11,14 @@ Some graph operations which are common enough and fit the linear style of Flows,
 streams, such that the second one is consumed after the first one has completed), may have shorthand methods defined on
 `Flow` or `Source` themselves, however you should keep in mind that those are also implemented as graph junctions.
 
-<a id="graph-dsl-java"></a>
+<a id="graph-dsl"></a>
 ## Constructing Graphs
 
 Graphs are built from simple Flows which serve as the linear connections within the graphs as well as junctions
 which serve as fan-in and fan-out points for Flows. Thanks to the junctions having meaningful types based on their behaviour
 and making them explicit elements these elements should be rather straightforward to use.
 
-Akka Streams currently provide these junctions (for a detailed list see @ref:[stages-overview_java](stages-overview.md)):
+Akka Streams currently provide these junctions (for a detailed list see @ref:[stages overview](stages-overview.md)):
 
  * **Fan-out**
 
@@ -68,7 +68,7 @@ is passed to it and return the inlets and outlets of the resulting copy so that 
 Another alternative is to pass existing graphs—of any shape—into the factory method that produces a
 new graph. The difference between these approaches is that importing using `builder.add(...)` ignores the
 materialized value of the imported graph while importing via the factory method allows its inclusion;
-for more details see @ref:[Stream Materialization](../../scala/stream/stream-flows-and-basics.md#stream-materialization-scala).
+for more details see @ref:[Stream Materialization](../stream/stream-flows-and-basics.md#stream-materialization).
 
 In the example below we prepare a graph that consists of two parallel streams,
 in which we re-use the same instance of `Flow`, yet it will properly be
@@ -76,7 +76,7 @@ materialized as two connections between the corresponding Sources and Sinks:
 
 @@snip [GraphDSLDocTest.java]($code$/java/jdocs/stream/GraphDSLDocTest.java) { #graph-dsl-reusing-a-flow }
 
-<a id="partial-graph-dsl-java"></a>
+<a id="partial-graph-dsl"></a>
 ## Constructing and combining Partial Graphs
 
 Sometimes it is not possible (or needed) to construct the entire computation graph in one place, but instead construct
@@ -110,7 +110,7 @@ A partial graph also verifies that all ports are either connected or part of the
 
 @@@
 
-<a id="constructing-sources-sinks-flows-from-partial-graphs-java"></a>
+<a id="constructing-sources-sinks-flows-from-partial-graphs"></a>
 ## Constructing Sources, Sinks and Flows from Partial Graphs
 
 Instead of treating a `Graph` as simply a collection of flows and junctions which may not yet all be
@@ -153,7 +153,7 @@ The same can be done for a `Sink` but in this case it will be fan-out:
 
 @@snip [StreamPartialGraphDSLDocTest.java]($code$/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #sink-combine }
 
-<a id="bidi-flow-java"></a>
+<a id="bidi-flow"></a>
 ## Bidirectional Flows
 
 A graph topology that is often useful is that of two flows going in opposite
@@ -186,7 +186,7 @@ turns an object into a sequence of bytes.
 The other stage that we talked about is a little more involved since reversing
 a framing protocol means that any received chunk of bytes may correspond to
 zero or more messages. This is best implemented using a `GraphStage`
-(see also @ref:[Custom processing with GraphStage](stream-customize.md#graphstage-java)).
+(see also @ref:[Custom processing with GraphStage](stream-customize.md#graphstage)).
 
 @@snip [BidiFlowDocTest.java]($code$/java/jdocs/stream/BidiFlowDocTest.java) { #framing }
 
@@ -199,7 +199,7 @@ together and also turned around with the `.reversed()` method. The test
 simulates both parties of a network communication protocol without actually
 having to open a network connection—the flows can just be connected directly.
 
-<a id="graph-matvalue-java"></a>
+<a id="graph-matvalue"></a>
 ## Accessing the materialized value inside the Graph
 
 In certain cases it might be necessary to feed back the materialized value of a Graph (partial, closed or backing a
@@ -215,7 +215,7 @@ The following example demonstrates a case where the materialized `CompletionStag
 
 @@snip [GraphDSLDocTest.java]($code$/java/jdocs/stream/GraphDSLDocTest.java) { #graph-dsl-matvalue-cycle }
 
-<a id="graph-cycles-java"></a>
+<a id="graph-cycles"></a>
 ## Graph cycles, liveness and deadlocks
 
 Cycles in bounded stream topologies need special considerations to avoid potential deadlocks and other liveness issues.

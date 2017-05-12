@@ -56,10 +56,10 @@ akka {
 The sky is the limit!
 By the way, did you know that Akka's `Typed Actors`, `Serialization` and other features are implemented as Akka Extensions?
 
-<a id="extending-akka-java-settings"></a>
+<a id="extending-akka-settings"></a>
 ### Application specific settings
 
-The <!-- FIXME: More than one link target with name configuration in path Some(/java/extending-akka.rst) --> configuration can be used for application specific settings. A good practice is to place those settings in an Extension.
+The @ref:[configuration](general/configuration.md) can be used for application specific settings. A good practice is to place those settings in an Extension.
 
 Sample configuration:
 

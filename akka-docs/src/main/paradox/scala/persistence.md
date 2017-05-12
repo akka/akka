@@ -11,7 +11,7 @@ communication with at-least-once message delivery semantics.
 
 Akka persistence is inspired by and the official replacement of the [eventsourced](https://github.com/eligosource/eventsourced) library. It follows the same
 concepts and architecture of [eventsourced](https://github.com/eligosource/eventsourced) but significantly differs on API and implementation level. See also
-@ref:[migration-eventsourced-2.3](../scala/project/migration-guide-eventsourced-2.3.x.md)
+@ref:[migration-eventsourced-2.3](project/migration-guide-eventsourced-2.3.x.md)
 
 ## Dependencies
 
@@ -48,7 +48,7 @@ used for optimizing recovery times. The storage backend of a snapshot store is p
 The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem.
 Replicated snapshot stores are available as [Community plugins](http://akka.io/community/).
 
-<a id="event-sourcing-scala"></a>
+<a id="event-sourcing"></a>
 ## Event sourcing
 
 The basic idea behind [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html) is quite simple. A persistent actor receives a (non-persistent) command
@@ -85,7 +85,7 @@ about successful state changes by publishing events.
 
 When persisting events with `persist` it is guaranteed that the persistent actor will not receive further commands between
 the `persist` call and the execution(s) of the associated event handler. This also holds for multiple `persist`
-calls in context of a single command. Incoming messages are [stashed](#internal-stash-scala) until the `persist`
+calls in context of a single command. Incoming messages are [stashed](#internal-stash) until the `persist`
 is completed.
 
 If persistence of an event fails, `onPersistFailure` will be invoked (logging the error by default),
@@ -109,7 +109,7 @@ behavior when replaying the events. When replay is completed it will use the new
 
 @@@
 
-<a id="persistence-id-scala"></a>
+<a id="persistence-id"></a>
 ### Identifiers
 
 A persistent actor must have an identifier that doesn't change across different actor incarnations.
@@ -126,7 +126,7 @@ behavior is corrupted.
 
 @@@
 
-<a id="recovery-scala"></a>
+<a id="recovery"></a>
 ### Recovery
 
 By default, a persistent actor is automatically recovered on start and on restart by replaying journaled messages.
@@ -149,7 +149,7 @@ recovery in the future, store its `ActorPath` explicitly in your persisted event
 
 @@@
 
-<a id="recovery-custom-scala"></a>
+<a id="recovery-custom"></a>
 #### Recovery customization
 
 Applications may also customise how recovery is performed by returning a customised `Recovery` object
@@ -193,11 +193,11 @@ unused `persistenceId`.
 If there is a problem with recovering the state of the actor from the journal, `onRecoveryFailure`
 is called (logging the error by default) and the actor will be stopped.
 
-<a id="internal-stash-scala"></a>
+<a id="internal-stash"></a>
 ### Internal stash
 
-The persistent actor has a private @ref:[stash](actors.md#stash-scala) for internally caching incoming messages during
-[recovery](#recovery-scala) or the `persist\persistAll` method persisting events. You can still use/inherit from the
+The persistent actor has a private @ref:[stash](actors.md#stash) for internally caching incoming messages during
+[recovery](#recovery) or the `persist\persistAll` method persisting events. You can still use/inherit from the
 `Stash` interface. The internal stash cooperates with the normal stash by hooking into `unstashAll` method and
 making sure messages are unstashed properly to the internal stash to maintain ordering guarantees.
 
@@ -240,7 +240,7 @@ be discarded. You can use bounded stash instead of it.
 
 @@@
 
-<a id="persist-async-scala"></a>
+<a id="persist-async"></a>
 ### Relaxed local consistency requirements and high throughput use-cases
 
 If faced with relaxed local consistency requirements and high throughput demands sometimes `PersistentActor` and its
@@ -272,7 +272,7 @@ The callback will not be invoked if the actor is restarted (or stopped) in betwe
 
 @@@
 
-<a id="defer-scala"></a>
+<a id="defer"></a>
 ### Deferring actions until preceding persist handlers have executed
 
 Sometimes when working with `persistAsync` or `persist` you may find that it would be nice to define some actions in terms of
@@ -303,7 +303,7 @@ The callback will not be invoked if the actor is restarted (or stopped) in betwe
 
 @@@
 
-<a id="nested-persist-calls-scala"></a>
+<a id="nested-persist-calls"></a>
 ### Nested persist calls
 
 It is possible to call `persist` and `persistAsync` inside their respective callback blocks and they will properly
@@ -347,7 +347,7 @@ the Actor's receive block (or methods synchronously invoked from there).
 
 @@@
 
-<a id="failures-scala"></a>
+<a id="failures"></a>
 ### Failures
 
 If persistence of an event fails, `onPersistFailure` will be invoked (logging the error by default),
@@ -368,7 +368,7 @@ next message.
 If there is a problem with recovering the state of the actor from the journal when the actor is
 started, `onRecoveryFailure` is called (logging the error by default), and the actor will be stopped.
 Note that failure to load snapshot is also treated like this, but you can disable loading of snapshots
-if you for example know that serialization format has changed in an incompatible way, see [Recovery customization](#recovery-custom-scala).
+if you for example know that serialization format has changed in an incompatible way, see [Recovery customization](#recovery-custom).
 
 ### Atomic writes
 
@@ -436,7 +436,7 @@ For critical failures, such as recovery or persisting events failing, the persis
 handler is invoked. This is because if the underlying journal implementation is signalling persistence failures it is most
 likely either failing completely or overloaded and restarting right-away and trying to persist the event again will most
 likely not help the journal recover – as it would likely cause a [Thundering herd problem](https://en.wikipedia.org/wiki/Thundering_herd_problem), as many persistent actors
-would restart and try to persist their events again. Instead, using a `BackoffSupervisor` (as described in [Failures](#failures-scala)) which
+would restart and try to persist their events again. Instead, using a `BackoffSupervisor` (as described in [Failures](#failures)) which
 implements an exponential-backoff strategy which allows for more breathing room for the journal to recover between
 restarts of the persistent actor.
 
@@ -450,11 +450,11 @@ Check the documentation of the journal implementation you are using for details 
 
 @@@
 
-<a id="safe-shutdown-scala"></a>
+<a id="safe-shutdown"></a>
 ### Safely shutting down persistent actors
 
 Special care should be given when shutting down persistent actors from the outside.
-With normal Actors it is often acceptable to use the special @ref:[PoisonPill](actors.md#poison-pill-scala) message
+With normal Actors it is often acceptable to use the special @ref:[PoisonPill](actors.md#poison-pill) message
 to signal to an Actor that it should stop itself once it receives this message – in fact this message is handled
 automatically by Akka, leaving the target actor no way to refuse stopping itself when given a poison pill.
 
@@ -479,7 +479,7 @@ mechanism when `persist()` is used. Notice the early stop behaviour that occurs 
 
 @@snip [PersistenceDocSpec.scala]($code$/scala/docs/persistence/PersistenceDocSpec.scala) { #safe-shutdown-example-good }
 
-<a id="replay-filter-scala"></a>
+<a id="replay-filter"></a>
 ### Replay Filter
 
 There could be cases where event streams are corrupted and multiple writers (i.e. multiple persistent actor instances)
@@ -552,7 +552,7 @@ Since it is acceptable for some applications to not use any snapshotting, it is 
 However, Akka will log a warning message when this situation is detected and then continue to operate until
 an actor tries to store a snapshot, at which point the operation will fail (by replying with an `SaveSnapshotFailure` for example).
 
-Note that @ref:[cluster_sharding_scala](cluster-sharding.md) is using snapshots, so if you use Cluster Sharding you need to define a snapshot store plugin.
+Note that @ref:[Cluster Sharding](cluster-sharding.md) is using snapshots, so if you use Cluster Sharding you need to define a snapshot store plugin.
 
 @@@
 
@@ -579,7 +579,7 @@ If failure messages are left unhandled by the actor, a default warning log messa
 No default action is performed on the success messages, however you're free to handle them e.g. in order to delete
 an in memory representation of the snapshot, or in the case of failure to attempt save the snapshot again.
 
-<a id="at-least-once-delivery-scala"></a>
+<a id="at-least-once-delivery"></a>
 ## At-Least-Once Delivery
 
 To send messages with at-least-once delivery semantics to destinations you can mix-in `AtLeastOnceDelivery`
@@ -605,7 +605,7 @@ possible resends
 delivered to the new actor incarnation
 
 These semantics are similar to what an `ActorPath` represents (see
-@ref:[Actor Lifecycle](actors.md#actor-lifecycle-scala)), therefore you need to supply a path and not a
+@ref:[Actor Lifecycle](actors.md#actor-lifecycle)), therefore you need to supply a path and not a
 reference when delivering messages. The messages are sent to the path with
 an actor selection.
 
@@ -684,7 +684,7 @@ not accept more messages and it will throw `AtLeastOnceDelivery.MaxUnconfirmedMe
 The default value can be configured with the `akka.persistence.at-least-once-delivery.max-unconfirmed-messages`
 configuration key. The method can be overridden by implementation classes to return non-default values.
 
-<a id="event-adapters-scala"></a>
+<a id="event-adapters"></a>
 ## Event Adapters
 
 In long running projects using event sourcing sometimes the need arises to detach the data model from the domain model
@@ -1083,19 +1083,19 @@ in your Akka configuration. The LevelDB Java port is for testing purposes only.
 
 @@@ warning
 
-It is not possible to test persistence provided classes (i.e. [PersistentActor](#event-sourcing-scala)
-and [AtLeastOnceDelivery](#at-least-once-delivery-scala)) using `TestActorRef` due to its *synchronous* nature.
+It is not possible to test persistence provided classes (i.e. [PersistentActor](#event-sourcing)
+and [AtLeastOnceDelivery](#at-least-once-delivery)) using `TestActorRef` due to its *synchronous* nature.
 These traits need to be able to perform asynchronous tasks in the background in order to handle internal persistence
 related events.
 
-When testing Persistence based projects always rely on @ref:[asynchronous messaging using the TestKit](testing.md#async-integration-testing-scala).
+When testing Persistence based projects always rely on @ref:[asynchronous messaging using the TestKit](testing.md#async-integration-testing).
 
 @@@
 
 ## Configuration
 
 There are several configuration properties for the persistence module, please refer
-to the @ref:[reference configuration](../scala/general/configuration.md#config-akka-persistence).
+to the @ref:[reference configuration](general/configuration.md#config-akka-persistence).
 
 ## Multiple persistence plugin configurations
 
