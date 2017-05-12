@@ -81,7 +81,7 @@ all domain events of an Aggregate Root type.
 
 @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByTag }
 
-To tag events you create an @ref:[Event Adapters](persistence.md#event-adapters-java) that wraps the events in a `akka.persistence.journal.Tagged`
+To tag events you create an @ref:[Event Adapters](persistence.md#event-adapters) that wraps the events in a `akka.persistence.journal.Tagged`
 with the given `tags`.
 
 @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }

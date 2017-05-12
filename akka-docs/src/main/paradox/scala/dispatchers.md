@@ -13,7 +13,7 @@ dispatchers in this ActorSystem. If no ExecutionContext is given, it will fallba
 `akka.actor.default-dispatcher.default-executor.fallback`. By default this is a "fork-join-executor", which
 gives excellent performance in most cases.
 
-<a id="dispatcher-lookup-scala"></a>
+<a id="dispatcher-lookup"></a>
 ## Looking up a Dispatcher
 
 Dispatchers implement the `ExecutionContext` interface and can thus be used to run `Future` invocations etc.
@@ -48,7 +48,7 @@ You can read more about it in the JDK's [ThreadPoolExecutor documentation](https
 
 @@@
 
-For more options, see the default-dispatcher section of the <!-- FIXME: More than one link target with name configuration in path Some(/scala/dispatchers.rst) --> configuration.
+For more options, see the default-dispatcher section of the @ref:[configuration](general/configuration.md).
 
 Then you create the actor as usual and define the dispatcher in the deployment configuration.
 

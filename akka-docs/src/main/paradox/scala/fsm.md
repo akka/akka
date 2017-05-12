@@ -433,7 +433,7 @@ and in the following.
 
 ### Event Tracing
 
-The setting `akka.actor.debug.fsm` in <!-- FIXME: More than one link target with name configuration in path Some(/scala/fsm.rst) --> configuration enables logging of an
+The setting `akka.actor.debug.fsm` in @ref:[configuration](general/configuration.md) enables logging of an
 event trace by `LoggingFSM` instances:
 
 @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #logging-fsm }
@@ -447,7 +447,7 @@ messages
  * all state transitions
 
 Life cycle changes and special messages can be logged as described for
-@ref:[Actors](testing.md#actor-logging-scala).
+@ref:[Actors](testing.md#actor-logging).
 
 ### Rolling Event Log
 

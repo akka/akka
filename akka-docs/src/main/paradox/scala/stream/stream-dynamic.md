@@ -1,6 +1,6 @@
 # Dynamic stream handling
 
-<a id="kill-switch-scala"></a>
+<a id="kill-switch"></a>
 ## Controlling graph completion with KillSwitch
 
 A `KillSwitch` allows the completion of graphs of `FlowShape` from the outside. It consists of a flow element that
@@ -17,7 +17,7 @@ Graph completion is performed by both
 
 A `KillSwitch` can control the completion of one or multiple streams, and therefore comes in two different flavours.
 
-<a id="unique-kill-switch-scala"></a>
+<a id="unique-kill-switch"></a>
 ### UniqueKillSwitch
 
 `UniqueKillSwitch` allows to control the completion of **one** materialized `Graph` of `FlowShape`. Refer to the
@@ -31,7 +31,7 @@ below for usage examples.
 
 @@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #unique-abort }
 
-<a id="shared-kill-switch-scala"></a>
+<a id="shared-kill-switch"></a>
 ### SharedKillSwitch
 
 A `SharedKillSwitch` allows to control the completion of an arbitrary number graphs of `FlowShape`. It can be
@@ -122,6 +122,6 @@ than 3 seconds are forcefully removed (and their stream failed).
 
 The resulting Flow now has a type of `Flow[String, String, UniqueKillSwitch]` representing a publish-subscribe
 channel which can be used any number of times to attach new producers or consumers. In addition, it materializes
-to a `UniqueKillSwitch` (see [UniqueKillSwitch](#unique-kill-switch-scala)) that can be used to deregister a single user externally:
+to a `UniqueKillSwitch` (see [UniqueKillSwitch](#unique-kill-switch)) that can be used to deregister a single user externally:
 
 @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-4 }

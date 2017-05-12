@@ -1,5 +1,5 @@
 
-<a id="fault-tolerance-sample-java"></a>
+<a id="fault-tolerance-sample"></a>
 # Diagrams of the Fault Tolerance Sample
 
 ![faulttolerancesample-normal-flow.png](../images/faulttolerancesample-normal-flow.png)

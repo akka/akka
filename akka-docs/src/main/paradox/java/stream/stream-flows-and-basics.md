@@ -1,6 +1,6 @@
 # Basics and working with Flows
 
-<a id="core-concepts-java"></a>
+<a id="core-concepts"></a>
 ## Core concepts
 
 Akka Streams is a library to process and transfer a sequence of elements using bounded buffer space. This
@@ -36,7 +36,7 @@ is running.
 Processing Stage
 : The common name for all building blocks that build up a Graph.
 Examples of a processing stage would be  operations like `map()`, `filter()`, custom `GraphStage` s and graph
-junctions like `Merge` or `Broadcast`. For the full list of built-in processing stages see @ref:[stages-overview_java](stages-overview.md)
+junctions like `Merge` or `Broadcast`. For the full list of built-in processing stages see @ref:[stages overview](stages-overview.md)
 
 
 When we talk about *asynchronous, non-blocking backpressure* we mean that the processing stages available in Akka
@@ -45,7 +45,7 @@ will use asynchronous means to slow down a fast producer, without blocking its t
 design, since entities that need to wait (a fast producer waiting on a slow consumer) will not block the thread but
 can hand it back for further use to an underlying thread-pool.
 
-<a id="defining-and-running-streams-java"></a>
+<a id="defining-and-running-streams"></a>
 ## Defining and running streams
 
 Linear processing pipelines can be expressed in Akka Streams using the following core abstractions:
@@ -131,7 +131,7 @@ In accordance to the Reactive Streams specification ([Rule 2.13](https://github.
 Akka Streams do not allow `null` to be passed through the stream as an element. In case you want to model the concept
 of absence of a value we recommend using `java.util.Optional` which is available since Java 8.
 
-<a id="back-pressure-explained-java"></a>
+<a id="back-pressure-explained"></a>
 ## Back-pressure explained
 
 Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the [Reactive Streams](http://reactive-streams.org/)
@@ -141,7 +141,7 @@ The user of the library does not have to write any explicit back-pressure handli
 and dealt with automatically by all of the provided Akka Streams processing stages. It is possible however to add
 explicit buffer stages with overflow strategies that can influence the behaviour of the stream. This is especially important
 in complex processing graphs which may even contain loops (which *must* be treated with very special
-care, as explained in @ref:[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles-java)).
+care, as explained in @ref:[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles)).
 
 The back pressure protocol is defined in terms of the number of elements a downstream `Subscriber` is able to receive
 and buffer, referred to as `demand`.
@@ -156,7 +156,7 @@ different Reactive Streams implementations.
 
 Akka Streams implements these concepts as `Source`, `Flow` (referred to as `Processor` in Reactive Streams)
 and `Sink` without exposing the Reactive Streams interfaces directly.
-If you need to integrate with other Reactive Stream libraries read @ref:[Integrating with Reactive Streams](stream-integrations.md#reactive-streams-integration-java).
+If you need to integrate with other Reactive Stream libraries read @ref:[Integrating with Reactive Streams](stream-integrations.md#reactive-streams-integration).
 
 @@@
 
@@ -198,7 +198,7 @@ it will have to abide to this back-pressure by applying one of the below strateg
 As we can see, this scenario effectively means that the `Subscriber` will *pull* the elements from the Publisher –
 this mode of operation is referred to as pull-based back-pressure.
 
-<a id="stream-materialization-java"></a>
+<a id="stream-materialization"></a>
 ## Stream Materialization
 
 When constructing flows and graphs in Akka Streams think of them as preparing a blueprint, an execution plan.
@@ -222,7 +222,7 @@ yet will materialize that stage multiple times.
 
 @@@
 
-<a id="operator-fusion-java"></a>
+<a id="operator-fusion"></a>
 ### Operator Fusion
 
 By default Akka Streams will fuse the stream operators. This means that the processing steps of a flow or
@@ -282,7 +282,7 @@ resulting values. Some examples of using these combiners are illustrated in the 
 
 @@@ note
 
-In Graphs it is possible to access the materialized value from inside the stream processing graph. For details see @ref:[Accessing the materialized value inside the Graph](stream-graphs.md#graph-matvalue-java).
+In Graphs it is possible to access the materialized value from inside the stream processing graph. For details see @ref:[Accessing the materialized value inside the Graph](stream-graphs.md#graph-matvalue).
 
 @@@
 

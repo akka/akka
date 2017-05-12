@@ -2,7 +2,7 @@
 
 @@@ note
 
-This page describes the @ref:[may change](../scala/common/may-change.md) remoting subsystem, codenamed *Artery* that will eventually replace the
+This page describes the @ref:[may change](common/may-change.md) remoting subsystem, codenamed *Artery* that will eventually replace the
 old remoting implementation. For the current stable remoting system please refer to @ref:[Remoting](remoting.md).
 
 @@@
@@ -87,7 +87,7 @@ listening for connections and handling messages as not to interfere with other a
 @@@
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-All settings are described in [Remote Configuration](#remote-configuration-artery-scala).
+All settings are described in [Remote Configuration](#remote-configuration-artery).
 
 @@@ note
 
@@ -111,7 +111,7 @@ real network.
 
 In cases, where Network Address Translation (NAT) is used or other network bridging is involved, it is important
 to configure the system so that it understands that there is a difference between his externally visible, canonical
-address and between the host-port pair that is used to listen for connections. See [Akka behind NAT or in a Docker container](#remote-configuration-nat-artery-scala)
+address and between the host-port pair that is used to listen for connections. See [Akka behind NAT or in a Docker container](#remote-configuration-nat-artery)
 for details.
 
 ## Acquiring references to remote actors
@@ -166,7 +166,7 @@ and automatically reply to with a `ActorIdentity` message containing the
 the `ActorSelection`, which returns a `Future` of the matching
 `ActorRef`.
 
-For more details on how actor addresses and paths are formed and used, please refer to @ref:[Actor References, Paths and Addresses](../scala/general/addressing.md).
+For more details on how actor addresses and paths are formed and used, please refer to @ref:[Actor References, Paths and Addresses](general/addressing.md).
 
 @@@ note
 
@@ -274,11 +274,11 @@ Actor classes not included in the whitelist will not be allowed to be remote dep
 An `ActorSystem` should not be exposed via Akka Remote (Artery) over plain Aeron/UDP to an untrusted network (e.g. internet).
 It should be protected by network security, such as a firewall. There is currently no support for encryption with Artery
 so if network security is not considered as enough protection the classic remoting with
-@ref:[TLS and mutual authentication](remoting.md#remote-tls-scala)  should be used.
+@ref:[TLS and mutual authentication](remoting.md#remote-tls)  should be used.
 
 Best practice is that Akka remoting nodes should only be accessible from the adjacent network.
 
-It is also security best practice to @ref:[disable the Java serializer](../java/remoting-artery.md#disable-java-serializer-java-artery) because of
+It is also security best practice to @ref:[disable the Java serializer](remoting-artery.md#disable-java-serializer-java-artery) because of
 its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
 
 ### Untrusted Mode
@@ -350,7 +350,7 @@ marking them `PossiblyHarmful` so that a client cannot forge them.
 
 Akka remoting is using Aeron as underlying message transport. Aeron is using UDP and adds
 among other things reliable delivery and session semantics, very similar to TCP. This means that
-the order of the messages are preserved, which is needed for the @ref:[Actor message ordering guarantees](../scala/general/message-delivery-reliability.md#message-ordering).
+the order of the messages are preserved, which is needed for the @ref:[Actor message ordering guarantees](general/message-delivery-reliability.md#message-ordering).
 Under normal circumstances all messages will be delivered but there are cases when messages
 may not be delivered to the destination:
 
@@ -359,7 +359,7 @@ may not be delivered to the destination:
  * if serialization or deserialization of a message fails (only that message will be dropped)
  * if an unexpected exception occurs in the remoting infrastructure
 
-In short, Actor message delivery is “at-most-once” as described in @ref:[Message Delivery Reliability](../scala/general/message-delivery-reliability.md)
+In short, Actor message delivery is “at-most-once” as described in @ref:[Message Delivery Reliability](general/message-delivery-reliability.md)
 
 Some messages in Akka are called system messages and those cannot be dropped because that would result
 in an inconsistent state between the systems. Such messages are used for essentially two features; remote death
@@ -401,7 +401,7 @@ when the destination system has been restarted.
 ### Watching Remote Actors
 
 Watching a remote actor is API wise not different than watching a local actor, as described in
-@ref:[Lifecycle Monitoring aka DeathWatch](actors.md#deathwatch-scala). However, it is important to note, that unlike in the local case, remoting has to handle
+@ref:[Lifecycle Monitoring aka DeathWatch](actors.md#deathwatch). However, it is important to note, that unlike in the local case, remoting has to handle
 when a remote actor does not terminate in a graceful way sending a system message to notify the watcher actor about
 the event, but instead being hosted on a system which stopped abruptly (crashed). These situations are handled
 by the built-in failure detector.
@@ -428,7 +428,7 @@ phi = -log10(1 - F(timeSinceLastHeartbeat))
 where F is the cumulative distribution function of a normal distribution with mean
 and standard deviation estimated from historical heartbeat inter-arrival times.
 
-In the [Remote Configuration](#remote-configuration-artery-scala) you can adjust the `akka.remote.watch-failure-detector.threshold`
+In the [Remote Configuration](#remote-configuration-artery) you can adjust the `akka.remote.watch-failure-detector.threshold`
 to define when a *phi* value is considered to be a failure.
 
 A low `threshold` is prone to generate many false positives but ensures
@@ -454,7 +454,7 @@ a standard deviation of 100 ms.
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
 `akka.remote.watch-failure-detector.acceptable-heartbeat-pause`. You may want to
-adjust the [Remote Configuration](#remote-configuration-artery-scala) of this depending on you environment.
+adjust the [Remote Configuration](#remote-configuration-artery) of this depending on you environment.
 This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 3 seconds.
 
@@ -467,7 +467,7 @@ those actors are serializable. Failing to do so will cause the system to behave 
 
 For more information please see @ref:[Serialization](serialization.md).
 
-<a id="remote-bytebuffer-serialization-scala"></a>
+<a id="remote-bytebuffer-serialization"></a>
 ### ByteBuffer based serialization
 
 Artery introduces a new serialization mechanism which allows the `ByteBufferSerializer` to directly write into a
@@ -543,7 +543,7 @@ The attempts are logged with the SECURITY marker.
 Please note that this option does not stop you from manually invoking java serialization.
 
 Please note that this means that you will have to configure different serializers which will able to handle all of your
-remote messages. Please refer to the @ref:[Serialization](serialization.md) documentation as well as [ByteBuffer based serialization](#remote-bytebuffer-serialization-scala) to learn how to do this.
+remote messages. Please refer to the @ref:[Serialization](serialization.md) documentation as well as [ByteBuffer based serialization](#remote-bytebuffer-serialization) to learn how to do this.
 
 ## Routers with Remote Destinations
 
@@ -746,15 +746,15 @@ crashes unexpectedly.
 for production systems.
 
 The location of the file can be controlled via the *akka.remote.artery.advanced.flight-recoder.destination* setting (see
-@ref:[akka-remote (artery)](../scala/general/configuration.md#config-akka-remote-artery) for details). By default, a file with the *.afr* extension is produced in the temporary
+@ref:[akka-remote (artery)](general/configuration.md#config-akka-remote-artery) for details). By default, a file with the *.afr* extension is produced in the temporary
 directory of the operating system. In cases where the flight recorder casuses issues, it can be disabled by adding the
 setting *akka.remote.artery.advanced.flight-recorder.enabled=off*, although this is not recommended.
 
-<a id="remote-configuration-artery-scala"></a>
+<a id="remote-configuration-artery"></a>
 ## Remote Configuration
 
 There are lots of configuration properties that are related to remoting in Akka. We refer to the
-@ref:[reference configuration](../scala/general/configuration.md#config-akka-remote-artery) for more information.
+@ref:[reference configuration](general/configuration.md#config-akka-remote-artery) for more information.
 
 @@@ note
 
@@ -765,7 +765,7 @@ best done by using something like the following:
 
 @@@
 
-<a id="remote-configuration-nat-artery-scala"></a>
+<a id="remote-configuration-nat-artery"></a>
 ### Akka behind NAT or in a Docker container
 
 In setups involving Network Address Translation (NAT), Load Balancers or Docker

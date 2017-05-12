@@ -1,9 +1,9 @@
 
-<a id="stream-quickstart-java"></a>
+<a id="stream-quickstart"></a>
 # Quick Start Guide
 
 Create a project and add the akka-streams dependency to the build tool of your
-choice as described in @ref:[Using a build tool](../../java/guide/quickstart.md).
+choice as described in @ref:[Using a build tool](../guide/quickstart.md).
 
 A stream usually begins at a source, so this is also how we start an Akka
 Stream. Before we create one, we import the full complement of streaming tools:
@@ -146,7 +146,7 @@ combinator will assert *back-pressure* upstream.
 
 This is basically all there is to Akka Streams in a nutshell—glossing over the
 fact that there are dozens of sources and sinks and many more stream
-transformation combinators to choose from, see also @ref:[stages-overview_java](stages-overview.md).
+transformation combinators to choose from, see also @ref:[stages overview](stages-overview.md).
 
 # Reactive Tweets
 
@@ -167,7 +167,7 @@ Here's the data model we'll be working with throughout the quickstart examples:
 @@@ note
 
 If you would like to get an overview of the used vocabulary first instead of diving head-first
-into an actual example you can have a look at the @ref:[Core concepts](stream-flows-and-basics.md#core-concepts-java) and @ref:[Defining and running streams](stream-flows-and-basics.md#defining-and-running-streams-java)
+into an actual example you can have a look at the @ref:[Core concepts](stream-flows-and-basics.md#core-concepts) and @ref:[Defining and running streams](stream-flows-and-basics.md#defining-and-running-streams)
 sections of the docs, and then come back to this quickstart to see it all pieced together into a simple example application.
 
 @@@
@@ -183,7 +183,7 @@ which will be responsible for materializing and running the streams we are about
 @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #materializer-setup }
 
 The `ActorMaterializer` can optionally take `ActorMaterializerSettings` which can be used to define
-materialization properties, such as default buffer sizes (see also @ref:[Buffers for asynchronous stages](stream-rate.md#async-stream-buffers-java)), the dispatcher to
+materialization properties, such as default buffer sizes (see also @ref:[Buffers for asynchronous stages](stream-rate.md#async-stream-buffers)), the dispatcher to
 be used by the pipeline etc. These can be overridden with `withAttributes` on `Flow`, `Source`, `Sink` and `Graph`.
 
 Let's assume we have a stream of tweets readily available. In Akka this is expressed as a `Source<Out, M>`:
@@ -195,7 +195,7 @@ more advanced graph elements to finally be consumed by a `Sink<In,M3>`.
 
 The first type parameter—`Tweet` in this case—designates the kind of elements produced
 by the source while the `M` type parameters describe the object that is created during
-materialization ([see below](#materialized-values-quick-java))—`NotUsed` (from the `scala.runtime`
+materialization ([see below](#materialized-values-quick))—`NotUsed` (from the `scala.runtime`
 package) means that no value is produced, it is the generic equivalent of `void`.
 
 The operations should look familiar to anyone who has used the Scala Collections library,
@@ -204,7 +204,7 @@ only make sense in streaming and vice versa):
 
 @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #authors-filter-map }
 
-Finally in order to @ref:[materialize](stream-flows-and-basics.md#stream-materialization-java) and run the stream computation we need to attach
+Finally in order to @ref:[materialize](stream-flows-and-basics.md#stream-materialization) and run the stream computation we need to attach
 the Flow to a `Sink<T, M>` that will get the Flow running. The simplest way to do this is to call
 `runWith(sink)` on a `Source<Out, M>`. For convenience a number of common Sinks are predefined and collected as static methods on
 the `Sink class`.
@@ -274,14 +274,14 @@ Both `Graph` and `RunnableGraph` are *immutable, thread-safe, and freely shareab
 A graph can also have one of several other shapes, with one or more unconnected ports. Having unconnected ports
 expresses a graph that is a *partial graph*. Concepts around composing and nesting graphs in large structures are
 explained in detail in @ref:[Modularity, Composition and Hierarchy](stream-composition.md). It is also possible to wrap complex computation graphs
-as Flows, Sinks or Sources, which will be explained in detail in @ref:[Constructing and combining Partial Graphs](stream-graphs.md#partial-graph-dsl-java).
+as Flows, Sinks or Sources, which will be explained in detail in @ref:[Constructing and combining Partial Graphs](stream-graphs.md#partial-graph-dsl).
 
 ## Back-pressure in action
 
 One of the main advantages of Akka Streams is that they *always* propagate back-pressure information from stream Sinks
 (Subscribers) to their Sources (Publishers). It is not an optional feature, and is enabled at all times. To learn more
 about the back-pressure protocol used by Akka Streams and all other Reactive Streams compatible implementations read
-@ref:[Back-pressure explained](stream-flows-and-basics.md#back-pressure-explained-java).
+@ref:[Back-pressure explained](stream-flows-and-basics.md#back-pressure-explained).
 
 A typical problem applications (not using Akka Streams) like this often face is that they are unable to process the incoming data fast enough,
 either temporarily or by design, and will start buffering incoming data until there's no more space to buffer, resulting
@@ -295,7 +295,7 @@ The `buffer` element takes an explicit and required `OverflowStrategy`, which de
 when it receives another element while it is full. Strategies provided include dropping the oldest element (`dropHead`),
 dropping the entire buffer, signalling failures etc. Be sure to pick and choose the strategy that fits your use case best.
 
-<a id="materialized-values-quick-java"></a>
+<a id="materialized-values-quick"></a>
 ## Materialized values
 
 So far we've been only processing data using Flows and consuming it into some kind of external Sink - be it by printing
@@ -336,7 +336,7 @@ will be different, as illustrated by this example:
 @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-runnable-flow-materialized-twice }
 
 Many elements in Akka Streams provide materialized values which can be used for obtaining either results of computation or
-steering these elements which will be discussed in detail in @ref:[Stream Materialization](stream-flows-and-basics.md#stream-materialization-java). Summing up this section, now we know
+steering these elements which will be discussed in detail in @ref:[Stream Materialization](stream-flows-and-basics.md#stream-materialization). Summing up this section, now we know
 what happens behind the scenes when we run this one-liner, which is equivalent to the multi line version above:
 
 @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-fold-count-oneline }

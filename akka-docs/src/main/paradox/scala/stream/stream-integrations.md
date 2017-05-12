@@ -322,7 +322,7 @@ The numbers in parenthesis illustrates how many calls that are in progress at
 the same time. Here the downstream demand and thereby the number of concurrent
 calls are limited by the buffer size (4) of the `ActorMaterializerSettings`.
 
-<a id="reactive-streams-integration-scala"></a>
+<a id="reactive-streams-integration"></a>
 ## Integrating with Reactive Streams
 
 [Reactive Streams](http://reactive-streams.org/) defines a standard for asynchronous stream processing with non-blocking
@@ -427,7 +427,7 @@ type-safe and safe to implement `akka.stream.stage.GraphStage`. It can also
 expose a "stage actor ref" is needed to be addressed as-if an Actor.
 Custom stages implemented using `GraphStage` are also automatically fusable.
 
-To learn more about implementing custom stages using it refer to @ref:[Custom processing with GraphStage](stream-customize.md#graphstage-scala).
+To learn more about implementing custom stages using it refer to @ref:[Custom processing with GraphStage](stream-customize.md#graphstage).
 
 @@@
 
@@ -482,7 +482,7 @@ type-safe and safe to implement `akka.stream.stage.GraphStage`. It can also
 expose a "stage actor ref" is needed to be addressed as-if an Actor.
 Custom stages implemented using `GraphStage` are also automatically fusable.
 
-To learn more about implementing custom stages using it refer to @ref:[Custom processing with GraphStage](stream-customize.md#graphstage-scala).
+To learn more about implementing custom stages using it refer to @ref:[Custom processing with GraphStage](stream-customize.md#graphstage).
 
 @@@
 

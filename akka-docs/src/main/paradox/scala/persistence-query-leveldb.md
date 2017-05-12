@@ -77,7 +77,7 @@ all domain events of an Aggregate Root type.
 
 @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #EventsByTag }
 
-To tag events you create an @ref:[Event Adapters](persistence.md#event-adapters-scala) that wraps the events in a `akka.persistence.journal.Tagged`
+To tag events you create an @ref:[Event Adapters](persistence.md#event-adapters) that wraps the events in a `akka.persistence.journal.Tagged`
 with the given `tags`.
 
 @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #tagger }

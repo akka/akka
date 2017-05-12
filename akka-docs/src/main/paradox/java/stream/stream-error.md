@@ -36,7 +36,7 @@ elements that cause the division by zero are effectively dropped.
 @@@ note
 
 Be aware that dropping elements may result in deadlocks in graphs with
-cycles, as explained in @ref:[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles-java).
+cycles, as explained in @ref:[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles).
 
 @@@
 

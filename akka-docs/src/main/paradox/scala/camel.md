@@ -33,8 +33,8 @@ The above example exposes an actor over a TCP endpoint via Apache
 Camel's [Mina component](http://camel.apache.org/mina2.html). The actor implements the endpointUri method to define
 an endpoint from which it can receive messages. After starting the actor, TCP
 clients can immediately send messages to and receive responses from that
-actor. If the message exchange should go over HTTP (via Camel's <!-- FIXME: duplicate target id: jetty component --> `Jetty
-component`_), only the actor's endpointUri method must be changed.
+actor. If the message exchange should go over HTTP (via Camel's Jetty
+component, only the actor's endpointUri method must be changed.
 
 @@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #Consumer }
 
@@ -70,13 +70,13 @@ You can also create a CamelMessage yourself with the appropriate body and header
 The akka-camel module is implemented as an Akka Extension, the `CamelExtension` object.
 Extensions will only be loaded once per `ActorSystem`, which will be managed by Akka.
 The `CamelExtension` object provides access to the [Camel](@github@/akka-camel/src/main/scala/akka/camel/Camel.scala) trait.
-The [Camel](@github@/akka-camel/src/main/scala/akka/camel/Camel.scala) trait in turn provides access to two important Apache Camel objects, the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) and the <!-- FIXME: duplicate target id: producertemplate --> `ProducerTemplate`_.
+The [Camel](@github@/akka-camel/src/main/scala/akka/camel/Camel.scala) trait in turn provides access to two important Apache Camel objects, the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) and the `ProducerTemplate`.
 Below you can see how you can get access to these Apache Camel objects.
 
 @@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelExtension }
 
 One `CamelExtension` is only loaded once for every one `ActorSystem`, which makes it safe to call the `CamelExtension` at any point in your code to get to the
-Apache Camel objects associated with it. There is one [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) and one <!-- FIXME: duplicate target id: producertemplate --> `ProducerTemplate`_ for every one `ActorSystem` that uses a `CamelExtension`.
+Apache Camel objects associated with it. There is one [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) and one `ProducerTemplate` for every one `ActorSystem` that uses a `CamelExtension`.
 By Default, a new [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) is created when the `CamelExtension` starts. If you want to inject your own context instead,
 you can extend the [ContextProvider](@github@/akka-camel/src/main/scala/akka/camel/ContextProvider.scala) trait and add the FQCN of your implementation in the config, as the value of the "akka.camel.context-provider".
 This interface define a single method `getContext` used to load the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java).
@@ -86,7 +86,7 @@ Below an example on how to add the ActiveMQ component to the [CamelContext](http
 @@snip [Introduction.scala]($code$/scala/docs/camel/Introduction.scala) { #CamelExtensionAddComponent }
 
 The [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) joins the lifecycle of the `ActorSystem` and `CamelExtension` it is associated with; the [CamelContext](https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java) is started when
-the `CamelExtension` is created, and it is shut down when the associated `ActorSystem` is shut down. The same is true for the <!-- FIXME: unresolved link reference: producertemplate --> `ProducerTemplate`_.
+the `CamelExtension` is created, and it is shut down when the associated `ActorSystem` is shut down. The same is true for the `ProducerTemplate`.
 
 The `CamelExtension` is used by both *Producer* and *Consumer* actors to interact with Apache Camel internally.
 You can access the `CamelExtension` inside a *Producer* or a *Consumer* using the `camel` definition, or get straight at the *CamelContext* using the `camelContext` definition.
@@ -121,8 +121,8 @@ actor. Messages consumed by actors from Camel endpoints are of type
 [CamelMessage](@github@/akka-camel/src/main/scala/akka/camel/CamelMessage.scala). These are immutable representations of Camel messages.
 
 Here's another example that sets the endpointUri to
-`jetty:http://localhost:8877/camel/default`. It causes Camel's <!-- FIXME: duplicate target id: jetty component --> `Jetty
-component`_ to start an embedded [Jetty](http://www.eclipse.org/jetty/) server, accepting HTTP connections
+`jetty:http://localhost:8877/camel/default`. It causes Camel's Jetty
+component to start an embedded [Jetty](http://www.eclipse.org/jetty/) server, accepting HTTP connections
 from localhost on port 8877.
 
 @@snip [Consumers.scala]($code$/scala/docs/camel/Consumers.scala) { #Consumer2 }
@@ -160,8 +160,8 @@ acknowledgement).
 Camel Exchanges (and their corresponding endpoints) that support two-way communications need to wait for a response from
 an actor before returning it to the initiating client.
 For some endpoint types, timeout values can be defined in an endpoint-specific
-way which is described in the documentation of the individual <!-- FIXME: duplicate target id: camel components --> `Camel
-components`_. Another option is to configure timeouts on the level of consumer actors.
+way which is described in the documentation of the individual Camel
+components. Another option is to configure timeouts on the level of consumer actors.
 
 Two-way communications between a Camel endpoint and an actor are
 initiated by sending the request message to the actor with the [ask](@github@/akka-actor/src/main/scala/akka/pattern/AskSupport.scala) pattern
@@ -193,7 +193,7 @@ Producer actor and waits for a response.
 
 The future contains the response CamelMessage, or an `AkkaCamelException` when an error occurred, which contains the headers of the response.
 
-<a id="camel-custom-processing-scala"></a>
+<a id="camel-custom-processing"></a>
 ### Custom Processing
 
 Instead of replying to the initial sender, producer actors can implement custom
@@ -227,8 +227,8 @@ To correlate request with response messages, applications can set the
 ### ProducerTemplate
 
 The [Producer](@github@/akka-camel/src/main/scala/akka/camel/Producer.scala) trait is a very
-convenient way for actors to produce messages to Camel endpoints. Actors may also use a Camel <!-- FIXME: unresolved link reference: producertemplate --> `ProducerTemplate`_ for producing
-messages to endpoints.
+convenient way for actors to produce messages to Camel endpoints. Actors may also use a Camel 
+`ProducerTemplate` for producing messages to endpoints.
 
 @@snip [Producers.scala]($code$/scala/docs/camel/Producers.scala) { #ProducerTemplate }
 
@@ -252,15 +252,16 @@ asynchronous routing engine. Asynchronous responses are wrapped and added to the
 producer actor's mailbox for later processing. By default, response messages are
 returned to the initial sender but this can be overridden by Producer
 implementations (see also description of the `routeResponse` method
-in [Custom Processing](#camel-custom-processing-scala)).
+in [Custom Processing](#camel-custom-processing)).
 
 However, asynchronous two-way message exchanges, without allocating a thread for
 the full duration of exchange, cannot be generically supported by Camel's
 asynchronous routing engine alone. This must be supported by the individual
-<!-- FIXME: duplicate target id: camel components --> `Camel components`_ (from which endpoints are created) as well. They must be
+Camel components (from which endpoints are created) as well. They must be
 able to suspend any work started for request processing (thereby freeing threads
 to do other work) and resume processing when the response is ready. This is
-currently the case for a [subset of components](http://camel.apache.org/asynchronous-routing-engine.html) such as the <!-- FIXME: duplicate target id: jetty component --> `Jetty component`_.
+currently the case for a [subset of components](http://camel.apache.org/asynchronous-routing-engine.html) 
+such as the Jetty component.
 All other Camel components can still be used, of course, but they will cause
 allocation of a thread for the duration of an in-out message exchange. There's
 also [Examples](#camel-examples) that implements both, an asynchronous
@@ -290,7 +291,7 @@ most use cases, some applications may require more specialized routes to actors.
 The akka-camel module provides two mechanisms for customizing routes to actors,
 which will be explained in this section. These are:
 
- * Usage of [camel-components](#camel-components-2) to access actors.
+ * Usage of [camel components](#camel-components-2) to access actors.
 Any Camel route can use these components to access Akka actors.
  * [Intercepting route construction](#camel-intercepting-route-construction) to actors.
 This option gives you the ability to change routes that have already been added to Camel.
@@ -299,13 +300,13 @@ Consumer actors have a hook into the route definition process which can be used 
 <a id="camel-components-2"></a>
 ### Akka Camel components
 
-Akka actors can be accessed from Camel routes using the <!-- FIXME: duplicate target id: actor --> `actor`_ Camel component. This component can be used to
+Akka actors can be accessed from Camel routes using the actor Camel component. This component can be used to
 access any Akka actor (not only consumer actors) from Camel routes, as described in the following sections.
 
 <a id="access-to-actors"></a>
 ### Access to actors
 
-To access actors from custom Camel routes, the <!-- FIXME: duplicate target id: actor --> `actor`_ Camel
+To access actors from custom Camel routes, the actor Camel
 component should be used. It fully supports Camel's [asynchronous routing
 engine](http://camel.apache.org/asynchronous-routing-engine.html).
 
@@ -357,7 +358,7 @@ the HTTP request.
 <a id="camel-intercepting-route-construction"></a>
 ### Intercepting route construction
 
-The previous section, [camel-components](#camel-components-2), explained how to setup a route to an actor manually.
+The previous section, [camel components](#camel-components-2), explained how to setup a route to an actor manually.
 It was the application's responsibility to define the route and add it to the current CamelContext.
 This section explains a more convenient way to define custom routes: akka-camel is still setting up the routes to consumer actors (and adds these routes to the current CamelContext) but applications can define extensions to these routes.
 Extensions can be defined with Camel's [Java DSL](http://camel.apache.org/dsl.html) or [Scala DSL](http://camel.apache.org/scala-dsl.html).
@@ -403,7 +404,7 @@ using the Camel Quartz component
 ## Configuration
 
 There are several configuration properties for the Camel module, please refer
-to the @ref:[reference configuration](../scala/general/configuration.md#config-akka-camel).
+to the @ref:[reference configuration](general/configuration.md#config-akka-camel).
 
 ## Additional Resources
 

@@ -17,8 +17,9 @@ its syntax from Erlang.
 
 Since Akka enforces parental supervision every actor is supervised and
 (potentially) the supervisor of its children, it is advisable that you
-familiarize yourself with @ref:[Actor Systems](../scala/general/actor-systems.md) and <!-- FIXME: More than one link target with name supervision in path Some(/java/actors.rst) --> supervision and it
-may also help to read @ref:[Actor References, Paths and Addresses](../scala/general/addressing.md).
+familiarize yourself with @ref:[Actor Systems](general/actor-systems.md) and 
+@ref:[supervision](general/supervision.md) and it
+may also help to read @ref:[Actor References, Paths and Addresses](general/addressing.md).
 
 @@@
 
@@ -140,7 +141,7 @@ create a child actor.
 
 It is recommended to create a hierarchy of children, grand-children and so on
 such that it fits the logical failure-handling structure of the application,
-see @ref:[Actor Systems](../scala/general/actor-systems.md).
+see @ref:[Actor Systems](general/actor-systems.md).
 
 The call to `actorOf` returns an instance of `ActorRef`. This is a
 handle to the actor instance and the only way to interact with it. The
@@ -158,7 +159,7 @@ another child to the same parent an *InvalidActorNameException* is thrown.
 
 Actors are automatically started asynchronously when created.
 
-<a id="actor-create-factory-java"></a>
+<a id="actor-create-factory"></a>
 ### Dependency Injection
 
 If your actor has a constructor that takes parameters then those need to
@@ -175,7 +176,7 @@ constructor arguments are determined by a dependency injection framework.
 You might be tempted at times to offer an `IndirectActorProducer`
 which always returns the same instance, e.g. by using a static field. This is
 not supported, as it goes against the meaning of an actor restart, which is
-described here: @ref:[What Restarting Means](../scala/general/supervision.md#supervision-restart).
+described here: @ref:[What Restarting Means](general/supervision.md#supervision-restart).
 
 When using a dependency injection framework, actor beans *MUST NOT* have
 singleton scope.
@@ -236,7 +237,7 @@ time).
     * parent supervisor
     * supervised children
     * lifecycle monitoring
-    * hotswap behavior stack as described in [Become/Unbecome](#actor-hotswap-java)
+    * hotswap behavior stack as described in [Become/Unbecome](#actor-hotswap)
 
 The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following:
@@ -285,11 +286,11 @@ occupying it. `ActorSelection` cannot be watched for this reason. It is
 possible to resolve the current incarnation's `ActorRef` living under the
 path by sending an `Identify` message to the `ActorSelection` which
 will be replied to with an `ActorIdentity` containing the correct reference
-(see [Identifying Actors via Actor Selection](#actorselection-java)). This can also be done with the `resolveOne`
+(see [Identifying Actors via Actor Selection](#actorselection)). This can also be done with the `resolveOne`
 method of the `ActorSelection`, which returns a `Future` of the matching
 `ActorRef`.
 
-<a id="deathwatch-java"></a>
+<a id="deathwatch"></a>
 ### Lifecycle Monitoring aka DeathWatch
 
 In order to be notified when another actor terminates (i.e. stops permanently,
@@ -322,7 +323,7 @@ using `context.unwatch(target)`. This works even if the `Terminated`
 message has already been enqueued in the mailbox; after calling `unwatch`
 no `Terminated` message for that actor will be processed anymore.
 
-<a id="start-hook-java"></a>
+<a id="start-hook"></a>
 ### Start Hook
 
 Right after starting the actor, its `preStart` method is invoked.
@@ -337,13 +338,13 @@ Initialization code which is part of the actor’s constructor will always be
 called when an instance of the actor class is created, which happens at every
 restart.
 
-<a id="restart-hook-java"></a>
+<a id="restart-hook"></a>
 ### Restart Hooks
 
 All actors are supervised, i.e. linked to another actor with a fault
 handling strategy. Actors may be restarted in case an exception is thrown while
-processing a message (see <!-- FIXME: More than one link target with name supervision in path Some(/java/actors.rst) --> supervision). This restart involves the hooks
-mentioned above:
+processing a message (see @ref:[supervision](general/supervision.md)). 
+This restart involves the hooks mentioned above:
 
  1. 
     The old actor is informed by calling `preRestart` with the exception
@@ -374,11 +375,11 @@ usual.
 Be aware that the ordering of failure notifications relative to user messages
 is not deterministic. In particular, a parent might restart its child before
 it has processed the last messages sent by the child before the failure.
-See @ref:[Discussion: Message Ordering](../scala/general/message-delivery-reliability.md#message-ordering) for details.
+See @ref:[Discussion: Message Ordering](general/message-delivery-reliability.md#message-ordering) for details.
 
 @@@
 
-<a id="stop-hook-java"></a>
+<a id="stop-hook"></a>
 ### Stop Hook
 
 After stopping an actor, its `postStop` hook is called, which may be used
@@ -387,10 +388,10 @@ to run after message queuing has been disabled for this actor, i.e. messages
 sent to a stopped actor will be redirected to the `deadLetters` of the
 `ActorSystem`.
 
-<a id="actorselection-java"></a>
+<a id="actorselection"></a>
 ## Identifying Actors via Actor Selection
 
-As described in @ref:[Actor References, Paths and Addresses](../scala/general/addressing.md), each actor has a unique logical path, which
+As described in @ref:[Actor References, Paths and Addresses](general/addressing.md), each actor has a unique logical path, which
 is obtained by following the chain of actors from child to parent until
 reaching the root of the actor system, and it has a physical path, which may
 differ if the supervision chain includes any remote supervisors. These paths
@@ -408,7 +409,7 @@ It is always preferable to communicate with other Actors using their ActorRef
 instead of relying upon ActorSelection. Exceptions are
 
 >
- * sending messages using the @ref:[At-Least-Once Delivery](persistence.md#at-least-once-delivery-java) facility
+ * sending messages using the @ref:[At-Least-Once Delivery](persistence.md#at-least-once-delivery) facility
  * initiating first contact with a remote system
 
 In all other cases ActorRefs can be provided during Actor creation or
@@ -460,7 +461,7 @@ Remote actor addresses may also be looked up, if @ref:[remoting](remoting.md) is
 
 @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #selection-remote }
 
-An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample-java).
+An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample).
 
 ## Messages and immutability
 
@@ -496,7 +497,7 @@ In all these methods you have the option of passing along your own `ActorRef`.
 Make it a practice of doing so because it will allow the receiver actors to be able to respond
 to your message, since the sender reference is sent along with the message.
 
-<a id="actors-tell-sender-java"></a>
+<a id="actors-tell-sender"></a>
 ### Tell: Fire-forget
 
 This is the preferred way of sending messages. No blocking waiting for a
@@ -513,7 +514,7 @@ different one. Outside of an actor and if no reply is needed the second
 argument can be `null`; if a reply is needed outside of an actor you can use
 the ask-pattern described next..
 
-<a id="actors-ask-java"></a>
+<a id="actors-ask"></a>
 ### Ask: Send-And-Receive-Future
 
 The `ask` pattern involves actors as well as futures, hence it is offered as
@@ -573,7 +574,7 @@ on the enclosing actor from within the callback. This would break the actor
 encapsulation and may introduce synchronization bugs and race conditions because
 the callback will be scheduled concurrently to the enclosing actor. Unfortunately
 there is not yet a way to detect these illegal accesses at compile time. See also:
-@ref:[Actors and shared mutable state](../scala/general/jmm.md#jmm-shared-state)
+@ref:[Actors and shared mutable state](general/jmm.md#jmm-shared-state)
 
 @@@
 
@@ -586,7 +587,7 @@ routers, load-balancers, replicators etc.
 
 @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #forward }
 
-<a id="actors-receive-java"></a>
+<a id="actors-receive"></a>
 ## Receive messages
 
 An actor has to define its initial receive behavior by implementing
@@ -667,7 +668,7 @@ Messages marked with `NotInfluenceReceiveTimeout` will not reset the timer. This
 `ReceiveTimeout` should be fired by external inactivity but not influenced by internal activity,
 e.g. scheduled tick messages.
 
-<a id="stopping-actors-java"></a>
+<a id="stopping-actors"></a>
 ## Stopping actors
 
 Actors are stopped by invoking the `stop` method of a `ActorRefFactory`,
@@ -687,7 +688,7 @@ Termination of an actor proceeds in two steps: first the actor suspends its
 mailbox processing and sends a stop command to all its children, then it keeps
 processing the internal termination notifications from its children until the last one is
 gone, finally terminating itself (invoking `postStop`, dumping mailbox,
-publishing `Terminated` on the [DeathWatch](#deathwatch-java), telling
+publishing `Terminated` on the [DeathWatch](#deathwatch), telling
 its supervisor). This procedure ensures that actor system sub-trees terminate
 in an orderly fashion, propagating the stop command to the leaves and
 collecting their confirmation back to the stopped supervisor. If one of the
@@ -714,7 +715,7 @@ message which will eventually arrive.
 
 @@@
 
-<a id="poison-pill-java"></a>
+<a id="poison-pill"></a>
 ### PoisonPill
 
 You can also send an actor the `akka.actor.PoisonPill` message, which will
@@ -755,7 +756,7 @@ message, i.e. not for top-level actors.
 
 @@@
 
-<a id="coordinated-shutdown-java"></a>
+<a id="coordinated-shutdown"></a>
 ### Coordinated Shutdown
 
 There is an extension named `CoordinatedShutdown` that will stop certain actors and
@@ -784,7 +785,7 @@ is only used for debugging/logging.
 Tasks added to the same phase are executed in parallel without any ordering assumptions.
 Next phase will not start until all tasks of previous phase have been completed.
 
-If tasks are not completed within a configured timeout (see @ref:[reference.conf](../scala/general/configuration.md#config-akka-actor))
+If tasks are not completed within a configured timeout (see @ref:[reference.conf](general/configuration.md#config-akka-actor))
 the next phase will be started anyway. It is possible to configure `recover=off` for a phase
 to abort the rest of the shutdown process if a task fails or is not completed within the timeout.
 
@@ -837,7 +838,7 @@ akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
 akka.cluster.run-coordinated-shutdown-when-down = off
 ```
 
-<a id="actor-hotswap-java"></a>
+<a id="actor-hotswap"></a>
 ## Become/Unbecome
 
 Akka supports hotswapping the Actor’s message loop (e.g. its implementation) at
@@ -870,7 +871,7 @@ behavior is not the default).
 
 @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #swapper }
 
-<a id="stash-java"></a>
+<a id="stash"></a>
 ## Stash
 
 The `AbstractActorWithStash` class enables an actor to temporarily stash away messages
@@ -931,14 +932,14 @@ then you should use the `AbstractActorWithUnboundedStash` class instead.
 
 @@@
 
-<a id="killing-actors-java"></a>
+<a id="killing-actors"></a>
 ## Killing an Actor
 
 You can kill an actor by sending a `Kill` message. This will cause the actor
 to throw a `ActorKilledException`, triggering a failure. The actor will
 suspend operation and its supervisor will be asked how to handle the failure,
 which may mean resuming the actor, restarting it or terminating it completely.
-See @ref:[What Supervision Means](../scala/general/supervision.md#supervision-directives) for more information.
+See @ref:[What Supervision Means](general/supervision.md#supervision-directives) for more information.
 
 Use `Kill` like this:
 
@@ -957,8 +958,7 @@ lost. It is important to understand that it is not put back on the mailbox. So
 if you want to retry processing of a message, you need to deal with it yourself
 by catching the exception and retry your flow. Make sure that you put a bound
 on the number of retries since you don't want a system to livelock (so
-consuming a lot of cpu cycles without making progress). Another possibility
-would be to have a look at the <!-- FIXME: unresolved link reference: mailbox-acking --> mailbox-acking.
+consuming a lot of cpu cycles without making progress).
 
 ### What happens to the mailbox
 
@@ -969,7 +969,7 @@ messages on that mailbox will be there as well.
 ### What happens to the actor
 
 If code within an actor throws an exception, that actor is suspended and the
-supervision process is started (see <!-- FIXME: More than one link target with name supervision in path Some(/java/actors.rst) --> supervision). Depending on the
+supervision process is started (see @ref:[supervision](general/supervision.md)). Depending on the
 supervisor’s decision the actor is resumed (as if nothing happened), restarted
 (wiping out its internal state and starting from scratch) or terminated.
 
@@ -1008,7 +1008,7 @@ Please note, that the child actors are *still restarted*, but no new `ActorRef` 
 the same principles for the children, ensuring that their `preStart()` method is called only at the creation of their
 refs.
 
-For more information see @ref:[What Restarting Means](../scala/general/supervision.md#supervision-restart).
+For more information see @ref:[What Restarting Means](general/supervision.md#supervision-restart).
 
 ### Initialization via message passing
 

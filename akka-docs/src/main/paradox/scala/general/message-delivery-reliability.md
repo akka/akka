@@ -280,13 +280,10 @@ acknowledgement
 
 The third becomes necessary by virtue of the acknowledgements not being guaranteed
 to arrive either. An ACK-RETRY protocol with business-level acknowledgements is
-supported by @ref:[At-Least-Once Delivery](../../scala/persistence.md#at-least-once-delivery-scala) of the Akka Persistence module. Duplicates can be
-detected by tracking the identifiers of messages sent via @ref:[At-Least-Once Delivery](../../scala/persistence.md#at-least-once-delivery-scala).
+supported by @ref:[At-Least-Once Delivery](../persistence.md#at-least-once-delivery) of the Akka Persistence module. Duplicates can be
+detected by tracking the identifiers of messages sent via @ref:[At-Least-Once Delivery](../persistence.md#at-least-once-delivery).
 Another way of implementing the third part would be to make processing the messages
 idempotent on the level of the business logic.
-
-Another example of implementing all three requirements is shown at
-<!-- FIXME: unresolved link reference: reliable-proxy --> reliable-proxy (which is now superseded by @ref:[At-Least-Once Delivery](../../scala/persistence.md#at-least-once-delivery-scala)).
 
 ### Event Sourcing
 
@@ -301,7 +298,7 @@ components may consume the event stream as a means to replicate the component’
 state on a different continent or to react to changes). If the component’s
 state is lost—due to a machine failure or by being pushed out of a cache—it can
 easily be reconstructed by replaying the event stream (usually employing
-snapshots to speed up the process). @ref:[Event sourcing](../../scala/persistence.md#event-sourcing-scala) is supported by
+snapshots to speed up the process). @ref:[Event sourcing](../persistence.md#event-sourcing) is supported by
 Akka Persistence.
 
 ### Mailbox with Explicit Acknowledgement
@@ -313,8 +310,6 @@ guarantees are otherwise sufficient to fulfill the application’s requirements.
 
 Please note that the caveats for [The Rules for In-JVM (Local) Message Sends](#the-rules-for-in-jvm-local-message-sends)
 do apply.
-
-An example implementation of this pattern is shown at <!-- FIXME: unresolved link reference: mailbox-acking --> mailbox-acking.
 
 <a id="deadletters"></a>
 ## Dead Letters
@@ -344,8 +339,8 @@ guaranteed delivery.
 ### How do I Receive Dead Letters?
 
 An actor can subscribe to class `akka.actor.DeadLetter` on the event
-stream, see @ref:[Event Stream](../../java/event-bus.md#event-stream-java) (Java) or @ref:[Event Stream](../../scala/event-bus.md#event-stream-scala)
-(Scala) for how to do that. The subscribed actor will then receive all dead
+stream, see @ref:[Event Stream](../event-bus.md#event-stream)
+for how to do that. The subscribed actor will then receive all dead
 letters published in the (local) system from that point onwards. Dead letters
 are not propagated over the network, if you want to collect them in one place
 you will have to subscribe one actor per network node and forward them

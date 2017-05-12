@@ -95,11 +95,11 @@ A test for this implementation may look like this:
 This classifier takes always a time which is proportional to the number of
 subscriptions, independent of how many actually match.
 
-<a id="actor-classification-scala"></a>
+<a id="actor-classification"></a>
 ### Actor Classification
 
 This classification was originally developed specifically for implementing
-@ref:[DeathWatch](actors.md#deathwatch-scala): subscribers as well as classifiers are of
+@ref:[DeathWatch](actors.md#deathwatch): subscribers as well as classifiers are of
 type `ActorRef`.
 
 This classification requires an `ActorSystem` in order to perform book-keeping
@@ -118,7 +118,7 @@ A test for this implementation may look like this:
 This classifier is still is generic in the event type, and it is efficient for
 all use cases.
 
-<a id="event-stream-scala"></a>
+<a id="event-stream"></a>
 ## Event Stream
 
 The event stream is the main event bus of each actor system: it is used for
@@ -172,7 +172,7 @@ event class have been done)
 
 ### Dead Letters
 
-As described at @ref:[Stopping actors](actors.md#stopping-actors-scala), messages queued when an actor
+As described at @ref:[Stopping actors](actors.md#stopping-actors), messages queued when an actor
 terminates or sent after its death are re-routed to the dead letter mailbox,
 which by default will publish the messages wrapped in `DeadLetter`. This
 wrapper holds the original sender, receiver and message of the envelope which
