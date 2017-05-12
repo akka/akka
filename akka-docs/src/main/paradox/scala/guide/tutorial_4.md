@@ -73,9 +73,6 @@ need to be able to work:
  * The `ActorRef` of the actor who sent the group actor the query. We will send the reply to this actor directly.
  * A timeout parameter, how long the query should wait for replies. Keeping this as a parameter will simplify testing.
 
-//getContext().getSystem().scheduler().scheduleOnce(
-        timeout, getSelf(), new CollectionTimeout(), getContext().dispatcher(), getSelf()
-
 Since we need to have a timeout for how long we are willing to wait for responses, it is time to introduce a new feature that we have
 not used yet: timers. Akka has a built-in scheduler facility for this exact purpose. Using it is simple, the
 @scala[`scheduler.scheduleOnce(time, actorRef, message)`] @java[`scheduler.scheduleOnce(time, actorRef, message, executor, sender)`] method will schedule the message `message` into the future by the

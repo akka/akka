@@ -159,7 +159,6 @@ Scala
 
 Java
 :   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_3/DeviceGroupTest.java) { #device-group-test3 }
->>>>>>> integrate-docs-scala-java:akka-docs-new/src/main/paradox/guide/tutorial_3.md
 
 So far, we have implemented everything for registering device actors in the group. Devices come and go, however, so
 we will need a way to remove those from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`]. We will assume that when a device is removed, its corresponding device actor
@@ -212,7 +211,6 @@ We add two more test cases now. In the first, we just test that we get back the 
 a few devices. The second test case makes sure that the device ID is properly removed after the device actor has
  been stopped:
 
-=======
 Scala
 :   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_3/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
 
