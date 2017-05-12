@@ -17,9 +17,11 @@ concepts and architecture of [eventsourced](https://github.com/eligosource/event
 
 Akka persistence is a separate jar file. Make sure that you have the following dependency in your project:
 
+@@@vars
 ```
-"com.typesafe.akka" %% "akka-persistence" % "@version@" @crossString@
+"com.typesafe.akka" %% "akka-persistence" % $akka.version$
 ```
+@@@
 
 The Akka persistence extension comes with few built-in persistence plugins, including
 in-memory heap based journal, local file-system based snapshot-store and LevelDB based journal.
@@ -94,9 +96,9 @@ stored, e.g. due to serialization error, `onPersistRejected` will be invoked (lo
 by default) and the actor continues with the next message.
 
 The easiest way to run this example yourself is to download the ready to run
-[Akka Persistence Sample with Scala](@exampleCodeService@/akka-samples-persistence-scala)
+@extref[Akka Persistence Sample with Scala](ecs:akka-samples-persistence-scala)
 together with the tutorial. It contains instructions on how to run the `PersistentActorExample`.
-The source code of this sample can be found in the [Akka Samples Repository](@samples@/akka-sample-persistence-scala).
+The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-persistence-scala).
 
 @@@ note
 
@@ -903,7 +905,7 @@ In order to help developers build correct and high quality storage plugins, we p
 The TCK is usable from Java as well as Scala projects. For Scala you need to include the akka-persistence-tck dependency:
 
 ```
-"com.typesafe.akka" %% "akka-persistence-tck" % "@version@" % "test"
+"com.typesafe.akka" %% "akka-persistence-tck" % "$akka.version$" % "test"
 ```
 
 To include the Journal TCK tests in your test suite simply extend the provided `JournalSpec`:

@@ -180,7 +180,7 @@ to the network socket.
 
 These write models (with the exception of the second which is rather specialised) are
 demonstrated in complete examples below. The full and contiguous source is
-available [on GitHub](@github@/akka-docs/rst/java/code/jdocs/io/japi).
+available @extref[on GitHub](github:akka-docs/rst/java/code/jdocs/io/japi).
 
 For back-pressuring reads there are two modes of operation
 

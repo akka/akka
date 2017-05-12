@@ -110,21 +110,23 @@ A more comprehensive sample is available in the tutorial named [Distributed work
 
 To use the Cluster Singleton you must add the following dependency in your project.
 
-sbt:
+sbt
+:   @@@vars
+    ```
+    "com.typesafe.akka" %% "akka-cluster-tools" % $akka.version$
+    ```
+    @@@
 
-```
-"com.typesafe.akka" %% "akka-cluster-tools" % "@version@" @crossString@
-```
-
-maven:
-
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-cluster-tools_@binVersion@</artifactId>
-  <version>@version@</version>
-</dependency>
-```
+Maven
+:   @@@vars
+    ```
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-cluster-tools_$scala.binary_version$</artifactId>
+      <version>$akka.version$</version>
+    </dependency>
+    ```
+    @@@
 
 ## Configuration
 
