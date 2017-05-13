@@ -140,7 +140,7 @@ def httpMarshallersJavaSubproject(name: String) =
   )
 
 lazy val docs = project("docs")
-  .enablePlugins(ParadoxPlugin, NoPublish, DeployRsync)
+  .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(
     httpCore, http, httpXml, httpMarshallersJava, httpMarshallersScala,
@@ -149,9 +149,10 @@ lazy val docs = project("docs")
   .settings(Dependencies.docs)
   .settings(
     name := "akka-http-docs",
-    paradoxTheme := Some(builtinParadoxTheme("generic")),
-    paradoxNavigationDepth := 3,
+    resolvers += Resolver.bintrayRepo("2m", "maven"),
+    paradoxGroups := Map("Languages" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
+      "project.name" -> "Akka HTTP",
       "akka.version" -> Dependencies.akkaVersion.value,
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scala.version" -> scalaVersion.value,
@@ -165,6 +166,8 @@ lazy val docs = project("docs")
         val v = if (isSnapshot.value) "current" else version.value
         s"http://doc.akka.io/japi/akka-http/$v"
       },
+      "algolia.docsearch.api_key" -> "0ccbb8bf5148554a406fbf07df0a93b9",
+      "algolia.docsearch.index_name" -> "akka-http",
       "github.base_url" -> GitHub.url(version.value)
     ),
     Formatting.docFormatSettings,

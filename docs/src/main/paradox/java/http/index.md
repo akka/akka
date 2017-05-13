@@ -3,7 +3,7 @@
 
 Akka HTTP API - @javadoc:[Javadoc](akka.http.javadsl.package-summary)
 
-@@toc { depth=3 }
+@@toc { depth=2 }
 
 @@@ index
 
