@@ -160,7 +160,7 @@ lazy val docs = project("docs")
         case akka.Doc.BinVer(_) => ""
         case _                  => "cross CrossVersion.full"
       }),
-      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion}/%s",
+      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion.value}/%s",
       "javadoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
         s"http://doc.akka.io/japi/akka-http/$v"
