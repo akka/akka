@@ -79,14 +79,36 @@ class DeferredSpec extends TypedSpec {
 
     def `must stop when exception from factory`(): Unit = {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.deferred[Command] { _ ⇒
-        probe.ref ! Started
-        throw new RuntimeException("simulated exc from factory") with NoStackTrace
+      val behv = Actor.deferred[Command] { ctx ⇒
+        val child = ctx.spawnAnonymous(Actor.deferred[Command] { _ ⇒
+          probe.ref ! Started
+          throw new RuntimeException("simulated exc from factory") with NoStackTrace
+        })
+        ctx.watch(child)
+        Actor.immutable[Command]((_, _) ⇒ Actor.same).onSignal {
+          case (_, Terminated(`child`)) ⇒
+            probe.ref ! Pong
+            Actor.stopped
+        }
       }
-      val ref = start(behv)
+      start(behv)
       probe.expectMsg(Started)
-      ref ! Ping
-      probe.expectNoMsg(100.millis)
+      probe.expectMsg(Pong)
+    }
+
+    def `must stop when deferred result it Stopped`(): Unit = {
+      val probe = TestProbe[Event]("evt")
+      val behv = Actor.deferred[Command] { ctx ⇒
+        val child = ctx.spawnAnonymous(Actor.deferred[Command](_ ⇒ Actor.stopped))
+        ctx.watch(child)
+        Actor.immutable[Command]((_, _) ⇒ Actor.same).onSignal {
+          case (_, Terminated(`child`)) ⇒
+            probe.ref ! Pong
+            Actor.stopped
+        }
+      }
+      start(behv)
+      probe.expectMsg(Pong)
     }
 
     def `must create underlying when nested`(): Unit = {
@@ -136,10 +158,10 @@ class DeferredSpec extends TypedSpec {
 
   }
 
-  object `A Restarter (stubbed, native)` extends StubbedTests with NativeSystem
-  object `A Restarter (stubbed, adapted)` extends StubbedTests with AdaptedSystem
+  object `A DeferredBehavior (stubbed, native)` extends StubbedTests with NativeSystem
+  object `A DeferredBehavior (stubbed, adapted)` extends StubbedTests with AdaptedSystem
 
-  object `A Restarter (real, native)` extends RealTests with NativeSystem
-  object `A Restarter (real, adapted)` extends RealTests with AdaptedSystem
+  object `A DeferredBehavior (real, native)` extends RealTests with NativeSystem
+  object `A DeferredBehavior (real, adapted)` extends RealTests with AdaptedSystem
 
 }
