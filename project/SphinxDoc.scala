@@ -79,7 +79,7 @@ object SphinxDoc {
         "sigarVersion" -> Dependencies.Compile.sigar.revision,
         "sigarLoaderVersion" -> Dependencies.Compile.Provided.sigarLoader.revision,
         "github" -> GitHub.url(v),
-        "samples" -> "http://github.com/akka/akka-samples/tree/master",
+        "samples" -> "http://github.com/akka/akka-samples/tree/2.5",
         "exampleCodeService" -> "https://example.lightbend.com/v1/download"
       )
     },
