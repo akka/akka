@@ -71,7 +71,7 @@ class StubbedActorContext[T](
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, _name: String): ActorRef[U] = {
+  @InternalApi private[akka] def internalSpawnAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
     val i = Inbox[U](n)
     _children += i.ref.path.name → i
