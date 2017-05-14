@@ -13,13 +13,14 @@ To use it include the following dependency:
 
 ## Usage
 
-Here is an example of what a simple test with the routing testkit might look like (using the built-in support for
-[scalatest](http://www.scalatest.org)):
+Here is an example of what a simple test with the routing testkit might look like using the built-in support for
+[scalatest](http://www.scalatest.org) and [specs2](http://etorreborre.github.io/specs2/):
 
-@@snip [FullTestKitExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/FullTestKitExampleSpec.scala) { #source-quote }
+ScalaTest
+:  @@snip [FullTestKitExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/FullTestKitExampleSpec.scala) { #source-quote }
 
-The testkit also supports testing routes with [specs2](http://etorreborre.github.io/specs2/). The equivalent of the above example can be found
-@github[here](docs/src/test/scala/docs/http/scaladsl/server/FullSpecs2TestKitExampleSpec.scala).
+specs2
+:  @@snip [FullSpecs2TestKitExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/FullSpecs2TestKitExampleSpec.scala) { #source-quote }
 
 The basic structure of a test built with the testkit is this (expression placeholder in all-caps):
 
@@ -87,7 +88,7 @@ You do this by wrapping your route with the `akka.http.scaladsl.server.Route.sea
 and translates them to the respective `HttpResponse`.
 
 Note that explicit call on the `akka.http.scaladsl.server.Route.seal` method is needed in test code, but in your application code it is not necessary.
-As described in @ref[Sealing a Route](routes.md#sealing-a-route), your application code only needs to bring 
+As described in @ref[Sealing a Route](routes.md#sealing-a-route), your application code only needs to bring
 implicit rejection and exception handlers in scope.
 
 ## Testing Route fragments
