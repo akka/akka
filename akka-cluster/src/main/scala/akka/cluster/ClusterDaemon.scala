@@ -374,7 +374,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   def uninitialized: Actor.Receive = ({
     case InitJoin ⇒
-      logInfo("Received InitJoin message from [{}] to [{}]", sender(), selfAddress)
+      logInfo("Received InitJoin message from [{}], but this node is not initialized yet", sender())
       sender() ! InitJoinNack(selfAddress)
     case ClusterUserAction.JoinTo(address) ⇒ join(address)
     case JoinSeedNodes(newSeedNodes)       ⇒ joinSeedNodes(newSeedNodes)
@@ -384,7 +384,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def tryingToJoin(joinWith: Address, deadline: Option[Deadline]): Actor.Receive = ({
     case Welcome(from, gossip) ⇒ welcome(joinWith, from, gossip)
     case InitJoin ⇒
-      logInfo("Received InitJoin message from [{}] to [{}]", sender(), selfAddress)
+      logInfo("Received InitJoin message from [{}], but this node is not a member yet", sender())
       sender() ! InitJoinNack(selfAddress)
     case ClusterUserAction.JoinTo(address) ⇒
       becomeUninitialized()
