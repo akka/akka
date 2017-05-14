@@ -88,13 +88,13 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def date1 = rule { day ~ `date-sep` ~ month ~ `date-sep` ~ year }
 
-  def day = rule { digit2 }
+  def day = rule { digit2 | digit }
 
   def month = rule(
     "Jan" ~ push(1) | "Feb" ~ push(2) | "Mar" ~ push(3) | "Apr" ~ push(4) | "May" ~ push(5) | "Jun" ~ push(6) | "Jul" ~ push(7) |
       "Aug" ~ push(8) | "Sep" ~ push(9) | "Oct" ~ push(10) | "Nov" ~ push(11) | "Dec" ~ push(12))
 
-  def year = rule { digit4 }
+  def year = rule { digit4 | digit2 ~> (y ⇒ if (y <= 69) y + 2000 else y + 1900) }
 
   def `time-of-day` = rule { hour ~ ':' ~ minute ~ ':' ~ second }
   def hour = rule { digit2 }
