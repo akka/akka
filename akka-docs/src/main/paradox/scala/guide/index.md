@@ -1,5 +1,7 @@
 # Getting Started Guide
 
+@@toc { depth=2 }
+
 @@@ index
 
  * [introduction](introduction.md)
