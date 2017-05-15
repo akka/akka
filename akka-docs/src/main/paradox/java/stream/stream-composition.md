@@ -283,7 +283,7 @@ of combining materialized values without nesting and hierarchy involved.
 We have seen that we can use `named()` to introduce a nesting level in the fluid DSL (and also explicit nesting by using
 `create()` from `GraphDSL`). Apart from having the effect of adding a nesting level, `named()` is actually
 a shorthand for calling `withAttributes(Attributes.name("someName"))`. Attributes provide a way to fine-tune certain
-aspects of the materialized running entity. For example buffer sizes for asynchronous stagescan be controlled via
+aspects of the materialized running entity. For example buffer sizes for asynchronous stages can be controlled via
 attributes (see @ref:[Buffers for asynchronous stages](stream-rate.md#async-stream-buffers)). When it comes to hierarchic composition, attributes are inherited
 by nested modules, unless they override them with a custom value.
 
