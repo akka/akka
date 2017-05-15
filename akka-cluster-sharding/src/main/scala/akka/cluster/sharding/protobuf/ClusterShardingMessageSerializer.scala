@@ -17,13 +17,11 @@ import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages ⇒ sm }
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
-import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.protobuf.MessageLite
 import java.io.NotSerializableException
-import java.nio.charset.StandardCharsets
 
-import akka.cluster.sharding.Shard.StartEntity
+import akka.cluster.sharding.ShardRegion.{ StartEntity, StartEntityAck }
 
 /**
  * INTERNAL API: Protobuf serializer of ClusterSharding messages.
@@ -62,6 +60,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private val EntityStoppedManifest = "CD"
 
   private val StartEntityManifest = "EA"
+  private val StartEntityAckManifest = "EB"
 
   private val GetShardStatsManifest = "DA"
   private val ShardStatsManifest = "DB"
@@ -95,7 +94,8 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     GetShardStatsManifest → { bytes ⇒ GetShardStats },
     ShardStatsManifest → { bytes ⇒ shardStatsFromBinary(bytes) },
 
-    StartEntityManifest → { bytes ⇒ startEntityFromBinary(bytes) }
+    StartEntityManifest → { startEntityFromBinary(_) },
+    StartEntityAckManifest → { startEntityAckFromBinary(_) }
   )
 
   override def manifest(obj: AnyRef): String = obj match {
@@ -125,6 +125,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case _: GracefulShutdownReq        ⇒ GracefulShutdownReqManifest
 
     case _: StartEntity                ⇒ StartEntityManifest
+    case _: StartEntityAck             ⇒ StartEntityAckManifest
 
     case GetShardStats                 ⇒ GetShardStatsManifest
     case _: ShardStats                 ⇒ ShardStatsManifest
@@ -155,14 +156,15 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case GracefulShutdownReq(ref) ⇒
       actorRefMessageToProto(ref).toByteArray
 
-    case m: EntityState   ⇒ entityStateToProto(m).toByteArray
-    case m: EntityStarted ⇒ entityStartedToProto(m).toByteArray
-    case m: EntityStopped ⇒ entityStoppedToProto(m).toByteArray
+    case m: EntityState    ⇒ entityStateToProto(m).toByteArray
+    case m: EntityStarted  ⇒ entityStartedToProto(m).toByteArray
+    case m: EntityStopped  ⇒ entityStoppedToProto(m).toByteArray
 
-    case s: StartEntity   ⇒ startEntityToByteArray(s)
+    case s: StartEntity    ⇒ startEntityToByteArray(s)
+    case s: StartEntityAck ⇒ startEntityAckToByteArray(s)
 
-    case GetShardStats    ⇒ Array.emptyByteArray
-    case m: ShardStats    ⇒ shardStatsToProto(m).toByteArray
+    case GetShardStats     ⇒ Array.emptyByteArray
+    case m: ShardStats     ⇒ shardStatsToProto(m).toByteArray
 
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
@@ -278,11 +280,26 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   }
 
   private def startEntityToByteArray(s: StartEntity): Array[Byte] = {
-    s.entity.getBytes(StandardCharsets.UTF_8)
+    val builder = sm.StartEntity.newBuilder()
+    builder.setEntityId(s.entityId)
+    builder.build().toByteArray
   }
 
   private def startEntityFromBinary(bytes: Array[Byte]): StartEntity = {
-    StartEntity(new String(bytes, StandardCharsets.UTF_8))
+    val se = sm.StartEntity.parseFrom(bytes)
+    StartEntity(se.getEntityId)
+  }
+
+  private def startEntityAckToByteArray(s: StartEntityAck): Array[Byte] = {
+    val builder = sm.StartEntityAck.newBuilder()
+    builder.setEntityId(s.entityId)
+    builder.setShardId(s.shardId)
+    builder.build().toByteArray
+  }
+
+  private def startEntityAckFromBinary(bytes: Array[Byte]): StartEntityAck = {
+    val sea = sm.StartEntityAck.parseFrom(bytes)
+    StartEntityAck(sea.getEntityId, sea.getShardId)
   }
 
   private def resolveActorRef(path: String): ActorRef = {

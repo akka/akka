@@ -3,11 +3,10 @@
  */
 package akka.cluster.sharding.protobuf
 
-import akka.actor.{ ExtendedActorSystem }
+import akka.actor.ExtendedActorSystem
 import akka.testkit.AkkaSpec
 import akka.actor.Props
-import akka.cluster.sharding.ShardCoordinator
-import akka.cluster.sharding.Shard
+import akka.cluster.sharding.{ Shard, ShardCoordinator, ShardRegion }
 
 class ClusterShardingMessageSerializerSpec extends AkkaSpec {
   import ShardCoordinator.Internal._
@@ -79,7 +78,8 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     }
 
     "be able to serialize StartEntity" in {
-      checkSerialization(Shard.StartEntity("42"))
+      checkSerialization(ShardRegion.StartEntity("42"))
+      checkSerialization(ShardRegion.StartEntityAck("13", "37"))
     }
   }
 }

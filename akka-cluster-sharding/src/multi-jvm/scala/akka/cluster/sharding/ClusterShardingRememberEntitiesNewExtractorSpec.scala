@@ -7,7 +7,6 @@ import java.io.File
 
 import akka.actor._
 import akka.cluster.{ Cluster, MemberStatus }
-import akka.cluster.sharding.Shard.StartEntity
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testconductor.RoleName
@@ -40,14 +39,14 @@ object ClusterShardingRememberEntitiesNewExtractorSpec {
   }
 
   val extractShardId1: ShardRegion.ExtractShardId = {
-    case id: Int         ⇒ (id % shardCount).toString
-    case StartEntity(id) ⇒ extractShardId1(id.toInt)
+    case id: Int                     ⇒ (id % shardCount).toString
+    case ShardRegion.StartEntity(id) ⇒ extractShardId1(id.toInt)
   }
 
   val extractShardId2: ShardRegion.ExtractShardId = {
     // always bump it one shard id
-    case id: Int         ⇒ ((id + 1) % shardCount).toString
-    case StartEntity(id) ⇒ extractShardId2(id.toInt)
+    case id: Int                     ⇒ ((id + 1) % shardCount).toString
+    case ShardRegion.StartEntity(id) ⇒ extractShardId2(id.toInt)
   }
 
 }
@@ -60,7 +59,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
   val fifth = role("fifth")
 
   commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.cluster.auto-down-unreachable-after = 0s
     akka.remote.log-remote-lifecycle-events = off
