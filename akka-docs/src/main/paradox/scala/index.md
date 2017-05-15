@@ -1,4 +1,4 @@
-# Scala Documentation
+# Akka Documentation
 
 @@toc { depth=2 }
 
