@@ -7,7 +7,7 @@ import akka.NotUsed
 import akka.event.LoggingAdapter
 import akka.japi.function
 import akka.stream._
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 
 import scala.collection.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
