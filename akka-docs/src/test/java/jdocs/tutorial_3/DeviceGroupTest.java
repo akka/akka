@@ -102,7 +102,7 @@ public class DeviceGroupTest extends JUnitSuite {
   }
 
   @Test
-  public void teestListActiveDevicesAfterOneShutsDown() {
+  public void testListActiveDevicesAfterOneShutsDown() {
     TestKit probe = new TestKit(system);
     ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
 
