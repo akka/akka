@@ -120,10 +120,16 @@ public class DeviceGroupTest extends JUnitSuite {
     toShutDown.tell(PoisonPill.getInstance(), ActorRef.noSender());
     probe.expectTerminated(toShutDown);
 
-    groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
-    reply = probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
-    assertEquals(1L, reply.requestId);
-    assertEquals(Stream.of("device2").collect(Collectors.toSet()), reply.ids);
+    // using awaitAssert to retry because it might take longer for the groupActor
+    // to see the Terminated, that order is undefined
+    probe.awaitAssert(() -> {
+      groupActor.tell(new DeviceGroup.RequestDeviceList(1L), probe.getRef());
+      DeviceGroup.ReplyDeviceList r = 
+        probe.expectMsgClass(DeviceGroup.ReplyDeviceList.class);
+      assertEquals(1L, r.requestId);
+      assertEquals(Stream.of("device2").collect(Collectors.toSet()), r.ids);
+      return null;
+    });
   }
 
   @Test

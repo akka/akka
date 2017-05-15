@@ -93,8 +93,12 @@ class DeviceGroupSpec extends AkkaSpec {
       toShutDown ! PoisonPill
       probe.expectTerminated(toShutDown)
 
-      groupActor.tell(DeviceGroup.RequestDeviceList(requestId = 1), probe.ref)
-      probe.expectMsg(DeviceGroup.ReplyDeviceList(requestId = 1, Set("device2")))
+      // using awaitAssert to retry because it might take longer for the groupActor
+      // to see the Terminated, that order is undefined
+      probe.awaitAssert {
+        groupActor.tell(DeviceGroup.RequestDeviceList(requestId = 1), probe.ref)
+        probe.expectMsg(DeviceGroup.ReplyDeviceList(requestId = 1, Set("device2")))
+      }
     }
     //#device-group-list-terminate-test
 
