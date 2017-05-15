@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.stream.impl
+package akka.util
 
 import akka.annotation.InternalApi
 import akka.japi.function.{ Function ⇒ JFun, Function2 ⇒ JFun2 }
@@ -10,7 +10,6 @@ import akka.japi.{ Pair ⇒ JPair }
 /**
  * INTERNAL API
  */
-@deprecated("Use akka.util.ConstantFun instead", "2.5.0")
 @InternalApi private[akka] object ConstantFun {
   private[this] val JavaIdentityFunction = new JFun[Any, Any] {
     @throws(classOf[Exception]) override def apply(param: Any): Any = param
@@ -29,8 +28,7 @@ import akka.japi.{ Pair ⇒ JPair }
   def scalaAnyToNone[A, B]: A ⇒ Option[B] = none
   def scalaAnyTwoToNone[A, B, C]: (A, B) ⇒ Option[C] = two2none
   def javaAnyToNone[A, B]: A ⇒ Option[B] = none
-
-  val conforms = (a: Any) ⇒ a
+  def nullFun[T] = _nullFun.asInstanceOf[Any ⇒ T]
 
   val zeroLong = (_: Any) ⇒ 0L
 
@@ -38,8 +36,12 @@ import akka.japi.{ Pair ⇒ JPair }
 
   val oneInt = (_: Any) ⇒ 1
 
-  val none = (_: Any) ⇒ None
+  private val _nullFun = (_: Any) ⇒ null
 
-  val two2none = (_: Any, _: Any) ⇒ None
+  private val conforms = (a: Any) ⇒ a
+
+  private val none = (_: Any) ⇒ None
+
+  private val two2none = (_: Any, _: Any) ⇒ None
 
 }

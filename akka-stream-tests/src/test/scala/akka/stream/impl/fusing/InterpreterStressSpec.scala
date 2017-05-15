@@ -4,10 +4,10 @@
 
 package akka.stream.impl.fusing
 
-import akka.stream.impl.ConstantFun
 import akka.stream.Supervision
 import akka.stream.testkit.StreamSpec
 import akka.testkit.LongRunningTest
+import akka.util.ConstantFun
 
 class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider
