@@ -38,4 +38,7 @@ addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.10")
 
-addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.2.9")
+resolvers += Resolver.url("2m-sbt-plugin-releases", url("https://dl.bintray.com/2m/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
+resolvers += Resolver.bintrayRepo("2m", "sbt-plugin-releases")
+
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "bfeb6446")

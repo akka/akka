@@ -117,6 +117,7 @@ object Dependencies {
 
     object Provided {
       // TODO remove from "test" config
+      // If changed, update akka-docs/build.sbt as well
       val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.6-rev002"     %     "optional;provided;test" // ApacheV2
 
       val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
