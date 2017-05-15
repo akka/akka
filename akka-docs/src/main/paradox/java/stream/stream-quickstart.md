@@ -309,16 +309,15 @@ First, let's write such an element counter using `Flow.of(Class)` and `Sink.fold
 
 @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-fold-count }
 
-First we prepare a reusable `Flow` that will change each incoming tweet into an integer of value `1`. We'll use this in
-order to combine those with a `Sink.fold` that will sum all `Integer` elements of the stream and make its result available as
-a `CompletionStage<Integer>`. Next we connect the `tweets` stream to `count` with `via`. Finally we connect the Flow to the previously
-prepared Sink using `toMat`.
+`Sink.fold` will sum all `Integer` elements of the stream and make its result available as
+a `CompletionStage<Integer>`. Next we use the `map` method of `tweets` `Source` which will change each incoming tweet
+into an integer value `1`.  Finally we connect the Flow to the previously prepared Sink using `toMat`.
 
 Remember those mysterious `Mat` type parameters on ``Source<Out, Mat>``, `Flow<In, Out, Mat>` and `Sink<In, Mat>`?
 They represent the type of values these processing parts return when materialized. When you chain these together,
-you can explicitly combine their materialized values: in our example we used the `Keep.right` predefined function,
+you can explicitly combine their materialized values: in our example we used the `Keep.right()` predefined function,
 which tells the implementation to only care about the materialized type of the stage currently appended to the right.
-The materialized type of `sumSink` is `CompletionStage<Integer>` and because of using `Keep.right`, the resulting `RunnableGraph`
+The materialized type of `sumSink` is `CompletionStage<Integer>` and because of using `Keep.right()`, the resulting `RunnableGraph`
 has also a type parameter of `CompletionStage<Integer>`.
 
 This step does *not* yet materialize the
