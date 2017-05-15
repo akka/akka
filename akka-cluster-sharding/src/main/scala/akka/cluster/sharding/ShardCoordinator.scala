@@ -829,11 +829,11 @@ class PersistentShardCoordinator(typeName: String, settings: ClusterShardingSett
     case DeleteMessagesFailure(reason, toSequenceNr) ⇒
       log.warning("Persistent messages to {} deletion failure: {}", toSequenceNr, reason.getMessage)
 
-    case DeleteSnapshotSuccess(m) ⇒
+    case DeleteSnapshotsSuccess(m) ⇒
       log.debug("Persistent snapshots matching {} deleted successfully", m)
 
-    case DeleteSnapshotFailure(m, reason) ⇒
-      log.warning("Persistent snapshots matching {} deletion falure: {}", m, reason.getMessage)
+    case DeleteSnapshotsFailure(m, reason) ⇒
+      log.warning("Persistent snapshots matching {} deletion failure: {}", m, reason.getMessage)
   }
 
   def update[E <: DomainEvent](evt: E)(f: E ⇒ Unit): Unit = {

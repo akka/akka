@@ -26,11 +26,11 @@ import akka.cluster.ddata.DistributedData
 import akka.persistence.PersistentActor
 import akka.persistence.SnapshotOffer
 import akka.persistence.SaveSnapshotSuccess
-import akka.persistence.DeleteSnapshotFailure
+import akka.persistence.DeleteSnapshotsFailure
 import akka.persistence.DeleteMessagesSuccess
 import akka.persistence.SaveSnapshotFailure
 import akka.persistence.DeleteMessagesFailure
-import akka.persistence.DeleteSnapshotSuccess
+import akka.persistence.DeleteSnapshotsSuccess
 import akka.persistence.SnapshotSelectionCriteria
 import akka.persistence.RecoveryCompleted
 
@@ -467,11 +467,11 @@ private[akka] class PersistentShard(
     case DeleteMessagesFailure(reason, toSequenceNr) ⇒
       log.warning("PersistentShard messages to {} deletion failure: {}", toSequenceNr, reason.getMessage)
 
-    case DeleteSnapshotSuccess(m) ⇒
+    case DeleteSnapshotsSuccess(m) ⇒
       log.debug("PersistentShard snapshots matching {} deleted successfully", m)
 
-    case DeleteSnapshotFailure(m, reason) ⇒
-      log.warning("PersistentShard snapshots matching {} deletion falure: {}", m, reason.getMessage)
+    case DeleteSnapshotsFailure(m, reason) ⇒
+      log.warning("PersistentShard snapshots matching {} deletion failure: {}", m, reason.getMessage)
 
   }: Receive).orElse(super.receiveCommand)
 
