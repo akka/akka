@@ -168,6 +168,8 @@ lazy val docs = project("docs")
       },
       "algolia.docsearch.api_key" -> "0ccbb8bf5148554a406fbf07df0a93b9",
       "algolia.docsearch.index_name" -> "akka-http",
+      "google.analytics.account" -> "UA-21117439-1",
+      "google.analytics.domain.name" -> "akka.io",
       "github.base_url" -> GitHub.url(version.value)
     ),
     Formatting.docFormatSettings,
