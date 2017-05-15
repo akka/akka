@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowShape }
 import akka.stream.scaladsl._
 import akka.testkit._
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.testkit.Utils
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -19,7 +19,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
   "The connection-level client implementation" should {
 
     "be able to handle 100 pipelined requests across one connection" in Utils.assertAllStagesStopped {
-      val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
+      val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
 
       val binding = Http().bindAndHandleSync(
         r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
@@ -38,7 +38,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
     }
 
     "be able to handle 100 pipelined requests across 4 connections (client-flow is reusable)" in Utils.assertAllStagesStopped {
-      val (_, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
+      val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
 
       val binding = Http().bindAndHandleSync(
         r ⇒ HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),

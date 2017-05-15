@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.http.impl.util.ExampleHttpContexts
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 import akka.http.scaladsl.server.Directives
-import akka.http.scaladsl.{ Http2, TestUtils }
+import akka.http.scaladsl.Http2
 import akka.stream.ActorMaterializer
 import akka.testkit._
 import org.scalatest.concurrent.ScalaFutures
@@ -43,7 +43,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       HttpResponse().withEntity(HttpEntity(entity.data))
     }
   }
-  val port = TestUtils.temporaryServerAddress().getPort
+  val port = SocketUtil.temporaryServerAddress().getPort
 
   val binding = {
     Http2().bindAndHandleAsync(echo, "127.0.0.1", port, ExampleHttpContexts.exampleServerContext).futureValue

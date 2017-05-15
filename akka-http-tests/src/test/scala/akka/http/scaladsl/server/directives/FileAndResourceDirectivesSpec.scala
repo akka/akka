@@ -19,7 +19,6 @@ import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
-import akka.http.scaladsl.TestUtils.writeAllText
 import akka.http.scaladsl.model.Uri.Path
 import akka.testkit._
 
@@ -34,6 +33,9 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
   require(testRoot.exists(), s"testRoot was not found at ${testRoot.getAbsolutePath}")
 
   override def testConfigSource = "akka.http.routing.range-coalescing-threshold = 1"
+
+  def writeAllText(text: String, file: File): Unit =
+    java.nio.file.Files.write(file.toPath, text.getBytes("UTF-8"))
 
   "getFromFile" should {
     "reject non-GET requests" in {

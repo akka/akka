@@ -15,10 +15,10 @@ import akka.http.javadsl.model.StatusCode;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
-import akka.http.scaladsl.TestUtils;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 import akka.testkit.TestKit;
+import akka.testkit.SocketUtil;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.After;
@@ -64,10 +64,10 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
     }
 
     private Optional<HttpResponse> runRoute(ActorSystem system, ActorMaterializer materializer, Route route, String routePath) {
-        final Tuple3<InetSocketAddress, String, Object> inetaddrHostAndPort = TestUtils.temporaryServerHostnameAndPort("127.0.0.1");
+        final Tuple2<String, Object> inetaddrHostAndPort = SocketUtil.temporaryServerHostnameAndPort("127.0.0.1");
         Tuple2<String, Integer> hostAndPort = new Tuple2<>(
-                inetaddrHostAndPort._2(),
-                (Integer) inetaddrHostAndPort._3()
+                inetaddrHostAndPort._1(),
+                (Integer) inetaddrHostAndPort._2()
         );
 
         final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = route.flow(system, materializer);

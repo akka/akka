@@ -8,11 +8,11 @@ import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.http.javadsl.settings.ServerSettings
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
 import akka.stream.ActorMaterializer
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, SocketUtil }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
@@ -23,7 +23,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
   import system.dispatcher
 
   def withMinimal(testCode: (MinimalHttpApp, String, Int) ⇒ Any): Unit = {
-    val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+    val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
     val minimal = new MinimalHttpApp()
     try testCode(minimal, host, port)
     finally {
@@ -32,7 +32,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
   }
 
   def withSneaky(testCode: (SneakHttpApp, String, Int) ⇒ Any): Unit = {
-    val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+    val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
     val sneaky = new SneakHttpApp()
     try testCode(sneaky, host, port)
     finally {
@@ -104,7 +104,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
       minimal.bindingPromise.get(5, TimeUnit.SECONDS)
 
       minimal.binding().localAddress.getPort should ===(port)
-      minimal.binding().localAddress.getHostName should ===(host)
+      minimal.binding().localAddress.getAddress.getHostAddress should ===(host)
 
       // Requesting the server to shutdown
       callAndVerify(host, port, "shutdown")
