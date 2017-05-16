@@ -3,8 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import java.util.Optional
-import java.util.concurrent.{ CompletableFuture, CompletionStage, TimeUnit }
+import java.util.concurrent.{ CompletionStage, TimeUnit }
 
 import akka.{ Done, NotUsed }
 import akka.stream.Attributes._
@@ -12,10 +11,12 @@ import akka.stream._
 import akka.stream.javadsl
 import akka.stream.stage._
 import akka.stream.testkit._
+import akka.stream.javadsl
 import com.typesafe.config.ConfigFactory
 
 object AttributesSpec {
 
+  // materializes the effective attributes
   class AttributesSource(_initialAttributes: Attributes = Attributes.none) extends GraphStageWithMaterializedValue[SourceShape[Any], Attributes] {
     val out = Outlet[Any]("out")
     override protected def initialAttributes: Attributes = _initialAttributes
@@ -33,6 +34,7 @@ object AttributesSpec {
 
   }
 
+  // materializes the effective attributes
   class AttributesFlow(_initialAttributes: Attributes = Attributes.none) extends GraphStageWithMaterializedValue[FlowShape[Any, Any], Attributes] {
 
     val in = Inlet[Any]("in")
@@ -53,6 +55,7 @@ object AttributesSpec {
     }
   }
 
+  // materializes the effective attributes
   class AttributesSink(_initialAttributes: Attributes = Attributes.none) extends GraphStageWithMaterializedValue[SinkShape[Any], Attributes] {
 
     val in = Inlet[Any]("in")
@@ -76,6 +79,7 @@ object AttributesSpec {
     }
   }
 
+  // emits the thread name onPull is invoked on and completes
   class ThreadNameSnitchingStage(initialDispatcher: String) extends GraphStage[SourceShape[String]] {
     val out = Outlet[String]("out")
     override val shape = SourceShape.of(out)
@@ -163,6 +167,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       attributes.get[WhateverAttribute] shouldBe empty
     }
 
+    val attributes = Attributes.name("a") and Attributes.name("b") and Attributes.inputBuffer(1, 2)
     "be overridable on a module basis" in {
       val attributes =
         Source.fromGraph(new AttributesSource().withAttributes(Attributes.name("new-name")))
@@ -184,24 +189,6 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
       // least specific
       attributes.getFirst[Name] should contain(Name("whole-graph"))
-    }
-  }
-
-  "attributes on a source" must {
-
-    "make the attributes on fromGraph(single-source-stage) Source behave the same as the stage itself" in {
-      val attributes =
-        Source.fromGraph(
-          new AttributesSource(Attributes.name("original-name") and whateverAttribute("whatever"))
-            .withAttributes(Attributes.name("new-name")))
-          .toMat(Sink.head)(Keep.left)
-          .run()
-
-      // most specific
-      attributes.get[Name] should contain(Name("new-name"))
-
-      // least specific
-      attributes.getFirst[Name] should contain(Name("new-name"))
     }
 
     "make the attributes on Source.fromGraph source behave the same as the stage itself" in {
@@ -323,6 +310,21 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     }
   }
 
+  "attributes on a Source" must {
+
+    "make the attributes on fromGraph(single-source-stage) Source behave the same as the stage itself" in {
+      val attributes =
+        Source.fromGraph(
+          new AttributesSource(Attributes.name("original-name") and whateverAttribute("whatever"))
+            .withAttributes(Attributes.name("new-name")))
+          .toMat(Sink.head)(Keep.left)
+          .run()
+
+      // most specific
+      attributes.get[Name] should contain(Name("new-name"))
+    }
+  }
+
   "attributes on a Flow" must {
 
     "make the attributes on fromGraph(flow-stage) Flow behave the same as the stage itself" in {
@@ -385,7 +387,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
 
   }
 
-  "attributes in the javadsl source" must {
+  "attributes in the javadsl" must {
 
     "not change dispatcher from one defined on a surrounding graph" in {
       val dispatcherF =
@@ -487,8 +489,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       } finally {
         myDispatcherMaterializer.shutdown()
       }
-
     }
-
   }
 }
+
