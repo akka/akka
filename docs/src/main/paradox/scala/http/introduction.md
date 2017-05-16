@@ -35,9 +35,9 @@ Akka HTTP is provided in a separate jar file, to use it make sure to include the
 
 Dependency declarations for other build tools (like Gradle or Maven) can be found [here](http://akka.io/docs/#akka-http).
 
-Mind that `akka-http` comes in two modules: `akka-http` and `akka-http-core`. Because `akka-http`
+Mind that Akka HTTP comes in two modules: `akka-http` and `akka-http-core`. Because `akka-http`
 depends on `akka-http-core` you don't need to bring the latter explicitly. Still you may need to this in case you rely
-solely on low-level API; make sure the scala version should be a recent release of version `2.11` or `2.12`.
+solely on the low-level API; make sure the Scala version is a recent release of version `2.11` or `2.12`.
 
 
 ## Routing DSL for HTTP servers
@@ -52,7 +52,7 @@ will be sent back as a HTTP OK with the string as response body.
 
 Transforming request and response bodies between over-the-wire formats and objects to be used in your application is
 done separately from the route declarations, in marshallers, which are pulled in implicitly using the "magnet" pattern.
-This means that you can `complete` a request with any kind of object a as long as there is an implicit marshaller
+This means that you can `complete` a request with any kind of object as long as there is an implicit marshaller
 available in scope.
 
 Default marshallers are provided for simple objects like String or ByteString, and you can define your own for example
