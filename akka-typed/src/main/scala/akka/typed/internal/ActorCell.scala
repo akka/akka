@@ -276,16 +276,23 @@ private[typed] class ActorCell[T](
     if (Debug) println(s"[$thread] $self entering run(): interrupted=${Thread.currentThread.isInterrupted}")
     val status = _status
     val msgs = messageCount(status)
+
     var processed = 0
-    try {
-      unscheduleReceiveTimeout()
-      if (!isTerminated(status)) {
-        while (processAllSystemMessages() && !queue.isEmpty() && processed < msgs) {
-          val msg = queue.poll()
+    @tailrec def process(): Unit = {
+      if (processAllSystemMessages() && processed < msgs) {
+        val msg = queue.poll()
+        if (msg != null) {
           processed += 1
           processMessage(msg)
+          process()
         }
       }
+    }
+
+    try {
+      unscheduleReceiveTimeout()
+      if (!isTerminated(status))
+        process()
       scheduleReceiveTimeout()
     } catch {
       case NonFatal(ex) ⇒ fail(ex)
