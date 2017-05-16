@@ -4,19 +4,15 @@
 
 package akka
 
-import java.io.FileInputStream
-import java.io.InputStreamReader
+import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
 
 import akka.TestExtras.JUnitFileReporting
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
+import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import sbt.Keys._
-import sbt._
-import sbtunidoc.Plugin.ScalaUnidoc
-import sbtunidoc.Plugin.JavaUnidoc
-import sbtunidoc.Plugin.UnidocKeys._
+import sbt.{TestResult, _}
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -329,7 +325,7 @@ object AkkaBuild extends Build {
         val resolver = Resolver.file("user-publish-m2-local", new File(path))
         (resolver, Seq(
           otherResolvers := resolver:: publishTo.value.toList,
-          publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value)
+          publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value, overwrite = true)
         ))
     }
 
@@ -400,7 +396,20 @@ object AkkaBuild extends Build {
     testOptions in Test += Tests.Argument("-oDF"),
 
     // don't save test output to a file
-    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value)),
+    testListeners in (Test, test) := {
+      val log = streams.value.log
+      Seq(new TestsListener {
+        def doInit(): Unit = ()
+        def doComplete(finalResult: TestResult.Value): Unit = ()
+        def startGroup(name: String): Unit = ()
+        def testEvent(event: TestEvent): Unit = ()
+        def endGroup(name: String, t: Throwable): Unit = {
+          log.trace(t)
+          log.error("Could not run test " + name + ": " + t.toString)
+        }
+        def endGroup(name: String, result: TestResult.Value): Unit = ()
+      })
+    },
 
     // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
     // -a Show stack traces and exception class name for AssertionErrors.
