@@ -271,6 +271,14 @@ abstract class PathDirectives extends ParameterDirectives {
     D.path(PathMatchers.Segment)(unmarshal(t, inner))
   }
 
+  /**
+   * Tries to match the inner route and if it fails with an empty rejection, it tries it again
+   * adding (or removing) the trailing slash on the given path.
+   */
+  def ignoreTrailingSlash(inner: Supplier[Route]): Route = RouteAdapter {
+    D.ignoreTrailingSlash { inner.get.delegate }
+  }
+
   private def unmarshal[T](t: Unmarshaller[String, T], inner: JFunction[T, Route]) = { element: String ⇒
     D.extractRequestContext { ctx ⇒
       import ctx.executionContext

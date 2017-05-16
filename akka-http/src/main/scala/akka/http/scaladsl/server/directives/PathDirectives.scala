@@ -5,15 +5,19 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.common.ToNameReceptacleEnhancements
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.server.RouteResult.Rejected
+import akka.http.scaladsl.server.directives.PathDirectives.TrailingRetryRejection
 
 /**
  * @groupname path Path directives
  * @groupprio path 170
  */
 trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction with ToNameReceptacleEnhancements {
+
   import BasicDirectives._
   import RouteDirectives._
   import PathMatcher._
@@ -143,8 +147,8 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * }}}
    *
    * For further information, refer to:
-   * @see [[http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html]]
    *
+   * @see [[https://webmasters.googleblog.com/2010/04/to-slash-or-not-to-slash.html]]
    * @group path
    */
   def pathEndOrSingleSlash: Directive0 = rawPathPrefix(Slash.? ~ PathEnd)
@@ -196,6 +200,57 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
       } else pass
     }
 
+  /**
+   * Tries to match the inner route and if it fails with an empty rejection, it tries it again
+   * adding (or removing) the trailing slash on the given path.
+   *
+   * @group path
+   */
+  def ignoreTrailingSlash: Directive0 = Directive[Unit] {
+    /**
+     * Converts a URL that ends with `/` to one without. Or one that ends without `/` to one with it.
+     */
+    def flipTrailingSlash(path: Path): Path = {
+      if (path.endsWithSlash && path != Path.SingleSlash) path.reverse.tail.reverse
+      else path ++ Path.SingleSlash
+    }
+
+    /**
+     * Transforms empty rejections to [[akka.http.scaladsl.server.directives.PathDirectives.TrailingRetryRejection]]
+     * for the only purpose to break the loop of rejection handling
+     */
+    val transformEmptyRejections = recoverRejections(rejections ⇒
+      if (rejections == Nil) {
+        Rejected(List(TrailingRetryRejection))
+      } else Rejected(rejections)
+    )
+
+    inner ⇒
+      import ExecutionDirectives._
+      val totallyMissingHandler = RejectionHandler.newBuilder()
+        .handleNotFound {
+          mapRequestContext(req ⇒ req.withUnmatchedPath(flipTrailingSlash(req.unmatchedPath))) {
+            // transforming the rejection to break the loop.
+            transformEmptyRejections {
+              inner(())
+            }
+          }
+        }
+        .result()
+
+      cancelRejection(TrailingRetryRejection) {
+        handleRejections(totallyMissingHandler) {
+          inner(())
+        }
+      }
+  }
 }
 
-object PathDirectives extends PathDirectives
+object PathDirectives extends PathDirectives {
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[http] case object TrailingRetryRejection extends Rejection
+}

@@ -7,6 +7,7 @@ package docs.http.javadsl.server.directives;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import akka.http.javadsl.server.PathMatchers;
 import org.junit.Test;
 
 import akka.http.javadsl.model.HttpRequest;
@@ -319,4 +320,34 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
     //#redirect-notrailing-slash-present
   }
 
+  @Test
+  public void testIgnoreTrailingSlash() {
+    //#ignoreTrailingSlash
+    final Route route = ignoreTrailingSlash(() ->
+      route(
+        path("foo", () ->
+          // Thanks to `ignoreTrailingSlash` it will serve both `/foo` and `/foo/`.
+          complete("OK")),
+        path(PathMatchers.segment("bar").slash(), () ->
+          // Thanks to `ignoreTrailingSlash` it will serve both `/bar` and `/bar/`.
+          complete("OK"))
+      )
+    );
+
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/foo"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("OK");
+    testRoute(route).run(HttpRequest.GET("/foo/"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("OK");
+
+    testRoute(route).run(HttpRequest.GET("/bar"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("OK");
+    testRoute(route).run(HttpRequest.GET("/bar/"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("OK");
+    //#ignoreTrailingSlash
+  }
 }

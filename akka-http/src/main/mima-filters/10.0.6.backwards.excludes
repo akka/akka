@@ -1,4 +1,9 @@
+# Mima filters needed to check newer versions against 10.0.6
+
 # Provide routes method in HttpApp #953 Rename of method is OK as class is `@ApiMayChange`
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.server.HttpApp.routes")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.HttpApp.routes")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.server.HttpApp.route")
+
+# Path ignore trailing slash #880 (Trait is not expected to be implemented by third-parties)
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.PathDirectives.ignoreTrailingSlash")

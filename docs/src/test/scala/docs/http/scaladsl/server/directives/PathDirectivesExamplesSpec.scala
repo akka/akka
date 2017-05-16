@@ -4,6 +4,7 @@
 
 package docs.http.scaladsl.server.directives
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import docs.http.scaladsl.server.RoutingSpec
 
@@ -361,7 +362,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
     val route =
       redirectToNoTrailingSlashIfPresent(StatusCodes.MovedPermanently) {
         path("foo") {
-          // We require the explicit trailing slash in the path
+          // We require to not have a trailing slash in the path
           complete("OK")
         } ~
           path("bad"./) {
@@ -399,5 +400,41 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
       handled shouldEqual false
     }
     //#redirectToNoTrailingSlashIfPresent-0
+  }
+
+  "ignoreTrailingSlash" in {
+    //#ignoreTrailingSlash
+    val route = ignoreTrailingSlash {
+      path("foo") {
+        // Thanks to `ignoreTrailingSlash` it will serve both `/foo` and `/foo/`.
+        complete("OK")
+      } ~
+        path("bar" /) {
+          // Thanks to `ignoreTrailingSlash` it will serve both `/bar` and `/bar/`.
+          complete("OK")
+        }
+    }
+
+    // tests:
+    Get("/foo") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "OK"
+    }
+
+    Get("/foo/") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "OK"
+    }
+
+    Get("/bar") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "OK"
+    }
+
+    Get("/bar/") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "OK"
+    }
+    //#ignoreTrailingSlash
   }
 }

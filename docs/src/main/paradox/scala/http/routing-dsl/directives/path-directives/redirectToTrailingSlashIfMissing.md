@@ -18,10 +18,8 @@ or refuses to for security reasons, automatically follow redirects.
 Please note that the inner paths **MUST** end with an explicit trailing slash (e.g. `"things"./`) for the
 re-directed-to route to match.
 
-See also @ref[redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPresent.md#redirecttonotrailingslashifpresent) for the opposite behaviour.
+See also @ref[redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPresent.md#redirecttonotrailingslashifpresent) which achieves the opposite - redirecting paths in case they do have a trailing slash.
 
 ## Example
 
 @@snip [PathDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #redirectToTrailingSlashIfMissing-0 }
-
-See also @ref[redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPresent.md#redirecttonotrailingslashifpresent) which achieves the opposite - redirecting paths in case they do have a trailing slash.

@@ -1,5 +1,22 @@
 # Release Notes
 
+## 10.0.7
+
+### New Path Directive `ignoreTrailingSlash`
+
+Akka HTTP treats differently by default a route that ends with slash (`/`) than one that doesn't. From this version on, 
+users who don't want to have this distinction, can use a new Path Directive called `ignoreTrailingSlash`.
+This route, will retry its inner route with and without a trailing slash. If you want to know more about this feature,
+please check the documentation pages for @ref[Scala](scala/http/routing-dsl/directives/path-directives/ignoreTrailingSlash.md)
+and @ref[Java](java/http/routing-dsl/directives/path-directives/ignoreTrailingSlash.md) API.
+
+### List of Changes
+
+#### Improvements
+
+##### akka-http
+ * Added new Path Directive `ignoreTrailingSlash` ([#880](https://github.com/akka/akka-http/issues/880))
+
 ## 10.0.6
 
 See the [announcement](http://akka.io/news/2017/05/03/akka-http-10.0.6-released.html) and

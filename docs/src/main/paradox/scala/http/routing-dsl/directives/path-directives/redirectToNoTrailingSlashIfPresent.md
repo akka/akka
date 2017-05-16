@@ -20,10 +20,8 @@ for the re-directed-to route to match.
 
 A good read on the subject of how to deal with trailing slashes is available on [Google Webmaster Central - To Slash or not to Slash](http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html).
 
-See also @ref[redirectToTrailingSlashIfMissing](redirectToTrailingSlashIfMissing.md#redirecttotrailingslashifmissing) for the opposite behaviour.
+See also @ref[redirectToTrailingSlashIfMissing](redirectToTrailingSlashIfMissing.md#redirecttotrailingslashifmissing) which achieves the opposite - redirecting paths in case they do *not* have a trailing slash.
 
 ## Example
 
 @@snip [PathDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #redirectToNoTrailingSlashIfPresent-0 }
-
-See also @ref[redirectToTrailingSlashIfMissing](redirectToTrailingSlashIfMissing.md#redirecttotrailingslashifmissing) which achieves the opposite - redirecting paths in case they do *not* have a trailing slash.

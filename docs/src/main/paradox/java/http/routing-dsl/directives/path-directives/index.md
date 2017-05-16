@@ -17,6 +17,7 @@
 * [rawPathPrefixTest](rawPathPrefixTest.md)
 * [redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPresent.md)
 * [redirectToTrailingSlashIfMissing](redirectToTrailingSlashIfMissing.md)
+* [ignoreTrailingSlash](ignoreTrailingSlash.md)
 * [../path-directives](../path-directives.md)
 
 @@@

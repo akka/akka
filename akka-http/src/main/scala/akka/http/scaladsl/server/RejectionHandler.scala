@@ -95,7 +95,7 @@ object RejectionHandler {
     }
 
     /**
-     * Convenience method for handling rejections created by created by the onCompleteWithBreaker directive.
+     * Convenience method for handling rejections created by the onCompleteWithBreaker directive.
      * Signals that the request was rejected because the supplied circuit breaker is open and requests are failing fast.
      *
      * Use to customise the error response being written instead of the default [[ServiceUnavailable]] response.
