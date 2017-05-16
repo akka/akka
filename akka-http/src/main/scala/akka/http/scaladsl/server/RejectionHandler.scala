@@ -12,7 +12,6 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
 trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { self ⇒
@@ -152,7 +151,7 @@ object RejectionHandler {
    * Default [[RejectionHandler]] instance.
    */
   final val default =
-    newBuilder()
+    new Builder(isDefault = true)
       .handleAll[SchemeRejection] { rejections ⇒
         val schemes = rejections.map(_.supported).mkString(", ")
         complete((BadRequest, "Uri scheme not allowed, supported schemes: " + schemes))
