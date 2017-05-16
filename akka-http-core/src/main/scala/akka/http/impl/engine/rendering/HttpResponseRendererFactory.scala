@@ -23,8 +23,6 @@ import HttpProtocols._
 import akka.annotation.InternalApi
 import headers._
 
-import scala.concurrent.duration._
-
 /**
  * INTERNAL API
  */

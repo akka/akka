@@ -10,7 +10,6 @@ import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import akka.stream.impl.fusing.SubSource
 
 /**
  * INTERNAL API

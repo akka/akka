@@ -15,9 +15,10 @@ object MultiNode extends AutoPlugin {
     val multiNode = CliOption("akka.test.multi-node", false)
     val sbtLogNoFormat = CliOption("sbt.log.noformat", false)
 
-    val hostsFileName = sys.props.get("akka.test.multi-node.hostsFileName").toSeq
-    val javaName = sys.props.get("akka.test.multi-node.java").toSeq
-    val targetDirName = sys.props.get("akka.test.multi-node.targetDirName").toSeq
+    def seqWithProperty(name: String) = Option(System.getProperty(name)).toSeq
+    val hostsFileName = seqWithProperty("akka.test.multi-node.hostsFileName")
+    val javaName = seqWithProperty("akka.test.multi-node.java")
+    val targetDirName = seqWithProperty("akka.test.multi-node.targetDirName")
   }
 
   val multiExecuteTests = CliOptions.multiNode.ifTrue(multiNodeExecuteTests in MultiJvm).getOrElse(executeTests in MultiJvm)

@@ -20,7 +20,6 @@ import akka.stream.stage.GraphStageLogic.EagerTerminateOutput
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 import scala.concurrent.Future
-import scala.language.existentials
 import scala.util.{ Failure, Success }
 import scala.collection.JavaConverters._
 

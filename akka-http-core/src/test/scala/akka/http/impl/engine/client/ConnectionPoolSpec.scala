@@ -182,9 +182,6 @@ class ConnectionPoolSpec extends AkkaSpec("""
           .log("test")
 
       val laterData = Promise[ByteString]()
-      val slowEntity =
-        Source.single(ByteString("def")) ++ Source.fromFuture(laterData.future)
-
       val laterHandler = Promise[(HttpRequest ⇒ Future[HttpResponse]) ⇒ Unit]()
 
       override def asyncTestServerHandler(connNr: Int): HttpRequest ⇒ Future[HttpResponse] = { req ⇒
@@ -225,7 +222,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       // now respond to request 2
       handlerSetter(req ⇒ Future.successful(HttpResponse()))
 
-      val (Success(response2), _) = responseOut.expectNext()
+      val (Success(_), _) = responseOut.expectNext()
     }
 
     "retry failed requests" in new TestSetup(autoAccept = true) {

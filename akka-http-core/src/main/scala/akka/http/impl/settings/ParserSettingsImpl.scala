@@ -5,7 +5,6 @@
 package akka.http.impl.settings
 
 import akka.annotation.InternalApi
-import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.settings.ParserSettings.{ CookieParsingMode, ErrorLoggingVerbosity, IllegalResponseHeaderValueProcessingMode }
 import akka.stream.impl.ConstantFun
 import com.typesafe.config.Config

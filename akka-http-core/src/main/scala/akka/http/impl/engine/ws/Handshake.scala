@@ -10,7 +10,6 @@ import akka.annotation.InternalApi
 
 import scala.collection.immutable
 import scala.collection.immutable.Seq
-import scala.reflect.ClassTag
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebSocket }

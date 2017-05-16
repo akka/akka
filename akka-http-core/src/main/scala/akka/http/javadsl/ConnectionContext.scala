@@ -12,7 +12,6 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import scala.compat.java8.OptionConverters
-import scala.collection.JavaConverters._
 
 object ConnectionContext {
   //#https-context-creation

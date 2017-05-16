@@ -8,12 +8,11 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.server._
-import akka.http.scaladsl.model.HttpResponse
 import akka.stream.{ Materializer, ActorMaterializer }
 import com.typesafe.config.{ ConfigFactory, Config }
 import org.junit.rules.ExternalResource
 import org.junit.{ Assert, Rule }
-import org.scalatest.junit.{ JUnitSuiteLike, JUnitSuite }
+import org.scalatest.junit.JUnitSuiteLike
 import scala.concurrent.duration._
 import scala.concurrent.Await
 

@@ -6,7 +6,6 @@ package akka.http.javadsl.settings
 import akka.actor.ActorSystem
 import akka.annotation.DoNotInherit
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import akka.http.impl.util.JavaMapping
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration

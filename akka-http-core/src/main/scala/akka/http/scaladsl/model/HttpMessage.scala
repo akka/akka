@@ -16,7 +16,6 @@ import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
-import scala.compat.java8.OptionConverters._
 import scala.reflect.{ ClassTag, classTag }
 import akka.Done
 import akka.parboiled2.CharUtils

@@ -17,11 +17,12 @@ import akka.http.impl.util._
 import akka.stream.stage.GraphStage
 import akka.stream._
 import akka.stream.scaladsl.{ Flow, Sink, Source }
+
 /**
  * INTERNAL API
  */
 @InternalApi
-private object RenderSupport {
+private[rendering] object RenderSupport {
   val DefaultStatusLineBytes = "HTTP/1.1 200 OK\r\n".asciiBytes
   val StatusLineStartBytes = "HTTP/1.1 ".asciiBytes
   val ChunkedBytes = "chunked".asciiBytes

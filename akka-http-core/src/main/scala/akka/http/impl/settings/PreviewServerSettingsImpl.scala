@@ -4,7 +4,7 @@
 
 package akka.http.impl.settings
 
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import akka.http.impl.util.SettingsCompanion
 import com.typesafe.config.Config
 

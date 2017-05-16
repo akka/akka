@@ -9,7 +9,6 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
-import akka.event.NoLogging
 import akka.http.impl.util.AddFutureAwaitResult
 import akka.http.impl.util.JavaMapping.Implicits.AddAsScala
 import akka.http.javadsl.model.HttpRequest
@@ -19,7 +18,7 @@ import akka.http.javadsl.server.Directives
 import akka.http.javadsl.server.Route
 import akka.http.javadsl.server.RouteResult
 import akka.http.scaladsl.server
-import akka.http.scaladsl.server.{ ExceptionHandler, RequestContextImpl, Route ⇒ ScalaRoute }
+import akka.http.scaladsl.server.{ ExceptionHandler, Route ⇒ ScalaRoute }
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.Materializer
 

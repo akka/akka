@@ -55,8 +55,6 @@ class FileUploadDirectivesSpec extends RoutingSpec {
 
     def echoAsAService =
       extractRequestContext { ctx ⇒
-        implicit val mat = ctx.materializer
-
         fileUpload("field1") {
           case (info, bytes) ⇒
             // stream the bytes somewhere
@@ -117,8 +115,6 @@ class FileUploadDirectivesSpec extends RoutingSpec {
       // byte count as a service ;)
       val route =
         extractRequestContext { ctx ⇒
-          implicit val mat = ctx.materializer
-
           fileUpload("missing") {
             case (info, bytes) ⇒
               // stream the bytes somewhere

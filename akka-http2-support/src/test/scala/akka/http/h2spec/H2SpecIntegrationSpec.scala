@@ -18,7 +18,6 @@ import org.scalatest.exceptions.TestPendingException
 
 import scala.concurrent.duration._
 import scala.sys.process._
-import scala.util.control.NoStackTrace
 
 class H2SpecIntegrationSpec extends AkkaSpec(
   """
@@ -88,7 +87,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       """.split("\n").map(_.trim).filterNot(_.isEmpty)
 
     // execution of tests ------------------------------------------------------------------ 
-    val runningOnJenkins = sys.env.get("BUILD_NUMBER").isDefined
+    val runningOnJenkins = System.getenv.containsKey("BUILD_NUMBER")
 
     if (runningOnJenkins) {
       "pass the entire h2spec, producing junit test report" in {
@@ -140,7 +139,8 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       } else if (output.contains("0 failed")) ()
     }
 
-    def executable = sys.props("h2spec.path")
+    def executable =
+      System.getProperty("h2spec.path").ensuring(_ != null, "h2spec.path property not defined")
   }
 
   override protected def afterTermination(): Unit = {

@@ -23,9 +23,9 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.11", "2.12.1"),
     scalaVersion := crossScalaVersions.value.head,
-    akkaVersion := sys.props.getOrElse("akka.build.version", "2.4.18"),
-    scalaCheckVersion := sys.props.getOrElse("akka.build.scalaCheckVersion", "1.13.4"),
-    scalaTestVersion := "3.0.0",
+    akkaVersion := System.getProperty("akka.build.version", "2.4.18"),
+    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.4"),
+    scalaTestVersion := "3.0.3",
     specs2Version := "3.8.6",
     java8CompatVersion := "0.8.0"
   )
@@ -38,7 +38,7 @@ object Dependencies {
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val netty         = "io.netty"                    % "netty"                        % "3.10.6.Final" // ApacheV2
 
-    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.5" // Scala License
+    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.6" // Scala License
     val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
     // ssl-config

@@ -18,9 +18,6 @@ package akka.parboiled2
 
 import scala.annotation.tailrec
 import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
-
-import akka.parboiled2.ParserInput.DefaultParserInput
 
 trait ParserInput {
   /**

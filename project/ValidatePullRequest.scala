@@ -12,6 +12,7 @@ import sbtunidoc.Plugin.UnidocKeys.unidoc
 import sbt.Keys._
 import sbt._
 
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.util.matching.Regex
 
@@ -100,8 +101,8 @@ object ValidatePullRequest extends AutoPlugin {
     }
   }
 
-  def localTargetBranch: Option[String] = sys.env.get("PR_TARGET_BRANCH")
-  def jenkinsTargetBranch: Option[String] = sys.env.get("ghprbTargetBranch")
+  def localTargetBranch: Option[String] = System.getenv.asScala.get("PR_TARGET_BRANCH")
+  def jenkinsTargetBranch: Option[String] = System.getenv.asScala.get("ghprbTargetBranch")
   def runningOnJenkins: Boolean = jenkinsTargetBranch.isDefined
   def runningLocally: Boolean = !runningOnJenkins
 

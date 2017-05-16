@@ -4,7 +4,6 @@
 
 package akka.http.impl.engine.client
 
-import language.existentials
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.event.LoggingAdapter

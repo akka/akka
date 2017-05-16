@@ -11,9 +11,7 @@ import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.testkit.RouteTestTimeout
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Properties
-import org.scalatest.matchers.Matcher
 import org.scalatest.{ Inside, Inspectors }
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._

@@ -5,19 +5,13 @@
 package akka.http.scaladsl
 
 import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.model.HttpProtocols.`HTTP/1.0`
-import akka.http.scaladsl.model.MediaType.WithFixedCharset
-import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.testkit.{ AkkaSpec, SocketUtil }
-import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent.duration._
 
 class CustomStatusCodesSpec extends AkkaSpec with ScalaFutures
   with Directives with RequestBuilding {

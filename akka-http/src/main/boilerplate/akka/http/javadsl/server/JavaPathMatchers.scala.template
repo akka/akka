@@ -3,21 +3,13 @@
  */
 package akka.http.javadsl.server
 
-import java.util.List
-import java.util.function.{BiFunction, Function}
 import akka.annotation.InternalApi
 import akka.http.scaladsl.server.{ PathMatcher ⇒ SPathMatcher }
 import akka.http.scaladsl.server.{ PathMatchers ⇒ SPathMatchers }
-import akka.http.scaladsl.server.PathMatcher
 import java.util.{ List ⇒ JList }
-import java.util.UUID
-import java.util.function.BiFunction
 import java.util.function.{ Function ⇒ JFunction }
-import akka.japi.function._
-import java.util.regex.Pattern
 import scala.collection.JavaConverters._
 
-import akka.http.scaladsl.server.PathMatcher
 import java.util.{List => JList}
 
 import scala.language.implicitConversions

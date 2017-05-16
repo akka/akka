@@ -20,7 +20,6 @@ import scala.concurrent.{ ExecutionContext, Future, Promise }
  * INTERNAL API
  */
 private[http] object StreamUtils {
-  import Attributes.none
 
   /**
    * Creates a transformer that will call `f` for each incoming ByteString and output its result. After the complete

@@ -107,7 +107,7 @@ class PrepareResponseSpec extends AkkaSpec {
       responseSub.request(1)
       inSub.expectRequest(1)
       inSub.sendNext(strictStart)
-      val response = responseProbe.expectNext()
+      responseProbe.expectNext()
 
       // now, before the strict message has completed
       // there is upstream demand
@@ -184,7 +184,7 @@ class PrepareResponseSpec extends AkkaSpec {
       responseSub.request(1)
       inSub.expectRequest(1)
       inSub.sendNext(strictStart)
-      val response = responseProbe.expectNext()
+      responseProbe.expectNext()
 
       // now before end of message has arrived
       // downstream cancels

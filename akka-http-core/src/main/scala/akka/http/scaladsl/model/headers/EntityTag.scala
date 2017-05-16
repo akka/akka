@@ -5,7 +5,6 @@
 package akka.http.scaladsl.model.headers
 
 import akka.http.impl.model.JavaInitialization
-import akka.util.Unsafe
 
 import scala.collection.immutable
 import akka.http.impl.util.{ Renderer, Rendering, ValueRenderable }

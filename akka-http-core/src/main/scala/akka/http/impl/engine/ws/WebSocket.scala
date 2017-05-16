@@ -17,7 +17,6 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.http.scaladsl.model.ws._
-import akka.stream.impl.fusing.SubSource
 
 /**
  * INTERNAL API

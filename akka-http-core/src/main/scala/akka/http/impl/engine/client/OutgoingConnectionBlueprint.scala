@@ -9,7 +9,6 @@ import akka.annotation.InternalApi
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ParserSettings }
 import akka.stream.impl.ConstantFun
 
-import language.existentials
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.collection.mutable.ListBuffer
@@ -28,8 +27,6 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.{ InHandler, OutHandler }
 import akka.http.impl.util.LogByteStringTools._
-
-import scala.util.control.NoStackTrace
 
 /**
  * INTERNAL API

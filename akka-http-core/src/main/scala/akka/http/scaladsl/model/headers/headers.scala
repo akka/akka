@@ -10,7 +10,7 @@ import java.security.MessageDigest
 import java.util
 import javax.net.ssl.SSLSession
 
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.InternalApi
 import akka.stream.scaladsl.ScalaSessionAPI
 
 import scala.reflect.ClassTag

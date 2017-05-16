@@ -19,7 +19,6 @@ import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import headers._
 
 import scala.collection.mutable.ListBuffer
-import akka.stream.impl.fusing.SubSource
 
 /**
  * INTERNAL API
@@ -125,9 +124,6 @@ private[http] final class BodyPartParser(
       }
 
       setHandlers(in, out, this)
-
-      def warnOnIllegalHeader(errorInfo: ErrorInfo): Unit =
-        if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
 
       def tryParseInitialBoundary(input: ByteString): StateResult =
         // we don't use boyerMoore here because we are testing for the boundary *without* a
@@ -263,11 +259,6 @@ private[http] final class BodyPartParser(
             case 0 ⇒ next(_, 0)
             case 1 ⇒ throw new IllegalStateException
           }
-        done()
-      }
-
-      def continue(next: (ByteString, Int) ⇒ StateResult): StateResult = {
-        state = next(_, 0)
         done()
       }
 

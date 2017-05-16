@@ -5,7 +5,6 @@
 package akka.http.scaladsl.model.headers
 
 import akka.http.impl.model.JavaInitialization
-import akka.util.Unsafe
 
 import scala.language.implicitConversions
 import scala.collection.immutable

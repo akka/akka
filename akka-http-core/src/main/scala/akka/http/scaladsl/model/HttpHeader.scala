@@ -4,20 +4,16 @@
 
 package akka.http.scaladsl.model
 
-import java.nio.charset.StandardCharsets
-
 import akka.annotation.InternalApi
 
 import scala.util.{ Failure, Success }
-import akka.parboiled2.{ ParseError, ParserInput }
+import akka.parboiled2.ParseError
 import akka.http.impl.util.ToStringRenderable
 import akka.http.impl.model.parser.{ CharacterClasses, HeaderParser }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.headers._
-import akka.parboiled2.ParserInput.DefaultParserInput
-import akka.util.{ ByteString, OptionVal }
+import akka.util.OptionVal
 
-import scala.annotation.tailrec
 import scala.collection.immutable
 
 /**

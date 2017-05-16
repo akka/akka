@@ -16,7 +16,7 @@ import akka.http.scaladsl.model.headers.`Content-Length`
  * INTERNAL API
  */
 @InternalApi
-private object SpecializedHeaderValueParsers {
+private[parsing] object SpecializedHeaderValueParsers {
   import HttpHeaderParser._
 
   def specializedHeaderValueParsers = Seq(ContentLengthParser)

@@ -54,7 +54,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       def main(args: Array[String]) {
         implicit val system = ActorSystem()
         implicit val materializer = ActorMaterializer()
-        // needed for the future onFailure in the end
+        // needed for the future foreach in the end
         implicit val executionContext = system.dispatcher
 
         val handler = get {
@@ -66,9 +66,8 @@ class HttpServerExampleSpec extends WordSpec with Matchers
         val bindingFuture: Future[ServerBinding] =
           Http().bindAndHandle(handler, host, port)
 
-        bindingFuture.onFailure {
-          case ex: Exception =>
-            log.error(ex, "Failed to bind to {}:{}!", host, port)
+        bindingFuture.failed.foreach { ex =>
+          log.error(ex, "Failed to bind to {}:{}!", host, port)
         }
       }
     }
@@ -92,7 +91,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    // needed for the future onFailure in the end
+    // needed for the future foreach in the end
     implicit val executionContext = system.dispatcher
 
     // let's say the OS won't allow us to bind to 80.
@@ -103,9 +102,8 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       .to(handleConnections) // Sink[Http.IncomingConnection, _]
       .run()
 
-    bindingFuture.onFailure {
-      case ex: Exception =>
-        log.error(ex, "Failed to bind to {}:{}!", host, port)
+    bindingFuture.failed.foreach { ex =>
+      log.error(ex, "Failed to bind to {}:{}!", host, port)
     }
     //#binding-failure-handling
   }
@@ -133,8 +131,8 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     val failureMonitor: ActorRef = system.actorOf(MyExampleMonitoringActor.props)
 
     val reactToTopLevelFailures = Flow[IncomingConnection]
-      .watchTermination()((_, termination) => termination.onFailure {
-        case cause => failureMonitor ! cause
+      .watchTermination()((_, termination) => termination.failed.foreach {
+        cause => failureMonitor ! cause
       })
 
     serverSource

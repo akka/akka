@@ -7,7 +7,6 @@ import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream.scaladsl.BidiFlow
 
-import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 

@@ -22,10 +22,9 @@ object WSServerAutobahnTest extends App {
   implicit val system = ActorSystem("WSServerTest")
   implicit val fm = ActorMaterializer()
 
-  val props = sys.props
-  val host = props.getOrElse("akka.ws-host", "127.0.0.1")
-  val port = props.getOrElse("akka.ws-port", "9001").toInt
-  val mode = props.getOrElse("akka.ws-mode", "read") // read or sleep
+  val host = System.getProperty("akka.ws-host", "127.0.0.1")
+  val port = System.getProperty("akka.ws-port", "9001").toInt
+  val mode = System.getProperty("akka.ws-mode", "read") // read or sleep
 
   try {
     val binding = Http().bindAndHandleSync(

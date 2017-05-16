@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.Done
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
-import akka.http.impl.engine.client.PoolGateway.{ GatewayIdentifier, SharedGateway }
+import akka.http.impl.engine.client.PoolGateway.GatewayIdentifier
 import akka.http.impl.engine.client.PoolMasterActor._
 import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
