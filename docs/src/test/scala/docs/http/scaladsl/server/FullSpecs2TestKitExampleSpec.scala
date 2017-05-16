@@ -7,12 +7,11 @@ package docs.http.scaladsl.server
 // format: OFF
 
 //#source-quote
-
+import org.specs2.mutable.Specification
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.Specs2RouteTest
 import akka.http.scaladsl.server._
 import Directives._
-import org.specs2.mutable.Specification
 
 class FullSpecs2TestKitExampleSpec extends Specification with Specs2RouteTest {
 
@@ -23,9 +22,9 @@ class FullSpecs2TestKitExampleSpec extends Specification with Specs2RouteTest {
           "Captain on the bridge!"
         }
       } ~
-        path("ping") {
-          complete("PONG!")
-        }
+      path("ping") {
+        complete("PONG!")
+      }
     }
 
   "The service" should {
