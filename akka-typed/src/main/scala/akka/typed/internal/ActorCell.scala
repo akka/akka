@@ -291,27 +291,32 @@ private[typed] class ActorCell[T](
 
     try {
       unscheduleReceiveTimeout()
-      if (!isTerminated(status))
+      if (!isTerminated(status)) {
         process()
-      scheduleReceiveTimeout()
+        scheduleReceiveTimeout()
+      }
     } catch {
-      case NonFatal(ex) ⇒ fail(ex)
+      case NonFatal(ex) ⇒
+        fail(ex)
       case ie: InterruptedException ⇒
         fail(ie)
         if (Debug) println(s"[$thread] $self interrupting due to catching InterruptedException")
         Thread.currentThread.interrupt()
-    } finally {
+    }
+
+    // Returns `true` if it should be rescheduled.
+    // This method shouldn't throw apart from fatal errors.
+    def postProcess(): Boolean = {
       // also remove the general activation token
       processed += 1
       val prev = unsafe.getAndAddInt(this, statusOffset, -processed)
       val now = prev - processed
       if (isTerminated(now)) {
-        // we’re finished
+        false // we’re finished, don't reschedule
       } else if (activations(now) > 0) {
         // normal messages pending: reverse the deactivation
         unsafe.getAndAddInt(this, statusOffset, 1)
-        // ... and reschedule
-        executionContext.execute(this)
+        true // ... and reschedule
       } else if (_systemQueue.head != null) {
         /*
          * System message was enqueued after our last processing, we now need to
@@ -322,10 +327,24 @@ private[typed] class ActorCell[T](
          * activation token again.
          */
         val again = unsafe.getAndAddInt(this, statusOffset, 1)
-        if (activations(again) == 0) executionContext.execute(this)
-        else unsafe.getAndAddInt(this, statusOffset, -1)
+        if (activations(again) == 0) true //reschedule
+        else {
+          unsafe.getAndAddInt(this, statusOffset, -1)
+          false // don't reschedule
+        }
+      } else {
+        false // don't reschedule
       }
     }
+
+    if (postProcess())
+      try executionContext.execute(this) catch {
+        case NonFatal(e) ⇒
+          // we can just hope that the actor will receive another message at some
+          // point to wake it up again—assuming that the failure to enqueue the cell is transient
+          fail(e)
+      }
+
     if (Debug) println(s"[$thread] $self exiting run(): interrupted=${Thread.currentThread.isInterrupted}")
   }
 
