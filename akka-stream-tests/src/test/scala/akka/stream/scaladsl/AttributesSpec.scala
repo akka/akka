@@ -3,39 +3,55 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.Attributes
 import akka.stream.Attributes._
-import akka.stream.MaterializationContext
-import akka.stream.SinkShape
+import akka.stream._
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 import akka.stream.testkit._
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import akka.stream.impl.SinkModule
-import akka.stream.impl.SinkholeSubscriber
+import com.typesafe.config.ConfigFactory
 
 object AttributesSpec {
 
-  object AttributesSink {
-    def apply(): Sink[Nothing, Future[Attributes]] =
-      Sink.fromGraph[Nothing, Future[Attributes]](new AttributesSink(Attributes.name("attributesSink"), Sink.shape("attributesSink")))
+  class AttributesSource(_initialAttributes: Attributes = Attributes.none) extends GraphStage[SourceShape[Attributes]] {
+    val out = Outlet[Attributes]("out")
+    override protected def initialAttributes: Attributes = _initialAttributes
+    override val shape = SourceShape.of(out)
+    def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+      setHandler(out, new OutHandler {
+        def onPull(): Unit = {
+          push(out, inheritedAttributes)
+          completeStage()
+        }
+      })
+    }
   }
 
-  final class AttributesSink(val attributes: Attributes, shape: SinkShape[Nothing]) extends SinkModule[Nothing, Future[Attributes]](shape) {
-    override def create(context: MaterializationContext) =
-      (new SinkholeSubscriber(Promise()), Future.successful(context.effectiveAttributes))
+  class ThreadNameSnitchingStage(initialDispatcher: String) extends GraphStage[SourceShape[String]] {
+    val out = Outlet[String]("out")
+    override val shape = SourceShape.of(out)
+    override protected def initialAttributes: Attributes = ActorAttributes.dispatcher(initialDispatcher)
+    def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+      setHandler(out, new OutHandler {
+        def onPull(): Unit = {
+          push(out, Thread.currentThread.getName)
+          completeStage()
+        }
+      })
+    }
 
-    override protected def newInstance(shape: SinkShape[Nothing]): SinkModule[Nothing, Future[Attributes]] =
-      new AttributesSink(attributes, shape)
-
-    override def withAttributes(attr: Attributes): SinkModule[Nothing, Future[Attributes]] =
-      new AttributesSink(attr, amendShape(attr))
   }
-
 }
 
-class AttributesSpec extends StreamSpec {
+class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
+  """
+    my-dispatcher {
+      type = Dispatcher
+      executor = "thread-pool-executor"
+      thread-pool-executor {
+        fixed-pool-size = 1
+      }
+      throughput = 1
+    }
+  """).withFallback(Utils.UnboundedMailboxConfig)) {
   import AttributesSpec._
 
   val settings = ActorMaterializerSettings(system)
@@ -45,20 +61,6 @@ class AttributesSpec extends StreamSpec {
 
   "attributes" must {
 
-    "be overridable on a module basis" in {
-      val runnable = Source.empty.toMat(AttributesSink().withAttributes(Attributes.name("new-name")))(Keep.right)
-      whenReady(runnable.run()) { attributes ⇒
-        attributes.get[Name] should contain(Name("new-name"))
-      }
-    }
-
-    "keep the outermost attribute as the least specific" in {
-      val runnable = Source.empty.toMat(AttributesSink())(Keep.right).withAttributes(Attributes.name("new-name"))
-      whenReady(runnable.run()) { attributes ⇒
-        attributes.get[Name] should contain(Name("attributesSink"))
-      }
-    }
-
     val attributes = Attributes.name("a") and Attributes.name("b") and Attributes.inputBuffer(1, 2)
 
     "give access to first attribute" in {
@@ -67,6 +69,95 @@ class AttributesSpec extends StreamSpec {
 
     "give access to attribute byt type" in {
       attributes.get[Name] should ===(Some(Attributes.Name("b")))
+    }
+
+  }
+
+  "attributes on a stage" must {
+
+    "be overridable on a module basis" in {
+      val attributes =
+        Source.fromGraph(new AttributesSource().withAttributes(Attributes.name("new-name")))
+          .runWith(Sink.head)
+          .futureValue
+      attributes.get[Name] should contain(Name("new-name"))
+    }
+
+    "keep the outermost attribute as the least specific" in {
+      val attributes = Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
+        .addAttributes(Attributes.name("new-name"))
+        .runWith(Sink.head)
+        .futureValue
+
+      // most specific
+      attributes.get[Name] should contain(Name("original-name"))
+
+      // least specific
+      attributes.getFirst[Name] should contain(Name("new-name"))
+    }
+
+    "replace the attributes directly on a graph stage" in {
+      val attributes =
+        Source.fromGraph(
+          new AttributesSource(Attributes.name("original-name")).withAttributes(Attributes.name("new-name"))
+        )
+          .runWith(Sink.head)
+          .futureValue
+
+      // most specific
+      attributes.get[Name] should contain(Name("new-name"))
+
+      // least specific
+      attributes.getFirst[Name] should contain(Name("new-name"))
+    }
+
+    // just to document the behavior, this creates a nested source with attributes
+    // so they are not really replaced on the inner graph
+    "wrap the attributes on a graph stage " in {
+      val attributes =
+        Source.fromGraph(new AttributesSource(Attributes.name("original-name")))
+          .withAttributes(Attributes.name("nested-source"))
+          .runWith(Sink.head)
+          .futureValue
+
+      // most specific
+      attributes.get[Name] should contain(Name("original-name"))
+
+      // least specific
+      attributes.getFirst[Name] should contain(Name("nested-source"))
+    }
+
+    "use the initial attributes for dispatcher" in {
+      val dispatcher =
+        Source.fromGraph(new ThreadNameSnitchingStage("my-dispatcher"))
+          .runWith(Sink.head)
+          .futureValue
+
+      dispatcher should startWith("AttributesSpec-my-dispatcher")
+    }
+
+    "use the least specific dispatcher when specified directly around the graph stage" in {
+      val dispatcher =
+        Source.fromGraph(
+          // directly on stage
+          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher")
+            .addAttributes(ActorAttributes.dispatcher("my-dispatcher")))
+          .runWith(Sink.head)
+          .futureValue
+
+      dispatcher should startWith("AttributesSpec-my-dispatcher")
+    }
+
+    "use the least specific dispatcher when specified further out from the stage" in {
+      val dispatcher =
+        // on the source returned from graph
+        Source.fromGraph(
+          new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
+          .addAttributes(ActorAttributes.dispatcher("my-dispatcher"))
+          .runWith(Sink.head)
+          .futureValue
+
+      dispatcher should startWith("AttributesSpec-my-dispatcher")
     }
 
   }
