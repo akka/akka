@@ -120,7 +120,10 @@ object UnidocRoot extends AutoPlugin {
 
   override lazy val projectSettings =
     CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++
-    settings(Seq(), Seq(AkkaBuild.remoteTests, AkkaBuild.benchJmh, AkkaBuild.protobuf, AkkaBuild.akkaScalaNightly, AkkaBuild.docs))
+      // TODO These should be excluded, but I haven't figured out how to exclude them without having the project
+      //   reference available anymore (since the Project's are in build.sbt now)
+      // AkkaBuild.remoteTests, AkkaBuild.benchJmh, AkkaBuild.protobuf, AkkaBuild.akkaScalaNightly, AkkaBuild.docs))
+    settings(Seq(), Seq())
 }
 
 /**
