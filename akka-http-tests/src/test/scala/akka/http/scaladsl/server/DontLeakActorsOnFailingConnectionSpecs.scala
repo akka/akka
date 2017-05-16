@@ -8,12 +8,12 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.Utils.assertAllStagesStopped
-import akka.testkit.TestKit
+import akka.testkit.{ TestKit, SocketUtil }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
@@ -39,7 +39,7 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
       assertAllStagesStopped {
         val reqsCount = 100
         val clientFlow = Http().superPool[Int]()
-        val (_, _, port) = TestUtils.temporaryServerHostnameAndPort()
+        val (_, port) = SocketUtil.temporaryServerHostnameAndPort()
         val source = Source(1 to reqsCount).map(i ⇒ HttpRequest(uri = Uri(s"http://127.0.0.1:$port/test/$i")) → i)
 
         val countDown = new CountDownLatch(reqsCount)

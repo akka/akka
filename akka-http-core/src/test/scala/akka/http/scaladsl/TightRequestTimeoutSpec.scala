@@ -34,7 +34,7 @@ class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfter
   "Tight request timeout" should {
 
     "not cause double push error caused by the late response attemting to push" in {
-      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val slowHandler = Flow[HttpRequest].map(_ ⇒ HttpResponse()).delay(500.millis.dilated, OverflowStrategy.backpressure)
       val binding = Http().bindAndHandle(slowHandler, hostname, port)
 

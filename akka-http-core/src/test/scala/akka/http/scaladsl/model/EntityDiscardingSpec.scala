@@ -5,7 +5,7 @@
 package akka.http.scaladsl.model
 
 import akka.Done
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit._
@@ -56,7 +56,7 @@ class EntityDiscardingSpec extends AkkaSpec {
     // TODO consider improving this by storing a mutable "already materialized" flag somewhere
     // TODO likely this is going to inter-op with the auto-draining as described in #18716
     "should not allow draining a second time" in {
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
       val bound = Http().bindAndHandleSync(
         req ⇒
           HttpResponse(entity = HttpEntity(

@@ -5,8 +5,8 @@
 package akka.http.scaladsl.marshallers.xml
 
 import java.io.File
+import java.nio.file.Files
 
-import akka.http.scaladsl.TestUtils
 import org.xml.sax.SAXParseException
 import scala.xml.NodeSeq
 import scala.concurrent.{ Future, Await }
@@ -96,7 +96,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
   def withTempFile[T](content: String)(f: File ⇒ T): T = {
     val file = File.createTempFile("xxe", ".txt")
     try {
-      TestUtils.writeAllText(content, file)
+      Files.write(file.toPath, content.getBytes("UTF-8"))
       f(file)
     } finally {
       file.delete()

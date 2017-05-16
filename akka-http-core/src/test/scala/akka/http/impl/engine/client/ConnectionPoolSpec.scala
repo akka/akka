@@ -16,7 +16,7 @@ import akka.http.impl.util.SingletonException
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
@@ -376,7 +376,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
   "The superPool client infrastructure" should {
 
     "route incoming requests to the right cached host connection pool" in new TestSetup(autoAccept = true) {
-      val (serverEndpoint2, serverHostName2, serverPort2) = TestUtils.temporaryServerHostnameAndPort()
+      val (serverHostName2, serverPort2) = SocketUtil.temporaryServerHostnameAndPort()
       Http().bindAndHandleSync(testServerHandler(0), serverHostName2, serverPort2)
 
       val (requestIn, responseOut, responseOutSub, hcp) = superPool[Int]()
@@ -457,7 +457,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
   class TestSetup(
     serverSettings: ServerSettings = ServerSettings(system),
     autoAccept:     Boolean        = false) {
-    val (serverEndpoint, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
+    val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
 
     def asyncTestServerHandler(connNr: Int): HttpRequest ⇒ Future[HttpResponse] = {
       val handler = testServerHandler(connNr)
@@ -481,7 +481,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
           .recover({ case NoErrorComplete ⇒ ByteString.empty }),
         Flow[ByteString].map(SessionBytes(null, _)))
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink.fromSubscriber(incomingConnections)
-      Tcp().bind(serverEndpoint.getHostString, serverEndpoint.getPort, idleTimeout = serverSettings.timeouts.idleTimeout)
+      Tcp().bind(serverHostName, serverPort, idleTimeout = serverSettings.timeouts.idleTimeout)
         .map { c ⇒
           val layer = Http().serverLayer(serverSettings, log = log)
           Http.IncomingConnection(c.localAddress, c.remoteAddress, layer atop rawBytesInjection join c.flow)

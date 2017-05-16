@@ -55,7 +55,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
   "The low-level HTTP infrastructure" should {
 
     "properly bind a server" in {
-      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val binding = Http().bind(hostname, port).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
       val sub = probe.expectSubscription() // if we get it we are bound
@@ -64,7 +64,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "report failure if bind fails" in EventFilter[BindException](occurrences = 2).intercept {
-      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val binding = Http().bind(hostname, port)
       val probe1 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // Bind succeeded, we have a local address
@@ -106,7 +106,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "run with bindAndHandleSync" in {
-      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val binding = Http().bindAndHandleSync(_ ⇒ HttpResponse(), hostname, port)
       val b1 = Await.result(binding, 3.seconds.dilated)
 
@@ -118,7 +118,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "prevent more than the configured number of max-connections with bindAndHandle" in {
-      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val settings = ServerSettings(system).withMaxConnections(1)
 
       val receivedSlow = Promise[Long]()
@@ -182,7 +182,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       }
 
       abstract class RemoteAddressTestScenario {
-        val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
 
         val settings = ServerSettings(system).withRemoteAddressHeader(true)
         def createBinding(): Future[ServerBinding]
@@ -224,7 +224,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       "support server timeouts" should {
         "close connection with idle client after idleTimeout" in {
           val serverTimeout = 300.millis
-          val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
 
           try {
@@ -258,7 +258,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
           val clientTimeout = 345.millis.dilated
           val clientSettings = cs.withIdleTimeout(clientTimeout)
 
-          val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
 
           try {
@@ -291,7 +291,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
           val clientTimeout = 345.millis.dilated
           val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
-          val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
 
           try {
@@ -326,7 +326,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
           val clientTimeout = 345.millis.dilated
           val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
-          val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
 
           try {
@@ -356,7 +356,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       "are triggered in `mapMaterialized`" in Utils.assertAllStagesStopped {
         // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
         pending
-        val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
         val flow = Flow[HttpRequest].map(_ ⇒ HttpResponse()).mapMaterializedValue(_ ⇒ sys.error("BOOM"))
         val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
         val b1 = Await.result(binding, 1.seconds.dilated)
@@ -375,7 +375,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       }(materializer2)
 
       "stop stages on failure" in Utils.assertAllStagesStopped {
-        val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
         val stageCounter = new AtomicLong(0)
         val cancelCounter = new AtomicLong(0)
         val stage: GraphStage[FlowShape[HttpRequest, HttpResponse]] = new GraphStage[FlowShape[HttpRequest, HttpResponse]] {
@@ -517,7 +517,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val serverToClientNetworkBufferSize = 1000
       val responseSize = 200000
 
-      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val request = HttpRequest(uri = s"http://$hostname:$port", headers = headers.Connection("close") :: Nil)
       val response = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString("t" * responseSize)))
 
@@ -574,7 +574,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
   }
 
   class TestSetup {
-    val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+    val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
     def configOverrides = ""
 
     // automatically bind a server

@@ -1,13 +1,13 @@
 package akka.http.impl.engine.client
 
 import javax.net.ssl.SSLContext
-import akka.http.scaladsl.{ ConnectionContext, Http, TestUtils }
+import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.{ TestSubscriber, TestPublisher, Utils }
 import akka.http.scaladsl.model.headers
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, SocketUtil }
 
 class ClientCancellationSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
@@ -17,13 +17,13 @@ class ClientCancellationSpec extends AkkaSpec("""
   val noncheckedMaterializer = ActorMaterializer()
 
   "Http client connections" must {
-    val address = TestUtils.temporaryServerAddress()
+    val address = SocketUtil.temporaryServerAddress()
     Http().bindAndHandleSync(
       { req ⇒ HttpResponse(headers = headers.Connection("close") :: Nil) },
       address.getHostName,
       address.getPort)(noncheckedMaterializer)
 
-    val addressTls = TestUtils.temporaryServerAddress()
+    val addressTls = SocketUtil.temporaryServerAddress()
     Http().bindAndHandleSync(
       { req ⇒ HttpResponse() }, // TLS client does full-close, no need for the connection:close header
       addressTls.getHostName,

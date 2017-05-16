@@ -7,7 +7,7 @@ package docs.http.scaladsl.server.directives
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.Route
 import docs.CompileOnlySpec
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpEntity._
@@ -16,7 +16,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, SocketUtil }
 
 private[this] object TimeoutDirectivesInfiniteTimeoutTestConfig {
   val testConf: Config = ConfigFactory.parseString("""
@@ -37,7 +37,7 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
   def slowFuture(): Future[String] = Promise[String].future // TODO: move to Future.never in Scala 2.12
 
   def runRoute(route: Route, routePath: String): HttpResponse = {
-    val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+    val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
     val binding = Http().bindAndHandle(route, hostname, port)
 
     val response = Http().singleRequest(HttpRequest(uri = s"http://$hostname:$port/$routePath")).futureValue
@@ -142,7 +142,7 @@ class TimeoutDirectivesFiniteTimeoutExamplesSpec extends AkkaSpec(TimeoutDirecti
   def slowFuture(): Future[String] = Promise[String].future // TODO: move to Future.never in Scala 2.12
 
   def runRoute(route: Route, routePath: String): HttpResponse = {
-    val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+    val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
     val binding = Http().bindAndHandle(route, hostname, port)
 
     val response = Http().singleRequest(HttpRequest(uri = s"http://$hostname:$port/$routePath")).futureValue
