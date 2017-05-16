@@ -21,7 +21,7 @@ paradoxProperties ++= Map(
   "github.base_url" -> GitHub.url(version.value),
   "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
   "extref.github.base_url" -> ("http://github.com/akka/akka/tree/" + (if (isSnapshot.value) "master" else "v" + version.value) + "/%s"),
-  "extref.samples.base_url" -> "http://github.com/akka/akka-samples/tree/master/%s",
+  "extref.samples.base_url" -> "http://github.com/akka/akka-samples/tree/2.5/%s",
   "extref.ecs.base_url" -> "https://example.lightbend.com/v1/download/%s",
   "scala.version" -> scalaVersion.value,
   "scala.binary_version" -> scalaBinaryVersion.value,
