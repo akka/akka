@@ -8,6 +8,7 @@ import language.implicitConversions
 import java.util
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.scaladsl.model.MediaType.WithFixedCharset
 
 sealed abstract class MediaRange extends jm.MediaRange with Renderable with WithQValue[MediaRange] {
   def value: String
@@ -48,6 +49,12 @@ sealed abstract class MediaRange extends jm.MediaRange with Renderable with With
 }
 
 object MediaRange {
+
+  private[http] def extractCharset(mediaType: MediaType): Option[HttpCharset] = mediaType match {
+    case mt: WithFixedCharset ⇒ Some(mt.charset)
+    case _: MediaType         ⇒ None
+  }
+
   private[http] def splitOffQValue(params: Map[String, String], defaultQ: Float = 1.0f): (Map[String, String], Float) =
     params.get("q") match {
       case Some(x) ⇒ (params - "q") → (try x.toFloat catch { case _: NumberFormatException ⇒ 1.0f })
@@ -95,7 +102,10 @@ object MediaRange {
     def matches(mediaType: MediaType) =
       this.mediaType.mainType == mediaType.mainType &&
         this.mediaType.subType == mediaType.subType &&
-        this.mediaType.params.forall { case (key, value) ⇒ mediaType.params.get(key).contains(value) }
+        this.mediaType.params
+        .filterNot { case (key, value) ⇒ key == "charset" }
+        .forall { case (key, value) ⇒ mediaType.params.get(key).contains(value) } &&
+        extractCharset(this.mediaType) == extractCharset(mediaType)
     def withParams(params: Map[String, String]) = copy(mediaType = mediaType.withParams(params))
     def withQValue(qValue: Float) = copy(qValue = qValue)
     def render[R <: Rendering](r: R): r.type = if (qValue < 1.0f) r ~~ mediaType ~~ ";q=" ~~ qValue else r ~~ mediaType
