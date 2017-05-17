@@ -30,153 +30,8 @@ Be sure to add the module `akka-testkit` to your dependencies.
 
 @@@
 
-## Synchronous Unit Testing with `TestActorRef`
-
-Testing the business logic inside `Actor` classes can be divided into
-two parts: first, each atomic operation must work in isolation, then sequences
-of incoming events must be processed correctly, even in the presence of some
-possible variability in the ordering of events. The former is the primary use
-case for single-threaded unit testing, while the latter can only be verified in
-integration tests.
-
-Normally, the `ActorRef` shields the underlying `Actor` instance
-from the outside, the only communications channel is the actor's mailbox. This
-restriction is an impediment to unit testing, which led to the inception of the
-`TestActorRef`. This special type of reference is designed specifically
-for test purposes and allows access to the actor in two ways: either by
-obtaining a reference to the underlying actor instance, or by invoking or
-querying the actor's behaviour (`receive`). Each one warrants its own
-section below.
-
-@@@ note
-
-It is highly recommended to stick to traditional behavioural testing (using messaging
-to ask the Actor to reply with the state you want to run assertions against),
-instead of using `TestActorRef` whenever possible.
-
-@@@
-
-@@@ warning
-
-Due to the synchronous nature of `TestActorRef` it will **not** work with some support
-traits that Akka provides as they require asynchronous behaviours to function properly.
-Examples of traits that do not mix well with test actor refs are @ref:[PersistentActor](persistence.md#event-sourcing)
-and @ref:[AtLeastOnceDelivery](persistence.md#at-least-once-delivery) provided by @ref:[Akka Persistence](persistence.md).
-
-@@@
-
-### Obtaining a Reference to an `Actor`
-
-Having access to the actual `Actor` object allows application of all
-traditional unit testing techniques on the contained methods. Obtaining a
-reference is done like this:
-
-Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-actor-ref }
-
-Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-actor-ref }
-
-Since `TestActorRef` is generic in the actor type it returns the
-underlying actor with its proper static type. From this point on you may bring
-any unit testing tool to bear on your actor as usual.
-
-@@@ div { .group-scala }
-
-
-<a id="testfsmref"></a>
-### Testing Finite State Machines
-
-If your actor under test is a `FSM`, you may use the special
-`TestFSMRef` which offers all features of a normal `TestActorRef`
-and in addition allows access to the internal state:
-
-@@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-fsm-ref }
-
-Due to a limitation in Scala’s type inference, there is only the factory method
-shown above, so you will probably write code like `TestFSMRef(new MyFSM)`
-instead of the hypothetical `ActorRef`-inspired `TestFSMRef[MyFSM]`.
-All methods shown above directly access the FSM state without any
-synchronization; this is perfectly alright if the `CallingThreadDispatcher`
-is used and no other threads are involved, but it may lead to surprises if you
-were to actually exercise timer events, because those are executed on the
-`Scheduler` thread.
-
-@@@
-
-### Testing the Actor's Behavior
-
-When the dispatcher invokes the processing behavior of an actor on a message,
-it actually calls `apply` on the current behavior registered for the
-actor. This starts out with the return value of the declared `receive`
-method, but it may also be changed using `become` and `unbecome` in
-response to external messages. All of this contributes to the overall actor
-behavior and it does not lend itself to easy testing on the `Actor`
-itself. Therefore the `TestActorRef` offers a different mode of
-operation to complement the `Actor` testing: it supports all operations
-also valid on normal `ActorRef`. Messages sent to the actor are
-processed synchronously on the current thread and answers may be sent back as
-usual. This trick is made possible by the `CallingThreadDispatcher`
-described below (see [CallingThreadDispatcher](#callingthreaddispatcher)); this dispatcher is set
-implicitly for any actor instantiated into a `TestActorRef`.
-
-Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-behavior }
-
-Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-behavior }
-
-As the `TestActorRef` is a subclass of `LocalActorRef` with a few
-special extras, also aspects like supervision and restarting work properly, but
-beware that execution is only strictly synchronous as long as all actors
-involved use the `CallingThreadDispatcher`. As soon as you add elements
-which include more sophisticated scheduling you leave the realm of unit testing
-as you then need to think about asynchronicity again (in most cases the problem
-will be to wait until the desired effect had a chance to happen).
-
-One more special aspect which is overridden for single-threaded tests is the
-`receiveTimeout`, as including that would entail asynchronous queuing of
-`ReceiveTimeout` messages, violating the synchronous contract.
-
-@@@ note
-
-To summarize: `TestActorRef` overwrites two fields: it sets the
-dispatcher to `CallingThreadDispatcher.global` and it sets the
-`receiveTimeout` to None.
-
-@@@
-
-### The Way In-Between: Expecting Exceptions
-
-If you want to test the actor behavior, including hotswapping, but without
-involving a dispatcher and without having the `TestActorRef` swallow
-any thrown exceptions, then there is another mode available for you: just use
-the `receive` method on `TestActorRef`, which will be forwarded to the
-underlying actor:
-
-Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-expecting-exceptions }
-
-Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-expecting-exceptions }
-
-### Use Cases
-
-You may of course mix and match both modi operandi of `TestActorRef` as
-suits your test needs:
-
->
- * one common use case is setting up the actor into a specific internal state
-before sending the test message
- * another is to verify correct internal state transitions after having sent
-the test message
-
-Feel free to experiment with the possibilities, and if you find useful
-patterns, don't hesitate to let the Akka forums know about them! Who knows,
-common operations might even be worked into nice DSLs.
-
 <a id="async-integration-testing"></a>
-## Asynchronous Integration Testing with `TestKit`
+## Asynchronous Testing: `TestKit`
 
 When you are reasonably sure that your actor's business logic is correct, the
 next step is verifying that it works correctly within its intended
@@ -961,3 +816,149 @@ Ray Roestenburg's example code from [his blog](http://roestenburg.agilesquad.com
 @@snip [TestKitUsageSpec.scala]($code$/scala/docs/testkit/TestKitUsageSpec.scala) { #testkit-usage }
 
 @@@
+
+
+## Synchronous Testing: `TestActorRef`
+
+Testing the business logic inside `Actor` classes can be divided into
+two parts: first, each atomic operation must work in isolation, then sequences
+of incoming events must be processed correctly, even in the presence of some
+possible variability in the ordering of events. The former is the primary use
+case for single-threaded unit testing, while the latter can only be verified in
+integration tests.
+
+Normally, the `ActorRef` shields the underlying `Actor` instance
+from the outside, the only communications channel is the actor's mailbox. This
+restriction is an impediment to unit testing, which led to the inception of the
+`TestActorRef`. This special type of reference is designed specifically
+for test purposes and allows access to the actor in two ways: either by
+obtaining a reference to the underlying actor instance, or by invoking or
+querying the actor's behaviour (`receive`). Each one warrants its own
+section below.
+
+@@@ note
+
+It is highly recommended to stick to traditional behavioural testing (using messaging
+to ask the Actor to reply with the state you want to run assertions against),
+instead of using `TestActorRef` whenever possible.
+
+@@@
+
+@@@ warning
+
+Due to the synchronous nature of `TestActorRef` it will **not** work with some support
+traits that Akka provides as they require asynchronous behaviours to function properly.
+Examples of traits that do not mix well with test actor refs are @ref:[PersistentActor](persistence.md#event-sourcing)
+and @ref:[AtLeastOnceDelivery](persistence.md#at-least-once-delivery) provided by @ref:[Akka Persistence](persistence.md).
+
+@@@
+
+### Obtaining a Reference to an `Actor`
+
+Having access to the actual `Actor` object allows application of all
+traditional unit testing techniques on the contained methods. Obtaining a
+reference is done like this:
+
+Scala
+:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-actor-ref }
+
+Java
+:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-actor-ref }
+
+Since `TestActorRef` is generic in the actor type it returns the
+underlying actor with its proper static type. From this point on you may bring
+any unit testing tool to bear on your actor as usual.
+
+@@@ div { .group-scala }
+
+
+<a id="testfsmref"></a>
+### Testing Finite State Machines
+
+If your actor under test is a `FSM`, you may use the special
+`TestFSMRef` which offers all features of a normal `TestActorRef`
+and in addition allows access to the internal state:
+
+@@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-fsm-ref }
+
+Due to a limitation in Scala’s type inference, there is only the factory method
+shown above, so you will probably write code like `TestFSMRef(new MyFSM)`
+instead of the hypothetical `ActorRef`-inspired `TestFSMRef[MyFSM]`.
+All methods shown above directly access the FSM state without any
+synchronization; this is perfectly alright if the `CallingThreadDispatcher`
+is used and no other threads are involved, but it may lead to surprises if you
+were to actually exercise timer events, because those are executed on the
+`Scheduler` thread.
+
+@@@
+
+### Testing the Actor's Behavior
+
+When the dispatcher invokes the processing behavior of an actor on a message,
+it actually calls `apply` on the current behavior registered for the
+actor. This starts out with the return value of the declared `receive`
+method, but it may also be changed using `become` and `unbecome` in
+response to external messages. All of this contributes to the overall actor
+behavior and it does not lend itself to easy testing on the `Actor`
+itself. Therefore the `TestActorRef` offers a different mode of
+operation to complement the `Actor` testing: it supports all operations
+also valid on normal `ActorRef`. Messages sent to the actor are
+processed synchronously on the current thread and answers may be sent back as
+usual. This trick is made possible by the `CallingThreadDispatcher`
+described below (see [CallingThreadDispatcher](#callingthreaddispatcher)); this dispatcher is set
+implicitly for any actor instantiated into a `TestActorRef`.
+
+Scala
+:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-behavior }
+
+Java
+:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-behavior }
+
+As the `TestActorRef` is a subclass of `LocalActorRef` with a few
+special extras, also aspects like supervision and restarting work properly, but
+beware that execution is only strictly synchronous as long as all actors
+involved use the `CallingThreadDispatcher`. As soon as you add elements
+which include more sophisticated scheduling you leave the realm of unit testing
+as you then need to think about asynchronicity again (in most cases the problem
+will be to wait until the desired effect had a chance to happen).
+
+One more special aspect which is overridden for single-threaded tests is the
+`receiveTimeout`, as including that would entail asynchronous queuing of
+`ReceiveTimeout` messages, violating the synchronous contract.
+
+@@@ note
+
+To summarize: `TestActorRef` overwrites two fields: it sets the
+dispatcher to `CallingThreadDispatcher.global` and it sets the
+`receiveTimeout` to None.
+
+@@@
+
+### The Way In-Between: Expecting Exceptions
+
+If you want to test the actor behavior, including hotswapping, but without
+involving a dispatcher and without having the `TestActorRef` swallow
+any thrown exceptions, then there is another mode available for you: just use
+the `receive` method on `TestActorRef`, which will be forwarded to the
+underlying actor:
+
+Scala
+:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-expecting-exceptions }
+
+Java
+:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-expecting-exceptions }
+
+### Use Cases
+
+You may of course mix and match both modi operandi of `TestActorRef` as
+suits your test needs:
+
+>
+ * one common use case is setting up the actor into a specific internal state
+before sending the test message
+ * another is to verify correct internal state transitions after having sent
+the test message
+
+Feel free to experiment with the possibilities, and if you find useful
+patterns, don't hesitate to let the Akka forums know about them! Who knows,
+common operations might even be worked into nice DSLs.
