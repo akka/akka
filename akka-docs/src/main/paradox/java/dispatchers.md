@@ -99,7 +99,7 @@ an `akka.dispatcher.ExecutorServiceConfigurator`
    
  * CallingThreadDispatcher
     * This dispatcher runs invocations on the current thread only. This dispatcher does not create any new threads,
-but it can be used from different threads concurrently for the same actor. See @ref:[Java-CallingThreadDispatcher](testing.md#java-callingthreaddispatcher)
+but it can be used from different threads concurrently for the same actor. See @ref:[CallingThreadDispatcher](testing.md#callingthreaddispatcher)
 for details and restrictions.
     * Sharability: Unlimited
     * Mailboxes: Any, creates one per Actor per Thread (on demand)
