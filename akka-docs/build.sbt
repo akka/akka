@@ -32,7 +32,8 @@ paradoxProperties ++= Map(
   "google.analytics.account" -> "UA-21117439-1",
   "google.analytics.domain.name" -> "akka.io",
   "snip.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
-  "snip.akka.base_dir" -> ((baseDirectory in Test).value / "..").getAbsolutePath
+  "snip.akka.base_dir" -> ((baseDirectory in Test).value / "..").getAbsolutePath,
+  "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath
 )
 paradoxGroups := Map("Languages" -> Seq("Scala", "Java"))
 

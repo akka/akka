@@ -78,6 +78,12 @@ for cases when the actor constructor takes value classes as arguments.
 
 @@@
 
+@@@ note { title=DIY }
+
+@@fiddle [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75 cssStyle=width:100%; }
+
+@@@
+
 #### Dangerous Variants
 
 @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #creating-props-deprecated }
@@ -245,7 +251,7 @@ In addition, it offers:
 
  * `self` reference to the `ActorRef` of the actor
  * `sender` reference sender Actor of the last received message, typically used as described in [Actor.Reply](#actor-reply)
- * 
+ *
    `supervisorStrategy` user overridable definition the strategy to use for supervising child actors
    This strategy is typically declared inside the actor in order to have access
 to the actor’s internal state within the decider function: since failure is
@@ -255,7 +261,7 @@ within the actor are available, as is the `sender` reference (which will
 be the immediate child reporting the failure; if the original failure
 occurred within a distant descendant it is still reported one level up at a
 time).
- * 
+ *
    `context` exposes contextual information for the actor and the current message, such as:
     * factory methods to create child actors (`actorOf`)
     * system that the actor belongs to
@@ -375,7 +381,7 @@ handling strategy. Actors may be restarted in case an exception is thrown while
 processing a message (see @ref:[supervision](general/supervision.md)). This restart involves the hooks
 mentioned above:
 
- 1. 
+ 1.
     The old actor is informed by calling `preRestart` with the exception
 which caused the restart and the message which triggered that exception; the
 latter may be `None` if the restart was not caused by processing a
