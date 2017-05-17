@@ -5,21 +5,29 @@ package docs.actor
 
 import jdocs.actor.ImmutableMessage
 
+//#fiddle_code
 import language.postfixOps
+//#fiddle_code
 
+//#fiddle_code
 //#imports1
 import akka.actor.Actor
 import akka.actor.Props
+//#fiddle_code
 import akka.event.Logging
 
 //#imports1
 
 import scala.concurrent.Future
+//#fiddle_code
 import akka.actor.{ ActorRef, ActorSystem, PoisonPill, Terminated, ActorLogging }
+//#fiddle_code
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import akka.testkit._
 import akka.util._
+//#fiddle_code
 import scala.concurrent.duration._
+//#fiddle_code
 import scala.concurrent.Await
 import akka.Done
 import akka.actor.CoordinatedShutdown
@@ -275,6 +283,38 @@ final case class Give(thing: Any)
 
 //#receive-orElse
 
+//#fiddle_code
+
+case object Ping
+case object Pong
+
+class Pinger extends Actor {
+  var countDown = 100
+
+  def receive = {
+    case Pong =>
+      println(s"${self.path} received pong, count down $countDown")
+
+      if (countDown > 0) {
+        countDown -= 1
+        sender() ! Ping
+      } else {
+        sender() ! PoisonPill
+        self ! PoisonPill
+      }
+  }
+}
+
+class Ponger(pinger: ActorRef) extends Actor {
+  def receive = {
+    case Ping =>
+      println(s"${self.path} received ping")
+      pinger ! Pong
+  }
+}
+
+//#fiddle_code
+
 class ActorDocSpec extends AkkaSpec("""
   akka.loglevel = INFO
   akka.loggers = []
@@ -320,6 +360,31 @@ class ActorDocSpec extends AkkaSpec("""
     system.eventStream.publish(TestEvent.UnMute(filter))
 
     system.stop(myActor)
+  }
+
+  "run basic Ping Pong" in {
+    //#fiddle_code
+    val system = ActorSystem("pingpong")
+
+    val pinger = system.actorOf(Props[Pinger], "pinger")
+
+    val ponger = system.actorOf(Props(classOf[Ponger], pinger), "ponger")
+
+    //#fiddle_code
+    val testProbe = new TestProbe(system)
+    testProbe watch pinger
+    testProbe watch ponger
+    //#fiddle_code
+    import system.dispatcher
+    system.scheduler.scheduleOnce(500 millis) {
+      ponger ! Ping
+    }
+
+// $FiddleDependency org.akka-js %%% akkajsactor % 1.2.5.1
+    //#fiddle_code
+    testProbe.expectTerminated(pinger)
+    testProbe.expectTerminated(ponger)
+    system.terminate()
   }
 
   "creating a Props config" in {

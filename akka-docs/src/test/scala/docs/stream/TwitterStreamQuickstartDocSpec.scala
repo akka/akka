@@ -5,11 +5,12 @@ package docs.stream
 
 //#imports
 
+//#fiddle_code
 import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.{ ClosedShape, ActorMaterializer, OverflowStrategy }
 import akka.stream.scaladsl._
-
+//#fiddle_code
 import scala.concurrent.Await
 import scala.concurrent.Future
 
@@ -18,6 +19,8 @@ import scala.concurrent.Future
 import akka.testkit.AkkaSpec
 
 object TwitterStreamQuickstartDocSpec {
+  //#fiddle_code
+
   //#model
   final case class Author(handle: String)
 
@@ -31,12 +34,15 @@ object TwitterStreamQuickstartDocSpec {
   val akkaTag = Hashtag("#akka")
   //#model
 
+  //#fiddle_code
+
   abstract class TweetSourceDecl {
     //#tweet-source
     val tweets: Source[Tweet, NotUsed]
     //#tweet-source
   }
 
+  //#fiddle_code
   val tweets: Source[Tweet, NotUsed] = Source(
     Tweet(Author("rolandkuhn"), System.currentTimeMillis, "#akka rocks!") ::
       Tweet(Author("patriknw"), System.currentTimeMillis, "#akka !") ::
@@ -49,6 +55,8 @@ object TwitterStreamQuickstartDocSpec {
       Tweet(Author("appleman"), System.currentTimeMillis, "#apples rock!") ::
       Tweet(Author("drama"), System.currentTimeMillis, "we compared #apples to #oranges!") ::
       Nil)
+
+  //#fiddle_code
 }
 
 class TwitterStreamQuickstartDocSpec extends AkkaSpec {
@@ -60,12 +68,15 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
   def println(s: Any): Unit = ()
 
   trait Example1 {
+    //#fiddle_code
     //#first-sample
     //#materializer-setup
     implicit val system = ActorSystem("reactive-tweets")
     implicit val materializer = ActorMaterializer()
     //#materializer-setup
     //#first-sample
+
+    //#fiddle_code
   }
 
   implicit val materializer = ActorMaterializer()
@@ -131,6 +142,20 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     g.run()
     //#graph-dsl-broadcast
     // format: ON
+  }
+
+  "simple fiddle showcase" in {
+
+    //#fiddle_code
+    tweets
+      .filterNot(_.hashtags.contains(akkaTag))
+      .mapConcat(_.hashtags)
+      .map(_.name.toUpperCase)
+      .runWith(Sink.foreach(println))
+
+      // $FiddleDependency org.akka-js %%% akkajsactorstream % 1.2.5.1
+      //#fiddle_code
+      .value
   }
 
   "slowProcessing" in {

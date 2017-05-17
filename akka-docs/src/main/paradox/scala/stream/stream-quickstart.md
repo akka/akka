@@ -130,7 +130,7 @@ certain speed: we use the `throttle` combinator to slow down the stream to 1
 element per second (the second `1` in the argument list is the maximum size
 of a burst that we want to allow—passing `1` means that the first element
 gets through immediately and the second then has to wait for one second and so
-on). 
+on).
 
 If you run this program you will see one line printed per second. One aspect
 that is not immediately visible deserves mention, though: if you try and set
@@ -238,6 +238,12 @@ our implementation of flatMap (due to the liveness issues).
 
 Please note that the `mapConcat` requires the supplied function to return an iterable (`f: Out => immutable.Iterable[T]`),
 whereas `flatMap` would have to operate on streams all the way through.
+
+@@@
+
+@@@ note { title=DIY }
+
+@@fiddle [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75 cssStyle=width:100%; }
 
 @@@
 
