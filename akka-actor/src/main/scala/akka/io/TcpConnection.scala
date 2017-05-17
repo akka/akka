@@ -4,21 +4,23 @@
 
 package akka.io
 
-import java.net.{ SocketException, InetSocketAddress }
+import java.net.{ InetSocketAddress, SocketException }
 import java.nio.channels.SelectionKey._
 import java.io.{ FileInputStream, IOException }
 import java.nio.channels.{ FileChannel, SocketChannel }
 import java.nio.ByteBuffer
+
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.util.control.NonFatal
+import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.concurrent.duration._
 import akka.actor._
 import akka.util.ByteString
 import akka.io.Inet.SocketOption
 import akka.io.Tcp._
 import akka.io.SelectionHandler._
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import java.nio.file.Paths
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
@@ -149,11 +151,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     case write: WriteCommand ⇒
       if (writingSuspended) {
         if (TraceLogging) log.debug("Dropping write because writing is suspended")
-        sender() ! write.failureMessage
+        sender() ! write.failureMessage.withCause(DroppingWriteBecauseWritingIsSuspendedException)
 
       } else if (writePending) {
         if (TraceLogging) log.debug("Dropping write because queue is full")
-        sender() ! write.failureMessage
+        sender() ! write.failureMessage.withCause(DroppingWriteBecauseQueueIsFullException)
         if (info.useResumeWriting) writingSuspended = true
 
       } else {
@@ -504,4 +506,10 @@ private[io] object TcpConnection {
   }
 
   val doNothing: () ⇒ Unit = () ⇒ ()
+
+  val DroppingWriteBecauseWritingIsSuspendedException =
+    new IOException("Dropping write because writing is suspended") with NoStackTrace
+
+  val DroppingWriteBecauseQueueIsFullException =
+    new IOException("Dropping write because queue is full") with NoStackTrace
 }
