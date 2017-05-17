@@ -94,7 +94,7 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
           val bestMarshallingPerElement = availableMarshallingsPerElement mapConcat { marshallings ⇒
             // pick the Marshalling that matches our EntityStreamingSupport
             (s.contentType match {
-              case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset) ⇒
+              case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset) ⇒
                 marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
 
               case best @ ContentType.WithCharset(bestMT, bestCS) ⇒
@@ -137,7 +137,7 @@ trait LowPriorityToResponseMarshallerImplicits {
           val bestMarshallingPerElement = availableMarshallingsPerElement mapConcat { marshallings ⇒
             // pick the Marshalling that matches our EntityStreamingSupport
             val selectedMarshallings = (s.contentType match {
-              case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset) ⇒
+              case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset) ⇒
                 marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
 
               case best @ ContentType.WithCharset(bestMT, bestCS) ⇒

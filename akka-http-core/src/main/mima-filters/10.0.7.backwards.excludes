@@ -1,0 +1,4 @@
+# Mima filters needed to check newer versions against 10.0.7
+
+# Added a new method to this sealed trait
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.MediaType#WithOpenCharset.toContentTypeWithMissingCharset")
