@@ -30,12 +30,15 @@ addSbtPlugin("pl.project13.sbt" % "sbt-jol" % "0.1.1")
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
 
 // for advanced PR validation features
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.0")
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
 
 libraryDependencies += "org.kohsuke" % "github-api" % "1.68"
 
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 
-addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.8")
+addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.10")
 
-addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.2.9")
+resolvers += Resolver.url("2m-sbt-plugin-releases", url("https://dl.bintray.com/2m/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
+resolvers += Resolver.bintrayRepo("2m", "sbt-plugin-releases")
+
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "f811271f")

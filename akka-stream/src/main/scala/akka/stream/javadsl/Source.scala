@@ -6,12 +6,13 @@ package akka.stream.javadsl
 import java.util
 import java.util.Optional
 
+import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
-import akka.stream.impl.{ ConstantFun, LinearTraversalBuilder, SourceQueueAdapter, StreamLayout }
+import akka.stream.impl.{ LinearTraversalBuilder, SourceQueueAdapter, StreamLayout }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance

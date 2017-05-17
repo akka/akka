@@ -25,7 +25,6 @@ import akka.util.ByteString
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ Future, Promise }
-import scala.util.Try
 
 /**
  * INTERNAL API
@@ -78,7 +77,11 @@ import scala.util.Try
               unbindPromise.future
             }))
           case f: CommandFailed ⇒
-            val ex = BindFailedException
+            val ex = new BindFailedException {
+              // cannot modify the actual exception class for compatibility reasons
+              override def getMessage: String = s"Bind failed${f.causedByString}"
+            }
+            f.cause.foreach(ex.initCause)
             bindingPromise.failure(ex)
             unbindPromise.success(() ⇒ Future.successful(()))
             failStage(ex)
@@ -219,8 +222,8 @@ private[stream] object ConnectionSourceStage {
       val sender = evt._1
       val msg = evt._2
       msg match {
-        case Terminated(_)      ⇒ failStage(new StreamTcpException("The IO manager actor (TCP) has terminated. Stopping now."))
-        case CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed"))
+        case Terminated(_)          ⇒ failStage(new StreamTcpException("The IO manager actor (TCP) has terminated. Stopping now."))
+        case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}"))
         case c: Connected ⇒
           role.asInstanceOf[Outbound].localAddressPromise.success(c.localAddress)
           connection = sender
@@ -238,13 +241,13 @@ private[stream] object ConnectionSourceStage {
       val sender = evt._1
       val msg = evt._2
       msg match {
-        case Terminated(_)      ⇒ failStage(new StreamTcpException("The connection actor has terminated. Stopping now."))
-        case CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed"))
-        case ErrorClosed(cause) ⇒ failStage(new StreamTcpException(s"The connection closed with error: $cause"))
-        case Aborted            ⇒ failStage(new StreamTcpException("The connection has been aborted"))
-        case Closed             ⇒ completeStage()
-        case ConfirmedClosed    ⇒ completeStage()
-        case PeerClosed         ⇒ complete(bytesOut)
+        case Terminated(_)          ⇒ failStage(new StreamTcpException("The connection actor has terminated. Stopping now."))
+        case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}"))
+        case ErrorClosed(cause)     ⇒ failStage(new StreamTcpException(s"The connection closed with error: $cause"))
+        case Aborted                ⇒ failStage(new StreamTcpException("The connection has been aborted"))
+        case Closed                 ⇒ completeStage()
+        case ConfirmedClosed        ⇒ completeStage()
+        case PeerClosed             ⇒ complete(bytesOut)
 
         case Received(data) ⇒
           // Keep on reading even when closed. There is no "close-read-side" in TCP

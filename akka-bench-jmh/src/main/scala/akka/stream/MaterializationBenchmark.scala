@@ -8,11 +8,11 @@ import java.util.concurrent.TimeUnit
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
+import akka.util.ConstantFun
 import org.openjdk.jmh.annotations._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.Future
-import akka.stream.impl.ConstantFun
 import akka.Done
 
 object MaterializationBenchmark {

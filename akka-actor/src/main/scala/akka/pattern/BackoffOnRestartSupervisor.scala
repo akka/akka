@@ -15,13 +15,14 @@ import akka.actor.SupervisorStrategy._
  * with ``akka.pattern.Backoff.onFailure``.
  */
 private class BackoffOnRestartSupervisor(
-  val childProps: Props,
-  val childName:  String,
-  minBackoff:     FiniteDuration,
-  maxBackoff:     FiniteDuration,
-  val reset:      BackoffReset,
-  randomFactor:   Double,
-  strategy:       OneForOneStrategy)
+  val childProps:        Props,
+  val childName:         String,
+  minBackoff:            FiniteDuration,
+  maxBackoff:            FiniteDuration,
+  val reset:             BackoffReset,
+  randomFactor:          Double,
+  strategy:              OneForOneStrategy,
+  val replyWhileStopped: Option[Any])
   extends Actor with HandleBackoff
   with ActorLogging {
 

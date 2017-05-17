@@ -10,7 +10,7 @@ import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.stream.*;
-import akka.stream.impl.ConstantFun;
+import akka.util.ConstantFun;
 import akka.stream.javadsl.GraphDSL.Builder;
 import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
