@@ -309,7 +309,7 @@ It has a single dependency: the slf4j-api jar. In your runtime, you also need a 
 
 >
 ```scala
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.3"
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 ```
 
 You need to enable the Slf4jLogger in the `loggers` element in
