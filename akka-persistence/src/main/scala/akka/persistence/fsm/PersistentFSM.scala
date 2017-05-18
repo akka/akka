@@ -9,11 +9,44 @@ import akka.annotation.InternalApi
 import akka.persistence.fsm.PersistentFSM.FSMState
 import akka.persistence.serialization.Message
 import akka.persistence.{ PersistentActor, RecoveryCompleted, SnapshotOffer }
+import com.typesafe.config.Config
 
 import scala.annotation.varargs
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+
+/**
+ * SnapshotAfter Extension Id and factory for creating SnapshotAfter extension
+ */
+private[akka] object SnapshotAfter extends ExtensionId[SnapshotAfter] with ExtensionIdProvider {
+  override def get(system: ActorSystem): SnapshotAfter = super.get(system)
+
+  override def lookup = SnapshotAfter
+
+  override def createExtension(system: ExtendedActorSystem): SnapshotAfter = new SnapshotAfter(system.settings.config)
+}
+
+/**
+ * SnapshotAfter enables PersistentFSM to take periodical snapshot.
+ * See `akka.persistence.fsm.snapshot-after` for configuration options.
+ */
+private[akka] class SnapshotAfter(config: Config) extends Extension {
+  val key = "akka.persistence.fsm.snapshot-after"
+  val snapshotAfterValue = config.getString(key).toLowerCase match {
+    case "off" ⇒ None
+    case _     ⇒ Some(config.getInt(key))
+  }
+
+  /**
+   * Function that takes lastSequenceNr as the param, and returns whether the passed
+   * sequence number should trigger auto snapshot or not
+   */
+  val isSnapshotAfterSeqNo: Long ⇒ Boolean = snapshotAfterValue match {
+    case Some(snapShotAfterValue) ⇒ seqNo: Long ⇒ seqNo % snapShotAfterValue == 0
+    case None ⇒ seqNo: Long ⇒ false //always false, if snapshotAfter is not specified in config
+  }
+}
 
 /**
  * A FSM implementation with persistent state.
@@ -52,19 +85,6 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
    * Timeout set for the current state. Used when saving a snapshot
    */
   private var currentStateTimeout: Option[FiniteDuration] = None
-
-  /**
-   * "akka.persistence.fsm.snapshot-after"
-   */
-  private val snapshotAfter: Option[Int] = {
-    val config = context.system.settings.config
-    val key = "akka.persistence.fsm.snapshot-after"
-
-    config.getString(key).toLowerCase match {
-      case "off" ⇒ None
-      case _     ⇒ Some(config.getInt(key))
-    }
-  }
 
   /**
    * Override this handler to define the action on Domain Event
@@ -124,11 +144,9 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
       //Persist the events and apply the new state after all event handlers were executed
       var nextData: D = stateData
       var handlersExecutedCounter = 0
+
+      val snapshotAfterExtension = SnapshotAfter.get(context.system)
       var doSnapshot: Boolean = false
-      val moduloCondition: Long ⇒ Boolean = snapshotAfter match {
-        case Some(snapShotAfterValue) ⇒ lastSequenceNr: Long ⇒ lastSequenceNr % snapShotAfterValue == 0
-        case None ⇒ lastSequenceNr: Long ⇒ false //if snapshotAfter is not specified, no snapshot within applyState()
-      }
 
       def applyStateOnLastHandler() = {
         handlersExecutedCounter += 1
@@ -146,10 +164,10 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
       persistAll[Any](eventsToPersist) {
         case domainEventTag(event) ⇒
           nextData = applyEvent(event, nextData)
-          doSnapshot = doSnapshot || moduloCondition(lastSequenceNr)
+          doSnapshot = doSnapshot || snapshotAfterExtension.isSnapshotAfterSeqNo(lastSequenceNr)
           applyStateOnLastHandler()
         case StateChangeEvent(stateIdentifier, timeout) ⇒
-          doSnapshot = doSnapshot || moduloCondition(lastSequenceNr)
+          doSnapshot = doSnapshot || snapshotAfterExtension.isSnapshotAfterSeqNo(lastSequenceNr)
           applyStateOnLastHandler()
       }
     }
