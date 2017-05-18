@@ -41,10 +41,12 @@ be able to operate at full throughput because they will wait on a previous or su
 pancake example frying the second half of the pancake is usually faster than frying the first half, `fryingPan2` will
 not be able to operate at full capacity <a id="^1" href="#1">[1]</a>.
 
-note::
-: Asynchronous stream processing stages have internal buffers to make communication between them more efficient.
+@@@ note
+
+Asynchronous stream processing stages have internal buffers to make communication between them more efficient.
 For more details about the behavior of these and how to add additional buffers refer to @ref:[Buffers and working with rate](stream-rate.md).
 
+@@@
 
 ## Parallel processing
 

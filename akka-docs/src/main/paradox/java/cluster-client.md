@@ -42,23 +42,23 @@ The `ClusterClientReceptionist` sends out notifications in relation to having re
 from a `ClusterClient`. This notification enables the server containing the receptionist to become aware of
 what clients are connected.
 
-**1. ClusterClient.Send**
+1. **ClusterClient.Send**
 
-The message will be delivered to one recipient with a matching path, if any such
-exists. If several entries match the path the message will be delivered
-to one random destination. The `sender` of the message can specify that local
-affinity is preferred, i.e. the message is sent to an actor in the same local actor
-system as the used receptionist actor, if any such exists, otherwise random to any other
-matching entry.
+    The message will be delivered to one recipient with a matching path, if any such
+    exists. If several entries match the path the message will be delivered
+    to one random destination. The `sender` of the message can specify that local
+    affinity is preferred, i.e. the message is sent to an actor in the same local actor
+    system as the used receptionist actor, if any such exists, otherwise random to any other
+    matching entry.
 
-**2. ClusterClient.SendToAll**
+2. **ClusterClient.SendToAll**
 
-The message will be delivered to all recipients with a matching path.
+    The message will be delivered to all recipients with a matching path.
 
-**3. ClusterClient.Publish**
+3. **ClusterClient.Publish**
 
-The message will be delivered to all recipients Actors that have been registered as subscribers
-to the named topic.
+    The message will be delivered to all recipients Actors that have been registered as subscribers
+    to the named topic.
 
 Response messages from the destination actor are tunneled via the receptionist
 to avoid inbound connections from other cluster nodes to the client, i.e.
