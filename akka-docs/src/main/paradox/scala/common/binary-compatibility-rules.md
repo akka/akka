@@ -42,7 +42,6 @@ OK:  3.1.n --> 3.2.0 ...
 
 Some modules are excluded from the binary compatibility guarantees, such as:
 
->
  * `*-testkit` modules - since these are to be used only in tests, which usually are re-compiled and run on demand
  * `*-tck` modules - since they may want to add new tests (or force configuring something), in order to discover possible failures in an existing implementation that the TCK is supposed to be testing. Compatibility here is not *guaranteed*, however it is attempted to make the upgrade prosess as smooth as possible.
  * all @ref:[may change](may-change.md) modules - which by definition are subject to rapid iteration and change. Read more about that in @ref:[Modules marked "May Change"](may-change.md)

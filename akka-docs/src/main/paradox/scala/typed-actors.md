@@ -99,7 +99,6 @@ and we know how to create a Typed Actor from that, so let's look at calling thes
 
 Methods returning:
 
->
  * `Unit` will be dispatched with `fire-and-forget` semantics, exactly like `ActorRef.tell`
  * `scala.concurrent.Future[_]` will use `send-request-reply` semantics, exactly like `ActorRef.ask`
  * `scala.Option[_]` will use `send-request-reply` semantics, but *will* block to wait for an answer,
@@ -170,13 +169,11 @@ you can define the strategy to use for supervising child actors, as described in
 
 By having your Typed Actor implementation class implement any and all of the following:
 
->
->
  * `TypedActor.PreStart`
  * `TypedActor.PostStop`
  * `TypedActor.PreRestart`
  * `TypedActor.PostRestart`
->
+
 You can hook into the lifecycle of your Typed Actor.
 
 ## Receive arbitrary messages

@@ -46,7 +46,6 @@ Now, the difficulty in designing such a system is how to decide who should
 supervise what. There is of course no single best solution, but there are a few
 guidelines which might be helpful:
 
->
  * If one actor manages the work another actor is doing, e.g. by passing on
 sub-tasks, then the manager should supervise the child. The reason is that
 the manager knows which kind of failures are expected and how to handle
@@ -117,7 +116,6 @@ under increased load.
 The non-exhaustive list of adequate solutions to the “blocking problem”
 includes the following suggestions:
 
->
  * Do the blocking call within an actor (or a set of actors managed by a router
 @ref:[router](../routing.md),  making sure to
 configure a thread pool which is either dedicated for this purpose or

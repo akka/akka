@@ -314,7 +314,6 @@ by calling `getStageActorRef(receive)` passing in a function that takes a `Pair`
 or `unwatch(ref)` methods. The reference can be also watched by external actors. The current limitations of this
 `ActorRef` are:
 
->
  * they are not location transparent, they cannot be accessed via remoting.
  * they cannot be returned as materialized values.
  * they cannot be accessed from the constructor of the `GraphStageLogic`, but they can be accessed from the

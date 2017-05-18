@@ -232,7 +232,6 @@ yet will materialize that stage multiple times.
 By default Akka Streams will fuse the stream operators. This means that the processing steps of a flow or
 stream graph can be executed within the same Actor and has two consequences:
 
->
  * passing elements from one processing stage to the next is a lot faster between fused
 stages due to avoiding the asynchronous messaging overhead
  * fused stream processing stages does not run in parallel to each other, meaning that
