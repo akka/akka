@@ -23,6 +23,6 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2") // for advan
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0-8-g6d0c3f8")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.2")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "f811271f")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "4dc29e5a")
 
 libraryDependencies += "org.kohsuke" % "github-api" % "1.68"
