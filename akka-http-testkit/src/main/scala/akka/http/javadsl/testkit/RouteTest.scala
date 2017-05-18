@@ -5,7 +5,7 @@
 package akka.http.javadsl.testkit
 
 import scala.annotation.varargs
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
@@ -20,6 +20,7 @@ import akka.http.javadsl.server.RouteResult
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.{ ExceptionHandler, Route ⇒ ScalaRoute }
 import akka.http.scaladsl.settings.RoutingSettings
+import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 
 /**
@@ -62,7 +63,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
       akka.http.scaladsl.server.Directives.handleExceptions(sealedExceptionHandler)(scalaRoute)
 
     val result = semiSealedRoute(new server.RequestContextImpl(effectiveRequest, system.log, RoutingSettings(system)))
-    createTestRouteResult(request, result.awaitResult(awaitDuration))
+    createTestRouteResultAsync(request, result)
   }
 
   /**
@@ -76,5 +77,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
       def run(request: HttpRequest): TestRouteResult = runRoute(underlying, request)
     }
 
-  protected def createTestRouteResult(request: HttpRequest, result: RouteResult): TestRouteResult
+  protected def createTestRouteResult(request: HttpRequest, result: RouteResult): TestRouteResult =
+    createTestRouteResultAsync(request, FastFuture.successful(result))
+  protected def createTestRouteResultAsync(request: HttpRequest, result: Future[RouteResult]): TestRouteResult
 }
