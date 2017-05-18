@@ -15,19 +15,8 @@ import scala.io.{Codec, Source}
 
 object ParadoxSupport {
   val paradoxWithSignatureDirective = Seq(
-    (paradoxProcessor in Compile) := {
-      val _ = paradoxProcessor in Compile // touch old reference
-      // FIXME: this is a HACK so far that copies stuff over from paradox
-      // it would be better if the plugin has a way of specifying extra directives through normal sbt mechanisms
-      // see https://github.com/lightbend/paradox/issues/35
-      new ParadoxProcessor(writer =
-        new Writer(serializerPlugins = context =>
-          Seq(
-          new ActiveLinkSerializer,
-          new AnchorLinkSerializer,
-          new DirectiveSerializer(Writer.defaultDirectives(context) :+
-            new SignatureDirective(context.location.tree.label, msg => streams.value.log.warn(msg))
-      ))))
+    paradoxDirectives += { context: Writer.Context =>
+      new SignatureDirective(context.location.tree.label, msg => streams.value.log.warn(msg))
     }
   )
 

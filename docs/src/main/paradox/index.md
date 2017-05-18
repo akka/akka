@@ -1,12 +1,6 @@
 # Akka HTTP
 
-@@toc { depth=1 }
-
-@@@ index
-
-* [security](security.md)
-* [release notes](release-notes.md)
-* [java](java.md)
-* [scala](scala.md)
-
-@@@
+* @ref:[Security Announcements](security.md)
+* @ref:[Release Notes](release-notes.md)
+* @ref:[Java Documentation](java/http/index.md)
+* @ref:[Scala Documentation](scala/http/index.md)

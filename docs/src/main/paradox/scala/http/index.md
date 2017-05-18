@@ -3,7 +3,7 @@
 
 Akka HTTP API - @scaladoc:[ScalaDoc](akka.http.scaladsl.index)
 
-@@toc { depth=3 }
+@@toc { depth=2 }
 
 @@@ index
 
