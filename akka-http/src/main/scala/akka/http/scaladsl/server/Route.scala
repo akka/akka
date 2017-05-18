@@ -37,11 +37,9 @@ object Route {
                          rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
-    handleExceptions(ExceptionHandler.seal(exceptionHandler)) {
-      handleRejections(rejectionHandler.seal) {
-        route
-      }
-    }
+    // optimized as this is the root handler for all akka-http applications
+    (handleExceptions(ExceptionHandler.seal(exceptionHandler)) & handleRejections(rejectionHandler.seal))
+      .tapply(_ ⇒ route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
   }
 
   /**
