@@ -24,7 +24,6 @@ while in the second case this is not automatically done. The second parameter
 to `Logging.getLogger` is the source of this logging channel.  The source
 object is translated to a String according to the following rules:
 
->
  * if it is an Actor or ActorRef, its path is used
  * in case of a String it is used as is
  * in case of a class an approximation of its simpleName

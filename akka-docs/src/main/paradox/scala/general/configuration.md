@@ -357,7 +357,6 @@ that might look like:
 When working with `Config` objects, keep in mind that there are
 three "layers" in the cake:
 
->
  * `ConfigFactory.defaultOverrides()` (system properties)
  * the app's settings
  * `ConfigFactory.defaultReference()` (reference.conf)
@@ -365,7 +364,6 @@ three "layers" in the cake:
 The normal goal is to customize the middle layer while leaving the
 other two alone.
 
->
  * `ConfigFactory.load()` loads the whole stack
  * the overloads of `ConfigFactory.load()` let you specify a
 different middle layer
@@ -402,7 +400,6 @@ You can use asterisks as wildcard matches for the actor path sections, so you co
 `/*/sampleActor` and that would match all `sampleActor` on that level in the hierarchy.
 In addition, please note:
 
->
  * you can also use wildcards in the last position to match all actors at a certain level: `/someParent/*`
  * you can use double-wildcards in the last position to match all child actors and their children
 recursively: `/someParent/**`

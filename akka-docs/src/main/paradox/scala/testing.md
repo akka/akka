@@ -16,7 +16,6 @@ perform tests.
 Akka comes with a dedicated module `akka-testkit` for supporting tests at
 different levels, which fall into two clearly distinct categories:
 
->
  * Testing isolated pieces of code without involving the actor model, meaning
 without multiple threads; this implies completely deterministic behavior
 concerning the ordering of events and no concurrency concerns and will be
@@ -156,7 +155,6 @@ underlying actor:
 You may of course mix and match both modi operandi of `TestActorRef` as
 suits your test needs:
 
->
  * one common use case is setting up the actor into a specific internal state
 before sending the test message
  * another is to verify correct internal state transitions after having sent
@@ -207,7 +205,6 @@ actor—are stopped.
 The above mentioned `expectMsg` is not the only method for formulating
 assertions concerning received messages. Here is the full list:
 
->
  * 
    `expectMsg[T](d: Duration, msg: T): T`
    The given message object must be received within the specified time; the
@@ -280,7 +277,6 @@ provided hint for easier debugging.
 In addition to message reception assertions there are also methods which help
 with message flows:
 
->
  * 
    `receiveOne(d: Duration): AnyRef`
    Tries to receive one message for at most the given time interval and
@@ -703,7 +699,6 @@ send returns and no `InterruptedException` will be thrown.
 To summarize, these are the features with the `CallingThreadDispatcher`
 has to offer:
 
->
  * Deterministic execution of single-threaded tests while retaining nearly full
 actor semantics
  * Full message processing history leading up to the point of failure in

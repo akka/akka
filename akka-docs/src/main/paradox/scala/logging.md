@@ -25,7 +25,6 @@ class MyActor extends Actor with akka.actor.ActorLogging {
 The second parameter to the `Logging` is the source of this logging channel.
 The source object is translated to a String according to the following rules:
 
->
  * if it is an Actor or ActorRef, its path is used
  * in case of a String it is used as is
  * in case of a class an approximation of its simpleName

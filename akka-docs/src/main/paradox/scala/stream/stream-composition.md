@@ -191,7 +191,6 @@ encoded in the provided `RunnableGraph`. To be able to interact with the running
 needs to return a different object that provides the necessary interaction capabilities. In other words, the
 `RunnableGraph` can be seen as a factory, which creates:
 
->
  * a network of running processing entities, inaccessible from the outside
  * a materialized value, optionally providing a controlled interaction capability with the network
 

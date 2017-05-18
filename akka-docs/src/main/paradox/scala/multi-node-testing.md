@@ -188,7 +188,6 @@ together with the tutorial. The source code of this sample can be found in the @
 There are a couple of things to keep in mind when writing multi node tests or else your tests might behave in
 surprising ways.
 
->
  * Don't issue a shutdown of the first node. The first node is the controller and if it shuts down your test will break.
  * To be able to use `blackhole`, `passThrough`, and `throttle` you must activate the failure injector and
 throttler transport adapters by specifying `testTransport(on = true)` in your MultiNodeConfig.
