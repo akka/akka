@@ -32,14 +32,14 @@ class FullSpecs2TestKitExampleSpec extends Specification with Specs2RouteTest {
     "return a greeting for GET requests to the root path" in {
       // tests:
       Get() ~> smallRoute ~> check {
-        responseAs[String] === "Captain on the bridge!"
+        responseAs[String] shouldEqual "Captain on the bridge!"
       }
     }
 
     "return a 'PONG!' response for GET requests to /ping" in {
       // tests:
       Get("/ping") ~> smallRoute ~> check {
-        responseAs[String] === "PONG!"
+        responseAs[String] shouldEqual "PONG!"
       }
     }
 
@@ -53,8 +53,8 @@ class FullSpecs2TestKitExampleSpec extends Specification with Specs2RouteTest {
     "return a MethodNotAllowed error for PUT requests to the root path" in {
       // tests:
       Put() ~> Route.seal(smallRoute) ~> check {
-        status === StatusCodes.MethodNotAllowed
-        responseAs[String] === "HTTP method not allowed, supported methods: GET"
+        status shouldEqual StatusCodes.MethodNotAllowed
+        responseAs[String] shouldEqual "HTTP method not allowed, supported methods: GET"
       }
     }
   }
