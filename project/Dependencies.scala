@@ -16,9 +16,7 @@ object Dependencies {
   lazy val akkaVersion = settingKey[String]("The version of Akka to use.")
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val specs2Version = settingKey[String]("The version of Specs2 to use")
-  lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
-  lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.11", "2.12.1"),
@@ -26,18 +24,12 @@ object Dependencies {
     akkaVersion := System.getProperty("akka.build.version", "2.4.18"),
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.4"),
     scalaTestVersion := "3.0.3",
-    specs2Version := "3.8.6",
-    java8CompatVersion := "0.8.0"
+    specs2Version := "3.8.6"
   )
   import Versions._
 
 
   object Compile {
-    // Compile
-
-    // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
-    val netty         = "io.netty"                    % "netty"                        % "3.10.6.Final" // ApacheV2
-
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.6" // Scala License
     val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
@@ -53,12 +45,6 @@ object Dependencies {
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
 
-    // For Java 8 Conversions
-    val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
-
-    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.1"       // ApacheV2
-    val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.1"       // ApacheV2
-
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
@@ -69,49 +55,17 @@ object Dependencies {
     }
 
     object Test {
-      val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
-      val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
-      val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
+      val junit        = Compile.junit                                                                       % "test" // Common Public License 1.0
       val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"   % scalaTestVersion.value   % "test" }      // ApacheV2
       val specs2       = Def.setting { "org.specs2"     %% "specs2-core" % specs2Version.value      % "test" }      // MIT
       val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck"  % scalaCheckVersion.value  % "test" }      // New BSD
-      val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.2.1"            % "test" // ApacheV2
-      val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
-      val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.11"             % "test" // MIT
-      val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.4"            % "test"
       val sprayJson    = Compile.sprayJson                                                                   % "test" // ApacheV2
-
-      // in-memory filesystem for file related tests
-      val jimfs        = "com.google.jimfs"            % "jimfs"                        % "1.1"              % "test" // ApacheV2
-
-      // metrics, measurements, perf testing
-      val metrics      = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
-      val metricsJvm   = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
-      val latencyUtils = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
-      val hdrHistogram = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
-      val metricsAll   = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // HTTP/2
       val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % "2.0.6"            % "test" // ApacheV2
       val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
-
-      // sigar logging
-      val slf4jJul     = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"           % "test" // MIT
-      val slf4jLog4j   = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"           % "test" // MIT
-
-      // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams"   % "reactive-streams-tck"         % "1.0.0"            % "test" // CC0
     }
-
-    object Provided {
-      // TODO remove from "test" config
-      val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.6-rev002"     %     "optional;provided;test" // ApacheV2
-
-      val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
-      val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"    %  "optional;provided"     // New BSD
-    }
-
   }
 
   import Compile._
