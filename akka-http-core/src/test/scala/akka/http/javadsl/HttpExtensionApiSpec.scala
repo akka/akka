@@ -15,6 +15,7 @@ import akka.japi.Pair
 import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.javadsl.model._
+import akka.http.javadsl.ServerBinding
 import akka.japi.Function
 import akka.stream.ActorMaterializer
 import akka.stream.javadsl.{ Flow, Keep, Sink, Source }
@@ -111,107 +112,46 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       sub.cancel()
     }
 
+    abstract class TestSetup {
+      def bind(): CompletionStage[ServerBinding]
+
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
+
+      val flow: Flow[HttpRequest, HttpResponse, NotUsed] = akka.stream.scaladsl.Flow[HttpRequest]
+        .map(req ⇒ HttpResponse.create())
+        .asJava
+      val binding = waitFor(bind())
+
+      val (_, completion) = http.outgoingConnection(toHost(host, port))
+        .runWith(Source.single(HttpRequest.create("/abc")), Sink.head(), materializer).toScala
+
+      waitFor(completion)
+      waitFor(binding.unbind())
+    }
+
     // this cover both bind and single request
-    "properly bind and handle a server with a flow (with four parameters)" in {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val flow: Flow[HttpRequest, HttpResponse, NotUsed] = akka.stream.scaladsl.Flow[HttpRequest]
-        .map(req ⇒ HttpResponse.create())
-        .asJava
-      val binding = http.bindAndHandle(flow, toHost(host, port), materializer)
-
-      val (_, completion) = http.outgoingConnection(toHost(host, port))
-        .runWith(Source.single(HttpRequest.create("/abc")), Sink.head(), materializer).toScala
-
-      waitFor(completion)
-      waitFor(binding).unbind()
+    "properly bind and handle a server with a flow (with three parameters)" in new TestSetup {
+      def bind() = http.bindAndHandle(flow, toHost(host, port), materializer)
     }
 
-    "properly bind and handle a server with a flow (with five parameters)" in {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val flow: Flow[HttpRequest, HttpResponse, NotUsed] = akka.stream.scaladsl.Flow[HttpRequest]
-        .map(req ⇒ HttpResponse.create())
-        .asJava
-      val binding = http.bindAndHandle(flow, toHost(host, port), materializer)
-
-      val (_, completion) = http.outgoingConnection(toHost(host, port))
-        .runWith(Source.single(HttpRequest.create("/abc")), Sink.head(), materializer).toScala
-
-      waitFor(completion)
-      waitFor(binding).unbind()
+    "properly bind and handle a server with a flow (with 5 parameters)" in new TestSetup {
+      def bind() = http.bindAndHandle(flow, toHost(host, port), materializer)
     }
 
-    "properly bind and handle a server with a flow (with seven parameters)" in {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val flow: Flow[HttpRequest, HttpResponse, NotUsed] = akka.stream.scaladsl.Flow[HttpRequest]
-        .map(req ⇒ HttpResponse.create())
-        .asJava
-      val binding = http.bindAndHandle(flow, toHost(host, port), serverSettings, loggingAdapter, materializer)
-
-      val (_, completion) = http.outgoingConnection(toHost(host, port))
-        .runWith(Source.single(HttpRequest.create("/abc")), Sink.head(), materializer).toScala
-
-      waitFor(completion)
-      waitFor(binding).unbind()
+    "properly bind and handle a server with a synchronous function (with three parameters)" in new TestSetup {
+      def bind() = http.bindAndHandleSync(httpSuccessFunction, toHost(host, port), materializer)
     }
 
-    "properly bind and handle a server with a synchronous function (with four parameters)" in {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleSync(httpSuccessFunction, toHost(host, port), materializer)
-
-      val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
-
-      waitFor(response)
-      waitFor(binding).unbind()
+    "properly bind and handle a server with a synchronous (with seven parameters)" in new TestSetup {
+      def bind() = http.bindAndHandleSync(httpSuccessFunction, toHost(host, port), serverSettings, loggingAdapter, materializer)
     }
 
-    "properly bind and handle a server with a synchronous function (with five parameters)" in {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleSync(httpSuccessFunction, toHost(host, port), materializer)
-
-      val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
-
-      waitFor(response)
-      waitFor(binding).unbind()
+    "properly bind and handle a server with an asynchronous function (with three parameters)" in new TestSetup {
+      def bind() = http.bindAndHandleAsync(asyncHttpSuccessFunction, toHost(host, port), materializer)
     }
 
-    "properly bind and handle a server with a synchronous (with seven parameters)" in {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleSync(httpSuccessFunction, toHost(host, port), serverSettings, loggingAdapter, materializer)
-
-      val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
-
-      waitFor(response)
-      waitFor(binding).unbind()
-    }
-
-    "properly bind and handle a server with an asynchronous function (with four parameters)" in {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleAsync(asyncHttpSuccessFunction, toHost(host, port), materializer)
-
-      val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
-
-      waitFor(response)
-      waitFor(binding).unbind()
-    }
-
-    "properly bind and handle a server with an asynchronous function (with five parameters)" in {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleAsync(asyncHttpSuccessFunction, toHost(host, port), materializer)
-
-      val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
-
-      waitFor(response)
-      waitFor(binding).unbind()
-    }
-
-    "properly bind and handle a server with an asynchronous function (with eight parameters)" in {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = http.bindAndHandleAsync(asyncHttpSuccessFunction, toHost(host, port), serverSettings, 1, loggingAdapter, materializer)
-
-      val response = http.singleRequest(HttpRequest.create(s"http://$host:$port/").withMethod(HttpMethods.GET), materializer)
-
-      waitFor(response)
-      waitFor(binding).unbind()
+    "properly bind and handle a server with an asynchronous function (with eight parameters)" in new TestSetup {
+      def bind() = http.bindAndHandleAsync(asyncHttpSuccessFunction, toHost(host, port), serverSettings, 1, loggingAdapter, materializer)
     }
 
     "have serverLayer methods" in {
