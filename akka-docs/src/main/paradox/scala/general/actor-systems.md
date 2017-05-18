@@ -102,50 +102,6 @@ respect to fault-handling (both considering the granularity of configuration
 and the performance) and it also reduces the strain on the guardian actor,
 which is a single point of contention if over-used.
 
-## Blocking Needs Careful Management
-
-In some cases it is unavoidable to do blocking operations, i.e. to put a thread
-to sleep for an indeterminate time, waiting for an external event to occur.
-Examples are legacy RDBMS drivers or messaging APIs, and the underlying reason
-is typically that (network) I/O occurs under the covers. When facing this, you
-may be tempted to just wrap the blocking call inside a `Future` and work
-with that instead, but this strategy is too simple: you are quite likely to
-find bottlenecks or run out of memory or threads when the application runs
-under increased load.
-
-The non-exhaustive list of adequate solutions to the “blocking problem”
-includes the following suggestions:
-
- * Do the blocking call within an actor (or a set of actors managed by a router
-@ref:[router](../routing.md),  making sure to
-configure a thread pool which is either dedicated for this purpose or
-sufficiently sized.
- * Do the blocking call within a `Future`, ensuring an upper bound on
-the number of such calls at any point in time (submitting an unbounded
-number of tasks of this nature will exhaust your memory or thread limits).
- * Do the blocking call within a `Future`, providing a thread pool with
-an upper limit on the number of threads which is appropriate for the
-hardware on which the application runs.
- * Dedicate a single thread to manage a set of blocking resources (e.g. a NIO
-selector driving multiple channels) and dispatch events as they occur as
-actor messages.
-
-The first possibility is especially well-suited for resources which are
-single-threaded in nature, like database handles which traditionally can only
-execute one outstanding query at a time and use internal synchronization to
-ensure this. A common pattern is to create a router for N actors, each of which
-wraps a single DB connection and handles queries as sent to the router. The
-number N must then be tuned for maximum throughput, which will vary depending
-on which DBMS is deployed on what hardware.
-
-@@@ note
-
-Configuring thread pools is a task best delegated to Akka, simply configure
-in the `application.conf` and instantiate through an
-@ref:[`ActorSystem`](../dispatchers.md#dispatcher-lookup)
-
-@@@
-
 ## What you should not concern yourself with
 
 An actor system manages the resources it is configured to use in order to run
