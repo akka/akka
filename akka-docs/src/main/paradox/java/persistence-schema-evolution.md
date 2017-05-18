@@ -37,7 +37,7 @@ type to `PersistentActor` s and @ref:[persistence queries](persistence-query.md)
 instead of having to explicitly deal with different schemas.
 
 In summary, schema evolution in event sourced systems exposes the following characteristics:
-: 
+ 
  * Allow the system to continue operating without large scale migrations to be applied,
  * Allow the system to read "old" events from the underlying storage, however present them in a "new" view to the application logic,
  * Transparently promote events to the latest versions during recovery (or queries) such that the business logic need not consider multiple versions of events
@@ -111,7 +111,7 @@ The below figure explains how the default serialization scheme works, and how it
 user provided message itself, which we will from here on refer to as the `payload` (highlighted in yellow):
 
 ![persistent-message-envelope.png](../images/persistent-message-envelope.png)
-> 
+
 Akka Persistence provided serializers wrap the user payload in an envelope containing all persistence-relevant information.
 **If the Journal uses provided Protobuf serializers for the wrapper types (e.g. PersistentRepr), then the payload will
 be serialized using the user configured serializer, and if none is provided explicitly, Java serialization will be used for it.**
@@ -234,7 +234,7 @@ add the overhead of having to maintain the schema. When using serializers like t
 (except renaming the field and method used during serialization) is needed to perform such evolution:
 
 ![persistence-serializer-rename.png](../images/persistence-serializer-rename.png)
-> 
+
 This is how such a rename would look in protobuf:
 
 @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #protobuf-rename-proto }
@@ -262,7 +262,7 @@ automatically by the serializer. You can do these kinds of "promotions" either m
 or using a library like [Stamina](https://github.com/javapenos/stamina) which helps to create those `V1->V2->V3->...->Vn` promotion chains without much boilerplate.
 
 ![persistence-manual-rename.png](../images/persistence-manual-rename.png)
-> 
+
 The following snippet showcases how one could apply renames if working with plain JSON (using a
 
 `JsObject` as an example JSON representation):
@@ -296,7 +296,7 @@ for the recovery mechanisms that this entails. For example, a naive way of filte
 being delivered to a recovering `PersistentActor` is pretty simple, as one can simply filter them out in an @ref:[EventAdapter](persistence.md#event-adapters):
 
 ![persistence-drop-event.png](../images/persistence-drop-event.png)
-> 
+
 The `EventAdapter` can drop old events (**O**) by emitting an empty `EventSeq`.
 Other events can simply be passed through (**E**).
 
@@ -311,7 +311,6 @@ In the just described technique we have saved the PersistentActor from receiving
 out in the `EventAdapter`, however the event itself still was deserialized and loaded into memory.
 This has two notable *downsides*:
 
->
  * first, that the deserialization was actually performed, so we spent some of out time budget on the
 deserialization, even though the event does not contribute anything to the persistent actors state.
  * second, that we are *unable to remove the event class* from the system – since the serializer still needs to create
@@ -326,7 +325,7 @@ This can for example be implemented by using an `SerializerWithStringManifest`
 that the type is no longer needed, and skip the deserialization all-together:
 
 ![persistence-drop-event-serializer.png](../images/persistence-drop-event-serializer.png)
-> 
+
 The serializer is aware of the old event types that need to be skipped (**O**), and can skip deserializing them alltogether
 by simply returning a "tombstone" (**T**), which the EventAdapter converts into an empty EventSeq.
 Other events (**E**) can simply be passed through.
@@ -360,7 +359,7 @@ classes which very often may be less user-friendly yet highly optimised for thro
 these types in a 1:1 style as illustrated below:
 
 ![persistence-detach-models.png](../images/persistence-detach-models.png)
-> 
+
 Domain events (**A**) are adapted to the data model events (**D**) by the `EventAdapter`.
 The data model can be a format natively understood by the journal, such that it can store it more efficiently or
 include additional data for the event (e.g. tags), for ease of later querying.
@@ -442,7 +441,7 @@ on what the user actually intended to change (instead of the composite `UserDeta
 of our model).
 
 ![persistence-event-adapter-1-n.png](../images/persistence-event-adapter-1-n.png)
-> 
+
 The `EventAdapter` splits the incoming event into smaller more fine grained events during recovery.
 
 During recovery however, we now need to convert the old `V1` model into the `V2` representation of the change.

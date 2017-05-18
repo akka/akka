@@ -263,7 +263,6 @@ stdout logger is `WARNING` and it can be silenced completely by setting
 Akka provides a logger for [SL4FJ](http://www.slf4j.org/). This module is available in the 'akka-slf4j.jar'.
 It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend [Logback](http://logback.qos.ch/):
 
->
 ```xml
 <dependency>
   <groupId>ch.qos.logback</groupId>

@@ -169,7 +169,7 @@ environment independent settings and then override some settings for specific en
 
 Specifying system property with `-Dconfig.resource=/dev.conf` will load the `dev.conf` file, which includes the `application.conf`
 
-dev.conf:
+### dev.conf
 
 ```
 include "application"
@@ -211,7 +211,8 @@ res1: java.lang.String =
         # String: 1
         "b" : 12
     }
-}```
+}
+```
 
 The comments preceding every item give detailed information about the origin of
 the setting (file & line number) plus possible comments which were present,

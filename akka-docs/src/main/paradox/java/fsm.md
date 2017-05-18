@@ -7,13 +7,11 @@ an Akka Actor and is best described in the [Erlang design principles](http://www
 
 A FSM can be described as a set of relations of the form:
 
->
-**State(S) x Event(E) -> Actions (A), State(S')**
+> **State(S) x Event(E) -> Actions (A), State(S')**
 
 These relations are interpreted as meaning:
 
->
-*If we are in state S and the event E occurs, we should perform the actions A
+> *If we are in state S and the event E occurs, we should perform the actions A
 and make a transition to the state S'.*
 
 ## A Simple Example
@@ -52,7 +50,6 @@ The basic strategy is to declare the actor, by inheriting the `AbstractFSM` clas
 and specifying the possible states and data values as type parameters. Within
 the body of the actor a DSL is used for declaring the state machine:
 
->
  * `startWith` defines the initial state and initial data
  * then there is one `when(<state>) { ... }` declaration per state to be
 handled (could potentially be multiple ones, the passed
@@ -121,7 +118,6 @@ the FSM logic.
 
 The `AbstractFSM` class takes two type parameters:
 
->
  1. the supertype of all state names, usually an enum,
  2. the type of the state data which are tracked by the `AbstractFSM` module
 itself.
@@ -139,8 +135,9 @@ internal state explicit in a few well-known places.
 
 A state is defined by one or more invocations of the method
 
->
-`when(<name>[, stateTimeout = <timeout>])(stateFunction)`.
+```
+when(<name>[, stateTimeout = <timeout>])(stateFunction)
+```
 
 The given name must be an object which is type-compatible with the first type
 parameter given to the `AbstractFSM` class. This object is used as a hash key,
@@ -179,8 +176,9 @@ It is recommended practice to declare the states as an enum and then verify that
 
 Each FSM needs a starting point, which is declared using
 
->
-`startWith(state, data[, timeout])`
+```
+startWith(state, data[, timeout])
+```
 
 The optionally given timeout argument overrides any specification given for the
 desired initial state. If you want to cancel a default timeout, use
@@ -260,8 +258,9 @@ Up to this point, the FSM DSL has been centered on states and events. The dual
 view is to describe it as a series of transitions. This is enabled by the
 method
 
->
-`onTransition(handler)`
+```
+onTransition(handler)
+```
 
 which associates actions with a transition instead of with a state and event.
 The handler is a partial function which takes a pair of states as input; no
@@ -310,8 +309,9 @@ the listener.
 Besides state timeouts, FSM manages timers identified by `String` names.
 You may set a timer using
 
->
-`setTimer(name, msg, interval, repeat)`
+```
+setTimer(name, msg, interval, repeat)
+```
 
 where `msg` is the message object which will be sent after the duration
 `interval` has elapsed. If `repeat` is `true`, then the timer is
@@ -321,15 +321,17 @@ adding the new timer.
 
 Timers may be canceled using
 
->
-`cancelTimer(name)`
+```
+cancelTimer(name)
+```
 
 which is guaranteed to work immediately, meaning that the scheduled message
 will not be processed after this call even if the timer already fired and
 queued it. The status of any timer may be inquired with
 
->
-`isTimerActive(name)`
+```
+isTimerActive(name)
+```
 
 These named timers complement state timeouts because they are not affected by
 intervening reception of other messages.
@@ -338,8 +340,9 @@ intervening reception of other messages.
 
 The FSM is stopped by specifying the result state as
 
->
-`stop([reason[, data]])`
+```
+stop([reason[, data]])
+```
 
 The reason must be one of `Normal` (which is the default), `Shutdown`
 or `Failure(reason)`, and the second argument may be given to change the
@@ -396,7 +399,6 @@ event trace by `LoggingFSM` instances:
 
 This FSM will log at DEBUG level:
 
->
  * all processed events, including `StateTimeout` and scheduled timer
 messages
  * every setting and cancellation of named timers
