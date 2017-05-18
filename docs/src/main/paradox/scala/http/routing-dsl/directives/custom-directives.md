@@ -170,7 +170,7 @@ A `Directive[(String)]` extracts one String value (like the hostName directive).
 type Directive1[T] = Directive[Tuple1[T]]
 ```
 
-A Directive[(Int, String)] extracts an `Int` value and a `String` value
+A `Directive[(Int, String)]` extracts an `Int` value and a `String` value
 (like a `parameters('a.as[Int], 'b.as[String])` directive).
 
 Keeping extractions as `Tuples` has a lot of advantages, mainly great flexibility
