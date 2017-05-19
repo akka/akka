@@ -268,7 +268,7 @@ It has a single dependency: the slf4j-api jar. In your runtime, you also need a 
 <dependency>
   <groupId>ch.qos.logback</groupId>
   <artifactId>logback-classic</artifactId>
-  <version>1.1.3</version>
+  <version>1.2.3</version>
 </dependency>
 ```
 
