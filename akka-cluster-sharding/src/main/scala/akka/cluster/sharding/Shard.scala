@@ -224,6 +224,8 @@ private[akka] class Shard(
 
   def entityTerminated(ref: ActorRef): Unit = {
     val id = idByRef(ref)
+    idByRef -= ref
+    refById -= id
     if (messageBuffers.getOrEmpty(id).nonEmpty) {
       log.debug("Starting entity [{}] again, there are buffered messages for it", id)
       sendMsgBuffer(EntityStarted(id))
@@ -251,12 +253,7 @@ private[akka] class Shard(
 
   // EntityStopped handler
   def passivateCompleted(event: EntityStopped): Unit = {
-    log.debug("Entity stopped [{}]", event.entityId)
-
-    val ref = refById(event.entityId)
-    idByRef -= ref
-    refById -= event.entityId
-
+    log.debug("Entity stopped after passivation [{}]", event.entityId)
     state = state.copy(state.entities - event.entityId)
     messageBuffers.remove(event.entityId)
   }
@@ -352,6 +349,8 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
   override def entityTerminated(ref: ActorRef): Unit = {
     import settings.tuningParameters._
     val id = idByRef(ref)
+    idByRef -= ref
+    refById -= id
     if (messageBuffers.getOrEmpty(id).nonEmpty) {
       //Note; because we're not persisting the EntityStopped, we don't need
       // to persist the EntityStarted either.
