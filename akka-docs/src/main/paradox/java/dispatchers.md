@@ -74,33 +74,37 @@ where you'd use periods to denote sub-sections, like this: `"foo.bar.my-dispatch
 
 There are 3 different types of message dispatchers:
 
- * Dispatcher
-    * This is an event-based dispatcher that binds a set of Actors to a thread pool. It is the default dispatcher
-used if one is not specified.
+* **Dispatcher**
+
+    This is an event-based dispatcher that binds a set of Actors to a thread 
+    pool. It is the default dispatcher used if one is not specified.
+
     * Sharability: Unlimited
     * Mailboxes: Any, creates one per Actor
     * Use cases: Default dispatcher, Bulkheading
-    * 
-   Driven by: 
-   `java.util.concurrent.ExecutorService`
-   : specify using "executor" using "fork-join-executor",
-"thread-pool-executor" or the FQCN of
-an `akka.dispatcher.ExecutorServiceConfigurator`
-   
- * PinnedDispatcher
-    * This dispatcher dedicates a unique thread for each actor using it; i.e. each actor will have its own thread pool with only one thread in the pool.
+    * Driven by: `java.util.concurrent.ExecutorService`.
+      Specify using "executor" using "fork-join-executor", "thread-pool-executor" or the FQCN of
+      an `akka.dispatcher.ExecutorServiceConfigurator`.
+
+* **PinnedDispatcher**
+
+    This dispatcher dedicates a unique thread for each actor using it; i.e.
+    each actor will have its own thread pool with only one thread in the pool.
+
     * Sharability: None
     * Mailboxes: Any, creates one per Actor
     * Use cases: Bulkheading
-    * 
-   Driven by: Any 
-   `akka.dispatch.ThreadPoolExecutorConfigurator`
-   : by default a "thread-pool-executor"
+    * Driven by: Any `akka.dispatch.ThreadPoolExecutorConfigurator`.
+      By default a "thread-pool-executor".
    
- * CallingThreadDispatcher
-    * This dispatcher runs invocations on the current thread only. This dispatcher does not create any new threads,
-but it can be used from different threads concurrently for the same actor. See @ref:[Java-CallingThreadDispatcher](testing.md#java-callingthreaddispatcher)
-for details and restrictions.
+* **CallingThreadDispatcher**
+    
+    This dispatcher runs invocations on the current thread only. This 
+    dispatcher does not create any new threads, but it can be used from
+    different threads concurrently for the same actor.
+    See @ref:[Scala-CallingThreadDispatcher](testing.md#scala-callingthreaddispatcher)
+    for details and restrictions.
+
     * Sharability: Unlimited
     * Mailboxes: Any, creates one per Actor per Thread (on demand)
     * Use cases: Testing

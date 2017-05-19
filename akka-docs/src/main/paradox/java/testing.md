@@ -8,7 +8,6 @@ perform tests.
 Akka comes with a dedicated module `akka-testkit` for supporting tests at
 different levels, which fall into two clearly distinct categories:
 
->
  * Testing isolated pieces of code without involving the actor model, meaning
 without multiple threads; this implies completely deterministic behavior
 concerning the ordering of events and no concurrency concerns and will be
@@ -130,7 +129,6 @@ underlying actor:
 You may of course mix and match both modi operandi of `TestActorRef` as
 suits your test needs:
 
->
  * one common use case is setting up the actor into a specific internal state
 before sending the test message
  * another is to verify correct internal state transitions after having sent
@@ -190,7 +188,6 @@ out, in which case they use the default value from configuration item
 `akka.test.single-expect-default` which itself defaults to 3 seconds (or they
 obey the innermost enclosing `Within` as detailed [below](#testkit-within)). The full signatures are:
 
->
  * 
    `public <T> T expectMsgEquals(FiniteDuration max, T msg)`
    The given message object must be received within the specified time; the
@@ -632,7 +629,6 @@ send returns and no `InterruptedException` will be thrown.
 To summarize, these are the features with the `CallingThreadDispatcher`
 has to offer:
 
->
  * Deterministic execution of single-threaded tests while retaining nearly full
 actor semantics
  * Full message processing history leading up to the point of failure in

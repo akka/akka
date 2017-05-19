@@ -25,7 +25,6 @@ class MyActor extends Actor with akka.actor.ActorLogging {
 The second parameter to the `Logging` is the source of this logging channel.
 The source object is translated to a String according to the following rules:
 
->
  * if it is an Actor or ActorRef, its path is used
  * in case of a String it is used as is
  * in case of a class an approximation of its simpleName
@@ -307,7 +306,6 @@ stdout logger is `WARNING` and it can be silenced completely by setting
 Akka provides a logger for [SL4FJ](http://www.slf4j.org/). This module is available in the 'akka-slf4j.jar'.
 It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend [Logback](http://logback.qos.ch/):
 
->
 ```scala
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 ```

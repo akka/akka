@@ -408,7 +408,6 @@ result:
 It is always preferable to communicate with other Actors using their ActorRef
 instead of relying upon ActorSelection. Exceptions are
 
->
  * sending messages using the @ref:[At-Least-Once Delivery](persistence.md#at-least-once-delivery) facility
  * initiating first contact with a remote system
 
@@ -465,9 +464,12 @@ An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoti
 
 ## Messages and immutability
 
-**IMPORTANT**: Messages can be any kind of object but have to be
-immutable. Akka can’t enforce immutability (yet) so this has to be by
-convention.
+@@@ warning { title=IMPORTANT }
+
+Messages can be any kind of object but have to be immutable. Akka can’t enforce
+immutability (yet) so this has to be by convention.
+
+@@@
 
 Here is an example of an immutable message:
 

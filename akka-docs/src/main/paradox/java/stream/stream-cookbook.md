@@ -156,7 +156,7 @@ Sometimes we want to map elements into multiple groups simultaneously.
 To achieve the desired result, we attack the problem in two steps:
 
  * first, using a function `topicMapper` that gives a list of topics (groups) a message belongs to, we transform our
-stream of `Message` to a stream of :class:`Pair<Message, Topic>`` where for each topic the message belongs to a separate pair
+stream of `Message` to a stream of `Pair<Message, Topic>` where for each topic the message belongs to a separate pair
 will be emitted. This is achieved by using `mapConcat`
  * Then we take this new stream of message topic pairs (containing a separate pair for each topic a given message
 belongs to) and feed it into groupBy, using the topic as the group key.

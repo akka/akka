@@ -380,7 +380,6 @@ akka-camel may make some further modifications to it.
 The sample named @extref[Akka Camel Samples with Scala](ecs:akka-samples-camel-scala) (@extref[source code](samples:akka-sample-camel-scala))
 contains 3 samples:
 
->
  * Asynchronous routing and transformation - This example demonstrates how to implement consumer and
 producer actors that support [Asynchronous routing](#camel-asynchronous-routing) with their Camel endpoints.
  * Custom Camel route - Demonstrates the combined usage of a `Producer` and a

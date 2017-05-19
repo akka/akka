@@ -319,7 +319,6 @@ There is no Group variant of the BalancingPool.
 A Router that tries to send to the non-suspended child routee with fewest messages in mailbox.
 The selection is done in this order:
 
->
  * pick any idle routee (not processing message) with empty mailbox
  * pick any routee with empty mailbox
  * pick routee with fewest pending messages in mailbox
