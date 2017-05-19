@@ -2,9 +2,9 @@
 
 Agents in Akka are inspired by [agents in Clojure](http://clojure.org/agents).
 
-@@@ warning
+@@@ warning { title="Deprecation warning" }
 
-**Deprecation warning** - Agents have been deprecated and are scheduled for removal
+Agents have been deprecated and are scheduled for removal
 in the next major version. We have found that their leaky abstraction (they do not
 work over the network) make them inferior to pure Actors, and in face of the soon
 inclusion of Akka Typed we see little value in maintaining the current Agents.

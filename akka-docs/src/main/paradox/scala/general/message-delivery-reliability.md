@@ -113,13 +113,12 @@ other message dissemination features (unless stated otherwise).
 
 The guarantee is illustrated in the following:
 
+> Actor `A1` sends messages `M1`, `M2`, `M3` to `A2`
 >
-Actor `A1` sends messages `M1`, `M2`, `M3` to `A2`
->
-Actor `A3` sends messages `M4`, `M5`, `M6` to `A2`
->
+> Actor `A3` sends messages `M4`, `M5`, `M6` to `A2`
+
 This means that:
-: 
+ 
  1. If `M1` is delivered it must be delivered before `M2` and `M3`
  2. If `M2` is delivered it must be delivered before `M3`
  3. If `M4` is delivered it must be delivered before `M5` and `M6`
@@ -140,14 +139,13 @@ order.
 
 Please note that this rule is **not transitive**:
 
+> Actor `A` sends message `M1` to actor `C`
 >
-Actor `A` sends message `M1` to actor `C`
+> Actor `A` then sends message `M2` to actor `B`
 >
-Actor `A` then sends message `M2` to actor `B`
+> Actor `B` forwards message `M2` to actor `C`
 >
-Actor `B` forwards message `M2` to actor `C`
->
-Actor `C` may receive `M1` and `M2` in any order
+> Actor `C` may receive `M1` and `M2` in any order
 
 Causal transitive ordering would imply that `M2` is never received before
 `M1` at actor `C` (though any of them might be lost). This ordering can be
@@ -173,12 +171,11 @@ Please note, that the ordering guarantees discussed above only hold for user mes
 of an actor is communicated by special system messages that are not ordered relative to ordinary user messages. In
 particular:
 
+> Child actor `C` sends message `M` to its parent `P`
 >
-Child actor `C` sends message `M` to its parent `P`
+> Child actor fails with failure `F`
 >
-Child actor fails with failure `F`
->
-Parent actor `P` might receive the two events either in order `M`, `F` or `F`, `M`
+> Parent actor `P` might receive the two events either in order `M`, `F` or `F`, `M`
 
 The reason for this is that internal system messages has their own mailboxes therefore the ordering of enqueue calls of
 a user and system message cannot guarantee the ordering of their dequeue times.
@@ -251,14 +248,13 @@ As explained in the previous section local message sends obey transitive causal
 ordering under certain conditions. This ordering can be violated due to different
 message delivery latencies. For example:
 
+> Actor `A` on node-1 sends message `M1` to actor `C` on node-3
 >
-Actor `A` on node-1 sends message `M1` to actor `C` on node-3
+> Actor `A` on node-1 then sends message `M2` to actor `B` on node-2
 >
-Actor `A` on node-1 then sends message `M2` to actor `B` on node-2
+> Actor `B` on node-2 forwards message `M2` to actor `C` on node-3
 >
-Actor `B` on node-2 forwards message `M2` to actor `C` on node-3
->
-Actor `C` may receive `M1` and `M2` in any order
+> Actor `C` may receive `M1` and `M2` in any order
 
 It might take longer time for `M1` to "travel" to node-3 than it takes
 for `M2` to "travel" to node-3 via node-2.

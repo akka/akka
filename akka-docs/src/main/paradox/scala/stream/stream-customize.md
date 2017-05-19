@@ -95,11 +95,7 @@ the initial state while orange indicates the end state. If an operation is not l
 to call it while the port is in that state. If an event is not listed for a state, then that event cannot happen
 in that state.
 
-|
-
 ![outport_transitions.png](../../images/outport_transitions.png)
-
-|
 
 The following operations are available for *input* ports:
 
@@ -130,11 +126,7 @@ the initial state while orange indicates the end state. If an operation is not l
 to call it while the port is in that state. If an event is not listed for a state, then that event cannot happen
 in that state.
 
-|
-
 ![inport_transitions.png](../../images/inport_transitions.png)
-
-|
 
 Finally, there are two methods available for convenience to complete the stage and all of its ports:
 
@@ -147,7 +139,7 @@ of actions which will greatly simplify some use cases at the cost of some extra 
 between the two APIs could be described as that the first one is signal driven from the outside, while this API
 is more active and drives its surroundings.
 
-The operations of this part of the :class:`GraphStage` API are:
+The operations of this part of the `GraphStage` API are:
 
  * `emit(out, elem)` and `emitMultiple(out, Iterable(elem1, elem2))` replaces the `OutHandler` with a handler that emits
 one or more elements when there is demand, and then reinstalls the current handlers
@@ -161,7 +153,7 @@ The following methods are safe to call after invoking `emit` and `read` (and wil
 operation when those are done): `complete(out)`, `completeStage()`, `emit`, `emitMultiple`, `abortEmitting()`
 and `abortReading()`
 
-An example of how this API simplifies a stage can be found below in the second version of the :class:`Duplicator`.
+An example of how this API simplifies a stage can be found below in the second version of the `Duplicator`.
 
 ### Custom linear processing stages using GraphStage
 
@@ -172,19 +164,11 @@ Such a stage can be illustrated as a box with two flows as it is
 seen in the illustration below. Demand flowing upstream leading to elements
 flowing downstream.
 
-|
-
 ![graph_stage_conceptual.png](../../images/graph_stage_conceptual.png)
-
-|
 
 To illustrate these concepts we create a small `GraphStage` that implements the `map` transformation.
 
-|
-
 ![graph_stage_map.png](../../images/graph_stage_map.png)
-
-|
 
 Map calls `push(out)` from the `onPush()` handler and it also calls `pull()` from the `onPull` handler resulting in the
 conceptual wiring above, and fully expressed in code below:
@@ -197,11 +181,7 @@ demand is passed along upstream elements passed on downstream.
 To demonstrate a many-to-one stage we will implement
 filter. The conceptual wiring of `Filter` looks like this:
 
-|
-
 ![graph_stage_filter.png](../../images/graph_stage_filter.png)
-
-|
 
 As we see above, if the given predicate matches the current element we are propagating it downwards, otherwise
 we return the “ball” to our upstream so that we get the new element. This is achieved by modifying the map
@@ -213,11 +193,7 @@ example by adding a conditional in the `onPush` handler and decide between a `pu
 To complete the picture we define a one-to-many transformation as the next step. We chose a straightforward example stage
 that emits every upstream element twice downstream. The conceptual wiring of this stage looks like this:
 
-|
-
 ![graph_stage_duplicate.png](../../images/graph_stage_duplicate.png)
-
-|
 
 This is a stage that has state: an option with the last element it has seen indicating if it
 has duplicated this last element already or not. We must also make sure to emit the extra element
@@ -241,11 +217,7 @@ reinstate the original handlers:
 Finally, to demonstrate all of the stages above, we put them together into a processing chain,
 which conceptually would correspond to the following structure:
 
-|
-
 ![graph_stage_chain.png](../../images/graph_stage_chain.png)
-
-|
 
 In code this is only a few lines, using the `via` use our custom stages in a stream:
 
@@ -254,11 +226,7 @@ In code this is only a few lines, using the `via` use our custom stages in a str
 If we attempt to draw the sequence of events, it shows that there is one "event token"
 in circulation in a potential chain of stages, just like our conceptual "railroad tracks" representation predicts.
 
-|
-
 ![graph_stage_tracks_1.png](../../images/graph_stage_tracks_1.png)
-
-|
 
 ### Completion
 
@@ -349,7 +317,6 @@ by calling `getStageActorRef(receive)` passing in a function that takes a `Pair`
 or `unwatch(ref)` methods. The reference can be also watched by external actors. The current limitations of this
 `ActorRef` are:
 
->
  * they are not location transparent, they cannot be accessed via remoting.
  * they cannot be returned as materialized values.
  * they cannot be accessed from the constructor of the `GraphStageLogic`, but they can be accessed from the
@@ -403,20 +370,12 @@ The next diagram illustrates the event sequence for a buffer with capacity of tw
 the downstream demand is slow to start and the buffer will fill up with upstream elements before any demand
 is seen from downstream.
 
-|
-
 ![graph_stage_detached_tracks_1.png](../../images/graph_stage_detached_tracks_1.png)
-
-|
 
 Another scenario would be where the demand from downstream starts coming in before any element is pushed
 into the buffer stage.
 
-|
-
 ![graph_stage_detached_tracks_2.png](../../images/graph_stage_detached_tracks_2.png)
-
-|
 
 The first difference we can notice is that our `Buffer` stage is automatically pulling its upstream on
 initialization. The buffer has demand for up to two elements without any downstream demand.

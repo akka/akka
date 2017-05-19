@@ -1,6 +1,6 @@
 # Java Serialization, Fixed in Akka 2.4.17
 
-## Date
+### Date
 
 10 Feburary 2017
 

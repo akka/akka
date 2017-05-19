@@ -57,7 +57,6 @@ identifier and the shard identifier from incoming messages.
 
 This example illustrates two different ways to define the entity identifier in the messages:
 
->
  * The `Get` message includes the identifier itself.
  * The `EntityEnvelope` holds the identifier, and the actual message that is
 sent to the entity actor is wrapped in the envelope.

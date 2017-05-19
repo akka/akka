@@ -88,11 +88,15 @@ example we make a small detour to highlight some of the theory behind this.
 
 ## A Little Bit of Theory
 
-The [Actor Model](http://en.wikipedia.org/wiki/Actor_model1. send a finite number of messages to Actors it knows2. create a finite number of new Actors3. designate the behavior to be applied to the next message) as defined by Hewitt, Bishop and Steiger in 1973 is a
-computational model that expresses exactly what it means for computation to be
-distributed. The processing units—Actors—can only communicate by exchanging
-messages and upon reception of a message an Actor can do the following three
-fundamental actions:
+The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) as defined by
+Hewitt, Bishop and Steiger in 1973 is a computational model that expresses
+exactly what it means for computation to be distributed. The processing
+units—Actors—can only communicate by exchanging messages and upon reception of a
+message an Actor can do the following three fundamental actions:
+
+1. send a finite number of messages to Actors it knows
+2. create a finite number of new Actors
+3. designate the behavior to be applied to the next message
 
 The Akka Typed project expresses these actions using behaviors and addresses.
 Messages can be sent to an address and behind this façade there is a behavior

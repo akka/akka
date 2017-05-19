@@ -106,6 +106,5 @@ is the only one trying, the operation will succeed.
 
 ## Recommended literature
 
->
  * The Art of Multiprocessor Programming, M. Herlihy and N Shavit, 2008. ISBN 978-0123705914
  * Java Concurrency in Practice, B. Goetz, T. Peierls, J. Bloch, J. Bowbeer, D. Holmes and D. Lea, 2006. ISBN 978-0321349606

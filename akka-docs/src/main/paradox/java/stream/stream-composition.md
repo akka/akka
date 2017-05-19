@@ -11,11 +11,7 @@ be processed arrive and leave the stage. In this view, a `Source` is nothing els
 output port, or, a `BidiFlow` is a "box" with exactly two input and two output ports. In the figure below
 we illustrate the most common used stages viewed as "boxes".
 
-|
-
 ![compose_shapes.png](../../images/compose_shapes.png)
-
-|
 
 The *linear* stages are `Source`, `Sink`
 and `Flow`, as these can be used to compose strict chains of processing stages.
@@ -35,11 +31,7 @@ to interact with. One good example is the `Http` server component, which is enco
 The following figure demonstrates various composite stages, that contain various other type of stages internally, but
 hiding them behind a *shape* that looks like a `Source`, `Flow`, etc.
 
-|
-
 ![compose_composites.png](../../images/compose_composites.png)
-
-|
 
 One interesting example above is a `Flow` which is composed of a disconnected `Sink` and `Source`.
 This can be achieved by using the `fromSinkAndSource()` constructor method on `Flow` which takes the two parts as
@@ -62,11 +54,7 @@ These mechanics allow arbitrary nesting of modules. For example the following fi
 that is built from a composite `Source` and a composite `Sink` (which in turn contains a composite
 `Flow`).
 
-|
-
 ![compose_nested_flow.png](../../images/compose_nested_flow.png)
-
-|
 
 The above diagram contains one more shape that we have not seen yet, which is called `RunnableGraph`. It turns
 out, that if we wire all exposed ports together, so that no more open ports remain, we get a module that is *closed*.
@@ -93,11 +81,7 @@ Once we have hidden the internals of our components, they act like any other bui
 we hide some of the internals of our composites, the result looks just like if any other predefine component has been
 used:
 
-|
-
 ![compose_nested_flow_opaque.png](../../images/compose_nested_flow_opaque.png)
-
-|
 
 If we look at usage of built-in components, and our custom components, there is no difference in usage as the code
 snippet below demonstrates.
@@ -115,11 +99,7 @@ operate on are uniform across all DSLs and fit together nicely.
 
 As a first example, let's look at a more complex layout:
 
-|
-
 ![compose_graph.png](../../images/compose_graph.png)
-
-|
 
 The diagram shows a `RunnableGraph` (remember, if there are no unwired ports, the graph is closed, and therefore
 can be materialized) that encapsulates a non-trivial stream processing network. It contains fan-in, fan-out stages,
@@ -133,18 +113,12 @@ It is possible to refer to the ports, so another version might look like this:
 
 @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #complex-graph-alt }
 
-|
-
 Similar to the case in the first section, so far we have not considered modularity. We created a complex graph, but
 the layout is flat, not modularized. We will modify our example, and create a reusable component with the graph DSL.
 The way to do it is to use the `create()` method on `GraphDSL` factory. If we remove the sources and sinks
 from the previous example, what remains is a partial graph:
 
-|
-
 ![compose_graph_partial.png](../../images/compose_graph_partial.png)
-
-|
 
 We can recreate a similar graph in code, using the DSL in a similar way than before:
 
@@ -159,11 +133,7 @@ matching built-in ones.
 The resulting graph is already a properly wrapped module, so there is no need to call *named()* to encapsulate the graph, but
 it is a good practice to give names to modules to help debugging.
 
-|
-
 ![compose_graph_shape.png](../../images/compose_graph_shape.png)
-
-|
 
 Since our partial graph has the right shape, it can be already used in the simpler, linear DSL:
 
@@ -175,11 +145,7 @@ has a `fromGraph()` method that just adds the DSL to a `FlowShape`. There are si
 For convenience, it is also possible to skip the partial graph creation, and use one of the convenience creator methods.
 To demonstrate this, we will create the following graph:
 
-|
-
 ![compose_graph_flow.png](../../images/compose_graph_flow.png)
-
-|
 
 The code version of the above closed graph might look like this:
 
@@ -224,7 +190,6 @@ encoded in the provided `RunnableGraph`. To be able to interact with the running
 needs to return a different object that provides the necessary interaction capabilities. In other words, the
 `RunnableGraph` can be seen as a factory, which creates:
 
->
  * a network of running processing entities, inaccessible from the outside
  * a materialized value, optionally providing a controlled interaction capability with the network
 
@@ -236,11 +201,7 @@ graphically demonstrates what is happening.
 
 The propagation of the individual materialized values from the enclosed modules towards the top will look like this:
 
-|
-
 ![compose_mat.png](../../images/compose_mat.png)
-
-|
 
 To implement the above, first, we create a composite `Source`, where the enclosed `Source` have a
 materialized type of `CompletableFuture<Optional<Integer>>>`. By using the combiner function `Keep.left()`, the resulting materialized
@@ -297,11 +258,7 @@ the same attribute explicitly set. `nestedSource` gets the default attributes fr
 on the other hand has this attribute set, so it will be used by all nested modules. `nestedFlow` will inherit from `nestedSink`
 except the `map` stage which has again an explicitly provided attribute overriding the inherited one.
 
-|
-
 ![compose_attributes.png](../../images/compose_attributes.png)
-
-|
 
 This diagram illustrates the inheritance process for the example code (representing the materializer default attributes
 as the color *red*, the attributes set on `nestedSink` as *blue* and the attributes set on `nestedFlow` as *green*).

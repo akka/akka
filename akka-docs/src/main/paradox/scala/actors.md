@@ -437,7 +437,6 @@ result:
 It is always preferable to communicate with other Actors using their ActorRef
 instead of relying upon ActorSelection. Exceptions are
 
->
  * sending messages using the @ref:[At-Least-Once Delivery](persistence.md#at-least-once-delivery) facility
  * initiating first contact with a remote system
 
@@ -491,12 +490,15 @@ An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoti
 
 ## Messages and immutability
 
-**IMPORTANT**: Messages can be any kind of object but have to be
-immutable. Scala can’t enforce immutability (yet) so this has to be by
-convention. Primitives like String, Int, Boolean are always immutable. Apart
-from these the recommended approach is to use Scala case classes which are
-immutable (if you don’t explicitly expose the state) and works great with
-pattern matching at the receiver side.
+@@@ warning { title=IMPORTANT }
+
+Messages can be any kind of object but have to be immutable. Scala can’t enforce
+immutability (yet) so this has to be by convention. Primitives like String, Int,
+Boolean are always immutable. Apart from these the recommended approach is to
+use Scala case classes which are immutable (if you don’t explicitly expose the
+state) and works great with pattern matching at the receiver side.
+
+@@@
 
 Here is an example:
 
@@ -581,11 +583,11 @@ taken from one of the following locations in order of precedence:
 
  1. explicitly given timeout as in:
 
-@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-explicit-timeout }
+    @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-explicit-timeout }
 
  2. implicit argument of type `akka.util.Timeout`, e.g.
 
-@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-implicit-timeout }
+    @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-implicit-timeout }
 
 See @ref:[Futures](futures.md) for more information on how to await or query a
 future.

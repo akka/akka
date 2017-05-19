@@ -16,7 +16,7 @@ Read the following source code. The inlined comments explain the different piece
 the fault handling and why they are added. It is also highly recommended to run this
 sample as it is easy to follow the log output to understand what is happening in runtime.
 
-@@toc
+@@toc { depth=1 }
 
 @@@ index
 
