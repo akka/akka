@@ -4,11 +4,10 @@ resolvers += Resolver.sonatypeRepo("releases") // to more quickly obtain paradox
 
 // need this to resolve http://jcenter.bintray.com/org/jenkins-ci/jenkins/1.26/
 // which is used by plugin "org.kohsuke" % "github-api" % "1.68"
-resolvers += "Bintray Jcenter" at "https://jcenter.bintray.com/"
+resolvers += Resolver.jcenterRepo
 
 // for sbt-bintray for resolving credentials from env vars
-resolvers += Resolver.url("2m-sbt-plugin-releases", url("https://dl.bintray.com/2m/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
-resolvers += Resolver.bintrayRepo("2m", "sbt-plugin-releases")
+resolvers += Resolver.bintrayIvyRepo("2m", "sbt-plugin-releases")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.8")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.14")
@@ -23,6 +22,6 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2") // for advan
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.0")
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0-8-g6d0c3f8")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.2")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "4dc29e5a")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.1")
 
 libraryDependencies += "org.kohsuke" % "github-api" % "1.68"
