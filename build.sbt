@@ -5,7 +5,6 @@ import com.typesafe.tools.mima.plugin.MimaPlugin
 import akka.AkkaBuild._
 
 initialize := {
-  System.setProperty("akka.mode", "test") // Is there better place for this? (and more importantly, what is it?)
   // Load system properties from a file to make configuration from Jenkins easier
   loadSystemProperties("project/akka-build.properties")
   initialize.value
@@ -40,6 +39,7 @@ lazy val root = Project(
   base = file("."),
   aggregate = aggregatedProjects
 ).settings(rootSettings: _*)
+ .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs))
 
 lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   // remove dependencies that we have to build ourselves (Scala STM)

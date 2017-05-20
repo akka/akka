@@ -97,6 +97,12 @@ object UnidocRoot extends AutoPlugin {
     val genjavadocEnabled = CliOption("akka.genjavadoc.enabled", false)
   }
 
+  object autoImport {
+    val unidocRootIgnoreProjects = settingKey[Seq[Project]]("Projects to ignore when generating unidoc")
+    val unidocRootProjectFilter = settingKey[ScopeFilter.ProjectFilter]("project filter for generating unidoc")
+  }
+  import autoImport._
+
   override def trigger = noTrigger
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
@@ -107,23 +113,20 @@ object UnidocRoot extends AutoPlugin {
     sources in(JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
   )).getOrElse(Nil)
 
-  def settings(ignoreAggregates: Seq[Project], ignoreProjects: Seq[Project]) = {
-    val withoutAggregates = ignoreAggregates.foldLeft(inAnyProject) { _ -- inAggregates(_, transitive = true, includeRoot = true) }
-    val docProjectFilter = ignoreProjects.foldLeft(withoutAggregates) { _ -- inProjects(_) }
-
+  def settings() = {
     inTask(unidoc)(Seq(
-      unidocProjectFilter in ScalaUnidoc := docProjectFilter,
-      unidocProjectFilter in JavaUnidoc := docProjectFilter,
+      unidocRootProjectFilter := {
+        val ignoreProjects = unidocRootIgnoreProjects.value
+        ignoreProjects.foldLeft(inAnyProject) { _ -- inProjects(_) }
+      },
+      unidocProjectFilter in ScalaUnidoc := unidocRootProjectFilter.value,
+      unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter.value,
       apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value
     ))
   }
 
   override lazy val projectSettings =
-    CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++
-      // TODO These should be excluded, but I haven't figured out how to exclude them without having the project
-      //   reference available anymore (since the Project's are in build.sbt now)
-      // AkkaBuild.remoteTests, AkkaBuild.benchJmh, AkkaBuild.protobuf, AkkaBuild.akkaScalaNightly, AkkaBuild.docs))
-    settings(Seq(), Seq())
+    CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++ settings()
 }
 
 /**
