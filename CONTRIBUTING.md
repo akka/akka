@@ -228,6 +228,39 @@ akka-docs/paradox
 
 The generated html documentation is in `akka-docs/target/paradox/site/main/index.html`.
 
+### Note for paradox on Windows
+
+On Windows, you need special care to generate html documentation with paradox.
+
+Currently `akka-docs/src/main/paradox/java` has symbolic links which point to directories under `akka-docs/src/main/paradox/scala`.
+ 
+- java/additional -> scala/additional
+- java/common -> scala/common
+- java/general -> scala/general
+- java/guide -> scala/project
+- java/security -> scala/security
+
+So, if you just do `git clone <URL>`, then run `sbt akka-docs/paradox`, you will run into an an error like below,
+because symlinks are checked out in a Linux style which doesn't work on Windows.
+
+```
+sbt akka-docs/paradox
+[trace] Stack trace suppressed: run last akka-docs/compile:paradoxMarkdownToHtml for the full output.
+[error] (akka-docs/compile:paradoxMarkdownToHtml) com.lightbend.paradox.markdown.Index$LinkException: Unknown page [common/cluster.md] linked from [java/index-network.md]
+```
+
+As described in http://stackoverflow.com/a/42137273, recent versions of git scm can convert Linux-style symlinks to the Windows style,
+with `git clone`:
+
+- Launch git scm whose version is on or later than 2.11.1
+- **with administrator rights**
+- `git clone -c core.symlinks=true <URL>`
+
+Then the symlinks are checked out in the Windows style, and the paradox command works fine.
+
+In a future version of akka, this trick for Windows should not be needed -  we will use [paradox groups](http://developer.lightbend.com/docs/paradox/latest/features/groups.html) 
+to get rid of duplicate documentation in Java and Scala. At that point we don't need the symlinks anymore. 
+
 ### Scaladoc
 
 Akka generates class diagrams for the API documentation using ScalaDoc. This needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
