@@ -189,9 +189,12 @@ private[akka] class Shard(
   }
 
   def receiveStartEntityAck(ack: ShardRegion.StartEntityAck): Unit = {
-    if (ack.shardId != shardId) {
+    if (ack.shardId != shardId && state.entities.contains(ack.entityId)) {
       log.debug("Entity [{}] previously owned by shard [{}] started in shard [{}]", ack.entityId, shardId, ack.shardId)
-      state = state.copy(state.entities - ack.entityId)
+      processChange(EntityStopped(ack.entityId)) { _ ⇒
+        state = state.copy(state.entities - ack.entityId)
+        messageBuffers.remove(ack.entityId)
+      }
     }
   }
 
