@@ -2,6 +2,12 @@
 
 ## 10.0.7
 
+### New Seed Templates for Akka HTTP Apps
+
+We prepared new seed templates for starting out with Akka HTTP using the [Java DSL](https://github.com/akka/akka-http-java-seed.g8) 
+as well as [Scala DSL](https://github.com/akka/akka-http-scala-seed.g8). By using the `sbt new` command one can now easily get a 
+small sample project to easily get started with your first Akka HTTP app. More instructions on the seed template pages.
+
 ### New Path Directive `ignoreTrailingSlash`
 
 Akka HTTP treats differently by default a route that ends with slash (`/`) than one that doesn't. From this version on, 
@@ -16,6 +22,7 @@ and @ref[Java](java/http/routing-dsl/directives/path-directives/ignoreTrailingSl
 
 ##### akka-http
  * Added new Path Directive `ignoreTrailingSlash` ([#880](https://github.com/akka/akka-http/issues/880))
+ * Prepared new seed templates for Akka HTTP apps (for both [Java DSL](https://github.com/akka/akka-http-java-seed.g8) and [Scala](https://github.com/akka/akka-http-scala-seed.g8)) ([1137](https://github.com/akka/akka-http/issues/1137) & [1055](https://github.com/akka/akka-http/issues/1055))
 
 ## 10.0.6
 
