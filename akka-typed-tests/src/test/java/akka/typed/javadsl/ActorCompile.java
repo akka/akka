@@ -11,6 +11,7 @@ import static akka.typed.javadsl.Actor.*;
 import java.util.concurrent.TimeUnit;
 import scala.concurrent.duration.Duration;
 
+@SuppressWarnings("unused")
 public class ActorCompile {
 
   interface MyMsg {}
@@ -53,7 +54,6 @@ public class ActorCompile {
           if (msg2 instanceof MyMsgB) {
             ((MyMsgA) msg).replyTo.tell(((MyMsgB) msg2).greeting);
 
-            @SuppressWarnings("unused")
             ActorRef<String> adapter = ctx2.spawnAdapter(s -> new MyMsgB(s.toUpperCase()));
           }
           return same();
@@ -79,11 +79,37 @@ public class ActorCompile {
 
     @Override
     public Behavior<MyMsg> receiveMessage(ActorContext<MyMsg> ctx, MyMsg msg) throws Exception {
-      @SuppressWarnings("unused")
       ActorRef<String> adapter = ctx.asJava().spawnAdapter(s -> new MyMsgB(s.toUpperCase()));
       return this;
     }
 
+  }
+
+  // SupervisorStrategy
+  {
+    SupervisorStrategy strategy1 = SupervisorStrategy.restart();
+    SupervisorStrategy strategy2 = SupervisorStrategy.restart().withLoggingEnabled(false);
+    SupervisorStrategy strategy3 = SupervisorStrategy.resume();
+    SupervisorStrategy strategy4 =
+      SupervisorStrategy.restartWithLimit(3, Duration.create(1, TimeUnit.SECONDS));
+
+    SupervisorStrategy strategy5 =
+      SupervisorStrategy.restartWithBackoff(
+        Duration.create(200, TimeUnit.MILLISECONDS),
+        Duration.create(10, TimeUnit.SECONDS),
+        0.1);
+
+    BackoffSupervisorStrategy strategy6 =
+        SupervisorStrategy.restartWithBackoff(
+          Duration.create(200, TimeUnit.MILLISECONDS),
+          Duration.create(10, TimeUnit.SECONDS),
+          0.1);
+    SupervisorStrategy strategy7 = strategy6.withResetBackoffAfter(Duration.create(2, TimeUnit.SECONDS));
+
+    Behavior<MyMsg> behv =
+      Actor.restarter(RuntimeException.class, strategy1,
+        Actor.restarter(IllegalStateException.class,
+          strategy6, Actor.ignore()));
   }
 
 
