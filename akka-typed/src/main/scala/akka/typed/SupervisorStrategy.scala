@@ -101,13 +101,13 @@ object SupervisorStrategy {
   }
 }
 
-sealed trait SupervisorStrategy {
+sealed abstract class SupervisorStrategy {
   def loggingEnabled: Boolean
 
   def withLoggingEnabled(on: Boolean): SupervisorStrategy
 }
 
-sealed trait BackoffSupervisorStrategy extends SupervisorStrategy {
+sealed abstract class BackoffSupervisorStrategy extends SupervisorStrategy {
   def resetBackoffAfter: FiniteDuration
 
   /**
