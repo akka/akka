@@ -207,7 +207,43 @@ problematic, so passing an :class:`ActorRef<PostSessionMessage>` where
 Trying it out
 -------------
 
-TODO this section has not been written yet
+In order to see this chat room in action we need to write a client Actor that can use it:
+
+.. includecode:: ../../../akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java#chatroom-gabbler
+
+From this behavior we can create an Actor that will accept a chat room session,
+post a message, wait to see it published, and then terminate. The last step
+requires the ability to change behavior, we need to transition from the normal
+running behavior into the terminated state. This is why here we do not return
+:meth:`same`, as above, but another special value :meth:`stopped`.
+
+Now to try things out we must start both a chat room and a gabbler and of
+course we do this inside an Actor system. Since there can be only one guardian
+supervisor we could either start the chat room from the gabbler (which we don’t
+want—it complicates its logic) or the gabbler from the chat room (which is
+nonsensical) or we start both of them from a third Actor—our only sensible
+choice:
+
+.. includecode:: ../../../akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java#chatroom-main
+
+In good tradition we call the ``main`` Actor what it is, it directly
+corresponds to the ``main`` method in a traditional Java application. This
+Actor will perform its job on its own accord, we do not need to send messages
+from the outside, so we declare it to be of type ``Void``. Actors receive not
+only external messages, they also are notified of certain system events,
+so-called Signals. In order to get access to those we choose to implement this
+particular one using the :meth:`immutable` behavior decorator. The
+provided ``onSignal`` function will be invoked for signals (subclasses of :class:`Signal`)
+or the ``onMessage`` function for user messages.
+
+This particular ``main`` Actor is created using `Actor.deferred`, which is like a factory for a behavior.
+Creation of the behavior instance is deferred until the actor is started, as opposed to `Actor.immutable`
+that creates the behavior instance immediately before the actor is running. The factory function in 
+`deferred` pass the `ActorContext` as parameter and that can for example be used for spawning child actors.
+This ``main`` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
+gabbler is finished we will receive the :class:`Terminated` event due to having
+called ``ctx.watch`` for it. This allows us to shut down the Actor system: when
+the main Actor terminates there is nothing more to do.
 
 Status of this Project and Relation to Akka Actors
 ==================================================
