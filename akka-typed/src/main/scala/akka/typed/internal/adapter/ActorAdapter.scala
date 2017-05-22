@@ -75,16 +75,20 @@ import akka.util.OptionVal
       a.SupervisorStrategy.Stop
   }
 
-  override def preStart(): Unit =
+  override def preStart(): Unit = {
     behavior = validateAsInitial(undefer(behavior, ctx))
+    if (!isAlive(behavior)) context.stop(self)
+  }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     Behavior.interpretSignal(behavior, ctx, PreRestart)
     behavior = Behavior.stopped
   }
 
-  override def postRestart(reason: Throwable): Unit =
+  override def postRestart(reason: Throwable): Unit = {
     behavior = validateAsInitial(undefer(behavior, ctx))
+    if (!isAlive(behavior)) context.stop(self)
+  }
 
   override def postStop(): Unit = {
     behavior match {
