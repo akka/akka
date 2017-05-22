@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.impl.Stages.DefaultAttributes
+import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.stream.actor.ActorPublisher

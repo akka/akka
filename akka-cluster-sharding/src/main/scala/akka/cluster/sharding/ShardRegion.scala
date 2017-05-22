@@ -4,6 +4,7 @@
 package akka.cluster.sharding
 
 import java.net.URLEncoder
+
 import akka.pattern.AskTimeoutException
 import akka.util.{ MessageBufferMap, Timeout }
 import akka.pattern.{ ask, pipe }
@@ -12,6 +13,7 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus
+
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -300,6 +302,19 @@ object ShardRegion {
    */
   private final case class RestartShard(shardId: ShardId)
 
+  /**
+   * When remembering entities and a shard is started, each entity id that needs to
+   * be running will trigger this message being sent through sharding. For this to work
+   * the message *must* be handled by the shard id extractor.
+   */
+  final case class StartEntity(entityId: EntityId) extends ClusterShardingSerializable
+
+  /**
+   * Sent back when a `ShardRegion.StartEntity` message was received and triggered the entity
+   * to start (it does not guarantee the entity successfully started)
+   */
+  final case class StartEntityAck(entityId: EntityId, shardId: ShardRegion.ShardId) extends ClusterShardingSerializable
+
   private def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
 
@@ -438,6 +453,7 @@ private[akka] class ShardRegion(
     case cmd: ShardRegionCommand                 ⇒ receiveCommand(cmd)
     case query: ShardRegionQuery                 ⇒ receiveQuery(query)
     case msg: RestartShard                       ⇒ deliverMessage(msg, sender())
+    case msg: StartEntity                        ⇒ deliverStartEntity(msg, sender())
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
     case unknownMsg                              ⇒ log.warning("Message does not have an extractor defined in shard [{}] so it was ignored: {}", typeName, unknownMsg)
   }
@@ -697,6 +713,15 @@ private[akka] class ShardRegion(
     }
     loggedFullBufferWarning = false
     retryCount = 0
+  }
+
+  def deliverStartEntity(msg: StartEntity, snd: ActorRef): Unit = {
+    try {
+      deliverMessage(msg, snd)
+    } catch {
+      case ex: MatchError ⇒
+        log.error(ex, "When using remember-entities the shard id extractor must handle ShardRegion.StartEntity(id).")
+    }
   }
 
   def deliverMessage(msg: Any, snd: ActorRef): Unit =

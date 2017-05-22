@@ -496,7 +496,7 @@ class TcpSpec extends StreamSpec("akka.stream.materializer.subscription-timeout.
 
       val probe2 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
       val binding2F = bind.to(Sink.fromSubscriber(probe2)).run()
-      probe2.expectSubscriptionAndError(BindFailedException)
+      probe2.expectSubscriptionAndError(signalDemand = true) shouldBe a[BindFailedException]
 
       val probe3 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
       val binding3F = bind.to(Sink.fromSubscriber(probe3)).run()

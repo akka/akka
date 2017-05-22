@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 
 import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer

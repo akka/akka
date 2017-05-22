@@ -262,6 +262,9 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   @InternalApi private[akka] def wireOut(out: OutPort, absoluteOffset: Int, logic: Any): Unit = {
     if (Debug) println(s"  wiring $out to absolute = $absoluteOffset")
 
+    //          <-------- backwards, visited stuff
+    //                   ------------> forward, not yet visited
+    // ---------------- .. (we are here)
     // First check if we are wiring backwards. This is important since we can only do resolution for backward wires.
     // In other cases we need to record the forward wire and resolve it later once its target inSlot has been visited.
     if (absoluteOffset < currentGlobalOffset) {
@@ -432,7 +435,6 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     val attributesStack = new java.util.ArrayDeque[Attributes](8)
     attributesStack.addLast(initialAttributes and graph.traversalBuilder.attributes)
 
-    // TODO: No longer need for a stack
     val traversalStack = new java.util.ArrayDeque[Traversal](16)
     traversalStack.addLast(current)
 

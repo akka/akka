@@ -280,17 +280,17 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int) extends GraphStageWi
 
 /**
  * A BroadcastHub is a special streaming hub that is able to broadcast streamed elements to a dynamic set of consumers.
- * It consissts of two parts, a [[Sink]] and a [[Source]]. The [[Sink]] broadcasts elements from a producer to the
+ * It consists of two parts, a [[Sink]] and a [[Source]]. The [[Sink]] broadcasts elements from a producer to the
  * actually live consumers it has. Once the producer has been materialized, the [[Sink]] it feeds into returns a
- * materialized value which is the corresponding [[Source]]. This [[Source]] can be materialized arbitrary many times,
- * where weach of the new materializations will receive their elements from the original [[Sink]].
+ * materialized value which is the corresponding [[Source]]. This [[Source]] can be materialized an arbitrary number
+ * of times, where each of the new materializations will receive their elements from the original [[Sink]].
  */
 object BroadcastHub {
 
   /**
    * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
-   * value. This [[Source]] can be materialized arbitrary many times and each materialization will receive the
+   * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
    * broadcast elements form the ofiginal [[Sink]].
    *
    * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own

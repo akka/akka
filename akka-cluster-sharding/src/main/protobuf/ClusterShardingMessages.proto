@@ -52,3 +52,12 @@ message ShardStats {
     required string shard = 1;
     required int32 entityCount = 2;
 }
+
+message StartEntity {
+    required string entityId = 1;
+}
+
+message StartEntityAck {
+    required string entityId = 1;
+    required string shardId = 2;
+}
