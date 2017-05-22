@@ -61,8 +61,8 @@ private[io] trait ChannelRegistration extends NoSerializationVerificationNeeded 
 
   /**
    * Explicitly cancel the registration
-    *
-    * This wakes up the selector to make sure the cancellation takes effect immediately.
+   *
+   * This wakes up the selector to make sure the cancellation takes effect immediately.
    */
   def cancel(): Unit
 }
@@ -167,12 +167,11 @@ private[io] object SelectionHandler {
               def enableInterest(ops: Int): Unit = enableInterestOps(key, ops)
               def disableInterest(ops: Int): Unit = disableInterestOps(key, ops)
               def cancel(): Unit = {
-                key.cancel()
                 // On Windows the selector does not effectively cancel the registration until after the
-                // selector has woken up. Because here the registration is explicitly cancelled, we wake up the
-                // selector to make sure the cancellation (e.g. sending a RST packet for a cancelled TCP connection)
+                // selector has woken up. Because here the registration is explicitly cancelled, the selector
+                // will be woken up which makes sure the cancellation (e.g. sending a RST packet for a cancelled TCP connection)
                 // is performed immediately.
-                selector.wakeup()
+                cancelKey(key)
               }
             }
           } catch {
@@ -207,6 +206,13 @@ private[io] object SelectionHandler {
             val newOps = currentOps | ops
             if (newOps != currentOps) key.interestOps(newOps)
           }
+        }
+      }
+
+    private def cancelKey(key: SelectionKey): Unit =
+      execute {
+        new Task {
+          def tryRun(): Unit = key.cancel()
         }
       }
 

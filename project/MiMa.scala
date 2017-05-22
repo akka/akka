@@ -1198,6 +1198,9 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching_="),
         
+        // #22881 Make sure connections are aborted correctly on Windows
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancel"),
+
         // #22868 store shards
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.sendUpdate"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.waitingForUpdate"),
@@ -1213,10 +1216,7 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.apply"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnRestartSupervisor.this"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped"),
-
-        // #22881 Make sure connections are aborted correctly on Windows
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.wakeUp")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped")
       )
     )
 
