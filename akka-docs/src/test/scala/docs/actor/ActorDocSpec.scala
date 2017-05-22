@@ -5,29 +5,21 @@ package docs.actor
 
 import jdocs.actor.ImmutableMessage
 
-//#fiddle_code
 import language.postfixOps
-//#fiddle_code
 
-//#fiddle_code
 //#imports1
 import akka.actor.Actor
 import akka.actor.Props
-//#fiddle_code
 import akka.event.Logging
 
 //#imports1
 
 import scala.concurrent.Future
-//#fiddle_code
 import akka.actor.{ ActorRef, ActorSystem, PoisonPill, Terminated, ActorLogging }
-//#fiddle_code
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import akka.testkit._
 import akka.util._
-//#fiddle_code
 import scala.concurrent.duration._
-//#fiddle_code
 import scala.concurrent.Await
 import akka.Done
 import akka.actor.CoordinatedShutdown
@@ -284,6 +276,9 @@ final case class Give(thing: Any)
 //#receive-orElse
 
 //#fiddle_code
+import akka.actor.{ ActorSystem, Actor, ActorRef, Props, PoisonPill }
+import language.postfixOps
+import scala.concurrent.duration._
 
 case object Ping
 case object Pong
@@ -380,7 +375,7 @@ class ActorDocSpec extends AkkaSpec("""
       ponger ! Ping
     }
 
-// $FiddleDependency org.akka-js %%% akkajsactor % 1.2.5.1
+    // $FiddleDependency org.akka-js %%% akkajsactor % 1.2.5.1
     //#fiddle_code
     testProbe.expectTerminated(pinger)
     testProbe.expectTerminated(ponger)

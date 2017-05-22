@@ -5,12 +5,10 @@ package docs.stream
 
 //#imports
 
-//#fiddle_code
 import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.{ ClosedShape, ActorMaterializer, OverflowStrategy }
 import akka.stream.scaladsl._
-//#fiddle_code
 import scala.concurrent.Await
 import scala.concurrent.Future
 
@@ -20,6 +18,10 @@ import akka.testkit.AkkaSpec
 
 object TwitterStreamQuickstartDocSpec {
   //#fiddle_code
+  import akka.NotUsed
+  import akka.actor.ActorSystem
+  import akka.stream.ActorMaterializer
+  import akka.stream.scaladsl._
 
   //#model
   final case class Author(handle: String)
