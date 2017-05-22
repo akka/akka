@@ -1183,9 +1183,10 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getScopeManifest")
       ),
       "2.4.18" -> Seq(
-      // make sure that
-      //  * this list ends with the latest released version number
-      //  * is kept in sync between release-2.4 and master branch
+        // make sure that
+        //  * this list ends with the latest released version number
+        //  * is kept in sync between release-2.4 and master branch
+      )
     )
     
     val Release25Filters = Seq(
