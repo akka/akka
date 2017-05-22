@@ -41,6 +41,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   private[this] var interestedInResume: Option[ActorRef] = None
   var closedMessage: CloseInformation = _ // for ConnectionClosed message in postStop
   private var watchedActor: ActorRef = context.system.deadLetters
+  private var registration: Option[ChannelRegistration] = None
 
   def signDeathPact(actor: ActorRef): Unit = {
     unsignDeathPact()
@@ -193,6 +194,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   /** used in subclasses to start the common machinery above once a channel is connected */
   def completeConnect(registration: ChannelRegistration, commander: ActorRef,
                       options: immutable.Traversable[SocketOption]): Unit = {
+    this.registration = Some(registration)
+
     // Turn off Nagle's algorithm by default
     try channel.socket.setTcpNoDelay(true) catch {
       case e: SocketException ⇒
@@ -254,7 +257,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
           if (!pullMode) self ! ChannelReadable
         case EndOfStream if channel.socket.isOutputShutdown ⇒
           if (TraceLogging) log.debug("Read returned end-of-stream, our side already closed")
-          doCloseConnection(info, closeCommander, ConfirmedClosed)
+          doCloseConnection(info.handler, closeCommander, ConfirmedClosed)
         case EndOfStream ⇒
           if (TraceLogging) log.debug("Read returned end-of-stream, our side not yet closed")
           handleClose(info, closeCommander, PeerClosed)
@@ -273,7 +276,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
                   closedEvent: ConnectionClosed): Unit = closedEvent match {
     case Aborted ⇒
       if (TraceLogging) log.debug("Got Abort command. RESETing connection.")
-      doCloseConnection(info, closeCommander, closedEvent)
+      doCloseConnection(info.handler, closeCommander, closedEvent)
     case PeerClosed if info.keepOpenOnPeerClosed ⇒
       // report that peer closed the connection
       info.handler ! PeerClosed
@@ -293,17 +296,17 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       // that the peer closed first or concurrently with this code running.
       // also see http://bugs.sun.com/view_bug.do?bug_id=4516760
       if (peerClosed || !safeShutdownOutput())
-        doCloseConnection(info, closeCommander, closedEvent)
+        doCloseConnection(info.handler, closeCommander, closedEvent)
       else context.become(closing(info, closeCommander))
     case _ ⇒ // close now
       if (TraceLogging) log.debug("Got Close command, closing connection.")
-      doCloseConnection(info, closeCommander, closedEvent)
+      doCloseConnection(info.handler, closeCommander, closedEvent)
   }
 
-  def doCloseConnection(info: ConnectionInfo, closeCommander: Option[ActorRef], closedEvent: ConnectionClosed): Unit = {
-    if (closedEvent == Aborted) abort(Some(info))
+  def doCloseConnection(handler: ActorRef, closeCommander: Option[ActorRef], closedEvent: ConnectionClosed): Unit = {
+    if (closedEvent == Aborted) abort()
     else channel.close()
-    stopWith(CloseInformation(Set(info.handler) ++ closeCommander, closedEvent))
+    stopWith(CloseInformation(Set(handler) ++ closeCommander, closedEvent))
   }
 
   def handleError(handler: ActorRef, exception: IOException): Unit = {
@@ -327,7 +330,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       }
     }
 
-  def abort(info: Option[ConnectionInfo]): Unit = {
+  def abort(): Unit = {
     try channel.socket.setSoLinger(true, 0) // causes the following close() to send TCP RST
     catch {
       case NonFatal(e) ⇒
@@ -339,7 +342,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     // On linux, closing sends the RST directly. On windows, however, the connection is
     // closed only when the channel is deregistered from the selector, which happens before
     // and after 'select' polling.
-    info.foreach(_.registration.wakeUp())
+    registration.foreach(_.wakeUp())
   }
 
   def stopWith(closeInfo: CloseInformation): Unit = {
@@ -349,7 +352,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   override def postStop(): Unit = {
     if (channel.isOpen)
-      abort(None)
+      abort()
 
     if (writePending) pendingWrite.release()
 
