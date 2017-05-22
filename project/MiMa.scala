@@ -1192,7 +1192,6 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.async")
       ),
       "2.5.1" -> Seq(
-          
         // #22794 watchWith
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorContext.watchWith"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.watchWith"),
@@ -1214,7 +1213,10 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.apply"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnRestartSupervisor.this"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped"),
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped")
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withReplyWhileStopped"),
+
+        // #22881 Make sure connections are aborted correctly on Windows
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.wakeUp")
       )
     )
 
