@@ -7,10 +7,9 @@ import akka.testkit.AkkaSpec
 
 class SerializationChecksPlainRemotingSpec extends AkkaSpec {
 
-  "Settings serialize-messages and serialize-creators" must {
+  "Settings serialize-messages" must {
 
     "be on for tests" in {
-      system.settings.SerializeAllCreators should ===(true)
       system.settings.SerializeAllMessages should ===(true)
     }
 
