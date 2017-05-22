@@ -339,10 +339,15 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         if (TraceLogging) log.debug("setSoLinger(true, 0) failed with [{}]", e)
     }
     channel.close()
-    // On linux, closing sends the RST directly. On windows, however, the connection is
-    // closed only when the channel is deregistered from the selector, which happens before
-    // and after 'select' polling.
-    registration.foreach(_.wakeUp())
+
+    // On linux, closing the channel directly triggers a RST as a side effect of `preClose`
+    // called from `sun.nio.ch.SocketChannelImpl#implCloseSelectableChannel`.
+
+    // On windows, however, the connection is merely added to the `cancelledKeys` of the `java.nio.channels.spi.AbstractSelector`,
+    // and `sun.nio.ch.SelectorImpl` will kill those from `processDeregisterQueue` after the select poll has returned.
+
+    // We don't want to have to wait for that, hence explicitly triggering the cancellation:
+    registration.foreach(_.cancel())
   }
 
   def stopWith(closeInfo: CloseInformation): Unit = {
