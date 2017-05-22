@@ -41,7 +41,8 @@ object ClusterShardingRememberEntitiesSpec {
   }
 
   val extractShardId: ShardRegion.ExtractShardId = msg ⇒ msg match {
-    case id: Int ⇒ id.toString
+    case id: Int                     ⇒ id.toString
+    case ShardRegion.StartEntity(id) ⇒ id
   }
 
 }
@@ -73,10 +74,10 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(val mode: String) exten
     }
     """))
 
-  nodeConfig(first, second)(ConfigFactory.parseString(s"""
+  nodeConfig(third)(ConfigFactory.parseString(s"""
     akka.cluster.sharding.distributed-data.durable.lmdb {
-      # use same directory for first and second node (not used at same time)
-      dir = target/ShardingRememberEntitiesSpec/sharding-first-second
+      # use same directory when starting new node on third (not used at same time)
+      dir = target/ShardingRememberEntitiesSpec/sharding-third
     }
     """))
 }
@@ -127,10 +128,10 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
 
   val cluster = Cluster(system)
 
-  def startSharding(): Unit = {
-    ClusterSharding(system).start(
+  def startSharding(sys: ActorSystem = system, probe: ActorRef = testActor): Unit = {
+    ClusterSharding(sys).start(
       typeName = "Entity",
-      entityProps = ClusterShardingRememberEntitiesSpec.props(testActor),
+      entityProps = ClusterShardingRememberEntitiesSpec.props(probe),
       settings = ClusterShardingSettings(system).withRememberEntities(true),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)
@@ -203,16 +204,27 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
     }
 
     "start remembered entities in new cluster" in within(30.seconds) {
-      runOn(first) {
-        testConductor.exit(third, 0).await
-      }
-      enterBarrier("crash-third")
+      runOn(third) {
+        watch(region)
+        Cluster(system).leave(Cluster(system).selfAddress)
+        expectTerminated(region)
+        awaitAssert {
+          Cluster(system).isTerminated should ===(true)
+        }
+        // no nodes left of the original cluster, start a new cluster
 
-      // no nodes left of the original cluster, start a new cluster
-      join(first, first)
-      runOn(first) {
-        startSharding()
-        expectMsgType[Started]
+        val sys2 = ActorSystem(system.name, system.settings.config)
+        val probe2 = TestProbe()(sys2)
+
+        if (!isDdataMode) {
+          sys2.actorSelection(node(first) / "user" / "store").tell(Identify(None), probe2.ref)
+          val sharedStore = probe2.expectMsgType[ActorIdentity](10.seconds).ref.get
+          SharedLeveldbJournal.setStore(sharedStore, sys2)
+        }
+
+        Cluster(sys2).join(Cluster(sys2).selfAddress)
+        startSharding(sys2, probe2.ref)
+        probe2.expectMsgType[Started](20.seconds)
       }
       enterBarrier("after-3")
     }
