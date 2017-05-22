@@ -1,50 +1,48 @@
-.. _typed-java:
+# Akka Typed
 
-##########
-Akka Typed
-##########
+@@@ warning
 
-.. warning::
-
-  This module is currently marked as :ref:`may change <may-change>` in the sense
+This module is currently marked as @ref:[may change](common/may-change.md) in the sense
   of being the subject of active research. This means that API or semantics can
   change without warning or deprecation period and it is not recommended to use
   this module in production just yet—you have been warned.
 
-As discussed in :ref:`actor-systems` (and following chapters) Actors are about
+@@@
+
+As discussed in `actor-systems` (and following chapters) Actors are about
 sending messages between independent units of computation, but how does that
 look like? In all of the following these imports are assumed:
 
-.. includecode:: ../../../akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java#imports
+@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #imports }
 
 With these in place we can define our first Actor, and of course it will say
 hello!
 
-.. includecode:: ../../../akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java#hello-world-actor
+@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-actor }
 
 This small piece of code defines two message types, one for commanding the
 Actor to greet someone and one that the Actor will use to confirm that it has
-done so. The :class:`Greet` type contains not only the information of whom to
-greet, it also holds an :class:`ActorRef` that the sender of the message
-supplies so that the :class:`HelloWorld` Actor can send back the confirmation
+done so. The `Greet` type contains not only the information of whom to
+greet, it also holds an `ActorRef` that the sender of the message
+supplies so that the `HelloWorld` Actor can send back the confirmation
 message.
 
-The behavior of the Actor is defined as the :meth:`greeter` value with the help
-of the :meth:`immutable` behavior constructor. This constructor is called
+The behavior of the Actor is defined as the `greeter` value with the help
+of the `immutable` behavior constructor. This constructor is called
 immutable because the behavior instance doesn't have or close over any mutable
 state. Processing the next message may result in a new behavior that can
 potentially be different from this one. State is updated by returning a new
 behavior that holds the new immutable state. In this case we don't need to
-update any state, so we return :class:`Same`.
+update any state, so we return `Same`.
 
 The type of the messages handled by this behavior is declared to be of class
-:class:`Greet`, which implies that the supplied function’s ``msg`` argument is
-also typed as such. This is why we can access the ``whom`` and ``replyTo``
+`Greet`, which implies that the supplied function’s `msg` argument is
+also typed as such. This is why we can access the `whom` and `replyTo`
 members without needing to use a pattern match.
 
-On the last line we see the :class:`HelloWorld` Actor send a message to another
-Actor, which is done using the ``!`` operator (pronounced “tell”). Since the
-``replyTo`` address is declared to be of type ``ActorRef<Greeted>`` the
+On the last line we see the `HelloWorld` Actor send a message to another
+Actor, which is done using the `!` operator (pronounced “tell”). Since the
+`replyTo` address is declared to be of type `ActorRef<Greeted>` the
 compiler will only permit us to send messages of this type, other usage will
 not be accepted.
 
@@ -52,28 +50,28 @@ The accepted message types of an Actor together with all reply types defines
 the protocol spoken by this Actor; in this case it is a simple request–reply
 protocol but Actors can model arbitrarily complex protocols when needed. The
 protocol is bundled together with the behavior that implements it in a nicely
-wrapped scope—the ``HelloWorld`` class.
+wrapped scope—the `HelloWorld` class.
 
 Now we want to try out this Actor, so we must start an ActorSystem to host it:
 
-.. includecode:: ../../../akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java#hello-world
+@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
 
-We start an Actor system from the defined ``greeter`` behavior.
+We start an Actor system from the defined `greeter` behavior.
 
 As Carl Hewitt said, one Actor is no Actor—it would be quite lonely with
 nobody to talk to. In this sense the example is a little cruel because we only
-give the ``HelloWorld`` Actor a fake person to talk to—the “ask” pattern
-can be used to send a message such that the reply fulfills a :class:`CompletionStage`.
+give the `HelloWorld` Actor a fake person to talk to—the “ask” pattern
+can be used to send a message such that the reply fulfills a `CompletionStage`.
 
-Note that the :class:`CompletionStage` that is returned by the “ask” operation is
+Note that the `CompletionStage` that is returned by the “ask” operation is
 properly typed already, no type checks or casts needed. This is possible due to
-the type information that is part of the message protocol: the ``ask`` operator
-takes as argument a function that pass an :class:`ActorRef<U>`, which is the
-``replyTo`` parameter of the  ``Greet`` message, which means that when sending
-the reply message to that :class:`ActorRef` the message that fulfills the 
-:class:`CompletionStage` can only be of type :class:`Greeted`.
+the type information that is part of the message protocol: the `ask` operator
+takes as argument a function that pass an `ActorRef<U>`, which is the
+`replyTo` parameter of the  `Greet` message, which means that when sending
+the reply message to that `ActorRef` the message that fulfills the 
+`CompletionStage` can only be of type `Greeted`.
 
-We use this here to send the :class:`Greet` command to the Actor and when the
+We use this here to send the `Greet` command to the Actor and when the
 reply comes back we will print it out and tell the actor system to shut down and 
 the program ends.
 
@@ -82,21 +80,16 @@ by the compiler, but this ability is not unlimited, there are bounds to what we
 can statically express. Before we go on with a more complex (and realistic)
 example we make a small detour to highlight some of the theory behind this.
 
-A Little Bit of Theory
-======================
+## A Little Bit of Theory
 
-The `Actor Model`_ as defined by Hewitt, Bishop and Steiger in 1973 is a
-computational model that expresses exactly what it means for computation to be
-distributed. The processing units—Actors—can only communicate by exchanging
-messages and upon reception of a message an Actor can do the following three
-fundamental actions:
-
-.. _`Actor Model`: http://en.wikipedia.org/wiki/Actor_model
+The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) as defined by
+Hewitt, Bishop and Steiger in 1973 is a computational model that expresses
+exactly what it means for computation to be distributed. The processing
+units—Actors—can only communicate by exchanging messages and upon reception of a
+message an Actor can do the following three fundamental actions:
 
   1. send a finite number of messages to Actors it knows
-
   2. create a finite number of new Actors
-
   3. designate the behavior to be applied to the next message
 
 The Akka Typed project expresses these actions using behaviors and addresses.
@@ -142,24 +135,23 @@ just given by the last message type that was received or sent.
 
 In the next section we demonstrate this on a more realistic example.
 
-A More Complex Example
-======================
+## A More Complex Example
 
 Consider an Actor that runs a chat room: client Actors may connect by sending
 a message that contains their screen name and then they can post messages. The
 chat room Actor will disseminate all posted messages to all currently connected
 client Actors. The protocol definition could look like the following:
 
-.. includecode:: ../../../akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java#chatroom-protocol
+@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-protocol }
 
-Initially the client Actors only get access to an ``ActorRef<GetSession>``
+Initially the client Actors only get access to an `ActorRef<GetSession>`
 which allows them to make the first step. Once a client’s session has been
-established it gets a :class:`SessionGranted` message that contains a ``handle`` to
-unlock the next protocol step, posting messages. The :class:`PostMessage`
+established it gets a `SessionGranted` message that contains a `handle` to
+unlock the next protocol step, posting messages. The `PostMessage`
 command will need to be sent to this particular address that represents the
 session that has been added to the chat room. The other aspect of a session is
-that the client has revealed its own address, via the ``replyTo`` argument, so that subsequent
-:class:`MessagePosted` events can be sent to it.
+that the client has revealed its own address, via the `replyTo` argument, so that subsequent
+`MessagePosted` events can be sent to it.
 
 This illustrates how Actors can express more than just the equivalent of method
 calls on Java objects. The declared message types and their contents describe a
@@ -167,55 +159,54 @@ full protocol that can involve multiple Actors and that can evolve over
 multiple steps. The implementation of the chat room protocol would be as simple
 as the following:
 
-.. includecode:: ../../../akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java#chatroom-behavior
+@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-behavior }
 
 The core of this behavior is stateful, the chat room itself does not change
 into something else when sessions are established, but we introduce a variable
-that tracks the opened sessions. Note that by using a method parameter a ``var``
-is not needed. When a new :class:`GetSession` command comes in we add that client to the
+that tracks the opened sessions. Note that by using a method parameter a `var`
+is not needed. When a new `GetSession` command comes in we add that client to the
 list that is in the returned behavior. Then we also need to create the session’s
-:class:`ActorRef` that will be used to post messages. In this case we want to
-create a very simple Actor that just repackages the :class:`PostMessage`
-command into a :class:`PostSessionMessage` command which also includes the
+`ActorRef` that will be used to post messages. In this case we want to
+create a very simple Actor that just repackages the `PostMessage`
+command into a `PostSessionMessage` command which also includes the
 screen name. Such a wrapper Actor can be created by using the
-:meth:`spawnAdapter` method on the :class:`ActorContext`, so that we can then
-go on to reply to the client with the :class:`SessionGranted` result.
+`spawnAdapter` method on the `ActorContext`, so that we can then
+go on to reply to the client with the `SessionGranted` result.
 
-The behavior that we declare here can handle both subtypes of :class:`Command`.
-:class:`GetSession` has been explained already and the
-:class:`PostSessionMessage` commands coming from the wrapper Actors will
+The behavior that we declare here can handle both subtypes of `Command`.
+`GetSession` has been explained already and the
+`PostSessionMessage` commands coming from the wrapper Actors will
 trigger the dissemination of the contained chat room message to all connected
 clients. But we do not want to give the ability to send
-:class:`PostSessionMessage` commands to arbitrary clients, we reserve that
+`PostSessionMessage` commands to arbitrary clients, we reserve that
 right to the wrappers we create—otherwise clients could pose as completely
-different screen names (imagine the :class:`GetSession` protocol to include
-authentication information to further secure this). Therefore :class:`PostSessionMessage`
-has ``private`` visibility and can't be created outside the actor.
+different screen names (imagine the `GetSession` protocol to include
+authentication information to further secure this). Therefore `PostSessionMessage`
+has `private` visibility and can't be created outside the actor.
 
 If we did not care about securing the correspondence between a session and a
-screen name then we could change the protocol such that :class:`PostMessage` is
-removed and all clients just get an :class:`ActorRef<PostSessionMessage>` to
+screen name then we could change the protocol such that `PostMessage` is
+removed and all clients just get an `ActorRef<PostSessionMessage>` to
 send to. In this case no wrapper would be needed and we could just use
-``ctx.getSelf()``. The type-checks work out in that case because
-:class:`ActorRef<T>` is contravariant in its type parameter, meaning that we
-can use a :class:`ActorRef<Command>` wherever an
-:class:`ActorRef<PostSessionMessage>` is needed—this makes sense because the
+`ctx.getSelf()`. The type-checks work out in that case because
+`ActorRef<T>` is contravariant in its type parameter, meaning that we
+can use a `ActorRef<Command>` wherever an
+`ActorRef<PostSessionMessage>` is needed—this makes sense because the
 former simply speaks more languages than the latter. The opposite would be
-problematic, so passing an :class:`ActorRef<PostSessionMessage>` where
-:class:`ActorRef<Command>` is required will lead to a type error.
+problematic, so passing an `ActorRef<PostSessionMessage>` where
+`ActorRef<Command>` is required will lead to a type error.
 
-Trying it out
--------------
+### Trying it out
 
 In order to see this chat room in action we need to write a client Actor that can use it:
 
-.. includecode:: ../../../akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java#chatroom-gabbler
+@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-gabbler }
 
 From this behavior we can create an Actor that will accept a chat room session,
 post a message, wait to see it published, and then terminate. The last step
 requires the ability to change behavior, we need to transition from the normal
 running behavior into the terminated state. This is why here we do not return
-:meth:`same`, as above, but another special value :meth:`stopped`.
+`same`, as above, but another special value `stopped`.
 
 Now to try things out we must start both a chat room and a gabbler and of
 course we do this inside an Actor system. Since there can be only one guardian
@@ -224,61 +215,59 @@ want—it complicates its logic) or the gabbler from the chat room (which is
 nonsensical) or we start both of them from a third Actor—our only sensible
 choice:
 
-.. includecode:: ../../../akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java#chatroom-main
+@@snip [IntroSpec.scala]($akka$/akka-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-main }
 
-In good tradition we call the ``main`` Actor what it is, it directly
-corresponds to the ``main`` method in a traditional Java application. This
+In good tradition we call the `main` Actor what it is, it directly
+corresponds to the `main` method in a traditional Java application. This
 Actor will perform its job on its own accord, we do not need to send messages
-from the outside, so we declare it to be of type ``Void``. Actors receive not
+from the outside, so we declare it to be of type `Void`. Actors receive not
 only external messages, they also are notified of certain system events,
 so-called Signals. In order to get access to those we choose to implement this
-particular one using the :meth:`immutable` behavior decorator. The
-provided ``onSignal`` function will be invoked for signals (subclasses of :class:`Signal`)
-or the ``onMessage`` function for user messages.
+particular one using the `immutable` behavior decorator. The
+provided `onSignal` function will be invoked for signals (subclasses of `Signal`)
+or the `onMessage` function for user messages.
 
-This particular ``main`` Actor is created using `Actor.deferred`, which is like a factory for a behavior.
+This particular `main` Actor is created using `Actor.deferred`, which is like a factory for a behavior.
 Creation of the behavior instance is deferred until the actor is started, as opposed to `Actor.immutable`
 that creates the behavior instance immediately before the actor is running. The factory function in 
 `deferred` pass the `ActorContext` as parameter and that can for example be used for spawning child actors.
-This ``main`` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
-gabbler is finished we will receive the :class:`Terminated` event due to having
-called ``ctx.watch`` for it. This allows us to shut down the Actor system: when
+This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
+gabbler is finished we will receive the `Terminated` event due to having
+called `ctx.watch` for it. This allows us to shut down the Actor system: when
 the main Actor terminates there is nothing more to do.
 
-Status of this Project and Relation to Akka Actors
-==================================================
+## Status of this Project and Relation to Akka Actors
 
 Akka Typed is the result of many years of research and previous attempts
 (including Typed Channels in the 2.2.x series) and it is on its way to
 stabilization, but maturing such a profound change to the core concept of Akka
 will take a long time. We expect that this module will stay marked
-:ref:`may change <may-change>` for multiple major releases of Akka and the
-plain ``akka.actor.Actor`` will not be deprecated or go away anytime soon.
+@ref:[may change](common/may-change.md) for multiple major releases of Akka and the
+plain `akka.actor.Actor` will not be deprecated or go away anytime soon.
 
 Being a research project also entails that the reference documentation is not
 as detailed as it will be for a final version, please refer to the API
 documentation for greater depth and finer detail.
 
-Main Differences
-----------------
+### Main Differences
 
-The most prominent difference is the removal of the ``sender()`` functionality.
+The most prominent difference is the removal of the `sender()` functionality.
 This turned out to be the Achilles heel of the Typed Channels project, it is
 the feature that makes its type signatures and macros too complex to be viable.
 The solution chosen in Akka Typed is to explicitly include the properly typed
 reply-to address in the message, which both burdens the user with this task but
 also places this aspect of protocol design where it belongs.
 
-The other prominent difference is the removal of the :class:`Actor` trait. In
+The other prominent difference is the removal of the `Actor` trait. In
 order to avoid closing over unstable references from different execution
 contexts (e.g. Future transformations) we turned all remaining methods that
 were on this trait into messages: the behavior receives the
-:class:`ActorContext` as an argument during processing and the lifecycle hooks
+`ActorContext` as an argument during processing and the lifecycle hooks
 have been converted into Signals.
 
 A side-effect of this is that behaviors can now be tested in isolation without
 having to be packaged into an Actor, tests can run fully synchronously without
 having to worry about timeouts and spurious failures. Another side-effect is
-that behaviors can nicely be composed and decorated, see :meth:`tap`, or
-:meth:`widened` combinators; nothing about these is special or internal, new 
+that behaviors can nicely be composed and decorated, see `tap`, or
+`widened` combinators; nothing about these is special or internal, new 
 combinators can be written as external libraries or tailor-made for each project.

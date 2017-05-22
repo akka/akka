@@ -5,6 +5,7 @@
 @@@ index
 
 * [actors](actors.md)
+* [typed](typed.md)
 * [fault-tolerance](fault-tolerance.md)
 * [dispatchers](dispatchers.md)
 * [mailboxes](mailboxes.md)
