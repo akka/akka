@@ -82,6 +82,12 @@ called a `Sink`. `IOResult` is a type that IO operations return in
 Akka Streams in order to tell you how many bytes or elements were consumed and
 whether the stream terminated normally or exceptionally.
 
+
+#### Here is another example that you can edit and run in the browser:
+
+@@fiddle [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75 cssStyle=width:100%; }
+
+
 ## Reusable Pieces
 
 One of the nice parts of Akka Streams—and something that other stream libraries
@@ -130,7 +136,7 @@ certain speed: we use the `throttle` combinator to slow down the stream to 1
 element per second (the second `1` in the argument list is the maximum size
 of a burst that we want to allow—passing `1` means that the first element
 gets through immediately and the second then has to wait for one second and so
-on). 
+on).
 
 If you run this program you will see one line printed per second. One aspect
 that is not immediately visible deserves mention, though: if you try and set

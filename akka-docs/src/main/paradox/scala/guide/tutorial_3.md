@@ -100,9 +100,13 @@ message is preserved in the upper layers.* We will show you in the next section 
 We also add a safeguard against requests that come with a mismatched group or device ID. This is how the resulting
 the code looks like:
 
->@scala[NOTE: We used a feature of scala pattern matching where we can match if a certain field equals to an expected
+@@@ note { .group-scala }
+
+We used a feature of scala pattern matching where we can match if a certain field equals to an expected
 value. This is achieved by variables included in backticks, like `` `variable` ``, and it means that the pattern
-only match if it contains the value of `variable` in that position.]
+only match if it contains the value of `variable` in that position.
+
+@@@
 
 Scala
 :   @@snip [Device.scala]($code$/scala/tutorial_3/Device.scala) { #device-with-register }
@@ -113,10 +117,14 @@ Java
 We should not leave features untested, so we immediately write two new test cases, one exercising successful
 registration, the other testing the case when IDs don't match:
 
-> NOTE: We used the `expectNoMsg()` helper method from @scala[`TestProbe`] @java[`TestKit`]. This assertion waits until the defined time-limit
+@@@ note
+
+We used the `expectNoMsg()` helper method from @scala[`TestProbe`] @java[`TestKit`]. This assertion waits until the defined time-limit
 and fails if it receives any messages during this period. If no messages are received during the waiting period the
 assertion passes. It is usually a good idea to keep these timeouts low (but not too low) because they add significant
 test execution time otherwise.
+
+@@@
 
 Scala
 :   @@snip [DeviceSpec.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-registration-tests }

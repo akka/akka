@@ -89,7 +89,6 @@ and we know how to create a Typed Actor from that, so let's look at calling thes
 
 Methods returning:
 
->
  * `void` will be dispatched with `fire-and-forget` semantics, exactly like `ActorRef.tell`
  * `scala.concurrent.Future<?>` will use `send-request-reply` semantics, exactly like `ActorRef.ask`
  * `akka.japi.Option<?>` will use `send-request-reply` semantics, but *will* block to wait for an answer,
@@ -175,7 +174,6 @@ e.g. when interfacing with untyped actors.
 
 By having your Typed Actor implementation class implement any and all of the following:
 
->
  * `TypedActor.PreStart`
  * `TypedActor.PostStop`
  * `TypedActor.PreRestart`

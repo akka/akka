@@ -115,11 +115,8 @@ akka.protocol://system@host:1234/user/my/actor/hierarchy/path
 
 Observe all the parts you need here:
 
- * 
-   `protocol`
-    is the protocol to be used to communicate with the remote system. 
-   : Most of the cases this is *tcp*.
-   
+ * `protocol` is the protocol to be used to communicate with the remote system.
+ Most of the cases this is *tcp*.
  * `system` is the remote system’s name (must match exactly, case-sensitive!)
  * `host` is the remote system’s IP address or DNS name, and it must match that
 system’s configuration (i.e. *akka.remote.netty.tcp.hostname*)

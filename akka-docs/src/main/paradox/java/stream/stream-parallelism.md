@@ -28,7 +28,6 @@ This is how this setup would look like implemented as a stream:
 The two `map` stages in sequence (encapsulated in the "frying pan" flows) will be executed in a pipelined way,
 basically doing the same as Roland with his frying pans:
 
->
  1. A `ScoopOfBatter` enters `fryingPan1`
  2. `fryingPan1` emits a HalfCookedPancake once `fryingPan2` becomes available
  3. `fryingPan2` takes the HalfCookedPancake
@@ -41,10 +40,12 @@ be able to operate at full throughput because they will wait on a previous or su
 pancake example frying the second half of the pancake is usually faster than frying the first half, `fryingPan2` will
 not be able to operate at full capacity <a id="^1" href="#1">[1]</a>.
 
-note::
-: Asynchronous stream processing stages have internal buffers to make communication between them more efficient.
+@@@ note
+
+Asynchronous stream processing stages have internal buffers to make communication between them more efficient.
 For more details about the behavior of these and how to add additional buffers refer to @ref:[Buffers and working with rate](stream-rate.md).
 
+@@@
 
 ## Parallel processing
 
@@ -85,7 +86,6 @@ in sequence.
 
 It is also possible to organize parallelized stages into pipelines. This would mean employing four chefs:
 
->
  * the first two chefs prepare half-cooked pancakes from batter, in parallel, then putting those on a large enough
 flat surface.
  * the second two chefs take these and fry their other side in their own pans, then they put the pancakes on a shared

@@ -24,7 +24,7 @@ to ensure that a fix can be provided without delay.
 
 ## Fixed Security Vulnerabilities
 
-@@toc { depth=1 }
+@@toc { .list depth=1 }
 
 @@@ index
 

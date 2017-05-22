@@ -315,6 +315,11 @@ object Flow {
   /**
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
    * will be sent to the Sink and the Flow's output will come from the Source.
+   *
+   * The completion of the Sink and Source sides of a Flow constructed using
+   * this method are independent. So if the Sink receives a completion signal,
+   * the Source side will remain unaware of that. If you are looking to couple
+   * the termination signals of the two sides use `Flow.fromSinkAndSourceCoupled` instead.
    */
   def fromSinkAndSource[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
     fromSinkAndSourceMat(sink, source)(Keep.none)
@@ -323,11 +328,86 @@ object Flow {
    * Creates a `Flow` from a `Sink` and a `Source` where the Flow's input
    * will be sent to the Sink and the Flow's output will come from the Source.
    *
+   * The completion of the Sink and Source sides of a Flow constructed using
+   * this method are independent. So if the Sink receives a completion signal,
+   * the Source side will remain unaware of that. If you are looking to couple
+   * the termination signals of the two sides use `Flow.fromSinkAndSourceCoupledMat` instead.
+   *
    * The `combine` function is used to compose the materialized values of the `sink` and `source`
    * into the materialized value of the resulting [[Flow]].
    */
   def fromSinkAndSourceMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(combine: (M1, M2) ⇒ M): Flow[I, O, M] =
     fromGraph(GraphDSL.create(sink, source)(combine) { implicit b ⇒ (in, out) ⇒ FlowShape(in.in, out.out) })
+
+  /**
+   * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
+   * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
+   * however the Sink will also be completed. The table below illustrates the effects in detail:
+   *
+   * <table>
+   *   <tr>
+   *     <th>Returned Flow</th>
+   *     <th>Sink (<code>in</code>)</th>
+   *     <th>Source (<code>out</code>)</th>
+   *   </tr>
+   *   <tr>
+   *     <td><i>cause:</i> upstream (sink-side) receives completion</td>
+   *     <td><i>effect:</i> receives completion</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>cause:</i> upstream (sink-side) receives error</td>
+   *     <td><i>effect:</i> receives error</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>cause:</i> downstream (source-side) receives cancel</td>
+   *     <td><i>effect:</i> completes</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>effect:</i> cancels upstream, completes downstream</td>
+   *     <td><i>effect:</i> completes</td>
+   *     <td><i>cause:</i> signals complete</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>effect:</i> cancels upstream, errors downstream</td>
+   *     <td><i>effect:</i> receives error</td>
+   *     <td><i>cause:</i> signals error or throws</td>
+   *   </tr>
+   *   <tr>
+   *     <td><i>effect:</i> cancels upstream, completes downstream</td>
+   *     <td><i>cause:</i> cancels</td>
+   *     <td><i>effect:</i> receives cancel</td>
+   *   </tr>
+   * </table>
+   *
+   */
+  def fromSinkAndSourceCoupled[I, O](sink: Graph[SinkShape[I], _], source: Graph[SourceShape[O], _]): Flow[I, O, NotUsed] =
+    fromSinkAndSourceCoupledMat(sink, source)(Keep.none)
+
+  /**
+   * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
+   * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   *
+   * E.g. if the emitted [[Flow]] gets a cancellation, the [[Source]] of course is cancelled,
+   * however the Sink will also be completed. The table on [[Flow.fromSinkAndSourceCoupled]]
+   * illustrates the effects in detail.
+   *
+   * The `combine` function is used to compose the materialized values of the `sink` and `source`
+   * into the materialized value of the resulting [[Flow]].
+   */
+  def fromSinkAndSourceCoupledMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(combine: (M1, M2) ⇒ M): Flow[I, O, M] =
+  // format: OFF
+    Flow.fromGraph(GraphDSL.create(sink, source)(combine) { implicit b => (i, o) =>
+      import GraphDSL.Implicits._
+      val bidi = b.add(new CoupledTerminationBidi[I, O])
+      /* bidi.in1 ~> */ bidi.out1 ~> i; o ~> bidi.in2 /* ~> bidi.out2 */
+      FlowShape(bidi.in1, bidi.out2)
+    })
+  // format: ON
 }
 
 object RunnableGraph {

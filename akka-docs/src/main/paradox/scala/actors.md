@@ -51,6 +51,12 @@ stored within the actor as its “initial behavior”, see [Become/Unbecome](#be
 further information on changing the behavior of an actor after its
 construction.
 
+
+#### Here is another example that you can edit and run in the browser:
+
+@@fiddle [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75 cssStyle=width:100%; }
+
+
 ### Props
 
 `Props` is a configuration class to specify options for the creation
@@ -245,7 +251,7 @@ In addition, it offers:
 
  * `self` reference to the `ActorRef` of the actor
  * `sender` reference sender Actor of the last received message, typically used as described in [Actor.Reply](#actor-reply)
- * 
+ *
    `supervisorStrategy` user overridable definition the strategy to use for supervising child actors
    This strategy is typically declared inside the actor in order to have access
 to the actor’s internal state within the decider function: since failure is
@@ -255,7 +261,7 @@ within the actor are available, as is the `sender` reference (which will
 be the immediate child reporting the failure; if the original failure
 occurred within a distant descendant it is still reported one level up at a
 time).
- * 
+ *
    `context` exposes contextual information for the actor and the current message, such as:
     * factory methods to create child actors (`actorOf`)
     * system that the actor belongs to
@@ -375,7 +381,7 @@ handling strategy. Actors may be restarted in case an exception is thrown while
 processing a message (see @ref:[supervision](general/supervision.md)). This restart involves the hooks
 mentioned above:
 
- 1. 
+ 1.
     The old actor is informed by calling `preRestart` with the exception
 which caused the restart and the message which triggered that exception; the
 latter may be `None` if the restart was not caused by processing a
@@ -437,7 +443,6 @@ result:
 It is always preferable to communicate with other Actors using their ActorRef
 instead of relying upon ActorSelection. Exceptions are
 
->
  * sending messages using the @ref:[At-Least-Once Delivery](persistence.md#at-least-once-delivery) facility
  * initiating first contact with a remote system
 
@@ -491,12 +496,15 @@ An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoti
 
 ## Messages and immutability
 
-**IMPORTANT**: Messages can be any kind of object but have to be
-immutable. Scala can’t enforce immutability (yet) so this has to be by
-convention. Primitives like String, Int, Boolean are always immutable. Apart
-from these the recommended approach is to use Scala case classes which are
-immutable (if you don’t explicitly expose the state) and works great with
-pattern matching at the receiver side.
+@@@ warning { title=IMPORTANT }
+
+Messages can be any kind of object but have to be immutable. Scala can’t enforce
+immutability (yet) so this has to be by convention. Primitives like String, Int,
+Boolean are always immutable. Apart from these the recommended approach is to
+use Scala case classes which are immutable (if you don’t explicitly expose the
+state) and works great with pattern matching at the receiver side.
+
+@@@
 
 Here is an example:
 
@@ -581,11 +589,11 @@ taken from one of the following locations in order of precedence:
 
  1. explicitly given timeout as in:
 
-@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-explicit-timeout }
+    @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-explicit-timeout }
 
  2. implicit argument of type `akka.util.Timeout`, e.g.
 
-@@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-implicit-timeout }
+    @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #using-implicit-timeout }
 
 See @ref:[Futures](futures.md) for more information on how to await or query a
 future.

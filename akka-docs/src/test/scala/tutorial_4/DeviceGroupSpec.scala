@@ -88,8 +88,12 @@ class DeviceGroupSpec extends AkkaSpec {
       toShutDown ! PoisonPill
       probe.expectTerminated(toShutDown)
 
-      groupActor.tell(DeviceGroup.RequestDeviceList(requestId = 1), probe.ref)
-      probe.expectMsg(DeviceGroup.ReplyDeviceList(requestId = 1, Set("device2")))
+      // using awaitAssert to retry because it might take longer for the groupActor
+      // to see the Terminated, that order is undefined
+      probe.awaitAssert {
+        groupActor.tell(DeviceGroup.RequestDeviceList(requestId = 1), probe.ref)
+        probe.expectMsg(DeviceGroup.ReplyDeviceList(requestId = 1, Set("device2")))
+      }
     }
 
     //#group-query-integration-test
@@ -123,10 +127,7 @@ class DeviceGroupSpec extends AkkaSpec {
           temperatures = Map(
             "device1" -> DeviceGroup.Temperature(1.0),
             "device2" -> DeviceGroup.Temperature(2.0),
-            "device3" -> DeviceGroup.TemperatureNotAvailable
-          )
-        )
-      )
+            "device3" -> DeviceGroup.TemperatureNotAvailable)))
     }
     //#group-query-integration-test
 

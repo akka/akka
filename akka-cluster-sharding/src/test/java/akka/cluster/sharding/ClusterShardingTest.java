@@ -93,6 +93,49 @@ public class ClusterShardingTest {
     //#counter-supervisor-start
   }
 
+  public void demonstrateUsage2() {
+    ShardRegion.MessageExtractor messageExtractor = new ShardRegion.MessageExtractor() {
+
+      @Override
+      public String entityId(Object message) {
+        if (message instanceof Counter.EntityEnvelope)
+          return String.valueOf(((Counter.EntityEnvelope) message).id);
+        else if (message instanceof Counter.Get)
+          return String.valueOf(((Counter.Get) message).counterId);
+        else
+          return null;
+      }
+
+      @Override
+      public Object entityMessage(Object message) {
+        if (message instanceof Counter.EntityEnvelope)
+          return ((Counter.EntityEnvelope) message).payload;
+        else
+          return message;
+      }
+
+      //#extractShardId-StartEntity
+      @Override
+      public String shardId(Object message) {
+        int numberOfShards = 100;
+        if (message instanceof Counter.EntityEnvelope) {
+          long id = ((Counter.EntityEnvelope) message).id;
+          return String.valueOf(id % numberOfShards);
+        } else if (message instanceof Counter.Get) {
+          long id = ((Counter.Get) message).counterId;
+          return String.valueOf(id % numberOfShards);
+        } else if (message instanceof ShardRegion.StartEntity) {
+          long id = Long.valueOf(((ShardRegion.StartEntity) message).entityId());
+          return String.valueOf(id % numberOfShards);
+        } else {
+          return null;
+        }
+      }
+      //#extractShardId-StartEntity
+
+    };
+  }
+
   static//#counter-actor
   public class Counter extends AbstractPersistentActor {
 

@@ -275,6 +275,41 @@ final case class Give(thing: Any)
 
 //#receive-orElse
 
+//#fiddle_code
+import akka.actor.{ ActorSystem, Actor, ActorRef, Props, PoisonPill }
+import language.postfixOps
+import scala.concurrent.duration._
+
+case object Ping
+case object Pong
+
+class Pinger extends Actor {
+  var countDown = 100
+
+  def receive = {
+    case Pong =>
+      println(s"${self.path} received pong, count down $countDown")
+
+      if (countDown > 0) {
+        countDown -= 1
+        sender() ! Ping
+      } else {
+        sender() ! PoisonPill
+        self ! PoisonPill
+      }
+  }
+}
+
+class Ponger(pinger: ActorRef) extends Actor {
+  def receive = {
+    case Ping =>
+      println(s"${self.path} received ping")
+      pinger ! Pong
+  }
+}
+
+//#fiddle_code
+
 class ActorDocSpec extends AkkaSpec("""
   akka.loglevel = INFO
   akka.loggers = []
@@ -320,6 +355,31 @@ class ActorDocSpec extends AkkaSpec("""
     system.eventStream.publish(TestEvent.UnMute(filter))
 
     system.stop(myActor)
+  }
+
+  "run basic Ping Pong" in {
+    //#fiddle_code
+    val system = ActorSystem("pingpong")
+
+    val pinger = system.actorOf(Props[Pinger], "pinger")
+
+    val ponger = system.actorOf(Props(classOf[Ponger], pinger), "ponger")
+
+    //#fiddle_code
+    val testProbe = new TestProbe(system)
+    testProbe watch pinger
+    testProbe watch ponger
+    //#fiddle_code
+    import system.dispatcher
+    system.scheduler.scheduleOnce(500 millis) {
+      ponger ! Ping
+    }
+
+    // $FiddleDependency org.akka-js %%% akkajsactor % 1.2.5.1
+    //#fiddle_code
+    testProbe.expectTerminated(pinger)
+    testProbe.expectTerminated(ponger)
+    system.terminate()
   }
 
   "creating a Props config" in {

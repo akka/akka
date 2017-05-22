@@ -3,7 +3,6 @@
 UDP is a connectionless datagram protocol which offers two different ways of
 communication on the JDK level:
 
->
  * sockets which are free to send datagrams to any destination and receive
 datagrams from any origin
  * sockets which are restricted to communication with one specific remote
