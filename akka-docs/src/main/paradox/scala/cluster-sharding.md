@@ -274,6 +274,8 @@ the `rememberEntities` flag to true in `ClusterShardingSettings` when calling
 `Shard.StartEntity(EntityId)` which implies that a `ShardId` must be possible to
 extract from the `EntityId`.
 
+@@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #extractShardId-StartEntity }
+
 When configured to remember entities, whenever a `Shard` is rebalanced onto another
 node or recovers after a crash it will recreate all the entities which were previously
 running in that `Shard`. To permanently stop entities, a `Passivate` message must be

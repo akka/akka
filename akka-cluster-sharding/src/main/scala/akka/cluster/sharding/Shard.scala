@@ -33,6 +33,7 @@ import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteSnapshotsSuccess
 import akka.persistence.SnapshotSelectionCriteria
 import akka.persistence.RecoveryCompleted
+import akka.actor.NoSerializationVerificationNeeded
 
 /**
  * INTERNAL API
@@ -199,7 +200,7 @@ private[akka] class Shard(
   }
 
   def restartEntities(ids: Set[EntityId]): Unit = {
-    context.actorOf(RememberEntityStarter.props(typeName, shardId, ids, settings, sender()))
+    context.actorOf(RememberEntityStarter.props(context.parent, typeName, shardId, ids, settings, sender()))
   }
 
   def receiveShardRegionCommand(msg: ShardRegionCommand): Unit = msg match {
@@ -342,31 +343,32 @@ private[akka] class Shard(
 
 private[akka] object RememberEntityStarter {
   def props(
+    region:    ActorRef,
     typeName:  String,
     shardId:   ShardRegion.ShardId,
     ids:       Set[ShardRegion.EntityId],
     settings:  ClusterShardingSettings,
     requestor: ActorRef) =
-    Props(new RememberEntityStarter(typeName, shardId, ids, settings, requestor))
+    Props(new RememberEntityStarter(region, typeName, shardId, ids, settings, requestor))
+
+  private case object Tick extends NoSerializationVerificationNeeded
 }
 
 /**
  * INTERNAL API: Actor responsible for starting entities when rememberEntities is enabled
  */
 private[akka] class RememberEntityStarter(
+  region:    ActorRef,
   typeName:  String,
   shardId:   ShardRegion.ShardId,
   ids:       Set[ShardRegion.EntityId],
   settings:  ClusterShardingSettings,
-  requestor: ActorRef
-) extends Actor {
+  requestor: ActorRef) extends Actor with ActorLogging {
 
   import context.dispatcher
   import scala.concurrent.duration._
+  import RememberEntityStarter.Tick
 
-  case object Tick
-
-  val region = ClusterSharding(context.system).shardRegion(typeName)
   var waitingForAck = ids
 
   sendStart(ids)

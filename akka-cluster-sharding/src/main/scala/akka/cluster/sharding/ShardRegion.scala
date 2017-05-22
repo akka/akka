@@ -126,8 +126,13 @@ object ShardRegion {
      */
     override def entityMessage(message: Any): Any = message
 
-    override def shardId(message: Any): String =
-      (math.abs(entityId(message).hashCode) % maxNumberOfShards).toString
+    override def shardId(message: Any): String = {
+      val id = message match {
+        case ShardRegion.StartEntity(id) ⇒ id
+        case _                           ⇒ entityId(message)
+      }
+      (math.abs(id.hashCode) % maxNumberOfShards).toString
+    }
   }
 
   sealed trait ShardRegionCommand
