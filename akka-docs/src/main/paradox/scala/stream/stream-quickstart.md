@@ -82,6 +82,12 @@ called a `Sink`. `IOResult` is a type that IO operations return in
 Akka Streams in order to tell you how many bytes or elements were consumed and
 whether the stream terminated normally or exceptionally.
 
+
+#### Here is another example that you can edit and run in the browser:
+
+@@fiddle [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75 cssStyle=width:100%; }
+
+
 ## Reusable Pieces
 
 One of the nice parts of Akka Streams—and something that other stream libraries
@@ -238,12 +244,6 @@ our implementation of flatMap (due to the liveness issues).
 
 Please note that the `mapConcat` requires the supplied function to return an iterable (`f: Out => immutable.Iterable[T]`),
 whereas `flatMap` would have to operate on streams all the way through.
-
-@@@
-
-@@@ note { title=DIY }
-
-@@fiddle [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75 cssStyle=width:100%; }
 
 @@@
 

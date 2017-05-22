@@ -51,6 +51,12 @@ stored within the actor as its “initial behavior”, see [Become/Unbecome](#be
 further information on changing the behavior of an actor after its
 construction.
 
+
+#### Here is another example that you can edit and run in the browser:
+
+@@fiddle [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75 cssStyle=width:100%; }
+
+
 ### Props
 
 `Props` is a configuration class to specify options for the creation
@@ -75,12 +81,6 @@ found.
 
 The recommended approach to create the actor `Props` is not supported
 for cases when the actor constructor takes value classes as arguments.
-
-@@@
-
-@@@ note { title=DIY }
-
-@@fiddle [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75 cssStyle=width:100%; }
 
 @@@
 
