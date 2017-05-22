@@ -27,7 +27,6 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
     akka.remote.artery.canonical.port = 0
     akka.actor {
       serialize-messages = off
-      serialize-creators = off
       allow-java-serialization = off
     }
     """))) with WordSpecLike with Matchers with BeforeAndAfterAll {
