@@ -36,5 +36,4 @@ paradoxProperties ++= Map(
 )
 paradoxGroups := Map("Languages" -> Seq("Scala", "Java"))
 
-resolvers += Resolver.bintrayRepo("2m", "maven")
-resolvers += Resolver.bintrayRepo("2m", "sbt-plugin-releases")
+resolvers += Resolver.jcenterRepo
