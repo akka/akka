@@ -11,7 +11,7 @@ import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 import akka.stream.*;
-import akka.stream.impl.ConstantFun;
+import akka.util.ConstantFun;
 import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;

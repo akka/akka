@@ -4,12 +4,12 @@
 
 package akka.stream.impl.fusing
 
-import akka.stream.impl.ConstantFun
 import akka.stream.stage._
 import akka.stream.testkit.StreamSpec
 import akka.testkit.EventFilter
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+import akka.util.ConstantFun
 
 class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
   import Supervision.stoppingDecider
