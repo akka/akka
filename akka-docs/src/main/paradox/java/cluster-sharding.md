@@ -267,12 +267,15 @@ are thereafter delivered to a new incarnation of the entity.
 
 The list of entities in each `Shard` can be made persistent (durable) by setting
 the `rememberEntities` flag to true in `ClusterShardingSettings` when calling 
-`ClusterSharding.start`. When configured to remember entities, whenever a `Shard` 
-is rebalanced onto another node or recovers after a crash it will recreate all the
-entities which were previously running in that `Shard`. To permanently stop entities, 
-a `Passivate` message must be sent to the parent of the entity actor, otherwise the
-entity will be automatically restarted after the entity restart backoff specified in 
-the configuration.
+`ClusterSharding.start` and making sure the `shardIdExtractor` handles
+`Shard.StartEntity(EntityId)` which implies that a `ShardId` must be possible to
+extract from the `EntityId`.
+
+When configured to remember entities, whenever a `Shard` is rebalanced onto another
+node or recovers after a crash it will recreate all the entities which were previously
+running in that `Shard`. To permanently stop entities, a `Passivate` message must be
+sent to the parent of the entity actor, otherwise the entity will be automatically
+restarted after the entity restart backoff specified in the configuration.
 
 When [Distributed Data mode](#cluster-sharding-mode) is used the identifiers of the entities are
 stored in @ref:[Durable Storage](distributed-data.md#ddata-durable) of Distributed Data. You may want to change the 

@@ -47,7 +47,7 @@ private[akka] object Shard {
   sealed trait ShardCommand
 
   /**
-   * When an remembering entities and the entity stops without issuing a `Passivate`, we
+   * When remembering entities and the entity stops without issuing a `Passivate`, we
    * restart it after a back off using this message.
    */
   final case class RestartEntity(entity: EntityId) extends ShardCommand
@@ -170,6 +170,8 @@ private[akka] class Shard(
     case Terminated(ref)                         ⇒ receiveTerminated(ref)
     case msg: CoordinatorMessage                 ⇒ receiveCoordinatorMessage(msg)
     case msg: ShardCommand                       ⇒ receiveShardCommand(msg)
+    case msg: ShardRegion.StartEntity            ⇒ receiveStartEntity(msg)
+    case msg: ShardRegion.StartEntityAck         ⇒ receiveStartEntityAck(msg)
     case msg: ShardRegionCommand                 ⇒ receiveShardRegionCommand(msg)
     case msg: ShardQuery                         ⇒ receiveShardQuery(msg)
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
@@ -177,7 +179,27 @@ private[akka] class Shard(
 
   def receiveShardCommand(msg: ShardCommand): Unit = msg match {
     case RestartEntity(id)    ⇒ getEntity(id)
-    case RestartEntities(ids) ⇒ ids foreach getEntity
+    case RestartEntities(ids) ⇒ restartEntities(ids)
+  }
+
+  def receiveStartEntity(start: ShardRegion.StartEntity): Unit = {
+    log.debug("Got a request from [{}] to start entity [{}] in shard [{}]", sender(), start.entityId, shardId)
+    getEntity(start.entityId)
+    sender() ! ShardRegion.StartEntityAck(start.entityId, shardId)
+  }
+
+  def receiveStartEntityAck(ack: ShardRegion.StartEntityAck): Unit = {
+    if (ack.shardId != shardId && state.entities.contains(ack.entityId)) {
+      log.debug("Entity [{}] previously owned by shard [{}] started in shard [{}]", ack.entityId, shardId, ack.shardId)
+      processChange(EntityStopped(ack.entityId)) { _ ⇒
+        state = state.copy(state.entities - ack.entityId)
+        messageBuffers.remove(ack.entityId)
+      }
+    }
+  }
+
+  def restartEntities(ids: Set[EntityId]): Unit = {
+    context.actorOf(RememberEntityStarter.props(typeName, shardId, ids, settings, sender()))
   }
 
   def receiveShardRegionCommand(msg: ShardRegionCommand): Unit = msg match {
@@ -315,6 +337,63 @@ private[akka] class Shard(
       state = state.copy(state.entities + id)
       a
     }
+  }
+}
+
+private[akka] object RememberEntityStarter {
+  def props(
+    typeName:  String,
+    shardId:   ShardRegion.ShardId,
+    ids:       Set[ShardRegion.EntityId],
+    settings:  ClusterShardingSettings,
+    requestor: ActorRef) =
+    Props(new RememberEntityStarter(typeName, shardId, ids, settings, requestor))
+}
+
+/**
+ * INTERNAL API: Actor responsible for starting entities when rememberEntities is enabled
+ */
+private[akka] class RememberEntityStarter(
+  typeName:  String,
+  shardId:   ShardRegion.ShardId,
+  ids:       Set[ShardRegion.EntityId],
+  settings:  ClusterShardingSettings,
+  requestor: ActorRef
+) extends Actor {
+
+  import context.dispatcher
+  import scala.concurrent.duration._
+
+  case object Tick
+
+  val region = ClusterSharding(context.system).shardRegion(typeName)
+  var waitingForAck = ids
+
+  sendStart(ids)
+
+  val tickTask = {
+    val resendInterval = settings.tuningParameters.retryInterval
+    context.system.scheduler.schedule(resendInterval, resendInterval, self, Tick)
+  }
+
+  def sendStart(ids: Set[ShardRegion.EntityId]): Unit = {
+    ids.foreach(id ⇒ region ! ShardRegion.StartEntity(id))
+  }
+
+  override def receive = {
+    case ack: ShardRegion.StartEntityAck ⇒
+      waitingForAck -= ack.entityId
+      // inform whoever requested the start that it happened
+      requestor ! ack
+      if (waitingForAck.isEmpty) context.stop(self)
+
+    case Tick ⇒
+      sendStart(waitingForAck)
+
+  }
+
+  override def postStop(): Unit = {
+    tickTask.cancel()
   }
 }
 
