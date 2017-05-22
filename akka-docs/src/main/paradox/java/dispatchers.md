@@ -102,7 +102,7 @@ There are 3 different types of message dispatchers:
     This dispatcher runs invocations on the current thread only. This 
     dispatcher does not create any new threads, but it can be used from
     different threads concurrently for the same actor.
-    See @ref:[Scala-CallingThreadDispatcher](testing.md#scala-callingthreaddispatcher)
+    See @ref:[CallingThreadDispatcher](testing.md#callingthreaddispatcher)
     for details and restrictions.
 
     * Sharability: Unlimited
