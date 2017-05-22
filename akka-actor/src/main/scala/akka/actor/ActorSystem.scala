@@ -507,6 +507,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
+   * Note that ActorSystem will not terminate until all the registered callbacks are finished.
    *
    * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
    *
@@ -520,6 +521,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
+   * Note that ActorSystem will not terminate until all the registered callbacks are finished.
    *
    * Throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
    */
@@ -527,8 +529,8 @@ abstract class ActorSystem extends ActorRefFactory {
 
   /**
    * Terminates this actor system. This will stop the guardian actor, which in turn
-   * will recursively stop all its child actors, then the system guardian
-   * (below which the logging actors reside) and the execute all registered
+   * will recursively stop all its child actors, the system guardian
+   * (below which the logging actors reside) and then execute all registered
    * termination handlers (see [[ActorSystem#registerOnTermination]]).
    * Be careful to not schedule any operations on completion of the returned future
    * using the `dispatcher` of this actor system as it will have been shut down before the
@@ -538,7 +540,9 @@ abstract class ActorSystem extends ActorRefFactory {
 
   /**
    * Returns a Future which will be completed after the ActorSystem has been terminated
-   * and termination hooks have been executed. Be careful to not schedule any operations
+   * and termination hooks have been executed. If you registered any callback with
+   * [[ActorSystem#registerOnTermination]], the returned Future from this method will not complete
+   * until all the registered callbacks are finished. Be careful to not schedule any operations
    * on the `dispatcher` of this actor system as it will have been shut down before this
    * future completes.
    */

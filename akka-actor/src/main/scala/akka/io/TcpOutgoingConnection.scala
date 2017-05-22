@@ -4,11 +4,13 @@
 
 package akka.io
 
-import java.net.InetSocketAddress
+import java.net.{ ConnectException, InetSocketAddress }
 import java.nio.channels.{ SelectionKey, SocketChannel }
-import scala.util.control.NonFatal
+
+import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.concurrent.duration._
-import akka.actor.{ ReceiveTimeout, ActorRef }
+import akka.actor.{ ActorRef, ReceiveTimeout }
+import akka.annotation.InternalApi
 import akka.io.TcpConnection.CloseInformation
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
@@ -26,6 +28,7 @@ private[io] class TcpOutgoingConnection(
   connect:         Connect)
   extends TcpConnection(_tcp, SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel], connect.pullMode) {
 
+  import TcpOutgoingConnection._
   import context._
   import connect._
 
@@ -36,7 +39,7 @@ private[io] class TcpOutgoingConnection(
   channelRegistry.register(channel, 0)
   timeout foreach context.setReceiveTimeout //Initiate connection timeout if supplied
 
-  private def stop(): Unit = stopWith(CloseInformation(Set(commander), connect.failureMessage))
+  private def stop(cause: Throwable): Unit = stopWith(CloseInformation(Set(commander), connect.failureMessage.withCause(cause)))
 
   private def reportConnectFailure(thunk: ⇒ Unit): Unit = {
     try {
@@ -44,7 +47,7 @@ private[io] class TcpOutgoingConnection(
     } catch {
       case NonFatal(e) ⇒
         log.debug("Could not establish connection to [{}] due to {}", remoteAddress, e)
-        stop()
+        stop(e)
     }
   }
 
@@ -101,7 +104,7 @@ private[io] class TcpOutgoingConnection(
             } else {
               log.debug("Could not establish connection because finishConnect " +
                 "never returned true (consider increasing akka.io.tcp.finish-connect-retries)")
-              stop()
+              stop(FinishConnectNeverReturnedTrueException)
             }
           }
         }
@@ -109,7 +112,16 @@ private[io] class TcpOutgoingConnection(
       case ReceiveTimeout ⇒
         if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
         log.debug("Connect timeout expired, could not establish connection to [{}]", remoteAddress)
-        stop()
+        stop(connectTimeoutExpired(timeout))
     }
   }
+}
+
+@InternalApi
+private[io] object TcpOutgoingConnection {
+  val FinishConnectNeverReturnedTrueException =
+    new ConnectException("Could not establish connection because finishConnect never returned true") with NoStackTrace
+
+  def connectTimeoutExpired(timeout: Option[FiniteDuration]) =
+    new ConnectException(s"Connect timeout of $timeout expired") with NoStackTrace
 }

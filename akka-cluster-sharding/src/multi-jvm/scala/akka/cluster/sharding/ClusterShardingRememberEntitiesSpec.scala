@@ -72,6 +72,13 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(val mode: String) exten
       map-size = 10 MiB
     }
     """))
+
+  nodeConfig(first, second)(ConfigFactory.parseString(s"""
+    akka.cluster.sharding.distributed-data.durable.lmdb {
+      # use same directory for first and second node (not used at same time)
+      dir = target/ShardingRememberEntitiesSpec/sharding-first-second
+    }
+    """))
 }
 
 object PersistentClusterShardingRememberEntitiesSpecConfig extends ClusterShardingRememberEntitiesSpecConfig(
@@ -133,7 +140,7 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
 
   def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
-  s"Cluster with min-nr-of-members using sharding ($mode)" must {
+  s"Cluster sharding with remember entities ($mode)" must {
 
     if (!isDdataMode) {
       "setup shared journal" in {
@@ -144,7 +151,7 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
         }
         enterBarrier("peristence-started")
 
-        runOn(second, third) {
+        runOn(first, second, third) {
           system.actorSelection(node(first) / "user" / "store") ! Identify(None)
           val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
           SharedLeveldbJournal.setStore(sharedStore, system)
@@ -195,6 +202,20 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
       enterBarrier("after-2")
     }
 
+    "start remembered entities in new cluster" in within(30.seconds) {
+      runOn(first) {
+        testConductor.exit(third, 0).await
+      }
+      enterBarrier("crash-third")
+
+      // no nodes left of the original cluster, start a new cluster
+      join(first, first)
+      runOn(first) {
+        startSharding()
+        expectMsgType[Started]
+      }
+      enterBarrier("after-3")
+    }
   }
 }
 

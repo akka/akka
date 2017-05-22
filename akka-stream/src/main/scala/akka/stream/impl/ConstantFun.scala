@@ -10,6 +10,7 @@ import akka.japi.{ Pair ⇒ JPair }
 /**
  * INTERNAL API
  */
+@deprecated("Use akka.util.ConstantFun instead", "2.5.0")
 @InternalApi private[akka] object ConstantFun {
   private[this] val JavaIdentityFunction = new JFun[Any, Any] {
     @throws(classOf[Exception]) override def apply(param: Any): Any = param
