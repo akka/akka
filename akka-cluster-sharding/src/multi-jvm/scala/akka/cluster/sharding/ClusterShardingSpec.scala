@@ -82,8 +82,9 @@ object ClusterShardingSpec {
   val numberOfShards = 12
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
-    case Get(id)               ⇒ (id % numberOfShards).toString
+    case EntityEnvelope(id, _)       ⇒ (id % numberOfShards).toString
+    case Get(id)                     ⇒ (id % numberOfShards).toString
+    case ShardRegion.StartEntity(id) ⇒ (id.toLong % numberOfShards).toString
   }
 
   def qualifiedCounterProps(typeName: String): Props =
@@ -184,8 +185,23 @@ object ClusterShardingDocCode {
   val extractShardId: ShardRegion.ExtractShardId = {
     case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
     case Get(id)               ⇒ (id % numberOfShards).toString
+    case ShardRegion.StartEntity(id) ⇒
+      // StartEntity is used by remembering entities feature
+      (id.toLong % numberOfShards).toString
   }
   //#counter-extractor
+
+  {
+    //#extractShardId-StartEntity
+    val extractShardId: ShardRegion.ExtractShardId = {
+      case EntityEnvelope(id, _) ⇒ (id % numberOfShards).toString
+      case Get(id)               ⇒ (id % numberOfShards).toString
+      case ShardRegion.StartEntity(id) ⇒
+        // StartEntity is used by remembering entities feature
+        (id.toLong % numberOfShards).toString
+    }
+    //#extractShardId-StartEntity
+  }
 
 }
 
