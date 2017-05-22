@@ -5,24 +5,7 @@ development cycle. The actor model presents a different view on how units of
 code are delimited and how they interact, which has an influence on how to
 perform tests.
 
-Akka comes with a dedicated module `akka-testkit` for supporting tests at
-different levels, which fall into two clearly distinct categories:
-
->
- * Testing isolated pieces of code without involving the actor model, meaning
-without multiple threads; this implies completely deterministic behavior
-concerning the ordering of events and no concurrency concerns and will be
-called **Unit Testing** in the following.
- * Testing (multiple) encapsulated actors including multi-threaded scheduling;
-this implies non-deterministic order of events but shielding from
-concurrency concerns by the actor model and will be called **Integration
-Testing** in the following.
-
-There are of course variations on the granularity of tests in both categories,
-where unit testing reaches down to white-box tests and integration testing can
-encompass functional tests of complete actor networks. The important
-distinction lies in whether concurrency concerns are part of the test or not.
-The tools offered are described in detail in the following sections.
+Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
 @@@ note
 
@@ -30,7 +13,6 @@ Be sure to add the module `akka-testkit` to your dependencies.
 
 @@@
 
-<a id="async-integration-testing"></a>
 ## Asynchronous Testing: `TestKit`
 
 When you are reasonably sure that your actor's business logic is correct, the
@@ -89,7 +71,6 @@ In these examples, the maximum durations you will find mentioned below are left
 out, in which case they use the default value from configuration item
 `akka.test.single-expect-default` which itself defaults to 3 seconds (or they
 obey the innermost enclosing `Within` as detailed [below](#testkit-within)). The full signatures are:
-
 
 * @scala[`expectMsg[T](d: Duration, msg: T): T`]@java[`public <T> T expectMsgEquals(FiniteDuration max, T msg)`]
    The given message object must be received within the specified time; the
@@ -688,7 +669,6 @@ send returns and no `InterruptedException` will be thrown.
 To summarize, these are the features with the `CallingThreadDispatcher`
 has to offer:
 
->
  * Deterministic execution of single-threaded tests while retaining nearly full
 actor semantics
  * Full message processing history leading up to the point of failure in
@@ -816,7 +796,6 @@ Ray Roestenburg's example code from [his blog](http://roestenburg.agilesquad.com
 @@snip [TestKitUsageSpec.scala]($code$/scala/docs/testkit/TestKitUsageSpec.scala) { #testkit-usage }
 
 @@@
-
 
 ## Synchronous Testing: `TestActorRef`
 
@@ -953,7 +932,6 @@ Java
 You may of course mix and match both modi operandi of `TestActorRef` as
 suits your test needs:
 
->
  * one common use case is setting up the actor into a specific internal state
 before sending the test message
  * another is to verify correct internal state transitions after having sent

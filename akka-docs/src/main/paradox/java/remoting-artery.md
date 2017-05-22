@@ -703,10 +703,11 @@ Artery has been designed for low latency and as a result it can be CPU hungry wh
 This is not always desirable. It is possible to tune the tradeoff between CPU usage and latency with
 the following configuration:
 
->
+```
 # Values can be from 1 to 10, where 10 strongly prefers low latency
 # and 1 strongly prefers less CPU usage
 akka.remote.artery.advanced.idle-cpu-level = 1
+```
 
 By setting this value to a lower number, it tells Akka to do longer "sleeping" periods on its thread dedicated
 for [spin-waiting](https://en.wikipedia.org/wiki/Busy_waiting) and hence reducing CPU load when there is no

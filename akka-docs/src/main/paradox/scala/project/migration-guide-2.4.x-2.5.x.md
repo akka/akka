@@ -479,6 +479,18 @@ Note that the stored @ref:[Remembering Entities](../cluster-sharding.md#cluster-
 be migrated to the `data` mode. Such entities must be started again in some other way when using
 `ddata` mode.
 
+### Cluster Sharding remember entities
+
+To use *remember entities* with cluster sharding there are now an additional requirement added: the
+`extractShardId` must be able to extract the shard id from the message `Shard.StartEntity(EntityId)`.
+This is implies that it must be possible to calculate a shard id from an entity id when using remember
+entities.
+
+This was added to be able to gracefully handle when persisted locations of entities does not match
+where the entities should live when a shard region starts up. Such states could be cause by changing
+the `extractShardId` logic and restart a system using *remember entities*.
+
+
 ### Cluster Management Command Line Tool
 
 There is a new cluster management tool with HTTP API that has the same functionality as the command line tool.

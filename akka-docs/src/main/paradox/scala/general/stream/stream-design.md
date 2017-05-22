@@ -14,7 +14,6 @@ Akka is built upon a conscious decision to offer APIs that are minimal and consi
 
 From this follows that the principles implemented by Akka Streams are:
 
->
  * all features are explicit in the API, no magic
  * supreme compositionality: combined pieces retain the function of each part
  * exhaustive model of the domain of distributed bounded stream processing
@@ -25,7 +24,6 @@ This means that we provide all the tools necessary to express any stream process
 
 One important consequence of offering only features that can be relied upon is the restriction that Akka Streams cannot ensure that all objects sent through a processing topology will be processed. Elements can be dropped for a number of reasons:
 
->
  * plain user code can consume one element in a *map(...)* stage and produce an entirely different one as its result
  * common stream operators drop elements intentionally, e.g. take/drop/filter/conflate/buffer/…
  * stream failure will tear down the stream without waiting for processing to finish, all elements that are in flight will be discarded
@@ -51,7 +49,6 @@ This means that `Sink.asPublisher(true)` (for enabling fan-out support) must be 
 
 We expect libraries to be built on top of Akka Streams, in fact Akka HTTP is one such example that lives within the Akka project itself. In order to allow users to profit from the principles that are described for Akka Streams above, the following rules are established:
 
->
  * libraries shall provide their users with reusable pieces, i.e. expose factories that return graphs, allowing full compositionality
  * libraries may optionally and additionally provide facilities that consume and materialize graphs
 
@@ -71,7 +68,6 @@ Exceptions from this need to be well-justified and carefully documented.
 
 Akka Streams must enable a library to express any stream processing utility in terms of immutable blueprints. The most common building blocks are
 
->
  * Source: something with exactly one output stream
  * Sink: something with exactly one input stream
  * Flow: something with exactly one input and one output stream

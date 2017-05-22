@@ -106,7 +106,7 @@ class CircuitBreaker(
   scheduler:                Scheduler,
   maxFailures:              Int,
   callTimeout:              FiniteDuration,
-  resetTimeout:             FiniteDuration,
+  val resetTimeout:         FiniteDuration,
   maxResetTimeout:          FiniteDuration,
   exponentialBackoffFactor: Double)(implicit executor: ExecutionContext) extends AbstractCircuitBreaker {
 
