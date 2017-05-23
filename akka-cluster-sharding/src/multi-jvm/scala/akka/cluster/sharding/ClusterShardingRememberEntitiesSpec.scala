@@ -225,6 +225,8 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
         Cluster(sys2).join(Cluster(sys2).selfAddress)
         startSharding(sys2, probe2.ref)
         probe2.expectMsgType[Started](20.seconds)
+
+        shutdown(sys2)
       }
       enterBarrier("after-3")
     }
