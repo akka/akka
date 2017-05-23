@@ -123,10 +123,6 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   private def materializeTcpBind(binding: Future[Tcp.ServerBinding])(implicit mat: Materializer) = binding
     .map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(mat.executionContext)
 
-  private def prepareAttributes(settings: ServerSettings, remoteAddress: InetSocketAddress) =
-    if (settings.remoteAddressHeader) HttpAttributes.remoteAddress(remoteAddress)
-    else HttpAttributes.empty
-
   /**
    * Creates a [[akka.stream.scaladsl.Source]] of [[akka.http.scaladsl.Http.IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
@@ -156,7 +152,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
     tcpBind(interface, choosePort(port, connectionContext), settings)
       .map(incoming ⇒ {
-        val serverFlow = fullLayer.addAttributes(prepareAttributes(settings, incoming.remoteAddress)) join incoming.flow
+        val serverFlow = fullLayer.addAttributes(prepareAttributes(settings, incoming)) join incoming.flow
         IncomingConnection(incoming.localAddress, incoming.remoteAddress, serverFlow)
       })
       .mapMaterializedValue(materializeTcpBind)
@@ -185,7 +181,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       .mapAsyncUnordered(settings.maxConnections) { incoming ⇒
         try {
           fullLayer
-            .addAttributes(prepareAttributes(settings, incoming.remoteAddress))
+            .addAttributes(prepareAttributes(settings, incoming))
             .joinMat(incoming.flow)(Keep.left)
             .run()
             .recover {
@@ -851,6 +847,12 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
   def createExtension(system: ExtendedActorSystem): HttpExt =
     new HttpExt(system.settings.config getConfig "akka.http")(system)
+
+  @InternalApi
+  private[akka] def prepareAttributes(settings: ServerSettings, incoming: Tcp.IncomingConnection) =
+    if (settings.remoteAddressHeader) HttpAttributes.remoteAddress(incoming.remoteAddress)
+    else HttpAttributes.empty
+
 }
 
 /**

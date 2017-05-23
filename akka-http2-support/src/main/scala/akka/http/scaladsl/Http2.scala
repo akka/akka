@@ -94,11 +94,7 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
     connections.mapAsyncUnordered(settings.maxConnections) {
       case incoming: Tcp.IncomingConnection ⇒
         try {
-          val layer =
-            if (settings.remoteAddressHeader) fullLayer().addAttributes(HttpAttributes.remoteAddress(incoming.remoteAddress))
-            else fullLayer()
-
-          layer.joinMat(incoming.flow)(Keep.left)
+          fullLayer().addAttributes(Http.prepareAttributes(settings, incoming)).joinMat(incoming.flow)(Keep.left)
             .run().recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
