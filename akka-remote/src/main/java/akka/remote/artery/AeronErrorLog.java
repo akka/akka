@@ -22,6 +22,7 @@ import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.errors.ErrorLogReader;
 
 import akka.event.LoggingAdapter;
+import akka.util.Helpers;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
@@ -43,10 +44,6 @@ public class AeronErrorLog
     final DirectBuffer cncMetaDataBuffer;
     final int cncVersion;
     final AtomicBuffer buffer;
-    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSZ");
-    private final ZoneId timeZone = ZoneId.systemDefault();
-
-
 
     public AeronErrorLog(File cncFile)
     {
@@ -74,8 +71,8 @@ public class AeronErrorLog
                   log.error(String.format(
                       "Aeron error: %d observations from %s to %s for:%n %s",
                       observationCount,
-                      formatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(firstObservationTimestamp), timeZone)),
-                      formatter.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(lastObservationTimestamp), timeZone)),
+                      Helpers.timestamp(firstObservationTimestamp),
+                      Helpers.timestamp(lastObservationTimestamp),
                       encodedException));
                   lastTimestamp.set(Math.max(lastTimestamp.get(), lastObservationTimestamp));
                 }, sinceTimestamp);
