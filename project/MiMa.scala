@@ -56,12 +56,12 @@ object MiMa extends AutoPlugin {
             if (!akka242NewArtifacts.contains(projectName)) akka24NoStreamVersions
             else Seq.empty
           } ++ akka24StreamVersions ++ akka24WithScala212 ++ akka25Versions
-
-        case "2.12" =>
+          
+        case "2.12" => 
           akka24WithScala212 ++ akka25Versions
       }
     }
-
+    
     val akka25PromotedArtifacts = Set(
       "akka-distributed-data"
     )
@@ -71,7 +71,7 @@ object MiMa extends AutoPlugin {
       val adjustedProjectName =
         if (akka25PromotedArtifacts(projectName) && v.startsWith("2.4"))
           projectName + "-experimental"
-        else
+        else 
           projectName
       organization %% adjustedProjectName % v
     }.toSet
@@ -99,7 +99,7 @@ object MiMa extends AutoPlugin {
     val bcIssuesBetween24and25 = Seq(
       // ##22269 GSet as delta-CRDT
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GSet.this"), // constructor supplied by companion object
-
+        
       // # 18262 embed FJP, Mailbox extends ForkJoinTask
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.dispatch.ForkJoinExecutorConfigurator#ForkJoinExecutorServiceFactory.threadFactory"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.dispatch.ForkJoinExecutorConfigurator#ForkJoinExecutorServiceFactory.this"),
@@ -118,7 +118,7 @@ object MiMa extends AutoPlugin {
 
       // #21875 delta-CRDT
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GCounter.this"),
-
+      
       // #22188 ORSet delta-CRDT
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ORSet.this"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.SerializationSupport.versionVectorToProto"),
@@ -126,7 +126,7 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.SerializationSupport.versionVectorFromBinary"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.ddata.protobuf.ReplicatedDataSerializer.versionVectorToProto"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.protobuf.ReplicatedDataSerializer.versionVectorFromProto"),
-
+      
       // #22141 sharding minCap
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.updatingStateTimeout"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.waitingForStateTimeout"),
@@ -136,7 +136,7 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.CircuitBreaker#State.callThrough"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.CircuitBreaker#State.invoke"),
 
-      // #21423 Remove deprecated metrics
+        // #21423 Remove deprecated metrics
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterReadView.clusterMetrics"),
       ProblemFilters.exclude[MissingClassProblem]("akka.cluster.InternalClusterAction$MetricsTick$"),
       ProblemFilters.exclude[MissingClassProblem]("akka.cluster.MetricsCollector"),
@@ -209,13 +209,13 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingClassProblem]("akka.cluster.protobuf.msg.ClusterMessages$NodeMetrics$Metric"),
       ProblemFilters.exclude[MissingClassProblem]("akka.cluster.protobuf.msg.ClusterMessages$NodeMetrics$Metric$Builder"),
       ProblemFilters.exclude[MissingClassProblem]("akka.cluster.protobuf.msg.ClusterMessages$NodeMetrics$Number$Builder"),
-
+        
       // #22154 Sharding remembering entities with ddata, internal actors
       FilterAnyProblemStartingWith("akka.cluster.sharding.Shard"),
       FilterAnyProblemStartingWith("akka.cluster.sharding.PersistentShard"),
       FilterAnyProblemStartingWith("akka.cluster.sharding.ClusterShardingGuardian"),
       FilterAnyProblemStartingWith("akka.cluster.sharding.ShardRegion"),
-
+        
       // #21647 pruning
       FilterAnyProblemStartingWith("akka.cluster.ddata.PruningState"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.RemovedNodePruning.modifiedByNodes"),
@@ -230,7 +230,7 @@ object MiMa extends AutoPlugin {
 
       // #21537 coordinated shutdown
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterCoreDaemon.removed"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.convergence"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.Gossip.convergence"),  
 
       //#21717 Improvements to AbstractActor API
       FilterAnyProblemStartingWith("akka.japi.pf.ReceiveBuilder"),
@@ -244,8 +244,8 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[MissingTypesProblem]("akka.routing.RoutedActorCell"),
       ProblemFilters.exclude[MissingTypesProblem]("akka.routing.ResizablePoolCell"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AbstractPersistentActor.createReceiveRecover"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AbstractPersistentActor.createReceive"),
-
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AbstractPersistentActor.createReceive"),        
+        
       // #21423 removal of deprecated stages (in 2.5.x)
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.transform"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.SubSource.transform"),
@@ -307,20 +307,20 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.isTerminated"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.awaitTermination"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.awaitTermination"),
-
+      
       // #21423 remove deprecated ActorPath.ElementRegex
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorPath.ElementRegex"),
-
+      
       // #21423 remove some deprecated event bus classes
       ProblemFilters.exclude[MissingClassProblem]("akka.event.ActorClassification"),
       ProblemFilters.exclude[MissingClassProblem]("akka.event.EventStream$"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.EventStream.this"),
       ProblemFilters.exclude[MissingClassProblem]("akka.event.japi.ActorEventBus"),
-
+      
       // #21423 remove deprecated util.Crypt
       ProblemFilters.exclude[MissingClassProblem]("akka.util.Crypt"),
       ProblemFilters.exclude[MissingClassProblem]("akka.util.Crypt$"),
-
+      
       // #21423 removal of deprecated serializer constructors (in 2.5.x)
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.ProtobufSerializer.this"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.MessageContainerSerializer.this"),
@@ -328,11 +328,11 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.serialization.JavaSerializer.this"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.serialization.ByteArraySerializer.this"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.protobuf.ClusterMessageSerializer.this"),
-
+      
       // #21423 removal of deprecated constructor in PromiseActorRef
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.this"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.apply"),
-
+      
       // #21423 remove deprecated methods in routing
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.Pool.nrOfInstances"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.routing.Group.paths"),
@@ -343,7 +343,7 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.routing.RemoteRouterConfig.nrOfInstances"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.routing.ClusterRouterGroup.paths"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.routing.ClusterRouterPool.nrOfInstances"),
-
+      
       // #21423 remove deprecated persist method (persistAll)
       // This might filter changes to the ordinary persist method also, but not much to do about that
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.persistence.UntypedPersistentActor.persist"),
@@ -365,13 +365,13 @@ object MiMa extends AutoPlugin {
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.PersistentShardCoordinator.persistAsync"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData#RemoveOnePersistenceId.persist"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.RemoveInternalClusterShardingData#RemoveOnePersistenceId.persistAsync"),
-
+      
       // #21423 remove deprecated ARRAY_OF_BYTE_ARRAY
       ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.ProtobufSerializer.ARRAY_OF_BYTE_ARRAY"),
-
+      
       // #21423 remove deprecated constructor in DeadlineFailureDetector
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.DeadlineFailureDetector.this"),
-
+          
       // #21423 removal of deprecated `PersistentView` (in 2.5.x)
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.Update$"),
@@ -889,7 +889,7 @@ object MiMa extends AutoPlugin {
         // Interpreter internals change
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.stage.GraphStageLogic.portToConn"),
 
-        // #20994 adding new decode method, since we're on JDK7+ now
+	// #20994 adding new decode method, since we're on JDK7+ now
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeString"),
 
         // #20508  HTTP: Document how to be able to support custom request methods
@@ -1103,6 +1103,11 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.TcpClientHandler.this"),
         ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.transport.netty.TcpHandlers.log"),
 
+        // #22374 introduce fishForSpecificMessage in TestKit
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage$default$1"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage$default$2"),
+
         // #22224 DaemonMsgCreateSerializer using manifests
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesBytes"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.WireFormats#PropsData.getClassesList"),
@@ -1158,41 +1163,63 @@ object MiMa extends AutoPlugin {
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.Shard.messageBuffers_="),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardRegion.totalBufferSize"),
         ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers"),
-        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers_=")
+        ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ShardRegion.shardBuffers_="),
+
+        // #22332 protobuf serializers for remote deployment
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getConfigManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasScopeManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getScopeManifestBytes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getConfigSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasRouterConfigSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasRouterConfigManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getRouterConfigSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getRouterConfigManifestBytes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getConfigManifestBytes"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasConfigManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasScopeSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getRouterConfigManifest"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.hasConfigSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getScopeSerializerId"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.WireFormats#DeployDataOrBuilder.getScopeManifest")
       ),
       "2.4.18" -> Seq(
+        // make sure that
+        //  * this list ends with the latest released version number
+        //  * is kept in sync between release-2.4 and master branch
       )
-      // make sure that
-      //  * this list ends with the latest released version number
-      //  * is kept in sync between release-2.4 and master branch
     )
-
+    
     val Release25Filters = Seq(
       "2.5.0" -> Seq(
-
-        // #22759 LMDB files
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.env"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.db"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.keyBuffer"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.valueBuffer_="),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.valueBuffer"),
-
-        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.groupedWeightedWithin"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSubscriber.props"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.this"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSink.this"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FilePublisher.props"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSubscriber.this"),
-        ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FilePublisher.this"),
-        ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GroupedWithin"),
-
-        ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.traversalBuilder"),
-        ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.named"),
-        ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.addAttributes"),
-        ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.async")
+          
+          // #22759 LMDB files
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.env"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.db"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.keyBuffer"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.valueBuffer_="),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.LmdbDurableStore.valueBuffer"),
+          
+          ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.groupedWeightedWithin"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSubscriber.props"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSource.this"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSink.this"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FilePublisher.props"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FileSubscriber.this"),
+          ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.FilePublisher.this"),
+          ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.GroupedWithin"),
+          
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.traversalBuilder"),
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.named"),
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.addAttributes"),
+          ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.Graph.async")
       ),
       "2.5.1" -> Seq(
-          
+        // #22794 watchWith
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorContext.watchWith"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.watchWith"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$watching_="),
+
         // #22868 store shards
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.sendUpdate"),
         ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.DDataShardCoordinator.waitingForUpdate"),

@@ -3,9 +3,9 @@
 @@@ warning
 
 This module is currently marked as @ref:[may change](common/may-change.md) in the sense
-of being the subject of active research. This means that API or semantics can
-change without warning or deprecation period and it is not recommended to use
-this module in production just yet—you have been warned.
+  of being the subject of active research. This means that API or semantics can
+  change without warning or deprecation period and it is not recommended to use
+  this module in production just yet—you have been warned.
 
 @@@
 
@@ -27,20 +27,22 @@ greet, it also holds an `ActorRef` that the sender of the message
 supplies so that the `HelloWorld` Actor can send back the confirmation
 message.
 
-The behavior of the Actor is defined as the `greeter` value with the help
-of the `Stateless` behavior constructor—there are many different ways of
-formulating behaviors as we shall see in the following. The “stateless” behavior
-is not capable of changing in response to a message, it will stay the same
-until the Actor is stopped by its parent.
+The behavior of the Actor is defined as the :meth:`greeter` value with the help
+of the `immutable` behavior constructor. This constructor is called
+immutable because the behavior instance doesn't have or close over any mutable
+state. Processing the next message may result in a new behavior that can
+potentially be different from this one. State is updated by returning a new
+behavior that holds the new immutable state. In this case we don't need to
+update any state, so we return `Same`.
 
-The type of the messages handled by this behavior is declared to be of class
+The type of the messages handled by this behavior is declared to be of class 
 `Greet`, which implies that the supplied function’s `msg` argument is
 also typed as such. This is why we can access the `whom` and `replyTo`
 members without needing to use a pattern match.
 
 On the last line we see the `HelloWorld` Actor send a message to another
-Actor, which is done using the `!` operator (pronounced “tell”). Since the
-`replyTo` address is declared to be of type `ActorRef[Greeted]` the
+Actor, which is done using the `tell` method (represented by the `!` operator). 
+Since the `replyTo` address is declared to be of type `ActorRef[Greeted]` the
 compiler will only permit us to send messages of this type, other usage will
 not be accepted.
 
@@ -48,7 +50,7 @@ The accepted message types of an Actor together with all reply types defines
 the protocol spoken by this Actor; in this case it is a simple request–reply
 protocol but Actors can model arbitrarily complex protocols when needed. The
 protocol is bundled together with the behavior that implements it in a nicely
-wrapped scope—the `HelloWorld` object.
+wrapped scope—the ``HelloWorld`` object.
 
 Now we want to try out this Actor, so we must start an ActorSystem to host it:
 
@@ -90,13 +92,14 @@ example we make a small detour to highlight some of the theory behind this.
 
 The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) as defined by
 Hewitt, Bishop and Steiger in 1973 is a computational model that expresses
-exactly what it means for computation to be distributed. The processing
-units—Actors—can only communicate by exchanging messages and upon reception of a
-message an Actor can do the following three fundamental actions:
+computational model that expresses exactly what it means for computation to be
+distributed. The processing units—Actors—can only communicate by exchanging
+messages and upon reception of a message an Actor can do the following three
+fundamental actions:
 
-1. send a finite number of messages to Actors it knows
-2. create a finite number of new Actors
-3. designate the behavior to be applied to the next message
+  1. send a finite number of messages to Actors it knows
+  2. create a finite number of new Actors
+  3. designate the behavior to be applied to the next message
 
 The Akka Typed project expresses these actions using behaviors and addresses.
 Messages can be sent to an address and behind this façade there is a behavior
@@ -211,18 +214,12 @@ In order to see this chat room in action we need to write a client Actor that ca
 From this behavior we can create an Actor that will accept a chat room session,
 post a message, wait to see it published, and then terminate. The last step
 requires the ability to change behavior, we need to transition from the normal
-running behavior into the terminated state. This is why this Actor uses a
-different behavior constructor named `Total`. This constructor takes as
-argument a function from the handled message type, in this case
-`SessionEvent`, to the next behavior. That next behavior must again be
-of the same type as we discussed in the theory section above. Here we either
-stay in the very same behavior or we terminate, and both of these cases are so
-common that there are special values `Same` and `Stopped` that can be used.
-The behavior is named “total” (as opposed to “partial”) because the declared
-function must handle all values of its input type. Since `SessionEvent`
-is a sealed trait the Scala compiler will warn us if we forget to handle one of
-the subtypes; in this case it reminded us that alternatively to
-`SessionGranted` we may also receive a `SessionDenied` event.
+running behavior into the terminated state. This is why here we do not return
+`same`, as above, but another special value `stopped`.
+Since `SessionEvent` is a sealed trait the Scala compiler will warn us
+if we forget to handle one of the subtypes; in this case it reminded us that
+alternatively to `SessionGranted` we may also receive a
+`SessionDenied` event.
 
 Now to try things out we must start both a chat room and a gabbler and of
 course we do this inside an Actor system. Since there can be only one guardian
@@ -239,19 +236,20 @@ Actor will perform its job on its own accord, we do not need to send messages
 from the outside, so we declare it to be of type `NotUsed`. Actors receive not
 only external messages, they also are notified of certain system events,
 so-called Signals. In order to get access to those we choose to implement this
-particular one using the `Stateful` behavior decorator. The
-provided `signal` function will be invoked for signals (subclasses of `Signal`)
-or the `mesg` function for user messages.
+particular one using the `immutable` behavior decorator. The
+provided `onSignal` function will be invoked for signals (subclasses of `Signal`)
+or the `onMessage` function for user messages.
 
-This particular main Actor reacts to two signals: when it is started it will
-first receive the `PreStart` signal, upon which the chat room and the
-gabbler are created and the session between them is initiated, and when the
-gabbler is finished we will receive the `Terminated` event due to having
+This particular `main` Actor is created using `Actor.deferred`, which is like a factory for a behavior.
+Creation of the behavior instance is deferred until the actor is started, as opposed to `Actor.immutable`
+that creates the behavior instance immediately before the actor is running. The factory function in 
+`deferred` pass the `ActorContext` as parameter and that can for example be used for spawning child actors.
+This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the gabbler is finished we will receive the `Terminated` event due to having
 called `ctx.watch` for it. This allows us to shut down the Actor system: when
 the main Actor terminates there is nothing more to do.
 
 Therefore after creating the Actor system with the `main` Actor’s
-`Props` we just await its termination.
+`Behavior` we just await its termination.
 
 ## Status of this Project and Relation to Akka Actors
 
@@ -259,7 +257,7 @@ Akka Typed is the result of many years of research and previous attempts
 (including Typed Channels in the 2.2.x series) and it is on its way to
 stabilization, but maturing such a profound change to the core concept of Akka
 will take a long time. We expect that this module will stay marked
-@ref:[may change](common/may-change.md) for multiple major releases of Akka and the
+[may change](common/may-change.md) for multiple major releases of Akka and the
 plain `akka.actor.Actor` will not be deprecated or go away anytime soon.
 
 Being a research project also entails that the reference documentation is not
@@ -285,7 +283,6 @@ have been converted into Signals.
 A side-effect of this is that behaviors can now be tested in isolation without
 having to be packaged into an Actor, tests can run fully synchronously without
 having to worry about timeouts and spurious failures. Another side-effect is
-that behaviors can nicely be composed and decorated, see the `And`,
-`Or`, `Widened`, `ContextAware` combinators; nothing about
-these is special or internal, new combinators can be written as external
-libraries or tailor-made for each project.
+that behaviors can nicely be composed and decorated, see `tap`, or
+`widen` combinators; nothing about these is special or internal, new 
+combinators can be written as external libraries or tailor-made for each project.

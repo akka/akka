@@ -67,7 +67,9 @@ object AkkaBuild extends Build {
     streamTests,
     streamTestsTck,
     testkit,
-    typed
+    typed,
+    typedTests,
+    typedTestkit
   )
 
   lazy val root = Project(
@@ -94,16 +96,28 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor)
   )
 
-  lazy val typed = Project(
-    id = "akka-typed",
-    base = file("akka-typed"),
-    dependencies = Seq(testkit % "compile;test->test")
-  )
-
   lazy val actorTests = Project(
     id = "akka-actor-tests",
     base = file("akka-actor-tests"),
     dependencies = Seq(testkit % "compile;test->test")
+  )
+
+  lazy val typed = Project(
+    id = "akka-typed",
+    base = file("akka-typed"),
+    dependencies = Seq(actor)
+  )
+
+  lazy val typedTestkit = Project(
+    id = "akka-typed-testkit",
+    base = file("akka-typed-testkit"),
+    dependencies = Seq(typed, testkit % "compile;test->test")
+  )
+
+  lazy val typedTests = Project(
+    id = "akka-typed-tests",
+    base = file("akka-typed-tests"),
+    dependencies = Seq(typedTestkit % "compile;test->test")
   )
 
   lazy val benchJmh = Project(
@@ -260,6 +274,7 @@ object AkkaBuild extends Build {
       remote % "compile;test->test",
       persistence % "compile;provided->provided;test->test",
       typed % "compile;test->test",
+      typedTests % "compile;test->test",
       streamTestkit % "compile;test->test"
     )
   )
