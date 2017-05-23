@@ -213,7 +213,7 @@ the cluster have been stopped the state is lost and not needed any more.
 The state of [Remembering Entities](#cluster-sharding-remembering) is also durable, i.e. it is stored to
 disk. The stored entities are started also after a complete cluster restart.
 
-Cluster Sharding  is using its own Distributed Data `Replicator` per node role. In this way you can use a subset of
+Cluster Sharding is using its own Distributed Data `Replicator` per node role. In this way you can use a subset of
 all nodes for some entity types and another subset for other entity types. Each such replicator has a name
 that contains the node role and therefore the role configuration must be the same on all nodes in the
 cluster, i.e. you can't change the roles when performing a rolling upgrade. 
@@ -423,3 +423,13 @@ of entities that are alive in each shard.
 
 The purpose of these messages is testing and monitoring, they are not provided to give access to
 directly sending messages to the individual entities.
+
+## Rolling upgrades
+
+When doing rolling upgrades special care must be taken to not change any of the following aspects of sharding:
+
+ * the `extractShardId` function
+ * the role that the shard regions run on
+ * the persistence mode
+ 
+ If any one of these needs a change it will require a full cluster restart.
