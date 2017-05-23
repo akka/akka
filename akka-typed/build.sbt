@@ -8,7 +8,7 @@ disablePlugins(MimaPlugin)
 
 initialCommands := """
   import akka.typed._
-  import import akka.typed.scaladsl.Actor
+  import akka.typed.scaladsl.Actor
   import scala.concurrent._
   import duration._
   import akka.util.Timeout
