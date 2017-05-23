@@ -25,16 +25,7 @@ final case class DeadLetter(msg: Any)
  * guaranteed to arrive in contrast to the at-most-once semantics of normal
  * Actor messages).
  */
-sealed trait Signal
-
-/**
- * Lifecycle signal that is fired upon creation of the Actor. This will be the
- * first message that the actor processes.
- */
-sealed abstract class PreStart extends Signal
-final case object PreStart extends PreStart {
-  def instance: PreStart = this
-}
+trait Signal
 
 /**
  * Lifecycle signal that is fired upon restart of the Actor before replacing
@@ -51,10 +42,6 @@ final case object PreRestart extends PreRestart {
  * Lifecycle signal that is fired after this actor and all its child actors
  * (transitively) have terminated. The [[Terminated]] signal is only sent to
  * registered watchers after this signal has been processed.
- *
- * <b>IMPORTANT NOTE:</b> if the actor terminated by switching to the
- * `Stopped` behavior then this signal will be ignored (i.e. the
- * Stopped behavior will do nothing in reaction to it).
  */
 sealed abstract class PostStop extends Signal
 final case object PostStop extends PostStop {
@@ -68,8 +55,9 @@ final case object PostStop extends PostStop {
  * idempotent, meaning that registering twice has the same effect as registering
  * once. Registration does not need to happen before the Actor terminates, a
  * notification is guaranteed to arrive after both registration and termination
- * have occurred. Termination of a remote Actor can also be effected by declaring
- * the Actor’s home system as failed (e.g. as a result of being unreachable).
+ * have occurred. This message is also sent when the watched actor is on a node
+ * that has been removed from the cluster when using akka-cluster or has been
+ * marked unreachable when using akka-remote directly.
  */
 final case class Terminated(ref: ActorRef[Nothing])(failed: Throwable) extends Signal {
   def wasFailed: Boolean = failed ne null

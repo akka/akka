@@ -5,8 +5,6 @@ package akka.typed
 
 import akka.{ event ⇒ e }
 import akka.event.Logging.{ LogEvent, LogLevel, StdOutLogger }
-import akka.testkit.{ EventFilter, TestEvent ⇒ TE }
-import scala.annotation.tailrec
 
 /**
  * An EventStream allows local actors to register for certain message types, including
@@ -66,42 +64,31 @@ object Logger {
 }
 
 class DefaultLogger extends Logger with StdOutLogger {
-  import ScalaDSL._
   import Logger._
 
-  val initialBehavior =
-    ContextAware[Command] { ctx ⇒
-      Total {
-        case Initialize(eventStream, replyTo) ⇒
-          val log = ctx.spawn(Deferred[AnyRef] { () ⇒
-            var filters: List[EventFilter] = Nil
+  val initialBehavior = {
+    // TODO avoid depending on dsl here?
+    import scaladsl.Actor._
+    deferred[Command] { _ ⇒
+      immutable[Command] {
+        case (ctx, Initialize(eventStream, replyTo)) ⇒
+          val log = ctx.spawn(deferred[AnyRef] { childCtx ⇒
 
-            def filter(event: LogEvent): Boolean = filters exists (f ⇒ try { f(event) } catch { case e: Exception ⇒ false })
-
-            def addFilter(filter: EventFilter): Unit = filters ::= filter
-
-            def removeFilter(filter: EventFilter) {
-              @tailrec def removeFirst(list: List[EventFilter], zipped: List[EventFilter] = Nil): List[EventFilter] = list match {
-                case head :: tail if head == filter ⇒ tail.reverse_:::(zipped)
-                case head :: tail                   ⇒ removeFirst(tail, head :: zipped)
-                case Nil                            ⇒ filters // filter not found, just return original list
-              }
-              filters = removeFirst(filters)
-            }
-
-            Static {
-              case TE.Mute(filters)   ⇒ filters foreach addFilter
-              case TE.UnMute(filters) ⇒ filters foreach removeFilter
-              case event: LogEvent    ⇒ if (!filter(event)) print(event)
+            immutable[AnyRef] {
+              case (_, event: LogEvent) ⇒
+                print(event)
+                same
+              case _ ⇒ unhandled
             }
           }, "logger")
-          eventStream.subscribe(log, classOf[TE.Mute])
-          eventStream.subscribe(log, classOf[TE.UnMute])
+
           ctx.watch(log) // sign death pact
           replyTo ! log
-          Empty
+
+          empty
       }
     }
+  }
 }
 
 class DefaultLoggingFilter(settings: Settings, eventStream: EventStream) extends e.DefaultLoggingFilter(() ⇒ eventStream.logLevel)

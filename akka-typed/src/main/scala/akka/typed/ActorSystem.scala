@@ -11,10 +11,11 @@ import akka.actor.setup.ActorSystemSetup
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
-import akka.typed.adapter.{ ActorSystemAdapter, PropsAdapter }
+import akka.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
 import akka.util.Timeout
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
+import java.util.Optional
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -25,7 +26,7 @@ import akka.annotation.ApiMayChange
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
+abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: internal.ActorRefImpl[T] ⇒
 
   /**
    * The name of this actor system, used to distinguish multiple ones within
@@ -133,7 +134,7 @@ trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
 
   /**
    * Ask the system guardian of this system to create an actor from the given
-   * behavior and deployment and with the given name. The name does not need to
+   * behavior and props and with the given name. The name does not need to
    * be unique since the guardian will prefix it with a running number when
    * creating the child actor. The timeout sets the timeout used for the [[akka.typed.scaladsl.AskPattern$]]
    * invocation when asking the guardian.
@@ -142,7 +143,7 @@ trait ActorSystem[-T] extends ActorRef[T] { this: internal.ActorRefImpl[T] ⇒
    * to which messages can immediately be sent by using the [[ActorRef$.apply[T](s*]]
    * method.
    */
-  def systemActorOf[U](behavior: Behavior[U], name: String, deployment: DeploymentConfig = EmptyDeploymentConfig)(implicit timeout: Timeout): Future[ActorRef[U]]
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = Props.empty)(implicit timeout: Timeout): Future[ActorRef[U]]
 
   /**
    * Return a reference to this system’s [[akka.typed.patterns.Receptionist$]].
@@ -154,20 +155,42 @@ object ActorSystem {
   import internal._
 
   /**
-   * Create an ActorSystem implementation that is optimized for running
+   * Scala API: Create an ActorSystem implementation that is optimized for running
    * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
    * [[akka.actor.Actor]] instances.
    */
   def apply[T](name: String, guardianBehavior: Behavior[T],
-               guardianDeployment: DeploymentConfig         = EmptyDeploymentConfig,
-               config:             Option[Config]           = None,
-               classLoader:        Option[ClassLoader]      = None,
-               executionContext:   Option[ExecutionContext] = None): ActorSystem[T] = {
+               guardianProps:    Props                    = Props.empty,
+               config:           Option[Config]           = None,
+               classLoader:      Option[ClassLoader]      = None,
+               executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
     Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
-    new ActorSystemImpl(name, appConfig, cl, executionContext, guardianBehavior, guardianDeployment)
+    new ActorSystemImpl(name, appConfig, cl, executionContext, guardianBehavior, guardianProps)
   }
+
+  /**
+   * Java API: Create an ActorSystem implementation that is optimized for running
+   * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
+   * [[akka.actor.Actor]] instances.
+   */
+  def create[T](name: String, guardianBehavior: Behavior[T],
+                guardianProps:    Optional[Props],
+                config:           Optional[Config],
+                classLoader:      Optional[ClassLoader],
+                executionContext: Optional[ExecutionContext]): ActorSystem[T] = {
+    import scala.compat.java8.OptionConverters._
+    apply(name, guardianBehavior, guardianProps.asScala.getOrElse(EmptyProps), config.asScala, classLoader.asScala, executionContext.asScala)
+  }
+
+  /**
+   * Java API: Create an ActorSystem implementation that is optimized for running
+   * Akka Typed [[Behavior]] hierarchies—this system cannot run untyped
+   * [[akka.actor.Actor]] instances.
+   */
+  def create[T](name: String, guardianBehavior: Behavior[T]): ActorSystem[T] =
+    apply(name, guardianBehavior)
 
   /**
    * Create an ActorSystem based on the untyped [[akka.actor.ActorSystem]]
@@ -175,15 +198,23 @@ object ActorSystem {
    * system typed and untyped actors can coexist.
    */
   def adapter[T](name: String, guardianBehavior: Behavior[T],
-                 guardianDeployment:  DeploymentConfig         = EmptyDeploymentConfig,
+                 guardianProps:       Props                    = Props.empty,
                  config:              Option[Config]           = None,
                  classLoader:         Option[ClassLoader]      = None,
                  executionContext:    Option[ExecutionContext] = None,
                  actorSystemSettings: ActorSystemSetup         = ActorSystemSetup.empty): ActorSystem[T] = {
+
+    // TODO I'm not sure how useful this mode is for end-users. It has the limitation that untyped top level
+    // actors can't be created, because we have a custom user guardian. I would imagine that if you have
+    // a system of both untyped and typed actors (e.g. adding some typed actors to an existing application)
+    // you would start an untyped.ActorSystem and spawn typed actors from that system or from untyped actors.
+    // Same thing with `wrap` below.
+
     Behavior.validateAsInitial(guardianBehavior)
     val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
-    val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext, Some(PropsAdapter(guardianBehavior, guardianDeployment)), actorSystemSettings)
+    val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext,
+      Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps)), actorSystemSettings)
     untyped.start()
     new ActorSystemAdapter(untyped)
   }
