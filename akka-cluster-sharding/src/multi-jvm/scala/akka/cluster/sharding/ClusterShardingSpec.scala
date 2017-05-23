@@ -828,8 +828,11 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
         expectMsg(ActorIdentity(3, None))
 
         //Check counter 13 is alive again
-        system.actorSelection(shard / "13") ! Identify(4)
-        expectMsgType[ActorIdentity](3 seconds).ref should not be (None)
+        val probe3 = TestProbe()
+        awaitAssert({
+          system.actorSelection(shard / "13").tell(Identify(4), probe3.ref)
+          probe3.expectMsgType[ActorIdentity](1 second).ref should not be (None)
+        }, 5 seconds, 500 millis)
       }
 
       enterBarrier("after-13")
