@@ -13,14 +13,6 @@ later installed on your machine.
 As the very first thing, we need to make sure that we can compile our project and have a working IDE setup to be
 able to edit code comfortably.
 
-**FIXME all links to hello-akka shall be replaced by akka-scala-seed / akka-java-seed**
-
-The easiest way is to use the @scala[`akka-scala-seed` in [Get started with Lightbend technologies](http://dev.lightbend.com/start/?group=akka&project=hello-akka)] @java[`akka-java-seed` in [Get started with Lightbend technologies](http://dev.lightbend.com/start/?group=akka&project=hello-akka)] 
-
-1. Enter Project Name and create the project from the @scala[[akka-scala-seed](http://dev.lightbend.com/start/?group=akka&project=hello-akka)] @scala[[akka-java-seed](http://dev.lightbend.com/start/?group=akka&project=hello-akka)] page.
-
-1. Unzip the zip file and rename the directory to your preference.
-
-1. Read the @scala[[Guide](http://developer.lightbend.com/guides/hello-akka/)] @java[[Guide](http://developer.lightbend.com/guides/hello-akka/)] for this example project. It describes the example, the basic concepts of actors and how to run the "Hello World" application. **FIXME the Guide is in progress [here](https://github.com/akka/akka-scala-seed.g8/pull/4/files#diff-179702d743b88d85b3971cba561e6ace)**.
+The easiest way is to use the @scala[[Akka Quickstart with Scala guide](http://developer.lightbend.com/guides/akka-quickstart-scala/)] @java[[Akka Quickstart with Java guide](http://developer.lightbend.com/guides/akka-quickstart-java/)]. It contains a Hello World example that illustrates Akka basics. Within 30 minutes, you should be able to download and run the example and use that guide to understand how the example is constructed.
 
 After that you can go back here and you are ready to dive deeper.
