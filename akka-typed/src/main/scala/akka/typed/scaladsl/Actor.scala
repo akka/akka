@@ -228,11 +228,12 @@ object Actor {
   def supervise[T](wrapped: Behavior[T]): Supervise[T] =
     new Supervise(wrapped)
 
-  final class Supervise[T](val wrapped: Behavior[T]) extends AnyVal {
+  private final val NothingClassTag = ClassTag(classOf[Nothing])
+  final class Supervise[T](val wrapped: Behavior[T]) {
     /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws. */
     def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
       val tag = implicitly[ClassTag[Thr]]
-      val effectiveTag = if (tag == ClassTag(classOf[Nothing])) ClassTag(classOf[Throwable]) else tag
+      val effectiveTag = if (tag == NothingClassTag) ClassTag(classOf[Throwable]) else tag
       akka.typed.internal.Restarter(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
     }
   }
