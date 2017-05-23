@@ -428,7 +428,7 @@ directly sending messages to the individual entities.
 
 When doing rolling upgrades special care must be taken to not change any of the following aspects of sharding:
 
- * the `extractShardId` function so that it extracts a different shard id than before for a given message
+ * the `extractShardId` function
  * the role that the shard regions run on
  * the persistence mode
  
