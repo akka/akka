@@ -11,7 +11,6 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import akka.typed.scaladsl.Actor
-import akka.typed.scaladsl.AskPattern._
 import akka.typed.scaladsl.TimerScheduler
 import akka.typed.testkit.TestKitSettings
 import akka.typed.testkit.scaladsl._
@@ -154,10 +153,10 @@ class TimerSpec extends TypedSpec("""
     def `05 must discard timers from old incarnation after restart, alt 1`(): Unit = {
       val probe = TestProbe[Event]("evt")
       val startCounter = new AtomicInteger(0)
-      val behv = Actor.restarter[Exception]().wrap(Actor.withTimers[Command] { timer ⇒
+      val behv = Actor.supervise(Actor.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(startCounter.incrementAndGet()), interval)
         target(probe.ref, timer, 1)
-      })
+      }).onFailure[Exception](SupervisorStrategy.restart)
 
       val ref = start(behv)
       probe.expectMsg(Tock(1))
@@ -177,10 +176,10 @@ class TimerSpec extends TypedSpec("""
 
     def `06 must discard timers from old incarnation after restart, alt 2`(): Unit = {
       val probe = TestProbe[Event]("evt")
-      val behv = Actor.restarter[Exception]().wrap(Actor.withTimers[Command] { timer ⇒
+      val behv = Actor.supervise(Actor.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
         target(probe.ref, timer, 1)
-      })
+      }).onFailure[Exception](SupervisorStrategy.restart)
 
       val ref = start(behv)
       probe.expectMsg(Tock(1))

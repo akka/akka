@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ */
 package akka.typed
 
 import scala.concurrent.duration._
@@ -5,6 +8,7 @@ import scala.concurrent.Future
 import com.typesafe.config.ConfigFactory
 import akka.actor.DeadLetterSuppression
 import akka.typed.scaladsl.Actor
+import scala.language.existentials
 
 object ActorContextSpec {
 
@@ -92,8 +96,8 @@ object ActorContextSpec {
             throw ex
           case MkChild(name, mon, replyTo) ⇒
             val child = name match {
-              case None    ⇒ ctx.spawnAnonymous(Actor.restarter[Throwable]().wrap(subject(mon, ignorePostStop)))
-              case Some(n) ⇒ ctx.spawn(Actor.restarter[Throwable]().wrap(subject(mon, ignorePostStop)), n)
+              case None    ⇒ ctx.spawnAnonymous(Actor.supervise(subject(mon, ignorePostStop)).onFailure(SupervisorStrategy.restart))
+              case Some(n) ⇒ ctx.spawn(Actor.supervise(subject(mon, ignorePostStop)).onFailure(SupervisorStrategy.restart), n)
             }
             replyTo ! Created(child)
             Actor.same
@@ -180,8 +184,8 @@ object ActorContextSpec {
           throw ex
         case MkChild(name, mon, replyTo) ⇒
           val child = name match {
-            case None    ⇒ ctx.spawnAnonymous(Actor.restarter[Throwable]().wrap(subject(mon, ignorePostStop)))
-            case Some(n) ⇒ ctx.spawn(Actor.restarter[Throwable]().wrap(subject(mon, ignorePostStop)), n)
+            case None    ⇒ ctx.spawnAnonymous(Actor.supervise(subject(mon, ignorePostStop)).onFailure[Throwable](SupervisorStrategy.restart))
+            case Some(n) ⇒ ctx.spawn(Actor.supervise(subject(mon, ignorePostStop)).onFailure[Throwable](SupervisorStrategy.restart), n)
           }
           replyTo ! Created(child)
           Actor.same
@@ -284,10 +288,11 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       if (system eq nativeSystem) suite + "Native"
       else suite + "Adapted"
 
-    def setup(name: String, wrapper: Option[Actor.Restarter[_]] = None, ignorePostStop: Boolean = true)(
+    def setup(name: String, wrapper: Option[Behavior[Command] ⇒ Behavior[Command]] = None, ignorePostStop: Boolean = true)(
       proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[TypedSpec.Status] =
       runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
-        val props = wrapper.map(_.wrap(behavior(ctx, ignorePostStop))).getOrElse(behavior(ctx, ignorePostStop))
+        val b = behavior(ctx, ignorePostStop)
+        val props = wrapper.map(_(b)).getOrElse(b)
         val steps = startWith.withKeepTraces(true)(ctx.spawn(props, "subject"))
 
         proc(ctx, steps)
@@ -351,7 +356,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
     })
 
     def `01 must correctly wire the lifecycle hooks`(): Unit =
-      sync(setup("ctx01", Some(Actor.restarter[Throwable]()), ignorePostStop = false) { (ctx, startWith) ⇒
+      sync(setup("ctx01", Some(b ⇒ Actor.supervise(b).onFailure[Throwable](SupervisorStrategy.restart)), ignorePostStop = false) { (ctx, startWith) ⇒
         val self = ctx.self
         val ex = new Exception("KABOOM1")
         startWith { subj ⇒
@@ -421,7 +426,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
       }
     })
 
-    def `05 must reset behavior upon Restart`(): Unit = sync(setup("ctx05", Some(Actor.restarter[Exception]())) { (ctx, startWith) ⇒
+    def `05 must reset behavior upon Restart`(): Unit = sync(setup("ctx05", Some(Actor.supervise(_).onFailure(SupervisorStrategy.restart))) { (ctx, startWith) ⇒
       val self = ctx.self
       val ex = new Exception("KABOOM05")
       startWith
@@ -436,7 +441,7 @@ class ActorContextSpec extends TypedSpec(ConfigFactory.parseString(
 
     def `06 must not reset behavior upon Resume`(): Unit = sync(setup(
       "ctx06",
-      Some(Actor.restarter[Exception](SupervisorStrategy.resume))) { (ctx, startWith) ⇒
+      Some(b ⇒ Actor.supervise(b).onFailure(SupervisorStrategy.resume))) { (ctx, startWith) ⇒
         val self = ctx.self
         val ex = new Exception("KABOOM06")
         startWith

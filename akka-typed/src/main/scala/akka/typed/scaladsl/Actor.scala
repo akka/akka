@@ -4,16 +4,14 @@
 package akka.typed
 package scaladsl
 
-import scala.reflect.ClassTag
+import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl }
 
-import akka.annotation.ApiMayChange
-import akka.annotation.DoNotInherit
-import akka.typed.internal.BehaviorImpl
-import akka.typed.internal.TimerSchedulerImpl
+import scala.reflect.ClassTag
+import scala.util.control.Exception.Catcher
 
 @ApiMayChange
 object Actor {
-  import Behavior._
 
   private val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
   private def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
@@ -218,17 +216,25 @@ object Actor {
    * It is possible to specify different supervisor strategies, such as restart,
    * resume, backoff.
    *
+   * Note that only [[scala.util.control.NonFatal]] throwables will trigger the supervision strategy.
+   *
    * Example:
    * {{{
    * val dbConnector: Behavior[DbCommand] = ...
-   * val dbRestarts = Restarter[DbException]().wrap(dbConnector)
+   * val dbRestarts = supervise(dbConnector).onFailure(SupervisorStrategy.resume) // handle all NonFatal exceptions
+   * val dbSpecificRestarts = supervise(dbConnector).onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // handle all NonFatal exceptions
    * }}}
    */
-  def restarter[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy = SupervisorStrategy.restart): Restarter[Thr] =
-    new Restarter(implicitly, strategy)
+  def supervise[T](wrapped: Behavior[T]): Supervise[T] =
+    new Supervise(wrapped)
 
-  final class Restarter[Thr <: Throwable: ClassTag](c: ClassTag[Thr], strategy: SupervisorStrategy) {
-    def wrap[T](b: Behavior[T]): Behavior[T] = akka.typed.internal.Restarter(Behavior.validateAsInitial(b), strategy)(c)
+  final class Supervise[T](val wrapped: Behavior[T]) extends AnyVal {
+    /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws. */
+    def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
+      val tag = implicitly[ClassTag[Thr]]
+      val effectiveTag = if (tag == ClassTag(classOf[Nothing])) ClassTag(classOf[Throwable]) else tag
+      akka.typed.internal.Restarter(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
+    }
   }
 
   /**

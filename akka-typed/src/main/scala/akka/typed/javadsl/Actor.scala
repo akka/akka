@@ -227,12 +227,29 @@ object Actor {
    *
    * It is possible to specify different supervisor strategies, such as restart,
    * resume, backoff.
+   *
+   * The [[SupervisorStrategy]] is only invoked for "non fatal" (see [[scala.util.control.NonFatal]])
+   * exceptions.
    */
-  def restarter[T, Thr <: Throwable](
-    clazz:           Class[Thr],
-    strategy:        SupervisorStrategy,
-    initialBehavior: Behavior[T]): Behavior[T] = {
-    Restarter(Behavior.validateAsInitial(initialBehavior), strategy)(ClassTag(clazz))
+  def supervise[T](wrapped: Behavior[T]): Supervise[T] =
+    new Supervise[T](wrapped)
+
+  final class Supervise[T](wrapped: Behavior[T]) {
+    /**
+     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
+     *
+     * Only exceptions of the given type (and their subclasses) will be handled by this supervision behavior.
+     */
+    def onFailure[Thr <: Throwable](clazz: Class[Thr], strategy: SupervisorStrategy): Behavior[T] =
+      akka.typed.internal.Restarter(Behavior.validateAsInitial(wrapped), strategy)(ClassTag(clazz))
+
+    /**
+     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
+     *
+     * All non-fatal (see [[scala.util.control.NonFatal]]) exceptions types will be handled using the given strategy.
+     */
+    def onFailure(strategy: SupervisorStrategy): Behavior[T] =
+      onFailure(classOf[Exception], strategy)
   }
 
   /**
