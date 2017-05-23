@@ -425,3 +425,13 @@ of entities that are alive in each shard.
 
 The purpose of these messages is testing and monitoring, they are not provided to give access to
 directly sending messages to the individual entities.
+
+## Rolling upgrades
+
+When doing rolling upgrades special care must be taken to not change any of the following aspects of sharding:
+
+ * the `extractShardId` function
+ * the role that the shard regions run on
+ * the persistence mode
+ 
+ If any one of these needs a change it will require a full cluster restart.
