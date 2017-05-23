@@ -365,11 +365,6 @@ class ActorDocSpec extends AkkaSpec("""
 
     val ponger = system.actorOf(Props(classOf[Ponger], pinger), "ponger")
 
-    //#fiddle_code
-    val testProbe = new TestProbe(system)
-    testProbe watch pinger
-    testProbe watch ponger
-    //#fiddle_code
     import system.dispatcher
     system.scheduler.scheduleOnce(500 millis) {
       ponger ! Ping
@@ -377,7 +372,11 @@ class ActorDocSpec extends AkkaSpec("""
 
     // $FiddleDependency org.akka-js %%% akkajsactor % 1.2.5.1
     //#fiddle_code
+
+    val testProbe = new TestProbe(system)
+    testProbe watch pinger
     testProbe.expectTerminated(pinger)
+    testProbe watch ponger
     testProbe.expectTerminated(ponger)
     system.terminate()
   }
