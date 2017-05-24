@@ -7,12 +7,18 @@ package akka.typed
  * Envelope that is published on the eventStream for every message that is
  * dropped due to overfull queues.
  */
-final case class Dropped(msg: Any, recipient: ActorRef[Nothing])
+final case class Dropped(msg: Any, recipient: ActorRef[Nothing]) {
+  /** Java API */
+  def getRecipient(): ActorRef[Void] = recipient.asInstanceOf[ActorRef[Void]]
+}
 
 /**
  * Exception that an actor fails with if it does not handle a Terminated message.
  */
-final case class DeathPactException(ref: ActorRef[Nothing]) extends RuntimeException(s"death pact with $ref was triggered")
+final case class DeathPactException(ref: ActorRef[Nothing]) extends RuntimeException(s"death pact with $ref was triggered") {
+  /** Java API */
+  def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
+}
 
 /**
  * Envelope for dead letters.
