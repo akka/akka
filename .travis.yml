@@ -1,0 +1,28 @@
+language: scala
+
+branches:
+  only:
+  - releaseFromTravis
+
+# We use travis only for publishing and cross-build there
+scala:
+  - "2.12.2"
+
+jdk:
+  - oraclejdk8
+
+# We use travis only for publishing, skip build/install:
+before_install: true
+install: true
+before_script: true
+script: true
+
+deploy:
+  provider: script
+  # While we test this script only do the trial run, no actual deploy
+  script:
+    - project/scripts/release 
+  on:
+    tags: true
+    repo: akka/akka
+
