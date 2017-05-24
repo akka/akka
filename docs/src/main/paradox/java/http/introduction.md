@@ -44,6 +44,7 @@ configured using the [Giter8](http://www.foundweekends.org/giter8/) template:
 ```sh
 sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-java-seed.g8
 ```
+From there on the prepared project can be built using Gradle or Maven.
 More instructions can be found in the [template
 project](https://github.com/akka/akka-http-java-seed.g8). Note, requires
 sbt version 0.13.13 or newer.
