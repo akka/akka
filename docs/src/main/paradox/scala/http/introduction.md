@@ -39,6 +39,14 @@ Mind that Akka HTTP comes in two modules: `akka-http` and `akka-http-core`. Beca
 depends on `akka-http-core` you don't need to bring the latter explicitly. Still you may need to this in case you rely
 solely on the low-level API; make sure the Scala version is a recent release of version `2.11` or `2.12`.
 
+Alternatively, you can bootstrap a new sbt project with Akka HTTP already
+configured using the [Giter8](http://www.foundweekends.org/giter8/) template:
+```sh
+sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-scala-seed.g8
+```
+More instructions can be found on the [template
+project](https://github.com/akka/akka-http-scala-seed.g8). Note, requires
+sbt version 0.13.13 or newer.
 
 ## Routing DSL for HTTP servers
 

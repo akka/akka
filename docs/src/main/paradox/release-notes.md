@@ -4,13 +4,13 @@
 
 ### New Seed Templates for Akka HTTP Apps
 
-We prepared new seed templates for starting out with Akka HTTP using the [Java DSL](https://github.com/akka/akka-http-java-seed.g8) 
-as well as [Scala DSL](https://github.com/akka/akka-http-scala-seed.g8). By using the `sbt new` command one can now easily get a 
+We prepared new seed templates for starting out with Akka HTTP using the [Java DSL](https://github.com/akka/akka-http-java-seed.g8)
+as well as [Scala DSL](https://github.com/akka/akka-http-scala-seed.g8). By using the `sbt new` command one can now easily get a
 small sample project to easily get started with your first Akka HTTP app. More instructions on the seed template pages.
 
 ### New Path Directive `ignoreTrailingSlash`
 
-Akka HTTP treats differently by default a route that ends with slash (`/`) than one that doesn't. From this version on, 
+Akka HTTP treats differently by default a route that ends with slash (`/`) than one that doesn't. From this version on,
 users who don't want to have this distinction, can use a new Path Directive called `ignoreTrailingSlash`.
 This route, will retry its inner route with and without a trailing slash. If you want to know more about this feature,
 please check the documentation pages for @ref[Scala](scala/http/routing-dsl/directives/path-directives/ignoreTrailingSlash.md)
@@ -22,7 +22,7 @@ and @ref[Java](java/http/routing-dsl/directives/path-directives/ignoreTrailingSl
 
 ##### akka-http
  * Added new Path Directive `ignoreTrailingSlash` ([#880](https://github.com/akka/akka-http/issues/880))
- * Prepared new seed templates for Akka HTTP apps (for both [Java DSL](https://github.com/akka/akka-http-java-seed.g8) and [Scala](https://github.com/akka/akka-http-scala-seed.g8)) ([1137](https://github.com/akka/akka-http/issues/1137) & [1055](https://github.com/akka/akka-http/issues/1055))
+ * Prepared new seed templates for Akka HTTP apps (for both [Java DSL](https://github.com/akka/akka-http-java-seed.g8) and [Scala DSL](https://github.com/akka/akka-http-scala-seed.g8)) ([1137](https://github.com/akka/akka-http/issues/1137) & [1055](https://github.com/akka/akka-http/issues/1055))
 
 ## 10.0.6
 
@@ -125,7 +125,7 @@ This is the fifth maintenance release of the Akka HTTP 10.0 series. It is primar
 
 ### Compatibility notes
 
-This version of Akka HTTP must be used with Akka in version at-least 2.4.17, however it is also compatible with Akka 2.5, which has just released its Release Candidate 1. 
+This version of Akka HTTP must be used with Akka in version at-least 2.4.17, however it is also compatible with Akka 2.5, which has just released its Release Candidate 1.
 
 
 ## 10.0.4
