@@ -467,7 +467,7 @@ class BehaviorSpec extends TypedSpec {
 
   trait RestarterScalaBehavior extends ImmutableWithSignalScalaBehavior with Reuse {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-      SActor.restarter[Exception]().wrap(super.behavior(monitor)._1) → null
+      SActor.supervise(super.behavior(monitor)._1).onFailure(SupervisorStrategy.restart) → null
     }
   }
   object `A restarter Behavior (scala,native)` extends RestarterScalaBehavior with NativeSystem
@@ -611,7 +611,8 @@ class BehaviorSpec extends TypedSpec {
 
   trait RestarterJavaBehavior extends ImmutableWithSignalJavaBehavior with Reuse {
     override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-      JActor.restarter(classOf[Exception], SupervisorStrategy.restart, super.behavior(monitor)._1) → null
+      JActor.supervise(super.behavior(monitor)._1)
+        .onFailure(classOf[Exception], SupervisorStrategy.restart) → null
     }
   }
   object `A restarter Behavior (java,native)` extends RestarterJavaBehavior with NativeSystem
