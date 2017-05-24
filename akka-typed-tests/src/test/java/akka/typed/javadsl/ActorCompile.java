@@ -107,9 +107,9 @@ public class ActorCompile {
     SupervisorStrategy strategy7 = strategy6.withResetBackoffAfter(Duration.create(2, TimeUnit.SECONDS));
 
     Behavior<MyMsg> behv =
-      Actor.restarter(RuntimeException.class, strategy1,
-        Actor.restarter(IllegalStateException.class,
-          strategy6, Actor.ignore()));
+      Actor.supervise(
+        Actor.supervise(Actor.<MyMsg>ignore()).onFailure(IllegalStateException.class, strategy6)
+      ).onFailure(RuntimeException.class, strategy1);
   }
 
 

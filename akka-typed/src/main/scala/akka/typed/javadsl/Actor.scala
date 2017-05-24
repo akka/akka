@@ -227,12 +227,42 @@ object Actor {
    *
    * It is possible to specify different supervisor strategies, such as restart,
    * resume, backoff.
+   *
+   * The [[SupervisorStrategy]] is only invoked for "non fatal" (see [[scala.util.control.NonFatal]])
+   * exceptions.
+   *
+   * Example:
+   * {{{
+   * final Behavior[DbCommand] dbConnector = ...
+   *
+   * final Behavior[DbCommand] dbRestarts =
+   *    Actor.supervise(dbConnector)
+   *      .onFailure(SupervisorStrategy.restart) // handle all NonFatal exceptions
+   *
+   * final Behavior[DbCommand] dbSpecificResumes =
+   *    Actor.supervise(dbConnector)
+   *      .onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // resume for IndexOutOfBoundsException exceptions
+   * }}}
    */
-  def restarter[T, Thr <: Throwable](
-    clazz:           Class[Thr],
-    strategy:        SupervisorStrategy,
-    initialBehavior: Behavior[T]): Behavior[T] = {
-    Restarter(Behavior.validateAsInitial(initialBehavior), strategy)(ClassTag(clazz))
+  def supervise[T](wrapped: Behavior[T]): Supervise[T] =
+    new Supervise[T](wrapped)
+
+  final class Supervise[T] private[akka] (wrapped: Behavior[T]) {
+    /**
+     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
+     *
+     * Only exceptions of the given type (and their subclasses) will be handled by this supervision behavior.
+     */
+    def onFailure[Thr <: Throwable](clazz: Class[Thr], strategy: SupervisorStrategy): Behavior[T] =
+      akka.typed.internal.Restarter(Behavior.validateAsInitial(wrapped), strategy)(ClassTag(clazz))
+
+    /**
+     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
+     *
+     * All non-fatal (see [[scala.util.control.NonFatal]]) exceptions types will be handled using the given strategy.
+     */
+    def onFailure(strategy: SupervisorStrategy): Behavior[T] =
+      onFailure(classOf[Exception], strategy)
   }
 
   /**
