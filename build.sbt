@@ -149,7 +149,7 @@ lazy val docs = project("docs")
   .settings(Dependencies.docs)
   .settings(
     name := "akka-http-docs",
-    resolvers += Resolver.bintrayRepo("2m", "maven"),
+    resolvers += Resolver.jcenterRepo,
     paradoxGroups := Map("Languages" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
