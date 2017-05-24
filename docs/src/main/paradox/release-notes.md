@@ -23,6 +23,20 @@ and @ref[Java](java/http/routing-dsl/directives/path-directives/ignoreTrailingSl
 ##### akka-http
  * Added new Path Directive `ignoreTrailingSlash` ([#880](https://github.com/akka/akka-http/issues/880))
  * Prepared new seed templates for Akka HTTP apps (for both [Java DSL](https://github.com/akka/akka-http-java-seed.g8) and [Scala DSL](https://github.com/akka/akka-http-scala-seed.g8)) ([1137](https://github.com/akka/akka-http/issues/1137) & [1055](https://github.com/akka/akka-http/issues/1055))
+ * Migrated to the new docs theme (same as Akka) ([#1129](https://github.com/akka/akka-http/issues/1129))
+ * (ApiMayChange) `HttpApp#route` method was renamed to `routes` to highlight it is "all the routes" ([#953](https://github.com/akka/akka-http/issues/953))
+
+#### akka-http2-support
+ * Synthetic Remote-Address header setting is now honored in HTTP2 server blueprint ([#1088](https://github.com/akka/akka-http/issues/1088))
+
+#### Bug Fixes
+
+##### General
+ * OSGi Import-Package ranges have been fixed to allow Akka 2.5.x ([#1097](https://github.com/akka/akka-http/issues/1097))
+
+##### akka-http-core
+ * Dates in RFC1123 format with single-digit-day are now properly parsed ([#1110](https://github.com/akka/akka-http/issues/1110))
+ 
 
 ## 10.0.6
 
