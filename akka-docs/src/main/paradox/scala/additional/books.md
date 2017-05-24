@@ -1,6 +1,7 @@
 
 # Books
 
+ * [Reactive Design Patterns](https://www.reactivedesignpatterns.com/), by Roland Kuhn with Jamie Allen and Brian Hanafee, Manning Publications Co., ISBN 9781617291807, Feb 2017
  * [Mastering Akka](https://www.packtpub.com/application-development/mastering-akka), by Christian Baxter, PACKT Publishing, ISBN: 9781786465023, October 2016
  * [Learning Akka](https://www.packtpub.com/application-development/learning-akka), by Jason Goodwin, PACKT Publishing, ISBN: 9781784393007, December 2015
  * [Akka in Action](http://www.lightbend.com/resources/e-book/akka-in-action), by Raymond Roestenburg and Rob Bakker, Manning Publications Co., ISBN: 9781617291012, September 2016
