@@ -230,11 +230,24 @@ object Actor {
    *
    * The [[SupervisorStrategy]] is only invoked for "non fatal" (see [[scala.util.control.NonFatal]])
    * exceptions.
+   *
+   * Example:
+   * {{{
+   * final Behavior[DbCommand] dbConnector = ...
+   *
+   * final Behavior[DbCommand] dbRestarts =
+   *    Actor.supervise(dbConnector)
+   *      .onFailure(SupervisorStrategy.restart) // handle all NonFatal exceptions
+   *
+   * final Behavior[DbCommand] dbSpecificResumes =
+   *    Actor.supervise(dbConnector)
+   *      .onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // resume for IndexOutOfBoundsException exceptions
+   * }}}
    */
   def supervise[T](wrapped: Behavior[T]): Supervise[T] =
     new Supervise[T](wrapped)
 
-  final class Supervise[T](wrapped: Behavior[T]) {
+  final class Supervise[T] private[akka] (wrapped: Behavior[T]) {
     /**
      * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
      *

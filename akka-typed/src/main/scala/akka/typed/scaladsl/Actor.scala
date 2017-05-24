@@ -221,19 +221,26 @@ object Actor {
    * Example:
    * {{{
    * val dbConnector: Behavior[DbCommand] = ...
-   * val dbRestarts = supervise(dbConnector).onFailure(SupervisorStrategy.resume) // handle all NonFatal exceptions
-   * val dbSpecificRestarts = supervise(dbConnector).onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // handle all NonFatal exceptions
+   *
+   * val dbRestarts =
+   *    Actor.supervise(dbConnector)
+   *      .onFailure(SupervisorStrategy.restart) // handle all NonFatal exceptions
+   *
+   * val dbSpecificResumes =
+   *    Actor.supervise(dbConnector)
+   *      .onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // resume for IndexOutOfBoundsException exceptions
    * }}}
    */
   def supervise[T](wrapped: Behavior[T]): Supervise[T] =
-    new Supervise(wrapped)
+    new Supervise[T](wrapped)
 
   private final val NothingClassTag = ClassTag(classOf[Nothing])
-  final class Supervise[T](val wrapped: Behavior[T]) {
+  private final val ThrowableClassTag = ClassTag(classOf[Throwable])
+  final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
     /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws. */
     def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
       val tag = implicitly[ClassTag[Thr]]
-      val effectiveTag = if (tag == NothingClassTag) ClassTag(classOf[Throwable]) else tag
+      val effectiveTag = if (tag == NothingClassTag) ThrowableClassTag else tag
       akka.typed.internal.Restarter(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
     }
   }
