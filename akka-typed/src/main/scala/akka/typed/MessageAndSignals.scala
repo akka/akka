@@ -63,4 +63,8 @@ final case class Terminated(ref: ActorRef[Nothing])(failed: Throwable) extends S
   def wasFailed: Boolean = failed ne null
   def failure: Throwable = failed
   def failureOption: Option[Throwable] = Option(failed)
+
+  /** Java API */
+  def getRef(): ActorRef[Nothing] = ref
+
 }
