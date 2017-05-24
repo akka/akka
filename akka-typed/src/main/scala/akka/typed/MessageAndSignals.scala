@@ -65,6 +65,6 @@ final case class Terminated(ref: ActorRef[Nothing])(failed: Throwable) extends S
   def failureOption: Option[Throwable] = Option(failed)
 
   /** Java API */
-  def getRef(): ActorRef[Nothing] = ref
+  def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
 
 }
