@@ -4,7 +4,7 @@
 `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule.
 2. Create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description including notable changes mentioning external contributors.
 3. Travis CI will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray and will sync them to Maven Central.
-4. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.0 deployRsync repo.akka.io"` to deploy API and reference documentation.
+4. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.2 deployRsync repo.akka.io"` to deploy API and reference documentation.
 5. Go to https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 and select the just released version
 6. Go to the Maven Central tab and sync with Sonatype
 7. Log in to Sonatype to Close the staging repository
