@@ -157,6 +157,33 @@ final class Merge[T](val inputPorts: Int, val eagerComplete: Boolean) extends Gr
 }
 
 object MergePreferred {
+
+  /**
+   * Constructs Source by merging multiple sources and prefering to pull from the "preferred" one.
+   *
+   * The merge assumes `eagerComplete = false`, so it will continue merging as the incoming sources complete,
+   * until all of them have completed. See other overloads of this method to influence the completion behavior.
+   */
+  def apply[T, M](preferred: Source[T, M], secondaries: Source[T, Any]*): Source[T, M] =
+    apply(preferred, false, secondaries: _*)
+
+  /**
+   * Constructs Source by merging multiple sources and prefering to pull from the "preferred" one.
+   *
+   * @param eagerComplete if true, the merge will complete as soon as one of its inputs completes.
+   */
+  def apply[T, M](preferred: Source[T, M], eagerComplete: Boolean, secondaries: Source[T, Any]*): Source[T, M] = {
+    Source.fromGraph(GraphDSL.create(preferred) { implicit b ⇒ p ⇒
+      import GraphDSL.Implicits._
+      val merge = b.add(new MergePreferred[T](secondaries.size, eagerComplete))
+
+      p ~> merge.preferred
+      secondaries.zipWithIndex.foreach { case (s, i) ⇒ s ~> merge.in(i) }
+
+      SourceShape(merge.out)
+    })
+  }
+
   import FanInShape._
   final class MergePreferredShape[T](val secondaryPorts: Int, _init: Init[T]) extends UniformFanInShape[T, T](secondaryPorts, _init) {
     def this(secondaryPorts: Int, name: String) = this(secondaryPorts, Name[T](name))
@@ -172,7 +199,8 @@ object MergePreferred {
    * @param secondaryPorts number of secondary input ports
    * @param eagerComplete if true, the merge will complete as soon as one of its inputs completes.
    */
-  def apply[T](secondaryPorts: Int, eagerComplete: Boolean = false): MergePreferred[T] = new MergePreferred(secondaryPorts, eagerComplete)
+  def apply[T](secondaryPorts: Int, eagerComplete: Boolean = false): MergePreferred[T] =
+    new MergePreferred(secondaryPorts, eagerComplete)
 }
 
 /**
