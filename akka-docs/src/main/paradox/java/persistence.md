@@ -426,6 +426,7 @@ Message deletion doesn't affect the highest sequence number of the journal, even
 Persisting, deleting and replaying messages can either succeed or fail.
 
 |**Method**                 | **Success**            |
+|---------------------------|------------------------|
 |`persist` / `persistAsync` | persist handler invoked|
 |`onPersistRejected`        | No automatic actions.  |
 |`recovery`                 | `RecoverySuccess`      |
