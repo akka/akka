@@ -26,6 +26,10 @@ abstract class PreviewServerSettings private[akka] () { self: PreviewServerSetti
    * dependencies / classpath.
    */
   def enableHttp2: Boolean
+
+  // ---
+
+  def withEnableHttp2(newValue: Boolean): PreviewServerSettings = self.copy(enableHttp2 = newValue)
 }
 
 object PreviewServerSettings extends SettingsCompanion[PreviewServerSettings] {

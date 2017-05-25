@@ -17,6 +17,14 @@ import com.typesafe.config.Config
 @ApiMayChange @DoNotInherit
 abstract class PreviewServerSettings private[akka] () extends akka.http.javadsl.settings.PreviewServerSettings {
   self: PreviewServerSettingsImpl ⇒
+
+  override def enableHttp2: Boolean
+
+  // -- 
+
+  // override for more specific return type
+  override def withEnableHttp2(newValue: Boolean): PreviewServerSettings = self.copy(enableHttp2 = newValue)
+
 }
 
 object PreviewServerSettings extends SettingsCompanion[PreviewServerSettings] {

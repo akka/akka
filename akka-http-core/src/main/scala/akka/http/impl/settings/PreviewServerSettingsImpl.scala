@@ -16,7 +16,7 @@ private[http] final case class PreviewServerSettingsImpl(
   override def productPrefix: String = "PreviewServerSettings"
 }
 
-object PreviewServerSettingsImpl extends SettingsCompanion[PreviewServerSettingsImpl]("akka.http.preview") {
+object PreviewServerSettingsImpl extends SettingsCompanion[PreviewServerSettingsImpl]("akka.http.server.preview") {
   def fromSubConfig(root: Config, c: Config) = PreviewServerSettingsImpl(
     c getBoolean "enable-http2"
   )
