@@ -331,7 +331,7 @@ Akka Streams is one such library.
 
 An incomplete list of other implementations:
 
- * [Reactor (1.1+)](http://github.com/reactor/reactor)
+ * [Reactor (1.1+)](https://github.com/reactor/reactor)
  * [RxJava](https://github.com/ReactiveX/RxJavaReactiveStreams)
  * [Ratpack](http://www.ratpack.io/manual/current/streams.html)
  * [Slick](http://slick.lightbend.com)
