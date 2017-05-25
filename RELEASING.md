@@ -10,8 +10,9 @@
    - (Optional, should happen automatically if selected in Bintray) Log in to Sonatype to Close the staging repository
    - Run a test against the staging repository to make sure the release went well
    - Release the staging repository to Maven Central.
-10. Create a news item on https://github.com/akka/akka.github.com
-11. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
+7. Create a news item on https://github.com/akka/akka.github.com
+8. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
+9. Send a release notification to akka-user and tweet using the akka account (or ask someone to) about the new release
 
 ### Follow up steps
 
