@@ -8,8 +8,8 @@
 5. Go to https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 and select the just released version
 6. Go to the Maven Central tab and sync with Sonatype
    - (Optional, should happen automatically if selected in Bintray) Log in to Sonatype to Close the staging repository
-8. Run a test against the staging repository to make sure the release went well
-9. Release the staging repository to Maven Central.
+   - Run a test against the staging repository to make sure the release went well
+   - Release the staging repository to Maven Central.
 10. Create a news item on https://github.com/akka/akka.github.com
 11. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
 
