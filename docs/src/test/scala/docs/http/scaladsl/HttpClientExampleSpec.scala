@@ -317,4 +317,27 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     //#single-request-in-actor-example
   }
 
+  "https-proxy-example" in compileOnlySpec {
+    //#https-proxy-example
+    import java.net.InetSocketAddress
+
+    import akka.actor.ActorSystem
+    import akka.stream.ActorMaterializer
+    import akka.http.scaladsl.{ ClientTransport, Http }
+    import akka.http.scaladsl.settings.ClientConnectionSettings
+
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+
+    val proxyHost = "localhost"
+    val proxyPort = 8888
+
+    val proxySettings = new InetSocketAddress(proxyHost, proxyPort)
+    val transport = ClientTransport.proxy(None, proxySettings, ClientConnectionSettings(system))
+
+    val connectionFlow =
+      Http().outgoingConnectionUsingTransport("akka.io", 443, transport, Http().defaultClientHttpsContext)
+    //#https-proxy-example
+  }
+
 }

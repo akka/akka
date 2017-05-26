@@ -91,7 +91,7 @@ The Akka-http build includes a special task called `validatePullRequest` which i
 then running tests only on those projects.
 
 For example changing something in `akka-http-core` would cause tests to be run in all projects which depend on it
-(e.g. `akka-http-tests`, `akka-http-marshallers-*`, `akka-docs` etc.).
+(e.g. `akka-http-tests`, `akka-http-marshallers-*`, `docs` etc.).
 
 To use the task simply type, and the output should include entries like shown below:
 
@@ -99,7 +99,7 @@ To use the task simply type, and the output should include entries like shown be
 > validatePullRequest
 [info] Diffing [HEAD] to determine changed modules in PR...
 [info] Detected uncomitted changes in directories (including in dependency analysis): [akka-protobuf,project]
-[info] Detected changes in directories: [akka-docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
+[info] Detected changes in directories: [docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
 ```
 
 By default changes are diffed with the `master` branch when working locally, if you want to validate against a different
@@ -192,7 +192,7 @@ To generate documentation you can:
 > paradox
 ```
 
-The rendered documentation will be available under `docs/target/paradox/site/index.html`. 
+The rendered documentation will be available under `docs/target/paradox/site/main/index.html`. 
 
 ### JavaDoc
 

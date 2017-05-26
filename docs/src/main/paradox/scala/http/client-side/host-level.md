@@ -177,4 +177,11 @@ Even better is it to use the streaming API directly. This will mostly prevent in
 generated "on-the-fly" while streaming the requests. You supply the requests as a stream, i.e. as a `Source[(HttpRequest, ...)]`, and
 the pool will "pull out" single requests when capacity is available on one of the connections to the host.
 
-@@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-streamed-example }
+@@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example }
+
+## HTTPS proxying
+
+In order to connect to a remote server via HTTPS proxy you need use `ClientTransport.proxy` instead of the default one.
+Having proper instance of `ClientTransport` you need to pass it to `outgoingConnectionUsingTransport`:
+
+@@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example }
