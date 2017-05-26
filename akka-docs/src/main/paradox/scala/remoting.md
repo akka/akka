@@ -1,6 +1,6 @@
 # Remoting
 
-For an introduction of remoting capabilities of Akka please see [Location Transparency]().
+For an introduction of remoting capabilities of Akka please see @ref[Location Transparency](general/remoting.md).
 
 @@@ note
 
@@ -18,8 +18,18 @@ network and/or Akka configuration will have to be changed as described in
 The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project:
 
 @@@vars
-```
+sbt
+:   ```
 "com.typesafe.akka" %% "akka-remote" % $akka.version$
+```
+
+Maven
+:   ```
+<dependency>
+  <groupId>com.typesafe.akka</groupId>
+  <artifactId>akka-remote_$scala.binary_version$</artifactId>
+  <version>$akka.version$</version>
+</dependency>
 ```
 @@@
 
@@ -75,29 +85,42 @@ In the next sections the two alternatives are described in detail.
 
 `actorSelection(path)` will obtain an `ActorSelection` to an Actor on a remote node, e.g.:
 
-```
+Scala
+:   ```
 val selection =
   context.actorSelection("akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName")
+```
+
+Java
+:   ```
+ActorSelection selection =
+  context.actorSelection("akka.tcp://app@10.0.0.1:2552/user/serviceA/worker");
 ```
 
 As you can see from the example above the following pattern is used to find an actor on a remote node:
 
 ```
-akka.<protocol>://<actor system>@<hostname>:<port>/<actor path>
+akka.<protocol>://<actor system name>@<hostname>:<port>/<actor path>
 ```
 
 Once you obtained a selection to the actor you can interact with it in the same way you would with a local actor, e.g.:
 
-```
+Scala
+:   ```
 selection ! "Pretty awesome feature"
+```
+
+Java
+:   ```
+selection.tell("Pretty awesome feature", getSelf());
 ```
 
 To acquire an `ActorRef` for an `ActorSelection` you need to
 send a message to the selection and use the `sender` reference of the reply from
 the actor. There is a built-in `Identify` message that all Actors will understand
 and automatically reply to with a `ActorIdentity` message containing the
-`ActorRef`. This can also be done with the `resolveOne` method of
-the `ActorSelection`, which returns a `Future` of the matching
+`ActorRef`. This can also be done with the @scala[`resolveOne`]@java[`resolveOneCS`] method of
+the `ActorSelection`, which returns a @scala[`Future`]@java[`CompletionStage`] of the matching
 `ActorRef`.
 
 @@@ note
@@ -137,13 +160,17 @@ akka {
 ```
 
 The configuration above instructs Akka to react when an actor with path `/sampleActor` is created, i.e.
-using `system.actorOf(Props(...), "sampleActor")`. This specific actor will not be directly instantiated,
+using @scala[`system.actorOf(Props(...), "sampleActor")`]@java[`system.actorOf(new Props(...), "sampleActor")`]. This specific actor will not be directly instantiated,
 but instead the remote daemon of the remote system will be asked to create the actor,
 which in this sample corresponds to `sampleActorSystem@127.0.0.1:2553`.
 
 Once you have configured the properties above you would do the following in code:
 
-@@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
+Scala
+:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
+
+Java
+:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
 
 The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
@@ -151,10 +178,11 @@ actor systems has to have a JAR containing the class.
 @@@ note
 
 In order to ensure serializability of `Props` when passing constructor
-arguments to the actor being created, do not make the factory an inner class:
+arguments to the actor being created, do not make the factory @scala[an]@java[a non-static] inner class:
 this will inherently capture a reference to its enclosing object, which in
-most cases is not serializable. It is best to create a factory method in the
-companion object of the actor’s class.
+most cases is not serializable. It is best to @scala[create a factory method in the
+companion object of the actor’s class]@java[make a static
+inner class which implements `Creator<T extends Actor>`].
 
 Serializability of all Props can be tested by setting the configuration item
 `akka.actor.serialize-creators=on`. Only Props whose `deploy` has
@@ -164,7 +192,7 @@ Serializability of all Props can be tested by setting the configuration item
 
 @@@ note
 
-You can use asterisks as wildcard matches for the actor paths, so you could specify:
+You can use asterisks as wildcard matches for the actor path sections, so you could specify:
 `/*/sampleActor` and that would match all `sampleActor` on that level in the hierarchy.
 You can also use wildcard in the last position to match all actors at a certain level:
 `/someParent/*`. Non-wildcard matches always have higher priority to match than wildcards, so:
@@ -183,15 +211,27 @@ precedence.
 
 With these imports:
 
-@@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
+Scala
+:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
+
+Java
+:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
 
 and a remote address like this:
 
-@@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address }
+Scala
+:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address }
+
+Java
+:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address }
 
 you can advise the system to create a child on that remote node like so:
 
-@@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
+Scala
+:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
+
+Java
+:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
 
 <a id="remote-deployment-whitelist"></a>
 ### Remote deployment whitelist
@@ -338,6 +378,17 @@ convenient to use, thus it remained the default serialization mechanism that Akk
 serialize user messages as well as some of its internal messages in previous versions.
 Since the release of Artery, Akka internals do not rely on Java serialization anymore (one exception being `java.lang.Throwable`).
 
+@@@ warning
+
+Please note Akka 2.5 by default does not use any Java Serialization for its own internal messages, unlike 2.4 where
+by default it sill did for a few of the messages. If you want an 2.4.x system to communicate with a 2.5.x series, for
+example during a rolling deployment you should first enable `additional-serialization-bindings` on the old systems.
+You must do so on all nodes participating in a cluster, otherwise the mis-aligned serialization
+configurations will cause deserialization errors on the receiving nodes. These additional serialization bindings are
+enabled by default in Akka 2.5.x.
+
+@@@
+
 @@@ note
 
 When using the new remoting implementation (codename Artery), Akka does not use Java Serialization for any of its internal messages.
@@ -398,9 +449,9 @@ That is not done by the router.
 <a id="remote-sample"></a>
 ## Remoting Sample
 
-You can download a ready to run @extref[remoting sample](ecs:akka-samples-remote-scala)
+You can download a ready to run @scala[@extref[remoting sample](ecs:akka-samples-remote-scala)]@java[@extref[remoting sample](ecs:akka-samples-remote-java)]
 together with a tutorial for a more hands-on experience. The source code of this sample can be found in the
-@extref[Akka Samples Repository](samples:akka-sample-remote-scala).
+@scala[@extref[Akka Samples Repository](samples:akka-sample-remote-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-remote-java)].
 
 ### Remote Events
 
@@ -464,6 +515,10 @@ To intercept generic remoting related errors, listen to `RemotingErrorEvent` whi
 An `ActorSystem` should not be exposed via Akka Remote over plain TCP to an untrusted network (e.g. internet).
 It should be protected by network security, such as a firewall. If that is not considered as enough protection
 [TLS with mutual authentication](#remote-tls)  should be enabled.
+
+Best practice is that Akka remoting nodes should only be accessible from the adjacent network. Note that if TLS is
+enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by
+compromising any node with certificates issued by the same internal PKI tree.
 
 It is also security best-practice to [disable the Java serializer](#disable-java-serializer) because of
 its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
@@ -541,7 +596,7 @@ the other (the "server").
 Note that if TLS is enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate
 by compromising any node with certificates issued by the same internal PKI tree.
 
-See also a description of the settings in the [Remote Configuration](#remote-configuration) section.
+See also a description of the settings in the @ref[Remote Configuration](remoting.md#remote-configuration) section.
 
 @@@ note
 
