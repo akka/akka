@@ -875,7 +875,7 @@ behavior is not the default).
 
 ### Encoding Scala Actors nested receives without accidentally leaking memory
 
-See this @extref[Unnested receive example](github:akka-docs/src/main/scala/docs/actor/UnnestedReceives.scala).
+See this @extref[Unnested receive example](github:akka-docs/src/test/scala/docs/actor/UnnestedReceives.scala).
 
 <a id="stash"></a>
 ## Stash
