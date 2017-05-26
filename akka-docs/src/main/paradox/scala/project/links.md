@@ -24,7 +24,7 @@ A chat room is available for all questions related to developing and contributin
 
 ## Source Code
 
-Akka uses Git and is hosted at [Github akka/akka](http://github.com/akka/akka).
+Akka uses Git and is hosted at [Github akka/akka](https://github.com/akka/akka).
 
 ## Releases Repository
 
