@@ -598,7 +598,7 @@ As users were often confused by "when to use an Actor vs. when to use an Agent?"
 the Agents, as they rarely are really enough and do not fit the Akka spirit of thinking about distribution.
 We also anticipate to replace the uses of Agents by the upcoming Akka Typed, so in preparation thereof the Agents have been deprecated in 2.5.
 
-If you use Agents and would like to take over the maintanance thereof, please contact the team on gitter or github.
+If you use Agents and would like to take over the maintenance thereof, please contact the team on Gitter or GitHub.
 
 ## Camel
 
@@ -615,8 +615,8 @@ of Akka Camel.
 `akka-contrib` has been deprecated and is scheduled for removal in the next major version. 
 The reason is to reduce the amount of things to maintain in the core Akka projects. 
 Contributions to the core of Akka or its satellite projects are welcome. Contributions 
-that don't fit into existing modules can be hosted in new Akka Github repositories in the 
-`akka` Github organization or outside of it depending on what kind of library it is.
+that don't fit into existing modules can be hosted in new Akka GitHub repositories in the 
+`akka` GitHub organization or outside of it depending on what kind of library it is.
 Please ask.
 
 ### Aggregator
