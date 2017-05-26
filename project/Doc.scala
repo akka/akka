@@ -99,7 +99,6 @@ object UnidocRoot extends AutoPlugin {
 
   object autoImport {
     val unidocRootIgnoreProjects = settingKey[Seq[Project]]("Projects to ignore when generating unidoc")
-    val unidocRootProjectFilter = settingKey[ScopeFilter.ProjectFilter]("project filter for generating unidoc")
   }
   import autoImport._
 
@@ -113,20 +112,19 @@ object UnidocRoot extends AutoPlugin {
     sources in(JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
   )).getOrElse(Nil)
 
-  def settings() = {
+  val settings = {
+    def unidocRootProjectFilter(ignoreProjects: Seq[Project]) =
+      ignoreProjects.foldLeft(inAnyProject) { _ -- inProjects(_) }
+
     inTask(unidoc)(Seq(
-      unidocRootProjectFilter := {
-        val ignoreProjects = unidocRootIgnoreProjects.value
-        ignoreProjects.foldLeft(inAnyProject) { _ -- inProjects(_) }
-      },
-      unidocProjectFilter in ScalaUnidoc := unidocRootProjectFilter.value,
-      unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter.value,
+      unidocProjectFilter in ScalaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
+      unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
       apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value
     ))
   }
 
   override lazy val projectSettings =
-    CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++ settings()
+    CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++ settings
 }
 
 /**
