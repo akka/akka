@@ -43,7 +43,7 @@ public class BehaviorBuilderTest extends JUnitSuite {
           return Actor.<Message>same();
         })
         .onSignal(Terminated.class, (ctx, t) -> {
-          System.out.println("Terminating along with " + t.ref());
+          System.out.println("Terminating along with " + t.getRef());
           return stopped();
         })
         .build();
