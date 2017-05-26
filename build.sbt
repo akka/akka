@@ -39,6 +39,7 @@ lazy val root = Project(
   base = file("."),
   aggregate = aggregatedProjects
 ).settings(rootSettings: _*)
+ .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs))
 
 lazy val actor = akkaModule("akka-actor")
 
